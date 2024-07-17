@@ -14,7 +14,7 @@
 <body>
     <div id="openseadragon"></div>
     <script src="js/openseadragon.min.js"></script>
-    <script src="js/openseadragon-scalebar.min.js"></script>
+ <!--   <script src="js/openseadragon-scalebar.min.js"></script> -->
     <script>
         var viewer = OpenSeadragon({
             id: "openseadragon",
@@ -29,7 +29,7 @@
             location: OpenSeadragon.ScalebarLocation.BOTTOM_LEFT,
             xOffset: 5,
             yOffset: 10,
-            stayInsideImage: true,
+            stayInsideImage: false,
             color: "rgb(150, 150, 150)",
             fontColor: "rgb(255, 0, 0)",
             backgroundColor: "rgba(255, 255, 255, 0.75)",
