@@ -50,14 +50,15 @@
         document.querySelectorAll('.image-buttons button').forEach(function(button) {
             button.addEventListener('click', function() {
                 var tileSource = button.getAttribute('data-image');
+
                 // Save the current zoom and center
                 var currentZoom = viewer.viewport.getZoom();
                 var currentCenter = viewer.viewport.getCenter();
 
                 viewer.addHandler('open', function() {
                     // Restore the zoom and center
-                    viewer.viewport.zoomTo(currentZoom);
-                    viewer.viewport.panTo(currentCenter);
+                    viewer.viewport.zoomTo(currentZoom, null, true);
+                    viewer.viewport.panTo(currentCenter, true);
                 }, {once: true});
 
                 // Open the new image
