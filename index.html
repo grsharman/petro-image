@@ -3,69 +3,68 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OpenSeaDragon Parallel Images Example</title>
+    <title>OpenSeaDragon Spit View Example</title>
     <style>
-        #openseadragon {
-            width: 100%;
-            height: 600px;
+        #viewer1, #viewer2 {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 50%;
+            height: 100%;
         }
-        .image-buttons {
-            margin: 10px 0;
+        #viewer1 {
+            left: 0;
         }
-        .image-buttons button {
-            margin-right: 10px;
+        #viewer2 {
+            right: 0;
         }
     </style>
 </head>
 <body>
-    <div class="image-buttons">
-        <button data-image="images/O48-013.dzi">XPL</button>
-        <button data-image="images/O48-014.dzi">PPL</button>
-    </div>
-    <div id="openseadragon"></div>
+    <div id="viewer1"></div>
+    <div id="viewer2"></div>
     <script src="js/openseadragon.min.js"></script>
-    <script src="js/openseadragon-scalebar.min.js"></script>
     <script>
-        var viewer = OpenSeadragon({
-            id: "openseadragon",
+        var viewer1 = OpenSeadragon({
+            id: "viewer1",
             prefixUrl: "js/images/",
             tileSources: "https://raw.githubusercontent.com/grsharman/petro-image/main/images/O48-013.dzi"
         });
 
-        viewer.scalebar({
-            type: OpenSeadragon.ScalebarType.MAP,
-            pixelsPerMeter: 100000,
-            minWidth: "75px",
-            location: OpenSeadragon.ScalebarLocation.BOTTOM_LEFT,
-            xOffset: 5,
-            yOffset: 10,
-            stayInsideImage: true,
-            color: "rgb(150, 150, 150)",
-            fontColor: "rgb(255, 0, 0)",
-            backgroundColor: "rgba(255, 255, 255, 0.75)",
-            fontSize: "small",
-            barThickness: 2
+        var viewer2 = OpenSeadragon({
+            id: "viewer2",
+            prefixUrl: "js/images/",
+            tileSources: "https://raw.githubusercontent.com/grsharman/petro-image/main/images/O48-014.dzi"
         });
 
-        document.querySelectorAll('.image-buttons button').forEach(function(button) {
-            button.addEventListener('click', function() {
-                var tileSource = button.getAttribute('data-image');
-
-                // Save the current zoom and center
-                var currentZoom = viewer.viewport.getZoom();
-                var currentCenter = viewer.viewport.getCenter();
-
-                viewer.addHandler('open', function() {
-                    // Restore the zoom and center
-                    viewer.viewport.zoomTo(currentZoom, null, true);
-                    viewer.viewport.panTo(currentCenter, true);
-                }, {once: true});
-
-                // Open the new image
-                viewer.open(tileSource);
+        function synchronizeViewers(master, slave) {
+            master.addHandler('animation', function() {
+                var masterCenter = master.viewport.getCenter();
+                var masterZoom = master.viewport.getZoom();
+                slave.viewport.panTo(masterCenter, true);
+                slave.viewport.zoomTo(masterZoom, null, true);
             });
-        });
 
+            master.addHandler('resize', function() {
+                slave.viewport.viewportToImageRectangle(master.viewport.getBounds(true));
+            });
+        }
+
+        synchronizeViewers(viewer1, viewer2);
+        synchronizeViewers(viewer2, viewer1);
+
+        document.body.addEventListener('mousemove', function(event) {
+            var width = window.innerWidth;
+            var mouseX = event.clientX;
+
+            if (mouseX < width / 2) {
+                viewer1.container.style.width = '100%';
+                viewer2.container.style.width = '0%';
+            } else {
+                viewer1.container.style.width = '0%';
+                viewer2.container.style.width = '100%';
+            }
+        });
     </script>
 </body>
 </html>
