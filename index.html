@@ -9,7 +9,17 @@
             position: absolute;
             top: 0;
             bottom: 0;
-            width: 50%;
+            overflow: hidden;
+        }
+        #viewer-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+        #viewer1, #viewer2 {
+            position: absolute;
+            top: 0;
+            bottom: 0;
             height: 100%;
         }
         #viewer1 {
@@ -18,11 +28,22 @@
         #viewer2 {
             right: 0;
         }
+        #divider {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: black;
+            cursor: ew-resize;
+        }
     </style>
 </head>
 <body>
-    <div id="viewer1"></div>
-    <div id="viewer2"></div>
+    <div id="viewer-container">
+        <div id="viewer1"></div>
+        <div id="viewer2"></div>
+        <div id="divider"></div>
+    </div>
     <script src="js/openseadragon.min.js"></script>
     <script>
         var viewer1 = OpenSeadragon({
@@ -49,21 +70,30 @@
                 slave.viewport.viewportToImageRectangle(master.viewport.getBounds(true));
             });
         }
-        // Stuff
+
         synchronizeViewers(viewer1, viewer2);
         synchronizeViewers(viewer2, viewer1);
 
-        document.body.addEventListener('mousemove', function(event) {
-            var width = window.innerWidth;
-            var mouseX = event.clientX;
+        var divider = document.getElementById('divider');
+        var viewerContainer = document.getElementById('viewer-container');
 
-            if (mouseX < width / 2) {
-                viewer1.container.style.width = '100%';
-                viewer2.container.style.width = '0%';
-            } else {
-                viewer1.container.style.width = '0%';
-                viewer2.container.style.width = '100%';
-            }
+        viewerContainer.addEventListener('mousemove', function(event) {
+            var width = viewerContainer.clientWidth;
+            var mouseX = event.clientX;
+            var leftWidth = mouseX;
+            var rightWidth = width - mouseX;
+
+            viewer1.style.width = leftWidth + 'px';
+            viewer2.style.width = rightWidth + 'px';
+            viewer2.style.left = leftWidth + 'px';
+            divider.style.left = mouseX + 'px';
+        });
+
+        viewerContainer.addEventListener('mouseleave', function(event) {
+            viewer1.style.width = '50%';
+            viewer2.style.width = '50%';
+            viewer2.style.left = '50%';
+            divider.style.left = '50%';
         });
     </script>
 </body>
