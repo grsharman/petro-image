@@ -14,8 +14,6 @@
 <body>
     <div id="openseadragon"></div>
     <script src="js/openseadragon.min.js"></script>
-    <script src="js/openseadragon-scalebar.min.js"></script>
-
     <script>
         var viewer = OpenSeadragon({
             id: "openseadragon",
@@ -23,20 +21,6 @@
             tileSources: "https://raw.githubusercontent.com/grsharman/petro-image/main/images/O48-013.dzi"
         });
 
-        viewer.scalebar({
-            type: OpenSeadragon.ScalebarType.MAP,
-            pixelsPerMeter: 100000
-            minWidth: "75px",
-            location: OpenSeadragon.ScalebarLocation.BOTTOM_LEFT,
-            xOffset: 5,
-            yOffset: 10,
-            stayInsideImage: false,
-            color: "rgb(150, 150, 150)",
-            fontColor: "rgb(255, 0, 0)",
-            backgroundColor: "rgba(255, 255, 255, 0.75)",
-            fontSize: "small",
-            barThickness: 2
-        });
     </script>
 </body>
 </html>
