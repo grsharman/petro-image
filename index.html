@@ -19,8 +19,8 @@
 </head>
 <body>
     <div class="image-buttons">
-        <button data-image="images/O48-013.dzi">Image 1</button>
-        <button data-image="images/O48-014.dzi">Image 2</button>
+        <button data-image="images/O48-013.dzi">XPL</button>
+        <button data-image="images/O48-014.dzi">PPL</button>
     </div>
     <div id="openseadragon"></div>
     <script src="js/openseadragon.min.js"></script>
@@ -45,6 +45,13 @@
             backgroundColor: "rgba(255, 255, 255, 0.75)",
             fontSize: "small",
             barThickness: 2
+        });
+
+        document.querySelectorAll('.image-buttons button').forEach(function(button) {
+            button.addEventListener('click', function() {
+                var tileSource = button.getAttribute('data-image');
+                viewer.open(tileSource);
+            });
         });
 
     </script>
