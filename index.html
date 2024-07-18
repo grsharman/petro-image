@@ -37,6 +37,7 @@
             cursor: ew-resize;
         }
     </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/OpenSeadragonScalebar/2.0.0/openseadragon-scalebar.min.css" />
 </head>
 <body>
     <div id="viewer-container">
@@ -45,6 +46,7 @@
         <div id="divider"></div>
     </div>
     <script src="js/openseadragon.min.js"></script>
+    <script src="js/openseadragon-scalebar.min.js"></script>
     <script>
         var viewer1 = OpenSeadragon({
             id: "viewer1",
@@ -94,6 +96,38 @@
             viewer2.style.width = '50%';
             viewer2.style.left = '50%';
             divider.style.left = '50%';
+        });
+        
+        // Adding scalebar to viewer1
+        viewer1.scalebar({
+            type: OpenSeadragon.ScalebarType.MAP,
+            pixelsPerMeter: 100000, // Adjust according to your image
+            minWidth: "75px",
+            location: OpenSeadragon.ScalebarLocation.BOTTOM_LEFT,
+            xOffset: 10,
+            yOffset: 10,
+            stayInsideImage: true,
+            color: "black",
+            fontColor: "black",
+            backgroundColor: "rgba(255, 255, 255, 0.5)",
+            fontSize: "small",
+            barThickness: 2
+        });
+
+        // Adding scalebar to viewer2
+        viewer2.scalebar({
+            type: OpenSeadragon.ScalebarType.MAP,
+            pixelsPerMeter: 100000, // Adjust according to your image
+            minWidth: "75px",
+            location: OpenSeadragon.ScalebarLocation.BOTTOM_LEFT,
+            xOffset: 10,
+            yOffset: 10,
+            stayInsideImage: true,
+            color: "black",
+            fontColor: "black",
+            backgroundColor: "rgba(255, 255, 255, 0.5)",
+            fontSize: "small",
+            barThickness: 2
         });
     </script>
 </body>
