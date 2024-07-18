@@ -36,6 +36,14 @@
             background: black;
             cursor: ew-resize;
         }
+        .annotation {
+            position: absolute;
+            background: rgba(255, 0, 0, 0.5);
+            border-radius: 50%;
+            width: 10px;
+            height: 10px;
+            pointer-events: none;
+        }
     </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/OpenSeadragonScalebar/2.0.0/openseadragon-scalebar.min.css" />
 </head>
@@ -97,7 +105,7 @@
             viewer2.style.left = '50%';
             divider.style.left = '50%';
         });
-        
+
         // Adding scalebar to viewer1
         viewer1.scalebar({
             type: OpenSeadragon.ScalebarType.MAP,
@@ -128,6 +136,34 @@
             backgroundColor: "rgba(255, 255, 255, 0.5)",
             fontSize: "small",
             barThickness: 2
+        });
+        
+        // Annotation logic
+        function addAnnotation(viewer, point, id) {
+            var annotation = document.createElement('div');
+            annotation.className = 'annotation';
+            annotation.id = id;
+
+            viewer.addOverlay({
+                element: annotation,
+                location: point
+            });
+        }
+
+        function synchronizeAnnotations(point) {
+            var id = 'annotation-' + Date.now();
+            addAnnotation(viewer1, point, id);
+            addAnnotation(viewer2, point, id);
+        }
+
+        viewer1.addHandler('canvas-click', function(event) {
+            var point = viewer1.viewport.pointFromPixel(event.position);
+            synchronizeAnnotations(point);
+        });
+
+        viewer2.addHandler('canvas-click', function(event) {
+            var point = viewer2.viewport.pointFromPixel(event.position);
+            synchronizeAnnotations(point);
         });
     </script>
 </body>
