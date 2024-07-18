@@ -36,6 +36,15 @@
             background: black;
             cursor: ew-resize;
         }
+        #annotation-menu {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 1000;
+            background: white;
+            padding: 10px;
+            border: 1px solid black;
+        }
         .annotation {
             position: absolute;
             background: rgba(255, 0, 0, 0.5);
@@ -44,10 +53,21 @@
             height: 10px;
             pointer-events: none;
         }
+        .annotation-label {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.8);
+            border: 1px solid black;
+            padding: 2px;
+            font-size: 12px;
+            pointer-events: none;
+        }
     </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/OpenSeadragonScalebar/2.0.0/openseadragon-scalebar.min.css" />
 </head>
 <body>
+    <div id="annotation-menu">
+        <button id="annotate-button">Annotate</button>
+        <input type="text" id="annotation-text" placeholder="Annotation text">
     <div id="viewer-container">
         <div id="viewer1"></div>
         <div id="viewer2"></div>
@@ -137,12 +157,25 @@
             fontSize: "small",
             barThickness: 2
         });
-        
-        // Annotation logic
-        function addAnnotation(viewer, point, id) {
+
+        var annotateMode = false;
+        var annotateButton = document.getElementById('annotate-button');
+        var annotationText = document.getElementById('annotation-text');
+
+        annotateButton.addEventListener('click', function() {
+            annotateMode = !annotateMode;
+            annotateButton.textContent = annotateMode ? 'Annotate Mode: ON' : 'Annotate Mode: OFF';
+        });
+
+        function addAnnotation(viewer, point, text, id) {
             var annotation = document.createElement('div');
             annotation.className = 'annotation';
             annotation.id = id;
+
+            var label = document.createElement('div');
+            label.className = 'annotation-label';
+            label.textContent = text;
+            annotation.appendChild(label);
 
             viewer.addOverlay({
                 element: annotation,
@@ -150,20 +183,25 @@
             });
         }
 
-        function synchronizeAnnotations(point) {
+        function synchronizeAnnotations(point, text) {
             var id = 'annotation-' + Date.now();
-            addAnnotation(viewer1, point, id);
-            addAnnotation(viewer2, point, id);
+            addAnnotation(viewer1, point, text, id);
+            addAnnotation(viewer2, point, text, id);
+        }
+
+        function handleAnnotation(event, viewer) {
+            if (!annotateMode) return;
+            var point = viewer.viewport.pointFromPixel(event.position);
+            var text = annotationText.value || "Annotation";
+            synchronizeAnnotations(point, text);
         }
 
         viewer1.addHandler('canvas-click', function(event) {
-            var point = viewer1.viewport.pointFromPixel(event.position);
-            synchronizeAnnotations(point);
+            handleAnnotation(event, viewer1);
         });
 
         viewer2.addHandler('canvas-click', function(event) {
-            var point = viewer2.viewport.pointFromPixel(event.position);
-            synchronizeAnnotations(point);
+            handleAnnotation(event, viewer2);
         });
     </script>
 </body>
