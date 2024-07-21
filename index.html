@@ -84,7 +84,6 @@
         <div id="viewer2"></div>
         <div id="divider"></div>
         <div id="coordinates">Coordinates: (x, y)</div>
-        <div id="coordinates-right">Coordinates: (x, y)</div>
     </div>
     <script src="js/openseadragon.min.js"></script>
     <script src="js/openseadragon-scalebar.min.js"></script>
@@ -219,7 +218,6 @@
 
         // Coordinates display
         var coordinatesDisplay = document.getElementById('coordinates');
-        var coordinatesRightDisplay = document.getElementById('coordinates-right');
 
         function updateCoordinates(viewer, event, displayElement) {
             var point = viewer.viewport.pointFromPixel(event.position);
@@ -227,29 +225,32 @@
             displayElement.textContent = 'Coordinates: (' + imagePoint.x.toFixed(2) + ', ' + imagePoint.y.toFixed(2) + ')';
         }
 
-        viewer1.addHandler('canvas-enter', function() {
+        function showCoordinates() {
             coordinatesDisplay.style.display = 'block';
-        });
+        }
 
-        viewer1.addHandler('canvas-exit', function() {
+        function hideCoordinates() {
             coordinatesDisplay.style.display = 'none';
-        });
+        }
 
+        function handleCanvasHover(viewer, event) {
+            updateCoordinates(viewer, event, coordinatesDisplay);
+        }
+
+        viewer1.addHandler('canvas-enter', showCoordinates);
+        viewer1.addHandler('canvas-exit', hideCoordinates);
         viewer1.addHandler('canvas-hover', function(event) {
-            updateCoordinates(viewer1, event, coordinatesDisplay);
+            handleCanvasHover(viewer1, event);
         });
 
-        viewer2.addHandler('canvas-enter', function() {
-            coordinatesRightDisplay.style.display = 'block';
-        });
-
-        viewer2.addHandler('canvas-exit', function() {
-            coordinatesRightDisplay.style.display = 'none';
-        });
-
+        viewer2.addHandler('canvas-enter', showCoordinates);
+        viewer2.addHandler('canvas-exit', hideCoordinates);
         viewer2.addHandler('canvas-hover', function(event) {
-            updateCoordinates(viewer2, event, coordinatesRightDisplay);
+            handleCanvasHover(viewer2, event);
         });
+
+        // Show coordinates box initially
+        showCoordinates();
     </script>
 </body>
 </html>
