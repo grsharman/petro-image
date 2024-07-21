@@ -36,7 +36,7 @@
             background: black;
             cursor: ew-resize;
         }
-        #annotation-menu {
+/*        #annotation-menu {
             position: absolute;
             top: 10px;
             left: 10px;
@@ -60,8 +60,8 @@
             padding: 2px;
             font-size: 12px;
             pointer-events: none;
-        }
-        #coordinates-right {
+        }*/
+        #coordinates {
             position: absolute;
             bottom: 10px;
             right: 10px;
@@ -170,51 +170,51 @@
             barThickness: 2
         });
 
-        var annotateMode = false;
-        var annotateButton = document.getElementById('annotate-button');
-        var annotationText = document.getElementById('annotation-text');
+        // var annotateMode = false;
+        // var annotateButton = document.getElementById('annotate-button');
+        // var annotationText = document.getElementById('annotation-text');
 
-        annotateButton.addEventListener('click', function() {
-            annotateMode = !annotateMode;
-            annotateButton.textContent = annotateMode ? 'Annotate Mode: ON' : 'Annotate Mode: OFF';
-        });
+        // annotateButton.addEventListener('click', function() {
+        //     annotateMode = !annotateMode;
+        //     annotateButton.textContent = annotateMode ? 'Annotate Mode: ON' : 'Annotate Mode: OFF';
+        // });
 
-        function addAnnotation(viewer, point, text, id) {
-            var annotation = document.createElement('div');
-            annotation.className = 'annotation';
-            annotation.id = id;
+        // function addAnnotation(viewer, point, text, id) {
+        //     var annotation = document.createElement('div');
+        //     annotation.className = 'annotation';
+        //     annotation.id = id;
 
-            var label = document.createElement('div');
-            label.className = 'annotation-label';
-            label.textContent = text;
-            annotation.appendChild(label);
+        //     var label = document.createElement('div');
+        //     label.className = 'annotation-label';
+        //     label.textContent = text;
+        //     annotation.appendChild(label);
 
-            viewer.addOverlay({
-                element: annotation,
-                location: point
-            });
-        }
+        //     viewer.addOverlay({
+        //         element: annotation,
+        //         location: point
+        //     });
+        // }
 
-        function synchronizeAnnotations(point, text) {
-            var id = 'annotation-' + Date.now();
-            addAnnotation(viewer1, point, text, id);
-            addAnnotation(viewer2, point, text, id);
-        }
+        // function synchronizeAnnotations(point, text) {
+        //     var id = 'annotation-' + Date.now();
+        //     addAnnotation(viewer1, point, text, id);
+        //     addAnnotation(viewer2, point, text, id);
+        // }
 
-        function handleAnnotation(event, viewer) {
-            if (!annotateMode) return;
-            var point = viewer.viewport.pointFromPixel(event.position);
-            var text = annotationText.value || "Annotation";
-            synchronizeAnnotations(point, text);
-        }
+        // function handleAnnotation(event, viewer) {
+        //     if (!annotateMode) return;
+        //     var point = viewer.viewport.pointFromPixel(event.position);
+        //     var text = annotationText.value || "Annotation";
+        //     synchronizeAnnotations(point, text);
+        // }
 
-        viewer1.addHandler('canvas-click', function(event) {
-            handleAnnotation(event, viewer1);
-        });
+        // viewer1.addHandler('canvas-click', function(event) {
+        //     handleAnnotation(event, viewer1);
+        // });
 
-        viewer2.addHandler('canvas-click', function(event) {
-            handleAnnotation(event, viewer2);
-        });
+        // viewer2.addHandler('canvas-click', function(event) {
+        //     handleAnnotation(event, viewer2);
+        // });
 
         // Coordinates display
         var coordinatesDisplay = document.getElementById('coordinates');
