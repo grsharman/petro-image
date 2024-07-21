@@ -220,9 +220,8 @@
         var coordinatesDisplay = document.getElementById('coordinates');
 
         function updateCoordinates(viewer, event, displayElement) {
-            var webPoint = event.position;
-            var viewportPoint = viewer.viewport.pointFromPixel(webPoint);
-            var imagePoint = viewer.viewport.viewportToImageCoordinates(viewportPoint);
+            var webPoint = viewer.elementToViewportCoordinates(event.position);
+            var imagePoint = viewer.viewport.viewportToImageCoordinates(webPoint);
             displayElement.textContent = 'Coordinates: (' + imagePoint.x.toFixed(2) + ', ' + imagePoint.y.toFixed(2) + ')';
         }
 
