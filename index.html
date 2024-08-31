@@ -3,69 +3,103 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OpenSeaDragon Parallel Images Example</title>
+    <title>OpenSeaDragon Split View Example</title>
     <style>
-        #openseadragon {
+        body, html {
+            margin: 0;
+            height: 100%;
+            overflow: hidden;
+        }
+        #viewer-container {
+            position: relative;
             width: 100%;
-            height: 600px;
+            height: 100%;
         }
-        .image-buttons {
-            margin: 10px 0;
+        #viewer {
+            position: absolute;
+            height: 100%;
+            width: 100%;
         }
-        .image-buttons button {
-            margin-right: 10px;
+        #divider {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: black;
+            pointer-events: none;
         }
     </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/OpenSeadragonScalebar/2.0.0/openseadragon-scalebar.min.css" />
 </head>
 <body>
-    <div class="image-buttons">
-        <button data-image="images/O48-013.dzi">XPL</button>
-        <button data-image="images/O48-014.dzi">PPL</button>
+    <div id="viewer-container">
+        <div id="viewer"></div>
+        <div id="divider"></div>
     </div>
-    <div id="openseadragon"></div>
     <script src="js/openseadragon.min.js"></script>
     <script src="js/openseadragon-scalebar.min.js"></script>
     <script>
-        var viewer = OpenSeadragon({
-            id: "openseadragon",
+        const viewer = OpenSeadragon({
+            id: "viewer",
             prefixUrl: "js/images/",
-            tileSources: "https://raw.githubusercontent.com/grsharman/petro-image/main/images/O48-013.dzi"
+            tileSources: [
+                "https://raw.githubusercontent.com/grsharman/petro-image/main/images/O48-013.dzi",
+                "https://raw.githubusercontent.com/grsharman/petro-image/main/images/O48-014.dzi",
+            ]
         });
 
+        const divider = document.getElementById('divider');
+        const viewerContainer = document.getElementById('viewer-container');
+
+        // Keep track of the mouse's position outside the pointermove event so
+        // that it's available when handling other events, such as viewer
+        // animation.
+        let mousePos = new OpenSeadragon.Point(0, 0);
+
+        // Sets the dividing line between the two images at the given
+        // x-coordinate in window space.
+        const divideAtX = x => {
+            // Reposition the divider between the partial images.
+            divider.style.left = x + 'px';
+
+            // Clip the overlayed image to show only the region to the right of
+            // x, exposing the image underneath.
+            const overlay = viewer.world.getItemAt(1);
+            const clipPos = overlay.viewerElementToImageCoordinates(new OpenSeadragon.Point(x, 0));
+            // Clamp the clip to within the image bounds.
+            const size = overlay.getContentSize();
+            const xClip = Math.max(0, Math.min(clipPos.x, size.x));
+            overlay.setClip(new OpenSeadragon.Rect(xClip, 0, size.x, size.y));
+        };
+        // Sets the dividing line to the current mouse position.
+        const divideAtMouse = () => { divideAtX(mousePos.x); };
+        // Sets the dividing line to the center of the window.
+        const divideAtCenter = () => { divideAtX(document.body.clientWidth / 2); };
+
+        viewer.addHandler('animation', divideAtMouse);
+
+        viewerContainer.addEventListener('pointermove', event => {
+            mousePos = new OpenSeadragon.Point(event.clientX, event.clientY);
+            divideAtMouse();
+        });
+
+        document.addEventListener('mouseleave', divideAtCenter);
+
+        // Adding scalebar to viewer
         viewer.scalebar({
             type: OpenSeadragon.ScalebarType.MAP,
-            pixelsPerMeter: 100000,
+            pixelsPerMeter: 100000, // Adjust according to your image
             minWidth: "75px",
             location: OpenSeadragon.ScalebarLocation.BOTTOM_LEFT,
-            xOffset: 5,
+            xOffset: 10,
             yOffset: 10,
             stayInsideImage: true,
-            color: "rgb(150, 150, 150)",
-            fontColor: "rgb(255, 0, 0)",
-            backgroundColor: "rgba(255, 255, 255, 0.75)",
+            color: "black",
+            fontColor: "black",
+            backgroundColor: "rgba(255, 255, 255, 0.5)",
             fontSize: "small",
             barThickness: 2
         });
-
-        document.querySelectorAll('.image-buttons button').forEach(function(button) {
-            button.addEventListener('click', function() {
-                var tileSource = button.getAttribute('data-image');
-
-                // Save the current zoom and center
-                var currentZoom = viewer.viewport.getZoom();
-                var currentCenter = viewer.viewport.getCenter();
-
-                viewer.addHandler('open', function() {
-                    // Restore the zoom and center
-                    viewer.viewport.zoomTo(currentZoom, null, true);
-                    viewer.viewport.panTo(currentCenter, true);
-                }, {once: true});
-
-                // Open the new image
-                viewer.open(tileSource);
-            });
-        });
-
     </script>
 </body>
 </html>
