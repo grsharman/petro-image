@@ -40,21 +40,16 @@
 
         const viewerContainer = document.getElementById('viewer-container');
 
-        // Share mouse position and division point data between different event
-        // handlers.
-        let mousePos = null;
-        let divisionPoint = new OpenSeadragon.Point(0, 0);
+        // Share the mouse position between event handlers.
+        let mousePos = new OpenSeadragon.Point(0, 0);
 
-        // Divides the images at the current division point (either the mouse
-        // position or the center of the window), clipping overlaid images to
-        // expose the images underneath. Note that all images are expected to
-        // have the same position and size.
+        // Divides the images at the current mouse position, clipping overlaid
+        // images to expose the images underneath. Note that all images are
+        // expected to have the same position and size.
         const divideImages = () => {
-            divisionPoint = mousePos || new OpenSeadragon.Point(document.body.clientWidth / 2, document.body.clientHeight / 2);
-
             const overlay1 = viewer.world.getItemAt(1);
             const overlay2 = viewer.world.getItemAt(2);
-            const clipPos = overlay1.viewerElementToImageCoordinates(divisionPoint);
+            const clipPos = overlay1.viewerElementToImageCoordinates(mousePos);
 
             // Clamp the clip point to within the image bounds.
             const size = overlay1.getContentSize();
@@ -85,26 +80,22 @@
 
             const ctx = viewer.drawer.context;
             ctx.lineWidth = 2;
-            if (divisionPoint.y >= top && divisionPoint.y <= bottom) {
+            if (mousePos.y >= top && mousePos.y <= bottom) {
                 ctx.beginPath();
-                ctx.moveTo(left, divisionPoint.y);
-                ctx.lineTo(right, divisionPoint.y);
+                ctx.moveTo(left, mousePos.y);
+                ctx.lineTo(right, mousePos.y);
                 ctx.stroke();
             }
-            if (divisionPoint.x >= left && divisionPoint.x <= right && divisionPoint.y >= top) {
+            if (mousePos.x >= left && mousePos.x <= right && mousePos.y >= top) {
                 ctx.beginPath();
-                ctx.moveTo(divisionPoint.x, top);
-                ctx.lineTo(divisionPoint.x, Math.min(divisionPoint.y, bottom));
+                ctx.moveTo(mousePos.x, top);
+                ctx.lineTo(mousePos.x, Math.min(mousePos.y, bottom));
                 ctx.stroke();
             }
         });
 
         viewerContainer.addEventListener('pointermove', event => {
             mousePos = new OpenSeadragon.Point(event.clientX, event.clientY)
-            divideImages();
-        });
-        document.addEventListener('mouseleave', () => {
-            mousePos = null;
             divideImages();
         });
 
