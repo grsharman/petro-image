@@ -52,8 +52,8 @@
             const yClip = Math.max(0, Math.min(clipPos.y, size.y));
 
             // Set clips.
-            overlay1.setClip(new OpenSeadragon.Rect(0, 0, xClip, yClip));
-            overlay2.setClip(new OpenSeadragon.Rect(xClip, 0, size.x, yClip));
+            overlay1.setClip(new OpenSeadragon.Rect(xClip, 0,  size.x, yClip));
+            overlay2.setClip(new OpenSeadragon.Rect(0, yClip, size.x, size.y));
         };
 
         viewer.addHandler('animation', divideImages);
