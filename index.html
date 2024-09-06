@@ -15,11 +15,25 @@
             width: 100%;
             height: 100%;
         }
+        .controls {
+            position: absolute;
+            top: 40px;
+            left: 5px;
+            background-color: rgba(255, 255, 255, 0.5); 
+        }
     </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/OpenSeadragonScalebar/2.0.0/openseadragon-scalebar.min.css" />
 </head>
 <body>
     <div id="viewer-container"></div>
+    <div class="controls">
+        <input type="checkbox" id="image1" checked onclick="toggleVisibility(this, 0)" />
+        <label for="image1">Image 1</label>
+        <input type="checkbox" id="image2" checked onclick="toggleVisibility(this, 1)" />
+        <label for="image2">Image 2</label>
+        <input type="checkbox" id="image3" checked onclick="toggleVisibility(this, 2)" />
+        <label for="image3">Image 3</label>
+    </div>
     <script src="js/openseadragon.min.js"></script>
     <script src="js/openseadragon-scalebar.min.js"></script>
     <script>
@@ -42,52 +56,35 @@
         // images to expose the images underneath. Note that all images are
         // expected to have the same position and size.
         const divideImages = () => {
-            const overlay1 = viewer.world.getItemAt(1);
-            const overlay2 = viewer.world.getItemAt(2);
-            const clipPos = overlay1.viewerElementToImageCoordinates(mousePos);
+            // Get the clip point and clamp it to within the image bounds.
+            const image = viewer.world.getItemAt(0)
+            const clipPos = image.viewerElementToImageCoordinates(mousePos);
+            const size = image.getContentSize();
+            clipPos.x = Math.max(0, Math.min(clipPos.x, size.x));
+            clipPos.y = Math.max(0, Math.min(clipPos.y, size.y));
 
-            // Clamp the clip point to within the image bounds.
-            const size = overlay1.getContentSize();
-            const xClip = Math.max(0, Math.min(clipPos.x, size.x));
-            const yClip = Math.max(0, Math.min(clipPos.y, size.y));
+            // Set the clip for each image.
+            let previousVisibleImages = 0;
+            for (let i = 0; i < viewer.world.getItemCount(); ++i) {
+                const image = viewer.world.getItemAt(i);
+                if (!image.getOpacity()) {
+                    continue;
+                }
+                // Determine the quadrants to be clipped by how many visible
+                // images are underneath this one.
+                const xClip = previousVisibleImages & 1 ? clipPos.x : 0;
+                const yClip = previousVisibleImages & 2 ? clipPos.y : 0;
+                image.setClip(new OpenSeadragon.Rect(xClip, yClip, size.x, size.y));
+                ++previousVisibleImages;
+            }
+        };
 
-            // Set clips.
-            overlay1.setClip(new OpenSeadragon.Rect(xClip, 0,  size.x, yClip));
-            overlay2.setClip(new OpenSeadragon.Rect(0, yClip, size.x, size.y));
+        const toggleVisibility = (checkbox, idx) => {
+            viewer.world.getItemAt(idx).setOpacity(checkbox.checked ? 1 : 0);
+            divideImages();
         };
 
         viewer.addHandler('animation', divideImages);
-
-        viewer.addHandler('update-viewport', () => {
-            // Draw lines dividing the images, directly on the viewer's canvas.
-
-            // This is gnarly, but I don't know that there's a better way to
-            // find the window-space bounds of a viewer image.
-            const image0 = viewer.world.getItemAt(0);
-            const topLeftViewport = image0.viewportToImageCoordinates(image0.getBounds().getTopLeft())
-            const topLeftWindow = image0.imageToWindowCoordinates(topLeftViewport);
-            const bottomRightViewport = image0.viewportToImageCoordinates(image0.getBounds().getBottomRight());
-            const bottomRightWindow = image0.imageToWindowCoordinates(bottomRightViewport);
-            const top = Math.ceil(topLeftWindow.y);
-            const bottom = Math.floor(bottomRightWindow.y);
-            const left = Math.ceil(topLeftWindow.x);
-            const right = Math.floor(bottomRightWindow.x);
-
-            const ctx = viewer.drawer.context;
-            ctx.lineWidth = 2;
-            if (mousePos.y >= top && mousePos.y <= bottom) {
-                ctx.beginPath();
-                ctx.moveTo(left, mousePos.y);
-                ctx.lineTo(right, mousePos.y);
-                ctx.stroke();
-            }
-            if (mousePos.x >= left && mousePos.x <= right && mousePos.y >= top) {
-                ctx.beginPath();
-                ctx.moveTo(mousePos.x, top);
-                ctx.lineTo(mousePos.x, Math.min(mousePos.y, bottom));
-                ctx.stroke();
-            }
-        });
 
         viewerContainer.addEventListener('pointermove', event => {
             mousePos = new OpenSeadragon.Point(event.clientX, event.clientY)
