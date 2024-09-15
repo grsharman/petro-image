@@ -87,9 +87,9 @@
                 </div>
                 <div>
                     rows:
-                    <input id="row-count" class="coordinate-input" type="number" value="5" min="2"></input>
+                    <input id="row-count" class="coordinate-input" type="number" value="10" min="2"></input>
                     columns:
-                    <input id="col-count" class="coordinate-input" type="number" value="5" min="2"></input>
+                    <input id="col-count" class="coordinate-input" type="number" value="10" min="2"></input>
                 </div>
                 <button onclick="overlayGridPoints()">Apply</button>
                 <button>Import</button>
@@ -192,12 +192,20 @@
                     // Add crosshairs.
                     const crosshairs = document.createElement("div");
                     crosshairs.className = "crosshairs";
-                    viewer.addOverlay(crosshairs, location);
+                    viewer.addOverlay({
+                        element: crosshairs,
+                        location: location,
+                        checkResize: false,
+                    });
                     // Add point label with coordinates.
                     const pointLabel = document.createElement("div");
                     pointLabel.innerHTML = `${1 + col + row * colCount} (${x.toPrecision(3)}, ${y.toPrecision(3)})`;
                     pointLabel.className = "point-label";
-                    viewer.addOverlay(pointLabel, location);
+                    viewer.addOverlay({
+                        element: pointLabel,
+                        location: location,
+                        checkResize: false,
+                    });
                 }
             }
         };
