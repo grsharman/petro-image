@@ -121,6 +121,11 @@
         // images to expose the images underneath. Note that all images are
         // expected to have the same position and size.
         const divideImages = () => {
+            // Bail out if there are no images.
+            if (viewer.world.getItemCount() == 0) {
+                return;
+            }
+
             // Get the clip point and clamp it to within the image bounds.
             const image = viewer.world.getItemAt(0)
             const clipPos = image.viewerElementToImageCoordinates(mousePos);
