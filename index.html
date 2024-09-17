@@ -53,7 +53,7 @@
             transform: translate(-50%, -50%);
             background-color: red;
         }
-        .coordinate-input {
+        .number-input {
             width: 40px;
         }
     </style>
@@ -74,23 +74,31 @@
         <div>
             <details open>
                 <summary>Grid layout</summary>
+                <input id="pixels-per-meter" class="number-input" type="number" step="any" value="100" min="1"></input>
+                pixels/
+                <select id="unit">
+                    <option value="1">m</option>
+                    <option value="1e-3" selected>mm</option>
+                    <option value="1e-6">μm</option>
+                    <option value="1e-9">nm</option>
+                </select>
                 <div>
-                    x<sub>min</sub>:
-                    <input id="grid-left" class="coordinate-input" type="number" step="any" value="0" min="0"></input>
-                    y<sub>min</sub>:
-                    <input id="grid-top" class="coordinate-input" type="number" step="any" value="0" min="0"></input>
+                    <label for="grid-left">x<sub>min</sub>:</label>
+                    <input id="grid-left" class="number-input" type="number" step="any" value="0" min="0"></input>
+                    <label for="grid-top">y<sub>min</sub>:</label>
+                    <input id="grid-top" class="number-input" type="number" step="any" value="0" min="0"></input>
                 </div>
                 <div>
-                    x<sub>max</sub>:
-                    <input id="grid-right" class="coordinate-input" type="number" step="any" value="1.0"></input>
-                    y<sub>max</sub>:
-                    <input id="grid-bottom" class="coordinate-input" type="number" step="any" value="1.0"></input>
+                    <label for="grid-right">x<sub>max</sub>:</label>
+                    <input id="grid-right" class="number-input" type="number" step="any" value="1.0"></input>
+                    <label for="grid-bottom">y<sub>max</sub>:</label>
+                    <input id="grid-bottom" class="number-input" type="number" step="any" value="1.0"></input>
                 </div>
                 <div>
-                    rows:
-                    <input id="row-count" class="coordinate-input" type="number" value="10" min="2"></input>
-                    columns:
-                    <input id="col-count" class="coordinate-input" type="number" value="10" min="2"></input>
+                    <label for="row-count">rows:</label>
+                    <input id="row-count" class="number-input" type="number" value="10" min="2"></input>
+                    <label for="col-count">columns:</label>
+                    <input id="col-count" class="number-input" type="number" value="10" min="2"></input>
                 </div>
                 <button onclick="overlayGridPoints()">Apply</button>
                 <button>Import</button>
@@ -161,10 +169,10 @@
             divideImages();
         });
 
-        // Adding scalebar to viewer
+        // Initialize the scalebar, except for pixelsPerMeter, which depends on
+        // the grid settings.
         viewer.scalebar({
             type: OpenSeadragon.ScalebarType.MAP,
-            pixelsPerMeter: 100000, // Adjust according to your image
             minWidth: "75px",
             location: OpenSeadragon.ScalebarLocation.BOTTOM_LEFT,
             xOffset: 10,
@@ -177,23 +185,36 @@
             barThickness: 2
         });
 
+        // Initialize default grid.
+        let grid = {
+            pixelsPerMeter: 100_000,
+            xMin: 0,
+            yMin: 0,
+            xMax: 1,
+            yMax: 1,
+            rows: 10,
+            cols: 10
+        };
+
         const overlayGridPoints = () => {
             viewer.clearOverlays();
 
-            const gridTop = parseFloat(document.getElementById("grid-top").value);
-            const gridLeft = parseFloat(document.getElementById("grid-left").value);
-            const gridBottom = parseFloat(document.getElementById("grid-bottom").value);
-            const gridRight = parseFloat(document.getElementById("grid-right").value);
-            const rowCount = parseInt(document.getElementById("row-count").value);
-            const colCount = parseInt(document.getElementById("col-count").value);
-            const rowHeight = (gridBottom - gridTop) / (rowCount - 1);
-            const colWidth = (gridRight - gridLeft) / (colCount - 1);
+            const unit = parseFloat(document.getElementById("unit").value);
+            grid.pixelsPerMeter = parseFloat(document.getElementById("pixels-per-meter").value) / unit;
+            grid.xMin = parseFloat(document.getElementById("grid-left").value);
+            grid.yMin = parseFloat(document.getElementById("grid-top").value);
+            grid.xMax = parseFloat(document.getElementById("grid-right").value);
+            grid.yMax = parseFloat(document.getElementById("grid-bottom").value);
+            grid.rows = parseInt(document.getElementById("row-count").value);
+            grid.cols = parseInt(document.getElementById("col-count").value);
+            const rowHeight = (grid.yMax - grid.yMin) / (grid.rows - 1);
+            const colWidth = (grid.xMax - grid.xMin) / (grid.cols - 1);
 
-            for (let row = 0; row < rowCount; ++row) {
-                for (let col = 0; col < colCount; ++col) {
+            for (let row = 0; row < grid.rows; ++row) {
+                for (let col = 0; col < grid.cols; ++col) {
                     // Alternate column order.
-                    const x = gridLeft + (row % 2 == 0 ? col : colCount - col - 1) * colWidth;
-                    const y = gridTop + row * rowHeight;
+                    const x = grid.xMin + (row % 2 == 0 ? col : grid.cols - col - 1) * colWidth;
+                    const y = grid.yMin + row * rowHeight;
                     const location = new OpenSeadragon.Point(x, y);
                     // Add crosshairs.
                     const crosshairs = document.createElement("div");
@@ -205,7 +226,7 @@
                     });
                     // Add point label with coordinates.
                     const pointLabel = document.createElement("div");
-                    pointLabel.innerHTML = `${1 + col + row * colCount} (${x.toPrecision(3)}, ${y.toPrecision(3)})`;
+                    pointLabel.innerHTML = `${1 + col + row * grid.cols} (${x.toPrecision(3)}, ${y.toPrecision(3)})`;
                     pointLabel.className = "point-label";
                     viewer.addOverlay({
                         element: pointLabel,
@@ -214,6 +235,9 @@
                     });
                 }
             }
+
+            // Update scalebar scale.
+            viewer.scalebar({pixelsPerMeter: grid.pixelsPerMeter});
         };
     </script>
 </body>
