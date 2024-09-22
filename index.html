@@ -63,46 +63,47 @@
     <div id="viewer-container"></div>
     <div class="controls">
         <div>
-            <input type="checkbox" id="image1" checked onclick="toggleVisibility(this, 0)" />
+            <input type="checkbox" id="image1" checked onclick="toggleImage(this, 0)" />
             <label for="image1">XPL1</label>
-            <input type="checkbox" id="image2" checked onclick="toggleVisibility(this, 1)" />
+            <input type="checkbox" id="image2" checked onclick="toggleImage(this, 1)" />
             <label for="image2">XPL2</label>
-            <input type="checkbox" id="image3" checked onclick="toggleVisibility(this, 2)" />
+            <input type="checkbox" id="image3" checked onclick="toggleImage(this, 2)" />
             <label for="image3">PPL</label>
         </div>
         <hr>
         <div>
+            <input type="checkbox" id="show-grid" checked onclick="toggleGrid(this)" />
+            <label for="show-grid">Show grid</label>
             <details open>
                 <summary>Grid layout</summary>
-                <input id="pixels-per-unit" class="number-input" type="number" step="any" value="100" min="1"></input>
+                <input id="pixels-per-unit" class="number-input" type="number" step="any" value="100" min="1" onchange="enableGridButtons()"></input>
                 pixels/
-                <select id="meters-per-unit">
-                    <option value="1" label="m">m</option>
-                    <option value="1e-3" label = "mm" selected>mm</option>
-                    <option value="1e-6" label="μm">μm</option>
-                    <option value="1e-9" label="nm">nm</option>
+                <select id="unit" onchange="enableGridButtons()">
+                    <option>m</option>
+                    <option>mm</option>
+                    <option>μm</option>
+                    <option>nm</option>
                 </select>
                 <div>
                     <label for="grid-left">x<sub>min</sub>:</label>
-                    <input id="grid-left" class="number-input" type="number" step="any" value="0" min="0"></input>
+                    <input id="grid-left" class="number-input" type="number" step="any" min="0" onchange="enableGridButtons()"></input>
                     <label for="grid-top">y<sub>min</sub>:</label>
-                    <input id="grid-top" class="number-input" type="number" step="any" value="0" min="0"></input>
+                    <input id="grid-top" class="number-input" type="number" step="any" min="0" onchange="enableGridButtons()"></input>
                 </div>
                 <div>
                     <label for="grid-right">x<sub>max</sub>:</label>
-                    <input id="grid-right" class="number-input" type="number" step="any" value="20"></input>
+                    <input id="grid-right" class="number-input" type="number" step="any" onchange="enableGridButtons()"></input>
                     <label for="grid-bottom">y<sub>max</sub>:</label>
-                    <input id="grid-bottom" class="number-input" type="number" step="any" value="20"></input>
+                    <input id="grid-bottom" class="number-input" type="number" step="any" onchange="enableGridButtons()"></input>
                 </div>
                 <div>
                     <label for="row-count">rows:</label>
-                    <input id="row-count" class="number-input" type="number" value="10" min="2"></input>
+                    <input id="row-count" class="number-input" type="number" min="2" onchange="enableGridButtons()"></input>
                     <label for="col-count">columns:</label>
-                    <input id="col-count" class="number-input" type="number" value="10" min="2"></input>
+                    <input id="col-count" class="number-input" type="number" min="2" onchange="enableGridButtons()"></input>
                 </div>
-                <button onclick="overlayGridPoints()">Apply</button>
-                <button>Import</button>
-                <button>Export</button>
+                <button id="apply-grid-settings" onclick="applyGridSettings()">Apply</button>
+                <button id="restore-grid-settings" onclick="restoreGridSettings()" disabled>Restore</button>
             </details>
         </div>
     </div>
@@ -157,9 +158,15 @@
             }
         };
 
-        const toggleVisibility = (checkbox, idx) => {
+        const toggleImage = (checkbox, idx) => {
             viewer.world.getItemAt(idx).setOpacity(checkbox.checked ? 1 : 0);
             divideImages();
+        };
+
+        const toggleGrid = event => {
+            for (let el of document.getElementsByClassName("grid")) {
+                el.style.visibility = event.checked ? "visible" : "hidden";
+            }
         };
 
         viewer.addHandler('animation', divideImages);
@@ -185,33 +192,72 @@
             barThickness: 2
         });
 
-        // Initialize default grid.
-        let grid = {
-            pixelsPerMeter: 100_000,
-            xMin: 0,
-            yMin: 0,
-            xMax: 1,
-            yMax: 1,
-            rows: 10,
-            cols: 10
+        const Grid = class {
+            constructor({unit, pixelsPerUnit, xMin, yMin, xMax, yMax, rows, cols}) {
+                this.unit = unit;
+                this.pixelsPerUnit = pixelsPerUnit;
+                this.xMin = xMin;
+                this.yMin = yMin;
+                this.xMax = xMax;
+                this.yMax = yMax;
+                this.rows = rows;
+                this.cols = cols;
+            }
+
+            get metersPerUnit() {
+                return 10 ** (-3 * this.unit);
+            }
+
+            get unitName() {
+                switch (this.unit) {
+                    case 0:
+                        return "m";
+                    case 1:
+                        return "mm";
+                    case 2:
+                        return "μm";
+                    case 3:
+                        return "nm";
+                }
+            }
+
+            get pixelsPerMeter() {
+                return this.pixelsPerUnit / this.metersPerUnit;
+            }
         };
 
-        const overlayGridPoints = () => {
+        // Initialize grid with default settings.
+        let grid = new Grid({
+            unit: 1,
+            pixelsPerUnit: 100,
+            xMin: 1,
+            yMin: 3,
+            xMax: 48,
+            yMax: 28,
+            rows: 10,
+            cols: 10,
+        });
+        let gridApplied = false;
+
+        const enableGridButtons = () => {
+            document.getElementById("apply-grid-settings").disabled = false;
+            document.getElementById("restore-grid-settings").disabled = false;
+        };
+
+        const applyGridSettings = () => {
             viewer.clearOverlays();
 
             const image = viewer.world.getItemAt(0);
-            const metersPerUnitSelect = document.getElementById("meters-per-unit");
-            const metersPerUnit = parseFloat(metersPerUnitSelect.value);
-            const unitLabel = metersPerUnitSelect.options[metersPerUnitSelect.selectedIndex].label;
-            grid.pixelsPerMeter = parseFloat(document.getElementById("pixels-per-unit").value) / metersPerUnit;
-            grid.xMin = parseFloat(document.getElementById("grid-left").value);
-            grid.yMin = parseFloat(document.getElementById("grid-top").value);
-            grid.xMax = parseFloat(document.getElementById("grid-right").value);
-            grid.yMax = parseFloat(document.getElementById("grid-bottom").value);
-            grid.rows = parseInt(document.getElementById("row-count").value);
-            grid.cols = parseInt(document.getElementById("col-count").value);
-            const rowHeight = (grid.yMax - grid.yMin) / (grid.rows - 1);
-            const colWidth = (grid.xMax - grid.xMin) / (grid.cols - 1);
+            grid = new Grid({
+                unit: document.getElementById("unit").selectedIndex,
+                pixelsPerUnit: parseFloat(document.getElementById("pixels-per-unit").value),
+                xMin: parseFloat(document.getElementById("grid-left").value),
+                yMin: parseFloat(document.getElementById("grid-top").value),
+                xMax: parseFloat(document.getElementById("grid-right").value),
+                yMax: parseFloat(document.getElementById("grid-bottom").value),
+                rows: parseInt(document.getElementById("row-count").value),
+                cols: parseInt(document.getElementById("col-count").value),
+            });
 
             for (let row = 0; row < grid.rows; ++row) {
                 for (let col = 0; col < grid.cols; ++col) {
@@ -219,12 +265,12 @@
                     const altCol = row % 2 == 0 ? col : grid.cols - col - 1;
 
                     // Get the coordinates in the specified unit.
-                    const xUnits = grid.xMin + altCol * colWidth;
-                    const yUnits = grid.yMin + row * rowHeight;
+                    const xUnits = grid.xMin + altCol * (grid.xMax - grid.xMin) / (grid.cols - 1);
+                    const yUnits = grid.yMin + row * (grid.yMax - grid.yMin) / (grid.rows - 1);
 
                     // Convert to coordinates in pixels.
-                    const xPixels = xUnits * metersPerUnit * grid.pixelsPerMeter;
-                    const yPixels = yUnits * metersPerUnit * grid.pixelsPerMeter;
+                    const xPixels = xUnits * grid.metersPerUnit * grid.pixelsPerMeter;
+                    const yPixels = yUnits * grid.metersPerUnit * grid.pixelsPerMeter;
 
                     // Convert to view-space coordinates, measuring from the
                     // top-left of the first image.
@@ -232,8 +278,8 @@
 
                     // Add point label with coordinates.
                     const pointLabel = document.createElement("div");
-                    pointLabel.innerHTML = `${1 + col + row * grid.cols} (${xUnits.toPrecision(3)} ${unitLabel}, ${yUnits.toPrecision(3)} ${unitLabel})`;
-                    pointLabel.className = "point-label";
+                    pointLabel.innerHTML = `${1 + col + row * grid.cols} (${xUnits.toPrecision(3)} ${grid.unitName}, ${yUnits.toPrecision(3)} ${grid.unitName})`;
+                    pointLabel.className = "grid point-label";
                     viewer.addOverlay({
                         element: pointLabel,
                         location: location,
@@ -242,7 +288,7 @@
 
                     // Add crosshairs.
                     const crosshairs = document.createElement("div");
-                    crosshairs.className = "crosshairs";
+                    crosshairs.className = "grid crosshairs";
                     viewer.addOverlay({
                         element: crosshairs,
                         location: location,
@@ -253,7 +299,38 @@
 
             // Update scalebar scale.
             viewer.scalebar({pixelsPerMeter: grid.pixelsPerMeter});
+
+            // Always show the grid right after generating it. (The newly added
+            // overlay elements will be visible by default, so checking the box
+            // here doesn't actually affect them - it just makes the checkbox
+            // state consistent with the visibility states.)
+            document.getElementById("show-grid").checked = true;
+
+            document.getElementById("apply-grid-settings").disabled = true;
+            document.getElementById("restore-grid-settings").disabled = true;
+            gridApplied = true;
         };
+
+        const restoreGridSettings = () => {
+            document.getElementById("unit").selectedIndex = grid.unit;
+            document.getElementById("pixels-per-unit").value = grid.pixelsPerUnit;
+            document.getElementById("grid-left").value = grid.xMin;
+            document.getElementById("grid-top").value = grid.yMin;
+            document.getElementById("grid-right").value = grid.xMax;
+            document.getElementById("grid-bottom").value = grid.yMax;
+            document.getElementById("row-count").value = grid.rows;
+            document.getElementById("col-count").value = grid.cols;
+
+            // Leave the Apply button enabled unless the grid has been generated
+            // at least once.
+            if (gridApplied) {
+                document.getElementById("apply-grid-settings").disabled = true;
+            }
+            document.getElementById("restore-grid-settings").disabled = true;
+        }
+
+        // Initialize grid setting elements.
+        restoreGridSettings();
     </script>
 </body>
 </html>
