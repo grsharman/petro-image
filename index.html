@@ -112,6 +112,7 @@
     <script src="js/openseadragon-scalebar.min.js"></script>
     <script>
         const viewer = OpenSeadragon({
+            maxZoomPixelRatio: 100,
             id: "viewer-container",
             prefixUrl: "js/images/",
             tileSources: [
@@ -278,7 +279,8 @@
 
                     // Add point label with coordinates.
                     const pointLabel = document.createElement("div");
-                    pointLabel.innerHTML = `${1 + col + row * grid.cols} (${xUnits.toPrecision(3)} ${grid.unitName}, ${yUnits.toPrecision(3)} ${grid.unitName})`;
+                    pointLabel.innerHTML = `${1 + col + row * grid.cols}`;                    
+                    // pointLabel.innerHTML = `${1 + col + row * grid.cols} (${xUnits.toPrecision(3)} ${grid.unitName}, ${yUnits.toPrecision(3)} ${grid.unitName})`;
                     pointLabel.className = "grid point-label";
                     viewer.addOverlay({
                         element: pointLabel,
