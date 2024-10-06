@@ -14,9 +14,9 @@ const viewerContainer = document.getElementById("viewer-container");
 // Share the mouse position between event handlers.
 let mousePos = new OpenSeadragon.Point(0, 0);
 
-// Divides the images at the current mouse position, clipping overlaid
-// images to expose the images underneath. Note that all images are
-// expected to have the same position and size.
+// Divides the images at the current mouse position, clipping overlaid images to
+// expose the images underneath. Note that all images are expected to have the
+// same position and size.
 const divideImages = () => {
   // Bail out if there are no images.
   if (viewer.world.getItemCount() == 0) {
@@ -37,8 +37,8 @@ const divideImages = () => {
     if (!image.getOpacity()) {
       continue;
     }
-    // Determine the quadrants to be clipped by how many visible
-    // images are underneath this one.
+    // Determine the quadrants to be clipped by how many visible images are
+    // underneath this one.
     const xClip = previousVisibleImages & 1 ? clipPos.x : 0;
     const yClip = previousVisibleImages & 2 ? clipPos.y : 0;
     image.setClip(new OpenSeadragon.Rect(xClip, yClip, size.x, size.y));
@@ -64,8 +64,8 @@ viewerContainer.addEventListener("pointermove", (event) => {
   divideImages();
 });
 
-// Initialize the scalebar, except for pixelsPerMeter, which depends on
-// the grid settings.
+// Initialize the scalebar, except for pixelsPerMeter, which depends on the grid
+// settings.
 viewer.scalebar({
   type: OpenSeadragon.ScalebarType.MAP,
   minWidth: "75px",
@@ -162,14 +162,13 @@ const applyGridSettings = () => {
       const xPixels = xUnits * grid.metersPerUnit * grid.pixelsPerMeter;
       const yPixels = yUnits * grid.metersPerUnit * grid.pixelsPerMeter;
 
-      // Convert to view-space coordinates, measuring from the
-      // top-left of the first image.
+      // Convert to view-space coordinates, measuring from the top-left of the
+      // first image.
       const location = image.imageToViewportCoordinates(xPixels, yPixels);
 
       // Add point label with coordinates.
       const pointLabel = document.createElement("div");
       pointLabel.innerHTML = `${1 + col + row * grid.cols}`;
-      // pointLabel.innerHTML = `${1 + col + row * grid.cols} (${xUnits.toPrecision(3)} ${grid.unitName}, ${yUnits.toPrecision(3)} ${grid.unitName})`;
       pointLabel.className = "grid point-label";
       viewer.addOverlay({
         element: pointLabel,
@@ -191,10 +190,10 @@ const applyGridSettings = () => {
   // Update scalebar scale.
   viewer.scalebar({ pixelsPerMeter: grid.pixelsPerMeter });
 
-  // Always show the grid right after generating it. (The newly added
-  // overlay elements will be visible by default, so checking the box
-  // here doesn't actually affect them - it just makes the checkbox
-  // state consistent with the visibility states.)
+  // Always show the grid right after generating it. (The newly added overlay
+  // elements will be visible by default, so checking the box here doesn't
+  // actually affect them - it just makes the checkbox state consistent with the
+  // visibility states.)
   document.getElementById("show-grid").checked = true;
 
   document.getElementById("apply-grid-settings").disabled = true;
@@ -212,8 +211,8 @@ const restoreGridSettings = () => {
   document.getElementById("row-count").value = grid.rows;
   document.getElementById("col-count").value = grid.cols;
 
-  // Leave the Apply button enabled unless the grid has been generated
-  // at least once.
+  // Leave the Apply button enabled unless the grid has been generated at least
+  // once.
   if (gridApplied) {
     document.getElementById("apply-grid-settings").disabled = true;
   }
