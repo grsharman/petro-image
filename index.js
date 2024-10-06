@@ -1,3 +1,5 @@
+"use strict";
+
 const viewer = OpenSeadragon({
   maxZoomPixelRatio: 100,
   id: "viewer-container",
