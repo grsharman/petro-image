@@ -1,0 +1,57 @@
+body,
+html {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+#viewer-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.controls {
+  position: absolute;
+  top: 40px;
+  left: 5px;
+  border: 1px solid black;
+  border-radius: 4px;
+  padding: 5px;
+  background-color: rgba(255, 255, 255, 0.75);
+}
+
+.point-label {
+  position: absolute;
+  transform: translateY(-100%);
+  padding: 0px 5px;
+  border-radius: 9999px 9999px 9999px 0px;
+  color: white;
+  background-color: rgba(0, 0, 0, 0.5);
+  white-space: nowrap;
+}
+
+.crosshairs {
+  position: absolute;
+  transform: translate(-50%, -50%);
+}
+.crosshairs::before {
+  content: "";
+  position: absolute;
+  width: 12px;
+  height: 2px;
+  transform: translate(-50%, -50%);
+  background-color: red;
+}
+.crosshairs::after {
+  content: "";
+  position: absolute;
+  width: 2px;
+  height: 12px;
+  transform: translate(-50%, -50%);
+  background-color: red;
+}
+
+.number-input {
+  width: 40px;
+}
