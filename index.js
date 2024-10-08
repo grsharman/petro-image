@@ -5,9 +5,9 @@ const viewer = OpenSeadragon({
   id: "viewer-container",
   prefixUrl: "js/images/",
   tileSources: [
-    "https://raw.githubusercontent.com/grsharman/petro-image/main/images/O48-013.dzi",
-    "https://raw.githubusercontent.com/grsharman/petro-image/main/images/O48-013b.dzi",
-    "https://raw.githubusercontent.com/grsharman/petro-image/main/images/O48-014.dzi",
+    "https://raw.githubusercontent.com/grsharman/petro-image/main/images/NZ23-067b test5 2.5x XPL cropped.dzi",
+    "https://raw.githubusercontent.com/grsharman/petro-image/main/images/NZ23-067b test5 2.5x XPL cropped.dzi",
+    "https://raw.githubusercontent.com/grsharman/petro-image/main/images/NZ23-067b test5 2.5x PPL cropped.dzi",
   ],
 });
 
