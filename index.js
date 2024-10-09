@@ -82,6 +82,36 @@ viewer.scalebar({
   barThickness: 2,
 });
 
+// GRS note: The code unchecks the box, but the action does not occur
+
+// Keyboard shortcut handler to toggle checkboxes
+const toggleCheckbox = (id) => {
+  const checkbox = document.getElementById(id);
+  checkbox.checked = !checkbox.checked;
+  //checkbox.click();  // Trigger the onclick handler for each checkbox
+  checkbox.dispatchEvent(new Event('change'));
+};
+
+// Add keyboard event listener
+document.addEventListener("keydown", (event) => {
+  switch (event.key) {
+    case '1':
+      toggleCheckbox('image1');
+      break;
+    case '2':
+      toggleCheckbox('image2');
+      break;
+    case '3':
+      toggleCheckbox('image3');
+      break;
+    case 'g':
+      toggleCheckbox('show-grid');
+      break;
+    default:
+      break;
+  }
+});
+
 const Grid = class {
   constructor({ unit, pixelsPerUnit, xMin, yMin, xMax, yMax, rows, cols }) {
     this.unit = unit;
