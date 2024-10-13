@@ -87,9 +87,9 @@ viewer.scalebar({
 // Keyboard shortcut handler to toggle checkboxes
 const toggleCheckbox = (id) => {
   const checkbox = document.getElementById(id);
-  checkbox.checked = !checkbox.checked;
-  //checkbox.click();  // Trigger the onclick handler for each checkbox
-  checkbox.dispatchEvent(new Event('change'));
+  //checkbox.checked = !checkbox.checked;
+  checkbox.click();  // Trigger the onclick handler for each checkbox
+  //checkbox.dispatchEvent(new Event('change'));
 };
 
 // Add keyboard event listener
