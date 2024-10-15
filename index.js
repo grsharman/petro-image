@@ -61,6 +61,13 @@ const toggleGrid = (event) => {
 
 viewer.addHandler("animation", divideImages);
 
+// Get number of pixels in x and y dimensions
+viewer.addHandler('open', function() {
+  const tileSource = viewer.world.getItemAt(0).source;
+  const n_x = tileSource.dimensions.x;
+  const n_y = tileSource.dimensions.y;
+});
+
 viewerContainer.addEventListener("pointermove", (event) => {
   mousePos = new OpenSeadragon.Point(event.clientX, event.clientY);
   divideImages();
@@ -181,10 +188,10 @@ const applyGridSettings = () => {
 
   // GRS note: Need to know number of pixels in x and y dimensions of the image. How to get this?
 
-  const x_min_um = grid.xMin/100*17736/grid.pixelsPerUnit;
-  const x_max_um = grid.xMax/100*17736/grid.pixelsPerUnit;
-  const y_min_um = grid.yMin/100*10221/grid.pixelsPerUnit;
-  const y_max_um = grid.yMax/100*10221/grid.pixelsPerUnit;
+  const x_min_um = grid.xMin/100*n_x/grid.pixelsPerUnit;
+  const x_max_um = grid.xMax/100*n_x/grid.pixelsPerUnit;
+  const y_min_um = grid.yMin/100*n_y/grid.pixelsPerUnit;
+  const y_max_um = grid.yMax/100*n_y/grid.pixelsPerUnit;
 
   // GRS note: Trying to implement new algorithm for determing x and y coordinates of points
 
