@@ -61,12 +61,14 @@ const toggleGrid = (event) => {
 
 viewer.addHandler("animation", divideImages);
 
+// GRS note: Trying to extract pixels but not quite working
+
 // Get number of pixels in x and y dimensions
-viewer.addHandler('open', function() {
-  const tileSource = viewer.world.getItemAt(0).source;
-  const n_x = tileSource.dimensions.x;
-  const n_y = tileSource.dimensions.y;
-});
+// viewer.addHandler('open', function() {
+//   const tileSource = viewer.world.getItemAt(0).source;
+//   const n_x = tileSource.dimensions.x;
+//   const n_y = tileSource.dimensions.y;
+// });
 
 viewerContainer.addEventListener("pointermove", (event) => {
   mousePos = new OpenSeadragon.Point(event.clientX, event.clientY);
@@ -186,15 +188,14 @@ const applyGridSettings = () => {
     noPoints: parseInt(document.getElementById("no-points").value),
   });
 
-  // GRS note: Need to know number of pixels in x and y dimensions of the image. How to get this?
 
-  const x_min_um = grid.xMin/100*n_x/grid.pixelsPerUnit;
-  const x_max_um = grid.xMax/100*n_x/grid.pixelsPerUnit;
-  const y_min_um = grid.yMin/100*n_y/grid.pixelsPerUnit;
-  const y_max_um = grid.yMax/100*n_y/grid.pixelsPerUnit;
+  // GRS note: eventually use variables instead of hard-coding pixel dimensions
+  const x_min_um = grid.xMin/100*17736/grid.pixelsPerUnit;
+  const x_max_um = grid.xMax/100*17736/grid.pixelsPerUnit;
+  const y_min_um = grid.yMin/100*10221/grid.pixelsPerUnit;
+  const y_max_um = grid.yMax/100*10221/grid.pixelsPerUnit;
 
-  // GRS note: Trying to implement new algorithm for determing x and y coordinates of points
-
+  // Get the coordinates and labels for point counts
   let [X, Y, A]  = makePoints(x_min_um, x_max_um, y_min_um, y_max_um, grid.step, grid.noPoints);
 
   for (let i = 0; i < X.length; i++) {
