@@ -83,3 +83,11 @@ function makePoints(x_min, x_max, y_min, y_max, step_size, num_points) {
 // console.log(X);
 // console.log(Y);
 // console.log(A);
+
+let [X, Y, A]  = makePoints(0, 20000, 0, 10000, 1000, 861);
+for (let i = 0; i < X.length; i++) {
+    // Get the coordinates in the specified unit.
+    const xUnits = X[i];
+    const yUnits = Y[i];
+    console.log(X[i],Y[i]);
+  }

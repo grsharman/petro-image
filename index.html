@@ -38,15 +38,18 @@
       </div>
       <hr />
       <div>
-        <input
+
+        <details closed>
+          <summary>Grid</summary>
+          <div>
+          <input
           type="checkbox"
           id="show-grid"
           checked
           onclick="toggleGrid(this)"
         />
         <label for="show-grid">Show grid</label>
-        <details open>
-          <summary>Grid layout</summary>
+      </div>
           <input
             id="pixels-per-unit"
             class="number-input"
@@ -63,58 +66,44 @@
             <option>μm</option>
             <option>nm</option>
           </select>
+          <!- TODO: Limit range of xmin and xmax sliders so they can't swap places -->
+          <!- TODO: Make some way of seeing the values so you know what you're doing -->
           <div>
-            <label for="grid-left">x<sub>min</sub>:</label>
-            <input
-              id="grid-left"
-              class="number-input"
-              type="number"
-              step="any"
-              min="0"
-              onchange="enableGridButtons()"
-            />
-            <label for="grid-top">y<sub>min</sub>:</label>
-            <input
-              id="grid-top"
-              class="number-input"
-              type="number"
-              step="any"
-              min="0"
-              onchange="enableGridButtons()"
-            />
+            <input type="range" id="grid-left" name="x_min"
+            min="0" value = "0" max="100" onchange="enableGridButtons()"/>
+            <label for="x_min">x<sub>min</sub></label>
           </div>
           <div>
-            <label for="grid-right">x<sub>max</sub>:</label>
-            <input
-              id="grid-right"
-              class="number-input"
-              type="number"
-              step="any"
-              onchange="enableGridButtons()"
-            />
-            <label for="grid-bottom">y<sub>max</sub>:</label>
-            <input
-              id="grid-bottom"
-              class="number-input"
-              type="number"
-              step="any"
-              onchange="enableGridButtons()"
-            />
+            <input type="range" id="grid-right" name="x_max" min="0" value = "100"
+            max="100" onchange="enableGridButtons()"/>
+            <label for="x_max">x<sub>max</sub></label>
           </div>
           <div>
-            <label for="row-count">rows:</label>
+            <input type="range" id="grid-top" name="y_min" min="0" value = "0"
+            max="100" onchange="enableGridButtons()"/>
+            <label for="y_min">y<sub>min</sub></label>            
+          </div>
+          <div>
+            <input type="range" id="grid-bottom" name="y_max" min="0" value = "100"
+            max="100" onchange="enableGridButtons()"/>
+            <label for="y_max">y<sub>max</sub></label>            
+          </div>
+          <div>
+            <label for="step-size">step:</label>
             <input
-              id="row-count"
+              id="step-size"
               class="number-input"
               type="number"
+              value="500"
               min="2"
               onchange="enableGridButtons()"
             />
-            <label for="col-count">columns:</label>
+            <label for="no-points"># points:</label>
             <input
-              id="col-count"
+              id="no-points"
               class="number-input"
               type="number"
+              value="600"
               min="2"
               onchange="enableGridButtons()"
             />

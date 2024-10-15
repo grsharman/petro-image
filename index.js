@@ -82,8 +82,6 @@ viewer.scalebar({
   barThickness: 2,
 });
 
-// GRS note: The code unchecks the box, but the action does not occur
-
 // Keyboard shortcut handler to toggle checkboxes
 const toggleCheckbox = (id) => {
   const checkbox = document.getElementById(id);
@@ -94,34 +92,36 @@ const toggleCheckbox = (id) => {
 
 // Add keyboard event listener
 document.addEventListener("keydown", (event) => {
-  switch (event.key) {
-    case '1':
-      toggleCheckbox('image1');
-      break;
-    case '2':
-      toggleCheckbox('image2');
-      break;
-    case '3':
-      toggleCheckbox('image3');
-      break;
-    case 'g':
-      toggleCheckbox('show-grid');
-      break;
-    default:
-      break;
+  if (event.ctrlKey) {
+    switch (event.key) {
+      case '1':
+        toggleCheckbox('image1');
+        break;
+      case '2':
+        toggleCheckbox('image2');
+        break;
+      case '3':
+        toggleCheckbox('image3');
+        break;
+      case 'g':
+        toggleCheckbox('show-grid');
+        break;
+      default:
+        break;
+    }
   }
 });
 
 const Grid = class {
-  constructor({ unit, pixelsPerUnit, xMin, yMin, xMax, yMax, rows, cols }) {
+  constructor({ unit, pixelsPerUnit, xMin, yMin, xMax, yMax, step, noPoints}) {
     this.unit = unit;
     this.pixelsPerUnit = pixelsPerUnit;
     this.xMin = xMin;
     this.yMin = yMin;
     this.xMax = xMax;
     this.yMax = yMax;
-    this.rows = rows;
-    this.cols = cols;
+    this.step = step;
+    this.noPoints = noPoints;
   }
 
   get metersPerUnit() {
@@ -148,14 +148,14 @@ const Grid = class {
 
 // Initialize grid with default settings.
 let grid = new Grid({
-  unit: 1,
-  pixelsPerUnit: 100,
-  xMin: 1,
-  yMin: 3,
-  xMax: 48,
-  yMax: 28,
-  rows: 10,
-  cols: 10,
+  unit: 2,
+  pixelsPerUnit: 0.37,
+  xMin: 20,
+  yMin: 10,
+  xMax: 80,
+  yMax: 90,
+  step: 1000,
+  noPoints: 600,
 });
 let gridApplied = false;
 
@@ -175,49 +175,112 @@ const applyGridSettings = () => {
     yMin: parseFloat(document.getElementById("grid-top").value),
     xMax: parseFloat(document.getElementById("grid-right").value),
     yMax: parseFloat(document.getElementById("grid-bottom").value),
-    rows: parseInt(document.getElementById("row-count").value),
-    cols: parseInt(document.getElementById("col-count").value),
+    step: parseInt(document.getElementById("step-size").value),
+    noPoints: parseInt(document.getElementById("no-points").value),
   });
 
-  for (let row = 0; row < grid.rows; ++row) {
-    for (let col = 0; col < grid.cols; ++col) {
+  // GRS note: Need to know number of pixels in x and y dimensions of the image. How to get this?
+
+  const x_min_um = grid.xMin/100*17736/grid.pixelsPerUnit;
+  const x_max_um = grid.xMax/100*17736/grid.pixelsPerUnit;
+  const y_min_um = grid.yMin/100*10221/grid.pixelsPerUnit;
+  const y_max_um = grid.yMax/100*10221/grid.pixelsPerUnit;
+
+  // GRS note: Trying to implement new algorithm for determing x and y coordinates of points
+
+  let [X, Y, A]  = makePoints(x_min_um, x_max_um, y_min_um, y_max_um, grid.step, grid.noPoints);
+
+  for (let i = 0; i < X.length; i++) {
+    // Get the coordinates in the specified unit.
+    const xUnits = X[i];
+    const yUnits = Y[i];
+
+    // Convert to coordinates in pixels.
+    const xPixels = xUnits * grid.metersPerUnit * grid.pixelsPerMeter;
+    const yPixels = yUnits * grid.metersPerUnit * grid.pixelsPerMeter;
+
+    // Convert to view-space coordinates, measuring from the top-left of the
+    // first image.
+    const location = image.imageToViewportCoordinates(xPixels, yPixels);
+
+    // Add point label with coordinates.
+    const pointLabel = document.createElement("div");
+    pointLabel.innerHTML = `${A[i]}`;
+    pointLabel.className = "grid point-label";
+    viewer.addOverlay({
+      element: pointLabel,
+      location: location,
+      checkResize: false,
+    });
+
+    // Add crosshairs.
+    const crosshairs = document.createElement("div");
+    crosshairs.className = "grid crosshairs";
+    viewer.addOverlay({
+      element: crosshairs,
+      location: location,
+      checkResize: false,
+    });
+  }
+
+  // GRS note: Not able to get the AOI rectangle to show up
+
+  // Add AOI rectangle
+  // const aoi_rect = document.createElement("div");
+  // aoi_rect.className = "rectangle"; // Assign the CSS class
+
+  // // Set its size and position (relative to the image in image coordinates)
+  // var aoi_bounds = new OpenSeaDragon.Rect(grid.xMin/100, grid.yMin/100, grid.xMax/100, grid.yMax/100);
+
+  // viewer.addOverlay({
+  //   element: aoi_rect,
+  //   location: aoi_bounds,
+  //   checkResize: false,
+  // });
+
+  //const xPixels = xUnits * grid.metersPerUnit * grid.pixelsPerMeter;
+  //const yPixels = yUnits * grid.metersPerUnit * grid.pixelsPerMeter;
+
+  //for (let row = 0; row < grid.rows; ++row) {
+    //for (let col = 0; col < grid.cols; ++col) {
       // Alternate column order per row.
-      const altCol = row % 2 == 0 ? col : grid.cols - col - 1;
+      //const altCol = row % 2 == 0 ? col : grid.cols - col - 1;
 
       // Get the coordinates in the specified unit.
-      const xUnits =
-        grid.xMin + (altCol * (grid.xMax - grid.xMin)) / (grid.cols - 1);
-      const yUnits =
-        grid.yMin + (row * (grid.yMax - grid.yMin)) / (grid.rows - 1);
+      //const xUnits =
+      //  grid.xMin + (altCol * (grid.xMax - grid.xMin)) / (grid.cols - 1);
+      //const yUnits =
+      //  grid.yMin + (row * (grid.yMax - grid.yMin)) / (grid.rows - 1);
 
       // Convert to coordinates in pixels.
-      const xPixels = xUnits * grid.metersPerUnit * grid.pixelsPerMeter;
-      const yPixels = yUnits * grid.metersPerUnit * grid.pixelsPerMeter;
+      //const xPixels = xUnits * grid.metersPerUnit * grid.pixelsPerMeter;
+      //const yPixels = yUnits * grid.metersPerUnit * grid.pixelsPerMeter;
 
       // Convert to view-space coordinates, measuring from the top-left of the
       // first image.
-      const location = image.imageToViewportCoordinates(xPixels, yPixels);
+      //const location = image.imageToViewportCoordinates(xPixels, yPixels);
 
       // Add point label with coordinates.
-      const pointLabel = document.createElement("div");
-      pointLabel.innerHTML = `${1 + col + row * grid.cols}`;
-      pointLabel.className = "grid point-label";
-      viewer.addOverlay({
-        element: pointLabel,
-        location: location,
-        checkResize: false,
-      });
+      //const pointLabel = document.createElement("div");
+      //pointLabel.innerHTML = `${1 + xPixels.length}`;
+      // pointLabel.innerHTML = `${1 + col + row * grid.cols}`;
+      //pointLabel.className = "grid point-label";
+      //viewer.addOverlay({
+      //  element: pointLabel,
+      //  location: location,
+      //  checkResize: false,
+      //});
 
       // Add crosshairs.
-      const crosshairs = document.createElement("div");
-      crosshairs.className = "grid crosshairs";
-      viewer.addOverlay({
-        element: crosshairs,
-        location: location,
-        checkResize: false,
-      });
-    }
-  }
+      //const crosshairs = document.createElement("div");
+      //crosshairs.className = "grid crosshairs";
+      //viewer.addOverlay({
+      //  element: crosshairs,
+      //  location: location,
+      //  checkResize: false,
+      //});
+    //}
+  //}
 
   // Update scalebar scale.
   viewer.scalebar({ pixelsPerMeter: grid.pixelsPerMeter });
@@ -240,8 +303,8 @@ const restoreGridSettings = () => {
   document.getElementById("grid-top").value = grid.yMin;
   document.getElementById("grid-right").value = grid.xMax;
   document.getElementById("grid-bottom").value = grid.yMax;
-  document.getElementById("row-count").value = grid.rows;
-  document.getElementById("col-count").value = grid.cols;
+  document.getElementById("step-size").value = grid.step;
+  document.getElementById("no-points").value = grid.noPoints;
 
   // Leave the Apply button enabled unless the grid has been generated at least
   // once.
@@ -253,3 +316,85 @@ const restoreGridSettings = () => {
 
 // Initialize grid setting elements.
 restoreGridSettings();
+
+// Point counting function (Oct 14, 2024)
+function pointMatrix(x_min, x_max, y_min, y_max, step_size, i_ini = 1, reverse = false) {
+  // Return x coordinates, y coordinates, and point count labels
+  // Units of x and y must be same as step_size
+  // i_ini is starting point count ID label (default=1)
+  // reverse (bool) indicates whether starting in top left (false) or bottom right (true)
+
+  // Start at top-left pixel and progress to the bottom-right in snake-like pattern
+  let n_y_rows = Math.floor((y_max - y_min) / step_size) + 1;
+  let n_x_cols = Math.floor((x_max - x_min) / step_size) + 1;
+
+  // Make 1D x-axis array that reflects snaking increments from top left to bottom right
+  let x_vals = Array.from({ length: n_x_cols }, (_, i) => x_min + i * step_size);
+  let X = Array(n_y_rows)
+      .fill(0)
+      .map((_, rowIndex) => {
+          let row = [...x_vals];
+          return rowIndex % 2 === 0 ? row : row.reverse();
+      })
+      .flat();
+
+  // Make 1D y-axis values for the same array
+  let y_vals = Array.from({ length: n_y_rows }, (_, i) => y_min + i * step_size);
+  let Y = [].concat(...y_vals.map(y => Array(n_x_cols).fill(y)));
+
+  // Define 1D array with point count labels
+  let A = Array.from({ length: n_y_rows * n_x_cols }, (_, i) => i + i_ini);
+
+  if (reverse) {
+      return [X.reverse(), Y.reverse(), A];
+  } else {
+      return [X, Y, A];
+  }
+}
+
+function makePoints(x_min, x_max, y_min, y_max, step_size, num_points) {
+  let c = 0; // Counter for total number of points logged
+  let d = 1.0; // Counter that reflects decreasing step count
+  let e = 0; // Counter to control snake pattern direction (normal or reversed)
+
+  let Xs = [];
+  let Ys = [];
+  let As = [];
+  let legend = [];
+
+  while (c < num_points) {
+      let reverse = e % 2 !== 0;
+
+      let [X, Y, A] = pointMatrix(x_min, x_max, y_min, y_max, step_size * d, c, reverse);
+
+      // Remove overlapping points
+      let newPoints = X.map((x, i) => [x, Y[i]]);
+      let existingPoints = Xs.map((x, i) => [x, Ys[i]]);
+      let idxToRemove = newPoints.filter(p => existingPoints.some(e => e[0] === p[0] && e[1] === p[1]));
+      let filteredPoints = newPoints.filter(p => !idxToRemove.includes(p));
+
+      X = filteredPoints.map(p => p[0]);
+      Y = filteredPoints.map(p => p[1]);
+      A = Array.from({ length: X.length }, (_, i) => i + 1 + c);
+      
+      c += X.length;
+      
+      if (c <= num_points) {
+          Xs = [...Xs, ...X];
+          Ys = [...Ys, ...Y];
+          As = [...As, ...A];
+          legend = [...legend, ...Array(X.length).fill(e + 1)];
+          d /= 2.0;
+      } else {
+          Xs = [...Xs, ...X.slice(0, num_points - c)];
+          Ys = [...Ys, ...Y.slice(0, num_points - c)];
+          As = [...As, ...A.slice(0, num_points - c)];
+          legend = [...legend, ...Array(X.slice(0, num_points - c).length).fill(e + 1)];
+          break;
+      }
+
+      e += 1;
+  }
+
+  return [Xs, Ys, As];
+}
