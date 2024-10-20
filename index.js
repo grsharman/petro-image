@@ -180,10 +180,10 @@ const applyGridSettings = () => {
   });
 
   const imageSize = image.getContentSize();
-  const x_min_um = grid.xMin /100 * imageSize.x / grid.pixelsPerUnit;
+  const x_min_um = grid.xMin / 100 * imageSize.x / grid.pixelsPerUnit;
   const x_max_um = grid.xMax / 100 * imageSize.x / grid.pixelsPerUnit;
-  const y_min_um = grid.yMin / 100*imageSize.y / grid.pixelsPerUnit;
-  const y_max_um = grid.yMax / 100*imageSize.y / grid.pixelsPerUnit;
+  const y_min_um = grid.yMin / 100 * imageSize.y / grid.pixelsPerUnit;
+  const y_max_um = grid.yMax / 100 * imageSize.y / grid.pixelsPerUnit;
 
   // Get the coordinates and labels for point counts
   let [X, Y, A]  = makePoints(x_min_um, x_max_um, y_min_um, y_max_um, grid.step, grid.noPoints);
