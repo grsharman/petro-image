@@ -126,22 +126,6 @@ slider4.addEventListener('input', function () {
   value4.textContent = slider4.value;
 });
 
-
-// const minSlider = document.getElementById("grid-left");
-// const maxSlider = document.getElementById("grid-right");
-
-// minSlider.addEventListener("input", function() {
-//   if (parseInt(minSlider.value) > parseInt(maxSlider.value)) {
-//     maxSlider.value = minSlider.value;
-//   }
-// });
-
-// maxSlider.addEventListener("input", function() {
-//   if (parseInt(maxSlider.value) < parseInt(minSlider.value)) {
-//     minSlider.value = maxSlider.value;
-//   }
-// });
-
 ///////////////////////////////
 // Annotations functionality //
 ///////////////////////////////
@@ -162,40 +146,53 @@ const toggleAnnotation = (event) => {
   }
 };
 
-let annotations = [];
-// Event listener to add point annotations for shift + click
-viewer.addHandler('canvas-click', function(event) {
-  let originalEvent = event.originalEvent;  // Get the original mouse event
-
-  // Check if Shift is being held
-  if (originalEvent.shiftKey) {
-      let viewportPoint = viewer.viewport.pointFromPixel(event.position);  // Get viewport coordinates
-      let imagePoint = viewer.viewport.viewportToImageCoordinates(viewportPoint.x, viewportPoint.y); // Get image coordinates
-      let annotation = {
-          x: imagePoint.x,
-          y: imagePoint.y,
-          w: 0,
-          h: 0,
-          type: 'pt',
-          label: prompt("Enter a label for this point:"),  // Prompt for a label
-      };
-
-      // Make text and crosshairs
-      addText(annotation.label, viewportPoint);
-      addCrosshairs(viewportPoint);
-
-      // Store annotation
-      annotations.push(annotation);
+// Functions for detecting when q is pressed and released
+let isQPressed = false;
+document.addEventListener('keydown', function(event) {
+  if (event.key === 'q' || event.key === 'Q') {
+    console.log('Q pressed')
+    isQPressed = true;
+  }
+});
+document.addEventListener('keyup', function(event) {
+  if (event.key === 'q' || event.key === 'Q') {
+    console.log('Q released');
+    isQPressed = false;
   }
 });
 
-// GRS note: Ctrl+click and drag may not work in the browser
-// due to conflicting options (brings up a menu?)
-// Event listener to add square annotations for ctrl + drag
+// Function for making points
+let annotations = [];
+viewer.addHandler('canvas-click', function(event) {
+  console.log('canvas clicked');
+  let originalEvent = event.originalEvent;
+  if (isQPressed) {
+    console.log('canvs & Q clicked');
+    let viewportPoint = viewer.viewport.pointFromPixel(event.position);  // Get viewport coordinates
+    let imagePoint = viewer.viewport.viewportToImageCoordinates(viewportPoint.x, viewportPoint.y); // Get image coordinates
+    let annotation = {
+        x: imagePoint.x,
+        y: imagePoint.y,
+        w: 0,
+        h: 0,
+        type: 'pt',
+        label: prompt("Enter a label for this point:"),  // Prompt for a label
+    }
+    // Make text and crosshairs
+    addText(annotation.label, viewportPoint);
+    addCrosshairs(viewportPoint);
+    // Store annotation
+    annotations.push(annotation);
+    isQPressed = false; // Reset
+  }
+});
+
+// Event listener to add square annotations for shift + drag
 var startPoint = null;
 var overlayElement = null;
 viewer.addHandler('canvas-drag', function(event) {
-  if (event.originalEvent.ctrlKey) {
+  //if (isQPressed) {
+  if (event.originalEvent.shiftKey) {
       event.preventDefaultAction = true; // Prevent default behavior (like panning)
 
       var viewportPoint = viewer.viewport.pointFromPixel(event.position);
@@ -238,31 +235,23 @@ viewer.addHandler('canvas-drag', function(event) {
 
 // Finalize the rectangle on mouseup
 viewer.addHandler('canvas-release', function(event) {
-  if (event.originalEvent.ctrlKey && startPoint) {
+  if (event.originalEvent.shiftKey && startPoint) {
       // Capture the final rectangle's coordinates and size
       var endPoint = viewer.viewport.pointFromPixel(event.position);
       var imageStartPoint = viewer.viewport.viewportToImageCoordinates(startPoint.x, startPoint.y); // Get image coordinates
       var imageEndPoint = viewer.viewport.viewportToImageCoordinates(endPoint.x, endPoint.y);
       var width = imageEndPoint.x - imageStartPoint.x;
       var height = imageEndPoint.y - imageStartPoint.y;
-      // var width = endPoint.x - startPoint.x;
-      // var height = endPoint.y - startPoint.y;
 
       // Normalize the coordinates so the top-left is always the starting point
       var x = Math.min(imageStartPoint.x, imageStartPoint.x + width);
       var y = Math.min(imageStartPoint.y, imageStartPoint.y + height);
       var finalPoint = viewer.viewport.imageToViewportCoordinates(x, y);
-      // var x = Math.min(startPoint.x, startPoint.x + width);
-      // var y = Math.min(startPoint.y, startPoint.y + height);
-      //var imageXY = viewer.viewport.viewportToImageCoordinates(x, y);
       var finalWidth = Math.abs(width);
       var finalHeight = Math.abs(height);
       // Mouse up - finalize and reset for the next rectangle
       startPoint = null;
       overlayElement = null;
-      // var imageEndPoint = viewer.viewport.viewportToImageCoordinates(viewportPoint.x, viewportPoint.y); // Get image coordinates
-      // var imageWidth = imageEndPoint.x - startPoint.x;
-      // var imageHeight = imageEndPoint.y - startPoint.y;
 
       let annotation = {
         x: x,
@@ -286,18 +275,26 @@ viewer.addHandler('canvas-release', function(event) {
 let annotationTextOverlays = [];
 let annotationOverlays = [];
 
+// Clear annotations & grid (GRS note: Would be better if this did not clear the grid)
+document.getElementById('clearBtn').addEventListener('click', function () {
+  console.log('Clear clicked');
+  clearAnnotations();
+  annotations = [];
+});
+
 // Functions to add annotation test and crosshairs
 function addText(label, location) {
   const pointLabel = document.createElement("div");
   pointLabel.innerHTML = `${label}`;
   pointLabel.className = "annotate-label";
-  annotationTextOverlays.push(viewer.addOverlay({
+  const overlay = viewer.addOverlay({
           element: pointLabel,
           location: location,
           checkResize: false,
-      })
-    );
+      });
+  annotationTextOverlays.push(overlay); // GRS note: may not need this. Used in an attempt to clear overlays.
 }
+
 function addCrosshairs(location) {
     const crosshairsAnnotate = document.createElement("div");
     crosshairsAnnotate.className = "annotate-symbol";  
@@ -309,6 +306,18 @@ function addCrosshairs(location) {
   annotationOverlays.push(overlay)
 }
 
+// GRS note: need to get the rectangle plotting correctly
+
+function addRectangle(x, y, w, h) {
+  const rectAnnotate = document.createElement("div");
+  rectAnnotate.className = "annotate-rectangle";
+  const overlay = viewer.addOverlay({
+    element: rectAnnotate,
+    location: OpenSeadragon.Rect(x, y, w, h),
+    //checkResize: false,
+  });
+}
+
 // GRS note: Currently only works with points (not rectangles)
 function loadAnnotations(csvData) {
   Papa.parse(csvData, {
@@ -317,19 +326,27 @@ function loadAnnotations(csvData) {
       complete: function (results) {
           // Assuming the CSV format is: x,y,label
           results.data.forEach((row) => {
+              console.log('Starting row:',row)
               // x and y are both in pixels
               const x = parseFloat(row.x);
               const y = parseFloat(row.y);
+              const w = parseFloat(row.w);
+              const h = parseFloat(row.h);
+              const type = parseInt(row.type);
               const label = row.label;
               if (!isNaN(x) && !isNaN(y)) {
-                  const image = viewer.world.getItemAt(0);
+                const image = viewer.world.getItemAt(0);
+                console.log('Got this far');
+                console.log(type);
+                if (type === 0) {
+                  console.log('This is a point');
                   const viewportPoint = image.imageToViewportCoordinates(new OpenSeadragon.Point(x, y));
                   let annotation = {
                     x: x,
                     y: y,
                     w: 0,
                     h: 0,
-                    type: 'pt',
+                    type: type,
                     label: label,  // Prompt for a label
                   };
                   // Add the point
@@ -337,6 +354,23 @@ function loadAnnotations(csvData) {
                   addCrosshairs(viewportPoint);
                   // Store annotation
                   annotations.push(annotation);
+                }
+                if (type === 1) {
+                  console.log('This is a rectangle');
+                  const viewportRect = image.imageToViewportCoordinates(new OpenSeadragon.Rect(x, y, w, h));
+                  let annotation ={
+                    x: x,
+                    y: y,
+                    w: w,
+                    h: h,
+                    type: type,
+                    label: label,
+                  };
+                  // Add the rectangle
+                  addRectangle(label, x, y, w, h);
+                  // Store annotation
+                  annotations.push(annotation);
+                }
               }
           });
           alert('Annotations loaded successfully.');
@@ -370,21 +404,24 @@ document.getElementById('exportBtn').addEventListener('click', function () {
   saveAs(blob, "annotations.csv");
 });
 
-// GRS note: DOES NOT currently work
-function clearOverlaySet(set) {
-  set.forEach(overlay => {
-    viewer.removeOverlay(overlay);
-  });
-  // Optionally, empty the set after clearing
-  set.length = 0;
-}
-
-// GRS note: Would be nice to add ability to clear annotations
-// document.getElementById('clearBtn').addEventListener('click', function () {
-//   clearOverlaySet(annotationOverlays);
-//   clearOverlaySet(annotationTextOverlays);
-//   let annotations = [];
-// });
+// GRS note: grid will be cleared and reapplied if present
+// Possible performance issue, but was unable to figure out
+// how to selectively clear overlays
+const clearAnnotations = () => {
+  viewer.clearOverlays();
+  // If grid is not visible, enable it to be applied
+  // GRS note: The grid will have to be reapplied in order for it to be
+  // visible. It would be better if this step wasn't necessary
+  if (document.getElementById("show-grid").checked === false) {
+    applyGridSettings();
+    document.getElementById("apply-grid-settings").disabled = false;
+  }
+  // If grid is applied and visible, reapply it.
+  if (document.getElementById("apply-grid-settings").disabled &&
+  document.getElementById("show-grid").checked) {
+    applyGridSettings();
+  }
+};
 
 viewerContainer.addEventListener("pointermove", (event) => {
   mousePos = new OpenSeadragon.Point(event.clientX, event.clientY);
@@ -436,6 +473,10 @@ document.addEventListener("keydown", (event) => {
     }
   }
 });
+
+////////////////////////
+// Grid functionality //
+////////////////////////
 
 const Grid = class {
   constructor({ unit, pixelsPerUnit, xMin, yMin, xMax, yMax, step, noPoints}) {
@@ -491,6 +532,8 @@ const enableGridButtons = () => {
 
 // GRS note: Applying grid settings also clears any annotation overlays
 // Would be better to not have this happen.
+// One solution could be to reapply existing annotations
+// (though this would result in some performance delays)
 const applyGridSettings = () => {
   viewer.clearOverlays();
 
