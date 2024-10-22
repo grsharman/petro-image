@@ -175,7 +175,7 @@ viewer.addHandler('canvas-click', function(event) {
         y: imagePoint.y,
         w: 0,
         h: 0,
-        type: 'pt',
+        type: 0, // 0 for point
         label: prompt("Enter a label for this point:"),  // Prompt for a label
     }
     // Make text and crosshairs
@@ -258,7 +258,7 @@ viewer.addHandler('canvas-release', function(event) {
         y: y,
         w: finalWidth,
         h: finalHeight,
-        type: 'rect',
+        type: 1, // 1 for rectangle
         label: prompt("Enter a label for this rectangle:"),  // Prompt for a label
       };
 
@@ -269,11 +269,6 @@ viewer.addHandler('canvas-release', function(event) {
       annotations.push(annotation);
   }
 });
-
-// For storing annotation overlays so they can be cleared later
-// GRS note: clearing annotations DOES NOT currently work
-let annotationTextOverlays = [];
-let annotationOverlays = [];
 
 // Clear annotations & grid (GRS note: Would be better if this did not clear the grid)
 document.getElementById('clearBtn').addEventListener('click', function () {
@@ -292,7 +287,6 @@ function addText(label, location) {
           location: location,
           checkResize: false,
       });
-  annotationTextOverlays.push(overlay); // GRS note: may not need this. Used in an attempt to clear overlays.
 }
 
 function addCrosshairs(location) {
@@ -303,22 +297,22 @@ function addCrosshairs(location) {
       location: location,
       checkResize: false,
   });
-  annotationOverlays.push(overlay)
 }
 
-// GRS note: need to get the rectangle plotting correctly
-
 function addRectangle(x, y, w, h) {
+  /// Input must be in viewer coordinations
+  console.log('Adding rectangle!');
   const rectAnnotate = document.createElement("div");
+  rectAnnotate.style.border = '2px solid green';
   rectAnnotate.className = "annotate-rectangle";
+  console.log(new OpenSeadragon.Rect(x, y, w, h));
   const overlay = viewer.addOverlay({
     element: rectAnnotate,
-    location: OpenSeadragon.Rect(x, y, w, h),
-    //checkResize: false,
+    location: new OpenSeadragon.Rect(x, y, w, h),
+    checkResize: false,
   });
 }
 
-// GRS note: Currently only works with points (not rectangles)
 function loadAnnotations(csvData) {
   Papa.parse(csvData, {
       header: true, // Assuming your CSV has headers
@@ -340,7 +334,7 @@ function loadAnnotations(csvData) {
                 console.log(type);
                 if (type === 0) {
                   console.log('This is a point');
-                  const viewportPoint = image.imageToViewportCoordinates(new OpenSeadragon.Point(x, y));
+                  const viewportPoint = viewer.viewport.imageToViewportCoordinates(new OpenSeadragon.Point(x, y));
                   let annotation = {
                     x: x,
                     y: y,
@@ -357,7 +351,14 @@ function loadAnnotations(csvData) {
                 }
                 if (type === 1) {
                   console.log('This is a rectangle');
-                  const viewportRect = image.imageToViewportCoordinates(new OpenSeadragon.Rect(x, y, w, h));
+                  // X, Y image coordinates converted to viewport coordinates
+                  const viewportRect = viewer.viewport.imageToViewportCoordinates(new OpenSeadragon.Point(x, y));
+                  const imageSize = image.getContentSize();
+                  // Height and width normalized by pixel dimensions
+                  // GRS note: I'm surprised that both need to be normalized by x
+                  const w_view = w/imageSize.x;
+                  const h_view = h/imageSize.x;
+                  console.log(viewportRect);
                   let annotation ={
                     x: x,
                     y: y,
@@ -367,7 +368,9 @@ function loadAnnotations(csvData) {
                     label: label,
                   };
                   // Add the rectangle
-                  addRectangle(label, x, y, w, h);
+                  addRectangle(viewportRect.x, viewportRect.y, w_view, h_view);
+                  // Add the point
+                  addText(label, viewportRect);
                   // Store annotation
                   annotations.push(annotation);
                 }
@@ -534,6 +537,7 @@ const enableGridButtons = () => {
 // Would be better to not have this happen.
 // One solution could be to reapply existing annotations
 // (though this would result in some performance delays)
+// To-do: reapply annotations when grid is reapplied
 const applyGridSettings = () => {
   viewer.clearOverlays();
 
