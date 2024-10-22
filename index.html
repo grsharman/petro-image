@@ -69,24 +69,28 @@
           <!- TODO: Limit range of xmin and xmax sliders so they can't swap places -->
           <!- TODO: Make some way of seeing the values so you know what you're doing -->
           <div>
-            <input type="range" id="grid-left" name="x_min"
-            min="0" value = "0" max="100" onchange="enableGridButtons()"/>
             <label for="x_min">x<sub>min</sub></label>
+            <input type="range" id="grid-left" name="x_min"
+            min="0" value = "20" max="100" onchange="enableGridButtons()"/>
+            <span class="slider-value" id="grid-left-value">20</span>
           </div>
           <div>
-            <input type="range" id="grid-right" name="x_max" min="0" value = "100"
-            max="100" onchange="enableGridButtons()"/>
             <label for="x_max">x<sub>max</sub></label>
+            <input type="range" id="grid-right" name="x_max" min="0" value = "80"
+            max="100" onchange="enableGridButtons()"/>
+            <span class="slider-value" id="grid-right-value">80</span>
           </div>
           <div>
+            <label for="y_min">y<sub>min</sub></label>            
             <input type="range" id="grid-top" name="y_min" min="0" value = "0"
             max="100" onchange="enableGridButtons()"/>
-            <label for="y_min">y<sub>min</sub></label>            
+            <span class="slider-value" id="grid-top-value">10</span>
           </div>
           <div>
-            <input type="range" id="grid-bottom" name="y_max" min="0" value = "100"
-            max="100" onchange="enableGridButtons()"/>
             <label for="y_max">y<sub>max</sub></label>            
+            <input type="range" id="grid-bottom" name="y_max" min="0" value = "90"
+            max="100" onchange="enableGridButtons()"/>
+            <span class="slider-value" id="grid-bottom-value">90</span>
           </div>
           <div>
             <label for="step-size">step:</label>
@@ -120,9 +124,36 @@
           </button>
         </details>
       </div>
+      <div>
+        <details closed>
+          <summary>Annotate</summary>
+          <div>
+            <input
+            type="checkbox"
+            id="show-annotations"
+            checked
+            onclick="toggleAnnotation(this)"
+          />
+          <label for="show-annotation">Show annotation</label>
+          <span class="info-button">?
+            <span class="tooltip-text">Q+click for points. Shift+click and drag for rectangles.</span>
+          </span>
+          </div>
+          <div>
+            <input type="file" id="csvFileInput" accept=".csv" />
+          </div>
+          <div>
+            <button id="loadAnnotationsBtn">Load</button>
+            <button id="exportBtn">Export</button>
+            <button id="clearBtn" onclick="clearAnnotations()">Clear</button>
+          </div>
+        </details>
+      </div>
     </div>
     <script src="js/openseadragon.min.js"></script>
     <script src="js/openseadragon-scalebar.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
     <script src="index.js"></script>
   </body>
 </html>

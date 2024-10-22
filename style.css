@@ -31,6 +31,45 @@ html {
   white-space: nowrap;
 }
 
+.annotate-label {
+  position: absolute;
+  transform: translateY(-100%);
+  padding: 0px 5px;
+  border-radius: 9999px 9999px 9999px 0px;
+  color: white;
+  background-color: rgba(0, 0, 0, 0.5);
+  white-space: nowrap;
+}
+.rectangle-label {
+  position: absolute;
+  transform: translateY(-100%);
+  padding: 0px 5px;
+  border-radius: 9999px 9999px 9999px 0px;
+  color: white;
+  background-color: rgba(0, 0, 0, 0.5);
+  white-space: nowrap;
+}
+.annotate-symbol {
+  position: absolute;
+  transform: translate(-50%, -50%);
+}
+.annotate-symbol::before {
+  content: "";
+  position: absolute;
+  width: 12px;
+  height: 2px;
+  transform: translate(-50%, -50%);
+  background-color: green;
+}
+.annotate-symbol::after {
+  content: "";
+  position: absolute;
+  width: 2px;
+  height: 12px;
+  transform: translate(-50%, -50%);
+  background-color: green;
+}
+
 .crosshairs {
   position: absolute;
   transform: translate(-50%, -50%);
@@ -54,4 +93,54 @@ html {
 
 .number-input {
   width: 40px;
+}
+
+.info-button {
+  font-size: 10px;
+  font-weight: bold;
+  color: white;
+  background-color: grey;
+  border-radius: 50%;
+  width: 15px;
+  height: 15px;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  position: relative;
+}
+
+/* Tooltip container */
+.info-button:hover .tooltip-text {
+  visibility: visible;
+  opacity: 1;
+}
+
+.tooltip-text {
+  visibility: hidden;
+  width: 200px;
+  background-color: grey;
+  color: #fff;
+  text-align: center;
+  border-radius: 5px;
+  padding: 5px;
+  position: absolute;
+  z-index: 1;
+  bottom: 125%; /* Position above the ? button */
+  left: 50%;
+  margin-left: -100px;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+/* Arrow at the bottom of the tooltip */
+.tooltip-text::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -5px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: black transparent transparent transparent;
 }
