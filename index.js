@@ -1,16 +1,131 @@
 "use strict";
 
+// Keep track of the current step in the sequence
+let currentIndex = 0;
+
+let tileSets = [];
+let samples = [];
+let pixelsPerUnits = [];
+let pixelsPerMeters = [];
+let units = []; // 2 for microns
+
+// Load necessary information from JSON
+fetch('samples.json')
+  .then(response => response.json())
+  .then(data => {
+    // Loop through each sample
+    Object.keys(data).forEach(sampleKey => {
+      let sample = data[sampleKey];
+
+      if (sample) {
+        // Extract the relevant details
+        console.log("Title:", sample.title);
+        console.log("Description:", sample.description);
+        console.log("Location:", sample.latitude, sample.longitude);
+        console.log("Tile Labels:", sample.tileLabels);
+        console.log("Tile Sources:", sample.tileSets);
+
+        // Assuming you want to work with the tile sources for OpenSeadragon
+        tileSets.push(sample.tileSets);
+        samples.push(sample.title);
+        pixelsPerUnits.push(sample.pixelsPerUnit);
+        pixelsPerMeters.push(sample.pixelsPerMeter);
+        units.push(sample.unit);
+      } else {
+        console.error(`Sample not found for key: ${sampleKey}`);
+      }
+      // Further operations, such as adding overlays, custom titles, etc.
+    });
+    console.log(tileSets);
+    console.log(samples);
+    // Example: initialize OpenSeadragon with the first tile source
+  loadTileSet(0);
+  loadSampleName(0);
+  addScalebar(pixelsPerMeters[0]);
+  })
+  .catch(error => {
+    console.error('Error loading the JSON file:', error);
+  });
+
+//////////////
+// Scalebar //
+//////////////
+
+// Initialize the scalebar, except for pixelsPerMeter, which depends on the grid
+// settings.
+function addScalebar(pixelsPerMeter) {
+  viewer.scalebar({
+    type: OpenSeadragon.ScalebarType.MAP,
+    minWidth: "75px",
+    location: OpenSeadragon.ScalebarLocation.BOTTOM_LEFT,
+    xOffset: 10,
+    yOffset: 10,
+    stayInsideImage: true,
+    color: "black",
+    fontColor: "black",
+    backgroundColor: "rgba(255, 255, 255, 0.5)",
+    fontSize: "small",
+    barThickness: 2,
+    pixelsPerMeter: pixelsPerMeter,
+  });
+}
+
+// Initialize the OpenSeadragon viewer
 const viewer = OpenSeadragon({
   maxZoomPixelRatio: 100,
   id: "viewer-container",
   prefixUrl: "js/images/",
   zoomPerClick: 1, // Disable zoom on click (or shift+click)
-  tileSources: [
-    "https://raw.githubusercontent.com/grsharman/petro-image/main/images/NZ23-069 test1 2.5x XPL00 final.dzi",
-    "https://raw.githubusercontent.com/grsharman/petro-image/main/images/NZ23-069 test1 2.5x XPL45 final.dzi",
-    "https://raw.githubusercontent.com/grsharman/petro-image/main/images/NZ23-069 test1 2.5x PPL45 final.dzi",
-  ],
+  sequenceMode: false,
+  tileSources: tileSets[0], // Load first tile set upon load
 });
+
+// Function to load a set of images based on the current index
+function loadTileSet(index) {
+  viewer.world.removeAll(); // Remove previous images
+  // Add each tile source from the current tile set
+  tileSets[index].forEach(tileSource => {
+    viewer.addTiledImage({
+      tileSource: tileSource,
+      success: function() {
+        console.log('Image loaded: ' + tileSource);
+      }
+    });
+  });
+}
+
+function loadSampleName(index) {
+  document.getElementById('sample-name').innerText = samples[index];
+}
+
+// GRS note: Grid is disabled after switching images. Need to fix this.
+
+// Function to handle switching to the next set of images
+function nextSet() {
+  console.log('currentIndex');
+  if (currentIndex < tileSets.length - 1) {
+    currentIndex = currentIndex + 1;
+    loadTileSet(currentIndex);
+    loadSampleName(currentIndex);
+    clearAnnotations();
+    annotations = [];
+  }
+}
+
+// Function to handle switching to the previous set of images
+function prevSet() {
+  if (currentIndex > 0) {
+    currentIndex = currentIndex - 1;
+    loadTileSet(currentIndex);
+    loadSampleName(currentIndex);
+    clearAnnotations();
+    annotations = [];
+  }
+}
+
+// You can bind this nextSet function to some control, e.g., a button
+document.getElementById("next-button").addEventListener("click", nextSet);
+document.getElementById("prev-button").addEventListener("click", prevSet);
 
 const viewerContainer = document.getElementById("viewer-container");
 
@@ -208,7 +323,6 @@ viewer.addHandler('canvas-drag', function(event) {
           //overlayElement.style.background = 'rgba(255, 0, 0, 0.2)'; // Add semi-transparent background
           overlayElement.style.pointerEvents = 'none'; // Prevent interaction
 
-          
           viewer.addOverlay({
               element: overlayElement,
               location: new OpenSeadragon.Rect(startPoint.x, startPoint.y, 0, 0)
@@ -431,21 +545,9 @@ viewerContainer.addEventListener("pointermove", (event) => {
   divideImages();
 });
 
-// Initialize the scalebar, except for pixelsPerMeter, which depends on the grid
-// settings.
-viewer.scalebar({
-  type: OpenSeadragon.ScalebarType.MAP,
-  minWidth: "75px",
-  location: OpenSeadragon.ScalebarLocation.BOTTOM_LEFT,
-  xOffset: 10,
-  yOffset: 10,
-  stayInsideImage: true,
-  color: "black",
-  fontColor: "black",
-  backgroundColor: "rgba(255, 255, 255, 0.5)",
-  fontSize: "small",
-  barThickness: 2,
-});
+////////////////////////
+// Keyboard Shortcuts //
+////////////////////////
 
 // Keyboard shortcut handler to toggle checkboxes
 const toggleCheckbox = (id) => {
@@ -512,13 +614,13 @@ const Grid = class {
 
   get pixelsPerMeter() {
     return this.pixelsPerUnit / this.metersPerUnit;
-  }
+  }  
 };
 
 // Initialize grid with default settings.
 let grid = new Grid({
-  unit: 2,
-  pixelsPerUnit: 0.37,
+  //unit: 2,
+  //pixelsPerUnit: 0.37,
   xMin: 20,
   yMin: 10,
   xMax: 80,
@@ -543,8 +645,8 @@ const applyGridSettings = () => {
 
   const image = viewer.world.getItemAt(0);
   grid = new Grid({
-    unit: document.getElementById("unit").selectedIndex,
-    pixelsPerUnit: parseFloat(document.getElementById("pixels-per-unit").value),
+    unit: units[currentIndex],
+    pixelsPerUnit: pixelsPerUnits[currentIndex],
     xMin: parseFloat(document.getElementById("grid-left").value),
     yMin: parseFloat(document.getElementById("grid-top").value),
     xMax: parseFloat(document.getElementById("grid-right").value),
@@ -568,8 +670,10 @@ const applyGridSettings = () => {
     const yUnits = Y[i];
 
     // Convert to coordinates in pixels.
-    const xPixels = xUnits * grid.metersPerUnit * grid.pixelsPerMeter;
-    const yPixels = yUnits * grid.metersPerUnit * grid.pixelsPerMeter;
+    const xPixels = xUnits * pixelsPerUnits[currentIndex];
+    const yPixels = yUnits * pixelsPerUnits[currentIndex];
+    // const xPixels = xUnits * metersPerUnit[units[currentIndex]] * grid.pixelsPerMeter;
+    // const yPixels = yUnits * metersPerUnit[units[currentIndex]] * grid.pixelsPerMeter;
 
     // Convert to view-space coordinates, measuring from the top-left of the
     // first image.
@@ -594,24 +698,20 @@ const applyGridSettings = () => {
       checkResize: false,
     });
   }
-  
-  // Update scalebar scale.
-  viewer.scalebar({ pixelsPerMeter: grid.pixelsPerMeter });
 
   // Always show the grid right after generating it. (The newly added overlay
   // elements will be visible by default, so checking the box here doesn't
   // actually affect them - it just makes the checkbox state consistent with the
   // visibility states.)
   document.getElementById("show-grid").checked = true;
-
   document.getElementById("apply-grid-settings").disabled = true;
   document.getElementById("restore-grid-settings").disabled = true;
   gridApplied = true;
 };
 
 const restoreGridSettings = () => {
-  document.getElementById("unit").selectedIndex = grid.unit;
-  document.getElementById("pixels-per-unit").value = grid.pixelsPerUnit;
+  // document.getElementById("unit").selectedIndex = grid.unit;
+  // document.getElementById("pixels-per-unit").value = grid.pixelsPerUnit;
   document.getElementById("grid-left").value = grid.xMin;
   document.getElementById("grid-top").value = grid.yMin;
   document.getElementById("grid-right").value = grid.xMax;

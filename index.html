@@ -14,6 +14,9 @@
     <div id="viewer-container"></div>
     <div class="controls">
       <div>
+        <div id="sample-name">Sample name</div>
+      </div>
+      <div>
         <input
           type="checkbox"
           id="image1"
@@ -38,6 +41,14 @@
       </div>
       <hr />
       <div>
+        <button id="prev-button">
+        Previous Image
+        </button>
+        <button id="next-button">
+          Next Image
+        </button>
+      </div>
+      <div>
 
         <details closed>
           <summary>Grid</summary>
@@ -50,24 +61,6 @@
         />
         <label for="show-grid">Show grid</label>
       </div>
-          <input
-            id="pixels-per-unit"
-            class="number-input"
-            type="number"
-            step="any"
-            value="100"
-            min="1"
-            onchange="enableGridButtons()"
-          />
-          pixels/
-          <select id="unit" onchange="enableGridButtons()">
-            <option>m</option>
-            <option>mm</option>
-            <option>μm</option>
-            <option>nm</option>
-          </select>
-          <!- TODO: Limit range of xmin and xmax sliders so they can't swap places -->
-          <!- TODO: Make some way of seeing the values so you know what you're doing -->
           <div>
             <label for="x_min">x<sub>min</sub></label>
             <input type="range" id="grid-left" name="x_min"

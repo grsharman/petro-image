@@ -1,0 +1,42 @@
+{
+  "NZ23-069":
+      {
+          "title": "NZ23-069",
+          "description": "Rangiteki River",
+          "latitude": "-40.18712",
+          "longitude": "175.39231",
+          "unit": "2",
+          "pixelsPerUnit": "0.37",
+          "pixelsPerMeter": "370000",
+          "tileLabels": [
+              "XPL00",
+              "XPL45",
+              "PPL45"
+          ],
+          "tileSets": [
+              "https://raw.githubusercontent.com/grsharman/petro-image/main/images/NZ23-069 test1 2.5x XPL00 final.dzi",
+              "https://raw.githubusercontent.com/grsharman/petro-image/main/images/NZ23-069 test1 2.5x XPL45 final.dzi",
+              "https://raw.githubusercontent.com/grsharman/petro-image/main/images/NZ23-069 test1 2.5x PPL45 final.dzi"
+          ]
+      },
+    "NZ23-067b":
+      {
+          "title": "NZ23-067b",
+          "description": "Kohaiahi beach",
+          "latitude": "-41.10877",
+          "longitude": "172.10107",
+          "unit": "2",
+          "pixelsPerUnit": "0.37",
+          "pixelsPerMeter": "370000",
+          "tileLabels": [
+              "XPL00",
+              "XPL30",
+              "PPL00"
+          ],
+          "tileSets": [
+              "https://raw.githubusercontent.com/grsharman/petro-image/main/images/NZ23-067b test6 2.5x XPL00.dzi",
+              "https://raw.githubusercontent.com/grsharman/petro-image/main/images/NZ23-067b test6 2.5x XPL30.dzi",
+              "https://raw.githubusercontent.com/grsharman/petro-image/main/images/NZ23-067b test6 2.5x PPL.dzi"
+          ]
+      }
+}
