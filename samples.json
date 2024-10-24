@@ -60,6 +60,27 @@
             "https://raw.githubusercontent.com/grsharman/petro-image/main/images/NWA-02 01 2.5x PPL00 final.dzi"
         ]
     },
+    "NWA-04":
+    {
+        "group": "NWA",
+        "title": "NWA-04",
+        "description": "Lower Boone Fm.",
+        "latitude": "36.414119",
+        "longitude": "-94.222675",
+        "unit": "2",
+        "pixelsPerUnit": "0.398",
+        "pixelsPerMeter": "398000",
+        "tileLabels": [
+            "XPL00",
+            "XPL45",
+            "PPL00"
+        ],
+        "tileSets": [
+            "https://raw.githubusercontent.com/grsharman/petro-image/main/images/NWA-04 01 2.5x XPL00 final.dzi",
+            "https://raw.githubusercontent.com/grsharman/petro-image/main/images/NWA-04 01 2.5x XPL45 final.dzi",
+            "https://raw.githubusercontent.com/grsharman/petro-image/main/images/NWA-04 01 2.5x PPL00 final.dzi"
+        ]
+    },
     "NWA-05":
     {
         "group": "NWA",
@@ -79,6 +100,27 @@
             "https://raw.githubusercontent.com/grsharman/petro-image/main/images/NWA-05 01 2.5x XPL00 final.dzi",
             "https://raw.githubusercontent.com/grsharman/petro-image/main/images/NWA-05 01 2.5x XPL45 final.dzi",
             "https://raw.githubusercontent.com/grsharman/petro-image/main/images/NWA-05 01 2.5x PPL00 final.dzi"
+        ]
+    },
+    "NWA-12":
+    {
+        "group": "NWA",
+        "title": "NWA-12",
+        "description": "Cotter Fm.",
+        "latitude": "36.5303889",
+        "longitude": "-94.2965167",
+        "unit": "2",
+        "pixelsPerUnit": "0.398",
+        "pixelsPerMeter": "398000",
+        "tileLabels": [
+            "XPL00",
+            "XPL45",
+            "PPL00"
+        ],
+        "tileSets": [
+            "https://raw.githubusercontent.com/grsharman/petro-image/main/images/NWA-12 01 2.5x XPL00 final.dzi",
+            "https://raw.githubusercontent.com/grsharman/petro-image/main/images/NWA-12 01 2.5x XPL45 final.dzi",
+            "https://raw.githubusercontent.com/grsharman/petro-image/main/images/NWA-12 01 2.5x PPL00 final.dzi"
         ]
     },
     "NZ23-052":
