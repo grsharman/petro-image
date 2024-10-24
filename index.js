@@ -4,6 +4,7 @@
 let currentIndex = 0;
 
 let tileSets = [];
+let tileLabels = [];
 let samples = [];
 let pixelsPerUnits = [];
 let pixelsPerMeters = [];
@@ -27,6 +28,7 @@ fetch('samples.json')
 
         // Assuming you want to work with the tile sources for OpenSeadragon
         tileSets.push(sample.tileSets);
+        tileLabels.push(sample.tileLabels);
         samples.push(sample.title);
         pixelsPerUnits.push(sample.pixelsPerUnit);
         pixelsPerMeters.push(sample.pixelsPerMeter);
@@ -38,14 +40,49 @@ fetch('samples.json')
     });
     console.log(tileSets);
     console.log(samples);
+    console.log(tileLabels[0]);
     // Example: initialize OpenSeadragon with the first tile source
   loadTileSet(0);
-  loadSampleName(0);
+  updateButtonLabels(0);
+  //loadSampleName(0);
   addScalebar(pixelsPerMeters[0]);
+  populateDropdown();
   })
   .catch(error => {
     console.error('Error loading the JSON file:', error);
   });
+
+// Function to populate the dropdown with sample titles
+function populateDropdown() {
+  const dropdown = document.getElementById('sampleDropdown');
+
+  samples.forEach((sample, index) => {
+    const option = document.createElement('option');
+    option.value = index;  // Store index as value
+    option.textContent = sample;
+    dropdown.appendChild(option);
+  });
+
+  // Add event listener to handle selection change
+  dropdown.addEventListener('change', function() {
+    const selectedIndex = this.value;
+    loadTileSet(selectedIndex);
+    clearAnnotations();
+    annotations = [];
+    //loadSampleName(selectedIndex);
+    console.log(tileLabels[selectedIndex]);
+    updateButtonLabels(selectedIndex);
+    addScalebar(pixelsPerMeters[selectedIndex]);
+  });
+}
+
+// Function to update the button labels based on tileLabels array
+function updateButtonLabels(index) {
+  console.log("tileLabels for index", index, ":", tileLabels[index]);
+  document.querySelector("label[for='image1']").textContent = tileLabels[index][0] || "XPL1";
+  document.querySelector("label[for='image2']").textContent= tileLabels[index][1] || "XPL2";
+  document.querySelector("label[for='image3']").textContent = tileLabels[index][2] || "PPL";
+}
 
 //////////////
 // Scalebar //
@@ -94,38 +131,38 @@ function loadTileSet(index) {
   });
 }
 
-function loadSampleName(index) {
-  document.getElementById('sample-name').innerText = samples[index];
-}
+// function loadSampleName(index) {
+//   document.getElementById('sample-name').innerText = samples[index];
+// }
 
 // GRS note: Grid is disabled after switching images. Need to fix this.
 
 // Function to handle switching to the next set of images
-function nextSet() {
-  console.log('currentIndex');
-  if (currentIndex < tileSets.length - 1) {
-    currentIndex = currentIndex + 1;
-    loadTileSet(currentIndex);
-    loadSampleName(currentIndex);
-    clearAnnotations();
-    annotations = [];
-  }
-}
+// function nextSet() {
+//   console.log('currentIndex');
+//   if (currentIndex < tileSets.length - 1) {
+//     currentIndex = currentIndex + 1;
+//     loadTileSet(currentIndex);
+//     loadSampleName(currentIndex);
+//     clearAnnotations();
+//     annotations = [];
+//   }
+// }
 
-// Function to handle switching to the previous set of images
-function prevSet() {
-  if (currentIndex > 0) {
-    currentIndex = currentIndex - 1;
-    loadTileSet(currentIndex);
-    loadSampleName(currentIndex);
-    clearAnnotations();
-    annotations = [];
-  }
-}
+// // Function to handle switching to the previous set of images
+// function prevSet() {
+//   if (currentIndex > 0) {
+//     currentIndex = currentIndex - 1;
+//     loadTileSet(currentIndex);
+//     loadSampleName(currentIndex);
+//     clearAnnotations();
+//     annotations = [];
+//   }
+// }
 
-// You can bind this nextSet function to some control, e.g., a button
-document.getElementById("next-button").addEventListener("click", nextSet);
-document.getElementById("prev-button").addEventListener("click", prevSet);
+// // You can bind this nextSet function to some control, e.g., a button
+// document.getElementById("next-button").addEventListener("click", nextSet);
+// document.getElementById("prev-button").addEventListener("click", prevSet);
 
 const viewerContainer = document.getElementById("viewer-container");
 
