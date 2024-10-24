@@ -1,14 +1,138 @@
 {
+    "ARCS-51":
+    {
+        "group": "SedGeo",
+        "title": "ARCS-51",
+        "description": "Rensselaer grit",
+        "unit": "2",
+        "pixelsPerUnit": "0.398",
+        "pixelsPerMeter": "398000",
+        "tileLabels": [
+            "XPL00",
+            "XPL45",
+            "PPL00"
+        ],
+        "tileSets": [
+            "https://raw.githubusercontent.com/grsharman/petro-image/main/images/ARCS-51 01 2.5x XPL00 final.dzi",
+            "https://raw.githubusercontent.com/grsharman/petro-image/main/images/ARCS-51 01 2.5x XPL45 final.dzi",
+            "https://raw.githubusercontent.com/grsharman/petro-image/main/images/ARCS-51 01 2.5x PPL00 final.dzi"
+        ]
+    },
+    "NWA-01":
+    {
+        "group": "NWA",
+        "title": "NWA-01",
+        "description": "Upper Boone Fm.",
+        "latitude": "36.413033",
+        "longitude": "-94.213964",
+        "unit": "2",
+        "pixelsPerUnit": "0.398",
+        "pixelsPerMeter": "398000",
+        "tileLabels": [
+            "XPL00",
+            "XPL45",
+            "PPL00"
+        ],
+        "tileSets": [
+            "https://raw.githubusercontent.com/grsharman/petro-image/main/images/NWA-01 01 2.5x XPL00 final.dzi",
+            "https://raw.githubusercontent.com/grsharman/petro-image/main/images/NWA-01 01 2.5x XPL45 final.dzi",
+            "https://raw.githubusercontent.com/grsharman/petro-image/main/images/NWA-01 01 2.5x PPL00 final.dzi"
+        ]
+    },
+    "NWA-02":
+    {
+        "group": "NWA",
+        "title": "NWA-02",
+        "description": "Lower Boone Fm.",
+        "latitude": "36.413033",
+        "longitude": "-94.213964",
+        "unit": "2",
+        "pixelsPerUnit": "0.398",
+        "pixelsPerMeter": "398000",
+        "tileLabels": [
+            "XPL00",
+            "XPL45",
+            "PPL00"
+        ],
+        "tileSets": [
+            "https://raw.githubusercontent.com/grsharman/petro-image/main/images/NWA-02 01 2.5x XPL00 final.dzi",
+            "https://raw.githubusercontent.com/grsharman/petro-image/main/images/NWA-02 01 2.5x XPL45 final.dzi",
+            "https://raw.githubusercontent.com/grsharman/petro-image/main/images/NWA-02 01 2.5x PPL00 final.dzi"
+        ]
+    },
+    "NWA-05":
+    {
+        "group": "NWA",
+        "title": "NWA-05",
+        "description": "Lower Boone Fm.",
+        "latitude": "36.416114",
+        "longitude": "-94.219719",
+        "unit": "2",
+        "pixelsPerUnit": "0.398",
+        "pixelsPerMeter": "398000",
+        "tileLabels": [
+            "XPL00",
+            "XPL45",
+            "PPL00"
+        ],
+        "tileSets": [
+            "https://raw.githubusercontent.com/grsharman/petro-image/main/images/NWA-05 01 2.5x XPL00 final.dzi",
+            "https://raw.githubusercontent.com/grsharman/petro-image/main/images/NWA-05 01 2.5x XPL45 final.dzi",
+            "https://raw.githubusercontent.com/grsharman/petro-image/main/images/NWA-05 01 2.5x PPL00 final.dzi"
+        ]
+    },
+    "NZ23-052":
+    {
+        "group": "New Zealand",
+        "title": "NZ23-052",
+        "description": "Manganui River",
+        "latitude": "-39.12303",
+        "longitude": "174.28534",
+        "unit": "2",
+        "pixelsPerUnit": "0.398",
+        "pixelsPerMeter": "398000",
+        "tileLabels": [
+            "XPL00",
+            "XPL45",
+            "PPL00"
+        ],
+        "tileSets": [
+            "https://raw.githubusercontent.com/grsharman/petro-image/main/images/NZ23-052 01 2.5x XPL00 final.dzi",
+            "https://raw.githubusercontent.com/grsharman/petro-image/main/images/NZ23-052 01 2.5x XPL45 final.dzi",
+            "https://raw.githubusercontent.com/grsharman/petro-image/main/images/NZ23-052 01 2.5x PPL00 final.dzi"
+        ]
+    },
+    "NZ23-055":
+    {
+        "group": "New Zealand",
+        "title": "NZ23-055",
+        "description": "Manganui River",
+        "latitude": "-39.02223",
+        "longitude": "174.25191",
+        "unit": "2",
+        "pixelsPerUnit": "0.398",
+        "pixelsPerMeter": "398000",
+        "tileLabels": [
+            "XPL00",
+            "XPL45",
+            "PPL00"
+        ],
+        "tileSets": [
+            "https://raw.githubusercontent.com/grsharman/petro-image/main/images/NZ23-055 01 2.5x XPL00 final.dzi",
+            "https://raw.githubusercontent.com/grsharman/petro-image/main/images/NZ23-055 01 2.5x XPL45 final.dzi",
+            "https://raw.githubusercontent.com/grsharman/petro-image/main/images/NZ23-055 01 2.5x PPL00 final.dzi"
+        ]
+    },
   "NZ23-069":
       {
-          "group": "Group 1",
+          "group": "New Zealand",
           "title": "NZ23-069",
           "description": "Rangiteki River",
           "latitude": "-40.18712",
           "longitude": "175.39231",
           "unit": "2",
-          "pixelsPerUnit": "0.37",
-          "pixelsPerMeter": "370000",
+          "pixelsPerUnit": "0.398",
+          "pixelsPerMeter": "398000",
           "tileLabels": [
               "XPL00",
               "XPL45",
@@ -22,23 +146,23 @@
       },
     "NZ23-067b":
       {
-          "group": "Group 2",  
+          "group": "New Zealand",  
           "title": "NZ23-067b",
           "description": "Kohaiahi beach",
           "latitude": "-41.10877",
           "longitude": "172.10107",
           "unit": "2",
-          "pixelsPerUnit": "0.37",
-          "pixelsPerMeter": "370000",
+          "pixelsPerUnit": "0.393",
+          "pixelsPerMeter": "393000",
           "tileLabels": [
               "XPL00",
-              "XPL30",
+              "XPL45",
               "PPL00"
           ],
           "tileSets": [
-              "https://raw.githubusercontent.com/grsharman/petro-image/main/images/NZ23-067b test6 2.5x XPL00.dzi",
-              "https://raw.githubusercontent.com/grsharman/petro-image/main/images/NZ23-067b test6 2.5x XPL30.dzi",
-              "https://raw.githubusercontent.com/grsharman/petro-image/main/images/NZ23-067b test6 2.5x PPL.dzi"
+              "https://raw.githubusercontent.com/grsharman/petro-image/main/images/NZ23-067b 02 5x XPL00 final.dzi",
+              "https://raw.githubusercontent.com/grsharman/petro-image/main/images/NZ23-067b 02 5x XPL45 final.dzi",
+              "https://raw.githubusercontent.com/grsharman/petro-image/main/images/NZ23-067b 02 5x PPL00 final.dzi"
           ]
       }
 }
