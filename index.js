@@ -389,6 +389,11 @@ document.addEventListener('keyup', function(event) {
 
 // Function for making points
 let annotations = [];
+let annotateLabels = [];
+let annotatePoints = [];
+let annotateRectangles = [];
+let currentAnnotationId = 0; // Initialize a counter for annotation IDs
+
 viewer.addHandler('canvas-click', function(event) {
   console.log('canvas clicked');
   let originalEvent = event.originalEvent;
@@ -405,8 +410,8 @@ viewer.addHandler('canvas-click', function(event) {
         label: prompt("Enter a label for this point:"),  // Prompt for a label
     }
     // Make text and crosshairs
-    addText(annotation.label, viewportPoint);
-    addCrosshairs(viewportPoint);
+    addText(currentAnnotationId, annotation.label, viewportPoint);
+    addCrosshairs(currentAnnotationId, viewportPoint);
     // Store annotation
     annotations.push(annotation);
     isQPressed = false; // Reset
@@ -433,6 +438,7 @@ viewer.addHandler('canvas-drag', function(event) {
           overlayElement.className = "annotate-rectangle";
           //overlayElement.style.background = 'rgba(255, 0, 0, 0.2)'; // Add semi-transparent background
           overlayElement.style.pointerEvents = 'none'; // Prevent interaction
+          overlayElement.id = `annotate-rect-${currentAnnotationId}`;
 
           viewer.addOverlay({
               element: overlayElement,
@@ -474,6 +480,10 @@ viewer.addHandler('canvas-release', function(event) {
       var finalPoint = viewer.viewport.imageToViewportCoordinates(x, y);
       var finalWidth = Math.abs(width);
       var finalHeight = Math.abs(height);
+
+      // Record the rectangle
+      annotateRectangles.push(overlayElement);
+
       // Mouse up - finalize and reset for the next rectangle
       startPoint = null;
       overlayElement = null;
@@ -488,14 +498,15 @@ viewer.addHandler('canvas-release', function(event) {
       };
 
       // Add the label
-      addText(annotation.label, finalPoint);
+      addText(currentAnnotationId, annotation.label, finalPoint);
+      currentAnnotationId = currentAnnotationId+1;
 
       // Store annotation
       annotations.push(annotation);
   }
 });
 
-// Clear annotations & grid (GRS note: Would be better if this did not clear the grid)
+// Clear annotations & grid
 document.getElementById('clearBtn').addEventListener('click', function () {
   console.log('Clear clicked');
   clearAnnotations();
@@ -503,39 +514,45 @@ document.getElementById('clearBtn').addEventListener('click', function () {
 });
 
 // Functions to add annotation test and crosshairs
-function addText(label, location) {
+function addText(i, label, location) {
   const pointLabel = document.createElement("div");
   pointLabel.innerHTML = `${label}`;
   pointLabel.className = "annotate-label";
+  pointLabel.id = `annotate-label-${i}`;
   const overlay = viewer.addOverlay({
           element: pointLabel,
           location: location,
           checkResize: false,
       });
+  annotateLabels.push(pointLabel);
 }
 
-function addCrosshairs(location) {
+function addCrosshairs(i, location) {
     const crosshairsAnnotate = document.createElement("div");
     crosshairsAnnotate.className = "annotate-symbol";  
+    crosshairsAnnotate.id = `annotate-crosshair-${i}`;
     const overlay = viewer.addOverlay({
       element: crosshairsAnnotate,
       location: location,
       checkResize: false,
   });
+  annotatePoints.push(crosshairsAnnotate);
 }
 
-function addRectangle(x, y, w, h) {
+function addRectangle(i, x, y, w, h) {
   /// Input must be in viewer coordinations
   console.log('Adding rectangle!');
   const rectAnnotate = document.createElement("div");
   rectAnnotate.style.border = '2px solid green';
   rectAnnotate.className = "annotate-rectangle";
+  rectAnnotate.id = `annotate-rect-${i}`;
   console.log(new OpenSeadragon.Rect(x, y, w, h));
   const overlay = viewer.addOverlay({
     element: rectAnnotate,
     location: new OpenSeadragon.Rect(x, y, w, h),
     checkResize: false,
   });
+  annotateRectangles.push(rectAnnotate);
 }
 
 function loadAnnotations(csvData) {
@@ -569,8 +586,9 @@ function loadAnnotations(csvData) {
                     label: label,  // Prompt for a label
                   };
                   // Add the point
-                  addText(label, viewportPoint);
-                  addCrosshairs(viewportPoint);
+                  addText(currentAnnotationId, label, viewportPoint);
+                  addCrosshairs(currentAnnotationId, viewportPoint);
+                  currentAnnotationId = currentAnnotationId+1;
                   // Store annotation
                   annotations.push(annotation);
                 }
@@ -593,11 +611,12 @@ function loadAnnotations(csvData) {
                     label: label,
                   };
                   // Add the rectangle
-                  addRectangle(viewportRect.x, viewportRect.y, w_view, h_view);
+                  addRectangle(currentAnnotationId, viewportRect.x, viewportRect.y, w_view, h_view);
                   // Add the point
                   addText(label, viewportRect);
                   // Store annotation
                   annotations.push(annotation);
+                  currentAnnotationId = currentAnnotationId+1;
                 }
               }
           });
@@ -632,24 +651,21 @@ document.getElementById('exportBtn').addEventListener('click', function () {
   saveAs(blob, "annotations.csv");
 });
 
-// GRS note: grid will be cleared and reapplied if present
-// Possible performance issue, but was unable to figure out
-// how to selectively clear overlays
 const clearAnnotations = () => {
-  viewer.clearOverlays();
-  // If grid is not visible, enable it to be applied
-  // GRS note: The grid will have to be reapplied in order for it to be
-  // visible. It would be better if this step wasn't necessary
-  if (document.getElementById("show-grid").checked === false) {
-    applyGridSettings();
-    document.getElementById("apply-grid-settings").disabled = false;
-  }
-  // If grid is applied and visible, reapply it.
-  if (document.getElementById("apply-grid-settings").disabled &&
-  document.getElementById("show-grid").checked) {
-    applyGridSettings();
-  }
+  annotateLabels.forEach((label) => {
+    viewer.removeOverlay(label.id || label);
+  });
+  annotatePoints.forEach((label) => {
+    viewer.removeOverlay(label.id || label);
+  });
+  annotateRectangles.forEach((label) => {
+    viewer.removeOverlay(label.id || label);
+  });
+  annotateLabels = [];
+  annotatePoints = [];
+  annotateRectangles = [];
 };
+
 
 viewerContainer.addEventListener("pointermove", (event) => {
   mousePos = new OpenSeadragon.Point(event.clientX, event.clientY);
@@ -746,13 +762,13 @@ const enableGridButtons = () => {
   document.getElementById("restore-grid-settings").disabled = false;
 };
 
-// GRS note: Applying grid settings also clears any annotation overlays
-// Would be better to not have this happen.
-// One solution could be to reapply existing annotations
-// (though this would result in some performance delays)
-// To-do: reapply annotations when grid is reapplied
+// Empty arrays to store points and crosshairs
+let gridOverlayPoints = []; ///
+let gridOverlayCrosshairs = []; ///
+
 const applyGridSettings = () => {
-  viewer.clearOverlays();
+  clearGridOverlayCrosshairs();
+  clearGridOverlayPoints();
 
   const image = viewer.world.getItemAt(0);
   grid = new Grid({
@@ -794,20 +810,25 @@ const applyGridSettings = () => {
     const pointLabel = document.createElement("div");
     pointLabel.innerHTML = `${A[i]}`;
     pointLabel.className = "grid point-label";
-    viewer.addOverlay({
+    pointLabel.id = `pointLabel-${i}`;
+    const labelOverlay = viewer.addOverlay({
       element: pointLabel,
       location: location,
       checkResize: false,
     });
+    gridOverlayPoints.push(labelOverlay);
 
     // Add crosshairs.
     const crosshairs = document.createElement("div");
     crosshairs.className = "grid crosshairs";
-    viewer.addOverlay({
+    crosshairs.id = `crosshair-${i}`; // Set a unique ID for each overlay
+    const crosshairOverlay = viewer.addOverlay({
       element: crosshairs,
       location: location,
       checkResize: false,
     });
+    // Store the crosshairs overlay in the array
+    gridOverlayCrosshairs.push(crosshairOverlay);
   }
 
   // Always show the grid right after generating it. (The newly added overlay
@@ -818,6 +839,26 @@ const applyGridSettings = () => {
   document.getElementById("apply-grid-settings").disabled = true;
   document.getElementById("restore-grid-settings").disabled = true;
   gridApplied = true;
+};
+
+const clearGridOverlayPoints = () => {
+  // Loop through each overlay in the array and remove it from the viewer
+  gridOverlayPoints.forEach((_, i) => {
+    viewer.removeOverlay(`pointLabel-${i}`);
+  });
+  
+  // Clear the overlayPoints array
+  gridOverlayPoints = []; 
+};
+
+const clearGridOverlayCrosshairs = () => {
+  // Loop through each overlay in the array and remove it from the viewer
+  gridOverlayCrosshairs.forEach((_, i) => {
+    viewer.removeOverlay(`crosshair-${i}`);
+  });
+  
+  // Clear the overlayPoints array
+  gridOverlayCrosshairs = []; 
 };
 
 const restoreGridSettings = () => {
