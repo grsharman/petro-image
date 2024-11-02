@@ -2,7 +2,6 @@
 
 // Keep track of the current step in the sequence
 let currentIndex = 0;
-
 let tileSets = [];
 let tileLabels = [];
 let samples = [];
@@ -10,20 +9,20 @@ let descriptions = [];
 let pixelsPerUnits = [];
 let pixelsPerMeters = [];
 let units = []; // 2 for microns
+let groupMapping = {}; // To map groups to sample indices ///
 
 // Load necessary information from JSON
 fetch('samples.json')
   .then(response => response.json())
   .then(data => {
     // Loop through each sample
-    Object.keys(data).forEach(sampleKey => {
+    Object.keys(data).forEach((sampleKey, index) => { ///
+    // Object.keys(data).forEach(sampleKey => {
       let sample = data[sampleKey];
-
       if (sample) {
         // Extract the relevant details
         console.log("Title:", sample.title);
         console.log("Description:", sample.description);
-        console.log("Location:", sample.latitude, sample.longitude);
         console.log("Tile Labels:", sample.tileLabels);
         console.log("Tile Sources:", sample.tileSets);
 
@@ -35,44 +34,94 @@ fetch('samples.json')
         pixelsPerUnits.push(sample.pixelsPerUnit);
         pixelsPerMeters.push(sample.pixelsPerMeter);
         units.push(sample.unit);
+
+        /// Map sample indices to their groups
+        if (sample.groups) {
+          sample.groups.forEach(group => {
+            if (!groupMapping[group]) {
+              groupMapping[group] = [];
+            }
+            groupMapping[group].push(index);
+          });
+        }
       } else {
         console.error(`Sample not found for key: ${sampleKey}`);
       }
       // Further operations, such as adding overlays, custom titles, etc.
     });
+
+    // Add a default "All" group containing all sample indices
+    groupMapping['All'] = Array.from({ length: samples.length }, (_, i) => i);
+
     // Example: initialize OpenSeadragon with the first tile source
-  loadTileSet(0);
-  updateButtonLabels(0);
-  addScalebar(pixelsPerMeters[0]);
-  populateDropdown();
+    loadTileSet(0);
+    updateButtonLabels(0);
+    addScalebar(pixelsPerMeters[0]);
+    populateGroupDropdown();
+    //populateDropdown();
+
+    /// Automatically select the first group and populate the sample dropdown
+    const firstGroup = Object.keys(groupMapping)[0];
+    //populateGroupDropdown(firstGroup);
+    if (firstGroup) {
+      document.getElementById('groupDropdown').value = firstGroup;
+      populateSampleDropdown(firstGroup);
+    }
   })
   .catch(error => {
     console.error('Error loading the JSON file:', error);
   });
 
-// Function to populate the dropdown with sample titles
-function populateDropdown() {
-  const dropdown = document.getElementById('sampleDropdown');
+///
+function populateGroupDropdown() {
+  const groupDropdown = document.getElementById('groupDropdown');
+  groupDropdown.innerHTML = ''; // Clear existing
+  const uniqueGroups = Object.keys(groupMapping);
 
-  samples.forEach((sample, index) => {
+  uniqueGroups.forEach(group => {
     const option = document.createElement('option');
-    option.value = index;  // Store index as value
-    option.textContent = sample;
-    dropdown.appendChild(option);
+    option.value = group;
+    option.textContent = group;
+    groupDropdown.appendChild(option);
   });
 
-  // Add event listener to handle selection change
-  dropdown.addEventListener('change', function() {
-    const selectedIndex = this.value;
-    loadTileSet(selectedIndex);
-    clearAnnotations();
-    annotations = [];
-    //loadSampleName(selectedIndex);
-    console.log(tileLabels[selectedIndex]);
-    updateButtonLabels(selectedIndex);
-    addScalebar(pixelsPerMeters[selectedIndex]);
+  // Add event listener to update the sample dropdown on group change
+  groupDropdown.addEventListener('change', function() {
+    const selectedGroup = this.value;
+    populateSampleDropdown(selectedGroup);
   });
 }
+
+// Function to populate sample dropdown based on the selected group
+function populateSampleDropdown(selectedGroup) {
+  const sampleDropdown = document.getElementById('sampleDropdown');
+  sampleDropdown.innerHTML = ''; // Clear existing options
+
+  if (groupMapping[selectedGroup]) {
+    groupMapping[selectedGroup].forEach(index => {
+      const option = document.createElement('option');
+      option.value = index; // Store index as value
+      option.textContent = samples[index]; // Sample title
+      sampleDropdown.appendChild(option);
+    });
+    // Automatically select the first sample in the group
+    if (sampleDropdown.options.length > 0) {
+      sampleDropdown.selectedIndex = 0; // Select the first option
+      sampleDropdown.dispatchEvent(new Event('change')); // Trigger the change event
+    }
+  }
+}
+
+/// vent listener for sample selection change (only add once)
+document.getElementById('sampleDropdown').addEventListener('change', function() {
+  const selectedIndex = this.value;
+  loadTileSet(selectedIndex);
+  clearAnnotations();
+  annotations = [];
+  console.log(tileLabels[selectedIndex]);
+  updateButtonLabels(selectedIndex);
+  addScalebar(pixelsPerMeters[selectedIndex]);
+});
 
 // Function to update the button labels based on tileLabels array
 function updateButtonLabels(index) {
@@ -94,9 +143,6 @@ console.log(descriptions[currentIndex]);
 
 // Show tooltip with sample info on hover
 function showTooltip() {
-  //const selectedSample = sampleDropdown.value;
-  //const sampleInfo = imageData[selectedSample];
-
   const dropdown = document.getElementById("sampleDropdown");
 
   if (descriptions[dropdown.value]) {
@@ -105,7 +151,7 @@ function showTooltip() {
 
       const buttonRect = infoButton.getBoundingClientRect();
 
-      // GRS note: button placemen it somewhat ad hoc
+      // GRS note: button placement is somewhat ad hoc
 
       // Wait for the tooltip to be displayed before calculating its height
       const tooltipHeight = tooltip.offsetHeight;
@@ -130,7 +176,7 @@ infoButton.addEventListener("mouseleave", hideTooltip);
 
 // GRS note: testing a message to prevent loss of data upon reload
 
-const saved = true;
+const hasUnsavedData = false;
 
 window.addEventListener("beforeunload", (event) => {
   // Check if there's unsaved data or any other condition for triggering the warning
@@ -190,38 +236,7 @@ function loadTileSet(index) {
   });
 }
 
-// function loadSampleName(index) {
-//   document.getElementById('sample-name').innerText = samples[index];
-// }
-
 // GRS note: Grid is disabled after switching images. Need to fix this.
-
-// Function to handle switching to the next set of images
-// function nextSet() {
-//   console.log('currentIndex');
-//   if (currentIndex < tileSets.length - 1) {
-//     currentIndex = currentIndex + 1;
-//     loadTileSet(currentIndex);
-//     loadSampleName(currentIndex);
-//     clearAnnotations();
-//     annotations = [];
-//   }
-// }
-
-// // Function to handle switching to the previous set of images
-// function prevSet() {
-//   if (currentIndex > 0) {
-//     currentIndex = currentIndex - 1;
-//     loadTileSet(currentIndex);
-//     loadSampleName(currentIndex);
-//     clearAnnotations();
-//     annotations = [];
-//   }
-// }
-
-// // You can bind this nextSet function to some control, e.g., a button
-// document.getElementById("next-button").addEventListener("click", nextSet);
-// document.getElementById("prev-button").addEventListener("click", prevSet);
 
 const viewerContainer = document.getElementById("viewer-container");
 

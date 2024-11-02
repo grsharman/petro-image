@@ -1,7 +1,7 @@
 {
     "ARCS-44":
     {
-        "group": "SedGeo",
+        "groups": ["Highlights","SedGeo"],
         "title": "ARCS-44",
         "description": "Fountain Formation",
         "unit": "2",
@@ -20,7 +20,7 @@
     },
     "ARCS-51":
     {
-        "group": "SedGeo",
+        "groups": ["Highlights","SedGeo"],
         "title": "ARCS-51",
         "description": "Rensselaer grit",
         "unit": "2",
@@ -39,7 +39,7 @@
     },
     "ARC-45":
     {
-        "group": "SedGeo",  
+        "groups": ["SedGeo"],  
         "title": "ARC-45",
         "description": "Berea Sandstone",
         "unit": "2",
@@ -58,7 +58,7 @@
     },
     "ARC-50":
     {
-        "group": "SedGeo",  
+        "groups": ["Highlights","SedGeo"],  
         "title": "ARC-50",
         "description": "Sugarloaf Arkose",
         "unit": "2",
@@ -77,7 +77,7 @@
     },
     "NWA-01":
     {
-        "group": "NWA",
+        "groups": ["NWA"],
         "title": "NWA-01",
         "description": "Upper Boone Fm.",
         "latitude": "36.413033",
@@ -98,7 +98,7 @@
     },
     "NWA-02":
     {
-        "group": "NWA",
+        "groups": ["NWA"],
         "title": "NWA-02",
         "description": "Lower Boone Fm.",
         "latitude": "36.413033",
@@ -119,7 +119,7 @@
     },
     "NWA-03":
     {
-        "group": "NWA",
+        "groups": ["NWA"],
         "title": "NWA-03",
         "description": "Lower Boone Fm.",
         "latitude": "36.414119",
@@ -140,7 +140,7 @@
     },
     "NWA-04":
     {
-        "group": "NWA",
+        "groups": ["NWA"],
         "title": "NWA-04",
         "description": "Lower Boone Fm.",
         "latitude": "36.414119",
@@ -161,7 +161,7 @@
     },
     "NWA-05":
     {
-        "group": "NWA",
+        "groups": ["NWA"],
         "title": "NWA-05",
         "description": "Lower Boone Fm.",
         "latitude": "36.416114",
@@ -182,7 +182,7 @@
     },
     "NWA-06":
     {
-        "group": "NWA",
+        "groups": ["NWA"],
         "title": "NWA-06",
         "description": "Saint Joe Fm., Pearson Mbr.",
         "latitude": "36.422019",
@@ -203,7 +203,7 @@
     },
     "NWA-07":
     {
-        "group": "NWA",
+        "groups": ["Highlights","NWA"],
         "title": "NWA-07",
         "description": "Saint Joe Fm., Pearson Mbr.",
         "latitude": "36.422019",
@@ -224,7 +224,7 @@
     },
     "NWA-08":
     {
-        "group": "NWA",
+        "groups": ["NWA"],
         "title": "NWA-08",
         "description": "Saint Joe Fm., Compton Mbr.",
         "latitude": "36.36.45622",
@@ -245,7 +245,7 @@
     },
     "NWA-12":
     {
-        "group": "NWA",
+        "groups": ["NWA"],
         "title": "NWA-12",
         "description": "Cotter Fm.",
         "latitude": "36.5303889",
@@ -266,7 +266,7 @@
     },
     "NWA-17":
     {
-        "group": "NWA",
+        "groups": ["NWA"],
         "title": "NWA-17",
         "description": "Hale Fm., Cane Hill Mbr.",
         "latitude": "35.934781",
@@ -287,7 +287,7 @@
     },
     "NWA-19":
     {
-        "group": "NWA",
+        "groups": ["Highlights","NWA"],
         "title": "NWA-19",
         "description": "Kessler Limestone",
         "unit": "2",
@@ -306,7 +306,7 @@
     },
     "NWA-20":
     {
-        "group": "NWA",
+        "groups": ["Highlights","NWA"],
         "title": "NWA-20",
         "description": "Lower Atoka Ss (basal)",
         "unit": "2",
@@ -325,7 +325,7 @@
     },
     "NZ23-052":
     {
-        "group": "New Zealand",
+        "groups": ["New Zealand"],
         "title": "NZ23-052",
         "description": "Manganui River",
         "latitude": "-39.12303",
@@ -346,9 +346,9 @@
     },
     "NZ23-055":
     {
-        "group": "New Zealand",
+        "groups": ["New Zealand"],
         "title": "NZ23-055",
-        "description": "Manganui River",
+        "description": "Waitara River",
         "latitude": "-39.02223",
         "longitude": "174.25191",
         "unit": "2",
@@ -367,7 +367,7 @@
     },
     "NZ23-056":
     {
-        "group": "New Zealand",
+        "groups": ["New Zealand"],
         "title": "NZ23-056",
         "description": "Waikato River",
         "latitude": "-37.80671",
@@ -388,7 +388,7 @@
     },
     "NZ23-057":
     {
-        "group": "New Zealand",
+        "groups": ["Highlights","New Zealand"],
         "title": "NZ23-057",
         "description": "Waikato River",
         "latitude": "-37.29593",
@@ -409,7 +409,7 @@
     },
     "NZ23-060":
     {
-        "group": "New Zealand",
+        "groups": ["New Zealand"],
         "title": "NZ23-060",
         "description": "Waitotara River",
         "latitude": "-39.80465",
@@ -430,7 +430,7 @@
     },
   "NZ23-069":
       {
-          "group": "New Zealand",
+          "groups": ["Highlights","New Zealand"],
           "title": "NZ23-069",
           "description": "Rangiteki River",
           "latitude": "-40.18712",
@@ -451,7 +451,7 @@
       },
     "NZ23-067b":
       {
-          "group": "New Zealand",  
+          "groups": ["New Zealand"],  
           "title": "NZ23-067b",
           "description": "Kohaiahi beach",
           "latitude": "-41.10877",
@@ -472,7 +472,7 @@
       },
       "133-007s":
       {
-          "group": "SedGeo",  
+          "groups": ["Highlights","SedGeo"],  
           "title": "133-007s",
           "description": "Pt. Bonita, Golden Gate NRA, California",
           "unit": "2",
@@ -491,7 +491,7 @@
       },
       "SD0001":
       {
-          "group": "SedGeo",  
+          "groups": ["SedGeo"],  
           "title": "SD0001",
           "description": "Coral Sand Dunes",
           "unit": "2",
@@ -510,7 +510,7 @@
       },
       "SD0031":
       {
-          "group": "SedGeo",  
+          "groups": ["SedGeo"],  
           "title": "SD0031",
           "description": "Arroyo del Padre Juan",
           "unit": "2",
@@ -529,7 +529,7 @@
       },
       "WS-208":
       {
-          "group": "SedGeo",  
+          "groups": ["SedGeo"],  
           "title": "WS-208",
           "description": "Unknown",
           "unit": "2",
