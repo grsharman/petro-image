@@ -6,6 +6,7 @@ let currentIndex = 0;
 let tileSets = [];
 let tileLabels = [];
 let samples = [];
+let descriptions = [];
 let pixelsPerUnits = [];
 let pixelsPerMeters = [];
 let units = []; // 2 for microns
@@ -30,6 +31,7 @@ fetch('samples.json')
         tileSets.push(sample.tileSets);
         tileLabels.push(sample.tileLabels);
         samples.push(sample.title);
+        descriptions.push(sample.description);
         pixelsPerUnits.push(sample.pixelsPerUnit);
         pixelsPerMeters.push(sample.pixelsPerMeter);
         units.push(sample.unit);
@@ -38,13 +40,9 @@ fetch('samples.json')
       }
       // Further operations, such as adding overlays, custom titles, etc.
     });
-    console.log(tileSets);
-    console.log(samples);
-    console.log(tileLabels[0]);
     // Example: initialize OpenSeadragon with the first tile source
   loadTileSet(0);
   updateButtonLabels(0);
-  //loadSampleName(0);
   addScalebar(pixelsPerMeters[0]);
   populateDropdown();
   })
@@ -82,7 +80,68 @@ function updateButtonLabels(index) {
   document.querySelector("label[for='image1']").textContent = tileLabels[index][0] || "XPL1";
   document.querySelector("label[for='image2']").textContent= tileLabels[index][1] || "XPL2";
   document.querySelector("label[for='image3']").textContent = tileLabels[index][2] || "PPL";
+  // Default is to be checked upon image change
+  document.getElementById("image1").checked = true;
+  document.getElementById("image2").checked = true;
+  document.getElementById("image3").checked = true;
 }
+
+const tooltip = document.getElementById("tooltip-desc");
+const infoButton = document.getElementById("info-button-desc");
+//const sampleDropdown = document.getElementById('sampleDropdown');
+
+console.log(descriptions[currentIndex]);
+
+// Show tooltip with sample info on hover
+function showTooltip() {
+  //const selectedSample = sampleDropdown.value;
+  //const sampleInfo = imageData[selectedSample];
+
+  const dropdown = document.getElementById("sampleDropdown");
+
+  if (descriptions[dropdown.value]) {
+      tooltip.textContent = `${descriptions[dropdown.value]}`;
+      tooltip.style.display = 'block';
+
+      const buttonRect = infoButton.getBoundingClientRect();
+
+      // GRS note: button placemen it somewhat ad hoc
+
+      // Wait for the tooltip to be displayed before calculating its height
+      const tooltipHeight = tooltip.offsetHeight;
+
+      // Align tooltip vertically centered with the button
+      tooltip.style.top = `${buttonRect.top - (buttonRect.height / 1.25) - (tooltipHeight)}px`;
+
+      // Position tooltip directly to the right of the button
+      tooltip.style.left = `${buttonRect.right + 2}px`;  // Align to the right, accounting for scrolling
+  }
+}
+
+// Hide tooltip when not hovering
+function hideTooltip() {
+  tooltip.style.display = 'none';
+}
+
+// Event listeners for tooltip
+infoButton.addEventListener("mouseenter", showTooltip);
+infoButton.addEventListener("mouseleave", hideTooltip);
+
+
+// GRS note: testing a message to prevent loss of data upon reload
+
+const saved = true;
+
+window.addEventListener("beforeunload", (event) => {
+  // Check if there's unsaved data or any other condition for triggering the warning
+  if (saved) {
+      // Set the returnValue property of the event to a string to trigger the dialog
+      event.preventDefault();
+      // Some browsers might ignore this message and show their own default message
+      event.returnValue = "";
+  }
+});
+
 
 //////////////
 // Scalebar //
