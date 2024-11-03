@@ -164,3 +164,41 @@ html {
   border-style: solid;
   border-color: black transparent transparent transparent;
 }
+
+#sample-input {
+  width: 50px; /* Adjusted for a 3-4 digit number */
+  text-align: center; /* Center the number */
+}
+#go-button {
+  margin-top: 5px;
+}
+#sample-text {
+  width: 50px; /* Adjusted for a 3-4 digit number */
+  text-align: left; /* Center the number */
+}
+.input-success {
+  border-color: green !important;
+}
+
+.file-input-container {
+  position: relative;
+}
+
+.file-input {
+  display: none; /* Hide the actual file input */
+}
+
+.file-label {
+  display: inline-block;
+  padding: 5px 5px;
+  background-color: grey; /* Customize button color */
+  color: white;
+  border-radius: 5px;
+  font-size: 10px;
+  cursor: pointer;
+  text-align: center;
+}
+
+.file-label:hover {
+  background-color: #0056b3; /* Darken button on hover */
+}

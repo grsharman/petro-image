@@ -112,7 +112,7 @@ function populateSampleDropdown(selectedGroup) {
   }
 }
 
-/// vent listener for sample selection change (only add once)
+/// Event listener for sample selection change (only add once)
 document.getElementById('sampleDropdown').addEventListener('change', function() {
   const selectedIndex = this.value;
   loadTileSet(selectedIndex);
@@ -121,6 +121,8 @@ document.getElementById('sampleDropdown').addEventListener('change', function() 
   console.log(tileLabels[selectedIndex]);
   updateButtonLabels(selectedIndex);
   addScalebar(pixelsPerMeters[selectedIndex]);
+  clearGridOverlayPoints();
+  clearGridOverlayCrosshairs();
 });
 
 // Function to update the button labels based on tileLabels array
@@ -770,6 +772,15 @@ const applyGridSettings = () => {
   clearGridOverlayCrosshairs();
   clearGridOverlayPoints();
 
+  // Enable buttons and input field after settings are applied
+  document.getElementById('prev-button').disabled = false;
+  document.getElementById('next-button').disabled = false;
+  document.getElementById('sample-input').disabled = false;
+  document.getElementById('sample-text').disabled = false;
+  document.getElementById('sample-notes').disabled = false;
+  document.getElementById('count-export').disabled = false;
+
+
   const image = viewer.world.getItemAt(0);
   grid = new Grid({
     unit: units[currentIndex],
@@ -963,3 +974,327 @@ function makePoints(x_min, x_max, y_min, y_max, step_size, num_points) {
 
   return [Xs, Ys, As];
 }
+
+//////////////////////////////////////////
+//// Functionality for point counting ////
+//////////////////////////////////////////
+
+document.getElementById('prev-button').addEventListener('click', function() {
+  const input = document.getElementById('sample-input');
+  let value = parseInt(input.value, 10) || 0; // Parse current value or default to 0
+  const min = parseInt(input.min, 10);
+
+  if (value > min) {
+    input.value = value - 1;
+  }
+  goToGridPoint(input.value); // Input count id
+  inputSampleLabelFromOverlay();
+});
+
+document.getElementById('next-button').addEventListener('click', function() {
+  const input = document.getElementById('sample-input');
+  let value = parseInt(input.value, 10) || 0; // Parse current value or default to 0
+  const max = parseInt(document.getElementById("no-points").value);
+
+  if (value <= max) {
+    input.value = value + 1;
+  } else {
+    input.value = max;
+  }
+  goToGridPoint(input.value);
+  inputSampleLabelFromOverlay();
+});
+
+function goToGridPoint(value) {
+  console.log((value));
+  console.log(gridOverlayPoints[(value-1)]);
+  if (viewer.getOverlayById(`pointLabel-${value-1}`)) {
+    const overlay = viewer.getOverlayById(`pointLabel-${value-1}`);
+    console.log(overlay);
+    console.log(overlay.location.x);
+    console.log(overlay.location.y);
+
+    // Center the viewport on the specified coordinates without changing the zoom level
+    viewer.viewport.panTo(
+      new OpenSeadragon.Point(overlay.location.x, overlay.location.y),
+      true // Animate the panning
+    );
+    } else {
+    alert('Overlay not found for this sample number.');
+  }
+}
+
+// When you get hit Enter on the sample-input field
+document.addEventListener('keydown', function(event) {
+  // Check for Enter key in sample-input field
+  const gridInput = document.getElementById('sample-input');
+  if (event.code === 'Enter' && document.activeElement === gridInput) {
+    event.preventDefault(); // Prevent any default action for Enter key
+    goToGridPoint(gridInput.value);
+    inputSampleLabelFromOverlay();
+    //inputSampleLabel();
+  }
+});
+
+// When you hit Enter on the sample-notes field
+document.addEventListener('keydown', function(event) {
+  // Check for Enter key in sample-notes field
+  const notesInput = document.getElementById('sample-notes');
+  if (event.code === 'Enter' && document.activeElement === notesInput) {
+    event.preventDefault(); // Prevent any default action for Enter key
+    inputNotesText();
+  }
+});
+
+// Function to handle keyboard shortcuts
+document.addEventListener('keydown', function(event) {
+  // Check for Enter key in sample-text field
+  const textInput = document.getElementById('sample-text');
+  if (event.code === 'Enter' && document.activeElement === textInput) {
+    event.preventDefault(); // Prevent any default action for Enter key
+    inputSampleLabel();
+  }
+
+});
+
+// Shortcuts for going to next (space) or previous (shift+space)
+document.addEventListener('keydown', function(event) {
+  // Check if the space bar is pressed without modifiers
+  if (event.code === 'Space' && document.activeElement.id !== 'sample-notes') {
+    event.preventDefault();
+    if (event.shiftKey) {
+      const prevButton = document.getElementById('prev-button');
+      console.log("Previous button clicked!"); // Log to confirm the click action
+      prevButton.click(); // Simulate a click on the next button
+    } else {
+      const nextButton = document.getElementById('next-button');
+      console.log("Next buton clicked!");
+      nextButton.click(); // Simultae a click on the next button
+    }
+  }
+});
+
+// Function to update the sample-text input based on the current overlay
+function inputSampleLabelFromOverlay() {
+  const input = document.getElementById('sample-input');
+  let value = parseInt(input.value, 10);
+  const textInput = document.getElementById('sample-text');
+  const notesInput = document.getElementById('sample-notes');
+
+  const overlay = viewer.getOverlayById(`pointLabel-${value-1}`);
+  
+  // Populate the sample-text with the label of the current overlay
+  if (overlay) {
+    textInput.value = overlay.label || ''; // Set the text input to the label of the overlay, defaulting to an empty string
+    notesInput.value = overlay.notes || ''; // Set the text input to the label of the overlay, defaulting to an empty string
+    }
+}
+
+function inputSampleLabel() {
+  const input = document.getElementById('sample-input');
+  let value = parseInt(input.value, 10);
+  const textInput = document.getElementById('sample-text');
+  
+  // Store the text in the object with sampleNumber as key
+  const overlay = viewer.getOverlayById(`pointLabel-${value-1}`);
+  if (overlay) {
+    overlay.label = textInput.value;
+    console.log(overlay.label);
+  } else {
+    console.error('Overlay not found for value: ', value);
+  }
+}
+
+function inputNotesText() {
+  const input = document.getElementById('sample-input');
+  let value = parseInt(input.value, 10);
+  const textInput = document.getElementById('sample-notes');
+  
+  // Store the text in the object with sampleNumber as key
+  const overlay = viewer.getOverlayById(`pointLabel-${value-1}`);
+  if (overlay) {
+    overlay.notes = textInput.value;
+    console.log(overlay.notes);
+  } else {
+    console.error('Overlay not found for value: ', value);
+  }
+}
+
+// Shortcut for entering labels and notes
+document.addEventListener('keydown', function(event) {
+  // Check for Enter key in sample-text field
+  const textInput = document.getElementById('sample-text');
+  const notesInput = document.getElementById('sample-notes');
+  console.log(textInput);
+  if (event.code === 'Enter' && document.activeElement === textInput) {
+    event.preventDefault(); // Prevent any default action for Enter key
+    inputSampleLabel();
+
+    // Provide visual feedback by changing the border color
+    textInput.style.borderColor = 'green';
+    textInput.style.outline = 'none'; // Removes the default focus outline
+
+    setTimeout(() => {
+      textInput.style.borderColor = ''; // Revert to original after 1 second
+    }, 1000);
+  }
+  if (event.code === 'Enter' && document.activeElement === notesInput) {
+    event.preventDefault(); // Prevent any default action for Enter key
+    inputNotesText();
+
+    // Provide visual feedback by changing the border color
+    notesInput.style.borderColor = 'green';
+    notesInput.style.outline = 'none'; // Removes the default focus outline
+
+    setTimeout(() => {
+      notesInput.style.borderColor = ''; // Revert to original after 1 second
+    }, 1000);
+  }
+});
+
+// GRS note: Include sample in header and image? dimensions?
+// GRS note: Issues with sliders not updating appropriately when CSV is loaded
+
+// Export a CSV of point counts when the Export button is clickec
+document.getElementById('count-export').addEventListener('click', function() {
+  // Assuming `gridOverlayPoints` is the array that holds the overlay data
+  const csvHeaders = 'Header Information\n';
+  const xMin = parseFloat(document.getElementById("grid-left").value);
+  const yMin = parseFloat(document.getElementById("grid-top").value);
+  const xMax = parseFloat(document.getElementById("grid-right").value);
+  const yMax = parseFloat(document.getElementById("grid-bottom").value);
+  const step = parseInt(document.getElementById("step-size").value);
+  const noPoints = parseInt(document.getElementById("no-points").value);
+  const version = 1; // Indicating the vintage of the algorithm used to generate points
+  const headerInfo = `xMin,xMax,yMin,yMax,stepSize,noPoints,ver\n${xMin},${xMax},${yMin},${yMax},${step},${noPoints},${version}\n\n`;
+  const csvDataHeaders = 'Point Number,X_viewer,Y_viewer,X_image,Y_image,Label,Notes\n';
+  let csvContent = csvHeaders + headerInfo + csvDataHeaders;
+
+  const overlayCount = gridOverlayPoints.length;
+
+  for (let i = 0; i < overlayCount; i++) {
+    // Get the overlay by its ID
+    const overlay = viewer.getOverlayById(`pointLabel-${i}`);
+
+    if (overlay && overlay.location) {
+      const imagePoint = viewer.viewport.viewportToImageCoordinates(overlay.location.x, overlay.location.y);
+      const pointNumber = i + 1; // Point number, assuming 1-based index for CSV
+      const x = overlay.location ? overlay.location.x : 'N/A';
+      const y = overlay.location ? overlay.location.y : 'N/A';
+      const x_px = imagePoint.x;
+      const y_px = imagePoint.y;
+      const label = overlay.label || '';
+      const notes = overlay.notes || ''; // Adjust if your notes are stored differently
+
+      // Append the row as a CSV line
+      csvContent += `${pointNumber},${x},${y},${x_px},${y_px},"${label}","${notes}"\n`;
+    }
+  }
+
+  // Create a blob and trigger a download
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'count_data_export.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+});
+
+document.getElementById('count-file-input').addEventListener('change', function(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  // You can handle the file as you did before
+  console.log("File chosen:", file.name); // Optional: log the file name
+});
+
+// Import CSV of previously generated point-count data
+// Handle the file selection
+document.getElementById('count-file-input').addEventListener('change', function(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const content = e.target.result;
+    const lines = content.split('\n');
+
+    // Check if the file has at least three lines (header + data)
+    if (lines.length < 3) {
+      console.error('The file does not contain enough data.');
+      return;
+    }
+    // Parse header information
+    const headerLine = lines[1].split(','); // This will give you the header names
+    console.log("Header Line:", headerLine); // Debugging: Log the header line
+
+    // Parse the next line for actual values
+    const valuesLine = lines[2].split(','); // This should contain the actual values
+
+    // Use trim to remove any extra whitespace and parse the values
+    const xMin = parseFloat(valuesLine[0].trim());
+    const xMax = parseFloat(valuesLine[1].trim());
+    const yMin = parseFloat(valuesLine[2].trim());
+    const yMax = parseFloat(valuesLine[3].trim());
+    const stepSize = parseInt(valuesLine[4].trim());
+    const noPoints = parseInt(valuesLine[5].trim());
+    const version = parseInt(valuesLine[6].trim());
+
+    console.log(xMin,xMax,yMin,yMax,stepSize,noPoints,version);
+
+    // Update your grid settings based on header info
+    document.getElementById("grid-left").value = xMin;
+    document.getElementById("grid-top").value = yMin;
+    document.getElementById("grid-right").value = xMax;
+    document.getElementById("grid-bottom").value = yMax;
+    document.getElementById("step-size").value = stepSize;
+    document.getElementById("no-points").value = noPoints;
+    applyGridSettings();
+
+    // Update the slider values displayed next to the sliders
+    document.getElementById("grid-left-value").innerText = xMin;
+    document.getElementById("grid-right-value").innerText = xMax;
+    document.getElementById("grid-top-value").innerText = yMin;
+    document.getElementById("grid-bottom-value").innerText = yMax;
+    document.getElementById("step-size").innerText = stepSize;
+    document.getElementById("no-points").innerText = noPoints;
+
+    // Clear the existing overlays if necessary
+    //gridOverlayPoints = []; // Clear previous points
+
+    const labels = [];
+    const notes = [];
+    // Parse CSV data rows
+    for (let i = 4; i < lines.length; i++) {
+      const dataLine = lines[i].split(',');
+      if (dataLine.length > 1) { // Ensure there's data
+        const pointNumber = parseInt(dataLine[0]);
+        const label = dataLine[5].replace(/"/g, ''); // Remove quotes
+        const note = dataLine[6] ? dataLine[6].replace(/"/g, '') : ''; // Handle optional notes
+
+        labels[pointNumber - 1] = label;
+        notes[pointNumber - 1] = note;
+      }
+    }
+
+    for (let value = 1; value <= noPoints; value++) {
+      const overlay = viewer.getOverlayById(`pointLabel-${value - 1}`);
+      if (overlay) {
+        overlay.label = labels[value - 1] || '';
+        overlay.notes = notes[value - 1] || '';
+      }
+    }
+  };
+
+  reader.readAsText(file);
+});
+
+// Helper function to create overlay element
+// function createOverlayElement(label, notes) {
+//   const element = document.createElement('div');
+//   element.className = 'overlay'; // Add styling as needed
+//   element.innerHTML = `<strong>${label}</strong><br>${notes}`;
+//   return element;
+// }

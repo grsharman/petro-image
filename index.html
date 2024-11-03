@@ -116,6 +116,27 @@
             Restore
           </button>
         </details>
+        <details closed>
+          <summary>Count</summary>
+          <div>
+            <button id="prev-button" disabled>&larr;</button>
+            <input type="number" id="sample-input" placeholder="1" maxlength="4" value="1" min="1" max="9999" disabled/>
+            <button id="next-button" disabled>&rarr;</button>
+          </div>
+          <div>
+            <input type="text" id="sample-text" placeholder="Label" disabled />
+          </div>
+          <div>
+            <input type="text" id="sample-notes" placeholder="Notes" disabled />
+          </div>
+          <div>
+            <button id="count-export" disabled>Export CSV</button>
+          </div>
+          <div class="file-input-container">
+            <label for="count-file-input" class="file-label">Import CSV</label>
+            <input type="file" id="count-file-input" class="file-input" />
+          </div>
+        </details>
       </div>
       <div>
         <details closed>
