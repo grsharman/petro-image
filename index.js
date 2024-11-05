@@ -112,9 +112,13 @@ function populateSampleDropdown(selectedGroup) {
   }
 }
 
+let sampleName = '';
+
 /// Event listener for sample selection change (only add once)
 document.getElementById('sampleDropdown').addEventListener('change', function() {
   const selectedIndex = this.value;
+  sampleName = this.options[this.selectedIndex].textContent; // Get the sample name as a string
+  console.log(sampleName);
   loadTileSet(selectedIndex);
   clearAnnotations();
   annotations = [];
@@ -176,13 +180,13 @@ infoButton.addEventListener("mouseenter", showTooltip);
 infoButton.addEventListener("mouseleave", hideTooltip);
 
 
-// GRS note: testing a message to prevent loss of data upon reload
-
-const hasUnsavedData = false;
+// A message to discourage loss of data upon reload
+let hasUnsavedAnnotations = false;
+let hasUnsavedCounts = false;
 
 window.addEventListener("beforeunload", (event) => {
   // Check if there's unsaved data or any other condition for triggering the warning
-  if (saved) {
+  if (hasUnsavedAnnotations || hasUnsavedCounts) {
       // Set the returnValue property of the event to a string to trigger the dialog
       event.preventDefault();
       // Some browsers might ignore this message and show their own default message
@@ -527,6 +531,7 @@ function addText(i, label, location) {
           checkResize: false,
       });
   annotateLabels.push(pointLabel);
+  hasUnsavedAnnotations = true;
 }
 
 function addCrosshairs(i, location) {
@@ -555,6 +560,7 @@ function addRectangle(i, x, y, w, h) {
     checkResize: false,
   });
   annotateRectangles.push(rectAnnotate);
+  hasUnsavedAnnotations = true;
 }
 
 function loadAnnotations(csvData) {
@@ -651,6 +657,7 @@ document.getElementById('exportBtn').addEventListener('click', function () {
   var csv = Papa.unparse(annotations);
   let blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
   saveAs(blob, "annotations.csv");
+  hasUnsavedAnnotations = false;
 });
 
 const clearAnnotations = () => {
@@ -666,8 +673,8 @@ const clearAnnotations = () => {
   annotateLabels = [];
   annotatePoints = [];
   annotateRectangles = [];
+  hasUnsavedAnnotations = false;
 };
-
 
 viewerContainer.addEventListener("pointermove", (event) => {
   mousePos = new OpenSeadragon.Point(event.clientX, event.clientY);
@@ -1103,6 +1110,7 @@ function inputSampleLabel() {
   } else {
     console.error('Overlay not found for value: ', value);
   }
+  hasUnsavedCounts = true;
 }
 
 function inputNotesText() {
@@ -1118,6 +1126,7 @@ function inputNotesText() {
   } else {
     console.error('Overlay not found for value: ', value);
   }
+  hasUnsavedCounts = true;
 }
 
 // Shortcut for entering labels and notes
@@ -1152,27 +1161,33 @@ document.addEventListener('keydown', function(event) {
   }
 });
 
-// GRS note: Include sample in header and image? dimensions?
-// GRS note: Issues with sliders not updating appropriately when CSV is loaded
-
-// Export a CSV of point counts when the Export button is clickec
+// Export a CSV of point counts when the Export button is clicked
 document.getElementById('count-export').addEventListener('click', function() {
-  // Assuming `gridOverlayPoints` is the array that holds the overlay data
-  const csvHeaders = 'Header Information\n';
-  const xMin = parseFloat(document.getElementById("grid-left").value);
-  const yMin = parseFloat(document.getElementById("grid-top").value);
-  const xMax = parseFloat(document.getElementById("grid-right").value);
-  const yMax = parseFloat(document.getElementById("grid-bottom").value);
-  const step = parseInt(document.getElementById("step-size").value);
-  const noPoints = parseInt(document.getElementById("no-points").value);
-  const version = 1; // Indicating the vintage of the algorithm used to generate points
-  const headerInfo = `xMin,xMax,yMin,yMax,stepSize,noPoints,ver\n${xMin},${xMax},${yMin},${yMax},${step},${noPoints},${version}\n\n`;
-  const csvDataHeaders = 'Point Number,X_viewer,Y_viewer,X_image,Y_image,Label,Notes\n';
-  let csvContent = csvHeaders + headerInfo + csvDataHeaders;
+  let csvContent = 'Parameter,Value\n';
+  const headerInfo = {
+    sample: sampleName,
+    xMin: parseFloat(document.getElementById("grid-left").value),
+    yMin: parseFloat(document.getElementById("grid-top").value),
+    xMax: parseFloat(document.getElementById("grid-right").value),
+    yMax: parseFloat(document.getElementById("grid-bottom").value),
+    step: parseInt(document.getElementById("step-size").value),
+    noPoints: parseInt(document.getElementById("no-points").value),
+    version: 1
+  };
 
-  const overlayCount = gridOverlayPoints.length;
+  // Append each key-value pair in the header to csvContent
+  for (const [key, value] of Object.entries(headerInfo)) {
+    csvContent += `${key},${value}\n`;
+  }
 
-  for (let i = 0; i < overlayCount; i++) {
+  // Add a blank line to separate headers from data
+  csvContent += '\n';
+
+  // Define data headers for point information
+  csvContent += 'Point Number,X_viewer,Y_viewer,X_image,Y_image,Label,Notes\n';
+
+  // const overlayCount = gridOverlayPoints.length;
+  for (let i = 0; i < headerInfo.noPoints; i++) {
     // Get the overlay by its ID
     const overlay = viewer.getOverlayById(`pointLabel-${i}`);
 
@@ -1200,6 +1215,7 @@ document.getElementById('count-export').addEventListener('click', function() {
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
+  hasUnsavedCounts = false;
 });
 
 document.getElementById('count-file-input').addEventListener('change', function(event) {
@@ -1227,20 +1243,31 @@ document.getElementById('count-file-input').addEventListener('change', function(
       return;
     }
     // Parse header information
-    const headerLine = lines[1].split(','); // This will give you the header names
-    console.log("Header Line:", headerLine); // Debugging: Log the header line
+    // const headerLine = lines[1].split(','); // This will give you the header names
+    // console.log("Header Line:", headerLine); // Debugging: Log the header line
+
+    const headerInfo = {};
+    // Parse header information from the first lines (until an empty line)
+    let lineIndex = 0;
+    while (lines[lineIndex] && lines[lineIndex].trim() !== '') {
+      const [key, value] = lines[lineIndex].split(',').map(item => item.trim());
+      if (key && value) {
+        headerInfo[key] = value;
+      }
+      lineIndex++;
+    }
 
     // Parse the next line for actual values
-    const valuesLine = lines[2].split(','); // This should contain the actual values
+    // const valuesLine = lines[2].split(','); // This should contain the actual values
 
     // Use trim to remove any extra whitespace and parse the values
-    const xMin = parseFloat(valuesLine[0].trim());
-    const xMax = parseFloat(valuesLine[1].trim());
-    const yMin = parseFloat(valuesLine[2].trim());
-    const yMax = parseFloat(valuesLine[3].trim());
-    const stepSize = parseInt(valuesLine[4].trim());
-    const noPoints = parseInt(valuesLine[5].trim());
-    const version = parseInt(valuesLine[6].trim());
+    const xMin = parseFloat(headerInfo.xMin);
+    const xMax = parseFloat(headerInfo.xMax);
+    const yMin = parseFloat(headerInfo.yMin);
+    const yMax = parseFloat(headerInfo.yMax);
+    const stepSize = parseInt(headerInfo.step);
+    const noPoints = parseInt(headerInfo.noPoints);
+    const version = parseInt(headerInfo.version);
 
     console.log(xMin,xMax,yMin,yMax,stepSize,noPoints,version);
 
@@ -1266,8 +1293,13 @@ document.getElementById('count-file-input').addEventListener('change', function(
 
     const labels = [];
     const notes = [];
-    // Parse CSV data rows
-    for (let i = 4; i < lines.length; i++) {
+
+    // Move to the start of data rows, skipping the blank line between headers and data
+    lineIndex++;
+    const dataHeaders = lines[lineIndex++]; // Skip over the point data headers
+
+    // Parse CSV data rows for points
+    for (let i = lineIndex; i < lines.length; i++) {
       const dataLine = lines[i].split(',');
       if (dataLine.length > 1) { // Ensure there's data
         const pointNumber = parseInt(dataLine[0]);
@@ -1289,6 +1321,7 @@ document.getElementById('count-file-input').addEventListener('change', function(
   };
 
   reader.readAsText(file);
+  hasUnsavedCounts = false;
 });
 
 // Helper function to create overlay element
