@@ -487,7 +487,8 @@
               "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/133-007s 01 2.5x XPL00 final.dzi",
               "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/133-007s 01 2.5x XPL30 final.dzi",
               "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/133-007s 01 2.5x PPL00 final.dzi"
-          ]
+          ],
+          "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/main/images/133-007s.csv"
       },
       "SD0001":
       {
@@ -544,6 +545,25 @@
               "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/WS-208 01 2.5x XPL00 final.dzi",
               "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/WS-208 01 2.5x XPL30 final.dzi",
               "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/WS-208 01 2.5x PPL00 final.dzi"
+          ]
+      },
+      "IODP-021":
+      {
+          "groups": ["IODP"],  
+          "title": "IODP-21",
+          "description": "Unknown",
+          "unit": "2",
+          "pixelsPerUnit": "0.913",
+          "pixelsPerMeter": "913000",
+          "tileLabels": [
+              "XPL00",
+              "XPL30",
+              "PPL00"
+          ],
+          "tileSets": [
+              "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/IODP_021_XPL00 raw.dzi",
+              "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/IODP_021_XPL30 raw.dzi",
+              "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/IODP_021_PPL00 raw.dzi"
           ]
       }
 }
