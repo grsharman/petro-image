@@ -565,5 +565,24 @@
               "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/IODP_021_XPL30 raw.dzi",
               "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/IODP_021_PPL00 raw.dzi"
           ]
+      },
+      "133-008s":
+      {
+          "groups": ["SedGeo"],  
+          "title": "133-008s",
+          "description": "Mihi Beach, Kaikoura, New Zealand",
+          "unit": "2",
+          "pixelsPerUnit": "0.393",
+          "pixelsPerMeter": "393000",
+          "tileLabels": [
+              "XPL00",
+              "XPL30",
+              "PPL00"
+          ],
+          "tileSets": [
+              "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/133-008s 01 2.5x XPL00 final.dzi",
+              "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/133-008s 01 2.5x XPL30 final.dzi",
+              "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/133-008s 01 2.5x PPL00 final.dzi"
+          ]
       }
 }
