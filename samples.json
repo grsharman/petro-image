@@ -488,7 +488,7 @@
               "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/133-007s 01 2.5x XPL30 final.dzi",
               "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/133-007s 01 2.5x PPL00 final.dzi"
           ],
-          "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/main/images/133-007s.csv"
+          "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/main/annotations/133-007s.csv"
       },
       "SD0001":
       {
@@ -564,7 +564,8 @@
               "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/IODP_021_XPL00 raw.dzi",
               "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/IODP_021_XPL30 raw.dzi",
               "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/IODP_021_PPL00 raw.dzi"
-          ]
+          ],
+          "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/main/annotations/IODP-21.csv"
       },
       "133-008s":
       {
