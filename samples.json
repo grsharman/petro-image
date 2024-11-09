@@ -622,5 +622,24 @@
               "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/133-312s 01 2.5x XPL30 final.dzi",
               "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/133-312s 01 2.5x PPL00 final.dzi"
           ]
+      },
+      "131-011s":
+      {
+          "groups": ["SedGeo"],  
+          "title": "131-011s",
+          "description": "Wahiba, Empty Quarter, Oman",
+          "unit": "2",
+          "pixelsPerUnit": "0.393",
+          "pixelsPerMeter": "393000",
+          "tileLabels": [
+              "XPL00",
+              "XPL30",
+              "PPL00"
+          ],
+          "tileSets": [
+              "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/131-011s 01 2.5x XPL00 final.dzi",
+              "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/131-011s 01 2.5x XPL30 final.dzi",
+              "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/131-011s 01 2.5x PPL00 final.dzi"
+          ]
       }
 }
