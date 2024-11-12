@@ -564,8 +564,7 @@
               "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/IODP_021_XPL00 raw.dzi",
               "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/IODP_021_XPL30 raw.dzi",
               "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/IODP_021_PPL00 raw.dzi"
-          ],
-          "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/main/annotations/IODP-21.csv"
+          ]
       },
       "133-008s":
       {

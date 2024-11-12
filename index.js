@@ -9,7 +9,10 @@ let descriptions = [];
 let pixelsPerUnits = [];
 let pixelsPerMeters = [];
 let units = []; // 2 for microns
+const annotation_files = {};
 let groupMapping = {}; // To map groups to sample indices ///
+
+console.log('starting the whole thing');
 
 // Load necessary information from JSON
 fetch('samples.json')
@@ -21,10 +24,10 @@ fetch('samples.json')
       let sample = data[sampleKey];
       if (sample) {
         // Extract the relevant details
-        console.log("Title:", sample.title);
-        console.log("Description:", sample.description);
-        console.log("Tile Labels:", sample.tileLabels);
-        console.log("Tile Sources:", sample.tileSets);
+        //console.log("Title:", sample.title);
+        //console.log("Description:", sample.description);
+        //console.log("Tile Labels:", sample.tileLabels);
+        //console.log("Tile Sources:", sample.tileSets);
 
         // Assuming you want to work with the tile sources for OpenSeadragon
         tileSets.push(sample.tileSets);
@@ -34,6 +37,8 @@ fetch('samples.json')
         pixelsPerUnits.push(sample.pixelsPerUnit);
         pixelsPerMeters.push(sample.pixelsPerMeter);
         units.push(sample.unit);
+        console.log(sample.annotations);
+        annotation_files[sample.title] = sample.annotations;// || null;
 
         /// Map sample indices to their groups
         if (sample.groups) {
@@ -48,6 +53,7 @@ fetch('samples.json')
         console.error(`Sample not found for key: ${sampleKey}`);
       }
       // Further operations, such as adding overlays, custom titles, etc.
+      console.log('annotations_dict',annotation_files);
     });
 
     // Add a default "All" group containing all sample indices
@@ -118,20 +124,60 @@ let sampleName = '';
 document.getElementById('sampleDropdown').addEventListener('change', function() {
   const selectedIndex = this.value;
   sampleName = this.options[this.selectedIndex].textContent; // Get the sample name as a string
-  console.log(sampleName);
+  console.log('Selected sample: ',sampleName);
   loadTileSet(selectedIndex);
   clearAnnotations();
   annotations = [];
-  console.log(tileLabels[selectedIndex]);
   updateButtonLabels(selectedIndex);
   addScalebar(pixelsPerMeters[selectedIndex]);
   clearGridOverlayPoints();
   clearGridOverlayCrosshairs();
+
+  // Check if the selected sample has annotations
+  console.log('annotations');
+  let file = annotation_files[sampleName]; // annotation_files[selectedIndex];
+  console.log(file);
+  const annotationCheckbox = document.getElementById('show-annotations'); // replace with your actual checkbox ID
+
+  if (file) {
+    console.log('Loading annotations for: ',sampleName);
+    // Use fetch to get the file from the URL
+    fetch(file)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.text();
+      })
+      .then(csvData => {
+        loadAnnotations(csvData);  // Pass the fetched data to the loadAnnotations function
+        // Uncheck the annotation checkbox and update visibility
+        annotationCheckbox.checked = false;
+        toggleAnnotation(annotationCheckbox);      
+      })
+      .catch(error => {
+        console.error('Error loading file:', error);
+      });
+  } else {
+    console.log('No annotations found for:', sampleName);
+  }
+
+  toggleAnnotation(); // Turn annotations off by default if loaded upon import
+  hasUnsavedAnnotations = false; // No unsaved annotations upon first load
+
+  // console.log(preAnnotations);
+  // const sampleData = samples[selectedIndex];
+  // console.log(preAnnotations[selectedIndex]);
+  // if (sampleData.annotations) {
+  //   console.log('loading annotations');
+  //   const csvUrl = sampleData.annotations;
+  //   loadAnnotations(csvUrl);
+  // }
 });
 
 // Function to update the button labels based on tileLabels array
 function updateButtonLabels(index) {
-  console.log("tileLabels for index", index, ":", tileLabels[index]);
+  //("tileLabels for index", index, ":", tileLabels[index]);
   document.querySelector("label[for='image1']").textContent = tileLabels[index][0] || "XPL1";
   document.querySelector("label[for='image2']").textContent= tileLabels[index][1] || "XPL2";
   document.querySelector("label[for='image3']").textContent = tileLabels[index][2] || "PPL";
@@ -145,7 +191,7 @@ const tooltip = document.getElementById("tooltip-desc");
 const infoButton = document.getElementById("info-button-desc");
 //const sampleDropdown = document.getElementById('sampleDropdown');
 
-console.log(descriptions[currentIndex]);
+//(descriptions[currentIndex]);
 
 // Show tooltip with sample info on hover
 function showTooltip() {
@@ -236,7 +282,7 @@ function loadTileSet(index) {
     viewer.addTiledImage({
       tileSource: tileSource,
       success: function() {
-        console.log('Image loaded: ' + tileSource);
+        //console.log('Image loaded: ' + tileSource);
       }
     });
   });
@@ -621,14 +667,14 @@ function loadAnnotations(csvData) {
                   // Add the rectangle
                   addRectangle(currentAnnotationId, viewportRect.x, viewportRect.y, w_view, h_view);
                   // Add the point
-                  addText(label, viewportRect);
+                  addText(currentAnnotationId, label, viewportRect);
                   // Store annotation
                   annotations.push(annotation);
                   currentAnnotationId = currentAnnotationId+1;
                 }
               }
           });
-          alert('Annotations loaded successfully.');
+          // alert('Annotations loaded successfully.');
       },
       error: function (error) {
           console.error('Error loading annotations:', error);
@@ -640,6 +686,7 @@ function loadAnnotations(csvData) {
 document.getElementById('loadAnnotationsBtn').addEventListener('click', function () {
   const fileInput = document.getElementById('csvFileInput');
   const file = fileInput.files[0];
+  console.log(file);
   if (file) {
       const reader = new FileReader();
       reader.onload = function (event) {
