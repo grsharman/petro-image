@@ -470,6 +470,27 @@
               "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NZ23-067b 02 5x PPL00 final.dzi"
           ]
       },
+      "FWS-24-01":
+      {
+          "groups": ["New Zealand"],  
+          "title": "FWS-24-01",
+          "description": "Farewell Split beach",
+          "latitude": "-40.51873",
+          "longitude": "172.93429",
+          "unit": "2",
+          "pixelsPerUnit": "0.393",
+          "pixelsPerMeter": "393000",
+          "tileLabels": [
+              "XPL00",
+              "XPL30",
+              "PPL00"
+          ],
+          "tileSets": [
+              "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/FWS-24-01 01 2.5x XPL00 final.dzi",
+              "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/FWS-24-01 01 2.5x XPL30 final.dzi",
+              "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/FWS-24-01 01 2.5x PPL00 final.dzi"
+          ]
+      },
       "133-007s":
       {
           "groups": ["Highlights","SedGeo"],  
@@ -640,6 +661,63 @@
               "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/131-011s 01 2.5x XPL00 final.dzi",
               "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/131-011s 01 2.5x XPL30 final.dzi",
               "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/131-011s 01 2.5x PPL00 final.dzi"
+          ]
+      },
+      "133-311s":
+      {
+          "groups": ["SedGeo"],  
+          "title": "131-311s",
+          "description": "Merced River, Mariposa, CA",
+          "unit": "2",
+          "pixelsPerUnit": "0.393",
+          "pixelsPerMeter": "393000",
+          "tileLabels": [
+              "XPL00",
+              "XPL30",
+              "PPL00"
+          ],
+          "tileSets": [
+              "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/133-311s 01 2.5x XPL00 final.dzi",
+              "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/133-311s 01 2.5x XPL30 final.dzi",
+              "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/133-311s 01 2.5x PPL00 final.dzi"
+          ]
+      },
+      "GM-Tgml-02":
+      {
+          "groups": ["Green Mtn, CO"],  
+          "title": "GM-Tgml-02",
+          "description": "Tgml (lower unit)",
+          "unit": "2",
+          "pixelsPerUnit": "0.393",
+          "pixelsPerMeter": "393000",
+          "tileLabels": [
+              "XPL00",
+              "XPL30",
+              "PPL00"
+          ],
+          "tileSets": [
+              "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/GM-Tgml-02 01 2.5x XPL00 final.dzi",
+              "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/GM-Tgml-02 01 2.5x XPL30 final.dzi",
+              "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/GM-Tgml-02 01 2.5x PPL00 final.dzi"
+          ]
+      },
+      "Well-T-11445":
+      {
+          "groups": ["Stevens Ss"],  
+          "title": "Well-T-11445",
+          "description": "Stevens Sandstone",
+          "unit": "2",
+          "pixelsPerUnit": "0.393",
+          "pixelsPerMeter": "393000",
+          "tileLabels": [
+              "XPL00",
+              "XPL30",
+              "PPL00"
+          ],
+          "tileSets": [
+              "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/Well-T-11445 01 2.5x XPL00 final.dzi",
+              "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/Well-T-11445 01 2.5x XPL30 final.dzi",
+              "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/Well-T-11445 01 2.5x PPL00 final.dzi"
           ]
       }
 }
