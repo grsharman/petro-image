@@ -9,10 +9,8 @@ let descriptions = [];
 let pixelsPerUnits = [];
 let pixelsPerMeters = [];
 let units = []; // 2 for microns
-const annotation_files = {};
+const annotation_files = {}; // For loading predefined annotations
 let groupMapping = {}; // To map groups to sample indices ///
-
-console.log('starting the whole thing');
 
 // Load necessary information from JSON
 fetch('samples.json')
@@ -24,12 +22,6 @@ fetch('samples.json')
       let sample = data[sampleKey];
       if (sample) {
         // Extract the relevant details
-        //console.log("Title:", sample.title);
-        //console.log("Description:", sample.description);
-        //console.log("Tile Labels:", sample.tileLabels);
-        //console.log("Tile Sources:", sample.tileSets);
-
-        // Assuming you want to work with the tile sources for OpenSeadragon
         tileSets.push(sample.tileSets);
         tileLabels.push(sample.tileLabels);
         samples.push(sample.title);
@@ -37,7 +29,6 @@ fetch('samples.json')
         pixelsPerUnits.push(sample.pixelsPerUnit);
         pixelsPerMeters.push(sample.pixelsPerMeter);
         units.push(sample.unit);
-        console.log(sample.annotations);
         annotation_files[sample.title] = sample.annotations;// || null;
 
         /// Map sample indices to their groups
@@ -52,8 +43,6 @@ fetch('samples.json')
       } else {
         console.error(`Sample not found for key: ${sampleKey}`);
       }
-      // Further operations, such as adding overlays, custom titles, etc.
-      console.log('annotations_dict',annotation_files);
     });
 
     // Add a default "All" group containing all sample indices
@@ -124,7 +113,6 @@ let sampleName = '';
 document.getElementById('sampleDropdown').addEventListener('change', function() {
   const selectedIndex = this.value;
   sampleName = this.options[this.selectedIndex].textContent; // Get the sample name as a string
-  console.log('Selected sample: ',sampleName);
   loadTileSet(selectedIndex);
   clearAnnotations();
   annotations = [];
@@ -132,15 +120,13 @@ document.getElementById('sampleDropdown').addEventListener('change', function() 
   addScalebar(pixelsPerMeters[selectedIndex]);
   clearGridOverlayPoints();
   clearGridOverlayCrosshairs();
+  enableGridButtons();
 
   // Check if the selected sample has annotations
-  console.log('annotations');
-  let file = annotation_files[sampleName]; // annotation_files[selectedIndex];
-  console.log(file);
+  let file = annotation_files[sampleName];
   const annotationCheckbox = document.getElementById('show-annotations'); // replace with your actual checkbox ID
 
   if (file) {
-    console.log('Loading annotations for: ',sampleName);
     // Use fetch to get the file from the URL
     fetch(file)
       .then(response => {
@@ -158,21 +144,9 @@ document.getElementById('sampleDropdown').addEventListener('change', function() 
       .catch(error => {
         console.error('Error loading file:', error);
       });
-  } else {
-    console.log('No annotations found for:', sampleName);
   }
-
   toggleAnnotation(); // Turn annotations off by default if loaded upon import
   hasUnsavedAnnotations = false; // No unsaved annotations upon first load
-
-  // console.log(preAnnotations);
-  // const sampleData = samples[selectedIndex];
-  // console.log(preAnnotations[selectedIndex]);
-  // if (sampleData.annotations) {
-  //   console.log('loading annotations');
-  //   const csvUrl = sampleData.annotations;
-  //   loadAnnotations(csvUrl);
-  // }
 });
 
 // Function to update the button labels based on tileLabels array
@@ -282,7 +256,6 @@ function loadTileSet(index) {
     viewer.addTiledImage({
       tileSource: tileSource,
       success: function() {
-        //console.log('Image loaded: ' + tileSource);
       }
     });
   });
@@ -599,7 +572,6 @@ function addRectangle(i, x, y, w, h) {
   rectAnnotate.style.border = '2px solid green';
   rectAnnotate.className = "annotate-rectangle";
   rectAnnotate.id = `annotate-rect-${i}`;
-  console.log(new OpenSeadragon.Rect(x, y, w, h));
   const overlay = viewer.addOverlay({
     element: rectAnnotate,
     location: new OpenSeadragon.Rect(x, y, w, h),
@@ -616,7 +588,6 @@ function loadAnnotations(csvData) {
       complete: function (results) {
           // Assuming the CSV format is: x,y,label
           results.data.forEach((row) => {
-              console.log('Starting row:',row)
               // x and y are both in pixels
               const x = parseFloat(row.x);
               const y = parseFloat(row.y);
@@ -626,10 +597,7 @@ function loadAnnotations(csvData) {
               const label = row.label;
               if (!isNaN(x) && !isNaN(y)) {
                 const image = viewer.world.getItemAt(0);
-                console.log('Got this far');
-                console.log(type);
-                if (type === 0) {
-                  console.log('This is a point');
+                if (type === 0) { // Point
                   const viewportPoint = viewer.viewport.imageToViewportCoordinates(new OpenSeadragon.Point(x, y));
                   let annotation = {
                     x: x,
@@ -646,8 +614,7 @@ function loadAnnotations(csvData) {
                   // Store annotation
                   annotations.push(annotation);
                 }
-                if (type === 1) {
-                  console.log('This is a rectangle');
+                if (type === 1) { // Rectangle
                   // X, Y image coordinates converted to viewport coordinates
                   const viewportRect = viewer.viewport.imageToViewportCoordinates(new OpenSeadragon.Point(x, y));
                   const imageSize = image.getContentSize();
@@ -655,7 +622,6 @@ function loadAnnotations(csvData) {
                   // GRS note: I'm surprised that both need to be normalized by x
                   const w_view = w/imageSize.x;
                   const h_view = h/imageSize.x;
-                  console.log(viewportRect);
                   let annotation ={
                     x: x,
                     y: y,
@@ -686,7 +652,6 @@ function loadAnnotations(csvData) {
 document.getElementById('loadAnnotationsBtn').addEventListener('click', function () {
   const fileInput = document.getElementById('csvFileInput');
   const file = fileInput.files[0];
-  console.log(file);
   if (file) {
       const reader = new FileReader();
       reader.onload = function (event) {
@@ -1060,14 +1025,8 @@ document.getElementById('next-button').addEventListener('click', function() {
 });
 
 function goToGridPoint(value) {
-  console.log((value));
-  console.log(gridOverlayPoints[(value-1)]);
   if (viewer.getOverlayById(`pointLabel-${value-1}`)) {
     const overlay = viewer.getOverlayById(`pointLabel-${value-1}`);
-    console.log(overlay);
-    console.log(overlay.location.x);
-    console.log(overlay.location.y);
-
     // Center the viewport on the specified coordinates without changing the zoom level
     viewer.viewport.panTo(
       new OpenSeadragon.Point(overlay.location.x, overlay.location.y),
@@ -1086,6 +1045,8 @@ document.addEventListener('keydown', function(event) {
     event.preventDefault(); // Prevent any default action for Enter key
     goToGridPoint(gridInput.value);
     inputSampleLabelFromOverlay();
+    // GRS note: testing
+    console.log('Enter clicked');
     //inputSampleLabel();
   }
 });
@@ -1104,11 +1065,12 @@ document.addEventListener('keydown', function(event) {
 document.addEventListener('keydown', function(event) {
   // Check for Enter key in sample-text field
   const textInput = document.getElementById('sample-text');
+  // const gridInput = document.getElementById('sample-input'); // Placeholder for changing color of crosshairs
   if (event.code === 'Enter' && document.activeElement === textInput) {
     event.preventDefault(); // Prevent any default action for Enter key
     inputSampleLabel();
+    // updateGridCrosshair(gridInput.value); // Placeholder for changing color of crosshairs
   }
-
 });
 
 // Shortcuts for going to next (space) or previous (shift+space)
@@ -1118,11 +1080,9 @@ document.addEventListener('keydown', function(event) {
     event.preventDefault();
     if (event.shiftKey) {
       const prevButton = document.getElementById('prev-button');
-      console.log("Previous button clicked!"); // Log to confirm the click action
       prevButton.click(); // Simulate a click on the next button
     } else {
       const nextButton = document.getElementById('next-button');
-      console.log("Next buton clicked!");
       nextButton.click(); // Simultae a click on the next button
     }
   }
@@ -1153,7 +1113,6 @@ function inputSampleLabel() {
   const overlay = viewer.getOverlayById(`pointLabel-${value-1}`);
   if (overlay) {
     overlay.label = textInput.value;
-    console.log(overlay.label);
   } else {
     console.error('Overlay not found for value: ', value);
   }
@@ -1169,19 +1128,37 @@ function inputNotesText() {
   const overlay = viewer.getOverlayById(`pointLabel-${value-1}`);
   if (overlay) {
     overlay.notes = textInput.value;
-    console.log(overlay.notes);
   } else {
     console.error('Overlay not found for value: ', value);
   }
   hasUnsavedCounts = true;
 }
 
+// GRS note: in progress. Currently not working. Feature implement paused
+// Function for updating crosshair color after point is made
+// function updateGridCrosshair(id) {
+//   console.log('updating grid crosshair');
+  
+//   // Get the crosshair overlay from the array
+//   const crosshairOverlay = gridOverlayCrosshairs[id - 1];
+  
+//   if (crosshairOverlay && crosshairOverlay.element) {
+//     const element = crosshairOverlay.element;
+
+//     // Temporarily remove the class to force a re-render
+//     element.classList.remove("crosshair-counted");
+//     void element.offsetWidth; // Trigger a reflow
+//     element.classList.add("crosshair-counted");
+//   } else {
+//     console.error("Crosshair overlay not found for ID:", id);
+//   }
+// }
+
 // Shortcut for entering labels and notes
 document.addEventListener('keydown', function(event) {
   // Check for Enter key in sample-text field
   const textInput = document.getElementById('sample-text');
   const notesInput = document.getElementById('sample-notes');
-  console.log(textInput);
   if (event.code === 'Enter' && document.activeElement === textInput) {
     event.preventDefault(); // Prevent any default action for Enter key
     inputSampleLabel();
@@ -1268,8 +1245,6 @@ document.getElementById('count-export').addEventListener('click', function() {
 document.getElementById('count-file-input').addEventListener('change', function(event) {
   const file = event.target.files[0];
   if (!file) return;
-
-  // You can handle the file as you did before
   console.log("File chosen:", file.name); // Optional: log the file name
 });
 
@@ -1289,10 +1264,6 @@ document.getElementById('count-file-input').addEventListener('change', function(
       console.error('The file does not contain enough data.');
       return;
     }
-    // Parse header information
-    // const headerLine = lines[1].split(','); // This will give you the header names
-    // console.log("Header Line:", headerLine); // Debugging: Log the header line
-
     const headerInfo = {};
     // Parse header information from the first lines (until an empty line)
     let lineIndex = 0;
@@ -1315,8 +1286,6 @@ document.getElementById('count-file-input').addEventListener('change', function(
     const stepSize = parseInt(headerInfo.step);
     const noPoints = parseInt(headerInfo.noPoints);
     const version = parseInt(headerInfo.version);
-
-    console.log(xMin,xMax,yMin,yMax,stepSize,noPoints,version);
 
     // Update your grid settings based on header info
     document.getElementById("grid-left").value = xMin;
