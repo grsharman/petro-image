@@ -58,6 +58,15 @@
           onclick="toggleGrid(this)"
         />
         <label for="show-grid">Show grid</label>
+      <div>
+        <label for="show-aoi">
+          <input
+          type="checkbox"
+          id="show-aoi"
+          onclick="updateAoiRectangle(this)"
+          />Show AOI
+        </label>
+      </div>
       </div>
           <div>
             <label for="x_min">x<sub>min</sub></label>
@@ -130,8 +139,32 @@
             <input type="text" id="sample-notes" placeholder="Notes" disabled />
           </div>
           <div>
+            <div id="filterMenu">
+              <button id="filterButton">Select</button>
+              <div id="includeDropdown" class="dropdown-content" style="display: none;">
+                <!-- Checkboxes will be added dynamically -->
+              </div>
+              <button onclick="showResults()">Summarize</button>
+            </div>
+          </div>
+          <!-- Modal for displaying results -->
+          <div id="resultsModal">
+            <div id="modalContent">
+                <span class="closeButton" onclick="closeModal()">&times;</span>
+                <div id="resultsContent"></div>
+            </div>
+          </div>
+          <!-- Filtering menu -->
+          <div>
+            <label for="filterDropdown">Filter:</label>
+            <select id="filterDropdown" onchange="filterOverlays()">
+                <option value="all">All</option> <!-- Default option -->
+            </select>
+          </div>
+          <div>
             <button id="count-export" disabled>Export CSV</button>
           </div>
+
           <div class="file-input-container">
             <label for="count-file-input" class="file-label">Import CSV</label>
             <input type="file" id="count-file-input" class="file-input" />

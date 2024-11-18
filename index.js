@@ -53,7 +53,6 @@ fetch('samples.json')
     updateButtonLabels(0);
     addScalebar(pixelsPerMeters[0]);
     populateGroupDropdown();
-    //populateDropdown();
 
     /// Automatically select the first group and populate the sample dropdown
     const firstGroup = Object.keys(groupMapping)[0];
@@ -260,8 +259,6 @@ function loadTileSet(index) {
     });
   });
 }
-
-// GRS note: Grid is disabled after switching images. Need to fix this.
 
 const viewerContainer = document.getElementById("viewer-container");
 
@@ -787,6 +784,10 @@ const enableGridButtons = () => {
 let gridOverlayPoints = []; ///
 let gridOverlayCrosshairs = []; ///
 
+// GRS note: Currently adding more counts results in erasing the existing
+// counts. It would be better if there were a way of changing the point counts
+// without changing modifying the underlying count data. This way more points
+// count be added on the fly without having to mess up with CSV file.
 const applyGridSettings = () => {
   clearGridOverlayCrosshairs();
   clearGridOverlayPoints();
@@ -829,8 +830,6 @@ const applyGridSettings = () => {
     // Convert to coordinates in pixels.
     const xPixels = xUnits * pixelsPerUnits[currentIndex];
     const yPixels = yUnits * pixelsPerUnits[currentIndex];
-    // const xPixels = xUnits * metersPerUnit[units[currentIndex]] * grid.pixelsPerMeter;
-    // const yPixels = yUnits * metersPerUnit[units[currentIndex]] * grid.pixelsPerMeter;
 
     // Convert to view-space coordinates, measuring from the top-left of the
     // first image.
@@ -869,6 +868,9 @@ const applyGridSettings = () => {
   document.getElementById("apply-grid-settings").disabled = true;
   document.getElementById("restore-grid-settings").disabled = true;
   gridApplied = true;
+
+  // Update AOI rectangle after grid is applied
+  updateAoiRectangle();
 };
 
 const clearGridOverlayPoints = () => {
@@ -892,8 +894,6 @@ const clearGridOverlayCrosshairs = () => {
 };
 
 const restoreGridSettings = () => {
-  // document.getElementById("unit").selectedIndex = grid.unit;
-  // document.getElementById("pixels-per-unit").value = grid.pixelsPerUnit;
   document.getElementById("grid-left").value = grid.xMin;
   document.getElementById("grid-top").value = grid.yMin;
   document.getElementById("grid-right").value = grid.xMax;
@@ -994,8 +994,74 @@ function makePoints(x_min, x_max, y_min, y_max, step_size, num_points) {
   return [Xs, Ys, As];
 }
 
+let aoiOverlay = null; // Store the AOI overlay element
+
+// Function to create or update the AOI rectangle
+function updateAoiRectangle() {
+  const showAoi = document.getElementById("show-aoi").checked;
+  if (!showAoi) {
+    removeAoiRectangle();
+    return;
+  }
+  const xMin = parseFloat(document.getElementById("grid-left").value);
+  const xMax = parseFloat(document.getElementById("grid-right").value);
+  const yMin = parseFloat(document.getElementById("grid-top").value);
+  const yMax = parseFloat(document.getElementById("grid-bottom").value);
+
+  // Ensure viewer and first image are available
+  const image = viewer.world.getItemAt(0);
+  if (!image) {
+    console.error("No image loaded in OpenSeadragon viewer.");
+    return;
+  }
+
+  // Convert percentage grid coordinates to image pixel coordinates
+  const imageSize = image.getContentSize();
+  const xMinPx = (xMin / 100) * imageSize.x;
+  const xMaxPx = (xMax / 100) * imageSize.x;
+  const yMinPx = (yMin / 100) * imageSize.y;
+  const yMaxPx = (yMax / 100) * imageSize.y;
+
+  // Convert pixel coordinates to viewport coordinates
+  const topLeft = image.imageToViewportCoordinates(xMinPx, yMinPx);
+  const bottomRight = image.imageToViewportCoordinates(xMaxPx, yMaxPx);
+
+  const width = bottomRight.x - topLeft.x;
+  const height = bottomRight.y - topLeft.y;
+
+  if (!aoiOverlay) {
+    // Create the AOI overlay if it doesn't exist
+    const aoiElement = document.createElement("div");
+    aoiElement.className = "aoi-rectangle";
+    viewer.addOverlay({
+      element: aoiElement,
+      location: new OpenSeadragon.Rect(topLeft.x, topLeft.y, width, height),
+    });
+    aoiOverlay = aoiElement;
+  } else {
+    // Update the existing AOI overlay
+    viewer.updateOverlay(aoiOverlay, new OpenSeadragon.Rect(topLeft.x, topLeft.y, width, height));
+  }
+}
+
+// Function to remove the AOI rectangle
+function removeAoiRectangle() {
+  if (aoiOverlay) {
+    viewer.removeOverlay(aoiOverlay);
+    aoiOverlay = null;
+  }
+}
+
+// Attach event listeners to the sliders
+["grid-left", "grid-right", "grid-top", "grid-bottom"].forEach(id => {
+  document.getElementById(id).addEventListener("input", updateAoiRectangle);
+});
+
+// Attach an event listener to the "Show AOI" checkbox
+document.getElementById("show-aoi").addEventListener("change", updateAoiRectangle);
+
 //////////////////////////////////////////
-//// Functionality for point counting ////
+//// Point counting functionality ////////
 //////////////////////////////////////////
 
 document.getElementById('prev-button').addEventListener('click', function() {
@@ -1045,9 +1111,7 @@ document.addEventListener('keydown', function(event) {
     event.preventDefault(); // Prevent any default action for Enter key
     goToGridPoint(gridInput.value);
     inputSampleLabelFromOverlay();
-    // GRS note: testing
     console.log('Enter clicked');
-    //inputSampleLabel();
   }
 });
 
@@ -1170,6 +1234,8 @@ document.addEventListener('keydown', function(event) {
     setTimeout(() => {
       textInput.style.borderColor = ''; // Revert to original after 1 second
     }, 1000);
+    populateDropdown(); // Repopulate dropdown for filtering
+    populateFilterDropdown(); // Repopulate filter dropdown
   }
   if (event.code === 'Enter' && document.activeElement === notesInput) {
     event.preventDefault(); // Prevent any default action for Enter key
@@ -1275,9 +1341,6 @@ document.getElementById('count-file-input').addEventListener('change', function(
       lineIndex++;
     }
 
-    // Parse the next line for actual values
-    // const valuesLine = lines[2].split(','); // This should contain the actual values
-
     // Use trim to remove any extra whitespace and parse the values
     const xMin = parseFloat(headerInfo.xMin);
     const xMax = parseFloat(headerInfo.xMax);
@@ -1303,9 +1366,6 @@ document.getElementById('count-file-input').addEventListener('change', function(
     document.getElementById("grid-bottom-value").innerText = yMax;
     document.getElementById("step-size").innerText = stepSize;
     document.getElementById("no-points").innerText = noPoints;
-
-    // Clear the existing overlays if necessary
-    //gridOverlayPoints = []; // Clear previous points
 
     const labels = [];
     const notes = [];
@@ -1334,16 +1394,228 @@ document.getElementById('count-file-input').addEventListener('change', function(
         overlay.notes = notes[value - 1] || '';
       }
     }
+    populateDropdown();
+    populateFilterDropdown();
   };
 
   reader.readAsText(file);
   hasUnsavedCounts = false;
 });
 
-// Helper function to create overlay element
-// function createOverlayElement(label, notes) {
-//   const element = document.createElement('div');
-//   element.className = 'overlay'; // Add styling as needed
-//   element.innerHTML = `<strong>${label}</strong><br>${notes}`;
-//   return element;
-// }
+// Function to count labels dynamically
+function getLabelCounts(noPoints) {
+  const labelCounts = {};
+  let totalCount = 0;
+  for (let value = 1; value <= noPoints; value++) {
+    const overlayId = `pointLabel-${value - 1}`;
+    const overlay = viewer.getOverlayById(overlayId);
+
+    if (overlay) {
+        const label = overlay.label || ''; // Ensure label is not undefined
+        if (label) {
+            labelCounts[label] = (labelCounts[label] || 0) + 1;
+            totalCount++;
+        }
+    } else {
+        console.log(`No overlay found with ID: ${overlayId}`); // Debug: Log missing overlays
+    }
+  }
+  return { labelCounts, totalCount };
+}
+
+// For keeping track of which unique labels are checked
+const checkboxStates = {};
+
+// Function to populate the dropdown with unique labels and checkboxes
+function populateFilterDropdown() {
+  const filterDropdown = document.getElementById("includeDropdown");
+  const uniqueLabels = getUniqueLabels();
+
+  // Clear existing options
+  filterDropdown.innerHTML = "";
+
+  // Add checkboxes for each unique label
+  uniqueLabels.forEach(label => {
+    const isChecked = checkboxStates[label] !== undefined ? checkboxStates[label] : true;
+
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.value = label;
+    checkbox.id = `checkbox-${label}`;
+    checkbox.checked = isChecked; // Default to checked
+    
+    // Update the state in the `checkboxStates` object when the checkbox changes
+    checkbox.addEventListener("change", () => {
+      checkboxStates[label] = checkbox.checked;
+    });
+
+    const labelElement = document.createElement("label");
+    labelElement.textContent = label;
+    labelElement.htmlFor = `checkbox-${label}`;
+
+    const wrapper = document.createElement("div");
+    wrapper.appendChild(checkbox);
+    wrapper.appendChild(labelElement);
+
+    filterDropdown.appendChild(wrapper);
+
+    // Store the current state in `checkboxStates`
+    checkboxStates[label] = isChecked;
+  });
+}
+
+// Function to get selected labels from the dropdown
+function getSelectedLabels() {
+  const filterDropdown = document.getElementById("includeDropdown");
+  const checkboxes = filterDropdown.querySelectorAll("input[type='checkbox']");
+  const selectedLabels = [];
+
+  checkboxes.forEach(checkbox => {
+    if (checkbox.checked) {
+      selectedLabels.push(checkbox.value);
+    }
+  });
+
+  return selectedLabels;
+}
+
+// Modified getResults function to calculate statistics based on selected labels
+function getResults(noPoints) {
+  const { labelCounts, totalCount } = getLabelCounts(noPoints);
+  const selectedLabels = getSelectedLabels();
+
+  // Filter labelCounts to include only selected labels
+  const filteredCounts = Object.entries(labelCounts)
+    .filter(([label]) => selectedLabels.includes(label));
+
+  // Calculate total count for selected labels
+  const filteredTotalCount = filteredCounts.reduce((sum, [, count]) => sum + count, 0);
+
+  // Header with total count
+  const results = [`N= ${filteredTotalCount}`];
+
+  // Generate sorted results for selected labels
+  filteredCounts.sort((a, b) => b[1] - a[1]) // Sort by count in descending order
+    .forEach(([label, count]) => {
+      const percentage = ((count / filteredTotalCount) * 100).toFixed(1);
+      results.push(`${label}: ${count} (${percentage}%)`);
+    });
+
+  return results.join('<br>');
+}
+
+// Function to display summary results
+function showResults() {
+  const noPoints = parseInt(document.getElementById("no-points").value);
+  //const noPoints = viewer.overlays.length; // Total number of overlays
+  const resultsContent = document.getElementById("resultsContent");
+  resultsContent.innerHTML = getResults(noPoints);
+  document.getElementById("resultsModal").style.display = "block";
+}
+
+// Attach event listener to the filterButton
+document.getElementById("filterButton").addEventListener("click", function () {
+  const includeDropdown = document.getElementById("includeDropdown");
+  
+  // Toggle visibility of the dropdown menu
+  if (includeDropdown.style.display === "block") {
+    includeDropdown.style.display = "none";
+  } else {
+    includeDropdown.style.display = "block";
+  }
+});
+
+// Optional: Close the dropdown when clicking outside
+document.addEventListener("click", function (event) {
+  const includeDropdown = document.getElementById("includeDropdown");
+  const filterButton = document.getElementById("filterButton");
+
+  // Check if the click is outside the dropdown and button
+  if (!includeDropdown.contains(event.target) && event.target !== filterButton) {
+    includeDropdown.style.display = "none";
+  }
+});
+
+// Function to close the modal
+function closeModal() {
+  document.getElementById("resultsModal").style.display = "none";
+}
+
+// Function to get unique labels from the overlays
+function getUniqueLabels() {
+  const noPoints = parseInt(document.getElementById("no-points").value);
+  const labels = new Set();
+
+  for (let value = 1; value <= noPoints; value++) {
+      const overlayId = `pointLabel-${value - 1}`;
+      const overlay = viewer.getOverlayById(overlayId);
+      if (overlay && overlay.label) {
+          labels.add(overlay.label); // Add label to the Set (automatically ensures uniqueness)
+      }
+  }
+  return Array.from(labels); // Convert Set to Array
+}
+
+// Function to populate the dropdown with unique labels from overlays
+function populateDropdown() {
+  const filterDropdown = document.getElementById("filterDropdown");
+
+  // Clear existing dropdown options
+  filterDropdown.innerHTML = `<option value="all">All</option>`; // Default option
+
+  // Get unique labels
+  const uniqueLabels = getUniqueLabels();
+
+  // Add each unique label as an option
+  uniqueLabels.forEach(label => {
+      const option = document.createElement("option");
+      option.value = label;
+      option.textContent = label;
+      filterDropdown.appendChild(option);
+  });
+}
+
+// // Function to filter overlays based on selected label
+function filterOverlays() {
+  const filterDropdown = document.getElementById("filterDropdown");
+  const selectedLabel = filterDropdown.value;
+
+  const noPoints = parseInt(document.getElementById("no-points").value);
+  for (let value = 1; value <= noPoints; value++) {
+    const overlayId = `pointLabel-${value - 1}`;
+    const overlay = viewer.getOverlayById(overlayId);
+    const crosshairId = `crosshair-${value - 1}`;
+    const overlayCrosshair = viewer.getOverlayById(crosshairId);
+
+    if (overlay) {
+      // Manage visibility by changing the opacity of the overlay element
+      if (selectedLabel === "all" || overlay.label === selectedLabel) {
+          overlay.element.style.visibility = "visible"; // Make overlay visible
+          overlayCrosshair.element.style.visibility = "visible"; // Make overlay visible
+      } else {
+          overlay.element.style.visibility = "hidden"; // Hide overlay
+          overlayCrosshair.element.style.visibility = "hidden"; // Hide overlay
+      }
+    }
+  }
+}
+
+// Ensure overlays respect the filter on each viewport update (for panning, zooming, etc.)
+function enforceOverlayVisibility() {
+  const noPoints = parseInt(document.getElementById("no-points").value);
+
+  for (let value = 1; value <= noPoints; value++) {
+      const overlayId = `pointLabel-${value - 1}`;
+      const overlay = viewer.getOverlayById(overlayId);
+
+      if (overlay) {
+          const isVisible = overlay.element.style.visibility !== "hidden";
+          overlay.element.style.visibility = isVisible ? "visible" : "hidden";
+      }
+  }
+}
+
+// Attach the enforceOverlayVisibility function to OpenSeadragon's update-viewport event
+viewer.addHandler("update-viewport", () => {
+  enforceOverlayVisibility();
+});

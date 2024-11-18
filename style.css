@@ -202,3 +202,54 @@ html {
 .file-label:hover {
   background-color: #0056b3; /* Darken button on hover */
 }
+
+
+#resultsModal {
+  display: none; /* Hidden by default */
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent background */
+}
+
+#modalContent {
+  position: relative;
+  background-color: white;
+  margin: 15% auto; /* Centered vertically and horizontally */
+  padding: 20px;
+  border-radius: 8px;
+  width: 80%;
+  max-width: 500px;
+  text-align: center;
+}
+
+.closeButton {
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+#includeDropdown {
+  max-height: 200px; /* Adjust this height as needed */
+  overflow-y: auto; /* Enable vertical scrolling */
+  border: 1px solid #ccc; /* Optional: add a border */
+  padding: 10px; /* Optional: add padding for better appearance */
+  display: none; /* Initially hidden */
+  position: absolute; /* Ensure it stays near the button */
+  background-color: white; /* Ensure visibility */
+  z-index: 1000; /* Bring it above other elements */
+}
+
+#includeDropdown div {
+  margin-bottom: 5px; /* Optional: add spacing between checkboxes */
+}
+
+.aoi-rectangle {
+  border: 2px solid red; /* Add a visible border */
+  position: absolute;    /* Ensure it's positioned correctly */
+}
