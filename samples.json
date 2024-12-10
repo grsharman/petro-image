@@ -89,9 +89,9 @@
             "PPL00"
         ],
         "tileSets": [
-            "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/ARCS-59 01 2.5x XPL00 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/ARCS-59 01 2.5x XPL30 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/ARCS-59 01 2.5x PPL00 final.dzi"
+            "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/ARCS-59 01 2.5x XPL00 final.dzi",
+            "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/ARCS-59 01 2.5x XPL30 final.dzi",
+            "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/ARCS-59 01 2.5x PPL00 final.dzi"
         ]
     },
     "ARCS-60":
@@ -727,11 +727,11 @@
               "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/FWS-24-01 01 2.5x PPL00 final.dzi"
           ]
       },
-      "133-002s":
+      "131-011s":
       {
           "groups": ["SedGeo"],  
-          "title": "133-002s",
-          "description": "Ka-Lae, HI",
+          "title": "131-011s",
+          "description": "Wahiba, Empty Quarter, Oman",
           "unit": "2",
           "pixelsPerUnit": "0.393",
           "pixelsPerMeter": "393000",
@@ -741,9 +741,28 @@
               "PPL00"
           ],
           "tileSets": [
-              "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/133-002s 01 2.5x XPL00 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/133-002s 01 2.5x XPL30 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/133-002s 01 2.5x PPL00 final.dzi"
+              "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/131-011s 01 2.5x XPL00 final.dzi",
+              "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/131-011s 01 2.5x XPL30 final.dzi",
+              "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/131-011s 01 2.5x PPL00 final.dzi"
+          ]
+      },
+      "133-003s":
+      {
+          "groups": ["SedGeo"],  
+          "title": "133-003s",
+          "description": "Hanna Beach, Maui, HI",
+          "unit": "2",
+          "pixelsPerUnit": "0.393",
+          "pixelsPerMeter": "393000",
+          "tileLabels": [
+              "XPL00",
+              "XPL30",
+              "PPL00"
+          ],
+          "tileSets": [
+              "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/133-003s 01 2.5x XPL00 final.dzi",
+              "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/133-003s 01 2.5x XPL30 final.dzi",
+              "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/133-003s 01 2.5x PPL00 final.dzi"
           ]
       },
       "133-004s":
@@ -785,6 +804,25 @@
           ],
           "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/main/annotations/133-007s.csv"
       },
+      "133-008s":
+      {
+          "groups": ["SedGeo"],  
+          "title": "133-008s",
+          "description": "Mihi Beach, Kaikoura, New Zealand",
+          "unit": "2",
+          "pixelsPerUnit": "0.393",
+          "pixelsPerMeter": "393000",
+          "tileLabels": [
+              "XPL00",
+              "XPL30",
+              "PPL00"
+          ],
+          "tileSets": [
+              "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/133-008s 01 2.5x XPL00 final.dzi",
+              "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/133-008s 01 2.5x XPL30 final.dzi",
+              "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/133-008s 01 2.5x PPL00 final.dzi"
+          ]
+      },
       "133-010s":
       {
           "groups": ["SedGeo"],  
@@ -802,6 +840,63 @@
               "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/133-010s 01 2.5x XPL00 final.dzi",
               "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/133-010s 01 2.5x XPL30 final.dzi",
               "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/133-010s 01 2.5x PPL00 final.dzi"
+          ]
+      },
+      "133-311s":
+      {
+          "groups": ["SedGeo"],  
+          "title": "131-311s",
+          "description": "Merced River, Mariposa, CA",
+          "unit": "2",
+          "pixelsPerUnit": "0.393",
+          "pixelsPerMeter": "393000",
+          "tileLabels": [
+              "XPL00",
+              "XPL30",
+              "PPL00"
+          ],
+          "tileSets": [
+              "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/133-311s 01 2.5x XPL00 final.dzi",
+              "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/133-311s 01 2.5x XPL30 final.dzi",
+              "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/133-311s 01 2.5x PPL00 final.dzi"
+          ]
+      },
+      "133-312s":
+      {
+          "groups": ["SedGeo"],  
+          "title": "133-312s",
+          "description": "Bass Lake, Oakhurst, California",
+          "unit": "2",
+          "pixelsPerUnit": "0.393",
+          "pixelsPerMeter": "393000",
+          "tileLabels": [
+              "XPL00",
+              "XPL30",
+              "PPL00"
+          ],
+          "tileSets": [
+              "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/133-312s 01 2.5x XPL00 final.dzi",
+              "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/133-312s 01 2.5x XPL30 final.dzi",
+              "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/133-312s 01 2.5x PPL00 final.dzi"
+          ]
+      },
+      "137-002s":
+      {
+          "groups": ["SedGeo"],  
+          "title": "137-002s",
+          "description": "Ka-Lae, Hawaii",
+          "unit": "2",
+          "pixelsPerUnit": "0.393",
+          "pixelsPerMeter": "393000",
+          "tileLabels": [
+              "XPL00",
+              "XPL30",
+              "PPL00"
+          ],
+          "tileSets": [
+              "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/137-002s 01 2.5x XPL00 final.dzi",
+              "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/137-002s 01 2.5x XPL30 final.dzi",
+              "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/137-002s 01 2.5x PPL00 final.dzi"
           ]
       },
       "SD0001":
@@ -935,101 +1030,6 @@
               "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/IODP_021_XPL00 raw.dzi",
               "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/IODP_021_XPL30 raw.dzi",
               "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/IODP_021_PPL00 raw.dzi"
-          ]
-      },
-      "133-008s":
-      {
-          "groups": ["SedGeo"],  
-          "title": "133-008s",
-          "description": "Mihi Beach, Kaikoura, New Zealand",
-          "unit": "2",
-          "pixelsPerUnit": "0.393",
-          "pixelsPerMeter": "393000",
-          "tileLabels": [
-              "XPL00",
-              "XPL30",
-              "PPL00"
-          ],
-          "tileSets": [
-              "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/133-008s 01 2.5x XPL00 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/133-008s 01 2.5x XPL30 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/133-008s 01 2.5x PPL00 final.dzi"
-          ]
-      },
-      "133-003s":
-      {
-          "groups": ["SedGeo"],  
-          "title": "133-003s",
-          "description": "Kai Beach, Kauai, Hawaii",
-          "unit": "2",
-          "pixelsPerUnit": "0.393",
-          "pixelsPerMeter": "393000",
-          "tileLabels": [
-              "XPL00",
-              "XPL30",
-              "PPL00"
-          ],
-          "tileSets": [
-              "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/133-003s 01 2.5x XPL00 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/133-003s 01 2.5x XPL30 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/133-003s 01 2.5x PPL00 final.dzi"
-          ]
-      },
-      "133-312s":
-      {
-          "groups": ["SedGeo"],  
-          "title": "133-312s",
-          "description": "Bass Lake, Oakhurst, California",
-          "unit": "2",
-          "pixelsPerUnit": "0.393",
-          "pixelsPerMeter": "393000",
-          "tileLabels": [
-              "XPL00",
-              "XPL30",
-              "PPL00"
-          ],
-          "tileSets": [
-              "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/133-312s 01 2.5x XPL00 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/133-312s 01 2.5x XPL30 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/133-312s 01 2.5x PPL00 final.dzi"
-          ]
-      },
-      "131-011s":
-      {
-          "groups": ["SedGeo"],  
-          "title": "131-011s",
-          "description": "Wahiba, Empty Quarter, Oman",
-          "unit": "2",
-          "pixelsPerUnit": "0.393",
-          "pixelsPerMeter": "393000",
-          "tileLabels": [
-              "XPL00",
-              "XPL30",
-              "PPL00"
-          ],
-          "tileSets": [
-              "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/131-011s 01 2.5x XPL00 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/131-011s 01 2.5x XPL30 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/131-011s 01 2.5x PPL00 final.dzi"
-          ]
-      },
-      "133-311s":
-      {
-          "groups": ["SedGeo"],  
-          "title": "131-311s",
-          "description": "Merced River, Mariposa, CA",
-          "unit": "2",
-          "pixelsPerUnit": "0.393",
-          "pixelsPerMeter": "393000",
-          "tileLabels": [
-              "XPL00",
-              "XPL30",
-              "PPL00"
-          ],
-          "tileSets": [
-              "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/133-311s 01 2.5x XPL00 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/133-311s 01 2.5x XPL30 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/133-311s 01 2.5x PPL00 final.dzi"
           ]
       },
       "TMC1":
