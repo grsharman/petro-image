@@ -1,9 +1,9 @@
 {
-    "SD0020":
+    "SD0004":
     {
-        "groups": ["SedGeo"],  
-        "title": "SD0020",
-        "description": "Anak Krakatau",
+        "groups": ["Favorites","SedGeo"],  
+        "title": "SD0004",
+        "description": "Budhir, Iceland",
         "unit": "2",
         "pixelsPerUnit": "0.393",
         "pixelsPerMeter": "393000",
@@ -13,9 +13,9 @@
             "PPL00"
         ],
         "tileSets": [
-            "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0020 01 2.5x XPL00 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0020 01 2.5x XPL30 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0020 01 2.5x PPL00 final.dzi"
+            "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0004 01 2.5x XPL00 final.dzi",
+            "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0004 01 2.5x XPL30 final.dzi",
+            "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0004 01 2.5x PPL00 final.dzi"
         ]
     },
     "ARCS-44":
@@ -47,12 +47,12 @@
         "pixelsPerMeter": "398000",
         "tileLabels": [
             "XPL00",
-            "XPL45",
+            "XPL30",
             "PPL00"
         ],
         "tileSets": [
             "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/ARCS-46 01 2.5x XPL00 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/ARCS-46 01 2.5x XPL45 final.dzi",
+            "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/ARCS-46 01 2.5x XPL30 final.dzi",
             "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/ARCS-46 01 2.5x PPL00 final.dzi"
         ]
     },
@@ -66,12 +66,12 @@
         "pixelsPerMeter": "398000",
         "tileLabels": [
             "XPL00",
-            "XPL30",
+            "XPL45",
             "PPL00"
         ],
         "tileSets": [
             "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/ARCS-51 01 2.5x XPL00 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/ARCS-51 01 2.5x XPL30 final.dzi",
+            "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/ARCS-51 01 2.5x XPL45 final.dzi",
             "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/ARCS-51 01 2.5x PPL00 final.dzi"
         ]
     },
@@ -937,11 +937,11 @@
               "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0003 01 2.5x PPL00 final.dzi"
           ]
       },
-      "SD0004":
+      "SD0020":
       {
-          "groups": ["Favorites","SedGeo"],  
-          "title": "SD0004",
-          "description": "Budhir, Iceland",
+          "groups": ["SedGeo"],  
+          "title": "SD0020",
+          "description": "Anak Krakatau",
           "unit": "2",
           "pixelsPerUnit": "0.393",
           "pixelsPerMeter": "393000",
@@ -951,9 +951,9 @@
               "PPL00"
           ],
           "tileSets": [
-              "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0004 01 2.5x XPL00 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0004 01 2.5x XPL30 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0004 01 2.5x PPL00 final.dzi"
+              "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0020 01 2.5x XPL00 final.dzi",
+              "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0020 01 2.5x XPL30 final.dzi",
+              "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0020 01 2.5x PPL00 final.dzi"
           ]
       },
       "SD0031":
