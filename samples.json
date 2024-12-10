@@ -1,7 +1,26 @@
 {
+    "SD0020":
+    {
+        "groups": ["SedGeo"],  
+        "title": "SD0020",
+        "description": "Anak Krakatau",
+        "unit": "2",
+        "pixelsPerUnit": "0.393",
+        "pixelsPerMeter": "393000",
+        "tileLabels": [
+            "XPL00",
+            "XPL30",
+            "PPL00"
+        ],
+        "tileSets": [
+            "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0020 01 2.5x XPL00 final.dzi",
+            "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0020 01 2.5x XPL30 final.dzi",
+            "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0020 01 2.5x PPL00 final.dzi"
+        ]
+    },
     "ARCS-44":
     {
-        "groups": ["Highlights","SedGeo"],
+        "groups": ["Favorites","SedGeo"],
         "title": "ARCS-44",
         "description": "Fountain Formation",
         "unit": "2",
@@ -20,7 +39,7 @@
     },
     "ARCS-46":
     {
-        "groups": ["Highlights","SedGeo"],
+        "groups": ["Favorites","SedGeo"],
         "title": "ARCS-46",
         "description": "Unknown",
         "unit": "2",
@@ -32,14 +51,14 @@
             "PPL00"
         ],
         "tileSets": [
-            "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/ARCS-46 01 2.5x XPL00 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/ARCS-46 01 2.5x XPL45 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/ARCS-46 01 2.5x PPL00 final.dzi"
+            "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/ARCS-46 01 2.5x XPL00 final.dzi",
+            "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/ARCS-46 01 2.5x XPL45 final.dzi",
+            "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/ARCS-46 01 2.5x PPL00 final.dzi"
         ]
     },
     "ARCS-51":
     {
-        "groups": ["Highlights","SedGeo"],
+        "groups": ["Favorites","SedGeo"],
         "title": "ARCS-51",
         "description": "Rensselaer grit",
         "unit": "2",
@@ -47,18 +66,18 @@
         "pixelsPerMeter": "398000",
         "tileLabels": [
             "XPL00",
-            "XPL45",
+            "XPL30",
             "PPL00"
         ],
         "tileSets": [
             "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/ARCS-51 01 2.5x XPL00 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/ARCS-51 01 2.5x XPL45 final.dzi",
+            "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/ARCS-51 01 2.5x XPL30 final.dzi",
             "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/ARCS-51 01 2.5x PPL00 final.dzi"
         ]
     },
     "ARCS-59":
     {
-        "groups": ["Highlights","SedGeo"],
+        "groups": ["Favorites","SedGeo"],
         "title": "ARCS-59",
         "description": "Unknown",
         "unit": "2",
@@ -115,7 +134,7 @@
     },
     "ARC-50":
     {
-        "groups": ["Highlights","SedGeo"],  
+        "groups": ["Favorites","SedGeo"],  
         "title": "ARC-50",
         "description": "Sugarloaf Arkose",
         "unit": "2",
@@ -134,7 +153,7 @@
     },
     "ARC-62":
     {
-        "groups": ["Highlights","SedGeo"],  
+        "groups": ["Favorites","SedGeo"],  
         "title": "ARC-62",
         "description": "Unknown",
         "unit": "2",
@@ -153,7 +172,7 @@
     },
     "ARC-63":
     {
-        "groups": ["Highlights","SedGeo"],  
+        "groups": ["Favorites","SedGeo"],  
         "title": "ARC-63",
         "description": "Unknown",
         "unit": "2",
@@ -298,7 +317,7 @@
     },
     "NWA-07":
     {
-        "groups": ["Highlights","NWA"],
+        "groups": ["Favorites","NWA"],
         "title": "NWA-07",
         "description": "Saint Joe Fm., Pearson Mbr.",
         "latitude": "36.422019",
@@ -396,9 +415,9 @@
             "PPL00"
         ],
         "tileSets": [
-            "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/NWA-15 02 2.5x XPL00 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/NWA-15 02 2.5x XPL30 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/NWA-15 02 2.5x PPL00 final.dzi"
+            "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/NWA-15 02 2.5x XPL00 final.dzi",
+            "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/NWA-15 02 2.5x XPL30 final.dzi",
+            "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/NWA-15 02 2.5x PPL00 final.dzi"
         ]
     },
     "NWA-16":
@@ -445,7 +464,7 @@
     },
     "NWA-19":
     {
-        "groups": ["Highlights","NWA"],
+        "groups": ["Favorites","NWA"],
         "title": "NWA-19",
         "description": "Kessler Limestone",
         "unit": "2",
@@ -464,7 +483,7 @@
     },
     "NWA-20":
     {
-        "groups": ["Highlights","NWA"],
+        "groups": ["Favorites","NWA"],
         "title": "NWA-20",
         "description": "Lower Atoka Ss (basal)",
         "unit": "2",
@@ -605,7 +624,7 @@
     },
     "NZ23-057":
     {
-        "groups": ["Highlights","New Zealand"],
+        "groups": ["Favorites","New Zealand"],
         "title": "NZ23-057",
         "description": "Waikato River",
         "latitude": "-37.29593",
@@ -647,7 +666,7 @@
     },
   "NZ23-069":
       {
-          "groups": ["Highlights","New Zealand"],
+          "groups": ["Favorites","New Zealand"],
           "title": "NZ23-069",
           "description": "Rangiteki River",
           "latitude": "-40.18712",
@@ -748,7 +767,7 @@
       },
       "133-007s":
       {
-          "groups": ["Highlights","SedGeo"],  
+          "groups": ["Favorites","SedGeo"],  
           "title": "133-007s",
           "description": "Pt. Bonita, Golden Gate NRA, California",
           "unit": "2",
@@ -825,7 +844,7 @@
       },
       "SD0004":
       {
-          "groups": ["SedGeo"],  
+          "groups": ["Favorites","SedGeo"],  
           "title": "SD0004",
           "description": "Budhir, Iceland",
           "unit": "2",
@@ -840,25 +859,6 @@
               "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0004 01 2.5x XPL00 final.dzi",
               "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0004 01 2.5x XPL30 final.dzi",
               "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0004 01 2.5x PPL00 final.dzi"
-          ]
-      },
-      "SD0020":
-      {
-          "groups": ["SedGeo"],  
-          "title": "SD0020",
-          "description": "Anak Krakatau",
-          "unit": "2",
-          "pixelsPerUnit": "0.393",
-          "pixelsPerMeter": "393000",
-          "tileLabels": [
-              "XPL00",
-              "XPL30",
-              "PPL00"
-          ],
-          "tileSets": [
-              "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0020 01 2.5x XPL00 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0020 01 2.5x XPL30 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0020 01 2.5x PPL00 final.dzi"
           ]
       },
       "SD0031":
