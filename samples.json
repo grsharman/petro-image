@@ -436,9 +436,9 @@
             "PPL00"
         ],
         "tileSets": [
-            "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/NWA-16 02 2.5x XPL00 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/NWA-16 02 2.5x XPL30 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/NWA-16 02 2.5x PPL00 final.dzi"
+            "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/NWA-16 01 2.5x XPL00 final.dzi",
+            "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/NWA-16 01 2.5x XPL30 final.dzi",
+            "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/NWA-16 01 2.5x PPL00 final.dzi"
         ]
     },
     "NWA-17":
@@ -760,9 +760,9 @@
               "PPL00"
           ],
           "tileSets": [
-              "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/133-003s 01 2.5x XPL00 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/133-003s 01 2.5x XPL30 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/133-003s 01 2.5x PPL00 final.dzi"
+              "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/133-003s 01 2.5x XPL00 final.dzi",
+              "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/133-003s 01 2.5x XPL30 final.dzi",
+              "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/133-003s 01 2.5x PPL00 final.dzi"
           ]
       },
       "133-004s":
@@ -894,9 +894,9 @@
               "PPL00"
           ],
           "tileSets": [
-              "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/137-002s 01 2.5x XPL00 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/137-002s 01 2.5x XPL30 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/137-002s 01 2.5x PPL00 final.dzi"
+              "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/137-002s 01 2.5x XPL00 final.dzi",
+              "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/137-002s 01 2.5x XPL30 final.dzi",
+              "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/137-002s 01 2.5x PPL00 final.dzi"
           ]
       },
       "SD0001":
@@ -1065,9 +1065,9 @@
               "PPL00"
           ],
           "tileSets": [
-              "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/TMC2 01 2.5x XPL00 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/TMC2 01 2.5x XPL30 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/TMC2 01 2.5x PPL00 final.dzi"
+              "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/TCM2 01 2.5x XPL00 final.dzi",
+              "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/TCM2 01 2.5x XPL30 final.dzi",
+              "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/TCM2 01 2.5x PPL00 final.dzi"
           ]
       },
       "TMC3":
@@ -1104,8 +1104,8 @@
           ],
           "tileSets": [
               "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/UA-25-2812 01 2.5x XPL00 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/UA-25-2812 2.5x XPL30 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/UA-25-2812 2.5x PPL00 final.dzi"
+              "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/UA-25-2812 01 2.5x XPL30 final.dzi",
+              "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/UA-25-2812 01 2.5x PPL00 final.dzi"
           ]
       },
       "GM-Kl-02":
@@ -1200,7 +1200,7 @@
           "tileSets": [
               "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/Well-S-4463 01 2.5x XPL00 final.dzi",
               "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/Well-S-4463 01 2.5x XPL30 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/Well-S-4463 01 2.5x PPL00 final.dzi"
+              "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/Well-S-4463 01 2.5x PPL00 final_v2.dzi"
           ]
       },
       "Grove-9":
