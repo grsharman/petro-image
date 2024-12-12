@@ -120,6 +120,7 @@ document.getElementById('sampleDropdown').addEventListener('change', function() 
   clearGridOverlayPoints();
   clearGridOverlayCrosshairs();
   enableGridButtons();
+  removeAoiRectangle();
 
   // Check if the selected sample has annotations
   let file = annotation_files[sampleName];
@@ -787,7 +788,7 @@ let gridOverlayCrosshairs = []; ///
 // GRS note: Currently adding more counts results in erasing the existing
 // counts. It would be better if there were a way of changing the point counts
 // without changing modifying the underlying count data. This way more points
-// count be added on the fly without having to mess up with CSV file.
+// count be added on the fly without having to mess with CSV file.
 const applyGridSettings = () => {
   clearGridOverlayCrosshairs();
   clearGridOverlayPoints();
@@ -814,6 +815,8 @@ const applyGridSettings = () => {
   });
 
   const imageSize = image.getContentSize();
+  console.log('image size:',imageSize);
+  console.log('pixels per unit:',grid.pixelsPerUnit);
   const x_min_um = grid.xMin / 100 * imageSize.x / grid.pixelsPerUnit;
   const x_max_um = grid.xMax / 100 * imageSize.x / grid.pixelsPerUnit;
   const y_min_um = grid.yMin / 100 * imageSize.y / grid.pixelsPerUnit;
@@ -872,6 +875,108 @@ const applyGridSettings = () => {
   // Update AOI rectangle after grid is applied
   updateAoiRectangle();
 };
+
+
+// GRS note: IN PROGRESS. Developing an approach for loading pre-existing
+// points that is independent of defining a new grid. Will allow custom point
+// configuration provided that point locations in pixels are provided
+
+// toggleButton.addEventListener("click", () => {
+//   if (!detailsMenu.hasAttribute("disabled")) {
+//     detailsMenu.setAttribute("disabled", "true");
+//   } else {
+//     detailsMenu.removeAttribute("disabled");
+//   }
+// });
+
+// const loadExistingGrid = () => {
+//   clearGridOverlayCrosshairs();
+//   clearGridOverlayPoints();
+
+//   const gridDropdown = document.getElementById("detailsMenu");
+//   detailsMenu.setAttribute("disabled", "true");
+
+//   // Enable buttons and input field after settings are applied
+//   document.getElementById('prev-button').disabled = false;
+//   document.getElementById('next-button').disabled = false;
+//   document.getElementById('sample-input').disabled = false;
+//   document.getElementById('sample-text').disabled = false;
+//   document.getElementById('sample-notes').disabled = false;
+//   document.getElementById('count-export').disabled = false;
+
+
+//   const image = viewer.world.getItemAt(0);
+//   grid = new Grid({
+//     unit: units[currentIndex],
+//     pixelsPerUnit: pixelsPerUnits[currentIndex],
+//     xMin: parseFloat(document.getElementById("grid-left").value),
+//     yMin: parseFloat(document.getElementById("grid-top").value),
+//     xMax: parseFloat(document.getElementById("grid-right").value),
+//     yMax: parseFloat(document.getElementById("grid-bottom").value),
+//     step: parseInt(document.getElementById("step-size").value),
+//     noPoints: parseInt(document.getElementById("no-points").value),
+//   });
+
+//   const imageSize = image.getContentSize();
+//   console.log('image size:',imageSize);
+//   const x_min_um = grid.xMin / 100 * imageSize.x / grid.pixelsPerUnit;
+//   const x_max_um = grid.xMax / 100 * imageSize.x / grid.pixelsPerUnit;
+//   const y_min_um = grid.yMin / 100 * imageSize.y / grid.pixelsPerUnit;
+//   const y_max_um = grid.yMax / 100 * imageSize.y / grid.pixelsPerUnit;
+
+//   // Get the coordinates and labels for point counts
+//   let [X, Y, A]  = makePoints(x_min_um, x_max_um, y_min_um, y_max_um, grid.step, grid.noPoints);
+
+//   for (let i = 0; i < X.length; i++) {
+//     // Get the coordinates in the specified unit.
+//     const xUnits = X[i];
+//     const yUnits = Y[i];
+
+//     // Convert to coordinates in pixels.
+//     const xPixels = xUnits * pixelsPerUnits[currentIndex];
+//     const yPixels = yUnits * pixelsPerUnits[currentIndex];
+
+//     // Convert to view-space coordinates, measuring from the top-left of the
+//     // first image.
+//     const location = image.imageToViewportCoordinates(xPixels, yPixels);
+
+//     // Add point label with coordinates.
+//     const pointLabel = document.createElement("div");
+//     pointLabel.innerHTML = `${A[i]}`;
+//     pointLabel.className = "grid point-label";
+//     pointLabel.id = `pointLabel-${i}`;
+//     const labelOverlay = viewer.addOverlay({
+//       element: pointLabel,
+//       location: location,
+//       checkResize: false,
+//     });
+//     gridOverlayPoints.push(labelOverlay);
+
+//     // Add crosshairs.
+//     const crosshairs = document.createElement("div");
+//     crosshairs.className = "grid crosshairs";
+//     crosshairs.id = `crosshair-${i}`; // Set a unique ID for each overlay
+//     const crosshairOverlay = viewer.addOverlay({
+//       element: crosshairs,
+//       location: location,
+//       checkResize: false,
+//     });
+//     // Store the crosshairs overlay in the array
+//     gridOverlayCrosshairs.push(crosshairOverlay);
+//   }
+
+//   // Always show the grid right after generating it. (The newly added overlay
+//   // elements will be visible by default, so checking the box here doesn't
+//   // actually affect them - it just makes the checkbox state consistent with the
+//   // visibility states.)
+//   document.getElementById("show-grid").checked = true;
+//   document.getElementById("apply-grid-settings").disabled = true;
+//   document.getElementById("restore-grid-settings").disabled = true;
+//   gridApplied = true;
+
+//   // Update AOI rectangle after grid is applied
+//   updateAoiRectangle();
+// };
 
 const clearGridOverlayPoints = () => {
   // Loop through each overlay in the array and remove it from the viewer
