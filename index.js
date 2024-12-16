@@ -53,18 +53,53 @@ fetch('samples.json')
     updateButtonLabels(0);
     addScalebar(pixelsPerMeters[0]);
     populateGroupDropdown();
-
-    /// Automatically select the first group and populate the sample dropdown
-    const firstGroup = Object.keys(groupMapping)[0];
-    //populateGroupDropdown(firstGroup);
-    if (firstGroup) {
-      document.getElementById('groupDropdown').value = firstGroup;
-      populateSampleDropdown(firstGroup);
+ 
+    const sampleParam = getQueryParameter('sample');
+    if (sampleParam) {
+      const sampleIndex = samples.indexOf(sampleParam);
+      if (sampleIndex !== -1) {
+        // Select the correct group and sample
+        const groupForSample = Object.keys(groupMapping).find(group =>
+          groupMapping[group].includes(sampleIndex)
+        );
+        document.getElementById('groupDropdown').value = groupForSample || 'All';
+        populateSampleDropdown(groupForSample || 'All');
+        document.getElementById('sampleDropdown').value = sampleIndex;
+        document.getElementById('sampleDropdown').dispatchEvent(new Event('change'));
+      } else {
+        console.warn(`Sample "${sampleParam}" not found in JSON.`);
+      }
+    } else {
+      // Default behavior if no sample is specified
+      const firstGroup = Object.keys(groupMapping)[0];
+      if (firstGroup) {
+        document.getElementById('groupDropdown').value = firstGroup;
+        populateSampleDropdown(firstGroup);
+      }
     }
   })
   .catch(error => {
     console.error('Error loading the JSON file:', error);
   });
+
+// GRS note: Old code. Replaced by code that allows a sample to be specified in the URL
+//     /// Automatically select the first group and populate the sample dropdown
+//     const firstGroup = Object.keys(groupMapping)[0];
+//     //populateGroupDropdown(firstGroup);
+//     if (firstGroup) {
+//       document.getElementById('groupDropdown').value = firstGroup;
+//       populateSampleDropdown(firstGroup);
+//     }
+//   })
+//   .catch(error => {
+//     console.error('Error loading the JSON file:', error);
+//   });
+  
+// Parse URL for query parameters
+function getQueryParameter(param) {
+  const urlParams = new URLSearchParams(window.location.search);
+  return urlParams.get(param);
+}
 
 ///
 function populateGroupDropdown() {
