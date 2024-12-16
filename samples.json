@@ -399,6 +399,27 @@
             "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-12 01 2.5x PPL00 final.dzi"
         ]
     },
+    "NWA-14":
+    {
+        "groups": ["NWA"],
+        "title": "NWA-14",
+        "description": "Cotter Fm.",
+        "latitude": "36.5303889",
+        "longitude": "-94.2965167",
+        "unit": "2",
+        "pixelsPerUnit": "0.398",
+        "pixelsPerMeter": "398000",
+        "tileLabels": [
+            "XPL00",
+            "XPL30",
+            "PPL00"
+        ],
+        "tileSets": [
+            "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/NWA-14  01 2.5x PPL00 final.dzi",
+            "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/NWA-14 01 2.5x XPL30 final.dzi",
+            "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/NWA-14 01 2.5x PPL00 final.dzi"
+        ]
+    },
     "NWA-15":
     {
         "groups": ["NWA"],
@@ -460,6 +481,27 @@
             "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-17 01 2.5x XPL00 final.dzi",
             "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-17 01 2.5x XPL45 final.dzi",
             "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-17 01 2.5x PPL00 final.dzi"
+        ]
+    },
+    "NWA-18":
+    {
+        "groups": ["NWA"],
+        "title": "NWA-18",
+        "description": "Brentwood (basal)",
+        "latitude": "35.921387",
+        "longitude": "-94.199834",
+        "unit": "2",
+        "pixelsPerUnit": "0.398",
+        "pixelsPerMeter": "398000",
+        "tileLabels": [
+            "XPL00",
+            "XPL30",
+            "PPL00"
+        ],
+        "tileSets": [
+            "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/NWA-18 01 2.5x XPL00 final.dzi",
+            "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/NWA-18 01 2.5x XPL30 final.dzi",
+            "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/NWA-18 01 2.5x PPL00 final.dzi"
         ]
     },
     "NWA-19":
@@ -536,6 +578,44 @@
             "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/PG-001 01 2.5x XPL00 final.dzi",
             "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/PG-001 01 2.5x XPL30 final.dzi",
             "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/PG-001 01 2.5x PPL00 final.dzi"
+        ]
+    },
+    "OD5A-103118":
+    {
+        "groups": ["NWA"],
+        "title": "OD5A-103118",
+        "description": "Hartshorne Ss",
+        "unit": "2",
+        "pixelsPerUnit": "0.398",
+        "pixelsPerMeter": "398000",
+        "tileLabels": [
+            "XPL00",
+            "XPL30",
+            "PPL00"
+        ],
+        "tileSets": [
+            "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/ODSA-103118 01 2.5x XPL00 final.dzi",
+            "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/ODSA-103118 01 2.5x XPL30 final.dzi",
+            "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/ODSA-103118 01 2.5x PPL00 final.dzi"
+        ]
+    },
+    "PSB02":
+    {
+        "groups": ["SedGeo"],
+        "title": "PBS02",
+        "description": "Unspecified",
+        "unit": "2",
+        "pixelsPerUnit": "0.398",
+        "pixelsPerMeter": "398000",
+        "tileLabels": [
+            "XPL00",
+            "XPL30",
+            "PPL00"
+        ],
+        "tileSets": [
+            "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/PSB02 01 2.5x XPL00 final.dzi",
+            "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/PSB02 01 2.5x XPL30 final.dzi",
+            "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/PSB02 01 2.5x PPL00 final.dzi"
         ]
     },
     "NZ23-049":
@@ -1201,6 +1281,25 @@
               "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/Well-S-4463 01 2.5x XPL00 final.dzi",
               "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/Well-S-4463 01 2.5x XPL30 final.dzi",
               "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/Well-S-4463 01 2.5x PPL00 final_v2.dzi"
+          ]
+      },
+      "Grove-1":
+      {
+          "groups": ["Grove"],  
+          "title": "Grove-1",
+          "description": "Unspecified",
+          "unit": "2",
+          "pixelsPerUnit": "0.398",
+          "pixelsPerMeter": "398000",
+          "tileLabels": [
+              "XPL00",
+              "XPL30",
+              "PPL00"
+          ],
+          "tileSets": [
+              "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/Grove-1 01 2.5x XPL00 final.dzi",
+              "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/Grove-1 01 2.5x XPL30 final.dzi",
+              "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/Grove-1 01 2.5x PPL00 final.dzi"
           ]
       },
       "Grove-9":
