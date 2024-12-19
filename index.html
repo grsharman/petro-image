@@ -8,6 +8,7 @@
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/OpenSeadragonScalebar/2.0.0/openseadragon-scalebar.min.css"
     />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@annotorious/openseadragon@latest/dist/annotorious-openseadragon.css">
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
@@ -174,6 +175,27 @@
       <div>
         <details closed>
           <summary>Annotate</summary>
+            <!-- Container for buttons -->
+            <div class="button-container">
+              <button class="custom-button" id="crosshairButton">
+                <svg class="crosshairs-button" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <!-- Circle for center -->
+                  <circle cx="12" cy="12" r="2" fill="#444" />
+                  <!-- Horizontal line -->
+                  <line x1="2" y1="12" x2="22" y2="12" stroke="#444" stroke-width="2" />
+                  <!-- Vertical line -->
+                  <line x1="12" y1="2" x2="12" y2="22" stroke="#444" stroke-width="2" />
+                </svg>
+              </button>
+              <button class="custom-button" id="rectangleButton">
+                <div class="square"></div>
+              </button>
+              <button class="custom-button" id="polygonButton">
+                <svg class="polygon" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                  <polygon points="50,10 90,35 73,85 27,85 10,35" fill="#444" />
+                </svg>
+              </button>
+            </div>
           <div>
             <input
             type="checkbox"
@@ -181,13 +203,53 @@
             checked
             onclick="toggleAnnotation(this)"
           />
-          <label for="show-annotation">Show annotation</label>
-          <span class="info-button">?
-            <span class="tooltip-text">Q+click for points. Shift+click and drag for rectangles.</span>
-          </span>
+          <label for="show-annotation">Show annotations</label>
+          <div>
+            <button id="anno-prev-button" disabled>&larr;</button>
+            <input type="number" id="anno-id" placeholder="1" maxlength="3" value="1" min="1" max="9999" disabled/>
+            <button id="anno-next-button" disabled>&rarr;</button>
+            <div>
+              <input type="text" id="anno-label" placeholder="Label" disabled />
+            </div>
+            <div class="button-container">
+              <!-- Trash can button -->
+              <button class="custom-button" id="deleteButton" title="Delete">
+                <svg class="trash-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                  <!-- Trash Can Outline -->
+                  <path d="M9 3h6v2H9V3zm1 0v2h4V3h-4zM5 6h14v2H5V6zm2 3h10v11H7V9zm2 2v7h2v-7H9zm4 0v7h2v-7h-2z" />
+                </svg>
+              </button>
+              <button class="custom-button" id="gearButton" title="Settings">
+                <svg class="gear-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                  <!-- Gear Icon -->
+                  <path d="M19.14,12.94a7.47,7.47,0,0,0,.05-1,7.47,7.47,0,0,0-.05-1l2.11-1.65a.51.51,0,0,0,.13-.65l-2-3.46a.5.5,0,0,0-.6-.22l-2.49,1a7.68,7.68,0,0,0-1.74-1l-.38-2.65A.49.49,0,0,0,12,1H9a.49.49,0,0,0-.49.42L8.13,4.07a7.68,7.68,0,0,0-1.74,1l-2.49-1a.5.5,0,0,0-.6.22l-2,3.46a.51.51,0,0,0,.13.65l2.11,1.65a7.47,7.47,0,0,0-.05,1,7.47,7.47,0,0,0,.05,1l-2.11,1.65a.51.51,0,0,0-.13.65l2,3.46a.5.5,0,0,0,.6.22l2.49-1a7.68,7.68,0,0,0,1.74,1l.38,2.65A.49.49,0,0,0,9,23h3a.49.49,0,0,0,.49-.42l.38-2.65a7.68,7.68,0,0,0,1.74-1l2.49,1a.5.5,0,0,0,.6-.22l2-3.46a.51.51,0,0,0-.13-.65Zm-7.14,2.51A4.5,4.5,0,1,1,16.5,11,4.5,4.5,0,0,1,12,15.45Z" />
+                </svg>
+              </button>
+              <button id="unsavedChanges">No Unsaved Changes</button>
+            </div>
+
+            <!-- Hidden Settings Menu -->
+            <div id="settingsMenu" class="menu">
+              <input type="number" id="lwInput" placeholder="2" maxlength="3" value="2" min="1" max="10"/>
+              <label for="annoLine">Line weight</label>
+              
+              <input type="number" id="annoOpacity" placeholder="1" maxlength="3" value="1" min="0" max="1"/>
+              <label for="annoOpacity">Opacity</label>
+
+              <input type="color" id="lineColorPicker" value="#008000"/>
+              <label for="lineColorPicker">Border color</label>
+              
+              <input type="color" id="fillColorPicker" value="#FFFFFF"/>
+              <label for="fillColorPicker">Fill color</label>
+              
+              <button id="applyCurrentAnno">Apply to Current</button>
+              <button id="applyAllAnno">Apply to All</button>
+            </div>
+
+          </div>
           </div>
           <div>
-            <input type="file" id="csvFileInput" accept=".csv" />
+            <input type="file" id="geojsonFileInput" accept=".geojson,.json" />
           </div>
           <div>
             <button id="loadAnnotationsBtn">Load</button>
@@ -201,6 +263,7 @@
     <script src="js/openseadragon-scalebar.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@annotorious/openseadragon@latest/dist/annotorious-openseadragon.js"></script>
     <script src="index.js"></script>
   </body>
 </html>

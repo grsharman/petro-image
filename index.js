@@ -11,6 +11,7 @@ let pixelsPerMeters = [];
 let units = []; // 2 for microns
 const annotation_files = {}; // For loading predefined annotations
 let groupMapping = {}; // To map groups to sample indices ///
+let currentAnnotationId = 1; // Initialize a counter for annotation IDs. First ID is 1
 
 // Load necessary information from JSON
 fetch('samples.json')
@@ -53,7 +54,7 @@ fetch('samples.json')
     updateButtonLabels(0);
     addScalebar(pixelsPerMeters[0]);
     populateGroupDropdown();
- 
+
     const sampleParam = getQueryParameter('sample');
     if (sampleParam) {
       const sampleIndex = samples.indexOf(sampleParam);
@@ -81,19 +82,6 @@ fetch('samples.json')
   .catch(error => {
     console.error('Error loading the JSON file:', error);
   });
-
-// GRS note: Old code. Replaced by code that allows a sample to be specified in the URL
-//     /// Automatically select the first group and populate the sample dropdown
-//     const firstGroup = Object.keys(groupMapping)[0];
-//     //populateGroupDropdown(firstGroup);
-//     if (firstGroup) {
-//       document.getElementById('groupDropdown').value = firstGroup;
-//       populateSampleDropdown(firstGroup);
-//     }
-//   })
-//   .catch(error => {
-//     console.error('Error loading the JSON file:', error);
-//   });
   
 // Parse URL for query parameters
 function getQueryParameter(param) {
@@ -143,6 +131,16 @@ function populateSampleDropdown(selectedGroup) {
 
 let sampleName = '';
 
+// Initialize the OpenSeadragon viewer
+const viewer = OpenSeadragon({
+  maxZoomPixelRatio: 100,
+  id: "viewer-container",
+  prefixUrl: "js/images/",
+  zoomPerClick: 1, // Disable zoom on click (or shift+click)
+  sequenceMode: false,
+  tileSources: tileSets[0], // Load first tile set upon load
+});
+
 /// Event listener for sample selection change (only add once)
 document.getElementById('sampleDropdown').addEventListener('change', function() {
   const selectedIndex = this.value;
@@ -160,28 +158,29 @@ document.getElementById('sampleDropdown').addEventListener('change', function() 
   // Check if the selected sample has annotations
   let file = annotation_files[sampleName];
   const annotationCheckbox = document.getElementById('show-annotations'); // replace with your actual checkbox ID
-
+  currentAnnotationId = 1;
   if (file) {
-    // Use fetch to get the file from the URL
+    // Use fetch to get the GeoJSON file from the URL
     fetch(file)
-      .then(response => {
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        return response.text();
-      })
-      .then(csvData => {
-        loadAnnotations(csvData);  // Pass the fetched data to the loadAnnotations function
-        // Uncheck the annotation checkbox and update visibility
-        annotationCheckbox.checked = false;
-        toggleAnnotation(annotationCheckbox);      
-      })
-      .catch(error => {
-        console.error('Error loading file:', error);
-      });
-  }
-  toggleAnnotation(); // Turn annotations off by default if loaded upon import
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            // Log the raw response as text for debugging
+            return response.json(); // Use text() first to inspect the content
+        })
+        .then(data => {
+          console.log('GeoJSON data loaded:', data);
+          loadAnnotations(data);
+          // You can now use the geoJsonData for mapping or other purposes
+        })
+        .catch(error => {
+          console.error('Error loading GeoJSON:', error);
+        });      
+    }
   hasUnsavedAnnotations = false; // No unsaved annotations upon first load
+  updateButtonColor();
 });
 
 // Function to update the button labels based on tileLabels array
@@ -273,15 +272,97 @@ function addScalebar(pixelsPerMeter) {
   });
 }
 
-// Initialize the OpenSeadragon viewer
-const viewer = OpenSeadragon({
-  maxZoomPixelRatio: 100,
-  id: "viewer-container",
-  prefixUrl: "js/images/",
-  zoomPerClick: 1, // Disable zoom on click (or shift+click)
-  sequenceMode: false,
-  tileSources: tileSets[0], // Load first tile set upon load
-});
+
+const tiledImage = viewer.world.getItemAt(0); // Get the first image, or use the correct index
+
+// // Create the Annotorious annotator
+// const anno = AnnotoriousOSD.createOSDAnnotator(viewer, {
+//   style: { fill: 'grey', fillOpacity: 0.0, stroke: 'green', strokeWidth: 2 },
+//   drawingMode: 'drag',
+// });
+
+// // Disable panning by intercepting mouse events
+// function disablePanning() {
+//   viewer.setMouseNavEnabled(false); // Disable OpenSeadragon panning
+// }
+
+// // Re-enable panning by resetting mouse navigation
+// function enablePanning() {
+//   viewer.setMouseNavEnabled(true); // Re-enable OpenSeadragon panning
+// }
+
+// // Set default tool and state
+// anno.setDrawingEnabled(false); // Start with drawing disabled
+
+// // Event to add a label to the annotation when it is created
+// anno.on('createAnnotation', (annotation) => {
+//   console.log('Annotation created:', annotation);
+
+//   // Add a label to the annotation
+//   const label = prompt("Enter a label for this annotation:");
+//   if (label) {
+//     annotation.value = label; // Set the annotation value
+//     anno.updateAnnotation(annotation); // Update the annotation
+//   }
+//   console.log(annotation.id);
+// });
+
+// // Handle keyboard events for deleting annotations
+// document.addEventListener('keydown', (event) => {
+//   if (event.key === 'Delete' || event.key === 'Backspace') {
+//     const selectedAnnotations = anno.getSelected(); // Get selected annotations
+//     if (selectedAnnotations.length > 0) {
+//       selectedAnnotations.forEach((annotation) => {
+//         anno.removeAnnotation(annotation.id); // Remove the annotation by ID
+//         console.log('removing',annotation.id);
+//         removeLabelOverlay(annotation.id);  // Remove the associated label
+//       });
+//       console.log('Annotation(s) deleted:', selectedAnnotations);
+//     }
+//   }
+// });
+
+// // Optional: Add listeners for debugging annotation lifecycle
+// anno.on('createAnnotation', (annotation) => {
+//   console.log('Annotation created:', annotation);
+// });
+// anno.on('selectAnnotation', (annotation) => {
+//   console.log('Annotation selected:', annotation);
+// });
+// anno.on('updateAnnotation', (annotation) => {
+//   console.log('Annotation updated:', annotation);
+//   // updateLabelPosition(annotation);  // Update the label position when the annotation is updated
+// });
+// anno.on('deleteAnnotation', (annotation) => {
+//   console.log('Annotation deleted:', annotation);
+// });
+
+// const rectangleButton = document.getElementById('rectangleButton');
+
+// // Toggle rectangle drawing mode
+// rectangleButton.addEventListener('click', () => {
+//   console.log('rect clicked');
+//   if (isRectangleMode) {
+//     anno.setDrawingEnabled(false); // Disable drawing
+//     enablePanning(); // Enable panning
+//     rectangleButton.classList.remove('active');
+//     //rectangleButton.textContent = 'Draw Rectangles';
+//   } else {
+//     anno.setDrawingTool('rectangle'); // Set drawing tool to rectangle
+//     anno.setDrawingEnabled(true); // Enable drawing
+//     disablePanning(); // Disable panning
+//     rectangleButton.classList.add('active');
+//     //rectangleButton.textContent = 'Stop Drawing Rectangles';
+
+//     // Turn off polygon mode if active
+//     if (isPolygonMode) {
+//       polygonButton.classList.remove('active');
+//       //polygonButton.textContent = 'Draw Polygons';
+//       isPolygonMode = false;
+//     }
+//   }
+//   isRectangleMode = !isRectangleMode;
+// });
 
 // Function to load a set of images based on the current index
 function loadTileSet(index) {
@@ -410,9 +491,424 @@ slider4.addEventListener('input', function () {
   value4.textContent = slider4.value;
 });
 
+
+
+///////////////////////////////////
+// New annotations functionality //
+///////////////////////////////////
+
+// let currentAnnotationId = 1; // Initialize a counter for annotation IDs. First ID is 1
+
+let annoDict = {}; // Dictionary for ID number (1+) with unique alphanumeric ID
+
+let pointButton = document.getElementById("crosshairButton");
+let rectButton = document.getElementById("rectangleButton");
+let polyButton = document.getElementById("polygonButton");
+
+// Flags to track modes
+let isPointMode = false;
+let isRectangleMode = false;
+let isPolygonMode = false;
+
+pointButton.addEventListener("click", () => {
+  console.log('point button clicked');
+  // Deactivate rect and poly buttons
+  rectButton.classList.remove('active');
+  polyButton.classList.remove('active');
+
+  if (isPointMode === false) {
+    console.log('point mode activated');
+    pointButton.classList.add('active');
+    isPointMode = true;
+  }
+  else {
+    console.log('point mode deactivated');
+    pointButton.classList.remove('active');
+    isPointMode = false;
+  }
+});
+
+rectButton.addEventListener("click", () => {
+  console.log('rect button clicked');
+  // Deactivate point and poly buttons
+  pointButton.classList.remove('active');
+  polyButton.classList.remove('active');
+
+  if (isRectangleMode === false) {
+    console.log('rect mode activated');
+    rectButton.classList.add('active');
+    isRectangleMode = true;
+  }
+  else {
+    console.log('rect mode deactivated');
+    rectButton.classList.remove('active');
+    isRectangleMode = false;
+  }
+});
+
+polyButton.addEventListener("click", () => {
+  console.log('poly button clicked');
+  // Deactivate point and rect buttons
+  pointButton.classList.remove('active');
+  rectButton.classList.remove('active');
+
+  if (isPolygonMode === false) {
+    console.log('poly mode activated');
+    polyButton.classList.add('active');
+    isPolygonMode = true;
+  }
+  else {
+    console.log('poly mode deactivated');
+    polyButton.classList.remove('active');
+    isPolygonMode = false;
+  }
+});
+
+
+// // Add click event listeners to each button
+// document.querySelectorAll('.custom-button').forEach(button => {
+//   button.addEventListener('click', () => {
+//     // Remove 'active' class from all buttons
+//     document.querySelectorAll('.custom-button').forEach(btn => btn.classList.remove('active'));
+
+//     // Add 'active' class to the clicked button
+//     button.classList.add('active');
+//   });
+// });
+
+// Show or hide the settings menu when the gear button is clicked
+document.getElementById("gearButton").addEventListener("click", function (event) {
+  event.stopPropagation(); // Prevent click from reaching the window listener
+  const menu = document.getElementById("settingsMenu");
+  if (menu.style.display === "none" || menu.style.display === "") {
+    menu.style.display = "block";
+  } else {
+    menu.style.display = "none";
+  }
+});
+
+// Optional: Close the menu if clicked outside
+window.addEventListener("click", function (event) {
+  const menu = document.getElementById("settingsMenu");
+  if (!event.target.closest("#gearButton") && !event.target.closest("#settingsMenu")) {
+    menu.style.display = "none";
+  }
+});
+
+// Example functionality: Print the values when "Apply" is clicked
+// document.getElementById("applySettings").addEventListener("click", function () {
+//   const textValue = document.getElementById("textInput").value;
+//   const colorValue = document.getElementById("colorPicker").value;
+
+//   console.log("Text:", textValue);
+//   console.log("Color:", colorValue);
+
+//   alert(`Text: ${textValue}\nColor: ${colorValue}`);
+// });
+
+
+
+const enableAnnoButtons = () => {
+  document.getElementById("anno-prev-button").disabled = false;
+  document.getElementById("anno-id").disabled = false;
+  document.getElementById("anno-next-button").disabled = false;
+  document.getElementById("anno-label").disabled = false;
+};
+
+const disableAnnoButtons = () => {
+  document.getElementById("anno-prev-button").disabled = true;
+  document.getElementById("anno-id").disabled = true;
+  document.getElementById("anno-next-button").disabled = true;
+  document.getElementById("anno-label").disabled = true;
+};
+
+// // When the previous annotation button is clicked
+// document.getElementById('anno-prev-button').addEventListener('click', function() {
+//   const input = document.getElementById('anno-id');
+//   let value = parseInt(input.value, 10) || 1; // Parse current value or default to 0
+//   const min = parseInt(Math.min(...Object.keys(annoDict).map(Number)) || 1);
+//   console.log('value,min',value,min);
+
+//   if (value > min) {
+//     input.value = value - 1;
+//   }
+//   //let currentAnno = annotations.find(ann => ann.id === parseInt(input.value));
+//   goToAnnoPoint(annoJSON[input.value].properties.xLabel,
+//     annoJSON[input.value].properties.yLabel);
+//   //inputSampleLabelFromOverlay();
+//   annoLabelToText();
+// });
+
+// When the previous annotation button is clicked
+document.getElementById('anno-prev-button').addEventListener('click', function() {
+  // Current annotation id
+  const annoIdBox = document.getElementById('anno-id');
+  const currentId = parseInt(annoIdBox.value);
+  // List of all the annotation ids
+  const annoIds = Object.keys(annoDict).map(Number);
+  // Index of current annotation id
+  const currentIdx = annoIds.indexOf(currentId); // Index of current annotation
+
+  if (currentIdx > 0) {
+    const nextIdx = currentIdx-1;
+    const nextId = annoIds[nextIdx];
+    annoIdBox.value = nextId;
+    goToAnnoPoint(annoJSON[nextId].properties.xLabel,
+      annoJSON[nextId].properties.yLabel);
+    annoLabelToText();
+  }
+});
+
+// When the next annotation button is clicked
+document.getElementById('anno-next-button').addEventListener('click', function() {
+  // Current annotation id
+  const annoIdBox = document.getElementById('anno-id');
+  const currentId = parseInt(annoIdBox.value);
+  // List of all the annotation ids
+  const annoIds = Object.keys(annoDict).map(Number);
+  // Index of current annotation id
+  const currentIdx = annoIds.indexOf(currentId); // Index of current annotation
+
+  if (currentIdx+1 < Object.keys(annoDict).length) {
+    const nextIdx = currentIdx+1;
+    const nextId = annoIds[nextIdx];
+    annoIdBox.value = nextId;
+    goToAnnoPoint(annoJSON[nextId].properties.xLabel,
+      annoJSON[nextId].properties.yLabel);
+    annoLabelToText();
+  }
+});
+
+// When the delete annotation button is clicked
+document.getElementById('deleteButton').addEventListener('click', function() {
+  const id = parseInt(document.getElementById('anno-id').value);
+  deleteText(id);
+  deleteCrosshairs(id);
+  deleteFromGeoJSON(id);
+  deleteFromAnnoDict(id);
+  selectNextAnno(id);
+});
+
+// GRS note: Idea: allow a default text field (e.g., useful if picking many of the same thing)
+
+// GRS note: This currently just works for point features. Will need to modify to work with other
+// annotation shapes as well
+document.getElementById('applyCurrentAnno').addEventListener('click', function () {
+  const id = parseInt(document.getElementById("anno-id").value);
+  const lw = document.getElementById("lwInput").value;
+  const c = document.getElementById("lineColorPicker").value;
+  const op = document.getElementById("annoOpacity").value;
+  annoJSON[id].properties.lw = lw;
+  annoJSON[id].properties.color = c;
+  annoJSON[id].properties.opacity = op;
+  updateCrosshair(id, c, lw, op);
+});
+
+document.getElementById('applyAllAnno').addEventListener('click', function () {
+  const lw = document.getElementById("lwInput").value;
+  const c = document.getElementById("lineColorPicker").value;
+  const op = document.getElementById("annoOpacity").value;
+  
+  const annoIds = Object.keys(annoDict).map(Number);
+
+  for (let i = 0; i < annoIds.length; i++) {
+    updateCrosshair(annoIds[i], c, lw, op);
+  }  
+});
+
+function selectNextAnno(id) {
+  console.log('selecting next id');
+  const annoIdBox = document.getElementById('anno-id');
+  const annoLabelBox = document.getElementById('anno-label');
+  const annoIds = Object.keys(annoDict).map(Number);
+
+  // Case where there are no annotations left
+  if (annoIds.length === 0) {
+    annoLabelBox.value = '';
+    annoIdBox.value = currentAnnotationId;
+    document.getElementById("anno-id").disabled = false;
+    return;
+  }
+
+  // Case where there is no index that is < id
+  if (id > Math.min(annoIds)) {
+    const nextId = annoIds[0];
+    annoIdBox.value = nextId;
+    // GRS note: Zooming to next point may not be a desirable feature
+    // goToAnnoPoint(annoJSON[nextId].properties.xLabel,
+    //   annoJSON[nextId].properties.yLabel);
+    annoLabelToText();
+  } else {
+  // Find the index of the closest value that is < id
+  const nextIdx = annoIds.reduce((closestIndex, currentValue, currentIndex) => {
+    if (currentValue <= id) {
+      const closestValue = annoIds[closestIndex];
+      if (closestValue === undefined || id - currentValue < id - closestValue) {
+        return currentIndex;
+      }
+    }
+    return closestIndex;
+  }, -1);
+  const nextId = annoIds[nextIdx];
+  console.log('nextIdx,nextId',nextIdx,nextId);
+  annoIdBox.value = nextId;
+  // GRS note: Zooming to next point may not be a desirable feature
+  // goToAnnoPoint(annoJSON[nextId].properties.xLabel,
+  //   annoJSON[nextId].properties.yLabel);
+  annoLabelToText();
+  }
+}
+
+// Function to update the textbox with the JSON label
+function annoLabelToText() {
+  const idInput = parseInt(document.getElementById('anno-id').value);
+  // console.log('ID',idInput);
+  // Find the annotation by id
+  let label = '';
+  if (annoJSON[idInput]) {
+    // Access the label within the properties of the GeoJSON object
+    label = annoJSON[idInput].properties.label;
+    // console.log('label',label);
+  } else {
+    console.log('Annotation with this ID not found.');
+  }
+  const annoLabel = document.getElementById("anno-label");
+  annoLabel.value = `${label}`;
+}
+
+// Function to update the JSON based on the anno-id text box
+function annoTextToLabel() {
+  const idInput = parseInt(document.getElementById('anno-id').value);
+  const annoLabel = document.getElementById("anno-label");
+  // Check if the ID exists in the annoJSON dictionary
+  if (annoJSON[idInput]) {
+    // Update the label within the properties of the GeoJSON object
+    annoJSON[idInput].properties.label = annoLabel.value;
+    console.log(`Updated label for ID ${idInput}:`, annoJSON[idInput].properties.label);
+  } else {
+    console.log("Annotation with this ID not found.");
+  }
+}
+
+// When Enter is pressed in the anno-label text box
+document.addEventListener('keydown', function(event) {
+  // Check for Enter key in anno-label field
+  const idInput = parseInt(document.getElementById('anno-id').value);
+  const textInput = document.getElementById('anno-label');
+  // const gridInput = document.getElementById('sample-input'); // Placeholder for changing color of crosshairs
+  if (event.code === 'Enter' && document.activeElement === textInput) {
+    event.preventDefault(); // Prevent any default action for Enter key
+    annoTextToLabel();
+    updateText(idInput, textInput.value);
+    // updateGridCrosshair(gridInput.value); // Placeholder for changing color of crosshairs
+  }
+});
+
+// When Enter is pressed in the anno-id input box
+document.addEventListener('keydown', function(event) {
+  if (event.code === 'Enter' && document.activeElement === document.getElementById('anno-id')) {
+    const idInput = document.getElementById('anno-id');
+    event.preventDefault(); // Prevent any default action for Enter key
+    annoLabelToText();
+
+    goToAnnoPoint(annoJSON[parseInt(idInput.value)].properties.xLabel,
+      annoJSON[parseInt(idInput.value)].properties.yLabel);
+
+    // Provide visual feedback by changing the border color
+    idInput.style.borderColor = 'green';
+    idInput.style.outline = 'none'; // Removes the default focus outline
+
+    setTimeout(() => {
+      idInput.style.borderColor = ''; // Revert to original after 1 second
+    }, 1000);
+    //populateDropdown(); // Repopulate dropdown for filtering
+    //populateFilterDropdown(); // Repopulate filter dropdown
+  }
+});
+
+// GRS note: Redundancy with goToGridPoint() function. Could make a more generic function
+// that goes to specified x-y coordinates
+function goToAnnoPoint(x, y) {
+  // Center the viewport on the specified coordinates without changing the zoom level
+  viewer.viewport.panTo(
+    new OpenSeadragon.Point(x, y),
+    true // Animate the panning
+  );
+}
+
+// Function to add a point to the annoJSON
+function addPointToGeoJSON(id, x, y, metadata) {
+  // Create a GeoJSON point feature
+  // id = currentAnnotationId
+  // x, y = coordinates in image (pixel) coordinates
+  // metadata = dictionary with feature labels and values, e.g., { uuid: 'abc', label: 'Hello World'}
+  const pointFeature = {
+    type: "Feature",
+    geometry: {
+      type: "Point",
+      coordinates: [x, y]  // [x, y] format for coordinates
+    },
+    properties: metadata  // metadata like label, description, etc.
+  };
+
+  // Add the point feature to the annoJSON under the provided id
+  annoJSON[id] = pointFeature;
+}
+
+// Function to delete an entry in the JSON
+function deleteFromGeoJSON(id) {
+  if (annoJSON[id]) {
+    delete annoJSON[id];
+    console.log(`Entry with ID ${id} deleted.`);
+  } else {
+    console.warn(`Entry with ID ${id} not found.`);
+  }
+}
+
+function deleteFromAnnoDict(id) {
+  if (annoDict[id]) {
+    delete annoDict[id];
+    console.log(`annoDict with ID ${id} deleted.`);
+  } else {
+    console.warn(`annoDict with ID ${id} not found.`);
+  }  
+}
+
+// Get the button element
+const unsavedChangesButton = document.getElementById("unsavedChanges");
+
+// Function to update the button color and text based on the value of hasUnsavedAnnotations
+function updateButtonColor() {
+  if (hasUnsavedAnnotations) {
+    unsavedChangesButton.style.backgroundColor = "red"; // Color when true
+    unsavedChangesButton.textContent = "Unsaved Annotations";
+  } else {
+    unsavedChangesButton.style.backgroundColor = "green"; // Color when false
+    unsavedChangesButton.textContent = "No Unsaved Annotations";
+  }
+}
+
 ///////////////////////////////
 // Annotations functionality //
 ///////////////////////////////
+
+
+// Generate unique ID
+function generateUniqueId(length = 8) {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let result = '';
+
+  // Add a timestamp for uniqueness
+  result += Date.now().toString(36);
+
+  // Add random characters to meet the desired length
+  for (let i = result.length; i < length; i++) {
+    const randomIndex = Math.floor(Math.random() * chars.length);
+    result += chars.charAt(randomIndex);
+  }
+
+  return result;
+}
 
 // Import, add, and export points with labels
 const toggleAnnotation = (event) => {
@@ -450,29 +946,67 @@ let annotations = [];
 let annotateLabels = [];
 let annotatePoints = [];
 let annotateRectangles = [];
-let currentAnnotationId = 0; // Initialize a counter for annotation IDs
+// let currentAnnotationId = 0; // Initialize a counter for annotation IDs
+
+// Testing GeoJSON approach
+// GRS note: Will need to update geoJSON when colors are modified
+let annoJSON = {};
 
 viewer.addHandler('canvas-click', function(event) {
   console.log('canvas clicked');
   let originalEvent = event.originalEvent;
-  if (isQPressed) {
+  if (isQPressed || isPointMode) {
     console.log('canvs & Q clicked');
+    const image = viewer.world.getItemAt(0);
+    const imageSize = image.getContentSize();
     let viewportPoint = viewer.viewport.pointFromPixel(event.position);  // Get viewport coordinates
     let imagePoint = viewer.viewport.viewportToImageCoordinates(viewportPoint.x, viewportPoint.y); // Get image coordinates
+    const uniqueID = generateUniqueId(8);
+    const lw = document.getElementById("lwInput").value;
+    const c = document.getElementById("lineColorPicker").value;
+    const op = document.getElementById("annoOpacity").value;
     let annotation = {
-        x: imagePoint.x,
-        y: imagePoint.y,
+        id: currentAnnotationId,
+        uuid: uniqueID,
+        x: viewportPoint.x,
+        y: viewportPoint.y,
+        x_px: imagePoint.x,
+        y_px: imagePoint.y,
         w: 0,
         h: 0,
         type: 0, // 0 for point
         label: prompt("Enter a label for this point:"),  // Prompt for a label
     }
+    const sampleIdx = samples.indexOf(sampleName);
+    addPointToGeoJSON(currentAnnotationId,
+      imagePoint.x,
+      imagePoint.y,
+      { uuid: uniqueID,
+        label: annotation.label,
+        xLabel: viewportPoint.x,
+        yLabel: viewportPoint.y,
+        imageTitle: sampleName,
+        pixelsPerMeter: Number(pixelsPerMeters[sampleIdx]),
+        imageWidth: imageSize.x,
+        imageHeight: imageSize.y,
+        lw: Number(lw),
+        color: c,
+        opacity: Number(op),
+      }
+    )
+    console.log(annoJSON);
     // Make text and crosshairs
+    annoDict[currentAnnotationId] = uniqueID;
     addText(currentAnnotationId, annotation.label, viewportPoint);
-    addCrosshairs(currentAnnotationId, viewportPoint);
+
+    addCrosshairs(currentAnnotationId, viewportPoint, c, lw, op);
     // Store annotation
     annotations.push(annotation);
     isQPressed = false; // Reset
+    currentAnnotationId = currentAnnotationId+1;
+    enableAnnoButtons();
+    hasUnsavedAnnotations = true;
+    updateButtonColor();
   }
 });
 
@@ -574,28 +1108,110 @@ document.getElementById('clearBtn').addEventListener('click', function () {
 // Functions to add annotation test and crosshairs
 function addText(i, label, location) {
   const pointLabel = document.createElement("div");
+  const tiledImage = viewer.world.getItemAt(0); // Get first image
+
   pointLabel.innerHTML = `${label}`;
   pointLabel.className = "annotate-label";
   pointLabel.id = `annotate-label-${i}`;
   const overlay = viewer.addOverlay({
           element: pointLabel,
+          //location: viewer.viewport.viewportToImageCoordinates(location),
           location: location,
           checkResize: false,
       });
   annotateLabels.push(pointLabel);
   hasUnsavedAnnotations = true;
+  updateButtonColor();
 }
 
-function addCrosshairs(i, location) {
+// Function to delete the text of an existing annotation label
+function deleteText(id) {
+  const overlayElement = document.getElementById(`annotate-label-${id}`);
+  if (overlayElement) {
+    viewer.removeOverlay(overlayElement); // Remove the overlay using the element
+    annotateLabels = annotateLabels.filter(label => label.id !== `annotate-label-${id}`); // Clean up the array
+    console.log(`Overlay with ID annotate-label-${id} removed.`);
+    hasUnsavedAnnotations = true;
+    updateButtonColor();
+  } else {
+    console.warn(`Overlay with ID annotate-label-${id} not found.`);
+  }  
+}
+
+// Function to update the text of an existing annotation label
+function updateText(i, newLabel) {
+  // Find the label element by id
+  const pointLabel = document.getElementById(`annotate-label-${i}`);
+
+  if (pointLabel) {
+    // Update the innerHTML with the new label
+    pointLabel.innerHTML = newLabel;
+    console.log(`Label updated for ID ${i}:`, newLabel);
+    hasUnsavedAnnotations = true;
+    updateButtonColor();
+  } else {
+    console.log(`No annotation found with ID ${i}.`);
+
+  }
+}
+
+function addCrosshairs(i, location, color='purple', lineWeight = 2, opacity = 1) {
+    console.log('Crosshairs added');
+
+    const tiledImage = viewer.world.getItemAt(0); // Get first image
+
     const crosshairsAnnotate = document.createElement("div");
-    crosshairsAnnotate.className = "annotate-symbol";  
+    crosshairsAnnotate.className = "annotate-symbol"; // Used for css styling
     crosshairsAnnotate.id = `annotate-crosshair-${i}`;
+
+    // Apply inline styles for customization
+    crosshairsAnnotate.style.setProperty("--crosshair-color", color);
+    crosshairsAnnotate.style.setProperty("--crosshair-line-weight", `${lineWeight}px`);
+    crosshairsAnnotate.style.setProperty("--crosshair-opacity", opacity);
+
     const overlay = viewer.addOverlay({
       element: crosshairsAnnotate,
+      //location: viewer.viewport.viewportToImageCoordinates(location),
       location: location,
       checkResize: false,
   });
   annotatePoints.push(crosshairsAnnotate);
+  hasUnsavedAnnotations = true;
+  updateButtonColor();
+}
+
+// GRS note: Working on a function that updates crosshairs
+function updateCrosshair(id, newColor, newLineWeight, newOpacity) {
+  // Find the existing crosshair element by its ID
+  const crosshairElement = document.getElementById(`annotate-crosshair-${id}`);
+  
+  if (!crosshairElement) {
+      console.error(`Crosshair with ID "${id}" not found.`);
+      return;
+  }
+
+  // Update the CSS variables if new values are provided
+  if (newColor !== undefined) {
+      crosshairElement.style.setProperty("--crosshair-color", newColor);
+  }
+  if (newLineWeight !== undefined) {
+      crosshairElement.style.setProperty("--crosshair-line-weight", `${newLineWeight}px`);
+  }
+  if (newOpacity !== undefined) {
+      crosshairElement.style.setProperty("--crosshair-opacity", newOpacity);
+  }
+}
+
+// GRS note: Could probably consolidate these "delete" functions into a single function
+function deleteCrosshairs(id) {
+  const overlayElement = document.getElementById(`annotate-crosshair-${id}`);
+  if (overlayElement) {
+    viewer.removeOverlay(overlayElement); // Remove the overlay using the element
+    annotatePoints = annotatePoints.filter(label => label.id !== `annotate-crosshair-${id}`); // Clean up the array
+    console.log(`Overlay with ID annotate-crosshair-${id} removed.`);
+  } else {
+    console.warn(`Overlay with ID annotate-crosshair-${id} not found.`);
+  }    
 }
 
 function addRectangle(i, x, y, w, h) {
@@ -612,114 +1228,279 @@ function addRectangle(i, x, y, w, h) {
   });
   annotateRectangles.push(rectAnnotate);
   hasUnsavedAnnotations = true;
+  updateButtonColor();
 }
 
-function loadAnnotations(csvData) {
-  Papa.parse(csvData, {
-      header: true, // Assuming your CSV has headers
-      skipEmptyLines: true,
-      complete: function (results) {
-          // Assuming the CSV format is: x,y,label
-          results.data.forEach((row) => {
-              // x and y are both in pixels
-              const x = parseFloat(row.x);
-              const y = parseFloat(row.y);
-              const w = parseFloat(row.w);
-              const h = parseFloat(row.h);
-              const type = parseInt(row.type);
-              const label = row.label;
-              if (!isNaN(x) && !isNaN(y)) {
-                const image = viewer.world.getItemAt(0);
-                if (type === 0) { // Point
-                  const viewportPoint = viewer.viewport.imageToViewportCoordinates(new OpenSeadragon.Point(x, y));
-                  let annotation = {
-                    x: x,
-                    y: y,
-                    w: 0,
-                    h: 0,
-                    type: type,
-                    label: label,  // Prompt for a label
-                  };
-                  // Add the point
-                  addText(currentAnnotationId, label, viewportPoint);
-                  addCrosshairs(currentAnnotationId, viewportPoint);
-                  currentAnnotationId = currentAnnotationId+1;
-                  // Store annotation
-                  annotations.push(annotation);
-                }
-                if (type === 1) { // Rectangle
-                  // X, Y image coordinates converted to viewport coordinates
-                  const viewportRect = viewer.viewport.imageToViewportCoordinates(new OpenSeadragon.Point(x, y));
-                  const imageSize = image.getContentSize();
-                  // Height and width normalized by pixel dimensions
-                  // GRS note: I'm surprised that both need to be normalized by x
-                  const w_view = w/imageSize.x;
-                  const h_view = h/imageSize.x;
-                  let annotation ={
-                    x: x,
-                    y: y,
-                    w: w,
-                    h: h,
-                    type: type,
-                    label: label,
-                  };
-                  // Add the rectangle
-                  addRectangle(currentAnnotationId, viewportRect.x, viewportRect.y, w_view, h_view);
-                  // Add the point
-                  addText(currentAnnotationId, label, viewportRect);
-                  // Store annotation
-                  annotations.push(annotation);
-                  currentAnnotationId = currentAnnotationId+1;
-                }
-              }
-          });
-          // alert('Annotations loaded successfully.');
-      },
-      error: function (error) {
-          console.error('Error loading annotations:', error);
-          alert('Failed to load annotations from the CSV file.');
+// New function for loading geoJSON data
+function loadAnnotations(geoJSONData) {
+  // Parse the GeoJSON data
+  console.log('starting annotation load');
+  let geoJSON;
+  if (typeof geoJSONData === 'string') {
+    // If it's a string, attempt to parse it
+    try {
+      geoJSON = JSON.parse(geoJSONData);
+      console.log('Parsed geoJSON:', geoJSON);
+    } catch (error) {
+      console.error('Error parsing GeoJSON:', error);
+      return; // Exit if parsing fails
+    }
+  } else {
+    // If it's already an object, use it directly
+    geoJSON = geoJSONData;
+    console.log('GeoJSON is already parsed:', geoJSON);
+  }
+  //const geoJSON = JSON.parse(geoJSONData);
+
+  // Check if it's a FeatureCollection or an object with custom IDs
+  const features = geoJSON.features || Object.values(geoJSON); // Supports both formats
+  
+  console.log('features',features);
+
+  // Iterate through each feature in the GeoJSON data
+  features.forEach((feature) => {
+    const { geometry, properties } = feature;
+    
+    if (geometry && properties) {
+      const { label, pixelsPerMeter, imageWidth, imageHeight, lw, color, opacity } = properties;
+      const { coordinates } = geometry;
+      
+      if (geometry.type === "Point") { // Point annotation
+        const x = coordinates[0]; // x-coordinate from GeoJSON
+        const y = coordinates[1]; // y-coordinate from GeoJSON
+        
+        if (!isNaN(x) && !isNaN(y)) {
+          const tiledImage = viewer.world.getItemAt(0);
+          if (tiledImage) {
+            console.log('tiledImage',tiledImage);
+          } else {
+            console.error('TiledImage is undefined or not yet loaded.');
+          }
+          
+          // Calculate viewport coordinates from image coordinates
+          const viewportPoint = viewer.viewport.imageToViewportCoordinates(new OpenSeadragon.Point(x, y));
+          
+          // Create annotation object
+          let annotation = {
+            x: x,
+            y: y,
+            w: 0,   // Width not needed for points
+            h: 0,   // Height not needed for points
+            type: 0,  // Type 0 for points
+            label: label,  // Label from properties
+            uuid: properties.uuid,  // Unique ID for the annotation
+          };
+
+          // Add the point annotation (crosshairs, text)
+          addText(currentAnnotationId, label, viewportPoint);
+          addCrosshairs(currentAnnotationId, viewportPoint, color, lw, opacity);
+
+          // Create the GeoJSON entry for this annotation
+          const geoJSONFeature = {
+            type: "Feature",
+            geometry: {
+              type: "Point",
+              coordinates: [x, y]
+            },
+            properties: {
+              uuid: properties.uuid,
+              label: label,
+              xLabel: properties.xLabel,
+              yLabel: properties.yLabel,
+              imageTitle: properties.imageTitle,
+              pixelsPerMeter: properties.pixelsPerMeter,
+              imageWidth: properties.imageWidth,
+              imageHeight: properties.imageHeight,
+              lw: properties.lw,
+              color: properties.color,
+              opacity: properties.opacity,
+            }
+          };
+
+          // Add the feature to the geoJSONDict with currentAnnotationId + 1 as the key
+          // GRS note: is annoDict redundant with annoJSON?
+          annoDict[currentAnnotationId] = properties.uuid;
+          annoJSON[currentAnnotationId] = geoJSONFeature;
+          document.getElementById("anno-id").disabled = false;
+          document.getElementById("anno-prev-button").disabled = false;
+          document.getElementById("anno-next-button").disabled = false;
+          document.getElementById("anno-label").disabled = false;
+          annoLabelToText();
+          
+          // Increment annotation ID
+          currentAnnotationId = currentAnnotationId + 1;
+        }
       }
+    }
   });
 }
+  // Optional: alert if annotations loaded successfully
+  // alert('Annotations loaded successfully.');
 
+  // Optional: alert if annotations loaded successfully
+  // alert('Annotations loaded successfully.');
+
+// Old function
+// function loadAnnotations(csvData) {
+//   Papa.parse(csvData, {
+//       header: true, // Assuming your CSV has headers
+//       skipEmptyLines: true,
+//       complete: function (results) {
+//           // Assuming the CSV format is: x,y,label
+//           results.data.forEach((row) => {
+//               // x and y are both in pixels
+//               const x = parseFloat(row.x);
+//               const y = parseFloat(row.y);
+//               const w = parseFloat(row.w);
+//               const h = parseFloat(row.h);
+//               const type = parseInt(row.type);
+//               const label = row.label;
+//               if (!isNaN(x) && !isNaN(y)) {
+//                 const image = viewer.world.getItemAt(0);
+//                 if (type === 0) { // Point
+//                   const viewportPoint = viewer.viewport.imageToViewportCoordinates(new OpenSeadragon.Point(x, y));
+//                   let annotation = {
+//                     x: x,
+//                     y: y,
+//                     w: 0,
+//                     h: 0,
+//                     type: type,
+//                     label: label,  // Prompt for a label
+//                   };
+//                   // Add the point
+//                   addText(currentAnnotationId, label, viewportPoint);
+//                   addCrosshairs(currentAnnotationId, viewportPoint);
+//                   currentAnnotationId = currentAnnotationId+1;
+//                   // Store annotation
+//                   annotations.push(annotation);
+//                 }
+//                 if (type === 1) { // Rectangle
+//                   // X, Y image coordinates converted to viewport coordinates
+//                   const viewportRect = viewer.viewport.imageToViewportCoordinates(new OpenSeadragon.Point(x, y));
+//                   const imageSize = image.getContentSize();
+//                   // Height and width normalized by pixel dimensions
+//                   // GRS note: I'm surprised that both need to be normalized by x
+//                   const w_view = w/imageSize.x;
+//                   const h_view = h/imageSize.x;
+//                   let annotation ={
+//                     x: x,
+//                     y: y,
+//                     w: w,
+//                     h: h,
+//                     type: type,
+//                     label: label,
+//                   };
+//                   // Add the rectangle
+//                   addRectangle(currentAnnotationId, viewportRect.x, viewportRect.y, w_view, h_view);
+//                   // Add the point
+//                   addText(currentAnnotationId, label, viewportRect);
+//                   // Store annotation
+//                   annotations.push(annotation);
+//                   currentAnnotationId = currentAnnotationId+1;
+//                 }
+//               }
+//           });
+//           // alert('Annotations loaded successfully.');
+//       },
+//       error: function (error) {
+//           console.error('Error loading annotations:', error);
+//           alert('Failed to load annotations from the CSV file.');
+//       }
+//   });
+// }
+
+// New loading code
 document.getElementById('loadAnnotationsBtn').addEventListener('click', function () {
-  const fileInput = document.getElementById('csvFileInput');
+  const fileInput = document.getElementById('geojsonFileInput');
   const file = fileInput.files[0];
   if (file) {
       const reader = new FileReader();
       reader.onload = function (event) {
-          const csvData = event.target.result;
-          loadAnnotations(csvData);
+          const geoJSONData = event.target.result;
+          loadAnnotations(geoJSONData);
       };
       reader.readAsText(file);
   } else {
-      alert('Please select a CSV file to load annotations.');
+      alert('Please select a GeoJSON file to load annotations.');
   }
 });
 
-// Attach export functionality to the button
+// Old loading code
+// document.getElementById('loadAnnotationsBtn').addEventListener('click', function () {
+//   const fileInput = document.getElementById('csvFileInput');
+//   const file = fileInput.files[0];
+//   if (file) {
+//       const reader = new FileReader();
+//       reader.onload = function (event) {
+//           const csvData = event.target.result;
+//           loadAnnotations(csvData);
+//       };
+//       reader.readAsText(file);
+//   } else {
+//       alert('Please select a CSV file to load annotations.');
+//   }
+// });
+
+// Attach export functionality to the button (GeoJSON version)
 document.getElementById('exportBtn').addEventListener('click', function () {
-  var csv = Papa.unparse(annotations);
-  let blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  saveAs(blob, "annotations.csv");
+  const geoJSON = annoJSON;
+  console.log(geoJSON);
+  // Create a Blob from the GeoJSON object
+  const geoJSONBlob = new Blob([JSON.stringify(geoJSON, null, 2)], { type: 'application/geo+json' });
+  // Trigger the download with 'saveAs'
+  saveAs(geoJSONBlob, "annotations.geojson");
+  // Reset the unsaved annotations flag (if necessary)
   hasUnsavedAnnotations = false;
+  updateButtonColor();
 });
 
+// Original code
+// // Attach export functionality to the button
+// document.getElementById('exportBtn').addEventListener('click', function () {
+//   var csv = Papa.unparse(annotations);
+//   let blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+//   saveAs(blob, "annotations.csv");
+//   hasUnsavedAnnotations = false;
+// });
+
+
+// Updated code GRS note: Only works with points at this time
 const clearAnnotations = () => {
-  annotateLabels.forEach((label) => {
-    viewer.removeOverlay(label.id || label);
-  });
-  annotatePoints.forEach((label) => {
-    viewer.removeOverlay(label.id || label);
-  });
-  annotateRectangles.forEach((label) => {
-    viewer.removeOverlay(label.id || label);
-  });
-  annotateLabels = [];
-  annotatePoints = [];
-  annotateRectangles = [];
+  const annoIds = Object.keys(annoDict).map(Number);
+  if (annoIds.length === 0) {
+    return; // Nothing to remove
+  } else {
+    for (let i = 0; i < annoIds.length; i++) {
+      deleteCrosshairs(annoIds[i]);
+      deleteText(annoIds[i]);
+  }
+  }
+  const geoJSON = {};
+  console.log('Cleared',geoJSON);
+  annoDict = {};
+  const annoLabel = document.getElementById('anno-label');
+  annoLabel.value = '';
+  currentAnnotationId = 1;
   hasUnsavedAnnotations = false;
+  updateButtonColor();
 };
+
+// Old cold
+// const clearAnnotations = () => {
+//   annotateLabels.forEach((label) => {
+//     viewer.removeOverlay(label.id || label);
+//   });
+//   annotatePoints.forEach((label) => {
+//     viewer.removeOverlay(label.id || label);
+//   });
+//   annotateRectangles.forEach((label) => {
+//     viewer.removeOverlay(label.id || label);
+//   });
+//   annotateLabels = [];
+//   annotatePoints = [];
+//   annotateRectangles = [];
+//   hasUnsavedAnnotations = false;
+// };
 
 viewerContainer.addEventListener("pointermove", (event) => {
   mousePos = new OpenSeadragon.Point(event.clientX, event.clientY);
@@ -793,7 +1574,7 @@ const Grid = class {
     }
   }
 
-  get pixelsPerMeter() {
+  get pixelsPerMeter() {q
     return this.pixelsPerUnit / this.metersPerUnit;
   }  
 };
@@ -1280,7 +2061,8 @@ document.addEventListener('keydown', function(event) {
 // Shortcuts for going to next (space) or previous (shift+space)
 document.addEventListener('keydown', function(event) {
   // Check if the space bar is pressed without modifiers
-  if (event.code === 'Space' && document.activeElement.id !== 'sample-notes') {
+  if (event.code === 'Space' && document.activeElement.id !== 'sample-notes' && document.activeElement.id !== 'anno-label')
+   {
     event.preventDefault();
     if (event.shiftKey) {
       const prevButton = document.getElementById('prev-button');
