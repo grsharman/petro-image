@@ -36,10 +36,15 @@ html {
   transform: translateY(-100%);
   padding: 0px 5px;
   border-radius: 9999px 9999px 9999px 0px;
-  color: white;
-  background-color: rgba(0, 0, 0, 0.5);
+  color: var(--annoLabel-color, white);
+  /* color: white; */
+  background-color: var(--annoLabelBackground-color, rgba(0, 0, 0, 0.5));
+  /* background-color: rgba(0, 0, 0, 0.5); */
   white-space: nowrap;
+  /* font-size:  */
+  font-size: var(--annoLabel-font-size, 16px);
 }
+
 .rectangle-label {
   position: absolute;
   transform: translateY(-100%);
@@ -49,7 +54,7 @@ html {
   background-color: rgba(0, 0, 0, 0.5);
   white-space: nowrap;
 }
-.annotate-symbol {
+/* .annotate-symbol {
   position: absolute;
   transform: translate(-50%, -50%);
 }
@@ -68,7 +73,42 @@ html {
   height: 12px;
   transform: translate(-50%, -50%);
   background-color: green;
+} */
+
+.annotate-symbol {
+  position: absolute;
+  transform: translate(-50%, -50%);
 }
+
+.annotate-symbol::before, .annotate-symbol::after {
+  content: "";
+  position: absolute;
+  background-color: var(--crosshair-color, rgb(0, 128, 0)); /* Default color is green */
+  opacity: var(--crosshair-opacity, 1); /* Default opacity is 1 (fully visible) */
+}
+
+.annotate-symbol::before {
+  width: 12px; /* Default width */
+  height: var(--crosshair-line-weight, 2px);
+  transform: translate(-50%, -50%);
+}
+
+.annotate-symbol::after {
+  width: var(--crosshair-line-weight, 2px);
+  height: 12px; /* Default height */
+  transform: translate(-50%, -50%);
+}
+
+/*
+.annotate-rect {
+  border-style: solid;
+  border-width: var(--rectangle-line-weight, 2px);
+  border-color: var(--rectangle-color, green);
+  background-color: rgba(0, 0, 0, 0.1);
+  position: absolute;
+  pointer-events: none;
+}
+*/
 
 .crosshairs {
   position: absolute;
@@ -252,4 +292,121 @@ html {
 .aoi-rectangle {
   border: 2px solid red; /* Add a visible border */
   position: absolute;    /* Ensure it's positioned correctly */
+}
+
+.button-container {
+  display: flex; /* Flexbox for horizontal alignment */
+  gap: 2px;     /* Spacing between buttons */
+  margin: 0px;
+}
+
+/* General button styles */
+.custom-button {
+  width: 25px;
+  height: 25px;
+  padding: 2px;
+  border: 1px solid #444;
+  border-radius: 5px;
+  background-color: #f0f0f0;
+  margin: 2px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Activated state */
+.custom-button.active {
+  background-color: #b9b9b9; /* Light blue when active */
+  color: white;
+}
+
+/* Hover state */
+.custom-button:hover {
+  background-color: #b9b9b9;
+}
+
+/* Point (dot) button */
+.crosshairs-button {
+  width: 50px;
+  height: 50px;
+}
+
+/* Rectangle button */
+.square {
+  width: 10px;
+  height: 10px;
+  background-color: #444;
+}
+
+/* SVG container for polygon
+.polygon {
+  width: 25px;
+  height: 25px;
+} */
+
+/* Trash can icon styles */
+.trash-icon {
+  width: 40px;
+  height: 40px;
+  fill: #444;
+}
+
+/* Wrench icon styles */
+.gear-icon {
+  width: 18px;
+  height: 18px;
+  fill: #444;
+}
+
+/* Hidden menu styles */
+#settingsMenu {
+  display: inline-block;
+  position: absolute;
+  top: 50px;
+  left: 50px;
+  width: 200px;
+  padding: 10px;
+  border: 1px solid #000000;
+  border-radius: 5px;
+  background-color: #fff;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+}
+
+#settingsMenu h4 {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+#settingsMenu label {
+  display: inline-block;
+  margin-top: 5px;
+}
+
+#settingsMenu input[type="text"],
+#settingsMenu input[type="number"],
+#settingsMenu input[type="color"] {
+  width: 30px;
+  margin-top: 1px;
+  padding: 1px;
+}
+
+#settingsMenu button {
+  margin-top: 15px;
+  padding: 5px;
+  background-color: #444;
+  color: #fff;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+#settingsMenu button:hover {
+  background-color: #666;
+}
+
+/* Button for loading annotation from JSON */
+#loadAnnoFromJSONButton {
+  display: none;
 }

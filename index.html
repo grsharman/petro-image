@@ -8,6 +8,7 @@
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/OpenSeadragonScalebar/2.0.0/openseadragon-scalebar.min.css"
     />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@annotorious/openseadragon@latest/dist/annotorious-openseadragon.css">
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
@@ -174,6 +175,27 @@
       <div>
         <details closed>
           <summary>Annotate</summary>
+            <!-- Container for buttons -->
+            <div class="button-container">
+              <button class="custom-button" id="crosshairButton">
+                <svg class="crosshairs-button" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <!-- Circle for center -->
+                  <circle cx="12" cy="12" r="2" fill="#444" />
+                  <!-- Horizontal line -->
+                  <line x1="2" y1="12" x2="22" y2="12" stroke="#444" stroke-width="2" />
+                  <!-- Vertical line -->
+                  <line x1="12" y1="2" x2="12" y2="22" stroke="#444" stroke-width="2" />
+                </svg>
+              </button>
+              <button class="custom-button" id="rectangleButton">
+                <div class="square"></div>
+              </button>
+              <!-- <button class="custom-button" id="polygonButton">
+                <svg class="polygon" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                  <polygon points="50,10 90,35 73,85 27,85 10,35" fill="#444" />
+                </svg>
+              </button> -->
+            </div>
           <div>
             <input
             type="checkbox"
@@ -181,19 +203,122 @@
             checked
             onclick="toggleAnnotation(this)"
           />
-          <label for="show-annotation">Show annotation</label>
-          <span class="info-button">?
-            <span class="tooltip-text">Q+click for points. Shift+click and drag for rectangles.</span>
-          </span>
+          <label for="show-annotation">Show annotations</label>
+          <div>
+            <button id="anno-prev-button" disabled>&larr;</button>
+            <input type="number" id="anno-id" placeholder="1" maxlength="3" value="1" min="1" max="9999" disabled/>
+            <button id="anno-next-button" disabled>&rarr;</button>
+            <div>
+              <input type="text" id="anno-label" placeholder="Label" disabled />
+            </div>
+            <div class="button-container">
+              <!-- Trash can button -->
+              <button class="custom-button" id="deleteButton" title="Delete">
+                <svg class="trash-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                  <!-- Trash Can Outline -->
+                  <path d="M9 3h6v2H9V3zm1 0v2h4V3h-4zM5 6h14v2H5V6zm2 3h10v11H7V9zm2 2v7h2v-7H9zm4 0v7h2v-7h-2z" />
+                </svg>
+              </button>
+              <button class="custom-button" id="gearButton" title="Settings">
+                <svg class="gear-icon" version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" 
+                width="800px" height="800px" viewBox="0 0 64 64" enable-background="new 0 0 64 64" xml:space="preserve">
+             <g>
+               <polygon fill="#444" stroke="#000000" stroke-width="2" stroke-miterlimit="10" points="32,1 26,1 26,10 20,12 14,6 6,14 12,20 
+                 10,26 1,26 1,38 10,38 12,44 6,50 14,58 20,52 26,54 26,63 32,63 38,63 38,54 44,52 50,58 58,50 52,44 54,38 63,38 63,26 54,26 
+                 52,20 58,14 50,6 44,12 38,10 38,1 	"/>
+               <circle fill="#FFFFFF" stroke="#000000" stroke-width="2" stroke-miterlimit="10" cx="32" cy="32" r="6"/>
+             </g>
+             </svg>
+              </button>
+            </div>
+
+            <!-- Hidden Settings Menu -->
+            <div id="settingsMenu" class="menu">
+              <h4>Label</h4>
+              <div>
+                <input type="number" id="annoLabelFontSize" placeholder="16" maxlength="3" value="16" min="1"/>
+                <label for="annoLabelFontSize">Font Size</label>
+              </div>
+              <div>
+                <input type="color" id="annoLabelFontColor" value="#FFFFFF"/>
+                <label for="annoLabelFontColor">Font Color</label>
+              </div>
+              <div>
+                <input type="color" id="annoLabelBackgroundColor" value="#000000"/>
+                <label for="annoLabelBackgroundColor">Background Color</label>
+              </div>
+              <div>
+                <input type="number" id="annoLabelBackgroundOpacity" value="0.5" min="0" max="1"/>
+                <label for="annoLabelBackgroundOpacity">Background Opacity</label>
+              </div>
+              <hr />
+              <h4>Point</h4>
+              <div>
+                <input type="number" id="lwInput" placeholder="2" maxlength="3" value="2" min="1" max="10"/>
+                <label for="lwInput">Line Weight</label>
+              </div>
+              <div>
+                <input type="number" id="annoOpacity" placeholder="1" maxlength="3" value="1" min="0" max="1"/>
+                <label for="annoOpacity">Opacity</label>
+              </div>
+              <div>
+                <input type="color" id="lineColorPicker" value="#008000"/>
+                <label for="lineColorPicker">Color</label>
+              </div>
+              <hr />
+              <h4>Rectangle</h4>
+              <div>
+                <select id="rectBorderStyle">
+                  <option value="solid">Solid</option>
+                  <option value="dashed">Dashed</option>
+                  <option value="dotted">Dotted</option>
+                  <!-- <option value="double">Double</option>
+                  <option value="groove">Groove</option>
+                  <option value="ridge">Ridge</option>
+                  <option value="inset">Inset</option>
+                  <option value="outset">Outset</option> -->
+                  <option value="none">None</option>
+                </select>
+                <label for="rectBorderStyle">Border Style</label>
+              </div>
+              <div>
+                <input type="number" id="rectBorderLw" placeholder="2" maxlength="3" value="2" min="1" max="10"/>
+                <label for="rectBorderLw">Border Weight</label>
+              </div>
+              <div>
+                <input type="color" id="rectBorderColor" value="#008000"/>
+                <label for="rectBorderColor">Border Color</label>
+              </div>
+              <div>
+                <input type="number" id="rectBorderOpacity" placeholder="1" maxlength="3" value="1" min="0" max="1"/>
+                <label for="rectBorderOpacity">Border Opacity</label>
+              </div>
+              <div>
+                <input type="color" id="rectFillColor" value="#FFFFFF"/>
+                <label for="rectFillColor">Fill color</label>
+              </div>
+              <div>
+                <input type="number" id="rectFillOpacity" placeholder="1" maxlength="3" value="0" min="0" max="1"/>
+                <label for="rectFillOpacity">Fill Opacity</label>
+              </div>
+
+              <div>
+                <button id="applyCurrentAnno">Apply to Current</button>
+                <button id="applyAllAnno">Apply to All</button>
+              </div>
+            </div>
+
+          </div>
           </div>
           <div>
-            <input type="file" id="csvFileInput" accept=".csv" />
+            <input type="file" id="geojsonFileInput" accept=".geojson,.json" />
           </div>
           <div>
             <button id="loadAnnotationsBtn">Load</button>
             <button id="exportBtn">Export</button>
             <button id="clearBtn" onclick="clearAnnotations()">Clear</button>
           </div>
+          <div id="loadAnnoFromJSON"></div>
         </details>
       </div>
     </div>
@@ -201,6 +326,7 @@
     <script src="js/openseadragon-scalebar.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@annotorious/openseadragon@latest/dist/annotorious-openseadragon.js"></script>
     <script src="index.js"></script>
   </body>
 </html>
