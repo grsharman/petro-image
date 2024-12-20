@@ -1113,6 +1113,25 @@
               "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/IODP_021_PPL00 raw.dzi"
           ]
       },
+      "IODP-041":
+      {
+          "groups": ["IODP"],  
+          "title": "IODP-41",
+          "description": "Unknown",
+          "unit": "2",
+          "pixelsPerUnit": "0.913",
+          "pixelsPerMeter": "913000",
+          "tileLabels": [
+              "XPL00",
+              "XPL15",
+              "PPL00"
+          ],
+          "tileSets": [
+              "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/IODP_041_XPL_0.dzi",
+              "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/IODP_041_XPL_15.dzi",
+              "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/IODP_041_PPL.dzi"
+          ]
+      },
       "TMC1":
       {
           "groups": ["SedGeo"],  

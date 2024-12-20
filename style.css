@@ -36,10 +36,15 @@ html {
   transform: translateY(-100%);
   padding: 0px 5px;
   border-radius: 9999px 9999px 9999px 0px;
-  color: white;
-  background-color: rgba(0, 0, 0, 0.5);
+  color: var(--annoLabel-color, white);
+  /* color: white; */
+  background-color: var(--annoLabelBackground-color, rgba(0, 0, 0, 0.5));
+  /* background-color: rgba(0, 0, 0, 0.5); */
   white-space: nowrap;
+  /* font-size:  */
+  font-size: var(--annoLabel-font-size, 16px);
 }
+
 .rectangle-label {
   position: absolute;
   transform: translateY(-100%);
@@ -69,6 +74,7 @@ html {
   transform: translate(-50%, -50%);
   background-color: green;
 } */
+
 .annotate-symbol {
   position: absolute;
   transform: translate(-50%, -50%);
@@ -92,6 +98,18 @@ html {
   height: 12px; /* Default height */
   transform: translate(-50%, -50%);
 }
+
+/*
+.annotate-rect {
+  border-style: solid;
+  border-width: var(--rectangle-line-weight, 2px);
+  border-color: var(--rectangle-color, green);
+  background-color: rgba(0, 0, 0, 0.1);
+  position: absolute;
+  pointer-events: none;
+}
+*/
+
 .crosshairs {
   position: absolute;
   transform: translate(-50%, -50%);
@@ -286,6 +304,7 @@ html {
 .custom-button {
   width: 25px;
   height: 25px;
+  padding: 2px;
   border: 1px solid #444;
   border-radius: 5px;
   background-color: #f0f0f0;
@@ -320,11 +339,11 @@ html {
   background-color: #444;
 }
 
-/* SVG container for polygon */
+/* SVG container for polygon
 .polygon {
   width: 25px;
   height: 25px;
-}
+} */
 
 /* Trash can icon styles */
 .trash-icon {
@@ -334,9 +353,9 @@ html {
 }
 
 /* Wrench icon styles */
-.wrench-icon {
-  width: 40px;
-  height: 40px;
+.gear-icon {
+  width: 18px;
+  height: 18px;
   fill: #444;
 }
 
@@ -346,8 +365,8 @@ html {
   position: absolute;
   top: 50px;
   left: 50px;
-  width: 120px;
-  padding: 15px;
+  width: 200px;
+  padding: 10px;
   border: 1px solid #000000;
   border-radius: 5px;
   background-color: #fff;
@@ -355,13 +374,14 @@ html {
   z-index: 1000;
 }
 
-#settingsMenu h3 {
+#settingsMenu h4 {
   margin-top: 0;
+  margin-bottom: 0;
 }
 
 #settingsMenu label {
   display: inline-block;
-  margin-top: 10px;
+  margin-top: 5px;
 }
 
 #settingsMenu input[type="text"],
@@ -374,7 +394,7 @@ html {
 
 #settingsMenu button {
   margin-top: 15px;
-  padding: 8px;
+  padding: 5px;
   background-color: #444;
   color: #fff;
   border: none;
@@ -384,4 +404,9 @@ html {
 
 #settingsMenu button:hover {
   background-color: #666;
+}
+
+/* Button for loading annotation from JSON */
+#loadAnnoFromJSONButton {
+  display: none;
 }

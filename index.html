@@ -190,11 +190,11 @@
               <button class="custom-button" id="rectangleButton">
                 <div class="square"></div>
               </button>
-              <button class="custom-button" id="polygonButton">
+              <!-- <button class="custom-button" id="polygonButton">
                 <svg class="polygon" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
                   <polygon points="50,10 90,35 73,85 27,85 10,35" fill="#444" />
                 </svg>
-              </button>
+              </button> -->
             </div>
           <div>
             <input
@@ -220,30 +220,92 @@
                 </svg>
               </button>
               <button class="custom-button" id="gearButton" title="Settings">
-                <svg class="gear-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                  <!-- Gear Icon -->
-                  <path d="M19.14,12.94a7.47,7.47,0,0,0,.05-1,7.47,7.47,0,0,0-.05-1l2.11-1.65a.51.51,0,0,0,.13-.65l-2-3.46a.5.5,0,0,0-.6-.22l-2.49,1a7.68,7.68,0,0,0-1.74-1l-.38-2.65A.49.49,0,0,0,12,1H9a.49.49,0,0,0-.49.42L8.13,4.07a7.68,7.68,0,0,0-1.74,1l-2.49-1a.5.5,0,0,0-.6.22l-2,3.46a.51.51,0,0,0,.13.65l2.11,1.65a7.47,7.47,0,0,0-.05,1,7.47,7.47,0,0,0,.05,1l-2.11,1.65a.51.51,0,0,0-.13.65l2,3.46a.5.5,0,0,0,.6.22l2.49-1a7.68,7.68,0,0,0,1.74,1l.38,2.65A.49.49,0,0,0,9,23h3a.49.49,0,0,0,.49-.42l.38-2.65a7.68,7.68,0,0,0,1.74-1l2.49,1a.5.5,0,0,0,.6-.22l2-3.46a.51.51,0,0,0-.13-.65Zm-7.14,2.51A4.5,4.5,0,1,1,16.5,11,4.5,4.5,0,0,1,12,15.45Z" />
-                </svg>
+                <svg class="gear-icon" version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" 
+                width="800px" height="800px" viewBox="0 0 64 64" enable-background="new 0 0 64 64" xml:space="preserve">
+             <g>
+               <polygon fill="#444" stroke="#000000" stroke-width="2" stroke-miterlimit="10" points="32,1 26,1 26,10 20,12 14,6 6,14 12,20 
+                 10,26 1,26 1,38 10,38 12,44 6,50 14,58 20,52 26,54 26,63 32,63 38,63 38,54 44,52 50,58 58,50 52,44 54,38 63,38 63,26 54,26 
+                 52,20 58,14 50,6 44,12 38,10 38,1 	"/>
+               <circle fill="#FFFFFF" stroke="#000000" stroke-width="2" stroke-miterlimit="10" cx="32" cy="32" r="6"/>
+             </g>
+             </svg>
               </button>
-              <button id="unsavedChanges">No Unsaved Changes</button>
             </div>
 
             <!-- Hidden Settings Menu -->
             <div id="settingsMenu" class="menu">
-              <input type="number" id="lwInput" placeholder="2" maxlength="3" value="2" min="1" max="10"/>
-              <label for="annoLine">Line weight</label>
-              
-              <input type="number" id="annoOpacity" placeholder="1" maxlength="3" value="1" min="0" max="1"/>
-              <label for="annoOpacity">Opacity</label>
+              <h4>Label</h4>
+              <div>
+                <input type="number" id="annoLabelFontSize" placeholder="16" maxlength="3" value="16" min="1"/>
+                <label for="annoLabelFontSize">Font Size</label>
+              </div>
+              <div>
+                <input type="color" id="annoLabelFontColor" value="#FFFFFF"/>
+                <label for="annoLabelFontColor">Font Color</label>
+              </div>
+              <div>
+                <input type="color" id="annoLabelBackgroundColor" value="#000000"/>
+                <label for="annoLabelBackgroundColor">Background Color</label>
+              </div>
+              <div>
+                <input type="number" id="annoLabelBackgroundOpacity" value="0.5" min="0" max="1"/>
+                <label for="annoLabelBackgroundOpacity">Background Opacity</label>
+              </div>
+              <hr />
+              <h4>Point</h4>
+              <div>
+                <input type="number" id="lwInput" placeholder="2" maxlength="3" value="2" min="1" max="10"/>
+                <label for="lwInput">Line Weight</label>
+              </div>
+              <div>
+                <input type="number" id="annoOpacity" placeholder="1" maxlength="3" value="1" min="0" max="1"/>
+                <label for="annoOpacity">Opacity</label>
+              </div>
+              <div>
+                <input type="color" id="lineColorPicker" value="#008000"/>
+                <label for="lineColorPicker">Color</label>
+              </div>
+              <hr />
+              <h4>Rectangle</h4>
+              <div>
+                <select id="rectBorderStyle">
+                  <option value="solid">Solid</option>
+                  <option value="dashed">Dashed</option>
+                  <option value="dotted">Dotted</option>
+                  <!-- <option value="double">Double</option>
+                  <option value="groove">Groove</option>
+                  <option value="ridge">Ridge</option>
+                  <option value="inset">Inset</option>
+                  <option value="outset">Outset</option> -->
+                  <option value="none">None</option>
+                </select>
+                <label for="rectBorderStyle">Border Style</label>
+              </div>
+              <div>
+                <input type="number" id="rectBorderLw" placeholder="2" maxlength="3" value="2" min="1" max="10"/>
+                <label for="rectBorderLw">Border Weight</label>
+              </div>
+              <div>
+                <input type="color" id="rectBorderColor" value="#008000"/>
+                <label for="rectBorderColor">Border Color</label>
+              </div>
+              <div>
+                <input type="number" id="rectBorderOpacity" placeholder="1" maxlength="3" value="1" min="0" max="1"/>
+                <label for="rectBorderOpacity">Border Opacity</label>
+              </div>
+              <div>
+                <input type="color" id="rectFillColor" value="#FFFFFF"/>
+                <label for="rectFillColor">Fill color</label>
+              </div>
+              <div>
+                <input type="number" id="rectFillOpacity" placeholder="1" maxlength="3" value="0" min="0" max="1"/>
+                <label for="rectFillOpacity">Fill Opacity</label>
+              </div>
 
-              <input type="color" id="lineColorPicker" value="#008000"/>
-              <label for="lineColorPicker">Border color</label>
-              
-              <input type="color" id="fillColorPicker" value="#FFFFFF"/>
-              <label for="fillColorPicker">Fill color</label>
-              
-              <button id="applyCurrentAnno">Apply to Current</button>
-              <button id="applyAllAnno">Apply to All</button>
+              <div>
+                <button id="applyCurrentAnno">Apply to Current</button>
+                <button id="applyAllAnno">Apply to All</button>
+              </div>
             </div>
 
           </div>
@@ -256,6 +318,7 @@
             <button id="exportBtn">Export</button>
             <button id="clearBtn" onclick="clearAnnotations()">Clear</button>
           </div>
+          <div id="loadAnnoFromJSON"></div>
         </details>
       </div>
     </div>
