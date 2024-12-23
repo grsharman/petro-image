@@ -124,7 +124,8 @@ function populateSampleDropdown(selectedGroup) {
     });
     // Automatically select the first sample in the group
     if (sampleDropdown.options.length > 0) {
-      sampleDropdown.selectedIndex = 0; // Select the first option
+      sampleDropdown.currentIndex = 0; // Select the first option
+      // sampleDropdown.selectedIndex = 0; // Select the first option
       sampleDropdown.dispatchEvent(new Event('change')); // Trigger the change event
     }
   }
@@ -144,13 +145,15 @@ const viewer = OpenSeadragon({
 
 /// Event listener for sample selection change (only add once)
 document.getElementById('sampleDropdown').addEventListener('change', function() {
-  const selectedIndex = this.value;
-  sampleName = this.options[this.selectedIndex].textContent; // Get the sample name as a string
-  loadTileSet(selectedIndex);
+  currentIndex = Number(this.value);
+  sampleName = samples[currentIndex];
+  //sampleName = this.options[currentIndex].textContent; // Get the sample name as a string
+  console.log('sample, indx',sampleName,currentIndex);
+  loadTileSet(currentIndex);
   clearAnnotations();
   annotations = [];
-  updateButtonLabels(selectedIndex);
-  addScalebar(pixelsPerMeters[selectedIndex]);
+  updateButtonLabels(currentIndex);
+  addScalebar(pixelsPerMeters[currentIndex]);
   clearGridOverlayPoints();
   clearGridOverlayCrosshairs();
   enableGridButtons();
@@ -209,7 +212,7 @@ function showTooltip() {
 
       const buttonRect = infoButton.getBoundingClientRect();
 
-      // GRS note: button placement is somewhat ad hoc
+      // TODO: button placement is somewhat ad hoc
 
       // Wait for the tooltip to be displayed before calculating its height
       const tooltipHeight = tooltip.offsetHeight;
@@ -403,7 +406,7 @@ let annoDict = {}; // Dictionary for ID number (1+) with unique alphanumeric ID
 
 let pointButton = document.getElementById("crosshairButton");
 let rectButton = document.getElementById("rectangleButton");
-// let polyButton = document.getElementById("polygonButton"); // GRS note: Future implementation
+// let polyButton = document.getElementById("polygonButton"); // TODO: Future implementation
 
 // Flags to track modes
 let isPointMode = false;
@@ -446,7 +449,7 @@ rectButton.addEventListener("click", () => {
   }
 });
 
-// GRS note: In case I ever add a polygon feature
+// TODO: In case I ever add a polygon feature
 // polyButton.addEventListener("click", () => {
 //   console.log('poly button clicked');
 //   // Deactivate point and rect buttons
@@ -549,19 +552,19 @@ document.getElementById('deleteButton').addEventListener('click', function() {
   selectNextAnno(id);
 });
 
-// GRS note: Idea: allow a default text field (e.g., useful if picking many of the same thing)
-// GRS note: Currently cannot apply text field separately from shapes. Might consider doing this so all
+// TODO: Idea: allow a default text field (e.g., useful if picking many of the same thing)
+// TODO: Currently cannot apply text field separately from shapes. Might consider doing this so all
 // labels could be changed without affecting the underlying color of the shapes
-function applyCurrentAnno(id) {
+function applyCurrentAnno(id, changeLabel = false) {
   const annoLabel = document.getElementById("anno-label").value;
   const labelFontSize = Number(document.getElementById("annoLabelFontSize").value);
   const labelFontColor = document.getElementById("annoLabelFontColor").value;
   console.log('labelFontColor',labelFontColor);
   const labelBackgroundColor = document.getElementById("annoLabelBackgroundColor").value;
   const labelBackgroundOpacity = Number(document.getElementById("annoLabelBackgroundOpacity").value);
-  const lw = document.getElementById("lwInput").value;
-  const c = document.getElementById("lineColorPicker").value;
-  const op = document.getElementById("annoOpacity").value;
+  const pointLw = document.getElementById("pointLw").value;
+  const pointColor = document.getElementById("pointColor").value;
+  const pointOpacity = document.getElementById("pointOpacity").value;
   const borderLw = Number(document.getElementById("rectBorderLw").value);
   const borderColor = document.getElementById("rectBorderColor").value;
   const borderStyle = document.getElementById("rectBorderStyle").value;
@@ -571,42 +574,59 @@ function applyCurrentAnno(id) {
   const type = annoJSON[id].geometry.type;
   console.log('type',type);
   if (type === 'Point') {
-    annoJSON[id].properties.labelFontSize = labelFontSize;
-    annoJSON[id].properties.labelFontColor = labelFontColor;
-    annoJSON[id].properties.labelBackgroundColor = labelBackgroundColor;
-    annoJSON[id].properties.labelBackgroundOpacity = labelBackgroundOpacity;
-    annoJSON[id].properties.lw = lw;
-    annoJSON[id].properties.color = c;
-    annoJSON[id].properties.opacity = op;
-    updateCrosshair(id, c, lw, op);
-    updateText(id, undefined, labelFontColor, labelFontSize, labelBackgroundColor, labelBackgroundOpacity);
+    if (changeLabel) {
+      annoJSON[id].properties.labelFontSize = labelFontSize;
+      annoJSON[id].properties.labelFontColor = labelFontColor;
+      annoJSON[id].properties.labelBackgroundColor = labelBackgroundColor;
+      annoJSON[id].properties.labelBackgroundOpacity = labelBackgroundOpacity;
+      updateText(id, undefined, labelFontColor, labelFontSize, labelBackgroundColor, labelBackgroundOpacity);
+    } else {
+      annoJSON[id].properties.pointLw = pointLw;
+      annoJSON[id].properties.pointColor = pointColor;
+      annoJSON[id].properties.pointOpacity = pointOpacity;
+      updateCrosshair(id, pointColor, pointLw, pointOpacity);
+    }
   } else if (type === 'Polygon') {
-    annoJSON[id].properties.labelFontSize = labelFontSize;
-    annoJSON[id].properties.labelFontColor = labelFontColor;
-    annoJSON[id].properties.labelBackgroundColor = labelBackgroundColor;
-    annoJSON[id].properties.labelBackgroundOpacity = labelBackgroundOpacity;
-    annoJSON[id].properties.borderStyle = borderStyle;
-    annoJSON[id].properties.borderLw = borderLw;
-    annoJSON[id].properties.borderColor = borderColor;
-    annoJSON[id].properties.borderOpacity = borderOpacity;
-    annoJSON[id].properties.fillColor = fillColor;
-    annoJSON[id].properties.fillOpacity = fillOpacity;
-    updateRectangle(id, borderStyle, borderLw, borderColor,
-      borderOpacity, fillColor, fillOpacity);
-    updateText(id, undefined, String(labelFontColor), labelFontSize, labelBackgroundColor, labelBackgroundOpacity);
+    if (changeLabel) {
+      annoJSON[id].properties.labelFontSize = labelFontSize;
+      annoJSON[id].properties.labelFontColor = labelFontColor;
+      annoJSON[id].properties.labelBackgroundColor = labelBackgroundColor;
+      annoJSON[id].properties.labelBackgroundOpacity = labelBackgroundOpacity;
+      updateText(id, undefined, String(labelFontColor), labelFontSize, labelBackgroundColor, labelBackgroundOpacity);
+    } else {
+      annoJSON[id].properties.borderStyle = borderStyle;
+      annoJSON[id].properties.borderLw = borderLw;
+      annoJSON[id].properties.borderColor = borderColor;
+      annoJSON[id].properties.borderOpacity = borderOpacity;
+      annoJSON[id].properties.fillColor = fillColor;
+      annoJSON[id].properties.fillOpacity = fillOpacity;
+      updateRectangle(id, borderStyle, borderLw, borderColor,
+        borderOpacity, fillColor, fillOpacity);
+    }
   }
 }
 
+document.getElementById('applyCurrentAnnoLabel').addEventListener('click', function () {
+  const id = parseInt(document.getElementById("anno-id").value);
+  applyCurrentAnno(id, true);
+});
+
+document.getElementById('applyAllAnnoLabel').addEventListener('click', function () {
+  const annoIds = Object.keys(annoDict).map(Number);
+  for (let i = 0; i < annoIds.length; i++) {
+    applyCurrentAnno(annoIds[i], true);
+  }  
+});
+
 document.getElementById('applyCurrentAnno').addEventListener('click', function () {
   const id = parseInt(document.getElementById("anno-id").value);
-  applyCurrentAnno(id);
+  applyCurrentAnno(id, false);
 });
 
 document.getElementById('applyAllAnno').addEventListener('click', function () {
   const annoIds = Object.keys(annoDict).map(Number);
-
   for (let i = 0; i < annoIds.length; i++) {
-    applyCurrentAnno(annoIds[i]);
+    applyCurrentAnno(annoIds[i], false);
   }  
 });
 
@@ -631,6 +651,7 @@ function selectNextAnno(id) {
     annoLabelToText();
   } else {
   // Find the index of the closest value that is < id
+  // TODO: Update use of currentIndex to a variable that is not already used
   const nextIdx = annoIds.reduce((closestIndex, currentValue, currentIndex) => {
     if (currentValue <= id) {
       const closestValue = annoIds[closestIndex];
@@ -708,7 +729,7 @@ document.addEventListener('keydown', function(event) {
   }
 });
 
-// GRS note: Redundancy with goToGridPoint() function. Could make a more generic function
+// TODO: Redundancy with goToGridPoint() function. Could make a more generic function
 // that goes to specified x-y coordinates
 function goToAnnoPoint(x, y) {
   // Center the viewport on the specified coordinates without changing the zoom level
@@ -786,7 +807,7 @@ function deleteFromAnnoDict(id) {
   }  
 }
 
-// GRS note: Use for testing
+// TODO: Use for testing
 // // Get the button element
 // const unsavedChangesButton = document.getElementById("unsavedChanges");
 
@@ -823,14 +844,28 @@ const toggleAnnotation = (event) => {
   for (let el of document.getElementsByClassName("annotate-symbol")) {
     el.style.visibility = event.checked ? "visible" : "hidden";
   }
-  for (let el of document.getElementsByClassName("annotate-label")) {
-    el.style.visibility = event.checked ? "visible" : "hidden";
-  }
-  for (let el of document.getElementsByClassName("rectangle-label")) {
-    el.style.visibility = event.checked ? "visible" : "hidden";
+  if (document.getElementById('show-annotation-labels').checked) {
+    for (let el of document.getElementsByClassName("annotate-label")) {
+      el.style.visibility = event.checked ? "visible" : "hidden";
+    }
+    for (let el of document.getElementsByClassName("rectangle-label")) {
+      el.style.visibility = event.checked ? "visible" : "hidden";
+    }
   }
   for (let el of document.getElementsByClassName("annotate-rectangle")) {
     el.style.visibility = event.checked ? "visible" : "hidden";
+  }
+};
+
+// Import, add, and export points with labels
+const toggleAnnotationLabels = (event) => {
+  if (document.getElementById('show-annotations').checked) {
+    for (let el of document.getElementsByClassName("annotate-label")) {
+      el.style.visibility = event.checked ? "visible" : "hidden";
+    }
+    for (let el of document.getElementsByClassName("rectangle-label")) {
+      el.style.visibility = event.checked ? "visible" : "hidden";
+    }
   }
 };
 
@@ -857,7 +892,6 @@ let annotateRectangles = [];
 // let currentAnnotationId = 0; // Initialize a counter for annotation IDs
 
 // Testing GeoJSON approach
-// GRS note: Will need to update geoJSON when colors are modified
 let annoJSON = {};
 
 viewer.addHandler('canvas-click', function(event) {
@@ -875,9 +909,17 @@ viewer.addHandler('canvas-click', function(event) {
     const labelFontColor = document.getElementById("annoLabelFontColor").value;
     const labelBackgroundColor = document.getElementById("annoLabelBackgroundColor").value;
     const labelBackgroundOpacity = Number(document.getElementById("annoLabelBackgroundOpacity").value);
-    const lw = Number(document.getElementById("lwInput").value);
-    const c = document.getElementById("lineColorPicker").value;
-    const op = Number(document.getElementById("annoOpacity").value);
+    const pointLw = Number(document.getElementById("pointLw").value);
+    const pointColor = document.getElementById("pointColor").value;
+    const pointOpacity = Number(document.getElementById("pointOpacity").value);
+
+    const repeat = document.getElementById('repeat-anno').checked;
+    if (repeat) {
+      const annoId = parseInt(document.getElementById('anno-id').value);
+      var constPointLabel = annoJSON[annoId].properties.label;
+    } else {
+      var constPointLabel = prompt("Enter a label for this point:");
+    }
     let annotation = {
         id: currentAnnotationId,
         uuid: uniqueID,
@@ -888,7 +930,8 @@ viewer.addHandler('canvas-click', function(event) {
         w: 0,
         h: 0,
         type: 0, // 0 for point
-        label: prompt("Enter a label for this point:"),  // Prompt for a label
+        label: constPointLabel,
+        //label: prompt("Enter a label for this point:"),  // Prompt for a label
     }
     const sampleIdx = samples.indexOf(sampleName);
     addPointToGeoJSON(currentAnnotationId,
@@ -906,9 +949,9 @@ viewer.addHandler('canvas-click', function(event) {
         labelFontColor: labelFontColor,
         labelBackgroundColor: labelBackgroundColor,
         labelBackgroundOpacity: labelBackgroundOpacity,
-        pointLw: lw,
-        pointColor: c,
-        pointOpacity: op,
+        pointLw: pointLw,
+        pointColor: pointColor,
+        pointOpacity: pointOpacity,
       }
     )
     console.log(annoJSON);
@@ -918,7 +961,7 @@ viewer.addHandler('canvas-click', function(event) {
       labelFontSize, labelBackgroundColor, labelBackgroundOpacity
     );
 
-    addCrosshairs(currentAnnotationId, viewportPoint, c, lw, op);
+    addCrosshairs(currentAnnotationId, viewportPoint, pointColor, pointLw, pointOpacity);
     // Store annotation
     annotations.push(annotation);
     isQPressed = false; // Reset
@@ -932,15 +975,15 @@ viewer.addHandler('canvas-click', function(event) {
 
 
 // Event listener to add square annotations for shift + drag
-var startPoint = null;
-var overlayElement = null;
+let startPoint = null;
+let overlayElement = null;
 viewer.addHandler('canvas-drag', function(event) {
   console.log('rectangleMode',isRectangleMode);
   if (event.originalEvent.shiftKey || isRectangleMode) {
       console.log('drawing rectangle');
       event.preventDefaultAction = true; // Prevent default behavior (like panning)
 
-      var viewportPoint = viewer.viewport.pointFromPixel(event.position);
+      const viewportPoint = viewer.viewport.pointFromPixel(event.position);
       const borderLw = Number(document.getElementById("rectBorderLw").value);
       const borderColor = document.getElementById("rectBorderColor").value;
       const borderStyle = document.getElementById("rectBorderStyle").value;
@@ -959,7 +1002,7 @@ viewer.addHandler('canvas-drag', function(event) {
 
           // Create an HTML element for the overlay
           overlayElement = document.createElement('div');
-          overlayElement.className = "annotate-rect";
+          overlayElement.className = "annotate-rectangle";
           overlayElement.style.borderStyle = borderStyle;
           overlayElement.style.borderColor = borderColorToPlot;
           overlayElement.style.borderWidth = `${borderLw}px`;
@@ -972,8 +1015,8 @@ viewer.addHandler('canvas-drag', function(event) {
           });
       } else {
           // Mouse move - update overlay dimensions
-          var width = viewportPoint.x - startPoint.x;
-          var height = viewportPoint.y - startPoint.y;
+          const width = viewportPoint.x - startPoint.x;
+          const height = viewportPoint.y - startPoint.y;
           // If you want to constrain it to a square, make width = height
           //var size = Math.max(Math.abs(width), Math.abs(height));
           //width = width < 0 ? -size : size;
@@ -997,21 +1040,21 @@ viewer.addHandler('canvas-release', function(event) {
       const image = viewer.world.getItemAt(0);
       const imageSize = image.getContentSize();
 
-      var endPoint = viewer.viewport.pointFromPixel(event.position);
-      var imageStartPoint = image.viewportToImageCoordinates(startPoint.x, startPoint.y); // Get image coordinates
-      var imageEndPoint = image.viewportToImageCoordinates(endPoint.x, endPoint.y);
+      const endPoint = viewer.viewport.pointFromPixel(event.position);
+      const imageStartPoint = image.viewportToImageCoordinates(startPoint.x, startPoint.y); // Get image coordinates
+      const imageEndPoint = image.viewportToImageCoordinates(endPoint.x, endPoint.y);
       // var imageStartPoint = viewer.viewport.viewportToImageCoordinates(startPoint.x, startPoint.y); // Get image coordinates
       // var imageEndPoint = viewer.viewport.viewportToImageCoordinates(endPoint.x, endPoint.y);
-      var width = imageEndPoint.x - imageStartPoint.x;
-      var height = imageEndPoint.y - imageStartPoint.y;
+      const width = imageEndPoint.x - imageStartPoint.x;
+      const height = imageEndPoint.y - imageStartPoint.y;
 
       // Normalize the coordinates so the top-left is always the starting point
-      var x = Math.min(imageStartPoint.x, imageStartPoint.x + width);
-      var y = Math.min(imageStartPoint.y, imageStartPoint.y + height);
-      var finalPoint = image.imageToViewportCoordinates(x, y);
+      const x = Math.min(imageStartPoint.x, imageStartPoint.x + width);
+      const y = Math.min(imageStartPoint.y, imageStartPoint.y + height);
+      const finalPoint = image.imageToViewportCoordinates(x, y);
       // var finalPoint = viewer.viewport.imageToViewportCoordinates(x, y);
-      var finalWidth = Math.abs(width);
-      var finalHeight = Math.abs(height);
+      const finalWidth = Math.abs(width);
+      const finalHeight = Math.abs(height);
 
       // Get a uniqueID to store
       const uniqueID = generateUniqueId(8);
@@ -1028,6 +1071,14 @@ viewer.addHandler('canvas-release', function(event) {
       const fillColor = document.getElementById("rectFillColor").value;
       const fillOpacity = Number(document.getElementById("rectFillOpacity").value);
 
+      const repeat = document.getElementById('repeat-anno').checked;
+      if (repeat) {
+        const annoId = parseInt(document.getElementById('anno-id').value);
+        var constRectLabel = annoJSON[annoId].properties.label;
+      } else {
+        var constRectLabel = prompt("Enter a label for this point:");
+      }
+
       // Record the annotation (and get the prompt for the label)
       let annotation = {
         x: x,
@@ -1035,7 +1086,7 @@ viewer.addHandler('canvas-release', function(event) {
         w: finalWidth,
         h: finalHeight,
         type: 1, // 1 for rectangle
-        label: prompt("Enter a label for this rectangle:"),  // Prompt for a label
+        label: constRectLabel, //prompt("Enter a label for this rectangle:"),  // Prompt for a label
       };
 
       // Add the rectangle to the geoJSON
@@ -1123,6 +1174,7 @@ function addText(i, label, location, color='#FFFFFF', fontSize=16, backgroundCol
   annotateLabels.push(pointLabel);
   hasUnsavedAnnotations = true;
   // // updateButtonColor(); // Use for testing // Use for testing
+  updateRepeatAnnoLabelCheckbox();
 }
 
 // Function to delete the text of an existing annotation label
@@ -1136,7 +1188,7 @@ function deleteText(id) {
     // updateButtonColor(); // Use for testing
   } else {
     console.warn(`Overlay with ID annotate-label-${id} not found.`);
-  }  
+  }
 }
 
 // Function to update the text of an existing annotation label
@@ -1196,10 +1248,10 @@ function addCrosshairs(i, location, color='purple', lineWeight = 2, opacity = 1)
   });
   annotatePoints.push(crosshairsAnnotate);
   hasUnsavedAnnotations = true;
+  updateRepeatAnnoLabelCheckbox();
   // updateButtonColor(); // Use for testing
 }
 
-// GRS note: Working on a function that updates crosshairs
 function updateCrosshair(id, newColor, newLineWeight, newOpacity) {
   // Find the existing crosshair element by its ID
   const crosshairElement = document.getElementById(`annotate-crosshair-${id}`);
@@ -1221,7 +1273,6 @@ function updateCrosshair(id, newColor, newLineWeight, newOpacity) {
   }
 }
 
-// GRS note: Working on a function that updates crosshairs
 function updateRectangle(id, borderStyle, borderLw, borderColor,
   borderOpacity, fillColor, fillOpacity) {
   // Find the existing crosshair element by its ID
@@ -1249,7 +1300,7 @@ function updateRectangle(id, borderStyle, borderLw, borderColor,
   }
 }
 
-// GRS note: Could probably consolidate these "delete" functions into a single function
+// TODO: Could probably consolidate these "delete" functions into a single function
 function deleteCrosshairs(id) {
   const overlayElement = document.getElementById(`annotate-crosshair-${id}`);
   if (overlayElement) {
@@ -1258,10 +1309,11 @@ function deleteCrosshairs(id) {
     console.log(`Overlay with ID annotate-crosshair-${id} removed.`);
   } else {
     console.warn(`Overlay with ID annotate-crosshair-${id} not found.`);
-  }    
+  }
+  updateRepeatAnnoLabelCheckbox();
 }
 
-// GRS note: Could probably consolidate these "delete" functions into a single function
+// TODO: Could probably consolidate these "delete" functions into a single function
 function deleteRectangle(id) {
   const overlayElement = document.getElementById(`annotate-rect-${id}`);
   if (overlayElement) {
@@ -1270,7 +1322,8 @@ function deleteRectangle(id) {
     console.log(`Overlay with ID annotate-rect-${id} removed.`);
   } else {
     console.warn(`Overlay with ID annotate-rect-${id} not found.`);
-  }    
+  }
+  updateRepeatAnnoLabelCheckbox();
 }
 
 function addRectangle(i, x, y, w, h) {
@@ -1288,9 +1341,9 @@ function addRectangle(i, x, y, w, h) {
   annotateRectangles.push(rectAnnotate);
   hasUnsavedAnnotations = true;
   // updateButtonColor(); // Use for testing
+  updateRepeatAnnoLabelCheckbox();
 }
 
-// GRS note: testing load annotations from JSON
 function loadAnnotationsFromJSON(file) {
   // Use fetch to get the GeoJSON file from the URL
   console.log('Beginning loading annotations from JSON',file);
@@ -1309,10 +1362,11 @@ function loadAnnotationsFromJSON(file) {
       })
       .catch(error => {
         console.error('Error loading GeoJSON:', error);
-      });      
+      });
+  updateRepeatAnnoLabelCheckbox();
 }
 
-// GRS note: This function seems too complicated and probably redundant with parts
+// TODO: This function seems too complicated and probably redundant with parts
 // of other functions. Consider cleaning up.
 // New function for loading geoJSON data
 function loadAnnotations(geoJSONData) {
@@ -1343,6 +1397,11 @@ function loadAnnotations(geoJSONData) {
   // Iterate through each feature in the GeoJSON data
   features.forEach((feature) => {
     const { geometry, properties } = feature;
+    // Check if the uuid already exists, and if so, skip
+    if (Object.values(annoDict).includes(properties.uuid)) {
+      console.log('Warning: annotation already exists, skipping');
+      return;
+    }
     if (geometry && properties) {
       const { coordinates } = geometry;
       if (geometry.type === "Point") { // Point annotation
@@ -1382,8 +1441,8 @@ function loadAnnotations(geoJSONData) {
         // Add the point annotation (crosshairs, text)
         addText(currentAnnotationId, label, viewportPoint, properties.labelFontColor,
           properties.labelFontSize, properties.labelBackgroundColor, properties.labelBackgroundOpacity);
-        addCrosshairs(currentAnnotationId, viewportPoint, properties.color, properties.lw,
-          properties.opacity);
+        addCrosshairs(currentAnnotationId, viewportPoint, properties.pointColor, properties.pointLw,
+          properties.pointOpacity);
 
         // Create the GeoJSON entry for this annotation
         const geoJSONFeature = {
@@ -1411,10 +1470,10 @@ function loadAnnotations(geoJSONData) {
           }
         };
         // Add the feature to the geoJSONDict with currentAnnotationId + 1 as the key
-        // GRS note: is annoDict redundant with annoJSON?
+        // TODO: is annoDict redundant with annoJSON?
         annoDict[currentAnnotationId] = properties.uuid;
         annoJSON[currentAnnotationId] = geoJSONFeature;
-        // GRS note: This code is not generic for other polygon shapes. Currently only for Rectangles.
+        // TODO: This code is not generic for other polygon shapes. Currently only for Rectangles.
       } else if (geometry.type === "Polygon") { // Polygon annotation
         console.log('Loading polygon!!!');
         const image = viewer.world.getItemAt(0);
@@ -1432,7 +1491,7 @@ function loadAnnotations(geoJSONData) {
 
         // Width and height in geoJSON are in image coordinates
         const width = properties.w/properties.imageWidth;
-        const height = properties.h/properties.imageWidth; // GRS note: I'm always surprised this is x and not y
+        const height = properties.h/properties.imageWidth; // TODO: I'm always surprised this is x and not y
 
         // // Calculate viewport coordinates from image coordinates
         const viewportPoint = image.imageToViewportCoordinates(new OpenSeadragon.Point(minX, minY));
@@ -1446,7 +1505,7 @@ function loadAnnotations(geoJSONData) {
         const fillColorToPlot = applyOpacityToColor(properties.fillColor, properties.fillOpacity);
         
         overlayElement = document.createElement('div');
-        overlayElement.className = "annotate-rect";
+        overlayElement.className = "annotate-rectangle";
         overlayElement.style.borderStyle = properties.borderStyle;
         overlayElement.style.borderColor = borderColorToPlot;
         overlayElement.style.borderWidth = `${properties.borderLw}px`;
@@ -1490,7 +1549,7 @@ function loadAnnotations(geoJSONData) {
           }
         };
         // Add the feature to the geoJSONDict with currentAnnotationId + 1 as the key
-        // GRS note: is annoDict redundant with annoJSON?
+        // TODO: is annoDict redundant with annoJSON?
         annoDict[currentAnnotationId] = properties.uuid;
         annoJSON[currentAnnotationId] = geoJSONFeature;
       }
@@ -1665,7 +1724,7 @@ const enableGridButtons = () => {
 let gridOverlayPoints = []; ///
 let gridOverlayCrosshairs = []; ///
 
-// GRS note: Currently adding more counts results in erasing the existing
+// TODO: Currently adding more counts results in erasing the existing
 // counts. It would be better if there were a way of changing the point counts
 // without changing modifying the underlying count data. This way more points
 // count be added on the fly without having to mess with CSV file.
@@ -1757,7 +1816,7 @@ const applyGridSettings = () => {
 };
 
 
-// GRS note: IN PROGRESS. Developing an approach for loading pre-existing
+// TODO: IN PROGRESS. Developing an approach for loading pre-existing
 // points that is independent of defining a new grid. Will allow custom point
 // configuration provided that point locations in pixels are provided
 
@@ -2184,7 +2243,14 @@ function inputNotesText() {
   hasUnsavedCounts = true;
 }
 
-// GRS note: in progress. Currently not working. Feature implement paused
+// Function to update checkbox state
+function updateRepeatAnnoLabelCheckbox() {
+  const checkbox = document.getElementById('repeat-anno');
+  // Enable the checkbox if the dictionary has at least one item
+  checkbox.disabled = Object.keys(annoDict).length === 0;
+}
+
+// TODO: in progress. Currently not working. Feature implement paused
 // Function for updating crosshair color after point is made
 // function updateGridCrosshair(id) {
 //   console.log('updating grid crosshair');

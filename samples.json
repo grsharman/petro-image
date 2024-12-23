@@ -1100,8 +1100,8 @@
           "title": "IODP-21",
           "description": "Unknown",
           "unit": "2",
-          "pixelsPerUnit": "0.913",
-          "pixelsPerMeter": "913000",
+          "pixelsPerUnit": "0.913242",
+          "pixelsPerMeter": "913242",
           "tileLabels": [
               "XPL00",
               "XPL30",
@@ -1119,8 +1119,8 @@
           "title": "IODP-41",
           "description": "Unknown",
           "unit": "2",
-          "pixelsPerUnit": "0.913",
-          "pixelsPerMeter": "913000",
+          "pixelsPerUnit": "0.913242",
+          "pixelsPerMeter": "913242",
           "tileLabels": [
               "XPL00",
               "XPL15",
