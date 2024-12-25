@@ -33,7 +33,7 @@
         "tileSets": [
             "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0004 01 2.5x PPL00 final.dzi"
         ],
-        "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/annotorious/annotations/SD0004.geojson"
+        "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/main/annotations/SD0004.geojson"
     },
     "SD0004 (2 layer)":
     {
