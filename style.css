@@ -230,9 +230,9 @@ html {
 
 .file-label {
   display: inline-block;
-  padding: 5px 5px;
-  background-color: grey; /* Customize button color */
-  color: white;
+  padding: 2px 2px;
+  background-color: #f0f0f0; /* Customize button color */
+  border: 1px solid #444;
   border-radius: 5px;
   font-size: 10px;
   cursor: pointer;
@@ -240,7 +240,7 @@ html {
 }
 
 .file-label:hover {
-  background-color: #0056b3; /* Darken button on hover */
+  background-color: #b9b9b9; /* Darken button on hover */
 }
 
 
@@ -300,10 +300,53 @@ html {
   margin: 0px;
 }
 
+.arrow-container {
+  display: flex; /* Flexbox for horizontal alignment */
+  gap: 2px;     /* Spacing between buttons */
+  margin: 0px;
+}
+
+/* General button styles */
+.anno-arrows {
+  width: 20px;
+  height: 20px;
+  padding: 2px;
+  border: 1px solid #444;
+  border-radius: 5px;
+  background-color: #f0f0f0;
+  margin: 2px;
+  cursor: pointer;
+  display: block;
+  align-items: center;
+  justify-content: center;
+
+}
+
+/* Activated state */
+.anno-arrows.active {
+  background-color: #b9b9b9; /* Light blue when active */
+  color: white;
+}
+
+/* Hover state */
+.anno-arrows:hover {
+  background-color: #b9b9b9;
+}
+
+.anno-arrows:disabled {
+  cursor: not-allowed;
+  background-color: #f0f0f0; /* Neutral background */
+}
+
+.anno-arrows:disabled:hover {
+  background-color: #f0f0f0; /* No hover effect */
+}
+
 /* General button styles */
 .custom-button {
-  width: 25px;
-  height: 25px;
+  /* flex-shrink: 0; */
+  width: 20px;
+  height: 20px;
   padding: 2px;
   border: 1px solid #444;
   border-radius: 5px;
@@ -324,6 +367,15 @@ html {
 /* Hover state */
 .custom-button:hover {
   background-color: #b9b9b9;
+}
+
+.custom-button:disabled {
+  cursor: not-allowed;
+  background-color: #f0f0f0; /* Neutral background */
+}
+
+.custom-button:disabled:hover {
+  background-color: #f0f0f0; /* No hover effect */
 }
 
 /* Point (dot) button */
@@ -359,8 +411,74 @@ html {
   fill: #444;
 }
 
+/* .opacity-slider {
+  width: 100px;
+}
+
+.slider-value {
+  width: 75px;
+} */
+
+input[type="range"] {
+  max-width: 100px; /* Set a max width if you want flexibility but no wider than this */
+  width: 100%; /* Ensure the slider stretches to fit its container */
+}
+
+.dropdown-container {
+  display: flex;
+  align-items: center; /* Vertically align items */
+  gap: 8px; /* Add some space between the dropdown and the button */
+}
+
 /* Hidden menu styles */
-#settingsMenu {
+#imageSettingsMenu {
+  display: none;
+  position: absolute;
+  top: 50px;
+  left: 50px;
+  width: 200px;
+  padding: 10px;
+  border: 1px solid #000000;
+  border-radius: 5px;
+  background-color: #fff;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+}
+
+#imageSettingsMenu h4 {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+#imageSettingsMenu label {
+  display: inline-block;
+  margin-top: 5px;
+}
+
+#imageSettingsMenu input[type="text"],
+#imageSettingsMenu input[type="number"],
+#imageSettingsMenu input[type="color"] {
+  width: 20px;
+  margin-top: 1px;
+  padding: 1px;
+}
+
+#imageSettingsMenu button {
+  margin-top: 15px;
+  padding: 5px;
+  background-color: #444;
+  color: #fff;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+#imageSettingsMenu button:hover {
+  background-color: #666;
+}
+
+/* Hidden menu styles */
+#annoSettingsMenu {
   display: inline-block;
   position: absolute;
   top: 50px;
@@ -374,25 +492,25 @@ html {
   z-index: 1000;
 }
 
-#settingsMenu h4 {
+#annoSettingsMenu h4 {
   margin-top: 0;
   margin-bottom: 0;
 }
 
-#settingsMenu label {
+#annoSettingsMenu label {
   display: inline-block;
   margin-top: 5px;
 }
 
-#settingsMenu input[type="text"],
-#settingsMenu input[type="number"],
-#settingsMenu input[type="color"] {
+#annoSettingsMenu input[type="text"],
+#annoSettingsMenu input[type="number"],
+#annoSettingsMenu input[type="color"] {
   width: 30px;
   margin-top: 1px;
   padding: 1px;
 }
 
-#settingsMenu button {
+#annoSettingsMenu button {
   margin-top: 15px;
   padding: 5px;
   background-color: #444;
@@ -402,7 +520,7 @@ html {
   cursor: pointer;
 }
 
-#settingsMenu button:hover {
+#annoSettingsMenu button:hover {
   background-color: #666;
 }
 

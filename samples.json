@@ -8,14 +8,70 @@
         "pixelsPerUnit": "0.398",
         "pixelsPerMeter": "398000",
         "tileLabels": [
+            "PPL00",
             "XPL00",
-            "XPL30",
+            "XPL30"
+        ],
+        "tileSets": [
+            "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0004 01 2.5x PPL00 final.dzi",
+            "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0004 01 2.5x XPL00 final.dzi",
+            "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0004 01 2.5x XPL30 final.dzi"
+        ],
+        "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/annotorious/annotations/SD0004.geojson"
+    },
+    "SD0004 (1 layer)":
+    {
+        "groups": ["Favorites","SedGeo"],  
+        "title": "SD0004 (1 layer)",
+        "description": "Budhir, Iceland",
+        "unit": "2",
+        "pixelsPerUnit": "0.398",
+        "pixelsPerMeter": "398000",
+        "tileLabels": [
             "PPL00"
         ],
         "tileSets": [
+            "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0004 01 2.5x PPL00 final.dzi"
+        ],
+        "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/annotorious/annotations/SD0004.geojson"
+    },
+    "SD0004 (2 layer)":
+    {
+        "groups": ["Favorites","SedGeo"],  
+        "title": "SD0004 (2 layer)",
+        "description": "Budhir, Iceland",
+        "unit": "2",
+        "pixelsPerUnit": "0.398",
+        "pixelsPerMeter": "398000",
+        "tileLabels": [
+            "PPL00",
+            "XPL00"
+        ],
+        "tileSets": [
+            "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0004 01 2.5x PPL00 final.dzi",
+            "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0004 01 2.5x XPL00 final.dzi"
+        ],
+        "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/annotorious/annotations/SD0004.geojson"
+    },
+    "SD0004 (4 layer)":
+    {
+        "groups": ["Favorites","SedGeo"],  
+        "title": "SD0004 (4 layer)",
+        "description": "Budhir, Iceland",
+        "unit": "2",
+        "pixelsPerUnit": "0.398",
+        "pixelsPerMeter": "398000",
+        "tileLabels": [
+            "PPL00",
+            "XPL00",
+            "XPL30",
+            "XPL00"
+        ],
+        "tileSets": [
+            "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0004 01 2.5x PPL00 final.dzi",
             "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0004 01 2.5x XPL00 final.dzi",
             "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0004 01 2.5x XPL30 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0004 01 2.5x PPL00 final.dzi"
+            "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0004 01 2.5x XPL00 final.dzi"
         ],
         "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/annotorious/annotations/SD0004.geojson"
     },
@@ -28,14 +84,14 @@
         "pixelsPerUnit": "0.398",
         "pixelsPerMeter": "398000",
         "tileLabels": [
+            "PPL00",
             "XPL00",
-            "XPL30",
-            "PPL00"
+            "XPL30"
         ],
         "tileSets": [
+            "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/ARCS-44 01 2.5x PPL00 final.dzi",
             "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/ARCS-44 01 2.5x XPL00 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/ARCS-44 01 2.5x XPL30 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/ARCS-44 01 2.5x PPL00 final.dzi"
+            "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/ARCS-44 01 2.5x XPL30 final.dzi"
         ]
     },
     "ARCS-46":
@@ -66,14 +122,14 @@
         "pixelsPerUnit": "0.398",
         "pixelsPerMeter": "398000",
         "tileLabels": [
+            "PPL00",
             "XPL00",
-            "XPL45",
-            "PPL00"
+            "XPL45"
         ],
         "tileSets": [
+            "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/ARCS-51 01 2.5x PPL00 final.dzi",
             "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/ARCS-51 01 2.5x XPL00 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/ARCS-51 01 2.5x XPL45 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/ARCS-51 01 2.5x PPL00 final.dzi"
+            "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/ARCS-51 01 2.5x XPL45 final.dzi"
         ]
     },
     "ARCS-59":

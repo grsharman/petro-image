@@ -14,8 +14,59 @@
   <body>
     <div id="viewer-container"></div>
     <div class="controls">
-      <div>
+      <div class="dropdown-container">
         <select id="groupDropdown"></select>
+        <!--Gear icon to trigger hidden image menu-->
+        <button class="custom-button" id="imageSettingsButton" title="Settings">
+          <svg class="gear-icon" version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" 
+          width="800px" height="800px" viewBox="0 0 64 64" enable-background="new 0 0 64 64" xml:space="preserve">
+          <g>
+          <polygon fill="#444" stroke="#000000" stroke-width="2" stroke-miterlimit="10" points="32,1 26,1 26,10 20,12 14,6 6,14 12,20 
+            10,26 1,26 1,38 10,38 12,44 6,50 14,58 20,52 26,54 26,63 32,63 38,63 38,54 44,52 50,58 58,50 52,44 54,38 63,38 63,26 54,26 
+            52,20 58,14 50,6 44,12 38,10 38,1 	"/>
+          <circle fill="#FFFFFF" stroke="#000000" stroke-width="2" stroke-miterlimit="10" cx="32" cy="32" r="6"/>
+          </g>
+          </svg>
+        </button>
+      </div>
+      <div>
+        <!-- Hidden settings menu for images-->
+        <div id="imageSettingsMenu" class="menu-hidden">
+          <div>
+            <input
+            type="checkbox"
+            id="enableDivideImages"
+            checked
+            onclick="toggleDivideImages(this)"
+          />
+          <label for="enableDivideImages">Divide Images</label>
+          <hr />
+          <h4>Opacity</h4>
+          <div>
+            <label for="opacityImage1" id="labelForOpacityImage1">Img1</label>            
+            <input type="range" id="opacityImage1" name="opacityImage1" class="opacity-slider" min="0" max="100" value = "100"
+            onchange="setTileSetOpacity()"/>
+            <span class="slider-value" id="opacityImage1Value">100%</span>
+          </div>
+          <div>
+            <label for="opacityImage2" id="labelForOpacityImage2">Img2</label>            
+            <input type="range" id="opacityImage2" name="opacityImage2" class="opacity-slider" min="0" max="100" value = "100"
+            onchange="setTileSetOpacity()"/>
+            <span class="slider-value" id="opacityImage2Value">100%</span>
+          </div>
+          <div>
+            <label for="opacityImage3" id="labelForOpacityImage3">Img3</label>            
+            <input type="range" id="opacityImage3" name="opacityImage3" class="opacity-slider" min="0" max="100" value = "100"
+            onchange="setTileSetOpacity()"/>
+            <span class="slider-value" id="opacityImage3Value">100%</span>
+          </div>
+          <div>
+            <label for="opacityImage4" id="labelForOpacityImage4">Img4</label>            
+            <input type="range" id="opacityImage4" name="opacityImage4" class="opacity-slider" min="0" max="100" value = "100"
+            onchange="setTileSetOpacity()"/>
+            <span class="slider-value" id="opacityImage4Value">100%</span>
+          </div>
+        </div>
       </div>
       <div>
         <select id="sampleDropdown"></select>
@@ -29,14 +80,14 @@
           checked
           onclick="toggleImage(this, 0)"
         />
-        <label for="image1">XPL1</label>
+        <label for="image1" id="label1">IMG1</label>
         <input
           type="checkbox"
           id="image2"
           checked
           onclick="toggleImage(this, 1)"
         />
-        <label for="image2">XPL2</label>
+        <label for="image2" id="label2">IMG2</label>
       </div>
       <div>
         <input
@@ -45,7 +96,14 @@
           checked
           onclick="toggleImage(this, 2)"
         />
-        <label for="image3">PPL</label>
+        <label for="image3" id="label3">IMG3</label>
+        <input
+          type="checkbox"
+          id="image4"
+          checked
+          onclick="toggleImage(this, 3)"
+        />
+        <label for="image4" id="label4">IMG4</label>
       </div>
       <hr />
       <div>
@@ -162,47 +220,24 @@
                 <option value="all">All</option> <!-- Default option -->
             </select>
           </div>
-          <div>
-            <button id="count-export" disabled>Export CSV</button>
-          </div>
-
           <div class="file-input-container">
-            <label for="count-file-input" class="file-label">Import CSV</label>
+            <label for="count-file-input" class="file-label">Import</label>
             <input type="file" id="count-file-input" class="file-input" />
+            <button id="count-export" disabled>Export</button>
           </div>
         </details>
       </div>
       <div>
         <details closed>
           <summary>Annotate</summary>
-            <!-- Container for buttons -->
-            <div class="button-container">
-              <button class="custom-button" id="crosshairButton">
-                <svg class="crosshairs-button" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <!-- Circle for center -->
-                  <circle cx="12" cy="12" r="2" fill="#444" />
-                  <!-- Horizontal line -->
-                  <line x1="2" y1="12" x2="22" y2="12" stroke="#444" stroke-width="2" />
-                  <!-- Vertical line -->
-                  <line x1="12" y1="2" x2="12" y2="22" stroke="#444" stroke-width="2" />
-                </svg>
-              </button>
-              <button class="custom-button" id="rectangleButton">
-                <div class="square"></div>
-              </button>
-              <!-- <button class="custom-button" id="polygonButton">
-                <svg class="polygon" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                  <polygon points="50,10 90,35 73,85 27,85 10,35" fill="#444" />
-                </svg>
-              </button> -->
-            </div>
           <div>
             <input
             type="checkbox"
             id="show-annotations"
             checked
             onclick="toggleAnnotation(this)"
-          />
+            />
+          </div>
           <label for="show-annotation">Show annotations</label>
           <div>
             <input
@@ -210,131 +245,165 @@
             id="show-annotation-labels"
             checked
             onclick="toggleAnnotationLabels(this)"
-          />
-          <label for="show-annotation-labels">Show labels</label>
-          </div>
-          <div>
-            <button id="anno-prev-button" disabled>&larr;</button>
-            <input type="number" id="anno-id" placeholder="1" maxlength="3" value="1" min="1" max="9999" disabled/>
-            <button id="anno-next-button" disabled>&rarr;</button>
-            <div>
-              <input type="text" id="anno-label" placeholder="Label" disabled />
-            </div>
-            <div class="button-container">
-              <!-- Trash can button -->
-              <button class="custom-button" id="deleteButton" title="Delete">
-                <svg class="trash-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                  <!-- Trash Can Outline -->
-                  <path d="M9 3h6v2H9V3zm1 0v2h4V3h-4zM5 6h14v2H5V6zm2 3h10v11H7V9zm2 2v7h2v-7H9zm4 0v7h2v-7h-2z" />
-                </svg>
-              </button>
-              <button class="custom-button" id="gearButton" title="Settings">
-                <svg class="gear-icon" version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" 
-                width="800px" height="800px" viewBox="0 0 64 64" enable-background="new 0 0 64 64" xml:space="preserve">
-             <g>
-               <polygon fill="#444" stroke="#000000" stroke-width="2" stroke-miterlimit="10" points="32,1 26,1 26,10 20,12 14,6 6,14 12,20 
-                 10,26 1,26 1,38 10,38 12,44 6,50 14,58 20,52 26,54 26,63 32,63 38,63 38,54 44,52 50,58 58,50 52,44 54,38 63,38 63,26 54,26 
-                 52,20 58,14 50,6 44,12 38,10 38,1 	"/>
-               <circle fill="#FFFFFF" stroke="#000000" stroke-width="2" stroke-miterlimit="10" cx="32" cy="32" r="6"/>
-             </g>
-             </svg>
-              </button>
-              <input
-              type="checkbox"
-              id="repeat-anno"
-              disabled
             />
-            <label for="repeat-anno">Repeat Current</label>
-            </div>
-
-            <!-- Hidden Settings Menu -->
-            <div id="settingsMenu" class="menu">
-              <h4>Label</h4>
-              <div>
-                <input type="number" id="annoLabelFontSize" placeholder="16" maxlength="3" value="16" min="1"/>
-                <label for="annoLabelFontSize">Font Size</label>
-              </div>
-              <div>
-                <input type="color" id="annoLabelFontColor" value="#FFFFFF"/>
-                <label for="annoLabelFontColor">Font Color</label>
-              </div>
-              <div>
-                <input type="color" id="annoLabelBackgroundColor" value="#000000"/>
-                <label for="annoLabelBackgroundColor">Background Color</label>
-              </div>
-              <div>
-                <input type="number" id="annoLabelBackgroundOpacity" value="0.5" min="0" max="1"/>
-                <label for="annoLabelBackgroundOpacity">Background Opacity</label>
-              </div>
-              <div>
-                <button id="applyCurrentAnnoLabel">Apply to Current</button>
-                <button id="applyAllAnnoLabel">Apply to All</button>
-              </div>
-              <hr />
-              <h4>Point</h4>
-              <div>
-                <input type="number" id="pointLw" placeholder="2" maxlength="3" value="2" min="1" max="10"/>
-                <label for="pointLw">Line Weight</label>
-              </div>
-              <div>
-                <input type="number" id="pointOpacity" placeholder="1" maxlength="3" value="1" min="0" max="1"/>
-                <label for="pointOpacity">Opacity</label>
-              </div>
-              <div>
-                <input type="color" id="pointColor" value="#008000"/>
-                <label for="pointColor">Color</label>
-              </div>
-              <h4>Rectangle</h4>
-              <div>
-                <select id="rectBorderStyle">
-                  <option value="solid">Solid</option>
-                  <option value="dashed">Dashed</option>
-                  <option value="dotted">Dotted</option>
-                  <!-- <option value="double">Double</option>
-                  <option value="groove">Groove</option>
-                  <option value="ridge">Ridge</option>
-                  <option value="inset">Inset</option>
-                  <option value="outset">Outset</option> -->
-                  <option value="none">None</option>
-                </select>
-                <label for="rectBorderStyle">Border Style</label>
-              </div>
-              <div>
-                <input type="number" id="rectBorderLw" placeholder="2" maxlength="3" value="2" min="1" max="10"/>
-                <label for="rectBorderLw">Border Weight</label>
-              </div>
-              <div>
-                <input type="color" id="rectBorderColor" value="#008000"/>
-                <label for="rectBorderColor">Border Color</label>
-              </div>
-              <div>
-                <input type="number" id="rectBorderOpacity" placeholder="1" maxlength="3" value="1" min="0" max="1"/>
-                <label for="rectBorderOpacity">Border Opacity</label>
-              </div>
-              <div>
-                <input type="color" id="rectFillColor" value="#FFFFFF"/>
-                <label for="rectFillColor">Fill color</label>
-              </div>
-              <div>
-                <input type="number" id="rectFillOpacity" placeholder="1" maxlength="3" value="0" min="0" max="1"/>
-                <label for="rectFillOpacity">Fill Opacity</label>
-              </div>
-
-              <div>
-                <button id="applyCurrentAnno">Apply to Current</button>
-                <button id="applyAllAnno">Apply to All</button>
-              </div>
-            </div>
-
+            <label for="show-annotation-labels">Show labels</label>
           </div>
+
+          <div class="button-container">
+            <!-- Container for buttons -->
+            <button class="custom-button" id="crosshairButton" title="Point Mode">
+              <svg class="crosshairs-button" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <!-- Circle for center -->
+                <circle cx="12" cy="12" r="2" fill="#444" />
+                <!-- Horizontal line -->
+                <line x1="2" y1="12" x2="22" y2="12" stroke="#444" stroke-width="2" />
+                <!-- Vertical line -->
+                <line x1="12" y1="2" x2="12" y2="22" stroke="#444" stroke-width="2" />
+              </svg>
+            </button>
+            <button class="custom-button" id="rectangleButton" title="Rectangle Mode">
+              <div class="square"></div>
+            </button>
+            <!-- <button class="custom-button" id="polygonButton">
+              <svg class="polygon" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                <polygon points="50,10 90,35 73,85 27,85 10,35" fill="#444" />
+              </svg>
+            </button> -->
+            <!-- Trash can button -->
+            <button class="custom-button" id="deleteButton" title="Delete">
+              <svg class="trash-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                <!-- Trash Can Outline -->
+                <path d="M9 3h6v2H9V3zm1 0v2h4V3h-4zM5 6h14v2H5V6zm2 3h10v11H7V9zm2 2v7h2v-7H9zm4 0v7h2v-7h-2z" />
+              </svg>
+            </button>
+            <button class="custom-button" id="gearButton" title="Settings">
+              <svg class="gear-icon" version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" 
+              width="800px" height="800px" viewBox="0 0 64 64" enable-background="new 0 0 64 64" xml:space="preserve">
+              <g>
+                <polygon fill="#444" stroke="#000000" stroke-width="2" stroke-miterlimit="10" points="32,1 26,1 26,10 20,12 14,6 6,14 12,20 
+                  10,26 1,26 1,38 10,38 12,44 6,50 14,58 20,52 26,54 26,63 32,63 38,63 38,54 44,52 50,58 58,50 52,44 54,38 63,38 63,26 54,26 
+                  52,20 58,14 50,6 44,12 38,10 38,1 	"/>
+                <circle fill="#FFFFFF" stroke="#000000" stroke-width="2" stroke-miterlimit="10" cx="32" cy="32" r="6"/>
+              </g>
+              </svg>
+            </button>
+            <button class="custom-button" id="repeatButton" disabled title="Repeat">
+              <svg version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+                width="219.27px" height="219.27px" viewBox="0 0 219.27 219.27" style="enable-background:new 0 0 219.27 219.27;"
+                xml:space="preserve">
+                <g>
+                <path d="M171.568,129.988V98.497c0-47.302-38.482-85.784-85.784-85.784C38.483,12.713,0,51.195,0,98.497h40
+                  c0-25.245,20.539-45.784,45.784-45.784c25.246,0,45.784,20.539,45.784,45.784v31.491L112.15,110.57l-28.284,28.285l67.702,67.701
+                  l67.701-67.701l-28.283-28.285L171.568,129.988z"/>
+                </g>
+              </svg>
+            </button>
+          </div>
+
+          <div class="arrow-container">
+            <button class="anno-arrows" id="anno-first-button" disabled title="Go to First">
+              <svg fill="#000000" viewBox="0 0 24 24" id="left-double-arrow" data-name="Line Color" xmlns="http://www.w3.org/2000/svg" class="icon line-color"><polyline id="secondary" points="7 4 4 7 7 10" style="fill: none; stroke: rgb(0, 0, 0); stroke-linecap: round; stroke-linejoin: round; stroke-width: 2;"></polyline><line id="secondary-2" data-name="secondary" x1="20" y1="7" x2="4" y2="7" style="fill: none; stroke: rgb(0, 0, 0); stroke-linecap: round; stroke-linejoin: round; stroke-width: 2;"></line><line id="primary" x1="20" y1="17" x2="4" y2="17" style="fill: none; stroke: rgb(0, 0, 0); stroke-linecap: round; stroke-linejoin: round; stroke-width: 2;"></line><polyline id="primary-2" data-name="primary" points="7 14 4 17 7 20" style="fill: none; stroke: rgb(0, 0, 0); stroke-linecap: round; stroke-linejoin: round; stroke-width: 2;"></polyline></svg>
+            </button>
+            <button class="anno-arrows" id="anno-prev-button" disabled title="Previous">
+              <svg fill="#000000" viewBox="0 0 24 24" id="anno-prev-button" data-name="Line Color" xmlns="http://www.w3.org/2000/svg" class="icon line-color"><line id="primary" x1="21" y1="12" x2="3" y2="12" style="fill: none; stroke: rgb(0, 0, 0); stroke-linecap: round; stroke-linejoin: round; stroke-width: 2;"></line><polyline id="secondary" points="6 9 3 12 6 15" style="fill: none; stroke: rgb(0, 0, 0); stroke-linecap: round; stroke-linejoin: round; stroke-width: 2;"></polyline></svg>
+            </button>
+            <input type="number" id="anno-id" placeholder="1" maxlength="3" value="1" min="1" max="9999" disabled/>
+            <button class="anno-arrows" id="anno-next-button" disabled title="Next">
+              <svg fill="#000000" viewBox="0 0 24 24" data-name="Line Color" xmlns="http://www.w3.org/2000/svg"><line x1="3" y1="12" x2="21" y2="12" style="fill: none; stroke: rgb(0, 0, 0); stroke-linecap: round; stroke-linejoin: round; stroke-width: 2;"></line><polyline points="18 15 21 12 18 9" style="fill: none; stroke: rgb(0, 0, 0); stroke-linecap: round; stroke-linejoin: round; stroke-width: 2;"></polyline></svg>
+            </button>
+            <button class="anno-arrows" id="anno-last-button" disabled title="'Go to Last">
+              <svg fill="#000000" viewBox="0 0 24 24" id="right-double-arrow" data-name="Line Color" xmlns="http://www.w3.org/2000/svg" class="icon line-color"><polyline id="secondary" points="17 20 20 17 17 14" style="fill: none; stroke: rgb(0, 0, 0); stroke-linecap: round; stroke-linejoin: round; stroke-width: 2;"></polyline><line id="secondary-2" data-name="secondary" x1="4" y1="17" x2="20" y2="17" style="fill: none; stroke: rgb(0, 0, 0); stroke-linecap: round; stroke-linejoin: round; stroke-width: 2;"></line><line id="primary" x1="4" y1="7" x2="20" y2="7" style="fill: none; stroke: rgb(0, 0, 0); stroke-linecap: round; stroke-linejoin: round; stroke-width: 2;"></line><polyline id="primary-2" data-name="primary" points="17 10 20 7 17 4" style="fill: none; stroke: rgb(0, 0, 0); stroke-linecap: round; stroke-linejoin: round; stroke-width: 2;"></polyline></svg>
+            </button>
           </div>
           <div>
-            <input type="file" id="geojsonFileInput" accept=".geojson,.json" />
+            <input type="text" id="anno-label" placeholder="Label" disabled />
           </div>
-          <div>
-            <button id="loadAnnotationsBtn">Load</button>
-            <button id="exportBtn">Export</button>
-            <button id="clearBtn" onclick="clearAnnotations()">Clear</button>
+          <!-- Hidden Settings Menu -->
+          <div id="annoSettingsMenu" class="menu-hidden">
+            <h4>Label</h4>
+            <div>
+              <input type="number" id="annoLabelFontSize" placeholder="16" maxlength="3" value="16" min="1"/>
+              <label for="annoLabelFontSize">Font Size</label>
+            </div>
+            <div>
+              <input type="color" id="annoLabelFontColor" value="#FFFFFF"/>
+              <label for="annoLabelFontColor">Font Color</label>
+            </div>
+            <div>
+              <input type="color" id="annoLabelBackgroundColor" value="#000000"/>
+              <label for="annoLabelBackgroundColor">Background Color</label>
+            </div>
+            <div>
+              <input type="number" id="annoLabelBackgroundOpacity" value="0.5" min="0" max="1"/>
+              <label for="annoLabelBackgroundOpacity">Background Opacity</label>
+            </div>
+            <div>
+              <button id="applyCurrentAnnoLabel">Apply to Current</button>
+              <button id="applyAllAnnoLabel">Apply to All</button>
+            </div>
+            <hr />
+            <h4>Point</h4>
+            <div>
+              <input type="number" id="pointLw" placeholder="2" maxlength="3" value="2" min="1" max="10"/>
+              <label for="pointLw">Line Weight</label>
+            </div>
+            <div>
+              <input type="number" id="pointOpacity" placeholder="1" maxlength="3" value="1" min="0" max="1"/>
+              <label for="pointOpacity">Opacity</label>
+            </div>
+            <div>
+              <input type="color" id="pointColor" value="#008000"/>
+              <label for="pointColor">Color</label>
+            </div>
+            <h4>Rectangle</h4>
+            <div>
+              <select id="rectBorderStyle">
+                <option value="solid">Solid</option>
+                <option value="dashed">Dashed</option>
+                <option value="dotted">Dotted</option>
+                <!-- <option value="double">Double</option>
+                <option value="groove">Groove</option>
+                <option value="ridge">Ridge</option>
+                <option value="inset">Inset</option>
+                <option value="outset">Outset</option> -->
+                <option value="none">None</option>
+              </select>
+              <label for="rectBorderStyle">Border Style</label>
+            </div>
+            <div>
+              <input type="number" id="rectBorderLw" placeholder="2" maxlength="3" value="2" min="1" max="10"/>
+              <label for="rectBorderLw">Border Weight</label>
+            </div>
+            <div>
+              <input type="color" id="rectBorderColor" value="#008000"/>
+              <label for="rectBorderColor">Border Color</label>
+            </div>
+            <div>
+              <input type="number" id="rectBorderOpacity" placeholder="1" maxlength="3" value="1" min="0" max="1"/>
+              <label for="rectBorderOpacity">Border Opacity</label>
+            </div>
+            <div>
+              <input type="color" id="rectFillColor" value="#FFFFFF"/>
+              <label for="rectFillColor">Fill color</label>
+            </div>
+            <div>
+              <input type="number" id="rectFillOpacity" placeholder="1" maxlength="3" value="0" min="0" max="1"/>
+              <label for="rectFillOpacity">Fill Opacity</label>
+            </div>
+
+            <div>
+              <button id="applyCurrentAnno">Apply to Current</button>
+              <button id="applyAllAnno">Apply to All</button>
+            </div>
+          </div>
+          <!-- </div> -->
+          <!-- </div> -->
+          <div class="file-input-container">
+            <label for="loadAnnotationsBtn" class="file-label">Import</label>
+            <input type="file" id="loadAnnotationsBtn" class="file-input" title="Import geoJSON" />
+            <!-- <button id="loadAnnotationsBtn" class="file-label">Import</button> -->
+            <button id="exportBtn" class="file-label" title="Export as geoJSON">Export</button>
+            <button id="clearBtn" class="file-label" title="Clear Annotations" onclick="clearAnnotations()">Clear</button>
           </div>
           <div id="loadAnnoFromJSON"></div>
         </details>

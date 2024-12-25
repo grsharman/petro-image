@@ -53,6 +53,7 @@ fetch('samples.json')
     // Example: initialize OpenSeadragon with the first tile source
     loadTileSet(0);
     updateButtonLabels(0);
+    // updateCheckboxVisibility(tileSets[0].length);
     addScalebar(pixelsPerMeters[0]);
     populateGroupDropdown();
 
@@ -153,11 +154,15 @@ document.getElementById('sampleDropdown').addEventListener('change', function() 
   clearAnnotations();
   annotations = [];
   updateButtonLabels(currentIndex);
+  // updateCheckboxVisibility(tileSets[currentIndex].length);
   addScalebar(pixelsPerMeters[currentIndex]);
   clearGridOverlayPoints();
   clearGridOverlayCrosshairs();
   enableGridButtons();
   removeAoiRectangle();
+  updateOpacityImageSliderVisibility();
+  updateImageLabels();
+  document.getElementById('enableDivideImages').checked = true;
 
   const annoJSONButtonContainer = document.getElementById('loadAnnoFromJSON');
 
@@ -186,15 +191,61 @@ document.getElementById('sampleDropdown').addEventListener('change', function() 
 
 // Function to update the button labels based on tileLabels array
 function updateButtonLabels(index) {
-  //("tileLabels for index", index, ":", tileLabels[index]);
-  document.querySelector("label[for='image1']").textContent = tileLabels[index][0] || "XPL1";
-  document.querySelector("label[for='image2']").textContent= tileLabels[index][1] || "XPL2";
-  document.querySelector("label[for='image3']").textContent = tileLabels[index][2] || "PPL";
-  // Default is to be checked upon image change
-  document.getElementById("image1").checked = true;
-  document.getElementById("image2").checked = true;
-  document.getElementById("image3").checked = true;
+  const numButtons = tileSets[index].length;
+  console.log('numButtons',numButtons);
+  for (let i = 1; i <= 4; i++) {
+    const checkbox = document.getElementById(`image${i}`);
+    const label  = document.getElementById(`label${i}`);
+    if (i <= numButtons) {
+      checkbox.style.display = 'inline';
+      label.style.display = 'inline';
+      label.textContent = tileLabels[index][i-1];
+      checkbox.checked = true;
+    } else {
+      checkbox.style.display = "none";
+      label.style.display = "none";
+      label.textContent = '';
+    }
+  }
 }
+
+// Function to update the label dynamically
+function updateImageLabels() {
+  console.log(tileLabels[currentIndex]);
+  for (let i = 0; i < tileLabels[currentIndex].length; i++) {
+    console.log(i,tileLabels[currentIndex][i]);
+    const labelElement = document.getElementById(`labelForOpacityImage${i+1}`);
+    labelElement.textContent = tileLabels[currentIndex][i]; // Update the label text
+  }
+}
+
+// // Function to update the button labels based on tileLabels array
+// function updateButtonLabels(index) {
+//   //("tileLabels for index", index, ":", tileLabels[index]);
+//   document.querySelector("label[for='image1']").textContent = tileLabels[index][0] || "XPL1";
+//   document.querySelector("label[for='image2']").textContent= tileLabels[index][1] || "XPL2";
+//   document.querySelector("label[for='image3']").textContent = tileLabels[index][2] || "PPL";
+//   // Default is to be checked upon image change
+//   document.getElementById("image1").checked = true;
+//   document.getElementById("image2").checked = true;
+//   document.getElementById("image3").checked = true;
+// }
+
+// Function to update visibility of checkboxes
+// function updateCheckboxVisibility(arrayLength) {
+//   // Iterate over the checkboxes
+//   for (let i = 2; i <= 4; i++) { // Start from checkbox 2
+//       const checkbox = document.getElementById(`image${i}`);
+//       if (checkbox) {
+//           // Show checkboxes based on array length
+//           if (i <= arrayLength + 1) { // +1 because checkbox1 is always shown
+//               checkbox.style.display = "inline"; // Show
+//           } else {
+//               checkbox.style.display = "none"; // Hide
+//           }
+//       }
+//   }
+// }
 
 const tooltip = document.getElementById("tooltip-desc");
 const infoButton = document.getElementById("info-button-desc");
@@ -284,6 +335,19 @@ function loadTileSet(index) {
   });
 }
 
+function setTileSetOpacity() {
+  for (let i = 0; i < viewer.world.getItemCount(); ++i) {
+    const opacityValue = Number(document.getElementById(`opacityImage${i+1}`).value)/100; // Convert percent
+    if (document.getElementById(`image${i+1}`).checked) {
+      const tiledImage = viewer.world.getItemAt(i);
+      if (tiledImage) {
+        tiledImage.setOpacity(opacityValue);
+        //tiledImage.setOpacity(opacityValues[i]);
+      }
+    }
+  }
+}
+
 const viewerContainer = document.getElementById("viewer-container");
 
 // Share the mouse position between event handlers.
@@ -296,6 +360,14 @@ const divideImages = () => {
   // Bail out if there are no images.
   if (viewer.world.getItemCount() == 0) {
     return;
+  }
+  // Bail out if enableDivideImages is false
+  if (!enableDivideImages) {
+    for (let i = 0; i < viewer.world.getItemCount(); ++i) {
+      const image = viewer.world.getItemAt(i);
+      image.setClip(null); // Clear the clip
+    }
+    return; // Exit the function
   }
 
   // Get the clip point and clamp it to within the image bounds.
@@ -319,11 +391,16 @@ const divideImages = () => {
     image.setClip(new OpenSeadragon.Rect(xClip, yClip, size.x, size.y));
     ++previousVisibleImages;
   }
+  // TODO: testing
+  setTileSetOpacity();
 };
+
 
 const toggleImage = (checkbox, idx) => {
   viewer.world.getItemAt(idx).setOpacity(checkbox.checked ? 1 : 0);
-  divideImages();
+  if (enableDivideImages) {
+    divideImages();
+  }
 };
 
 const toggleGrid = (event) => {
@@ -355,7 +432,53 @@ const sliderValue_4 = document.getElementById("grid-bottom-value");
 slider_4.oninput = function() {
   sliderValue_4.textContent = this.value;
 };
+const image1slider = document.getElementById("opacityImage1");
+const image1sliderValue = document.getElementById("opacityImage1Value");
+image1slider.oninput = function() {
+  image1sliderValue.textContent = `${this.value}%`;
+};
+const image2slider = document.getElementById("opacityImage2");
+const image2sliderValue = document.getElementById("opacityImage2Value");
+image2slider.oninput = function() {
+  image2sliderValue.textContent = `${this.value}%`;
+};
+const image3slider = document.getElementById("opacityImage3");
+const image3sliderValue = document.getElementById("opacityImage3Value");
+image3slider.oninput = function() {
+  image3sliderValue.textContent = `${this.value}%`;
+};
+const image4slider = document.getElementById("opacityImage4");
+const image4sliderValue = document.getElementById("opacityImage4Value");
+image4slider.oninput = function() {
+  image4sliderValue.textContent = `${this.value}%`;
+};
 
+function updateOpacityImageSliderVisibility() {
+  // Get all slider container divs
+  const sliders = document.querySelectorAll("#imageSettingsMenu > div > div");
+
+  // Loop through all sliders and adjust visibility
+  sliders.forEach((slider, index) => {
+    if (index < tileSets[currentIndex].length) {
+      console.log('slider',slider);
+      slider.style.display = "block"; // Show the slider
+      // Reset the slider value to 100
+      const sliderInput = slider.querySelector("input[type='range']");
+      const sliderValueSpan = slider.querySelector(".slider-value");
+      if (sliderInput) {
+        sliderInput.value = 100; // Reset slider to 100
+      }
+      if (sliderValueSpan) {
+        sliderValueSpan.textContent = "100%"; // Update displayed value
+      }
+    } else {
+      slider.style.display = "none"; // Hide the slider
+    }
+  });
+}
+
+
+// TODO: Code below looks redundant with code above
 // Constrain values of sliders
 const slider1 = document.getElementById('grid-left');
 const slider2 = document.getElementById('grid-right');
@@ -406,11 +529,13 @@ let annoDict = {}; // Dictionary for ID number (1+) with unique alphanumeric ID
 
 let pointButton = document.getElementById("crosshairButton");
 let rectButton = document.getElementById("rectangleButton");
+let repeatButton = document.getElementById("repeatButton");
 // let polyButton = document.getElementById("polygonButton"); // TODO: Future implementation
 
 // Flags to track modes
 let isPointMode = false;
 let isRectangleMode = false;
+let isRepeatMode = false;
 // let isPolygonMode = false;
 
 pointButton.addEventListener("click", () => {
@@ -449,6 +574,19 @@ rectButton.addEventListener("click", () => {
   }
 });
 
+repeatButton.addEventListener("click", () => {
+  if (isRepeatMode === false) {
+    console.log('repeat mode activated');
+    repeatButton.classList.add('active');
+    isRepeatMode = true;
+  }
+  else {
+    console.log('repeat mode deactivated');
+    repeatButton.classList.remove('active');
+    isRepeatMode = false;
+  }
+});
+
 // TODO: In case I ever add a polygon feature
 // polyButton.addEventListener("click", () => {
 //   console.log('poly button clicked');
@@ -468,10 +606,11 @@ rectButton.addEventListener("click", () => {
 //   }
 // });
 
-// Show or hide the settings menu when the gear button is clicked
-document.getElementById("gearButton").addEventListener("click", function (event) {
+// Show or hide the image menu when the gear button is clicked
+document.getElementById("imageSettingsButton").addEventListener("click", function (event) {
+  console.log('image settings button clicked');
   event.stopPropagation(); // Prevent click from reaching the window listener
-  const menu = document.getElementById("settingsMenu");
+  const menu = document.getElementById("imageSettingsMenu");
   if (menu.style.display === "none" || menu.style.display === "") {
     menu.style.display = "block";
   } else {
@@ -481,25 +620,68 @@ document.getElementById("gearButton").addEventListener("click", function (event)
 
 // Optional: Close the menu if clicked outside
 window.addEventListener("click", function (event) {
-  const menu = document.getElementById("settingsMenu");
-  if (!event.target.closest("#gearButton") && !event.target.closest("#settingsMenu")) {
+  const menu = document.getElementById("imageSettingsMenu");
+  if (!event.target.closest("#imageSettingsButton") && !event.target.closest("#imageSettingsMenu")) {
+    menu.style.display = "none";
+  }
+});
+
+// Show or hide the settings menu when the gear button is clicked
+document.getElementById("gearButton").addEventListener("click", function (event) {
+  event.stopPropagation(); // Prevent click from reaching the window listener
+  const menu = document.getElementById("annoSettingsMenu");
+  if (menu.style.display === "none" || menu.style.display === "") {
+    menu.style.display = "block";
+  } else {
+    menu.style.display = "none";
+  }
+});
+
+// Optional: Close the menu if clicked outside
+window.addEventListener("click", function (event) {
+  const menu = document.getElementById("annoSettingsMenu");
+  if (!event.target.closest("#gearButton") && !event.target.closest("#annoSettingsMenu")) {
     menu.style.display = "none";
   }
 });
 
 const enableAnnoButtons = () => {
+  document.getElementById("anno-first-button").disabled = false;
   document.getElementById("anno-prev-button").disabled = false;
   document.getElementById("anno-id").disabled = false;
   document.getElementById("anno-next-button").disabled = false;
+  document.getElementById("anno-last-button").disabled = false;
   document.getElementById("anno-label").disabled = false;
 };
 
 const disableAnnoButtons = () => {
+  document.getElementById("anno-first-button").disabled = true;
   document.getElementById("anno-prev-button").disabled = true;
   document.getElementById("anno-id").disabled = true;
   document.getElementById("anno-next-button").disabled = true;
+  document.getElementById("anno-last-button").disabled = true;
   document.getElementById("anno-label").disabled = true;
 };
+
+document.getElementById('anno-first-button').addEventListener('click', function() {
+  const annoIdBox = document.getElementById('anno-id');
+  const annoIds = Object.keys(annoDict).map(Number);
+  const firstId = annoIds[0];
+  annoIdBox.value = firstId;
+  goToAnnoPoint(annoJSON[firstId].properties.xLabel,
+    annoJSON[firstId].properties.yLabel);
+  annoLabelToText();
+});
+
+document.getElementById('anno-last-button').addEventListener('click', function() {
+  const annoIdBox = document.getElementById('anno-id');
+  const annoIds = Object.keys(annoDict).map(Number);
+  const lastId = annoIds[annoIds.length-1];
+  annoIdBox.value = lastId;
+  goToAnnoPoint(annoJSON[lastId].properties.xLabel,
+    annoJSON[lastId].properties.yLabel);
+  annoLabelToText();
+});
 
 // When the previous annotation button is clicked
 document.getElementById('anno-prev-button').addEventListener('click', function() {
@@ -839,6 +1021,17 @@ function generateUniqueId(length = 8) {
   return result;
 }
 
+let enableDivideImages = true;
+const toggleDivideImages = (event) => {
+  if (event.checked) {
+    enableDivideImages = true;
+    divideImages();
+  } else {
+    enableDivideImages = false;
+    divideImages();
+  }
+}
+
 // Import, add, and export points with labels
 const toggleAnnotation = (event) => {
   for (let el of document.getElementsByClassName("annotate-symbol")) {
@@ -913,8 +1106,7 @@ viewer.addHandler('canvas-click', function(event) {
     const pointColor = document.getElementById("pointColor").value;
     const pointOpacity = Number(document.getElementById("pointOpacity").value);
 
-    const repeat = document.getElementById('repeat-anno').checked;
-    if (repeat) {
+    if (isRepeatMode) {
       const annoId = parseInt(document.getElementById('anno-id').value);
       var constPointLabel = annoJSON[annoId].properties.label;
     } else {
@@ -1071,8 +1263,7 @@ viewer.addHandler('canvas-release', function(event) {
       const fillColor = document.getElementById("rectFillColor").value;
       const fillOpacity = Number(document.getElementById("rectFillOpacity").value);
 
-      const repeat = document.getElementById('repeat-anno').checked;
-      if (repeat) {
+      if (isRepeatMode) {
         const annoId = parseInt(document.getElementById('anno-id').value);
         var constRectLabel = annoJSON[annoId].properties.label;
       } else {
@@ -1174,7 +1365,7 @@ function addText(i, label, location, color='#FFFFFF', fontSize=16, backgroundCol
   annotateLabels.push(pointLabel);
   hasUnsavedAnnotations = true;
   // // updateButtonColor(); // Use for testing // Use for testing
-  updateRepeatAnnoLabelCheckbox();
+  updateRepeatButton();
 }
 
 // Function to delete the text of an existing annotation label
@@ -1238,8 +1429,8 @@ function addCrosshairs(i, location, color='purple', lineWeight = 2, opacity = 1)
 
     // Apply inline styles for customization
     crosshairsAnnotate.style.setProperty("--crosshair-color", color);
-    crosshairsAnnotate.style.setProperty("--crosshair-line-weight", `${lineWeight}px`);
-    crosshairsAnnotate.style.setProperty("--crosshair-opacity", opacity);
+    crosshairsAnnotate.style.setProperty("--crosshair-line-weight", `${Number(lineWeight)}px`);
+    crosshairsAnnotate.style.setProperty("--crosshair-opacity", Number(opacity));
 
     const overlay = viewer.addOverlay({
       element: crosshairsAnnotate,
@@ -1248,7 +1439,7 @@ function addCrosshairs(i, location, color='purple', lineWeight = 2, opacity = 1)
   });
   annotatePoints.push(crosshairsAnnotate);
   hasUnsavedAnnotations = true;
-  updateRepeatAnnoLabelCheckbox();
+  updateRepeatButton();
   // updateButtonColor(); // Use for testing
 }
 
@@ -1310,7 +1501,7 @@ function deleteCrosshairs(id) {
   } else {
     console.warn(`Overlay with ID annotate-crosshair-${id} not found.`);
   }
-  updateRepeatAnnoLabelCheckbox();
+  updateRepeatButton();
 }
 
 // TODO: Could probably consolidate these "delete" functions into a single function
@@ -1323,7 +1514,7 @@ function deleteRectangle(id) {
   } else {
     console.warn(`Overlay with ID annotate-rect-${id} not found.`);
   }
-  updateRepeatAnnoLabelCheckbox();
+  updateRepeatButton();
 }
 
 function addRectangle(i, x, y, w, h) {
@@ -1341,7 +1532,7 @@ function addRectangle(i, x, y, w, h) {
   annotateRectangles.push(rectAnnotate);
   hasUnsavedAnnotations = true;
   // updateButtonColor(); // Use for testing
-  updateRepeatAnnoLabelCheckbox();
+  updateRepeatButton();
 }
 
 function loadAnnotationsFromJSON(file) {
@@ -1363,7 +1554,7 @@ function loadAnnotationsFromJSON(file) {
       .catch(error => {
         console.error('Error loading GeoJSON:', error);
       });
-  updateRepeatAnnoLabelCheckbox();
+  updateRepeatButton();
 }
 
 // TODO: This function seems too complicated and probably redundant with parts
@@ -1440,9 +1631,9 @@ function loadAnnotations(geoJSONData) {
 
         // Add the point annotation (crosshairs, text)
         addText(currentAnnotationId, label, viewportPoint, properties.labelFontColor,
-          properties.labelFontSize, properties.labelBackgroundColor, properties.labelBackgroundOpacity);
-        addCrosshairs(currentAnnotationId, viewportPoint, properties.pointColor, properties.pointLw,
-          properties.pointOpacity);
+          Number(properties.labelFontSize), properties.labelBackgroundColor, Number(properties.labelBackgroundOpacity));
+        addCrosshairs(currentAnnotationId, viewportPoint, properties.pointColor, Number(properties.pointLw),
+          Number(properties.pointOpacity));
 
         // Create the GeoJSON entry for this annotation
         const geoJSONFeature = {
@@ -1457,16 +1648,16 @@ function loadAnnotations(geoJSONData) {
             xLabel: properties.xLabel,
             yLabel: properties.yLabel,
             imageTitle: properties.imageTitle,
-            pixelsPerMeter: properties.pixelsPerMeter,
-            imageWidth: properties.imageWidth,
-            imageHeight: properties.imageHeight,
-            labelFontSize: properties.labelFontSize,
+            pixelsPerMeter: Number(properties.pixelsPerMeter),
+            imageWidth: Number(properties.imageWidth),
+            imageHeight: Number(properties.imageHeight),
+            labelFontSize: Number(properties.labelFontSize),
             labelFontColor: properties.labelFontColor,
             labelBackgroundColor: properties.labelBackgroundColor,
-            labelBackgroundOpacity: properties.labelBackgroundOpacity,
-            pointLw: properties.pointLw,
+            labelBackgroundOpacity: Number(properties.labelBackgroundOpacity),
+            pointLw: Number(properties.pointLw),
             pointColor: properties.pointColor,
-            pointOpacity: properties.pointOpacity,
+            pointOpacity: Number(properties.pointOpacity),
           }
         };
         // Add the feature to the geoJSONDict with currentAnnotationId + 1 as the key
@@ -1477,9 +1668,7 @@ function loadAnnotations(geoJSONData) {
       } else if (geometry.type === "Polygon") { // Polygon annotation
         console.log('Loading polygon!!!');
         const image = viewer.world.getItemAt(0);
-        if (image) {
-          console.log('tiledImage',image);
-        } else {
+        if (!image) {
           console.error('TiledImage is undefined or not yet loaded.');
           return;
         }
@@ -1498,17 +1687,19 @@ function loadAnnotations(geoJSONData) {
           
         // Add the point annotation (crosshairs, text)
         addText(currentAnnotationId, properties.label, viewportPoint, properties.labelFontColor,
-          properties.labelFontSize, properties.labelBackgroundColor, properties.labelBackgroundOpacity
+          Number(properties.labelFontSize), properties.labelBackgroundColor, Number(properties.labelBackgroundOpacity)
         );
      
-        const borderColorToPlot = applyOpacityToColor(properties.borderColor, properties.borderOpacity);
-        const fillColorToPlot = applyOpacityToColor(properties.fillColor, properties.fillOpacity);
+        console.log('inputs',currentAnnotationId, properties.label, viewportPoint, properties.labelFontColor, Number(properties.labelFontSize), properties.labelBackgroundColor, Number(properties.labelBackgroundOpacity));
+
+        const borderColorToPlot = applyOpacityToColor(properties.borderColor, Number(properties.borderOpacity));
+        const fillColorToPlot = applyOpacityToColor(properties.fillColor, Number(properties.fillOpacity));
         
         overlayElement = document.createElement('div');
         overlayElement.className = "annotate-rectangle";
         overlayElement.style.borderStyle = properties.borderStyle;
         overlayElement.style.borderColor = borderColorToPlot;
-        overlayElement.style.borderWidth = `${properties.borderLw}px`;
+        overlayElement.style.borderWidth = `${Number(properties.borderLw)}px`;
         overlayElement.style.backgroundColor = fillColorToPlot;
         overlayElement.id = `annotate-rect-${currentAnnotationId}`;
         
@@ -1533,19 +1724,19 @@ function loadAnnotations(geoJSONData) {
             w: properties.w,
             h: properties.h,
             imageTitle: properties.imageTitle,
-            pixelsPerMeter: properties.pixelsPerMeter,
-            imageWidth: properties.imageWidth,
-            imageHeight: properties.imageHeight,
-            labelFontSize: properties.labelFontSize,
+            pixelsPerMeter: Number(properties.pixelsPerMeter),
+            imageWidth: Number(properties.imageWidth),
+            imageHeight: Number(properties.imageHeight),
+            labelFontSize: Number(properties.labelFontSize),
             labelFontColor: properties.labelFontColor,
             labelBackgroundColor: properties.labelBackgroundColor,
-            labelBackgroundOpacity: properties.labelBackgroundOpacity,
+            labelBackgroundOpacity: Number(properties.labelBackgroundOpacity),
             borderStyle: properties.borderStyle,
-            borderLw: properties.borderLw,
+            borderLw: Number(properties.borderLw),
             borderColor: properties.borderColor,
-            borderOpacity: properties.borderOpacity,
+            borderOpacity: Number(properties.borderOpacity),
             fillColor: properties.fillColor,
-            fillOpacity: properties.fillOpacity
+            fillOpacity: Number(properties.fillOpacity)
           }
         };
         // Add the feature to the geoJSONDict with currentAnnotationId + 1 as the key
@@ -1567,13 +1758,25 @@ function loadAnnotations(geoJSONData) {
 }
 
 // New loading code
-document.getElementById('loadAnnotationsBtn').addEventListener('click', function () {
-  const fileInput = document.getElementById('geojsonFileInput');
+document.getElementById('loadAnnotationsBtn').addEventListener('change', function(event) {
+  
+  // const fileInput = document.getElementById('geojsonFileInput');
+  const fileInput = event.target;
+  // Old way
+  // const fileInput = document.getElementById()
+  // const file = fileInput.files[0];
+
   const file = fileInput.files[0];
+  if (!file) {
+    console.log('not a file!');
+    return;
+  }
+
   if (file) {
       const reader = new FileReader();
       reader.onload = function (event) {
           const geoJSONData = event.target.result;
+          console.log('geoJSONData',geoJSONData);
           loadAnnotations(geoJSONData);
           fileInput.value = '';
       };
@@ -1627,7 +1830,9 @@ const clearAnnotations = () => {
 
 viewerContainer.addEventListener("pointermove", (event) => {
   mousePos = new OpenSeadragon.Point(event.clientX, event.clientY);
-  divideImages();
+  if (enableDivideImages) {
+    divideImages();
+  }
 });
 
 ////////////////////////
@@ -1654,6 +1859,9 @@ document.addEventListener("keydown", (event) => {
         break;
       case '3':
         toggleCheckbox('image3');
+        break;
+      case '4':
+        toggleCheckbox('image4');
         break;
       case 'g':
         toggleCheckbox('show-grid');
@@ -2243,11 +2451,10 @@ function inputNotesText() {
   hasUnsavedCounts = true;
 }
 
-// Function to update checkbox state
-function updateRepeatAnnoLabelCheckbox() {
-  const checkbox = document.getElementById('repeat-anno');
+// Function to update repeatButton state
+function updateRepeatButton() {
   // Enable the checkbox if the dictionary has at least one item
-  checkbox.disabled = Object.keys(annoDict).length === 0;
+  repeatButton.disabled = Object.keys(annoDict).length === 0;
 }
 
 // TODO: in progress. Currently not working. Feature implement paused
@@ -2362,11 +2569,18 @@ document.getElementById('count-export').addEventListener('click', function() {
   hasUnsavedCounts = false;
 });
 
-document.getElementById('count-file-input').addEventListener('change', function(event) {
-  const file = event.target.files[0];
-  if (!file) return;
-  console.log("File chosen:", file.name); // Optional: log the file name
-});
+// TODO: Is the code below unnecessary?
+// document.getElementById('count-file-input').addEventListener('change', function(event) {
+//   const file = event.target.files[0];
+//   if (!file) return;
+//   console.log("File chosen:", file.name); // Optional: log the file name
+// });
+
+// document.getElementById('loadAnnotationsBtn').addEventListener('change', function(event) {
+//   const file = event.target.files[0];
+//   if (!file) return;
+//   console.log("File chosen:", file.name); // Optional: log the file name
+// });
 
 // Import CSV of previously generated point-count data
 // Handle the file selection
