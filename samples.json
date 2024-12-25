@@ -17,7 +17,7 @@
             "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0004 01 2.5x XPL00 final.dzi",
             "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0004 01 2.5x XPL30 final.dzi"
         ],
-        "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/annotorious/annotations/SD0004.geojson"
+        "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/SD0004.geojson"
     },
     "SD0004 (1 layer)":
     {
@@ -51,7 +51,7 @@
             "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0004 01 2.5x PPL00 final.dzi",
             "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0004 01 2.5x XPL00 final.dzi"
         ],
-        "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/annotorious/annotations/SD0004.geojson"
+        "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/SD0004.geojson"
     },
     "SD0004 (4 layer)":
     {
@@ -73,7 +73,7 @@
             "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0004 01 2.5x XPL30 final.dzi",
             "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0004 01 2.5x XPL00 final.dzi"
         ],
-        "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/annotorious/annotations/SD0004.geojson"
+        "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/SD0004.geojson"
     },
     "ARCS-44":
     {
