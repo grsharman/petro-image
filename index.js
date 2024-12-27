@@ -462,6 +462,18 @@ function updateOpacityImageSliderVisibility() {
       const sliderValueSpan = slider.querySelector(".slider-value");
       if (sliderInput) {
         sliderInput.value = 100; // Reset slider to 100
+
+        // Attach an event listener to dynamically update opacity
+        sliderInput.addEventListener("input", () => {
+          console.log('slider input event listener');
+          const opacity = sliderInput.value / 100;
+          setTileSetOpacity();
+          // Update the displayed slider value
+          if (sliderValueSpan) {
+            sliderValueSpan.textContent = `${sliderInput.value}%`;
+          }
+        });
+
       }
       if (sliderValueSpan) {
         sliderValueSpan.textContent = "100%"; // Update displayed value
