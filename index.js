@@ -161,6 +161,7 @@ document.getElementById('sampleDropdown').addEventListener('change', function() 
   removeAoiRectangle();
   updateOpacityImageSliderVisibility();
   updateImageLabels();
+  resetMeasurements();
   document.getElementById('enableDivideImages').checked = true;
 
   const annoJSONButtonContainer = document.getElementById('loadAnnoFromJSON');
@@ -2961,6 +2962,14 @@ let firstViewerElementPoint;
 let firstViewportPoint;
 let secondViewerElementPoint;
 let secondViewportPoint;
+const x0 = document.getElementById('x0');
+const y0 = document.getElementById('y0');
+const x1 = document.getElementById('x1');
+const y1 = document.getElementById('y1');
+const distanceElement = document.getElementById('distance');
+const measurementButton = document.getElementById("toggleMeasurementButton");
+const showMeasurementsButton = document.getElementById("show-measurements");
+
 viewer.addHandler('canvas-click', function(event) {
   console.log('click',measurementCounter);
   if (measurmentModeActive & measurementCounter < 2) {
@@ -2973,8 +2982,7 @@ viewer.addHandler('canvas-click', function(event) {
       clearLine();
       // disablePanning(); // Disable panning while measuring
       event.preventDefaultAction = true; // Prevent default behavior (like panning)
-      const x0 = document.getElementById('x0');
-      const y0 = document.getElementById('y0');
+
       x0.textContent = imagePoint.x.toFixed(0);
       y0.textContent = imagePoint.y.toFixed(0);
       const firstCrosshair = document.getElementById(`measure-crosshair-0`);
@@ -2989,8 +2997,7 @@ viewer.addHandler('canvas-click', function(event) {
       measurementCounter++;
     } else if (measurementCounter === 1) {
       // Reference the canvas
-      const x1 = document.getElementById('x1');
-      const y1 = document.getElementById('y1');
+
       x1.textContent = imagePoint.x.toFixed(0);
       y1.textContent = imagePoint.y.toFixed(0);
       addMeasurementCrosshairs(measurementCounter, viewportPoint);
@@ -3002,7 +3009,6 @@ viewer.addHandler('canvas-click', function(event) {
       // drawLine(viewportPt1.x, viewportPt1.y, viewportPt2.x, viewportPt2.y);
       measurementCounter++;
       const distance = Math.sqrt((x1.textContent - x0.textContent) ** 2 + (y1.textContent - y0.textContent) ** 2);
-      const distanceElement = document.getElementById('distance');
       const distanceInMicrons = distance*1/pixelsPerMeters[currentIndex]*1000000; // Microns
       distanceElement.value = distanceInMicrons.toFixed(2);
       measurementCounter = 0;
@@ -3026,7 +3032,6 @@ function enablePanning() {
 let measurmentModeActive = false;
 let measurementCounter = 0;
 function toggleMeasurementMode() {
-  const measurementButton = document.getElementById("toggleMeasurementButton");
   const isMeasuring = measurementButton.classList.contains("active");
 
   // Toggle the active state of the button
@@ -3163,3 +3168,30 @@ const toggleMeasurementVisibility = (event) => {
     lineCanvas.style.visibility = event.checked ? "visible" : "hidden";
   }
 };
+
+function resetMeasurements() {
+  // Clear the line canvas (if it exists)
+  if (lineContext) {
+    console.log('clearing canvas');
+    lineCanvas.width = lineCanvas.width; // Reset width, this will clear the canvas
+    lineCanvas.height = lineCanvas.height; // Reset height, this will clear the canvas
+  }
+  // Clear the crosshairs
+  const elements = Array.from(document.getElementsByClassName("measure-symbol"));
+  for (let el of elements) {
+    viewer.removeOverlay(el); // Remove the overlay using the element
+  }
+  // Reset other items
+  if (measurementButton.classList.contains("active")) {
+    toggleMeasurementMode();
+  }
+  measurementCounter = 0;
+  showMeasurementsButton.checked = true;
+  x0.textContent = '';
+  x1.textContent = '';
+  y0.textContent = '';
+  y1.textContent = '';
+  distanceElement.value = '0';
+  firstViewerElementPoint = '';
+  secondViewerElementPoint = '';
+}
