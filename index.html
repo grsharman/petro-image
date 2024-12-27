@@ -12,7 +12,9 @@
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
-    <div id="viewer-container"></div>
+    <div id="viewer-container">
+      <canvas id="measurement-overlay" style="position: absolute; top: 0; left: 0; z-index: 1000; pointer-events: none;"></canvas>
+    </div>
     <div class="controls">
       <div class="dropdown-container">
         <select id="groupDropdown"></select>
@@ -406,6 +408,43 @@
             <button id="clearBtn" class="file-label" title="Clear Annotations" onclick="clearAnnotations()">Clear</button>
           </div>
           <div id="loadAnnoFromJSON"></div>
+        </details>
+      </div>
+      <div>
+        <details closed>
+          <summary>Measure</summary>
+          <div>
+            <input
+            type="checkbox"
+            id="show-measurements"
+            checked
+            onclick="toggleMeasurementVisibility(this)"
+            />
+            <label for="show-measurements">Show measurements</label>
+          </div>
+          <div>
+            <button id="toggleMeasurementButton" onclick="toggleMeasurementMode(this)" title="Start/stop measuring">Start</button>
+          </div>
+          <div>
+            <label for="distance">Length (µm):</label>
+            <input type="number" id="distance" readonly value="0.00" style="width: 50px;">
+          </div>
+          <div>
+            <label for="x0">x1:</label>
+            <output id="x0">0.00</output>
+            <label for="y0">y1:</label>
+            <output id="y0">0.00</output>
+          </div>
+          <div>
+            <label for="x1">x2:</label>
+            <output id="x1">0.00</output>
+            <label for="y1">y2:</label>
+            <output id="y1">0.00</output>
+          </div>
+          <!-- <div>
+            <label for="distance">Distance:</label>
+            <output id="distance">0.00</output>
+          </div> -->
         </details>
       </div>
     </div>

@@ -149,7 +149,6 @@ document.getElementById('sampleDropdown').addEventListener('change', function() 
   currentIndex = Number(this.value);
   sampleName = samples[currentIndex];
   //sampleName = this.options[currentIndex].textContent; // Get the sample name as a string
-  console.log('sample, indx',sampleName,currentIndex);
   loadTileSet(currentIndex);
   clearAnnotations();
   annotations = [];
@@ -192,7 +191,6 @@ document.getElementById('sampleDropdown').addEventListener('change', function() 
 // Function to update the button labels based on tileLabels array
 function updateButtonLabels(index) {
   const numButtons = tileSets[index].length;
-  console.log('numButtons',numButtons);
   for (let i = 1; i <= 4; i++) {
     const checkbox = document.getElementById(`image${i}`);
     const label  = document.getElementById(`label${i}`);
@@ -211,9 +209,7 @@ function updateButtonLabels(index) {
 
 // Function to update the label dynamically
 function updateImageLabels() {
-  console.log(tileLabels[currentIndex]);
   for (let i = 0; i < tileLabels[currentIndex].length; i++) {
-    console.log(i,tileLabels[currentIndex][i]);
     const labelElement = document.getElementById(`labelForOpacityImage${i+1}`);
     labelElement.textContent = tileLabels[currentIndex][i]; // Update the label text
   }
@@ -460,7 +456,6 @@ function updateOpacityImageSliderVisibility() {
   // Loop through all sliders and adjust visibility
   sliders.forEach((slider, index) => {
     if (index < tileSets[currentIndex].length) {
-      console.log('slider',slider);
       slider.style.display = "block"; // Show the slider
       // Reset the slider value to 100
       const sliderInput = slider.querySelector("input[type='range']");
@@ -1745,10 +1740,13 @@ function loadAnnotations(geoJSONData) {
         annoJSON[currentAnnotationId] = geoJSONFeature;
       }
 
-      document.getElementById("anno-id").disabled = false;
-      document.getElementById("anno-prev-button").disabled = false;
-      document.getElementById("anno-next-button").disabled = false;
-      document.getElementById("anno-label").disabled = false;
+      // document.getElementById("anno-id").disabled = false;
+      // document.getElementById("anno-first-button").disabled = false;
+      // document.getElementById("anno-prev-button").disabled = false;
+      // document.getElementById("anno-next-button").disabled = false;
+      // document.getElementById("anno-last-button").disabled = false;
+      // document.getElementById("anno-label").disabled = false;
+      enableAnnoButtons();
       annoLabelToText();
       
       // Increment annotation ID
@@ -2942,3 +2940,214 @@ function applyOpacityToColor(color, opacity) {
   }
   return color; // If the color format isn't recognized, return as is
 }
+
+/////////////////////////////////
+//// Measuring functionality ////
+/////////////////////////////////
+
+let firstViewerElementPoint;
+let firstViewportPoint;
+let secondViewerElementPoint;
+let secondViewportPoint;
+viewer.addHandler('canvas-click', function(event) {
+  console.log('click',measurementCounter);
+  if (measurmentModeActive & measurementCounter < 2) {
+    const image = viewer.world.getItemAt(0);
+    //const imagePoint = handleMeasurementClick(event);
+    const viewportPoint = viewer.viewport.pointFromPixel(event.position);
+    const imagePoint = image.viewportToImageCoordinates(viewportPoint.x, viewportPoint.y); 
+    const viewerElementPoint = event.position;
+    if (measurementCounter === 0) {
+      clearLine();
+      // disablePanning(); // Disable panning while measuring
+      event.preventDefaultAction = true; // Prevent default behavior (like panning)
+      const x0 = document.getElementById('x0');
+      const y0 = document.getElementById('y0');
+      x0.textContent = imagePoint.x.toFixed(0);
+      y0.textContent = imagePoint.y.toFixed(0);
+      const firstCrosshair = document.getElementById(`measure-crosshair-0`);
+      const secondCrosshair = document.getElementById(`measure-crosshair-1`);
+      firstViewportPoint = viewportPoint;
+      firstViewerElementPoint = event.position;
+      if (firstCrosshair) {
+        viewer.removeOverlay(firstCrosshair); // Remove the overlay using the element
+        viewer.removeOverlay(secondCrosshair); // Remove the overlay using the element
+      }
+      addMeasurementCrosshairs(measurementCounter, viewportPoint);
+      measurementCounter++;
+    } else if (measurementCounter === 1) {
+      // Reference the canvas
+      const x1 = document.getElementById('x1');
+      const y1 = document.getElementById('y1');
+      x1.textContent = imagePoint.x.toFixed(0);
+      y1.textContent = imagePoint.y.toFixed(0);
+      addMeasurementCrosshairs(measurementCounter, viewportPoint);
+      const viewportPt1 = image.imageToViewportCoordinates(x0.textContent, y0.textContent);
+      const viewportPt2 = image.imageToViewportCoordinates(x1.textContent, y1.textContent);
+      secondViewportPoint = viewportPoint;
+      secondViewerElementPoint = event.position;
+      drawLine(firstViewerElementPoint, secondViewerElementPoint);
+      // drawLine(viewportPt1.x, viewportPt1.y, viewportPt2.x, viewportPt2.y);
+      measurementCounter++;
+      const distance = Math.sqrt((x1.textContent - x0.textContent) ** 2 + (y1.textContent - y0.textContent) ** 2);
+      const distanceElement = document.getElementById('distance');
+      const distanceInMicrons = distance*1/pixelsPerMeters[currentIndex]*1000000; // Microns
+      distanceElement.value = distanceInMicrons.toFixed(2);
+      measurementCounter = 0;
+      // enablePanning(); // Re-enable panning after measuring
+    } else {
+      measurementCounter = 0;
+    }
+  }
+});
+
+// Disable panning by intercepting mouse events
+function disablePanning() {
+  viewer.setMouseNavEnabled(false); // Disable OpenSeadragon panning
+}
+
+// Re-enable panning by resetting mouse navigation
+function enablePanning() {
+  viewer.setMouseNavEnabled(true); // Re-enable OpenSeadragon panning
+}
+
+let measurmentModeActive = false;
+let measurementCounter = 0;
+function toggleMeasurementMode() {
+  const measurementButton = document.getElementById("toggleMeasurementButton");
+  const isMeasuring = measurementButton.classList.contains("active");
+
+  // Toggle the active state of the button
+  measurementButton.classList.toggle("active");
+
+  if (isMeasuring) {
+    // Disable measurement mode
+    measurementButton.textContent = 'Start';
+    measurmentModeActive = false;
+    console.log('Measurement mode disabled');
+  } else {
+    // Enable measurement mode
+    measurementButton.textContent = 'Stop';
+    measurmentModeActive = true;
+    console.log('Measurement mode enabled');
+  }
+}
+
+// Function to handle measurement clicks
+function handleMeasurementClick(event) {
+  const image = viewer.world.getItemAt(0); // Assuming one image in the viewer
+  const viewportPoint = viewer.viewport.pointFromPixel(event.position); // Viewport coordinates
+  const imagePoint = image.viewportToImageCoordinates(viewportPoint); // Image coordinates
+
+  // Check if event.position exists
+  if (!event.position) {
+    console.error("event.position is undefined");
+    return;
+  }
+
+  return imagePoint;
+}
+
+function addMeasurementCrosshairs(i, location, color='red', lineWeight = 2, opacity = 1) {
+  console.log('adding measurement crosshairs');
+  const crosshairsMeasurement = document.createElement("div");
+  crosshairsMeasurement.className = "measure-symbol"; // Used for css styling
+  crosshairsMeasurement.id = `measure-crosshair-${i}`;
+
+  // Apply inline styles for customization
+  crosshairsMeasurement.style.setProperty("--crosshair-color", color);
+  crosshairsMeasurement.style.setProperty("--crosshair-line-weight", `${Number(lineWeight)}px`);
+  crosshairsMeasurement.style.setProperty("--crosshair-opacity", Number(opacity));
+
+  const overlay = viewer.addOverlay({
+    element: crosshairsMeasurement,
+    location: location,
+    checkResize: false,
+  });
+}
+
+const lineCanvas = document.getElementById('measurement-overlay');
+const lineContext = lineCanvas.getContext('2d');
+
+function resizeCanvasToViewport() {
+  const viewportWidth = viewer.viewport.containerSize.x;
+  const viewportHeight = viewer.viewport.containerSize.y;
+  lineCanvas.width = viewportWidth;
+  lineCanvas.height = viewportHeight;
+  if (firstViewerElementPoint && secondViewerElementPoint) {
+    const firstViewerElementPointUpdated = viewer.viewport.viewportToViewerElementCoordinates(firstViewportPoint);
+    const secondViewerElementPointUpdated = viewer.viewport.viewportToViewerElementCoordinates(secondViewportPoint);
+    drawLine(firstViewerElementPointUpdated, secondViewerElementPointUpdated);
+  }
+
+  // TODO: Allow multiple lines to be rescaled
+  // const crosshairDivs = document.querySelectorAll('div[id^="measure-crosshair-"]');
+  // crosshairDivs.forEach((div, index) => {
+  //   console.log(`Div ${index}:`, div); // Log or interact with each div
+}
+
+// Wait until the viewer is fully loaded (the open event)
+viewer.addHandler("open", function () {
+  // Resize canvas after the viewer has loaded
+  resizeCanvasToViewport();
+});
+
+// Update size on window resize
+window.addEventListener("resize", resizeCanvasToViewport);
+
+// Draw the line between the two points
+function drawLine(startPoint, endPoint) {
+  if (startPoint && endPoint) {
+    // points are in viewer element coordinates
+    lineContext.clearRect(0, 0, lineCanvas.width, lineCanvas.height);
+    // Draw the line
+    lineContext.beginPath();
+    lineContext.moveTo(startPoint.x, startPoint.y);
+    lineContext.lineTo(endPoint.x, endPoint.y);
+    lineContext.strokeStyle = 'red';
+    lineContext.lineWidth = 2;
+    lineContext.stroke();
+  }
+}
+
+function clearLine() {
+  lineContext.clearRect(0, 0, lineCanvas.width, lineCanvas.height);
+}
+
+// Adjust canvas transformations for pan and zoom
+function adjustCanvasTransform() {
+  const zoomLevel = viewer.viewport.getZoom();
+  const pan = viewer.viewport.getCenter();
+
+  // Clear the canvas before applying transformations
+  lineContext.clearRect(0, 0, lineCanvas.width, lineCanvas.height);
+
+  // Apply zoom and pan transformations to the canvas context
+  lineContext.setTransform(zoomLevel, 0, 0, zoomLevel, pan.x * lineCanvas.width, pan.y * lineCanvas.height);
+  
+  // Redraw the existing line with the new transform applied
+  drawLine(firstViewerElementPoint, secondViewerElementPoint);
+}
+
+// Update the line when the viewport changes
+viewer.addHandler('viewport-change', drawLine(firstViewerElementPoint, secondViewerElementPoint));
+viewer.addHandler('resize', () => {
+  resizeCanvasToViewport();
+  drawLine(firstViewerElementPoint, secondViewerElementPoint);
+});
+
+// Listen to zoom and pan events to update the line's position
+viewer.addHandler("animation", function () {
+  resizeCanvasToViewport();
+  // adjustCanvasTransform();
+});
+
+// Import, add, and export points with labels
+const toggleMeasurementVisibility = (event) => {
+  for (let el of document.getElementsByClassName("measure-symbol")) {
+    el.style.visibility = event.checked ? "visible" : "hidden";
+  }
+  if (lineCanvas) {
+    lineCanvas.style.visibility = event.checked ? "visible" : "hidden";
+  }
+};

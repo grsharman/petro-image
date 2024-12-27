@@ -99,6 +99,30 @@ html {
   transform: translate(-50%, -50%);
 }
 
+.measure-symbol {
+  position: absolute;
+  transform: translate(-50%, -50%);
+}
+
+.measure-symbol::before, .measure-symbol::after {
+  content: "";
+  position: absolute;
+  background-color: var(--crosshair-color, rgb(0, 128, 0)); /* Default color is green */
+  opacity: var(--crosshair-opacity, 1); /* Default opacity is 1 (fully visible) */
+}
+
+.measure-symbol::before {
+  width: 12px; /* Default width */
+  height: var(--crosshair-line-weight, 2px);
+  transform: translate(-50%, -50%);
+}
+
+.measure-symbol::after {
+  width: var(--crosshair-line-weight, 2px);
+  height: 12px; /* Default height */
+  transform: translate(-50%, -50%);
+}
+
 /*
 .annotate-rect {
   border-style: solid;
@@ -527,4 +551,26 @@ input[type="range"] {
 /* Button for loading annotation from JSON */
 #loadAnnoFromJSONButton {
   display: none;
+}
+
+#measurement-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1000; /* Above viewer */
+}
+
+/* Length display field */
+#distance::-webkit-inner-spin-button,
+#distance::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+#distance {
+  -moz-appearance: textfield; /* Hide arrows in Firefox */
+  appearance: textfield;
+  width: 200px; /* Custom width for this input */
 }
