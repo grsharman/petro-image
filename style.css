@@ -5,6 +5,15 @@ html {
   overflow: hidden;
 }
 
+#image-container {
+  width: 140px; /* Set the width of the div */
+  height: 25px;
+  background-image: url("js/images/logo_v0.1.png");
+  background-size: cover; /* Adjust to cover the entire div */
+  background-repeat: no-repeat; /* Prevent repeating */
+  background-position: center; /* Center the image */
+}
+
 #viewer-container {
   position: relative;
   width: 100%;
@@ -13,12 +22,13 @@ html {
 
 .controls {
   position: absolute;
-  top: 40px;
+  top: 5px;
   left: 5px;
   border: 1px solid black;
   border-radius: 4px;
   padding: 5px;
   background-color: rgba(255, 255, 255, 0.75);
+  z-index: 3000;
 }
 
 .point-label {
@@ -43,6 +53,7 @@ html {
   white-space: nowrap;
   /* font-size:  */
   font-size: var(--annoLabel-font-size, 16px);
+  z-index: 1001;
 }
 
 .rectangle-label {
@@ -80,11 +91,18 @@ html {
   transform: translate(-50%, -50%);
 }
 
-.annotate-symbol::before, .annotate-symbol::after {
+.annotate-symbol::before,
+.annotate-symbol::after {
   content: "";
   position: absolute;
-  background-color: var(--crosshair-color, rgb(0, 128, 0)); /* Default color is green */
-  opacity: var(--crosshair-opacity, 1); /* Default opacity is 1 (fully visible) */
+  background-color: var(
+    --crosshair-color,
+    rgb(0, 128, 0)
+  ); /* Default color is green */
+  opacity: var(
+    --crosshair-opacity,
+    1
+  ); /* Default opacity is 1 (fully visible) */
 }
 
 .annotate-symbol::before {
@@ -104,11 +122,18 @@ html {
   transform: translate(-50%, -50%);
 }
 
-.measure-symbol::before, .measure-symbol::after {
+.measure-symbol::before,
+.measure-symbol::after {
   content: "";
   position: absolute;
-  background-color: var(--crosshair-color, rgb(0, 128, 0)); /* Default color is green */
-  opacity: var(--crosshair-opacity, 1); /* Default opacity is 1 (fully visible) */
+  background-color: var(
+    --crosshair-color,
+    rgb(0, 128, 0)
+  ); /* Default color is green */
+  opacity: var(
+    --crosshair-opacity,
+    1
+  ); /* Default opacity is 1 (fully visible) */
 }
 
 .measure-symbol::before {
@@ -219,7 +244,7 @@ html {
 
 /* Arrow at the bottom of the tooltip */
 .tooltip-text::after {
-  content: '';
+  content: "";
   position: absolute;
   top: 100%;
   left: 50%;
@@ -266,7 +291,6 @@ html {
 .file-label:hover {
   background-color: #b9b9b9; /* Darken button on hover */
 }
-
 
 #resultsModal {
   display: none; /* Hidden by default */
@@ -315,25 +339,25 @@ html {
 
 .aoi-rectangle {
   border: 2px solid red; /* Add a visible border */
-  position: absolute;    /* Ensure it's positioned correctly */
+  position: absolute; /* Ensure it's positioned correctly */
 }
 
 .button-container {
   display: flex; /* Flexbox for horizontal alignment */
-  gap: 2px;     /* Spacing between buttons */
+  gap: 2px; /* Spacing between buttons */
   margin: 0px;
 }
 
 .arrow-container {
   display: flex; /* Flexbox for horizontal alignment */
-  gap: 2px;     /* Spacing between buttons */
+  gap: 2px; /* Spacing between buttons */
   margin: 0px;
 }
 
 /* General button styles */
 .anno-arrows {
-  width: 20px;
-  height: 20px;
+  width: 100%;
+  height: 100%;
   padding: 2px;
   border: 1px solid #444;
   border-radius: 5px;
@@ -343,7 +367,6 @@ html {
   display: block;
   align-items: center;
   justify-content: center;
-
 }
 
 /* Activated state */
@@ -404,34 +427,54 @@ html {
 
 /* Point (dot) button */
 .crosshairs-button {
-  width: 50px;
-  height: 50px;
+  width: 100%;
+  height: 100%;
+  /* width: 50px;
+  height: 50px; */
 }
 
-/* Rectangle button */
+/* Point (dot) button */
+.polyline-button {
+  width: 100%;
+  height: 100%;
+}
+
+/* Rectangle button
 .square {
   width: 10px;
   height: 10px;
   background-color: #444;
+} */
+
+.rectangle-button {
+  width: 100%;
+  height: 100%;
 }
 
-/* SVG container for polygon
-.polygon {
-  width: 25px;
-  height: 25px;
-} */
+/* SVG container for polygon */
+.polygon-button {
+  width: 100%;
+  height: 100%;
+}
 
 /* Trash can icon styles */
 .trash-icon {
-  width: 40px;
-  height: 40px;
+  width: 100%;
+  height: 100%;
   fill: #444;
 }
 
 /* Wrench icon styles */
 .gear-icon {
-  width: 18px;
-  height: 18px;
+  width: 100%;
+  height: 100%;
+  fill: #444;
+}
+
+/* Trash can icon styles */
+.repeat-icon {
+  width: 100%;
+  height: 100%;
   fill: #444;
 }
 
@@ -554,6 +597,15 @@ input[type="range"] {
 }
 
 #measurement-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1000; /* Above viewer */
+}
+
+#annotation-overlay {
   position: absolute;
   top: 0;
   left: 0;

@@ -142,6 +142,7 @@ const viewer = OpenSeadragon({
   zoomPerClick: 1, // Disable zoom on click (or shift+click)
   sequenceMode: false,
   tileSources: tileSets[0], // Load first tile set upon load
+  showNavigationControl: false // Disable the default navigation controls
 });
 
 /// Event listener for sample selection change (only add once)
@@ -151,7 +152,8 @@ document.getElementById('sampleDropdown').addEventListener('change', function() 
   //sampleName = this.options[currentIndex].textContent; // Get the sample name as a string
   loadTileSet(currentIndex);
   clearAnnotations();
-  annotations = [];
+  // TODO: delete below when ready
+  // annotations = [];
   updateButtonLabels(currentIndex);
   // updateCheckboxVisibility(tileSets[currentIndex].length);
   addScalebar(pixelsPerMeters[currentIndex]);
@@ -161,7 +163,9 @@ document.getElementById('sampleDropdown').addEventListener('change', function() 
   removeAoiRectangle();
   updateOpacityImageSliderVisibility();
   updateImageLabels();
-  resetMeasurements();
+  if (measurementLineDrawn === true) {
+    resetMeasurements();
+  }
   document.getElementById('enableDivideImages').checked = true;
 
   const annoJSONButtonContainer = document.getElementById('loadAnnoFromJSON');
@@ -536,39 +540,80 @@ slider4.addEventListener('input', function () {
 let annoDict = {}; // Dictionary for ID number (1+) with unique alphanumeric ID
 
 let pointButton = document.getElementById("crosshairButton");
+let polylineButton = document.getElementById("polylineButton");
 let rectButton = document.getElementById("rectangleButton");
 let repeatButton = document.getElementById("repeatButton");
-// let polyButton = document.getElementById("polygonButton"); // TODO: Future implementation
+let polygonButton = document.getElementById("polygonButton"); // TODO: Future implementation
 
 // Flags to track modes
 let isPointMode = false;
+let isPolylineMode = false;
 let isRectangleMode = false;
 let isRepeatMode = false;
-// let isPolygonMode = false;
+let isPolygonMode = false;
+
+function removeTemporaryPoints() {
+  clickCoordinates = [];
+  clickImageCoordinates = [];
+  clickCoordinatesArray = [];
+  annoJSONTemp = {};
+}
 
 pointButton.addEventListener("click", () => {
   // Deactivate rect and poly buttons
   rectButton.classList.remove('active');
-  // polyButton.classList.remove('active');
+  isRectangleMode = false;
+  polylineButton.classList.remove('active');
+  isPolygonMode = false;
+  polygonButton.classList.remove('active');
+  isPolygonMode = false;
+  removeTemporaryPoints();
+  // Remove any existing temporary points
 
   if (isPointMode === false) {
     console.log('point mode activated');
     pointButton.classList.add('active');
     isPointMode = true;
-    console.log('point mode activiated');
   }
   else {
     console.log('point mode deactivated');
     pointButton.classList.remove('active');
     isPointMode = false;
-    console.log('point mode deactiviated');
+  }
+});
+
+polylineButton.addEventListener("click", () => {
+  // Deactivate point and poly buttons
+  pointButton.classList.remove('active');
+  isPointMode = false;
+  rectButton.classList.remove('active');
+  isRectangleMode = false;
+  polygonButton.classList.remove('active');
+  isPolygonMode = false;
+  removeTemporaryPoints();
+
+  if (isPolylineMode === false) {
+    console.log('polyline mode activated');
+    polylineButton.classList.add('active');
+    isPolylineMode = true;
+  }
+  else {
+    console.log('polyline mode deactivated');
+    polylineButton.classList.remove('active');
+    isPolylineMode = false;
+    removeTemporaryPoints();
   }
 });
 
 rectButton.addEventListener("click", () => {
   // Deactivate point and poly buttons
   pointButton.classList.remove('active');
-  // polyButton.classList.remove('active');
+  isPointMode = false;
+  polylineButton.classList.remove('active');
+  isPolylineMode = false;
+  polygonButton.classList.remove('active');
+  isPolygonMode = false;
+  removeTemporaryPoints();
 
   if (isRectangleMode === false) {
     console.log('rect mode activated');
@@ -595,24 +640,29 @@ repeatButton.addEventListener("click", () => {
   }
 });
 
-// TODO: In case I ever add a polygon feature
-// polyButton.addEventListener("click", () => {
-//   console.log('poly button clicked');
-//   // Deactivate point and rect buttons
-//   pointButton.classList.remove('active');
-//   rectButton.classList.remove('active');
+// TODO: In progress
+polygonButton.addEventListener("click", () => {
+  console.log('poly button clicked');
+  // Deactivate point and rect buttons
+  pointButton.classList.remove('active');
+  isPointMode = false;
+  rectButton.classList.remove('active');
+  isRectangleMode = false;
+  polylineButton.classList.remove('active');
+  isPolylineMode = false;
+  removeTemporaryPoints();
 
-//   if (isPolygonMode === false) {
-//     console.log('poly mode activated');
-//     polyButton.classList.add('active');
-//     isPolygonMode = true;
-//   }
-//   else {
-//     console.log('poly mode deactivated');
-//     polyButton.classList.remove('active');
-//     isPolygonMode = false;
-//   }
-// });
+  if (isPolygonMode === false) {
+    console.log('poly mode activated');
+    polygonButton.classList.add('active');
+    isPolygonMode = true;
+  }
+  else {
+    console.log('poly mode deactivated');
+    polygonButton.classList.remove('active');
+    isPolygonMode = false;
+  }
+});
 
 // Show or hide the image menu when the gear button is clicked
 document.getElementById("imageSettingsButton").addEventListener("click", function (event) {
@@ -672,27 +722,38 @@ const disableAnnoButtons = () => {
 };
 
 document.getElementById('anno-first-button').addEventListener('click', function() {
+  console.log('first arrow clicked');
   const annoIdBox = document.getElementById('anno-id');
   const annoIds = Object.keys(annoDict).map(Number);
   const firstId = annoIds[0];
   annoIdBox.value = firstId;
-  goToAnnoPoint(annoJSON[firstId].properties.xLabel,
+  const image = viewer.world.getItemAt(0);
+  const viewportPoint = image.imageToViewportCoordinates(annoJSON[firstId].properties.xLabel,
     annoJSON[firstId].properties.yLabel);
+  goToAnnoPoint(viewportPoint.x, viewportPoint.y);
+  // goToAnnoPoint(annoJSON[firstId].properties.xLabel,
+  //   annoJSON[firstId].properties.yLabel);
   annoLabelToText();
 });
 
 document.getElementById('anno-last-button').addEventListener('click', function() {
+  console.log('last arrow clicked');
   const annoIdBox = document.getElementById('anno-id');
   const annoIds = Object.keys(annoDict).map(Number);
   const lastId = annoIds[annoIds.length-1];
   annoIdBox.value = lastId;
-  goToAnnoPoint(annoJSON[lastId].properties.xLabel,
+  const image = viewer.world.getItemAt(0);
+  const viewportPoint = image.imageToViewportCoordinates(annoJSON[lastId].properties.xLabel,
     annoJSON[lastId].properties.yLabel);
+  goToAnnoPoint(viewportPoint.x, viewportPoint.y);
+  // goToAnnoPoint(annoJSON[lastId].properties.xLabel,
+  //   annoJSON[lastId].properties.yLabel);
   annoLabelToText();
 });
 
 // When the previous annotation button is clicked
 document.getElementById('anno-prev-button').addEventListener('click', function() {
+  console.log('prev arrow clicked');
   // Current annotation id
   const annoIdBox = document.getElementById('anno-id');
   const currentId = parseInt(annoIdBox.value);
@@ -705,14 +766,19 @@ document.getElementById('anno-prev-button').addEventListener('click', function()
     const nextIdx = currentIdx-1;
     const nextId = annoIds[nextIdx];
     annoIdBox.value = nextId;
-    goToAnnoPoint(annoJSON[nextId].properties.xLabel,
+    const image = viewer.world.getItemAt(0);
+    const viewportPoint = image.imageToViewportCoordinates(annoJSON[nextId].properties.xLabel,
       annoJSON[nextId].properties.yLabel);
+    goToAnnoPoint(viewportPoint.x, viewportPoint.y);
+    // goToAnnoPoint(annoJSON[nextId].properties.xLabel,
+    //   annoJSON[nextId].properties.yLabel);
     annoLabelToText();
   }
 });
 
 // When the next annotation button is clicked
 document.getElementById('anno-next-button').addEventListener('click', function() {
+  console.log('next arrow clicked');
   // Current annotation id
   const annoIdBox = document.getElementById('anno-id');
   const currentId = parseInt(annoIdBox.value);
@@ -725,8 +791,12 @@ document.getElementById('anno-next-button').addEventListener('click', function()
     const nextIdx = currentIdx+1;
     const nextId = annoIds[nextIdx];
     annoIdBox.value = nextId;
-    goToAnnoPoint(annoJSON[nextId].properties.xLabel,
+    const image = viewer.world.getItemAt(0);
+    const viewportPoint = image.imageToViewportCoordinates(annoJSON[nextId].properties.xLabel,
       annoJSON[nextId].properties.yLabel);
+    goToAnnoPoint(viewportPoint.x, viewportPoint.y);
+    // goToAnnoPoint(annoJSON[nextId].properties.xLabel,
+    //   annoJSON[nextId].properties.yLabel);
     annoLabelToText();
   }
 });
@@ -740,10 +810,9 @@ document.getElementById('deleteButton').addEventListener('click', function() {
   deleteFromGeoJSON(id);
   deleteFromAnnoDict(id);
   selectNextAnno(id);
+  drawShape(polylineCanvas, [annoJSON]);
 });
 
-// TODO: Idea: allow a default text field (e.g., useful if picking many of the same thing)
-// TODO: Currently cannot apply text field separately from shapes. Might consider doing this so all
 // labels could be changed without affecting the underlying color of the shapes
 function applyCurrentAnno(id, changeLabel = false) {
   const annoLabel = document.getElementById("anno-label").value;
@@ -752,15 +821,12 @@ function applyCurrentAnno(id, changeLabel = false) {
   console.log('labelFontColor',labelFontColor);
   const labelBackgroundColor = document.getElementById("annoLabelBackgroundColor").value;
   const labelBackgroundOpacity = Number(document.getElementById("annoLabelBackgroundOpacity").value);
-  const pointLw = document.getElementById("pointLw").value;
-  const pointColor = document.getElementById("pointColor").value;
-  const pointOpacity = document.getElementById("pointOpacity").value;
-  const borderLw = Number(document.getElementById("rectBorderLw").value);
-  const borderColor = document.getElementById("rectBorderColor").value;
-  const borderStyle = document.getElementById("rectBorderStyle").value;
-  const borderOpacity = Number(document.getElementById("rectBorderOpacity").value);
-  const fillColor = document.getElementById("rectFillColor").value;
-  const fillOpacity = Number(document.getElementById("rectFillOpacity").value);
+  const lineWeight = document.getElementById("lineWeight").value;
+  const lineColor = document.getElementById("lineColor").value;
+  const lineOpacity = document.getElementById("lineOpacity").value;
+  const lineStyle = document.getElementById("lineStyle").value;
+  const fillColor = document.getElementById("fillColor").value;
+  const fillOpacity = Number(document.getElementById("fillOpacity").value);
   const type = annoJSON[id].geometry.type;
   console.log('type',type);
   if (type === 'Point') {
@@ -771,12 +837,12 @@ function applyCurrentAnno(id, changeLabel = false) {
       annoJSON[id].properties.labelBackgroundOpacity = labelBackgroundOpacity;
       updateText(id, undefined, labelFontColor, labelFontSize, labelBackgroundColor, labelBackgroundOpacity);
     } else {
-      annoJSON[id].properties.pointLw = pointLw;
-      annoJSON[id].properties.pointColor = pointColor;
-      annoJSON[id].properties.pointOpacity = pointOpacity;
-      updateCrosshair(id, pointColor, pointLw, pointOpacity);
+      annoJSON[id].properties.lineWeight = lineWeight;
+      annoJSON[id].properties.lineColor = lineColor;
+      annoJSON[id].properties.lineOpacity = lineOpacity;
+      updateCrosshair(id, lineColor, lineWeight, lineOpacity);
     }
-  } else if (type === 'Polygon') {
+  } if (type === 'Polygon') {
     if (changeLabel) {
       annoJSON[id].properties.labelFontSize = labelFontSize;
       annoJSON[id].properties.labelFontColor = labelFontColor;
@@ -784,14 +850,32 @@ function applyCurrentAnno(id, changeLabel = false) {
       annoJSON[id].properties.labelBackgroundOpacity = labelBackgroundOpacity;
       updateText(id, undefined, String(labelFontColor), labelFontSize, labelBackgroundColor, labelBackgroundOpacity);
     } else {
-      annoJSON[id].properties.borderStyle = borderStyle;
-      annoJSON[id].properties.borderLw = borderLw;
-      annoJSON[id].properties.borderColor = borderColor;
-      annoJSON[id].properties.borderOpacity = borderOpacity;
+      annoJSON[id].properties.lineStyle = lineStyle;
+      annoJSON[id].properties.lineWeight = lineWeight;
+      annoJSON[id].properties.lineColor = lineColor;
+      annoJSON[id].properties.lineOpacity = lineOpacity;
       annoJSON[id].properties.fillColor = fillColor;
       annoJSON[id].properties.fillOpacity = fillOpacity;
-      updateRectangle(id, borderStyle, borderLw, borderColor,
-        borderOpacity, fillColor, fillOpacity);
+      if (annoJSON[id].properties.canvasDraw === true) {
+        drawShape(polylineCanvas, [annoJSON])
+      } else {
+        updateRectangle(id, lineStyle, lineWeight, lineColor,
+          lineOpacity, fillColor, fillOpacity);
+      }
+    }
+  } if (type === 'LineString') {
+    if (changeLabel) {
+      annoJSON[id].properties.labelFontSize = labelFontSize;
+      annoJSON[id].properties.labelFontColor = labelFontColor;
+      annoJSON[id].properties.labelBackgroundColor = labelBackgroundColor;
+      annoJSON[id].properties.labelBackgroundOpacity = labelBackgroundOpacity;
+      updateText(id, undefined, String(labelFontColor), labelFontSize, labelBackgroundColor, labelBackgroundOpacity);
+    } else {
+      annoJSON[id].properties.lineStyle = lineStyle;
+      annoJSON[id].properties.lineWeight = lineWeight;
+      annoJSON[id].properties.lineColor = lineColor;
+      annoJSON[id].properties.lineOpacity = lineOpacity;
+      drawShape(polylineCanvas, [annoJSON]);
     }
   }
 }
@@ -906,8 +990,13 @@ document.addEventListener('keydown', function(event) {
     event.preventDefault(); // Prevent any default action for Enter key
     annoLabelToText();
 
-    goToAnnoPoint(annoJSON[parseInt(idInput.value)].properties.xLabel,
+    console.log(annoJSON);
+    const image = viewer.world.getItemAt(0);
+    const viewportPoint = image.imageToViewportCoordinates(annoJSON[parseInt(idInput.value)].properties.xLabel,
       annoJSON[parseInt(idInput.value)].properties.yLabel);
+    goToAnnoPoint(viewportPoint.x, viewportPoint.y);
+    // goToAnnoPoint(annoJSON[parseInt(idInput.value)].properties.xLabel,
+    //   annoJSON[parseInt(idInput.value)].properties.yLabel);
 
     // Provide visual feedback by changing the border color
     idInput.style.borderColor = 'green';
@@ -948,6 +1037,24 @@ function addPointToGeoJSON(id, x, y, metadata) {
   annoJSON[id] = pointFeature;
 }
 
+// Function to add a point to the annoJSON
+function addPolylineToGeoJSON(JSON, id, coordinates, metadata) {
+  // Create a GeoJSON point feature
+  // id = currentAnnotationId
+  // coordinates = array of x,y values in image (pixel) coordinates
+  // metadata = dictionary with feature labels and values, e.g., { uuid: 'abc', label: 'Hello World'}
+  const polylineFeature = {
+    type: "Feature",
+    geometry: {
+      type: "LineString",
+      coordinates: coordinates  // [x, y] format for coordinates
+    },
+    properties: metadata  // metadata like label, description, etc.
+  };
+  // Add the point feature to the annoJSON under the provided id
+  JSON[id] = polylineFeature;
+}
+
 // Function to add a rectangle to the annoJSON
 function addRectToGeoJSON(id, x, y, w, h, metadata) {
   // Create a GeoJSON point feature
@@ -976,6 +1083,24 @@ function addRectToGeoJSON(id, x, y, w, h, metadata) {
 
   // Add the point feature to the annoJSON under the provided id
   annoJSON[id] = rectangleFeature;
+}
+
+// Function to add a point to the annoJSON
+function addPolygonToGeoJSON(JSON, id, coordinates, metadata) {
+  // Create a GeoJSON polygon feature
+  // id = currentAnnotationId
+  // coordinates = array of x,y values in image (pixel) coordinates
+  // metadata = dictionary with feature labels and values, e.g., { uuid: 'abc', label: 'Hello World'}
+  const polygonFeature = {
+    type: "Feature",
+    geometry: {
+      type: "Polygon",
+      coordinates: coordinates  // [x, y] format for coordinates
+    },
+    properties: metadata  // metadata like label, description, etc.
+  };
+  // Add the point feature to the annoJSON under the provided id
+  JSON[id] = polygonFeature;
 }
 
 // Function to delete an entry in the JSON
@@ -1056,6 +1181,11 @@ const toggleAnnotation = (event) => {
   for (let el of document.getElementsByClassName("annotate-rectangle")) {
     el.style.visibility = event.checked ? "visible" : "hidden";
   }
+  if (polylineCanvas.style.display === 'none') {
+    polylineCanvas.style.display = 'block'; // Show the canvas
+  } else {
+    polylineCanvas.style.display = 'none'; // Hide the canvas
+  }
 };
 
 // Import, add, and export points with labels
@@ -1064,18 +1194,28 @@ const toggleAnnotationLabels = (event) => {
     for (let el of document.getElementsByClassName("annotate-label")) {
       el.style.visibility = event.checked ? "visible" : "hidden";
     }
-    for (let el of document.getElementsByClassName("rectangle-label")) {
+    for (let el of document.getElementsByClassName("rectangle-label")) { // TODO: Does rectangle label need it's own class?
       el.style.visibility = event.checked ? "visible" : "hidden";
     }
   }
 };
 
-// Functions for detecting when q is pressed and released
+// Functions for detecting when q, z, anc x are pressed and released
 let isQPressed = false;
+let isZPressed = false;
+let isXPressed = false;
 document.addEventListener('keydown', function(event) {
   if (event.key === 'q' || event.key === 'Q') {
     console.log('Q pressed')
     isQPressed = true;
+  }
+  if (event.key === 'z' || event.key === 'Z') {
+    console.log('Z pressed')
+    isZPressed = true;
+  }
+  if (event.key === 'x' || event.key === 'X') {
+    console.log('X pressed')
+    isXPressed = true;
   }
 });
 document.addEventListener('keyup', function(event) {
@@ -1083,21 +1223,29 @@ document.addEventListener('keyup', function(event) {
     console.log('Q released');
     isQPressed = false;
   }
+  if (event.key === 'z' || event.key === 'Z') {
+    console.log('Z released');
+    isZPressed = false;
+  }
+if (event.key === 'x' || event.key === 'X') {
+  console.log('X released');
+  isXPressed = false;
+}
 });
 
+// TODO: Are these global variables necessary?
 // Function for making points
-let annotations = [];
+// let annotations = [];
 let annotateLabels = [];
 let annotatePoints = [];
+let annotatePolylines = [];
 let annotateRectangles = [];
-// let currentAnnotationId = 0; // Initialize a counter for annotation IDs
-
-// Testing GeoJSON approach
+let annotatePolygons = [];
 let annoJSON = {};
+let annoJSONTemp = {}; // For drawing temporary annotations
 
+// Handler for adding point annotations
 viewer.addHandler('canvas-click', function(event) {
-  console.log('canvas clicked');
-  let originalEvent = event.originalEvent;
   if (isQPressed || isPointMode) {
     console.log('canvs & Q clicked');
     const image = viewer.world.getItemAt(0);
@@ -1110,9 +1258,9 @@ viewer.addHandler('canvas-click', function(event) {
     const labelFontColor = document.getElementById("annoLabelFontColor").value;
     const labelBackgroundColor = document.getElementById("annoLabelBackgroundColor").value;
     const labelBackgroundOpacity = Number(document.getElementById("annoLabelBackgroundOpacity").value);
-    const pointLw = Number(document.getElementById("pointLw").value);
-    const pointColor = document.getElementById("pointColor").value;
-    const pointOpacity = Number(document.getElementById("pointOpacity").value);
+    const lineWeight = Number(document.getElementById("lineWeight").value);
+    const lineColor = document.getElementById("lineColor").value;
+    const lineOpacity = Number(document.getElementById("lineOpacity").value);
 
     if (isRepeatMode) {
       const annoId = parseInt(document.getElementById('anno-id').value);
@@ -1120,59 +1268,631 @@ viewer.addHandler('canvas-click', function(event) {
     } else {
       var constPointLabel = prompt("Enter a label for this point:");
     }
-    let annotation = {
-        id: currentAnnotationId,
-        uuid: uniqueID,
-        x: viewportPoint.x,
-        y: viewportPoint.y,
-        x_px: imagePoint.x,
-        y_px: imagePoint.y,
-        w: 0,
-        h: 0,
-        type: 0, // 0 for point
-        label: constPointLabel,
-        //label: prompt("Enter a label for this point:"),  // Prompt for a label
-    }
     const sampleIdx = samples.indexOf(sampleName);
     addPointToGeoJSON(currentAnnotationId,
       imagePoint.x,
       imagePoint.y,
       { uuid: uniqueID,
-        label: annotation.label,
-        xLabel: viewportPoint.x,
-        yLabel: viewportPoint.y,
+        label: constPointLabel,
+        xLabel: imagePoint.x,
+        yLabel: imagePoint.y,
         imageTitle: sampleName,
-        pixelsPerMeter: pixelsPerMeters[sampleIdx],
+        pixelsPerMeter: Number(pixelsPerMeters[sampleIdx]),
         imageWidth: imageSize.x,
         imageHeight: imageSize.y,
         labelFontSize: labelFontSize,
         labelFontColor: labelFontColor,
         labelBackgroundColor: labelBackgroundColor,
         labelBackgroundOpacity: labelBackgroundOpacity,
-        pointLw: pointLw,
-        pointColor: pointColor,
-        pointOpacity: pointOpacity,
+        lineWeight: lineWeight,
+        lineColor: lineColor,
+        lineOpacity: lineOpacity,
       }
     )
-    console.log(annoJSON);
     // Make text and crosshairs
     annoDict[currentAnnotationId] = uniqueID;
-    addText(currentAnnotationId, annotation.label, viewportPoint, labelFontColor,
+    addText(currentAnnotationId, constPointLabel, viewportPoint, labelFontColor,
       labelFontSize, labelBackgroundColor, labelBackgroundOpacity
     );
 
-    addCrosshairs(currentAnnotationId, viewportPoint, pointColor, pointLw, pointOpacity);
+    addCrosshairs(currentAnnotationId, viewportPoint, lineColor, lineWeight, lineOpacity);
     // Store annotation
-    annotations.push(annotation);
     isQPressed = false; // Reset
     currentAnnotationId = currentAnnotationId+1;
     enableAnnoButtons();
     hasUnsavedAnnotations = true;
+
     // updateButtonColor(); // Use for testing
   }
 });
 
+// Event listener to add polyline annotations
+let clickCoordinates = []; // Array to store viewport coordinates
+let clickImageCoordinates = []; // Array to store image coordinates
+let clickCoordinatesArray = []; // Array to store arrays of coordinates
+let clickTimeout;          // Timeout reference to detect double-click
+const clickDelay = 300;    // Maximum delay between clicks for detecting double-click
+let lastClickTime = 0;     // Timestamp of the last click
+const polylineCanvas = document.getElementById('annotation-overlay');
+let activelyMakingPoly = false; // Either polyline or polygon
+viewer.addHandler('canvas-click', function(event) {
+  console.log('canvas clicked');
+  if (isPolylineMode || isPolygonMode || isZPressed || isXPressed) {
+    activelyMakingPoly = true;
+    const image = viewer.world.getItemAt(0);
+    const imageSize = image.getContentSize();
+    const viewportPoint = viewer.viewport.pointFromPixel(event.position);
+    const imagePoint = image.viewportToImageCoordinates(viewportPoint.x, viewportPoint.y);
+    const x = viewportPoint.x;
+    const y = viewportPoint.y;
+    const uniqueID = generateUniqueId(8);
+    const labelFontSize = Number(document.getElementById("annoLabelFontSize").value);
+    const labelFontColor = document.getElementById("annoLabelFontColor").value;
+    const labelBackgroundColor = document.getElementById("annoLabelBackgroundColor").value;
+    const labelBackgroundOpacity = Number(document.getElementById("annoLabelBackgroundOpacity").value);
+    const lineWeight = Number(document.getElementById("lineWeight").value);
+    const lineColor = document.getElementById("lineColor").value;
+    const lineStyle = document.getElementById("lineStyle").value;
+    const lineOpacity = Number(document.getElementById("lineOpacity").value);
+    const lineColorToPlot = applyOpacityToColor(lineColor, lineOpacity);
+    const fillColor = document.getElementById("fillColor").value;
+    const fillOpacity = Number(document.getElementById("fillOpacity").value);
+    const fillColorToPlot = applyOpacityToColor(fillColor, fillOpacity);
+    clickCoordinates.push({ x, y});
+    clickImageCoordinates.push([imagePoint.x, imagePoint.y]);
+    if (clickCoordinates.length > 1) {
+      viewerElementClickCoordinates = []; // Reset the array
+      for (let i = 0; i < clickCoordinates.length; i++) {
+        const viewportPoint = new OpenSeadragon.Point(clickCoordinates[i].x, clickCoordinates[i].y); 
+        const viewerElementPoint = updateViewerElementCoordinates(polylineCanvas, viewportPoint);
+        viewerElementClickCoordinates.push(viewerElementPoint);
+      }
+      // Draw the polyline (polyline or polygon)
+      drawShape(polylineCanvas, [annoJSON, annoJSONTemp]);
+    }
 
+    document.addEventListener("keydown", function(event) {
+      // Check if the Escape key was pressed
+      if (event.key === "Escape") {
+        removeTemporaryPoints();
+          // annoJSONTemp = {};
+          // clickCoordinates = [];
+          // clickImageCoordinates = [];
+          // clickCoordinatesArray = [];
+        console.log("Escape key pressed");
+      }
+    });
+
+    // Continually update the annoJSONTemp with the latest coordinates
+    viewerContainer.addEventListener('mousemove', function(subevent) {
+      if (activelyMakingPoly) {
+        const rect = viewerContainer.getBoundingClientRect(); // Get container bounds
+        const position = {
+          x: subevent.clientX - rect.left,
+          y: subevent.clientY - rect.top
+        };
+        const positionPoint = new OpenSeadragon.Point(position.x, position.y);
+        const subeventViewportPoint = viewer.viewport.pointFromPixel(positionPoint);
+        const subeventImagePoint = image.viewportToImageCoordinates(subeventViewportPoint.x, subeventViewportPoint.y);
+        annoDict[currentAnnotationId] = uniqueID;
+        const sampleIdx = samples.indexOf(sampleName);
+        addPolylineToGeoJSON(annoJSONTemp, currentAnnotationId,
+          [...clickImageCoordinates, [subeventImagePoint.x, subeventImagePoint.y]],
+          {
+            labelFontSize: labelFontSize,
+            labelFontColor: labelFontColor,
+            labelBackgroundColor: labelBackgroundColor,
+            labelBackgroundOpacity: labelBackgroundOpacity,
+            lineStyle: lineStyle,
+            lineWeight: lineWeight,
+            lineColor: lineColor,
+            lineOpacity: lineOpacity,
+            canvasDraw: true
+          }
+        );
+        drawShape(polylineCanvas, [annoJSON, annoJSONTemp]);
+      }
+    });
+
+    // If the time between this click and the last click is shorter than clickDelay, it's a double-click
+    const currentTime = new Date().getTime();
+    if (currentTime - lastClickTime < clickDelay) {
+      // Check whether z or x keys were being held at time of double click
+      let ZWasPressed = false;
+      let XWasPressed = false;
+      if (isZPressed) {
+        ZWasPressed = true;
+      }
+      if (isXPressed) {
+        XWasPressed = true;
+      }
+
+      // It's a double-click, so stop the timeout and end collection
+      activelyMakingPoly = false;
+      clearTimeout(clickTimeout);
+      console.log('Double-click detected, ending collection of points.');
+      console.log('Collected Coordinates:', clickCoordinates);
+      
+      if (isRepeatMode) {
+        const annoId = parseInt(document.getElementById('anno-id').value);
+        var constPolylineLabel = annoJSON[annoId].properties.label;
+        drawPath(polylineCanvas, [annoJSON]);
+      } else {
+        var constPolylineLabel = prompt("Enter a label for this polyline:");
+        drawPath(polylineCanvas, [annoJSON]);
+      }
+
+      const image = viewer.world.getItemAt(0);
+      const labelViewportPoint = new OpenSeadragon.Point(clickCoordinates[0].x, clickCoordinates[0].y);
+      const labelImagePoint = image.viewportToImageCoordinates(labelViewportPoint.x, labelViewportPoint.y);
+      const sampleIdx = samples.indexOf(sampleName);
+      
+      if (isPolygonMode || XWasPressed) {
+        // Close the polygon by adding the first point to the end
+        clickCoordinates = clickImageCoordinates.slice(0,clickImageCoordinates.length-1); // To avoid getting a duplicated final point
+        clickImageCoordinates.push(clickImageCoordinates[0]);
+        addPolygonToGeoJSON(annoJSON, currentAnnotationId,
+          clickImageCoordinates,
+          { uuid: uniqueID,
+            label: constPolylineLabel,
+            xLabel: labelImagePoint.x,
+            yLabel: labelImagePoint.y,
+            imageTitle: sampleName,
+            pixelsPerMeter: Number(pixelsPerMeters[sampleIdx]),
+            imageWidth: imageSize.x,
+            imageHeight: imageSize.y,
+            labelFontSize: labelFontSize,
+            labelFontColor: labelFontColor,
+            labelBackgroundColor: labelBackgroundColor,
+            labelBackgroundOpacity: labelBackgroundOpacity,
+            lineStyle: lineStyle,
+            lineWeight: lineWeight,
+            lineColor: lineColor,
+            lineOpacity: lineOpacity,
+            fillColor: fillColor,
+            fillOpacity: fillOpacity,
+            canvasDraw: true
+          }
+        )
+      }
+      
+      if (isPolylineMode || ZWasPressed) {
+        addPolylineToGeoJSON(annoJSON, currentAnnotationId,
+          clickImageCoordinates.slice(0,clickImageCoordinates.length-1), // To avoid getting a duplicated final point
+          { uuid: uniqueID,
+            label: constPolylineLabel,
+            xLabel: labelImagePoint.x,
+            yLabel: labelImagePoint.y,
+            imageTitle: sampleName,
+            pixelsPerMeter: Number(pixelsPerMeters[sampleIdx]),
+            imageWidth: imageSize.x,
+            imageHeight: imageSize.y,
+            labelFontSize: labelFontSize,
+            labelFontColor: labelFontColor,
+            labelBackgroundColor: labelBackgroundColor,
+            labelBackgroundOpacity: labelBackgroundOpacity,
+            lineStyle: lineStyle,
+            lineWeight: lineWeight,
+            lineColor: lineColor,
+            lineOpacity: lineOpacity,
+            canvasDraw: true
+          }
+        )
+      }
+      drawShape(polylineCanvas, [annoJSON]);
+
+      // Reset the coordinates array for the next set of clicks
+      clickCoordinatesArray.push(clickCoordinates);
+      clickCoordinates = [];
+      clickImageCoordinates = []; // Clear
+      // Optionally, process the coordinates here, e.g., creating a polyline annotation
+
+      // Make text and crosshairs
+      addText(currentAnnotationId, constPolylineLabel, labelViewportPoint, labelFontColor,
+        labelFontSize, labelBackgroundColor, labelBackgroundOpacity
+      );
+      annoJSONTemp = {};
+      hasUnsavedAnnotations = true;
+      annoDict[currentAnnotationId] = uniqueID;
+      enableAnnoButtons();
+      hasUnsavedAnnotations = true;
+      isXPressed = false; // reset (because keyup not detected)
+      XWasPressed = false; // reset
+      isZPressed = false; // reset (because keyup not detected)
+      ZWasPressed = false; // reset
+      currentAnnotationId = currentAnnotationId+1;
+
+    } else {
+      // It's a single click, so set a timeout to handle it
+      clickTimeout = setTimeout(function() {
+        console.log('Single click detected, continuing collection...');
+      }, clickDelay);
+    }
+
+    // Update the last click timestamp
+    lastClickTime = currentTime;
+  }
+});
+
+// // Event listener to add polyline annotations
+// let clickCoordinates = []; // Array to store viewport coordinates
+// let clickImageCoordinates = []; // Array to store image coordinates
+// let clickCoordinatesArray = []; // Array to store arrays of coordinates
+// let clickTimeout;          // Timeout reference to detect double-click
+// const clickDelay = 300;    // Maximum delay between clicks for detecting double-click
+// let lastClickTime = 0;     // Timestamp of the last click
+// const polylineCanvas = document.getElementById('annotation-overlay');
+// let activelyMakingPolyline = false;
+// viewer.addHandler('canvas-click', function(event) {
+//   console.log('canvas clicked');
+//   if (isPolylineMode) {
+//     activelyMakingPolyline = true;
+//     const image = viewer.world.getItemAt(0);
+//     const imageSize = image.getContentSize();
+//     const viewportPoint = viewer.viewport.pointFromPixel(event.position);
+//     const imagePoint = image.viewportToImageCoordinates(viewportPoint.x, viewportPoint.y);
+//     const x = viewportPoint.x;
+//     const y = viewportPoint.y;
+//     const uniqueID = generateUniqueId(8);
+//     const labelFontSize = Number(document.getElementById("annoLabelFontSize").value);
+//     const labelFontColor = document.getElementById("annoLabelFontColor").value;
+//     const labelBackgroundColor = document.getElementById("annoLabelBackgroundColor").value;
+//     const labelBackgroundOpacity = Number(document.getElementById("annoLabelBackgroundOpacity").value);
+//     const lineWeight = Number(document.getElementById("rectBorderLw").value);
+//     const lineColor = document.getElementById("lineColor").value;
+//     const lineStyle = document.getElementById("lineStyle").value;
+//     const lineOpacity = Number(document.getElementById("lineOpacity").value);
+//     const lineColorToPlot = applyOpacityToColor(lineColor, lineOpacity);
+//     clickCoordinates.push({ x, y});
+//     clickImageCoordinates.push([imagePoint.x, imagePoint.y]);
+//     if (clickCoordinates.length > 1) {
+//       viewerElementClickCoordinates = []; // Reset the array
+//       for (let i = 0; i < clickCoordinates.length; i++) {
+//         const viewportPoint = new OpenSeadragon.Point(clickCoordinates[i].x, clickCoordinates[i].y); 
+//         const viewerElementPoint = updateViewerElementCoordinates(polylineCanvas, viewportPoint);
+//         viewerElementClickCoordinates.push(viewerElementPoint);
+//       }
+//       // Draw the polyline
+//       drawShape(polylineCanvas, [annoJSON, annoJSONTemp]);
+//     }
+
+//     document.addEventListener("keydown", function(event) {
+//       // Check if the Escape key was pressed
+//       if (event.key === "Escape") {
+//           annoJSONTemp = {};
+//           clickCoordinates = [];
+//           clickImageCoordinates = [];
+//           clickCoordinatesArray = [];
+//           console.log("Escape key pressed");
+//           // Add your logic here, e.g., close a modal, reset a view, etc.
+//       }
+//     });
+
+//     // Continually update the annoJSONTemp with the latest coordinates
+//     viewerContainer.addEventListener('mousemove', function(subevent) {
+//       if (activelyMakingPolyline) {
+//         const rect = viewerContainer.getBoundingClientRect(); // Get container bounds
+//         const position = {
+//           x: subevent.clientX - rect.left,
+//           y: subevent.clientY - rect.top
+//         };
+//         const positionPoint = new OpenSeadragon.Point(position.x, position.y);
+//         const subeventViewportPoint = viewer.viewport.pointFromPixel(positionPoint);
+//         const subeventImagePoint = image.viewportToImageCoordinates(subeventViewportPoint.x, subeventViewportPoint.y);
+//         annoDict[currentAnnotationId] = uniqueID;
+//         const sampleIdx = samples.indexOf(sampleName);
+//         addPolylineToGeoJSON(annoJSONTemp, currentAnnotationId,
+//           [...clickImageCoordinates, [subeventImagePoint.x, subeventImagePoint.y]],
+//           {
+//           // { uuid: uniqueID,
+//           //   label: constPolylineLabel,
+//           //   xLabel: undefined,
+//           //   yLabel: undefined,
+//           //   imageTitle: sampleName,
+//           //   pixelsPerMeter: pixelsPerMeters[sampleIdx],
+//           //   imageWidth: imageSize.x,
+//           //   imageHeight: imageSize.y,
+//             labelFontSize: labelFontSize,
+//             labelFontColor: labelFontColor,
+//             labelBackgroundColor: labelBackgroundColor,
+//             labelBackgroundOpacity: labelBackgroundOpacity,
+//             lineStyle: lineStyle,
+//             lineWeight: lineWeight,
+//             lineColor: lineColor,
+//             lineOpacity: lineOpacity,
+//             canvasDraw: true
+//           }
+//         )
+//         drawShape(polylineCanvas, [annoJSON, annoJSONTemp]);
+//       }
+//     });
+
+//     // If the time between this click and the last click is shorter than clickDelay, it's a double-click
+//     const currentTime = new Date().getTime();
+//     if (currentTime - lastClickTime < clickDelay) {
+//       // It's a double-click, so stop the timeout and end collection
+//       activelyMakingPolyline = false;
+//       clearTimeout(clickTimeout);
+//       console.log('Double-click detected, ending collection of points.');
+//       console.log('Collected Coordinates:', clickCoordinates);
+      
+//       if (isRepeatMode) {
+//         const annoId = parseInt(document.getElementById('anno-id').value);
+//         var constPolylineLabel = annoJSON[annoId].properties.label;
+//       } else {
+//         var constPolylineLabel = prompt("Enter a label for this polyline:");
+//       }
+
+//       const labelViewportPoint = new OpenSeadragon.Point(clickCoordinates[0].x, clickCoordinates[0].y);
+
+//       const sampleIdx = samples.indexOf(sampleName);
+//       addPolylineToGeoJSON(annoJSON, currentAnnotationId,
+//         clickImageCoordinates.slice(0,clickImageCoordinates.length-1), // To avoid getting a duplicated final point
+//         { uuid: uniqueID,
+//           label: constPolylineLabel,
+//           xLabel: labelViewportPoint.x,
+//           yLabel: labelViewportPoint.y,
+//           imageTitle: sampleName,
+//           pixelsPerMeter: pixelsPerMeters[sampleIdx],
+//           imageWidth: imageSize.x,
+//           imageHeight: imageSize.y,
+//           labelFontSize: labelFontSize,
+//           labelFontColor: labelFontColor,
+//           labelBackgroundColor: labelBackgroundColor,
+//           labelBackgroundOpacity: labelBackgroundOpacity,
+//           lineStyle: lineStyle,
+//           lineWeight: lineWeight,
+//           lineColor: lineColor,
+//           lineOpacity: lineOpacity,
+//           canvasDraw: true
+//         }
+//       )
+
+//       // Reset the coordinates array for the next set of clicks
+//       clickCoordinatesArray.push(clickCoordinates);
+//       clickCoordinates = [];
+//       clickImageCoordinates = []; // Clear
+//       // Optionally, process the coordinates here, e.g., creating a polyline annotation
+
+//       // Make text and crosshairs
+//       addText(currentAnnotationId, constPolylineLabel, labelViewportPoint, labelFontColor,
+//         labelFontSize, labelBackgroundColor, labelBackgroundOpacity
+//       );
+//       annoJSONTemp = {};
+//       hasUnsavedAnnotations = true;
+//       annoDict[currentAnnotationId] = uniqueID;
+//       enableAnnoButtons();
+//       hasUnsavedAnnotations = true;
+//       currentAnnotationId = currentAnnotationId+1;
+
+//     } else {
+//       // It's a single click, so set a timeout to handle it
+//       clickTimeout = setTimeout(function() {
+//         console.log('Single click detected, continuing collection...');
+//       }, clickDelay);
+//     }
+
+//     // Update the last click timestamp
+//     lastClickTime = currentTime;
+//   }
+// });
+
+// Function that updates x, y coordinates in viewer element space
+function updateViewerElementCoordinates(canvas, viewportPoint) {
+  const viewportWidth = viewer.viewport.containerSize.x;
+  const viewportHeight = viewer.viewport.containerSize.y;
+  canvas.width = viewportWidth;
+  canvas.height = viewportHeight;
+  if (viewportPoint) {
+    const viewerElementPoint = viewer.viewport.viewportToViewerElementCoordinates(viewportPoint);
+    return viewerElementPoint;
+  }
+}
+
+let viewerElementClickCoordinates = [];
+// // Update a line that is currently being added when the viewport changes
+// viewer.addHandler('viewport-change', () => {
+//   if (clickCoordinates.length > 0) {
+//     for (let h = 0; h < clickCoordinates.length; h++) {
+//       viewerElementClickCoordinates = []; // Reset the array
+//       for (let i = 0; i < clickCoordinates[h].length; i++) {
+//         const viewportPoint = new OpenSeadragon.Point(clickCoordinates[h][i].x, clickCoordinatesArray[h][i].y); 
+//         const viewerElementPoint = updateViewerElementCoordinates(polylineCanvas, viewportPoint);
+//         viewerElementClickCoordinates.push(viewerElementPoint);
+//       }
+//     }
+//   }
+//   if (viewerElementClickCoordinates.length > 1) {
+//     drawShape(polylineCanvas, viewerElementClickCoordinates);
+//   }
+// });
+
+// Update previously draw lines
+viewer.addHandler('viewport-change', () => {
+  drawShape(polylineCanvas, [annoJSONTemp, annoJSON]);
+  // updateExistingCanvasDrawings(annoJSON);
+});
+
+// TOOD: Is this necessary? Could be partially redundant with the above function
+viewerContainer.addEventListener('mousemove', () => {
+  drawShape(polylineCanvas, [annoJSONTemp, annoJSON]);
+  // if (isPolylineMode || isPolygonMode) {
+    // updateExistingCanvasDrawings(annoJSONTemp);
+  // }
+});
+
+// TODO: Does this function do anything? I suppose it updates viewerElementClickCoordinates
+// function updateExistingCanvasDrawings(JSON) {
+//   // Check if any entry has properties.canvasDraw === true
+//   // Convert the object to an array of its values
+//   const annoArray = Object.values(JSON);
+//   const hasCanvasDraw = annoArray.some(entry => entry.properties.canvasDraw === true);
+//   if (hasCanvasDraw) {
+//     const image = viewer.world.getItemAt(0);
+//     for (let i = 0; i < annoArray.length; i++) { // One loop per JSON entry
+//       if (annoArray[i].properties.canvasDraw === true) {
+//         const coordinates = annoArray[i].geometry.coordinates;
+//         const metadata = annoArray[i].properties;
+//         const viewerElementCanvasCoordinates = [];
+//         for (let j = 0; j < coordinates.length; j++) {
+//           const viewportPoint = image.imageToViewportCoordinates(coordinates[j][0], coordinates[j][1])
+//           // const viewportPoint = new OpenSeadragon.Point(coordinates[j][0], coordinates[j][1]);
+//           const viewerElementPoint = updateViewerElementCoordinates(polylineCanvas, viewportPoint);
+//           viewerElementCanvasCoordinates.push(viewerElementPoint);
+//         }
+//         drawShape(polylineCanvas, [JSON]);
+//         // drawShape(polylineCanvas, viewerElementCanvasCoordinates);
+//         // console.log('viewerElementCanvasCoordinates',viewerElementCanvasCoordinates);
+//       }
+//     }
+//   }
+// }
+
+// Event listener for double-click to end collection
+viewer.addHandler('canvas-dblclick', function(event) {
+  if (isPolylineMode) {
+    // Double-click detected, stop collecting points
+    console.log('Double-click detected, ending collection of points.');
+    console.log('Collected Coordinates:', clickCoordinates);
+
+    const viewportPoint = viewer.viewport.pointFromPixel(event.position);
+    const x = viewportPoint.x;
+    const y = viewportPoint.y;
+
+    clickCoordinates.push({ x, y});
+
+    // Optionally, process the coordinates here
+    // For example, you could create a polyline annotation from these points
+
+    // Reset the coordinates array
+    clickCoordinates = [];
+  }
+});
+
+function drawShape(canvas, JSONArray) {
+  // Note: JSONArray must be an array with one or more entries
+
+  // Update canvas size dynamically
+  const viewerContainer = viewer.container;
+  canvas.width = viewerContainer.clientWidth;
+  canvas.height = viewerContainer.clientHeight;
+
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear the canvas
+
+  JSONArray.forEach((JSON) => {
+    // Point coordinates are in viewer element coordinates
+    const annoArray = Object.values(JSON);
+    const shapes = annoArray.filter(entry =>
+      (entry.geometry.type === 'LineString' || entry.geometry.type === 'Polygon')
+      && entry.properties.canvasDraw === true);
+    const image = viewer.world.getItemAt(0);
+
+    shapes.forEach((shape) => {
+      const coordinates = shape.geometry.coordinates;
+      if (shape.geometry.type === 'Polygon') {
+        drawPath(ctx, coordinates, image, shape, true); // 'true' for closed paths
+        // For polygons, coordinates can be nested (outer ring, inner rings)
+        // We'll draw only the outer ring here; adapt as needed for inner rings
+
+        // TODO: Make this work for polygons with holes
+
+        // coordinates.forEach((ring, index) => {
+        //   if (index === 0 || shape.geometry.includeHoles) { // Draw outer ring or optionally holes
+        //     drawPath(ctx, ring, image, shape, true); // Pass 'true' for polygons to close the path
+        //   }
+        // });
+
+      } else if (shape.geometry.type === 'LineString') {
+        drawPath(ctx, coordinates, image, shape, false); // 'false' for open paths
+      }
+    });
+  });
+}
+
+function drawPath(ctx, coordinates, image, shape, closePath) {
+  if (coordinates.length < 2) {
+    // console.warn('Skipping path with less than 2 points');
+    return;
+  }
+  ctx.beginPath();
+  const startingViewportPoint = image.imageToViewportCoordinates(coordinates[0][0], coordinates[0][1]);
+  const startingViewerElementPoint = viewer.viewport.viewportToViewerElementCoordinates(startingViewportPoint);
+  ctx.moveTo(startingViewerElementPoint.x, startingViewerElementPoint.y);
+
+  for (let i = 1; i < coordinates.length; i++) {
+    const nextViewportPoint = image.imageToViewportCoordinates(coordinates[i][0], coordinates[i][1]);
+    const nextViewerElementPoint = viewer.viewport.viewportToViewerElementCoordinates(nextViewportPoint);
+    ctx.lineTo(nextViewerElementPoint.x, nextViewerElementPoint.y);
+  }
+
+  if (closePath) {
+    ctx.closePath(); // Close the shape for polygons
+  }
+  if (closePath && shape.properties.fillColor) {
+    ctx.fillStyle = shape.properties.fillColor;
+    ctx.globalAlpha = shape.properties.fillOpacity;
+    ctx.fill();
+  }
+  // Set styles
+  ctx.lineStyle = shape.properties.lineStyle || 'solid'; // Allow border style customization
+  ctx.strokeStyle = shape.properties.lineColor || 'black';
+  ctx.lineWidth = shape.properties.lineWeight || 1;
+  ctx.globalAlpha = shape.properties.lineOpacity || 1;
+  ctx.stroke();
+}
+
+// TODO: Possibly delete this function if unnecessary
+// Function to draw polylines on the canvas
+// TODO: Make this function general to any canvas drawing (polyline, polygon, etc.)
+function drawPolyline(canvas, JSONArray) {
+  // Note: JSONArray must be an array with one or more entries
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear the canvas
+  JSONArray.forEach ((JSON) => {
+    // Point coordinates are in viewer element coordinates
+    const annoArray = Object.values(JSON);
+    const polylines = annoArray.filter(entry => entry.geometry.type === 'LineString');
+    const image = viewer.world.getItemAt(0);
+    for (let h = 0; h < polylines.length; h++) { // One loop per polyline entry
+      const coordinates = polylines[h].geometry.coordinates;
+      if (coordinates.length < 2) {
+        // console.warn(`Skipping polyline ${h} with less than 2 points`);
+        continue;
+      }
+      // Draw the polyline
+      ctx.beginPath();
+      const startingViewportPoint = image.imageToViewportCoordinates(coordinates[0][0], coordinates[0][1]);
+      const startingViewerElementPoint = viewer.viewport.viewportToViewerElementCoordinates(startingViewportPoint);
+      ctx.moveTo(startingViewerElementPoint.x, startingViewerElementPoint.y); // Start at the first point
+      for (let i = 1; i < coordinates.length; i++) {
+        // convert to viewer element coordinates
+        const nextViewportPoint = image.imageToViewportCoordinates(coordinates[i][0], coordinates[i][1]);
+        const nextViewerElementPoint = viewer.viewport.viewportToViewerElementCoordinates(nextViewportPoint);
+        ctx.lineTo(nextViewerElementPoint.x, nextViewerElementPoint.y); // Draw line to each point
+          // ctx.lineTo(points[i].x, points[i].y); // Draw line to each point
+      }
+      // if (cursor) {
+      //     ctx.lineTo(cursorX, cursorY); // Draw line to the cursor
+      // }
+      ctx.lineStyle = annoArray[h].properties.lineStyle; // TODO: Allow border style customization in canvas element
+      ctx.strokeStyle = annoArray[h].properties.lineColor;
+      ctx.lineWidth = annoArray[h].properties.lineWeight;
+      ctx.opacity = annoArray[h].properties.lineOpacity;
+      ctx.stroke();
+      ctx.closePath();
+
+    // Draw points
+    // points.forEach(point => {
+    //     ctx.beginPath();
+    //     ctx.arc(point.x, point.y, 5, 0, 2 * Math.PI);
+    //     ctx.fillStyle = 'red';
+    //     ctx.fill();
+    //     ctx.closePath();
+    // });
+    }
+  });
+}
 
 // Event listener to add square annotations for shift + drag
 let startPoint = null;
@@ -1184,17 +1904,16 @@ viewer.addHandler('canvas-drag', function(event) {
       event.preventDefaultAction = true; // Prevent default behavior (like panning)
 
       const viewportPoint = viewer.viewport.pointFromPixel(event.position);
-      const borderLw = Number(document.getElementById("rectBorderLw").value);
-      const borderColor = document.getElementById("rectBorderColor").value;
-      const borderStyle = document.getElementById("rectBorderStyle").value;
-      const borderOpacity = Number(document.getElementById("rectBorderOpacity").value);
-      const fillColor = document.getElementById("rectFillColor").value;
-      const fillOpacity = Number(document.getElementById("rectFillOpacity").value);
-      console.log('borderLw,borderColor,borderStyle,borderOpacity,fillColor',borderLw,borderColor,borderStyle,borderOpacity,fillColor);
+      const lineWeight = Number(document.getElementById("lineWeight").value);
+      const lineColor = document.getElementById("lineColor").value;
+      const lineStyle = document.getElementById("lineStyle").value;
+      const lineOpacity = Number(document.getElementById("lineOpacity").value);
+      const fillColor = document.getElementById("fillColor").value;
+      const fillOpacity = Number(document.getElementById("fillOpacity").value);
 
-      const borderColorToPlot = applyOpacityToColor(borderColor, borderOpacity);
+      const lineColorToPlot = applyOpacityToColor(lineColor, lineOpacity);
       const fillColorToPlot = applyOpacityToColor(fillColor, fillOpacity);
-      console.log('borderColorToPlot',borderColorToPlot);
+      console.log('lineColorToPlot',lineColorToPlot);
 
       if (!startPoint) {
           // Mouse down - initialize start point and overlay
@@ -1203,9 +1922,9 @@ viewer.addHandler('canvas-drag', function(event) {
           // Create an HTML element for the overlay
           overlayElement = document.createElement('div');
           overlayElement.className = "annotate-rectangle";
-          overlayElement.style.borderStyle = borderStyle;
-          overlayElement.style.borderColor = borderColorToPlot;
-          overlayElement.style.borderWidth = `${borderLw}px`;
+          overlayElement.style.borderStyle = lineStyle;
+          overlayElement.style.borderColor = lineColorToPlot;
+          overlayElement.style.borderWidth = `${lineWeight}px`;
           overlayElement.style.backgroundColor = fillColorToPlot;
           overlayElement.id = `annotate-rect-${currentAnnotationId}`;
 
@@ -1239,12 +1958,9 @@ viewer.addHandler('canvas-release', function(event) {
       // Capture the final rectangle's coordinates and size
       const image = viewer.world.getItemAt(0);
       const imageSize = image.getContentSize();
-
       const endPoint = viewer.viewport.pointFromPixel(event.position);
       const imageStartPoint = image.viewportToImageCoordinates(startPoint.x, startPoint.y); // Get image coordinates
       const imageEndPoint = image.viewportToImageCoordinates(endPoint.x, endPoint.y);
-      // var imageStartPoint = viewer.viewport.viewportToImageCoordinates(startPoint.x, startPoint.y); // Get image coordinates
-      // var imageEndPoint = viewer.viewport.viewportToImageCoordinates(endPoint.x, endPoint.y);
       const width = imageEndPoint.x - imageStartPoint.x;
       const height = imageEndPoint.y - imageStartPoint.y;
 
@@ -1264,12 +1980,12 @@ viewer.addHandler('canvas-release', function(event) {
       const labelFontColor = document.getElementById("annoLabelFontColor").value;
       const labelBackgroundColor = document.getElementById("annoLabelBackgroundColor").value;
       const labelBackgroundOpacity = Number(document.getElementById("annoLabelBackgroundOpacity").value);
-      const borderLw = Number(document.getElementById("rectBorderLw").value);
-      const borderColor = document.getElementById("rectBorderColor").value;
-      const borderStyle = document.getElementById("rectBorderStyle").value;
-      const borderOpacity = Number(document.getElementById("rectBorderOpacity").value);
-      const fillColor = document.getElementById("rectFillColor").value;
-      const fillOpacity = Number(document.getElementById("rectFillOpacity").value);
+      const lineWeight = Number(document.getElementById("lineWeight").value);
+      const lineColor = document.getElementById("lineColor").value;
+      const lineStyle = document.getElementById("lineStyle").value;
+      const lineOpacity = Number(document.getElementById("lineOpacity").value);
+      const fillColor = document.getElementById("fillColor").value;
+      const fillOpacity = Number(document.getElementById("fillOpacity").value);
 
       if (isRepeatMode) {
         const annoId = parseInt(document.getElementById('anno-id').value);
@@ -1278,15 +1994,16 @@ viewer.addHandler('canvas-release', function(event) {
         var constRectLabel = prompt("Enter a label for this point:");
       }
 
+      // TODO: Delete below when ready
       // Record the annotation (and get the prompt for the label)
-      let annotation = {
-        x: x,
-        y: y,
-        w: finalWidth,
-        h: finalHeight,
-        type: 1, // 1 for rectangle
-        label: constRectLabel, //prompt("Enter a label for this rectangle:"),  // Prompt for a label
-      };
+      // let annotation = {
+      //   x: x,
+      //   y: y,
+      //   w: finalWidth,
+      //   h: finalHeight,
+      //   type: 1, // 1 for rectangle
+      //   label: constRectLabel, //prompt("Enter a label for this rectangle:"),  // Prompt for a label
+      // };
 
       // Add the rectangle to the geoJSON
       const sampleIdx = samples.indexOf(sampleName);
@@ -1296,9 +2013,9 @@ viewer.addHandler('canvas-release', function(event) {
         finalWidth,
         finalHeight,
         { uuid: uniqueID,
-          label: annotation.label,
-          xLabel: finalPoint.x, // Upper left
-          yLabel: finalPoint.y, // Upper left
+          label: constRectLabel,
+          xLabel: x, // Upper left
+          yLabel: y, // Upper left
           w: finalWidth,
           h: finalHeight,
           imageTitle: sampleName,
@@ -1309,12 +2026,13 @@ viewer.addHandler('canvas-release', function(event) {
           labelFontColor: labelFontColor,
           labelBackgroundColor: labelBackgroundColor,
           labelBackgroundOpacity: labelBackgroundOpacity,
-          borderStyle: borderStyle,
-          borderLw: borderLw,
-          borderColor: borderColor,
-          borderOpacity: borderOpacity,
+          lineStyle: lineStyle,
+          lineWeight: lineWeight,
+          lineColor: lineColor,
+          lineOpacity: lineOpacity,
           fillColor: fillColor,
-          fillOpacity: fillOpacity
+          fillOpacity: fillOpacity,
+          canvasDraw: false
         }
       )
 
@@ -1329,16 +2047,13 @@ viewer.addHandler('canvas-release', function(event) {
 
 
       // Add the label
-      addText(currentAnnotationId, annotation.label, finalPoint,
+      addText(currentAnnotationId, constRectLabel, finalPoint,
         labelFontColor, labelFontSize, labelBackgroundColor, labelBackgroundOpacity
       );
       currentAnnotationId = currentAnnotationId+1;
-
-      // Store annotation
-      annotations.push(annotation);
-
       enableAnnoButtons();
       hasUnsavedAnnotations = true;
+      // annoJSON[currentAnnotationId] = geoJSONFeature;
       // updateButtonColor(); // Use for testing
   }
 });
@@ -1347,7 +2062,7 @@ viewer.addHandler('canvas-release', function(event) {
 document.getElementById('clearBtn').addEventListener('click', function () {
   console.log('Clear clicked');
   clearAnnotations();
-  annotations = [];
+  // annotations = [];
 });
 
 // Functions to add annotation test and crosshairs
@@ -1472,11 +2187,11 @@ function updateCrosshair(id, newColor, newLineWeight, newOpacity) {
   }
 }
 
-function updateRectangle(id, borderStyle, borderLw, borderColor,
-  borderOpacity, fillColor, fillOpacity) {
+function updateRectangle(id, lineStyle, lineWeight, lineColor,
+  lineOpacity, fillColor, fillOpacity) {
   // Find the existing crosshair element by its ID
   const rectElement = document.getElementById(`annotate-rect-${id}`);
-  const borderColorToPlot = applyOpacityToColor(borderColor, borderOpacity);
+  const lineColorToPlot = applyOpacityToColor(lineColor, lineOpacity);
   const fillColorToPlot = applyOpacityToColor(fillColor, fillOpacity);
 
   if (!rectElement) {
@@ -1485,14 +2200,14 @@ function updateRectangle(id, borderStyle, borderLw, borderColor,
   }
 
   // Update the CSS variables if new values are provided
-  if (borderStyle !== undefined) {
-    rectElement.style.borderStyle = borderStyle;
+  if (lineStyle !== undefined) {
+    rectElement.style.borderStyle = lineStyle;
   }
-  if (borderLw !== undefined) {
-    rectElement.style.borderWidth = `${borderLw}px`;
+  if (lineWeight !== undefined) {
+    rectElement.style.borderWidth = `${lineWeight}px`;
   }
-  if (borderColor !== undefined) {
-    rectElement.style.borderColor = borderColorToPlot;
+  if (lineColor !== undefined) {
+    rectElement.style.borderColor = lineColorToPlot;
   }
   if (fillColor !== undefined) {
     rectElement.style.backgroundColor = fillColorToPlot;
@@ -1626,22 +2341,11 @@ function loadAnnotations(geoJSONData) {
         const viewportPoint = image.imageToViewportCoordinates(new OpenSeadragon.Point(x, y));
         // const viewportPoint = viewer.viewport.imageToViewportCoordinates(new OpenSeadragon.Point(x, y));
           
-        // Create annotation object
-        let annotation = {
-          x: x,
-          y: y,
-          w: 0,   // Width not needed for points
-          h: 0,   // Height not needed for points
-          type: 0,  // Type 0 for points
-          label: label,  // Label from properties
-          uuid: properties.uuid,  // Unique ID for the annotation
-        };
-
         // Add the point annotation (crosshairs, text)
         addText(currentAnnotationId, label, viewportPoint, properties.labelFontColor,
           Number(properties.labelFontSize), properties.labelBackgroundColor, Number(properties.labelBackgroundOpacity));
-        addCrosshairs(currentAnnotationId, viewportPoint, properties.pointColor, Number(properties.pointLw),
-          Number(properties.pointOpacity));
+        addCrosshairs(currentAnnotationId, viewportPoint, properties.lineColor, Number(properties.lineWeight),
+          Number(properties.lineOpacity));
 
         // Create the GeoJSON entry for this annotation
         const geoJSONFeature = {
@@ -1663,9 +2367,9 @@ function loadAnnotations(geoJSONData) {
             labelFontColor: properties.labelFontColor,
             labelBackgroundColor: properties.labelBackgroundColor,
             labelBackgroundOpacity: Number(properties.labelBackgroundOpacity),
-            pointLw: Number(properties.pointLw),
-            pointColor: properties.pointColor,
-            pointOpacity: Number(properties.pointOpacity),
+            lineWeight: Number(properties.lineWeight),
+            lineColor: properties.lineColor,
+            lineOpacity: Number(properties.lineOpacity),
           }
         };
         // Add the feature to the geoJSONDict with currentAnnotationId + 1 as the key
@@ -1673,8 +2377,8 @@ function loadAnnotations(geoJSONData) {
         annoDict[currentAnnotationId] = properties.uuid;
         annoJSON[currentAnnotationId] = geoJSONFeature;
         // TODO: This code is not generic for other polygon shapes. Currently only for Rectangles.
-      } else if (geometry.type === "Polygon") { // Polygon annotation
-        console.log('Loading polygon!!!');
+      } else if (geometry.type === "Polygon" && properties.canvasDraw === false) { // Polygon annotation
+        console.log('Loading rectangle!!!');
         const image = viewer.world.getItemAt(0);
         if (!image) {
           console.error('TiledImage is undefined or not yet loaded.');
@@ -1690,7 +2394,7 @@ function loadAnnotations(geoJSONData) {
         const width = properties.w/properties.imageWidth;
         const height = properties.h/properties.imageWidth; // TODO: I'm always surprised this is x and not y
 
-        // // Calculate viewport coordinates from image coordinates
+        // Calculate viewport coordinates from image coordinates
         const viewportPoint = image.imageToViewportCoordinates(new OpenSeadragon.Point(minX, minY));
           
         // Add the point annotation (crosshairs, text)
@@ -1700,14 +2404,14 @@ function loadAnnotations(geoJSONData) {
      
         console.log('inputs',currentAnnotationId, properties.label, viewportPoint, properties.labelFontColor, Number(properties.labelFontSize), properties.labelBackgroundColor, Number(properties.labelBackgroundOpacity));
 
-        const borderColorToPlot = applyOpacityToColor(properties.borderColor, Number(properties.borderOpacity));
+        const lineColorToPlot = applyOpacityToColor(properties.lineColor, Number(properties.lineOpacity));
         const fillColorToPlot = applyOpacityToColor(properties.fillColor, Number(properties.fillOpacity));
         
         overlayElement = document.createElement('div');
         overlayElement.className = "annotate-rectangle";
-        overlayElement.style.borderStyle = properties.borderStyle;
-        overlayElement.style.borderColor = borderColorToPlot;
-        overlayElement.style.borderWidth = `${Number(properties.borderLw)}px`;
+        overlayElement.style.borderStyle = properties.lineStyle;
+        overlayElement.style.borderColor = lineColorToPlot;
+        overlayElement.style.borderWidth = `${Number(properties.lineWeight)}px`;
         overlayElement.style.backgroundColor = fillColorToPlot;
         overlayElement.id = `annotate-rect-${currentAnnotationId}`;
         
@@ -1715,7 +2419,6 @@ function loadAnnotations(geoJSONData) {
             element: overlayElement,
             location: new OpenSeadragon.Rect(viewportPoint.x, viewportPoint.y, width, height)
         });
-
 
         // Create the GeoJSON entry for this annotation
         const geoJSONFeature = {
@@ -1739,26 +2442,100 @@ function loadAnnotations(geoJSONData) {
             labelFontColor: properties.labelFontColor,
             labelBackgroundColor: properties.labelBackgroundColor,
             labelBackgroundOpacity: Number(properties.labelBackgroundOpacity),
-            borderStyle: properties.borderStyle,
-            borderLw: Number(properties.borderLw),
-            borderColor: properties.borderColor,
-            borderOpacity: Number(properties.borderOpacity),
+            lineStyle: properties.lineStyle,
+            lineWeight: Number(properties.lineWeight),
+            lineColor: properties.lineColor,
+            lineOpacity: Number(properties.lineOpacity),
             fillColor: properties.fillColor,
-            fillOpacity: Number(properties.fillOpacity)
+            fillOpacity: Number(properties.fillOpacity),
+            canvasDraw: false,
           }
         };
         // Add the feature to the geoJSONDict with currentAnnotationId + 1 as the key
         // TODO: is annoDict redundant with annoJSON?
         annoDict[currentAnnotationId] = properties.uuid;
         annoJSON[currentAnnotationId] = geoJSONFeature;
-      }
+      } else if (geometry.type === "Polygon" && properties.canvasDraw === true) {
+        const image = viewer.world.getItemAt(0);
+        // Calculate viewport coordinates from image coordinates
+        const viewportPoint = image.imageToViewportCoordinates(new OpenSeadragon.Point(properties.xLabel, properties.yLabel));
 
-      // document.getElementById("anno-id").disabled = false;
-      // document.getElementById("anno-first-button").disabled = false;
-      // document.getElementById("anno-prev-button").disabled = false;
-      // document.getElementById("anno-next-button").disabled = false;
-      // document.getElementById("anno-last-button").disabled = false;
-      // document.getElementById("anno-label").disabled = false;
+        // Create the GeoJSON entry for this annotation
+        const geoJSONFeature = {
+          type: "Feature",
+          geometry: {
+            type: "Polygon",
+            coordinates: coordinates
+          },
+          properties: {
+            uuid: properties.uuid,
+            label: properties.label,
+            xLabel: properties.xLabel,
+            yLabel: properties.yLabel,
+            imageTitle: properties.imageTitle,
+            pixelsPerMeter: Number(properties.pixelsPerMeter),
+            imageWidth: Number(properties.imageWidth),
+            imageHeight: Number(properties.imageHeight),
+            labelFontSize: Number(properties.labelFontSize),
+            labelFontColor: properties.labelFontColor,
+            labelBackgroundColor: properties.labelBackgroundColor,
+            labelBackgroundOpacity: Number(properties.labelBackgroundOpacity),
+            lineStyle: properties.lineStyle,
+            lineWeight: Number(properties.lineWeight),
+            lineColor: properties.lineColor,
+            lineOpacity: Number(properties.lineOpacity),
+            fillColor: properties.fillColor,
+            fillOpacity: Number(properties.fillOpacity),
+            canvasDraw: true
+          }
+        };
+        // Add the label text)
+        addText(currentAnnotationId, properties.label, viewportPoint, properties.labelFontColor,
+          Number(properties.labelFontSize), properties.labelBackgroundColor, Number(properties.labelBackgroundOpacity)
+        );
+        annoDict[currentAnnotationId] = properties.uuid;
+        annoJSON[currentAnnotationId] = geoJSONFeature;
+
+      } else if (geometry.type === "LineString") {
+        const image = viewer.world.getItemAt(0);
+        // Calculate viewport coordinates from image coordinates
+        const viewportPoint = image.imageToViewportCoordinates(new OpenSeadragon.Point(properties.xLabel, properties.yLabel));
+
+        // Create the GeoJSON entry for this annotation
+        const geoJSONFeature = {
+          type: "Feature",
+          geometry: {
+            type: "LineString",
+            coordinates: coordinates
+          },
+          properties: {
+            uuid: properties.uuid,
+            label: properties.label,
+            xLabel: properties.xLabel,
+            yLabel: properties.yLabel,
+            imageTitle: properties.imageTitle,
+            pixelsPerMeter: Number(properties.pixelsPerMeter),
+            imageWidth: Number(properties.imageWidth),
+            imageHeight: Number(properties.imageHeight),
+            labelFontSize: Number(properties.labelFontSize),
+            labelFontColor: properties.labelFontColor,
+            labelBackgroundColor: properties.labelBackgroundColor,
+            labelBackgroundOpacity: Number(properties.labelBackgroundOpacity),
+            lineStyle: properties.lineStyle,
+            lineWeight: Number(properties.lineWeight),
+            lineColor: properties.lineColor,
+            lineOpacity: Number(properties.lineOpacity),
+            canvasDraw: true
+          }
+        };
+        // Add the label text)
+        addText(currentAnnotationId, properties.label, viewportPoint, properties.labelFontColor,
+          Number(properties.labelFontSize), properties.labelBackgroundColor, Number(properties.labelBackgroundOpacity)
+        );
+        annoDict[currentAnnotationId] = properties.uuid;
+        annoJSON[currentAnnotationId] = geoJSONFeature;
+      }
+      drawShape(polylineCanvas, [annoJSON]);
       enableAnnoButtons();
       annoLabelToText();
       
@@ -1812,30 +2589,35 @@ document.getElementById('exportBtn').addEventListener('click', function () {
 
 const clearAnnotations = () => {
   const annoIds = Object.keys(annoDict).map(Number);
-  
   if (annoIds.length === 0) {
     return; // Nothing to remove
   } else {
     for (let i = 0; i < annoIds.length; i++) {
       const type = annoJSON[annoIds[i]].geometry.type;
       deleteText(annoIds[i]);
-      console.log('type',type);
       if (type === 'Point') {
         deleteCrosshairs(annoIds[i]);
-      } else if (type === 'Polygon') {
+      } else if (type === 'Polygon' && annoJSON[annoIds[i]].properties.canvasDraw === false) {
         deleteRectangle(annoIds[i]);
-      } else {
-        console.log('Annotation type not known. NOT DELETED');
       }
-  }
+      // else {
+      //   console.log('Annotation type not known. NOT DELETED');
+      // }
+    }
   }
   const geoJSON = {};
+  annoJSON = {};
+  annoJSONTemp = {};
+  drawPolyline(polylineCanvas, [annoJSON, annoJSONTemp]);
   console.log('Cleared',geoJSON);
   annoDict = {};
   const annoLabel = document.getElementById('anno-label');
+  const annoId = document.getElementById('anno-id');
   annoLabel.value = '';
+  annoId.value = 1;
   currentAnnotationId = 1;
   hasUnsavedAnnotations = false;
+  drawPolyline(polylineCanvas, [annoJSON]);
   // updateButtonColor(); // Use for testing
 };
 
@@ -2971,16 +3753,12 @@ const measurementButton = document.getElementById("toggleMeasurementButton");
 const showMeasurementsButton = document.getElementById("show-measurements");
 
 viewer.addHandler('canvas-click', function(event) {
-  console.log('click',measurementCounter);
   if (measurmentModeActive & measurementCounter < 2) {
     const image = viewer.world.getItemAt(0);
-    //const imagePoint = handleMeasurementClick(event);
     const viewportPoint = viewer.viewport.pointFromPixel(event.position);
     const imagePoint = image.viewportToImageCoordinates(viewportPoint.x, viewportPoint.y); 
-    const viewerElementPoint = event.position;
     if (measurementCounter === 0) {
-      clearLine();
-      // disablePanning(); // Disable panning while measuring
+      clearLine(lineCanvas);
       event.preventDefaultAction = true; // Prevent default behavior (like panning)
 
       x0.textContent = imagePoint.x.toFixed(0);
@@ -3005,29 +3783,18 @@ viewer.addHandler('canvas-click', function(event) {
       const viewportPt2 = image.imageToViewportCoordinates(x1.textContent, y1.textContent);
       secondViewportPoint = viewportPoint;
       secondViewerElementPoint = event.position;
-      drawLine(firstViewerElementPoint, secondViewerElementPoint);
-      // drawLine(viewportPt1.x, viewportPt1.y, viewportPt2.x, viewportPt2.y);
+      addLine(lineCanvas, firstViewerElementPoint, secondViewerElementPoint);
+      // addLine(viewportPt1.x, viewportPt1.y, viewportPt2.x, viewportPt2.y);
       measurementCounter++;
       const distance = Math.sqrt((x1.textContent - x0.textContent) ** 2 + (y1.textContent - y0.textContent) ** 2);
       const distanceInMicrons = distance*1/pixelsPerMeters[currentIndex]*1000000; // Microns
       distanceElement.value = distanceInMicrons.toFixed(2);
       measurementCounter = 0;
-      // enablePanning(); // Re-enable panning after measuring
     } else {
       measurementCounter = 0;
     }
   }
 });
-
-// Disable panning by intercepting mouse events
-function disablePanning() {
-  viewer.setMouseNavEnabled(false); // Disable OpenSeadragon panning
-}
-
-// Re-enable panning by resetting mouse navigation
-function enablePanning() {
-  viewer.setMouseNavEnabled(true); // Re-enable OpenSeadragon panning
-}
 
 let measurmentModeActive = false;
 let measurementCounter = 0;
@@ -3050,21 +3817,6 @@ function toggleMeasurementMode() {
   }
 }
 
-// Function to handle measurement clicks
-function handleMeasurementClick(event) {
-  const image = viewer.world.getItemAt(0); // Assuming one image in the viewer
-  const viewportPoint = viewer.viewport.pointFromPixel(event.position); // Viewport coordinates
-  const imagePoint = image.viewportToImageCoordinates(viewportPoint); // Image coordinates
-
-  // Check if event.position exists
-  if (!event.position) {
-    console.error("event.position is undefined");
-    return;
-  }
-
-  return imagePoint;
-}
-
 function addMeasurementCrosshairs(i, location, color='red', lineWeight = 2, opacity = 1) {
   console.log('adding measurement crosshairs');
   const crosshairsMeasurement = document.createElement("div");
@@ -3084,17 +3836,16 @@ function addMeasurementCrosshairs(i, location, color='red', lineWeight = 2, opac
 }
 
 const lineCanvas = document.getElementById('measurement-overlay');
-const lineContext = lineCanvas.getContext('2d');
-
-function resizeCanvasToViewport() {
+function resizeCanvasToViewport(canvas) {
   const viewportWidth = viewer.viewport.containerSize.x;
   const viewportHeight = viewer.viewport.containerSize.y;
-  lineCanvas.width = viewportWidth;
-  lineCanvas.height = viewportHeight;
+  canvas.width = viewportWidth;
+  canvas.height = viewportHeight;
   if (firstViewerElementPoint && secondViewerElementPoint) {
+    console.log('resizing canvas');
     const firstViewerElementPointUpdated = viewer.viewport.viewportToViewerElementCoordinates(firstViewportPoint);
     const secondViewerElementPointUpdated = viewer.viewport.viewportToViewerElementCoordinates(secondViewportPoint);
-    drawLine(firstViewerElementPointUpdated, secondViewerElementPointUpdated);
+    addLine(canvas, firstViewerElementPointUpdated, secondViewerElementPointUpdated);
   }
 
   // TODO: Allow multiple lines to be rescaled
@@ -3106,58 +3857,77 @@ function resizeCanvasToViewport() {
 // Wait until the viewer is fully loaded (the open event)
 viewer.addHandler("open", function () {
   // Resize canvas after the viewer has loaded
-  resizeCanvasToViewport();
-});
-
-// Update size on window resize
-window.addEventListener("resize", resizeCanvasToViewport);
-
-// Draw the line between the two points
-function drawLine(startPoint, endPoint) {
-  if (startPoint && endPoint) {
-    // points are in viewer element coordinates
-    lineContext.clearRect(0, 0, lineCanvas.width, lineCanvas.height);
-    // Draw the line
-    lineContext.beginPath();
-    lineContext.moveTo(startPoint.x, startPoint.y);
-    lineContext.lineTo(endPoint.x, endPoint.y);
-    lineContext.strokeStyle = 'red';
-    lineContext.lineWidth = 2;
-    lineContext.stroke();
-  }
-}
-
-function clearLine() {
-  lineContext.clearRect(0, 0, lineCanvas.width, lineCanvas.height);
-}
-
-// Adjust canvas transformations for pan and zoom
-function adjustCanvasTransform() {
-  const zoomLevel = viewer.viewport.getZoom();
-  const pan = viewer.viewport.getCenter();
-
-  // Clear the canvas before applying transformations
-  lineContext.clearRect(0, 0, lineCanvas.width, lineCanvas.height);
-
-  // Apply zoom and pan transformations to the canvas context
-  lineContext.setTransform(zoomLevel, 0, 0, zoomLevel, pan.x * lineCanvas.width, pan.y * lineCanvas.height);
-  
-  // Redraw the existing line with the new transform applied
-  drawLine(firstViewerElementPoint, secondViewerElementPoint);
-}
-
-// Update the line when the viewport changes
-viewer.addHandler('viewport-change', drawLine(firstViewerElementPoint, secondViewerElementPoint));
-viewer.addHandler('resize', () => {
-  resizeCanvasToViewport();
-  drawLine(firstViewerElementPoint, secondViewerElementPoint);
+  resizeCanvasToViewport(lineCanvas);
 });
 
 // Listen to zoom and pan events to update the line's position
 viewer.addHandler("animation", function () {
-  resizeCanvasToViewport();
+  resizeCanvasToViewport(lineCanvas);
   // adjustCanvasTransform();
 });
+
+// Update size on window resize
+window.addEventListener("resize", resizeCanvasToViewport(lineCanvas));
+
+let measurementLineDrawn = false;
+// Draw the line between the two points
+function addLine(canvas, firstPoint, secondPoint, lineColor='red', lineLw=2, lineOpacity=1) {
+  const lineContext = canvas.getContext('2d');
+
+  if (firstPoint && secondPoint) {
+    console.log('adding line');
+    console.log('lineContext', lineContext);
+    console.log('lw, color, opacity', lineLw, lineColor, lineOpacity);
+  
+    // points are in viewer element coordinates
+    //lineContext.clearRect(0, 0, lineCanvas.width, lineCanvas.height);
+    // Draw the line
+    lineContext.beginPath();
+    lineContext.moveTo(firstPoint.x, firstPoint.y);
+    lineContext.lineTo(secondPoint.x, secondPoint.y);
+    lineContext.strokeStyle = lineColor;
+    lineContext.lineWidth = lineLw;
+    lineContext.opacity = lineOpacity;
+    lineContext.stroke();
+  }
+  measurementLineDrawn = true;
+}
+
+function clearLine(canvas) {
+  const lineContext = canvas.getContext('2d');
+  lineContext.clearRect(0, 0, lineCanvas.width, lineCanvas.height);
+}
+
+// // Adjust canvas transformations for pan and zoom
+// function adjustCanvasTransform(canvas) {
+//   const zoomLevel = viewer.viewport.getZoom();
+//   const pan = viewer.viewport.getCenter();
+//   const lineContext = canvas.getContext('2d');
+
+//   // Clear the canvas before applying transformations
+//   lineContext.clearRect(0, 0, lineCanvas.width, lineCanvas.height);
+
+//   // Apply zoom and pan transformations to the canvas context
+//   lineContext.setTransform(zoomLevel, 0, 0, zoomLevel, pan.x * lineCanvas.width, pan.y * lineCanvas.height);
+  
+//   // Redraw the existing line with the new transform applied
+//   addLine(lineCanvas, firstViewerElementPoint, secondViewerElementPoint);
+// }
+
+// Update the line when the viewport changes
+viewer.addHandler('viewport-change', () => {
+  if (measurementLineDrawn) {
+    addLine(lineCanvas, firstViewerElementPoint, secondViewerElementPoint);
+  }
+});
+
+viewer.addHandler('resize', () => {
+  if (measurementLineDrawn) {
+    resizeCanvasToViewport(lineCanvas);
+    addLine(lineCanvas, firstViewerElementPoint, secondViewerElementPoint);
+  }
+});
+
 
 // Import, add, and export points with labels
 const toggleMeasurementVisibility = (event) => {
@@ -3171,7 +3941,7 @@ const toggleMeasurementVisibility = (event) => {
 
 function resetMeasurements() {
   // Clear the line canvas (if it exists)
-  if (lineContext) {
+  if (measurementLineDrawn) {
     console.log('clearing canvas');
     lineCanvas.width = lineCanvas.width; // Reset width, this will clear the canvas
     lineCanvas.height = lineCanvas.height; // Reset height, this will clear the canvas
