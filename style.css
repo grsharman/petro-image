@@ -254,10 +254,19 @@ html {
   border-color: black transparent transparent transparent;
 }
 
+#groupDropdown {
+  width: 120px;
+}
+
+#sampleDropdown {
+  width: 120px;
+}
+
 #sample-input {
   width: 50px; /* Adjusted for a 3-4 digit number */
   text-align: center; /* Center the number */
 }
+
 #go-button {
   margin-top: 5px;
 }
@@ -265,6 +274,70 @@ html {
   width: 50px; /* Adjusted for a 3-4 digit number */
   text-align: left; /* Center the number */
 }
+
+/* #filterButton {
+  width: 50px;
+  height: 20px;
+  padding: 2px;
+  border: 1px solid #444;
+  border-radius: 5px;
+  background-color: #f0f0f0;
+  margin: 2px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#filterButton:disabled {
+  cursor: not-allowed;
+  background-color: #f0f0f0;
+  border-color: grey;
+  opacity: 0.5;
+} */
+/* 
+#summarizeButton {
+  width: 80px;
+  height: 20px;
+  padding: 2px;
+  border: 1px solid #444;
+  border-radius: 5px;
+  background-color: #f0f0f0;
+  margin: 2px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#summarizeButton:disabled {
+  cursor: not-allowed;
+  background-color: #f0f0f0;
+  border-color: grey;
+  opacity: 0.5;
+} */
+
+/* #count-export {
+  width: 50px;
+  height: 20px;
+  padding: 2px;
+  border: 1px solid #444;
+  border-radius: 5px;
+  background-color: #f0f0f0;
+  margin: 2px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#count-export:disabled {
+  cursor: not-allowed;
+  background-color: #f0f0f0;
+  border-color: grey;
+  opacity: 0.5;
+} */
+
 .input-success {
   border-color: green !important;
 }
@@ -277,19 +350,37 @@ html {
   display: none; /* Hide the actual file input */
 }
 
-.file-label {
+/* .file-label {
   display: inline-block;
   padding: 2px 2px;
-  background-color: #f0f0f0; /* Customize button color */
+  background-color: #f0f0f0;
   border: 1px solid #444;
   border-radius: 5px;
   font-size: 10px;
   cursor: pointer;
   text-align: center;
+} */
+
+/* General button styles */
+.file-label {
+  /* flex-shrink: 0; */
+  display: inline-block;
+  width: 50px;
+  height: 18px;
+  padding: 1px;
+  border: 1px solid #444;
+  border-radius: 5px;
+  background-color: #f0f0f0;
+  margin: 2px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
 }
 
 .file-label:hover {
-  background-color: #b9b9b9; /* Darken button on hover */
+  background-color: #b9b9b9;
 }
 
 #resultsModal {
@@ -355,44 +446,10 @@ html {
 }
 
 /* General button styles */
-.anno-arrows {
-  width: 100%;
-  height: 100%;
-  padding: 2px;
-  border: 1px solid #444;
-  border-radius: 5px;
-  background-color: #f0f0f0;
-  margin: 2px;
-  cursor: pointer;
-  display: block;
-  align-items: center;
-  justify-content: center;
-}
-
-/* Activated state */
-.anno-arrows.active {
-  background-color: #b9b9b9; /* Light blue when active */
-  color: white;
-}
-
-/* Hover state */
-.anno-arrows:hover {
-  background-color: #b9b9b9;
-}
-
-.anno-arrows:disabled {
-  cursor: not-allowed;
-  background-color: #f0f0f0; /* Neutral background */
-}
-
-.anno-arrows:disabled:hover {
-  background-color: #f0f0f0; /* No hover effect */
-}
-
-/* General button styles */
 .custom-button {
   /* flex-shrink: 0; */
-  width: 20px;
+  --button-width: 20px; /* Default width */
+  width: var(--button-width);
   height: 20px;
   padding: 2px;
   border: 1px solid #444;
@@ -405,9 +462,51 @@ html {
   justify-content: center;
 }
 
+#apply-grid-settings {
+  width: 50px;
+  height: 20px;
+  padding: 2px;
+  border: 1px solid #444;
+  border-radius: 5px;
+  background-color: #f0f0f0;
+  margin: 2px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#apply-grid-settings:disabled {
+  cursor: not-allowed;
+  background-color: #f0f0f0; /* Neutral background */
+  border-color: grey;
+  opacity: 0.5;
+}
+
+#restore-grid-settings {
+  width: 60px;
+  height: 20px;
+  padding: 2px;
+  border: 1px solid #444;
+  border-radius: 5px;
+  background-color: #f0f0f0;
+  margin: 2px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#restore-grid-settings:disabled {
+  cursor: not-allowed;
+  background-color: #f0f0f0; /* Neutral background */
+  border-color: grey;
+  opacity: 0.5;
+}
+
 /* Activated state */
 .custom-button.active {
-  background-color: #b9b9b9; /* Light blue when active */
+  background-color: #b9b9b9;
   color: white;
 }
 
@@ -419,10 +518,8 @@ html {
 .custom-button:disabled {
   cursor: not-allowed;
   background-color: #f0f0f0; /* Neutral background */
-}
-
-.custom-button:disabled:hover {
-  background-color: #f0f0f0; /* No hover effect */
+  border-color: grey;
+  opacity: 0.5;
 }
 
 /* Point (dot) button */
@@ -494,7 +591,7 @@ input[type="range"] {
 .dropdown-container {
   display: flex;
   align-items: center; /* Vertically align items */
-  gap: 8px; /* Add some space between the dropdown and the button */
+  gap: 2px; /* Add some space between the dropdown and the button */
 }
 
 /* Hidden menu styles */
@@ -592,9 +689,9 @@ input[type="range"] {
 }
 
 /* Button for loading annotation from JSON */
-#loadAnnoFromJSONButton {
+/* #loadAnnoFromJSONButton {
   display: none;
-}
+} */
 
 #measurement-overlay {
   position: absolute;
@@ -625,4 +722,12 @@ input[type="range"] {
   -moz-appearance: textfield; /* Hide arrows in Firefox */
   appearance: textfield;
   width: 200px; /* Custom width for this input */
+}
+
+#step-size {
+  width: 50px;
+}
+
+#no-points {
+  width: 50px;
 }

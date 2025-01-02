@@ -72,9 +72,11 @@
           </div>
         </div>
       </div>
-      <div>
+      <div class="dropdown-container">
         <select id="sampleDropdown"></select>
-        <button id="info-button-desc">?
+        <button id="info-button-desc" class="custom-button" title="Sample Info">
+          <label for="info-button-desc">?</label>
+        </button>
       </div>
       <div id="tooltip-desc" class="hidden"></div>
       <div>
@@ -115,69 +117,72 @@
         <details id="detailsMenu" closed>
           <summary>Grid</summary>
           <div>
-          <input
-          type="checkbox"
-          id="show-grid"
-          checked
-          onclick="toggleGrid(this)"
-          />
-          <label for="show-grid">Show grid</label>
-          <div>
-          <label for="show-aoi">
+            <input
+            type="checkbox"
+            id="show-grid"
+            title="Show Grid"
+            checked
+            onclick="toggleGrid(this)"
+            />
+            <label for="show-grid">Show Grid</label>
             <input
             type="checkbox"
             id="show-aoi"
+            title="Area of Interest"
             onclick="updateAoiRectangle(this)"
-            />Show AOI
-          </label>
+            />
+            <label for="show-aoi">AOI</label>
           </div>
+          <div>
+            <label for="x_min">x<sub>min</sub></label>
+            <input type="range" id="grid-left" name="x_min"
+            min="0" value = "20" max="100" title="Left boundary of AOI"
+            onchange="enableGridButtons()"/>
+            <span class="slider-value" id="grid-left-value">20</span>
           </div>
-            <div>
-              <label for="x_min">x<sub>min</sub></label>
-              <input type="range" id="grid-left" name="x_min"
-              min="0" value = "20" max="100" onchange="enableGridButtons()"/>
-              <span class="slider-value" id="grid-left-value">20</span>
-            </div>
-            <div>
-              <label for="x_max">x<sub>max</sub></label>
-              <input type="range" id="grid-right" name="x_max" min="0" value = "80"
-              max="100" onchange="enableGridButtons()"/>
-              <span class="slider-value" id="grid-right-value">80</span>
-            </div>
-            <div>
-              <label for="y_min">y<sub>min</sub></label>            
-              <input type="range" id="grid-top" name="y_min" min="0" value = "0"
-              max="100" onchange="enableGridButtons()"/>
-              <span class="slider-value" id="grid-top-value">10</span>
-            </div>
-            <div>
-              <label for="y_max">y<sub>max</sub></label>            
-              <input type="range" id="grid-bottom" name="y_max" min="0" value = "90"
-              max="100" onchange="enableGridButtons()"/>
-              <span class="slider-value" id="grid-bottom-value">90</span>
-            </div>
-            <div>
-              <label for="step-size">step:</label>
-              <input
-                id="step-size"
-                class="number-input"
-                type="number"
-                value="1000"
-                min="2"
-                onchange="enableGridButtons()"
-              />
-            </div>
-            <div>
-              <label for="no-points"># points:</label>
-              <input
-                id="no-points"
-                class="number-input"
-                type="number"
-                value="600"
-                min="2"
-                onchange="enableGridButtons()"
-              />
-            </div>
+          <div>
+            <label for="x_max">x<sub>max</sub></label>
+            <input type="range" id="grid-right" name="x_max" min="0" value = "80" title="Right boundary of AOI"
+            max="100" onchange="enableGridButtons()"/>
+            <span class="slider-value" id="grid-right-value">80</span>
+          </div>
+          <div>
+            <label for="y_min">y<sub>min</sub></label>            
+            <input type="range" id="grid-top" name="y_min" min="0" value = "0"
+            max="100"  title="Top boundary of AOI" onchange="enableGridButtons()"/>
+            <span class="slider-value" id="grid-top-value">10</span>
+          </div>
+          <div>
+            <label for="y_max">y<sub>max</sub></label>            
+            <input type="range" id="grid-bottom" name="y_max" min="0" value = "90"  title="Bottom boundary of AOI"
+            max="100" onchange="enableGridButtons()"/>
+            <span class="slider-value" id="grid-bottom-value">90</span>
+          </div>
+          <div>
+            <label for="step-size">Step Size (µm):</label>
+            <input
+              id="step-size"
+              class="number-input"
+              type="number"
+              value="1000"
+              min="2"
+              title="Step size in micrometers"
+              onchange="enableGridButtons()"
+            />
+          </div>
+          <div>
+            <label for="no-points"># Points:</label>
+            <input
+              id="no-points"
+              class="number-input"
+              type="number"
+              value="600"
+              min="2"
+              title="Number of points"
+              onchange="enableGridButtons()"
+            />
+          </div>
+          <div class="dropdown-container">
             <button id="apply-grid-settings" onclick="applyGridSettings()">
               Apply
             </button>
@@ -188,14 +193,24 @@
             >
               Restore
             </button>
+          </div>
         </details>
         <details closed>
           <summary>Count</summary>
-          <div>
-            <button id="prev-button" disabled>&larr;</button>
+          <div class="arrow-container">
+            <button class="custom-button" id="first-button" disabled title="Go to First">
+              <svg fill="#000000" viewBox="0 0 24 24" id="left-double-arrow" data-name="Line Color" xmlns="http://www.w3.org/2000/svg" class="icon line-color"><polyline id="secondary" points="7 4 4 7 7 10" style="fill: none; stroke: rgb(0, 0, 0); stroke-linecap: round; stroke-linejoin: round; stroke-width: 2;"></polyline><line id="secondary-2" data-name="secondary" x1="20" y1="7" x2="4" y2="7" style="fill: none; stroke: rgb(0, 0, 0); stroke-linecap: round; stroke-linejoin: round; stroke-width: 2;"></line><line id="primary" x1="20" y1="17" x2="4" y2="17" style="fill: none; stroke: rgb(0, 0, 0); stroke-linecap: round; stroke-linejoin: round; stroke-width: 2;"></line><polyline id="primary-2" data-name="primary" points="7 14 4 17 7 20" style="fill: none; stroke: rgb(0, 0, 0); stroke-linecap: round; stroke-linejoin: round; stroke-width: 2;"></polyline></svg>
+            </button>
+            <button class="custom-button" id="prev-button" disabled title="Previous">
+              <svg fill="#000000" viewBox="0 0 24 24" id="prev-button" data-name="Line Color" xmlns="http://www.w3.org/2000/svg" class="icon line-color"><line id="primary" x1="21" y1="12" x2="3" y2="12" style="fill: none; stroke: rgb(0, 0, 0); stroke-linecap: round; stroke-linejoin: round; stroke-width: 2;"></line><polyline id="secondary" points="6 9 3 12 6 15" style="fill: none; stroke: rgb(0, 0, 0); stroke-linecap: round; stroke-linejoin: round; stroke-width: 2;"></polyline></svg>
+            </button>
             <input type="number" id="sample-input" placeholder="1" maxlength="4" value="1" min="1" max="9999" disabled/>
-            <button id="next-button" disabled>&rarr;</button>
-          </div>
+            <button class="custom-button" id="next-button" disabled title="Next">
+              <svg fill="#000000" viewBox="0 0 24 24" data-name="Line Color" xmlns="http://www.w3.org/2000/svg"><line x1="3" y1="12" x2="21" y2="12" style="fill: none; stroke: rgb(0, 0, 0); stroke-linecap: round; stroke-linejoin: round; stroke-width: 2;"></line><polyline points="18 15 21 12 18 9" style="fill: none; stroke: rgb(0, 0, 0); stroke-linecap: round; stroke-linejoin: round; stroke-width: 2;"></polyline></svg>
+            </button>
+            <button class="custom-button" id="last-button" disabled title="'Go to Last">
+              <svg fill="#000000" viewBox="0 0 24 24" id="right-double-arrow" data-name="Line Color" xmlns="http://www.w3.org/2000/svg" class="icon line-color"><polyline id="secondary" points="17 20 20 17 17 14" style="fill: none; stroke: rgb(0, 0, 0); stroke-linecap: round; stroke-linejoin: round; stroke-width: 2;"></polyline><line id="secondary-2" data-name="secondary" x1="4" y1="17" x2="20" y2="17" style="fill: none; stroke: rgb(0, 0, 0); stroke-linecap: round; stroke-linejoin: round; stroke-width: 2;"></line><line id="primary" x1="4" y1="7" x2="20" y2="7" style="fill: none; stroke: rgb(0, 0, 0); stroke-linecap: round; stroke-linejoin: round; stroke-width: 2;"></line><polyline id="primary-2" data-name="primary" points="17 10 20 7 17 4" style="fill: none; stroke: rgb(0, 0, 0); stroke-linecap: round; stroke-linejoin: round; stroke-width: 2;"></polyline></svg>
+            </button>          </div>
           <div>
             <input type="text" id="sample-text" placeholder="Label" disabled />
           </div>
@@ -203,12 +218,14 @@
             <input type="text" id="sample-notes" placeholder="Notes" disabled />
           </div>
           <div>
-            <div id="filterMenu">
-              <button id="filterButton">Select</button>
+            <div id="filterMenu" class="dropdown-container">
+              <button id="filterButton" class="custom-button"
+              style="--button-width: 50px;">Select</button>
               <div id="includeDropdown" class="dropdown-content" style="display: none;">
                 <!-- Checkboxes will be added dynamically -->
               </div>
-              <button onclick="showResults()">Summarize</button>
+              <button id="summarizeButton" class="custom-button"
+              style="--button-width: 80px;" onclick="showResults()">Summarize</button>
             </div>
           </div>
           <!-- Modal for displaying results -->
@@ -225,10 +242,11 @@
                 <option value="all">All</option> <!-- Default option -->
             </select>
           </div>
-          <div class="file-input-container">
+          <div class="dropdown-container">
             <label for="count-file-input" class="file-label">Import</label>
             <input type="file" id="count-file-input" class="file-input" />
-            <button id="count-export" disabled>Export</button>
+            <button id="count-export" class="custom-button"
+            style="--button-width: 50px;" disabled>Export</button>
           </div>
         </details>
         <details closed>
@@ -292,17 +310,17 @@
           </div>
 
           <div class="arrow-container">
-            <button class="anno-arrows" id="anno-first-button" disabled title="Go to First">
+            <button class="custom-button" id="anno-first-button" disabled title="Go to First">
               <svg fill="#000000" viewBox="0 0 24 24" id="left-double-arrow" data-name="Line Color" xmlns="http://www.w3.org/2000/svg" class="icon line-color"><polyline id="secondary" points="7 4 4 7 7 10" style="fill: none; stroke: rgb(0, 0, 0); stroke-linecap: round; stroke-linejoin: round; stroke-width: 2;"></polyline><line id="secondary-2" data-name="secondary" x1="20" y1="7" x2="4" y2="7" style="fill: none; stroke: rgb(0, 0, 0); stroke-linecap: round; stroke-linejoin: round; stroke-width: 2;"></line><line id="primary" x1="20" y1="17" x2="4" y2="17" style="fill: none; stroke: rgb(0, 0, 0); stroke-linecap: round; stroke-linejoin: round; stroke-width: 2;"></line><polyline id="primary-2" data-name="primary" points="7 14 4 17 7 20" style="fill: none; stroke: rgb(0, 0, 0); stroke-linecap: round; stroke-linejoin: round; stroke-width: 2;"></polyline></svg>
             </button>
-            <button class="anno-arrows" id="anno-prev-button" disabled title="Previous">
+            <button class="custom-button" id="anno-prev-button" disabled title="Previous">
               <svg fill="#000000" viewBox="0 0 24 24" id="anno-prev-button" data-name="Line Color" xmlns="http://www.w3.org/2000/svg" class="icon line-color"><line id="primary" x1="21" y1="12" x2="3" y2="12" style="fill: none; stroke: rgb(0, 0, 0); stroke-linecap: round; stroke-linejoin: round; stroke-width: 2;"></line><polyline id="secondary" points="6 9 3 12 6 15" style="fill: none; stroke: rgb(0, 0, 0); stroke-linecap: round; stroke-linejoin: round; stroke-width: 2;"></polyline></svg>
             </button>
             <input type="number" id="anno-id" placeholder="1" maxlength="3" value="1" min="1" max="9999" disabled/>
-            <button class="anno-arrows" id="anno-next-button" disabled title="Next">
+            <button class="custom-button" id="anno-next-button" disabled title="Next">
               <svg fill="#000000" viewBox="0 0 24 24" data-name="Line Color" xmlns="http://www.w3.org/2000/svg"><line x1="3" y1="12" x2="21" y2="12" style="fill: none; stroke: rgb(0, 0, 0); stroke-linecap: round; stroke-linejoin: round; stroke-width: 2;"></line><polyline points="18 15 21 12 18 9" style="fill: none; stroke: rgb(0, 0, 0); stroke-linecap: round; stroke-linejoin: round; stroke-width: 2;"></polyline></svg>
             </button>
-            <button class="anno-arrows" id="anno-last-button" disabled title="'Go to Last">
+            <button class="custom-button" id="anno-last-button" disabled title="'Go to Last">
               <svg fill="#000000" viewBox="0 0 24 24" id="right-double-arrow" data-name="Line Color" xmlns="http://www.w3.org/2000/svg" class="icon line-color"><polyline id="secondary" points="17 20 20 17 17 14" style="fill: none; stroke: rgb(0, 0, 0); stroke-linecap: round; stroke-linejoin: round; stroke-width: 2;"></polyline><line id="secondary-2" data-name="secondary" x1="4" y1="17" x2="20" y2="17" style="fill: none; stroke: rgb(0, 0, 0); stroke-linecap: round; stroke-linejoin: round; stroke-width: 2;"></line><line id="primary" x1="4" y1="7" x2="20" y2="7" style="fill: none; stroke: rgb(0, 0, 0); stroke-linecap: round; stroke-linejoin: round; stroke-width: 2;"></line><polyline id="primary-2" data-name="primary" points="17 10 20 7 17 4" style="fill: none; stroke: rgb(0, 0, 0); stroke-linecap: round; stroke-linejoin: round; stroke-width: 2;"></polyline></svg>
             </button>
           </div>
@@ -406,32 +424,28 @@
               <button id="applyAllAnno">Apply to All</button>
             </div>
           </div>
-          <div class="file-input-container">
+          <div class="dropdown-container">
             <label for="loadAnnotationsBtn" class="file-label">Import</label>
             <input type="file" id="loadAnnotationsBtn" class="file-input" title="Import geoJSON" />
             <!-- <button id="loadAnnotationsBtn" class="file-label">Import</button> -->
-            <button id="exportBtn" class="file-label" title="Export as geoJSON">Export</button>
-            <button id="clearBtn" class="file-label" title="Clear Annotations" onclick="clearAnnotations()">Clear</button>
+            <button id="exportBtn" class="custom-button"
+            style="--button-width: 50px;" title="Export as geoJSON">Export</button>
+            <button id="clearBtn" class="custom-button"
+            style="--button-width: 42px;" title="Clear Annotations" onclick="clearAnnotations()">Clear</button>
           </div>
           <div id="loadAnnoFromJSON"></div>
         </details>
         <details closed>
           <summary>Measure</summary>
           <div>
-            <input
-            type="checkbox"
-            id="show-measurements"
-            checked
-            onclick="toggleMeasurementVisibility(this)"
-            />
-            <label for="show-measurements">Show measurements</label>
-          </div>
-          <div>
-            <button id="toggleMeasurementButton" onclick="toggleMeasurementMode(this)" title="Start/stop measuring">Start</button>
+            <button id="toggleMeasurementButton"
+            class="custom-button"
+            style="width: 40px;"
+            onclick="toggleMeasurementMode(this)" title="Start/stop measuring">Start</button>
           </div>
           <div>
             <label for="distance">Length (µm):</label>
-            <input type="number" id="distance" readonly value="0.00" style="width: 50px;">
+            <input type="number" id="distance" readonly value="0.0" style="width: 50px;">
           </div>
           <div>
             <label for="x0">x1:</label>
