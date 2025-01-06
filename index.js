@@ -357,7 +357,6 @@ const divideImages = () => {
     image.setClip(new OpenSeadragon.Rect(xClip, yClip, size.x, size.y));
     ++previousVisibleImages;
   }
-  // TODO: testing
   setTileSetOpacity();
 };
 
@@ -498,7 +497,7 @@ let pointButton = document.getElementById("crosshairButton");
 let polylineButton = document.getElementById("polylineButton");
 let rectButton = document.getElementById("rectangleButton");
 let repeatButton = document.getElementById("repeatButton");
-let polygonButton = document.getElementById("polygonButton"); // TODO: Future implementation
+let polygonButton = document.getElementById("polygonButton");
 
 // Flags to track modes
 let isPointMode = false;
@@ -2236,7 +2235,6 @@ function loadAnnotations(geoJSONData) {
         // TODO: is annoDict redundant with annoJSON?
         annoDict[currentAnnotationId] = properties.uuid;
         annoJSON[currentAnnotationId] = geoJSONFeature;
-        // TODO: This code is not generic for other polygon shapes. Currently only for Rectangles.
       } else if (
         geometry.type === "Polygon" &&
         properties.canvasDraw === false
@@ -3071,7 +3069,7 @@ document.getElementById("prev-button").addEventListener("click", function () {
 
   if (value > min) {
     input.value = value - 1;
-    const overlay = viewer.getOverlayById(`pointLabel-${input.value - 1}`); // TODO: Why minus 1?
+    const overlay = viewer.getOverlayById(`pointLabel-${input.value - 1}`);
     goToAnnoPoint(overlay.location.x, overlay.location.y);
   }
   inputSampleLabelFromOverlay();
@@ -3087,7 +3085,7 @@ document.getElementById("next-button").addEventListener("click", function () {
   } else {
     input.value = max;
   }
-  const overlay = viewer.getOverlayById(`pointLabel-${input.value - 1}`); // TODO: Why minus 1?
+  const overlay = viewer.getOverlayById(`pointLabel-${input.value - 1}`);
   goToAnnoPoint(overlay.location.x, overlay.location.y);
   inputSampleLabelFromOverlay();
 });
