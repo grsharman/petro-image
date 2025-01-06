@@ -183,6 +183,7 @@ document
     if (file) {
       hasAnnotationInJSON = true;
       console.log("anno JSON detected, creating button");
+      console.log("file to load:", file);
       const button = document.createElement("button");
       button.textContent = "Load from JSON";
       button.id = "loadAnnoFromJSONButton";

@@ -449,7 +449,6 @@ html {
 .custom-button {
   --button-width: 20px; /* Default width */
   width: var(--button-width);
-  align-items: center;
   height: 20px;
   padding: 2px;
   border: 1px solid #444;
@@ -689,9 +688,9 @@ input[type="range"] {
 }
 
 /* Button for loading annotation from JSON */
-#loadAnnoFromJSONButton {
+/* #loadAnnoFromJSONButton {
   display: none;
-}
+} */
 
 #measurement-overlay {
   position: absolute;
