@@ -871,9 +871,9 @@
     "pixelsPerMeter": "913242",
     "tileLabels": ["PPL00", "XPL00", "XPL45"],
     "tileSets": [
-      "https://raw.githubusercontent.com/grsharman/image-storage6/main/images/IODP_001_PPL00 raw.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage6/main/images/IODP_001_XPL00 raw.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage6/main/images/IODP_001_XPL30 raw.dzi"
+      "https://raw.githubusercontent.com/grsharman/image-storage6/main/images/IODP_001_PPL00.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage6/main/images/IODP_001_XPL00.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage6/main/images/IODP_001_XPL30.dzi"
     ]
   },
   "IODP-011": {
@@ -885,10 +885,10 @@
     "pixelsPerMeter": "913242",
     "tileLabels": ["PPL00", "XPL00", "XPL15", "XPL45"],
     "tileSets": [
-      "https://raw.githubusercontent.com/grsharman/image-storage6/main/images/IODP_011_PPL00 raw.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage6/main/images/IODP_011_XPL00 raw.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage6/main/images/IODP_011_XPL15 raw.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage6/main/images/IODP_011_XPL45 raw.dzi"
+      "https://raw.githubusercontent.com/grsharman/image-storage6/main/images/IODP_011_PPL00.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage6/main/images/IODP_011_XPL00.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage6/main/images/IODP_011_XPL15.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage6/main/images/IODP_011_XPL45.dzi"
     ]
   },
   "IODP-021": {
