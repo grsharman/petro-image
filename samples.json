@@ -1,1438 +1,1104 @@
 {
-    "SD0004":
-    {
-        "groups": ["Favorites","SedGeo"],  
-        "title": "SD0004",
-        "description": "Budhir, Iceland",
-        "unit": "2",
-        "pixelsPerUnit": "0.398",
-        "pixelsPerMeter": "398000",
-        "tileLabels": [
-            "PPL00",
-            "XPL00",
-            "XPL30"
-        ],
-        "tileSets": [
-            "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0004 01 2.5x PPL00 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0004 01 2.5x XPL00 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0004 01 2.5x XPL30 final.dzi"
-        ],
-        "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/SD0004.geojson"
-    },
-    "SD0004 (1 layer)":
-    {
-        "groups": ["Favorites","SedGeo"],  
-        "title": "SD0004 (1 layer)",
-        "description": "Budhir, Iceland",
-        "unit": "2",
-        "pixelsPerUnit": "0.398",
-        "pixelsPerMeter": "398000",
-        "tileLabels": [
-            "PPL00"
-        ],
-        "tileSets": [
-            "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0004 01 2.5x PPL00 final.dzi"
-        ],
-        "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/SD0004.geojson"
-    },
-    "SD0004 (2 layer)":
-    {
-        "groups": ["Favorites","SedGeo"],  
-        "title": "SD0004 (2 layer)",
-        "description": "Budhir, Iceland",
-        "unit": "2",
-        "pixelsPerUnit": "0.398",
-        "pixelsPerMeter": "398000",
-        "tileLabels": [
-            "PPL00",
-            "XPL00"
-        ],
-        "tileSets": [
-            "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0004 01 2.5x PPL00 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0004 01 2.5x XPL00 final.dzi"
-        ],
-        "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/SD0004.geojson"
-    },
-    "SD0004 (4 layer)":
-    {
-        "groups": ["Favorites","SedGeo"],  
-        "title": "SD0004 (4 layer)",
-        "description": "Budhir, Iceland",
-        "unit": "2",
-        "pixelsPerUnit": "0.398",
-        "pixelsPerMeter": "398000",
-        "tileLabels": [
-            "PPL00",
-            "XPL00",
-            "XPL30",
-            "XPL00"
-        ],
-        "tileSets": [
-            "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0004 01 2.5x PPL00 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0004 01 2.5x XPL00 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0004 01 2.5x XPL30 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0004 01 2.5x XPL00 final.dzi"
-        ],
-        "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/SD0004.geojson"
-    },
-    "ARCS-44":
-    {
-        "groups": ["Favorites","SedGeo"],
-        "title": "ARCS-44",
-        "description": "Fountain Formation",
-        "unit": "2",
-        "pixelsPerUnit": "0.398",
-        "pixelsPerMeter": "398000",
-        "tileLabels": [
-            "PPL00",
-            "XPL00",
-            "XPL30"
-        ],
-        "tileSets": [
-            "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/ARCS-44 01 2.5x PPL00 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/ARCS-44 01 2.5x XPL00 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/ARCS-44 01 2.5x XPL30 final.dzi"
-        ]
-    },
-    "ARCS-46":
-    {
-        "groups": ["Favorites","SedGeo"],
-        "title": "ARCS-46",
-        "description": "Unknown",
-        "unit": "2",
-        "pixelsPerUnit": "0.398",
-        "pixelsPerMeter": "398000",
-        "tileLabels": [
-            "XPL00",
-            "XPL30",
-            "PPL00"
-        ],
-        "tileSets": [
-            "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/ARCS-46 01 2.5x XPL00 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/ARCS-46 01 2.5x XPL30 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/ARCS-46 01 2.5x PPL00 final.dzi"
-        ]
-    },
-    "ARCS-51":
-    {
-        "groups": ["Favorites","SedGeo"],
-        "title": "ARCS-51",
-        "description": "Rensselaer grit",
-        "unit": "2",
-        "pixelsPerUnit": "0.398",
-        "pixelsPerMeter": "398000",
-        "tileLabels": [
-            "PPL00",
-            "XPL00",
-            "XPL45"
-        ],
-        "tileSets": [
-            "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/ARCS-51 01 2.5x PPL00 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/ARCS-51 01 2.5x XPL00 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/ARCS-51 01 2.5x XPL45 final.dzi"
-        ]
-    },
-    "ARCS-59":
-    {
-        "groups": ["Favorites","SedGeo"],
-        "title": "ARCS-59",
-        "description": "Unknown",
-        "unit": "2",
-        "pixelsPerUnit": "0.398",
-        "pixelsPerMeter": "398000",
-        "tileLabels": [
-            "XPL00",
-            "XPL30",
-            "PPL00"
-        ],
-        "tileSets": [
-            "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/ARCS-59 01 2.5x XPL00 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/ARCS-59 01 2.5x XPL30 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/ARCS-59 01 2.5x PPL00 final.dzi"
-        ]
-    },
-    "ARCS-60":
-    {
-        "groups": ["SedGeo"],
-        "title": "ARCS-60",
-        "description": "Unknown",
-        "unit": "2",
-        "pixelsPerUnit": "0.398",
-        "pixelsPerMeter": "398000",
-        "tileLabels": [
-            "XPL00",
-            "XPL30",
-            "PPL00"
-        ],
-        "tileSets": [
-            "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/ARCS-60 01 2.5x XPL00 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/ARCS-60 01 2.5x XPL30 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/ARCS-60 01 2.5x PPL00 final.dzi"
-        ]
-    },
-    "ARC-45":
-    {
-        "groups": ["SedGeo"],  
-        "title": "ARC-45",
-        "description": "Berea Sandstone",
-        "unit": "2",
-        "pixelsPerUnit": "0.398",
-        "pixelsPerMeter": "398000",
-        "tileLabels": [
-            "XPL00",
-            "XPL30",
-            "PPL00"
-        ],
-        "tileSets": [
-            "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/ARC-45 01 2.5x XPL00 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/ARC-45 01 2.5x XPL30 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/ARC-45 01 2.5x PPL00 final.dzi"
-        ]
-    },
-    "ARC-50":
-    {
-        "groups": ["Favorites","SedGeo"],  
-        "title": "ARC-50",
-        "description": "Sugarloaf Arkose",
-        "unit": "2",
-        "pixelsPerUnit": "0.398",
-        "pixelsPerMeter": "398000",
-        "tileLabels": [
-            "XPL00",
-            "XPL30",
-            "PPL00"
-        ],
-        "tileSets": [
-            "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/ARC-50 01 2.5x XPL00 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/ARC-50 01 2.5x XPL30 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/ARC-50 01 2.5x PPL00 final.dzi"
-        ]
-    },
-    "ARC-62":
-    {
-        "groups": ["Favorites","SedGeo"],  
-        "title": "ARC-62",
-        "description": "Unknown",
-        "unit": "2",
-        "pixelsPerUnit": "0.398",
-        "pixelsPerMeter": "398000",
-        "tileLabels": [
-            "XPL00",
-            "XPL30",
-            "PPL00"
-        ],
-        "tileSets": [
-            "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/ARC-62 01 2.5x XPL00 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/ARC-62 01 2.5x XPL30 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/ARC-62 01 2.5x PPL00 final.dzi"
-        ]
-    },
-    "ARC-63":
-    {
-        "groups": ["Favorites","SedGeo"],  
-        "title": "ARC-63",
-        "description": "Unknown",
-        "unit": "2",
-        "pixelsPerUnit": "0.398",
-        "pixelsPerMeter": "398000",
-        "tileLabels": [
-            "XPL00",
-            "XPL30",
-            "PPL00"
-        ],
-        "tileSets": [
-            "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/ARC-63 01 2.5x XPL00 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/ARC-63 01 2.5x XPL30 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/ARC-63 01 2.5x PPL00 final.dzi"
-        ]
-    },
-    "NWA-01":
-    {
-        "groups": ["NWA"],
-        "title": "NWA-01",
-        "description": "Upper Boone Fm.",
-        "latitude": "36.413033",
-        "longitude": "-94.213964",
-        "unit": "2",
-        "pixelsPerUnit": "0.398",
-        "pixelsPerMeter": "398000",
-        "tileLabels": [
-            "XPL00",
-            "XPL45",
-            "PPL00"
-        ],
-        "tileSets": [
-            "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-01 01 2.5x XPL00 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-01 01 2.5x XPL45 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-01 01 2.5x PPL00 final.dzi"
-        ]
-    },
-    "NWA-02":
-    {
-        "groups": ["NWA"],
-        "title": "NWA-02",
-        "description": "Lower Boone Fm.",
-        "latitude": "36.413033",
-        "longitude": "-94.213964",
-        "unit": "2",
-        "pixelsPerUnit": "0.398",
-        "pixelsPerMeter": "398000",
-        "tileLabels": [
-            "XPL00",
-            "XPL45",
-            "PPL00"
-        ],
-        "tileSets": [
-            "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-02 01 2.5x XPL00 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-02 01 2.5x XPL45 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-02 01 2.5x PPL00 final.dzi"
-        ]
-    },
-    "NWA-03":
-    {
-        "groups": ["NWA"],
-        "title": "NWA-03",
-        "description": "Lower Boone Fm.",
-        "latitude": "36.414119",
-        "longitude": "-94.222675",
-        "unit": "2",
-        "pixelsPerUnit": "0.398",
-        "pixelsPerMeter": "398000",
-        "tileLabels": [
-            "XPL00",
-            "XPL45",
-            "PPL00"
-        ],
-        "tileSets": [
-            "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-03 01 2.5x XPL00 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-03 01 2.5x XPL45 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-03 01 2.5x PPL00 final.dzi"
-        ]
-    },
-    "NWA-04":
-    {
-        "groups": ["NWA"],
-        "title": "NWA-04",
-        "description": "Lower Boone Fm.",
-        "latitude": "36.414119",
-        "longitude": "-94.222675",
-        "unit": "2",
-        "pixelsPerUnit": "0.398",
-        "pixelsPerMeter": "398000",
-        "tileLabels": [
-            "XPL00",
-            "XPL45",
-            "PPL00"
-        ],
-        "tileSets": [
-            "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-04 01 2.5x XPL00 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-04 01 2.5x XPL45 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-04 01 2.5x PPL00 final.dzi"
-        ]
-    },
-    "NWA-05":
-    {
-        "groups": ["NWA"],
-        "title": "NWA-05",
-        "description": "Lower Boone Fm.",
-        "latitude": "36.416114",
-        "longitude": "-94.219719",
-        "unit": "2",
-        "pixelsPerUnit": "0.398",
-        "pixelsPerMeter": "398000",
-        "tileLabels": [
-            "XPL00",
-            "XPL45",
-            "PPL00"
-        ],
-        "tileSets": [
-            "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-05 01 2.5x XPL00 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-05 01 2.5x XPL45 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-05 01 2.5x PPL00 final.dzi"
-        ]
-    },
-    "NWA-06":
-    {
-        "groups": ["NWA"],
-        "title": "NWA-06",
-        "description": "Saint Joe Fm., Pearson Mbr.",
-        "latitude": "36.422019",
-        "longitude": "-94.224187",
-        "unit": "2",
-        "pixelsPerUnit": "0.398",
-        "pixelsPerMeter": "398000",
-        "tileLabels": [
-            "XPL00",
-            "XPL45",
-            "PPL00"
-        ],
-        "tileSets": [
-            "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-06 01 2.5x XPL00 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-06 01 2.5x XPL45 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-06 01 2.5x PPL00 final.dzi"
-        ]
-    },
-    "NWA-07":
-    {
-        "groups": ["Favorites","NWA"],
-        "title": "NWA-07",
-        "description": "Saint Joe Fm., Pearson Mbr.",
-        "latitude": "36.422019",
-        "longitude": "-94.224187",
-        "unit": "2",
-        "pixelsPerUnit": "0.398",
-        "pixelsPerMeter": "398000",
-        "tileLabels": [
-            "XPL00",
-            "XPL45",
-            "PPL00"
-        ],
-        "tileSets": [
-            "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-07 01 2.5x XPL00 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-07 01 2.5x XPL45 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-07 01 2.5x PPL00 final.dzi"
-        ]
-    },
-    "NWA-08":
-    {
-        "groups": ["NWA"],
-        "title": "NWA-08",
-        "description": "Saint Joe Fm., Compton Mbr.",
-        "latitude": "36.45622",
-        "longitude": "-94.24327",
-        "unit": "2",
-        "pixelsPerUnit": "0.398",
-        "pixelsPerMeter": "398000",
-        "tileLabels": [
-            "XPL00",
-            "XPL45",
-            "PPL00"
-        ],
-        "tileSets": [
-            "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-08 01 2.5x XPL00 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-08 01 2.5x XPL45 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-08 01 2.5x PPL00 final.dzi"
-        ]
-    },
-    "NWA-10":
-    {
-        "groups": ["NWA"],
-        "title": "NWA-10",
-        "description": "Saint Joe Fm., Compton Mbr.",
-        "latitude": "36.546253",
-        "longitude": "-94.327989",
-        "unit": "2",
-        "pixelsPerUnit": "0.398",
-        "pixelsPerMeter": "398000",
-        "tileLabels": [
-            "XPL00",
-            "XPL30",
-            "PPL00"
-        ],
-        "tileSets": [
-            "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/NWA-10 01 2.5x XPL00 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/NWA-10 01 2.5x XPL30 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/NWA-10 01 2.5x PPL00 final.dzi"
-        ]
-    },
-    "NWA-12":
-    {
-        "groups": ["NWA"],
-        "title": "NWA-12",
-        "description": "Cotter Fm.",
-        "latitude": "36.5303889",
-        "longitude": "-94.2965167",
-        "unit": "2",
-        "pixelsPerUnit": "0.398",
-        "pixelsPerMeter": "398000",
-        "tileLabels": [
-            "XPL00",
-            "XPL45",
-            "PPL00"
-        ],
-        "tileSets": [
-            "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-12 01 2.5x XPL00 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-12 01 2.5x XPL45 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-12 01 2.5x PPL00 final.dzi"
-        ]
-    },
-    "NWA-14":
-    {
-        "groups": ["NWA"],
-        "title": "NWA-14",
-        "description": "Cotter Fm.",
-        "latitude": "36.5303889",
-        "longitude": "-94.2965167",
-        "unit": "2",
-        "pixelsPerUnit": "0.398",
-        "pixelsPerMeter": "398000",
-        "tileLabels": [
-            "XPL00",
-            "XPL30",
-            "PPL00"
-        ],
-        "tileSets": [
-            "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/NWA-14 01 2.5x XPL00 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/NWA-14 01 2.5x XPL30 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/NWA-14 01 2.5x PPL00 final.dzi"
-        ]
-    },
-    "NWA-15":
-    {
-        "groups": ["NWA"],
-        "title": "NWA-15",
-        "description": "Hale Fm. (Prairie Grove Mbr.)",
-        "latitude": "36.011683",
-        "longitude": "-94.193633",
-        "unit": "2",
-        "pixelsPerUnit": "0.398",
-        "pixelsPerMeter": "398000",
-        "tileLabels": [
-            "XPL00",
-            "XPL30",
-            "PPL00"
-        ],
-        "tileSets": [
-            "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/NWA-15 02 2.5x XPL00 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/NWA-15 02 2.5x XPL30 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/NWA-15 02 2.5x PPL00 final.dzi"
-        ]
-    },
-    "NWA-16":
-    {
-        "groups": ["NWA"],
-        "title": "NWA-16",
-        "description": "Pitkin Limestone",
-        "latitude": "35.934781",
-        "longitude": "-94.196878",
-        "unit": "2",
-        "pixelsPerUnit": "0.398",
-        "pixelsPerMeter": "398000",
-        "tileLabels": [
-            "XPL00",
-            "XPL30",
-            "PPL00"
-        ],
-        "tileSets": [
-            "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/NWA-16 01 2.5x XPL00 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/NWA-16 01 2.5x XPL30 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/NWA-16 01 2.5x PPL00 final.dzi"
-        ]
-    },
-    "NWA-17":
-    {
-        "groups": ["NWA"],
-        "title": "NWA-17",
-        "description": "Hale Fm., Cane Hill Mbr.",
-        "latitude": "35.934781",
-        "longitude": "-94.196878",
-        "unit": "2",
-        "pixelsPerUnit": "0.398",
-        "pixelsPerMeter": "398000",
-        "tileLabels": [
-            "XPL00",
-            "XPL45",
-            "PPL00"
-        ],
-        "tileSets": [
-            "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-17 01 2.5x XPL00 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-17 01 2.5x XPL45 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-17 01 2.5x PPL00 final.dzi"
-        ]
-    },
-    "NWA-18":
-    {
-        "groups": ["NWA"],
-        "title": "NWA-18",
-        "description": "Brentwood (basal)",
-        "latitude": "35.921387",
-        "longitude": "-94.199834",
-        "unit": "2",
-        "pixelsPerUnit": "0.398",
-        "pixelsPerMeter": "398000",
-        "tileLabels": [
-            "XPL00",
-            "XPL30",
-            "PPL00"
-        ],
-        "tileSets": [
-            "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/NWA-18 01 2.5x XPL00 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/NWA-18 01 2.5x XPL30 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/NWA-18 01 2.5x PPL00 final.dzi"
-        ]
-    },
-    "NWA-19":
-    {
-        "groups": ["Favorites","NWA"],
-        "title": "NWA-19",
-        "description": "Kessler Limestone",
-        "unit": "2",
-        "pixelsPerUnit": "0.398",
-        "pixelsPerMeter": "398000",
-        "tileLabels": [
-            "XPL00",
-            "XPL45",
-            "PPL00"
-        ],
-        "tileSets": [
-            "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-19 01 2.5x XPL00 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-19 01 2.5x XPL45 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-19 01 2.5x PPL00 final.dzi"
-        ]
-    },
-    "NWA-20":
-    {
-        "groups": ["Favorites","NWA"],
-        "title": "NWA-20",
-        "description": "Lower Atoka Ss (basal)",
-        "unit": "2",
-        "pixelsPerUnit": "0.398",
-        "pixelsPerMeter": "398000",
-        "tileLabels": [
-            "XPL00",
-            "XPL45",
-            "PPL00"
-        ],
-        "tileSets": [
-            "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-20 01 2.5x XPL00 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-20 01 2.5x XPL45 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-20 01 2.5x PPL00 final.dzi"
-        ]
-    },
-    "CH-041918":
-    {
-        "groups": ["NWA"],
-        "title": "CH-041918",
-        "description": "Hale Fm., Cane Hill Mbr.",
-        "unit": "2",
-        "pixelsPerUnit": "0.398",
-        "pixelsPerMeter": "398000",
-        "tileLabels": [
-            "XPL00",
-            "XPL30",
-            "PPL00"
-        ],
-        "tileSets": [
-            "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/CH-041918 01 2.5x XPL00 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/CH-041918 01 2.5x XPL30 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/CH-041918 01 2.5x PPL00 final.dzi"
-        ]
-    },
-    "PG-001":
-    {
-        "groups": ["NWA"],
-        "title": "PG-001",
-        "description": "Unknown",
-        "unit": "2",
-        "pixelsPerUnit": "0.398",
-        "pixelsPerMeter": "398000",
-        "tileLabels": [
-            "XPL00",
-            "XPL30",
-            "PPL00"
-        ],
-        "tileSets": [
-            "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/PG-001 01 2.5x XPL00 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/PG-001 01 2.5x XPL30 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/PG-001 01 2.5x PPL00 final.dzi"
-        ]
-    },
-    "OD5A-103118":
-    {
-        "groups": ["NWA"],
-        "title": "OD5A-103118",
-        "description": "Hartshorne Ss",
-        "unit": "2",
-        "pixelsPerUnit": "0.398",
-        "pixelsPerMeter": "398000",
-        "tileLabels": [
-            "XPL00",
-            "XPL30",
-            "PPL00"
-        ],
-        "tileSets": [
-            "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/ODSA-103118 01 2.5x XPL00 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/ODSA-103118 01 2.5x XPL30 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/ODSA-103118 01 2.5x PPL00 final.dzi"
-        ]
-    },
-    "PSB02":
-    {
-        "groups": ["SedGeo"],
-        "title": "PBS02",
-        "description": "Unspecified",
-        "unit": "2",
-        "pixelsPerUnit": "0.398",
-        "pixelsPerMeter": "398000",
-        "tileLabels": [
-            "XPL00",
-            "XPL30",
-            "PPL00"
-        ],
-        "tileSets": [
-            "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/PSB02 01 2.5x XPL00 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/PSB02 01 2.5x XPL30 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/PSB02 01 2.5x PPL00 final.dzi"
-        ]
-    },
-    "NZ23-049":
-    {
-        "groups": ["New Zealand"],
-        "title": "NZ23-049",
-        "description": "Whanganui River",
-        "latitude": "-39.86246",
-        "longitude": "175.11026",
-        "unit": "2",
-        "pixelsPerUnit": "0.398",
-        "pixelsPerMeter": "398000",
-        "tileLabels": [
-            "XPL00",
-            "XPL30",
-            "PPL00"
-        ],
-        "tileSets": [
-            "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/NZ23-049 01 2.5x XPL00 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/NZ23-049 01 2.5x XPL30 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/NZ23-049 01 2.5x PPL00 final.dzi"
-        ]
-    },
-    "NZ23-052":
-    {
-        "groups": ["New Zealand"],
-        "title": "NZ23-052",
-        "description": "Manganui River",
-        "latitude": "-39.12303",
-        "longitude": "174.28534",
-        "unit": "2",
-        "pixelsPerUnit": "0.398",
-        "pixelsPerMeter": "398000",
-        "tileLabels": [
-            "XPL00",
-            "XPL45",
-            "PPL00"
-        ],
-        "tileSets": [
-            "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NZ23-052 01 2.5x XPL00 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NZ23-052 01 2.5x XPL45 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NZ23-052 01 2.5x PPL00 final.dzi"
-        ]
-    },
-    "NZ23-055":
-    {
-        "groups": ["New Zealand"],
-        "title": "NZ23-055",
-        "description": "Waitara River",
-        "latitude": "-39.02223",
-        "longitude": "174.25191",
-        "unit": "2",
-        "pixelsPerUnit": "0.398",
-        "pixelsPerMeter": "398000",
-        "tileLabels": [
-            "XPL00",
-            "XPL45",
-            "PPL00"
-        ],
-        "tileSets": [
-            "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NZ23-055 01 2.5x XPL00 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NZ23-055 01 2.5x XPL45 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NZ23-055 01 2.5x PPL00 final.dzi"
-        ]
-    },
-    "NZ23-056":
-    {
-        "groups": ["New Zealand"],
-        "title": "NZ23-056",
-        "description": "Waikato River",
-        "latitude": "-37.80671",
-        "longitude": "175.30579",
-        "unit": "2",
-        "pixelsPerUnit": "0.398",
-        "pixelsPerMeter": "398000",
-        "tileLabels": [
-            "XPL00",
-            "XPL45",
-            "PPL00"
-        ],
-        "tileSets": [
-            "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/NZ23-056 01 2.5x XPL00 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/NZ23-056 01 2.5x XPL45 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/NZ23-056 01 2.5x PPL00 final.dzi"
-        ]
-    },
-    "NZ23-057":
-    {
-        "groups": ["Favorites","New Zealand"],
-        "title": "NZ23-057",
-        "description": "Waikato River",
-        "latitude": "-37.29593",
-        "longitude": "174.94531",
-        "unit": "2",
-        "pixelsPerUnit": "0.398",
-        "pixelsPerMeter": "398000",
-        "tileLabels": [
-            "XPL00",
-            "XPL45",
-            "PPL00"
-        ],
-        "tileSets": [
-            "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/NZ23-057 01 2.5x XPL00 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/NZ23-057 01 2.5x XPL45 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/NZ23-057 01 2.5x PPL00 final.dzi"
-        ]
-    },
-    "NZ23-060":
-    {
-        "groups": ["New Zealand"],
-        "title": "NZ23-060",
-        "description": "Waitotara River",
-        "latitude": "-39.80465",
-        "longitude": "174.73801",
-        "unit": "2",
-        "pixelsPerUnit": "0.398",
-        "pixelsPerMeter": "398000",
-        "tileLabels": [
-            "XPL00",
-            "XPL45",
-            "PPL00"
-        ],
-        "tileSets": [
-            "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/NZ23-060 01 2.5x XPL00 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/NZ23-060 01 2.5x XPL45 final.dzi",
-            "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/NZ23-060 01 2.5x PPL00 final.dzi"
-        ]
-    },
-  "NZ23-069":
-      {
-          "groups": ["Favorites","New Zealand"],
-          "title": "NZ23-069",
-          "description": "Rangiteki River",
-          "latitude": "-40.18712",
-          "longitude": "175.39231",
-          "unit": "2",
-          "pixelsPerUnit": "0.398",
-          "pixelsPerMeter": "398000",
-          "tileLabels": [
-              "XPL00",
-              "XPL45",
-              "PPL45"
-          ],
-          "tileSets": [
-              "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NZ23-069 test1 2.5x XPL00 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NZ23-069 test1 2.5x XPL45 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NZ23-069 test1 2.5x PPL45 final.dzi"
-          ]
-      },
-    "NZ23-067b":
-      {
-          "groups": ["New Zealand"],  
-          "title": "NZ23-067b",
-          "description": "Kohaiahi beach",
-          "latitude": "-41.10877",
-          "longitude": "172.10107",
-          "unit": "2",
-          "pixelsPerUnit": "0.398",
-          "pixelsPerMeter": "398000",
-          "tileLabels": [
-              "XPL00",
-              "XPL45",
-              "PPL00"
-          ],
-          "tileSets": [
-              "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NZ23-067b 02 5x XPL00 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NZ23-067b 02 5x XPL45 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NZ23-067b 02 5x PPL00 final.dzi"
-          ]
-      },
-      "FWS-24-01":
-      {
-          "groups": ["New Zealand"],  
-          "title": "FWS-24-01",
-          "description": "Farewell Split beach",
-          "latitude": "-40.51873",
-          "longitude": "172.93429",
-          "unit": "2",
-          "pixelsPerUnit": "0.398",
-          "pixelsPerMeter": "398000",
-          "tileLabels": [
-              "XPL00",
-              "XPL30",
-              "PPL00"
-          ],
-          "tileSets": [
-              "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/FWS-24-01 01 2.5x XPL00 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/FWS-24-01 01 2.5x XPL30 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/FWS-24-01 01 2.5x PPL00 final.dzi"
-          ]
-      },
-      "131-011s":
-      {
-          "groups": ["SedGeo"],  
-          "title": "131-011s",
-          "description": "Wahiba, Empty Quarter, Oman",
-          "unit": "2",
-          "pixelsPerUnit": "0.398",
-          "pixelsPerMeter": "398000",
-          "tileLabels": [
-              "XPL00",
-              "XPL30",
-              "PPL00"
-          ],
-          "tileSets": [
-              "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/131-011s 01 2.5x XPL00 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/131-011s 01 2.5x XPL30 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/131-011s 01 2.5x PPL00 final.dzi"
-          ]
-      },
-      "133-003s":
-      {
-          "groups": ["SedGeo"],  
-          "title": "133-003s",
-          "description": "Hanna Beach, Maui, HI",
-          "unit": "2",
-          "pixelsPerUnit": "0.398",
-          "pixelsPerMeter": "398000",
-          "tileLabels": [
-              "XPL00",
-              "XPL30",
-              "PPL00"
-          ],
-          "tileSets": [
-              "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/133-003s 01 2.5x XPL00 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/133-003s 01 2.5x XPL30 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/133-003s 01 2.5x PPL00 final.dzi"
-          ]
-      },
-      "133-004s":
-      {
-          "groups": ["SedGeo"],  
-          "title": "133-004s",
-          "description": "Arrow Canyon, Nevada",
-          "unit": "2",
-          "pixelsPerUnit": "0.398",
-          "pixelsPerMeter": "398000",
-          "tileLabels": [
-              "XPL00",
-              "XPL30",
-              "PPL00"
-          ],
-          "tileSets": [
-              "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/133-004s 01 2.5x XPL00 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/133-004s 01 2.5x XPL30 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/133-004s 01 2.5x PPL00 final.dzi"
-          ]
-      },
-      "133-007s":
-      {
-          "groups": ["Favorites","SedGeo"],  
-          "title": "133-007s",
-          "description": "Pt. Bonita, Golden Gate NRA, California",
-          "unit": "2",
-          "pixelsPerUnit": "0.398",
-          "pixelsPerMeter": "398000",
-          "tileLabels": [
-              "XPL00",
-              "XPL30",
-              "PPL00"
-          ],
-          "tileSets": [
-              "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/133-007s 01 2.5x XPL00 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/133-007s 01 2.5x XPL30 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/133-007s 01 2.5x PPL00 final.dzi"
-          ],
-          "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/main/annotations/133-007s.csv"
-      },
-      "133-008s":
-      {
-          "groups": ["SedGeo"],  
-          "title": "133-008s",
-          "description": "Mihi Beach, Kaikoura, New Zealand",
-          "unit": "2",
-          "pixelsPerUnit": "0.398",
-          "pixelsPerMeter": "398000",
-          "tileLabels": [
-              "XPL00",
-              "XPL30",
-              "PPL00"
-          ],
-          "tileSets": [
-              "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/133-008s 01 2.5x XPL00 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/133-008s 01 2.5x XPL30 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/133-008s 01 2.5x PPL00 final.dzi"
-          ]
-      },
-      "133-010s":
-      {
-          "groups": ["SedGeo"],  
-          "title": "133-010s",
-          "description": "Lake Champlain, Burlington, VT",
-          "unit": "2",
-          "pixelsPerUnit": "0.398",
-          "pixelsPerMeter": "398000",
-          "tileLabels": [
-              "XPL00",
-              "XPL30",
-              "PPL00"
-          ],
-          "tileSets": [
-              "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/133-010s 01 2.5x XPL00 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/133-010s 01 2.5x XPL30 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/133-010s 01 2.5x PPL00 final.dzi"
-          ]
-      },
-      "133-311s":
-      {
-          "groups": ["SedGeo"],  
-          "title": "131-311s",
-          "description": "Merced River, Mariposa, CA",
-          "unit": "2",
-          "pixelsPerUnit": "0.398",
-          "pixelsPerMeter": "398000",
-          "tileLabels": [
-              "XPL00",
-              "XPL30",
-              "PPL00"
-          ],
-          "tileSets": [
-              "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/133-311s 01 2.5x XPL00 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/133-311s 01 2.5x XPL30 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/133-311s 01 2.5x PPL00 final.dzi"
-          ]
-      },
-      "133-312s":
-      {
-          "groups": ["SedGeo"],  
-          "title": "133-312s",
-          "description": "Bass Lake, Oakhurst, California",
-          "unit": "2",
-          "pixelsPerUnit": "0.398",
-          "pixelsPerMeter": "398000",
-          "tileLabels": [
-              "XPL00",
-              "XPL30",
-              "PPL00"
-          ],
-          "tileSets": [
-              "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/133-312s 01 2.5x XPL00 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/133-312s 01 2.5x XPL30 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/133-312s 01 2.5x PPL00 final.dzi"
-          ]
-      },
-      "137-002s":
-      {
-          "groups": ["SedGeo"],  
-          "title": "137-002s",
-          "description": "Ka-Lae, Hawaii",
-          "unit": "2",
-          "pixelsPerUnit": "0.398",
-          "pixelsPerMeter": "398000",
-          "tileLabels": [
-              "XPL00",
-              "XPL30",
-              "PPL00"
-          ],
-          "tileSets": [
-              "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/137-002s 01 2.5x XPL00 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/137-002s 01 2.5x XPL30 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/137-002s 01 2.5x PPL00 final.dzi"
-          ]
-      },
-      "SD0001":
-      {
-          "groups": ["SedGeo"],  
-          "title": "SD0001",
-          "description": "Coral Sand Dunes",
-          "unit": "2",
-          "pixelsPerUnit": "0.398",
-          "pixelsPerMeter": "398000",
-          "tileLabels": [
-              "XPL00",
-              "XPL30",
-              "PPL00"
-          ],
-          "tileSets": [
-              "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/SD0001 01 2.5x XPL00 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/SD0001 01 2.5x XPL30 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/SD0001 01 2.5x PPL00 final.dzi"
-          ]
-      },
-      "SD0003":
-      {
-          "groups": ["SedGeo"],  
-          "title": "SD0003",
-          "description": "Pfeiffer Beach, CA",
-          "unit": "2",
-          "pixelsPerUnit": "0.398",
-          "pixelsPerMeter": "398000",
-          "tileLabels": [
-              "XPL00",
-              "XPL30",
-              "PPL00"
-          ],
-          "tileSets": [
-              "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0003 01 2.5x XPL00 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0003 01 2.5x XPL30 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0003 01 2.5x PPL00 final.dzi"
-          ]
-      },
-      "SD0020":
-      {
-          "groups": ["SedGeo"],  
-          "title": "SD0020",
-          "description": "Anak Krakatau",
-          "unit": "2",
-          "pixelsPerUnit": "0.398",
-          "pixelsPerMeter": "398000",
-          "tileLabels": [
-              "XPL00",
-              "XPL30",
-              "PPL00"
-          ],
-          "tileSets": [
-              "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0020 01 2.5x XPL00 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0020 01 2.5x XPL30 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0020 01 2.5x PPL00 final.dzi"
-          ]
-      },
-      "SD0031":
-      {
-          "groups": ["SedGeo"],  
-          "title": "SD0031",
-          "description": "Arroyo del Padre Juan",
-          "unit": "2",
-          "pixelsPerUnit": "0.398",
-          "pixelsPerMeter": "398000",
-          "tileLabels": [
-              "XPL00",
-              "XPL30",
-              "PPL00"
-          ],
-          "tileSets": [
-              "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/SD0031 01 2.5x XPL00 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/SD0031 01 2.5x XPL30 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/SD0031 01 2.5x PPL00 final.dzi"
-          ]
-      },
-      "WS-208":
-      {
-          "groups": ["SedGeo"],  
-          "title": "WS-208",
-          "description": "Unknown",
-          "unit": "2",
-          "pixelsPerUnit": "0.398",
-          "pixelsPerMeter": "398000",
-          "tileLabels": [
-              "XPL00",
-              "XPL30",
-              "PPL00"
-          ],
-          "tileSets": [
-              "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/WS-208 01 2.5x XPL00 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/WS-208 01 2.5x XPL30 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/WS-208 01 2.5x PPL00 final.dzi"
-          ]
-      },
-      "WS-846":
-      {
-          "groups": ["SedGeo"],  
-          "title": "WS-846",
-          "description": "Unknown",
-          "unit": "2",
-          "pixelsPerUnit": "0.398",
-          "pixelsPerMeter": "398000",
-          "tileLabels": [
-              "XPL00",
-              "XPL30",
-              "PPL00"
-          ],
-          "tileSets": [
-              "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/WS-846 01 2.5x XPL00 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/WS-846 01 2.5x XPL30 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/WS-846 01 2.5x PPL00 final.dzi"
-          ]
-      },
-      "IODP-021":
-      {
-          "groups": ["IODP"],  
-          "title": "IODP-21",
-          "description": "Unknown",
-          "unit": "2",
-          "pixelsPerUnit": "0.913242",
-          "pixelsPerMeter": "913242",
-          "tileLabels": [
-              "XPL00",
-              "XPL30",
-              "PPL00"
-          ],
-          "tileSets": [
-              "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/IODP_021_XPL00 raw.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/IODP_021_XPL30 raw.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/IODP_021_PPL00 raw.dzi"
-          ]
-      },
-      "IODP-041":
-      {
-          "groups": ["IODP"],  
-          "title": "IODP-41",
-          "description": "Unknown",
-          "unit": "2",
-          "pixelsPerUnit": "0.913242",
-          "pixelsPerMeter": "913242",
-          "tileLabels": [
-              "XPL00",
-              "XPL15",
-              "PPL00"
-          ],
-          "tileSets": [
-              "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/IODP_041_XPL_0.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/IODP_041_XPL_15.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/IODP_041_PPL.dzi"
-          ]
-      },
-      "TMC1":
-      {
-          "groups": ["SedGeo"],  
-          "title": "TMC1",
-          "description": "Pierre Shale",
-          "unit": "2",
-          "pixelsPerUnit": "0.398",
-          "pixelsPerMeter": "398000",
-          "tileLabels": [
-              "XPL00",
-              "XPL30",
-              "PPL00"
-          ],
-          "tileSets": [
-              "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/TMC 1 01 2.5x XPL00 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/TMC 1 01 2.5x XPL30 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/TMC 1 01 2.5x PPL00 final.dzi"
-          ]
-      },
-      "TMC2":
-      {
-          "groups": ["SedGeo"],  
-          "title": "TMC2",
-          "description": "Pierre Shale",
-          "unit": "2",
-          "pixelsPerUnit": "0.398",
-          "pixelsPerMeter": "398000",
-          "tileLabels": [
-              "XPL00",
-              "XPL30",
-              "PPL00"
-          ],
-          "tileSets": [
-              "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/TCM2 01 2.5x XPL00 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/TCM2 01 2.5x XPL30 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/TCM2 01 2.5x PPL00 final.dzi"
-          ]
-      },
-      "TMC3":
-      {
-          "groups": ["SedGeo"],  
-          "title": "TMC3",
-          "description": "Pierre Shale",
-          "unit": "2",
-          "pixelsPerUnit": "0.398",
-          "pixelsPerMeter": "398000",
-          "tileLabels": [
-              "XPL00",
-              "XPL30",
-              "PPL00"
-          ],
-          "tileSets": [
-              "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/TMC 3 01 2.5x XPL00 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/TMC 3 01 2.5x XPL30 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/TMC 3 01 2.5x PPL00 final.dzi"
-          ]
-      },
-      "UA-25-2812":
-      {
-          "groups": ["SedGeo"],  
-          "title": "UA-25-2812",
-          "description": "Unspecified",
-          "unit": "2",
-          "pixelsPerUnit": "0.398",
-          "pixelsPerMeter": "398000",
-          "tileLabels": [
-              "XPL00",
-              "XPL30",
-              "PPL00"
-          ],
-          "tileSets": [
-              "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/UA-25-2812 01 2.5x XPL00 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/UA-25-2812 01 2.5x XPL30 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/UA-25-2812 01 2.5x PPL00 final.dzi"
-          ]
-      },
-      "GM-Kl-02":
-      {
-          "groups": ["Green Mtn, CO"],  
-          "title": "GM-Kl-02",
-          "description": "Laramie Fm.",
-          "unit": "2",
-          "pixelsPerUnit": "0.398",
-          "pixelsPerMeter": "398000",
-          "tileLabels": [
-              "XPL00",
-              "XPL30",
-              "PPL00"
-          ],
-          "tileSets": [
-              "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/GM-Kl-02 01 2.5x XPL00 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/GM-Kl-02 01 2.5x XPL30 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/GM-Kl-02 01 2.5x PPL00 final.dzi"
-          ]
-      },
-      "GM-Tgml-02":
-      {
-          "groups": ["Green Mtn, CO"],  
-          "title": "GM-Tgml-02",
-          "description": "Tgml (lower unit)",
-          "unit": "2",
-          "pixelsPerUnit": "0.398",
-          "pixelsPerMeter": "398000",
-          "tileLabels": [
-              "XPL00",
-              "XPL30",
-              "PPL00"
-          ],
-          "tileSets": [
-              "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/GM-Tgml-02 01 2.5x XPL00 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/GM-Tgml-02 01 2.5x XPL30 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/GM-Tgml-02 01 2.5x PPL00 final.dzi"
-          ]
-      },
-      "CC-01":
-      {
-          "groups": ["Stevens Ss"],  
-          "title": "CC-01",
-          "description": "Unknown",
-          "unit": "2",
-          "pixelsPerUnit": "0.398",
-          "pixelsPerMeter": "398000",
-          "tileLabels": [
-              "XPL00",
-              "XPL30",
-              "PPL00"
-          ],
-          "tileSets": [
-              "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/CC-01 01 2.5x XPL00 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/CC-01 01 2.5x XPL30 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/CC-01 01 2.5x PPL00 final.dzi"
-          ]
-      },
-      "Well-T-11445":
-      {
-          "groups": ["Stevens Ss"],  
-          "title": "Well-T-11445",
-          "description": "Stevens Sandstone",
-          "unit": "2",
-          "pixelsPerUnit": "0.398",
-          "pixelsPerMeter": "398000",
-          "tileLabels": [
-              "XPL00",
-              "XPL30",
-              "PPL00"
-          ],
-          "tileSets": [
-              "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/Well-T-11445 01 2.5x XPL00 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/Well-T-11445 01 2.5x XPL30 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/Well-T-11445 01 2.5x PPL00 final.dzi"
-          ]
-      },
-      "Well-S-4463":
-      {
-          "groups": ["Stevens Ss"],  
-          "title": "Well-S-4463",
-          "description": "Stevens Sandstone",
-          "unit": "2",
-          "pixelsPerUnit": "0.398",
-          "pixelsPerMeter": "398000",
-          "tileLabels": [
-              "XPL00",
-              "XPL30",
-              "PPL00"
-          ],
-          "tileSets": [
-              "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/Well-S-4463 01 2.5x XPL00 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/Well-S-4463 01 2.5x XPL30 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/Well-S-4463 01 2.5x PPL00 final_v2.dzi"
-          ]
-      },
-      "Grove-1":
-      {
-          "groups": ["Grove"],  
-          "title": "Grove-1",
-          "description": "Unspecified",
-          "unit": "2",
-          "pixelsPerUnit": "0.398",
-          "pixelsPerMeter": "398000",
-          "tileLabels": [
-              "XPL00",
-              "XPL30",
-              "PPL00"
-          ],
-          "tileSets": [
-              "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/Grove-1 01 2.5x XPL00 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/Grove-1 01 2.5x XPL30 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/Grove-1 01 2.5x PPL00 final.dzi"
-          ]
-      },
-      "Grove-9":
-      {
-          "groups": ["Grove"],  
-          "title": "Grove-9",
-          "description": "Unspecified",
-          "unit": "2",
-          "pixelsPerUnit": "0.398",
-          "pixelsPerMeter": "398000",
-          "tileLabels": [
-              "XPL00",
-              "XPL30",
-              "PPL00"
-          ],
-          "tileSets": [
-              "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/Grove-9 01 2.5x XPL00 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/Grove-9 01 2.5x XPL30 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/Grove-9 01 2.5x PPL00 final.dzi"
-          ]
-      },
-      "Grove-15":
-      {
-          "groups": ["Grove"],  
-          "title": "Grove-15",
-          "description": "Unspecified",
-          "unit": "2",
-          "pixelsPerUnit": "0.398",
-          "pixelsPerMeter": "398000",
-          "tileLabels": [
-              "XPL00",
-              "XPL30",
-              "PPL00"
-          ],
-          "tileSets": [
-              "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/Grove-15 01 2.5x XPL00 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/Grove-15 01 2.5x XPL30 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/Grove-15 01 2.5x PPL00 final.dzi"
-          ]
-      },
-      "YSU1-16":
-      {
-          "groups": ["YSU"],  
-          "title": "YSU1-16",
-          "description": "Yellow Steer Unit 1",
-          "unit": "2",
-          "pixelsPerUnit": "0.398",
-          "pixelsPerMeter": "398000",
-          "tileLabels": [
-              "XPL00",
-              "XPL30",
-              "PPL00"
-          ],
-          "tileSets": [
-              "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/YSUI-16 01 2.5x XPL00 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/YSUI-16 01 2.5x XPL30 final.dzi",
-              "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/YSUI-16 01 2.5x PPL00 final.dzi"
-          ]
-      }
+  "SD0004": {
+    "groups": ["Favorites", "SedGeo"],
+    "title": "SD0004",
+    "description": "Budhir, Iceland",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL00", "XPL00", "XPL30"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0004 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0004 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0004 01 2.5x XPL30 final.dzi"
+    ],
+    "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/SD0004.geojson"
+  },
+  "SD0004 (1 layer)": {
+    "groups": ["Favorites", "SedGeo"],
+    "title": "SD0004 (1 layer)",
+    "description": "Budhir, Iceland",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL00"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0004 01 2.5x PPL00 final.dzi"
+    ],
+    "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/SD0004.geojson"
+  },
+  "SD0004 (2 layer)": {
+    "groups": ["Favorites", "SedGeo"],
+    "title": "SD0004 (2 layer)",
+    "description": "Budhir, Iceland",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL00", "XPL00"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0004 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0004 01 2.5x XPL00 final.dzi"
+    ],
+    "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/SD0004.geojson"
+  },
+  "SD0004 (4 layer)": {
+    "groups": ["Favorites", "SedGeo"],
+    "title": "SD0004 (4 layer)",
+    "description": "Budhir, Iceland",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL00", "XPL00", "XPL30", "XPL00"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0004 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0004 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0004 01 2.5x XPL30 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0004 01 2.5x XPL00 final.dzi"
+    ],
+    "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/SD0004.geojson"
+  },
+  "ARCS-44": {
+    "groups": ["Favorites", "SedGeo"],
+    "title": "ARCS-44",
+    "description": "Fountain Formation",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL00", "XPL00", "XPL30"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/ARCS-44 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/ARCS-44 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/ARCS-44 01 2.5x XPL30 final.dzi"
+    ]
+  },
+  "ARCS-46": {
+    "groups": ["Favorites", "SedGeo"],
+    "title": "ARCS-46",
+    "description": "Unknown",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/ARCS-46 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/ARCS-46 01 2.5x XPL30 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/ARCS-46 01 2.5x PPL00 final.dzi"
+    ]
+  },
+  "ARCS-51": {
+    "groups": ["Favorites", "SedGeo"],
+    "title": "ARCS-51",
+    "description": "Rensselaer grit",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL00", "XPL00", "XPL45"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/ARCS-51 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/ARCS-51 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/ARCS-51 01 2.5x XPL45 final.dzi"
+    ]
+  },
+  "ARCS-59": {
+    "groups": ["Favorites", "SedGeo"],
+    "title": "ARCS-59",
+    "description": "Unknown",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/ARCS-59 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/ARCS-59 01 2.5x XPL30 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/ARCS-59 01 2.5x PPL00 final.dzi"
+    ]
+  },
+  "ARCS-60": {
+    "groups": ["SedGeo"],
+    "title": "ARCS-60",
+    "description": "Unknown",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/ARCS-60 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/ARCS-60 01 2.5x XPL30 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/ARCS-60 01 2.5x PPL00 final.dzi"
+    ]
+  },
+  "ARC-45": {
+    "groups": ["SedGeo"],
+    "title": "ARC-45",
+    "description": "Berea Sandstone",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/ARC-45 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/ARC-45 01 2.5x XPL30 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/ARC-45 01 2.5x PPL00 final.dzi"
+    ]
+  },
+  "ARC-50": {
+    "groups": ["Favorites", "SedGeo"],
+    "title": "ARC-50",
+    "description": "Sugarloaf Arkose",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/ARC-50 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/ARC-50 01 2.5x XPL30 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/ARC-50 01 2.5x PPL00 final.dzi"
+    ]
+  },
+  "ARC-62": {
+    "groups": ["Favorites", "SedGeo"],
+    "title": "ARC-62",
+    "description": "Unknown",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/ARC-62 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/ARC-62 01 2.5x XPL30 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/ARC-62 01 2.5x PPL00 final.dzi"
+    ]
+  },
+  "ARC-63": {
+    "groups": ["Favorites", "SedGeo"],
+    "title": "ARC-63",
+    "description": "Unknown",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/ARC-63 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/ARC-63 01 2.5x XPL30 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/ARC-63 01 2.5x PPL00 final.dzi"
+    ]
+  },
+  "NWA-01": {
+    "groups": ["NWA"],
+    "title": "NWA-01",
+    "description": "Upper Boone Fm.",
+    "latitude": "36.413033",
+    "longitude": "-94.213964",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["XPL00", "XPL45", "PPL00"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-01 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-01 01 2.5x XPL45 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-01 01 2.5x PPL00 final.dzi"
+    ]
+  },
+  "NWA-02": {
+    "groups": ["NWA"],
+    "title": "NWA-02",
+    "description": "Lower Boone Fm.",
+    "latitude": "36.413033",
+    "longitude": "-94.213964",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["XPL00", "XPL45", "PPL00"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-02 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-02 01 2.5x XPL45 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-02 01 2.5x PPL00 final.dzi"
+    ]
+  },
+  "NWA-03": {
+    "groups": ["NWA"],
+    "title": "NWA-03",
+    "description": "Lower Boone Fm.",
+    "latitude": "36.414119",
+    "longitude": "-94.222675",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["XPL00", "XPL45", "PPL00"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-03 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-03 01 2.5x XPL45 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-03 01 2.5x PPL00 final.dzi"
+    ]
+  },
+  "NWA-04": {
+    "groups": ["NWA"],
+    "title": "NWA-04",
+    "description": "Lower Boone Fm.",
+    "latitude": "36.414119",
+    "longitude": "-94.222675",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["XPL00", "XPL45", "PPL00"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-04 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-04 01 2.5x XPL45 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-04 01 2.5x PPL00 final.dzi"
+    ]
+  },
+  "NWA-05": {
+    "groups": ["NWA"],
+    "title": "NWA-05",
+    "description": "Lower Boone Fm.",
+    "latitude": "36.416114",
+    "longitude": "-94.219719",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["XPL00", "XPL45", "PPL00"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-05 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-05 01 2.5x XPL45 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-05 01 2.5x PPL00 final.dzi"
+    ]
+  },
+  "NWA-06": {
+    "groups": ["NWA"],
+    "title": "NWA-06",
+    "description": "Saint Joe Fm., Pearson Mbr.",
+    "latitude": "36.422019",
+    "longitude": "-94.224187",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["XPL00", "XPL45", "PPL00"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-06 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-06 01 2.5x XPL45 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-06 01 2.5x PPL00 final.dzi"
+    ]
+  },
+  "NWA-07": {
+    "groups": ["Favorites", "NWA"],
+    "title": "NWA-07",
+    "description": "Saint Joe Fm., Pearson Mbr.",
+    "latitude": "36.422019",
+    "longitude": "-94.224187",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["XPL00", "XPL45", "PPL00"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-07 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-07 01 2.5x XPL45 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-07 01 2.5x PPL00 final.dzi"
+    ]
+  },
+  "NWA-08": {
+    "groups": ["NWA"],
+    "title": "NWA-08",
+    "description": "Saint Joe Fm., Compton Mbr.",
+    "latitude": "36.45622",
+    "longitude": "-94.24327",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["XPL00", "XPL45", "PPL00"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-08 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-08 01 2.5x XPL45 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-08 01 2.5x PPL00 final.dzi"
+    ]
+  },
+  "NWA-10": {
+    "groups": ["NWA"],
+    "title": "NWA-10",
+    "description": "Saint Joe Fm., Compton Mbr.",
+    "latitude": "36.546253",
+    "longitude": "-94.327989",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/NWA-10 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/NWA-10 01 2.5x XPL30 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/NWA-10 01 2.5x PPL00 final.dzi"
+    ]
+  },
+  "NWA-12": {
+    "groups": ["NWA"],
+    "title": "NWA-12",
+    "description": "Cotter Fm.",
+    "latitude": "36.5303889",
+    "longitude": "-94.2965167",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["XPL00", "XPL45", "PPL00"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-12 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-12 01 2.5x XPL45 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-12 01 2.5x PPL00 final.dzi"
+    ]
+  },
+  "NWA-14": {
+    "groups": ["NWA"],
+    "title": "NWA-14",
+    "description": "Cotter Fm.",
+    "latitude": "36.5303889",
+    "longitude": "-94.2965167",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/NWA-14 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/NWA-14 01 2.5x XPL30 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/NWA-14 01 2.5x PPL00 final.dzi"
+    ]
+  },
+  "NWA-15": {
+    "groups": ["NWA"],
+    "title": "NWA-15",
+    "description": "Hale Fm. (Prairie Grove Mbr.)",
+    "latitude": "36.011683",
+    "longitude": "-94.193633",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/NWA-15 02 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/NWA-15 02 2.5x XPL30 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/NWA-15 02 2.5x PPL00 final.dzi"
+    ]
+  },
+  "NWA-16": {
+    "groups": ["NWA"],
+    "title": "NWA-16",
+    "description": "Pitkin Limestone",
+    "latitude": "35.934781",
+    "longitude": "-94.196878",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/NWA-16 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/NWA-16 01 2.5x XPL30 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/NWA-16 01 2.5x PPL00 final.dzi"
+    ]
+  },
+  "NWA-17": {
+    "groups": ["NWA"],
+    "title": "NWA-17",
+    "description": "Hale Fm., Cane Hill Mbr.",
+    "latitude": "35.934781",
+    "longitude": "-94.196878",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["XPL00", "XPL45", "PPL00"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-17 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-17 01 2.5x XPL45 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-17 01 2.5x PPL00 final.dzi"
+    ]
+  },
+  "NWA-18": {
+    "groups": ["NWA"],
+    "title": "NWA-18",
+    "description": "Brentwood (basal)",
+    "latitude": "35.921387",
+    "longitude": "-94.199834",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/NWA-18 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/NWA-18 01 2.5x XPL30 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/NWA-18 01 2.5x PPL00 final.dzi"
+    ]
+  },
+  "NWA-19": {
+    "groups": ["Favorites", "NWA"],
+    "title": "NWA-19",
+    "description": "Kessler Limestone",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["XPL00", "XPL45", "PPL00"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-19 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-19 01 2.5x XPL45 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-19 01 2.5x PPL00 final.dzi"
+    ]
+  },
+  "NWA-20": {
+    "groups": ["Favorites", "NWA"],
+    "title": "NWA-20",
+    "description": "Lower Atoka Ss (basal)",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["XPL00", "XPL45", "PPL00"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-20 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-20 01 2.5x XPL45 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-20 01 2.5x PPL00 final.dzi"
+    ]
+  },
+  "CH-041918": {
+    "groups": ["NWA"],
+    "title": "CH-041918",
+    "description": "Hale Fm., Cane Hill Mbr.",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/CH-041918 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/CH-041918 01 2.5x XPL30 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/CH-041918 01 2.5x PPL00 final.dzi"
+    ]
+  },
+  "PG-001": {
+    "groups": ["NWA"],
+    "title": "PG-001",
+    "description": "Unknown",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/PG-001 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/PG-001 01 2.5x XPL30 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/PG-001 01 2.5x PPL00 final.dzi"
+    ]
+  },
+  "OD5A-103118": {
+    "groups": ["NWA"],
+    "title": "OD5A-103118",
+    "description": "Hartshorne Ss",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/ODSA-103118 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/ODSA-103118 01 2.5x XPL30 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/ODSA-103118 01 2.5x PPL00 final.dzi"
+    ]
+  },
+  "PSB02": {
+    "groups": ["SedGeo"],
+    "title": "PBS02",
+    "description": "Unspecified",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/PSB02 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/PSB02 01 2.5x XPL30 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/PSB02 01 2.5x PPL00 final.dzi"
+    ]
+  },
+  "NZ23-049": {
+    "groups": ["New Zealand"],
+    "title": "NZ23-049",
+    "description": "Whanganui River",
+    "latitude": "-39.86246",
+    "longitude": "175.11026",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/NZ23-049 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/NZ23-049 01 2.5x XPL30 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/NZ23-049 01 2.5x PPL00 final.dzi"
+    ]
+  },
+  "NZ23-052": {
+    "groups": ["New Zealand"],
+    "title": "NZ23-052",
+    "description": "Manganui River",
+    "latitude": "-39.12303",
+    "longitude": "174.28534",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["XPL00", "XPL45", "PPL00"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NZ23-052 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NZ23-052 01 2.5x XPL45 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NZ23-052 01 2.5x PPL00 final.dzi"
+    ]
+  },
+  "NZ23-055": {
+    "groups": ["New Zealand"],
+    "title": "NZ23-055",
+    "description": "Waitara River",
+    "latitude": "-39.02223",
+    "longitude": "174.25191",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["XPL00", "XPL45", "PPL00"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NZ23-055 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NZ23-055 01 2.5x XPL45 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NZ23-055 01 2.5x PPL00 final.dzi"
+    ]
+  },
+  "NZ23-056": {
+    "groups": ["New Zealand"],
+    "title": "NZ23-056",
+    "description": "Waikato River",
+    "latitude": "-37.80671",
+    "longitude": "175.30579",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["XPL00", "XPL45", "PPL00"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/NZ23-056 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/NZ23-056 01 2.5x XPL45 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/NZ23-056 01 2.5x PPL00 final.dzi"
+    ]
+  },
+  "NZ23-057": {
+    "groups": ["Favorites", "New Zealand"],
+    "title": "NZ23-057",
+    "description": "Waikato River",
+    "latitude": "-37.29593",
+    "longitude": "174.94531",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["XPL00", "XPL45", "PPL00"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/NZ23-057 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/NZ23-057 01 2.5x XPL45 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/NZ23-057 01 2.5x PPL00 final.dzi"
+    ]
+  },
+  "NZ23-060": {
+    "groups": ["New Zealand"],
+    "title": "NZ23-060",
+    "description": "Waitotara River",
+    "latitude": "-39.80465",
+    "longitude": "174.73801",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["XPL00", "XPL45", "PPL00"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/NZ23-060 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/NZ23-060 01 2.5x XPL45 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/NZ23-060 01 2.5x PPL00 final.dzi"
+    ]
+  },
+  "NZ23-069": {
+    "groups": ["Favorites", "New Zealand"],
+    "title": "NZ23-069",
+    "description": "Rangiteki River",
+    "latitude": "-40.18712",
+    "longitude": "175.39231",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["XPL00", "XPL45", "PPL45"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NZ23-069 test1 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NZ23-069 test1 2.5x XPL45 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NZ23-069 test1 2.5x PPL45 final.dzi"
+    ]
+  },
+  "NZ23-067b": {
+    "groups": ["New Zealand"],
+    "title": "NZ23-067b",
+    "description": "Kohaiahi beach",
+    "latitude": "-41.10877",
+    "longitude": "172.10107",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["XPL00", "XPL45", "PPL00"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NZ23-067b 02 5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NZ23-067b 02 5x XPL45 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NZ23-067b 02 5x PPL00 final.dzi"
+    ]
+  },
+  "FWS-24-01": {
+    "groups": ["New Zealand"],
+    "title": "FWS-24-01",
+    "description": "Farewell Split beach",
+    "latitude": "-40.51873",
+    "longitude": "172.93429",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/FWS-24-01 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/FWS-24-01 01 2.5x XPL30 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/FWS-24-01 01 2.5x PPL00 final.dzi"
+    ]
+  },
+  "131-011s": {
+    "groups": ["SedGeo"],
+    "title": "131-011s",
+    "description": "Wahiba, Empty Quarter, Oman",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/131-011s 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/131-011s 01 2.5x XPL30 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/131-011s 01 2.5x PPL00 final.dzi"
+    ]
+  },
+  "133-003s": {
+    "groups": ["SedGeo"],
+    "title": "133-003s",
+    "description": "Hanna Beach, Maui, HI",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/133-003s 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/133-003s 01 2.5x XPL30 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/133-003s 01 2.5x PPL00 final.dzi"
+    ]
+  },
+  "133-004s": {
+    "groups": ["SedGeo"],
+    "title": "133-004s",
+    "description": "Arrow Canyon, Nevada",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/133-004s 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/133-004s 01 2.5x XPL30 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/133-004s 01 2.5x PPL00 final.dzi"
+    ]
+  },
+  "133-007s": {
+    "groups": ["Favorites", "SedGeo"],
+    "title": "133-007s",
+    "description": "Pt. Bonita, Golden Gate NRA, California",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/133-007s 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/133-007s 01 2.5x XPL30 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/133-007s 01 2.5x PPL00 final.dzi"
+    ],
+    "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/main/annotations/133-007s.csv"
+  },
+  "133-008s": {
+    "groups": ["SedGeo"],
+    "title": "133-008s",
+    "description": "Mihi Beach, Kaikoura, New Zealand",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/133-008s 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/133-008s 01 2.5x XPL30 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/133-008s 01 2.5x PPL00 final.dzi"
+    ]
+  },
+  "133-010s": {
+    "groups": ["SedGeo"],
+    "title": "133-010s",
+    "description": "Lake Champlain, Burlington, VT",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/133-010s 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/133-010s 01 2.5x XPL30 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/133-010s 01 2.5x PPL00 final.dzi"
+    ]
+  },
+  "133-311s": {
+    "groups": ["SedGeo"],
+    "title": "131-311s",
+    "description": "Merced River, Mariposa, CA",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/133-311s 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/133-311s 01 2.5x XPL30 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/133-311s 01 2.5x PPL00 final.dzi"
+    ]
+  },
+  "133-312s": {
+    "groups": ["SedGeo"],
+    "title": "133-312s",
+    "description": "Bass Lake, Oakhurst, California",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/133-312s 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/133-312s 01 2.5x XPL30 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/133-312s 01 2.5x PPL00 final.dzi"
+    ]
+  },
+  "137-002s": {
+    "groups": ["SedGeo"],
+    "title": "137-002s",
+    "description": "Ka-Lae, Hawaii",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/137-002s 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/137-002s 01 2.5x XPL30 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/137-002s 01 2.5x PPL00 final.dzi"
+    ]
+  },
+  "SD0001": {
+    "groups": ["SedGeo"],
+    "title": "SD0001",
+    "description": "Coral Sand Dunes",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/SD0001 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/SD0001 01 2.5x XPL30 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/SD0001 01 2.5x PPL00 final.dzi"
+    ]
+  },
+  "SD0003": {
+    "groups": ["SedGeo"],
+    "title": "SD0003",
+    "description": "Pfeiffer Beach, CA",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0003 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0003 01 2.5x XPL30 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0003 01 2.5x PPL00 final.dzi"
+    ]
+  },
+  "SD0020": {
+    "groups": ["SedGeo"],
+    "title": "SD0020",
+    "description": "Anak Krakatau",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0020 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0020 01 2.5x XPL30 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0020 01 2.5x PPL00 final.dzi"
+    ]
+  },
+  "SD0031": {
+    "groups": ["SedGeo"],
+    "title": "SD0031",
+    "description": "Arroyo del Padre Juan",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/SD0031 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/SD0031 01 2.5x XPL30 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/SD0031 01 2.5x PPL00 final.dzi"
+    ]
+  },
+  "WS-208": {
+    "groups": ["SedGeo"],
+    "title": "WS-208",
+    "description": "Unknown",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/WS-208 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/WS-208 01 2.5x XPL30 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/WS-208 01 2.5x PPL00 final.dzi"
+    ]
+  },
+  "WS-846": {
+    "groups": ["SedGeo"],
+    "title": "WS-846",
+    "description": "Unknown",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/WS-846 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/WS-846 01 2.5x XPL30 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/WS-846 01 2.5x PPL00 final.dzi"
+    ]
+  },
+  "IODP-001": {
+    "groups": ["IODP"],
+    "title": "IODP-001",
+    "description": "Unknown",
+    "unit": "2",
+    "pixelsPerUnit": "0.913242",
+    "pixelsPerMeter": "913242",
+    "tileLabels": ["PPL00", "XPL00", "XPL45"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage6/main/images/IODP_001_PPL00 raw.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage6/main/images/IODP_001_XPL00 raw.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage6/main/images/IODP_001_XPL30 raw.dzi"
+    ]
+  },
+  "IODP-011": {
+    "groups": ["IODP"],
+    "title": "IODP-011",
+    "description": "Unknown",
+    "unit": "2",
+    "pixelsPerUnit": "0.913242",
+    "pixelsPerMeter": "913242",
+    "tileLabels": ["PPL00", "XPL00", "XPL15", "XPL45"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage6/main/images/IODP_011_PPL00 raw.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage6/main/images/IODP_011_XPL00 raw.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage6/main/images/IODP_011_XPL15 raw.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage6/main/images/IODP_011_XPL45 raw.dzi"
+    ]
+  },
+  "IODP-021": {
+    "groups": ["IODP"],
+    "title": "IODP-021",
+    "description": "Unknown",
+    "unit": "2",
+    "pixelsPerUnit": "0.913242",
+    "pixelsPerMeter": "913242",
+    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/IODP_021_XPL00 raw.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/IODP_021_XPL30 raw.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/IODP_021_PPL00 raw.dzi"
+    ]
+  },
+  "IODP-041": {
+    "groups": ["IODP"],
+    "title": "IODP-41",
+    "description": "Unknown",
+    "unit": "2",
+    "pixelsPerUnit": "0.913242",
+    "pixelsPerMeter": "913242",
+    "tileLabels": ["XPL00", "XPL15", "PPL00"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/IODP_041_XPL_0.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/IODP_041_XPL_15.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/IODP_041_PPL.dzi"
+    ]
+  },
+  "TMC1": {
+    "groups": ["SedGeo"],
+    "title": "TMC1",
+    "description": "Pierre Shale",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/TMC 1 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/TMC 1 01 2.5x XPL30 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/TMC 1 01 2.5x PPL00 final.dzi"
+    ]
+  },
+  "TMC2": {
+    "groups": ["SedGeo"],
+    "title": "TMC2",
+    "description": "Pierre Shale",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/TCM2 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/TCM2 01 2.5x XPL30 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/TCM2 01 2.5x PPL00 final.dzi"
+    ]
+  },
+  "TMC3": {
+    "groups": ["SedGeo"],
+    "title": "TMC3",
+    "description": "Pierre Shale",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/TMC 3 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/TMC 3 01 2.5x XPL30 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/TMC 3 01 2.5x PPL00 final.dzi"
+    ]
+  },
+  "UA-25-2812": {
+    "groups": ["SedGeo"],
+    "title": "UA-25-2812",
+    "description": "Unspecified",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/UA-25-2812 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/UA-25-2812 01 2.5x XPL30 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/UA-25-2812 01 2.5x PPL00 final.dzi"
+    ]
+  },
+  "GM-Kl-02": {
+    "groups": ["Green Mtn, CO"],
+    "title": "GM-Kl-02",
+    "description": "Laramie Fm.",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/GM-Kl-02 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/GM-Kl-02 01 2.5x XPL30 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/GM-Kl-02 01 2.5x PPL00 final.dzi"
+    ]
+  },
+  "GM-Tgml-02": {
+    "groups": ["Green Mtn, CO"],
+    "title": "GM-Tgml-02",
+    "description": "Tgml (lower unit)",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/GM-Tgml-02 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/GM-Tgml-02 01 2.5x XPL30 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/GM-Tgml-02 01 2.5x PPL00 final.dzi"
+    ]
+  },
+  "CC-01": {
+    "groups": ["Stevens Ss"],
+    "title": "CC-01",
+    "description": "Unknown",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/CC-01 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/CC-01 01 2.5x XPL30 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/CC-01 01 2.5x PPL00 final.dzi"
+    ]
+  },
+  "Well-T-11445": {
+    "groups": ["Stevens Ss"],
+    "title": "Well-T-11445",
+    "description": "Stevens Sandstone",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/Well-T-11445 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/Well-T-11445 01 2.5x XPL30 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/Well-T-11445 01 2.5x PPL00 final.dzi"
+    ]
+  },
+  "Well-S-4463": {
+    "groups": ["Stevens Ss"],
+    "title": "Well-S-4463",
+    "description": "Stevens Sandstone",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/Well-S-4463 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/Well-S-4463 01 2.5x XPL30 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/Well-S-4463 01 2.5x PPL00 final_v2.dzi"
+    ]
+  },
+  "Grove-1": {
+    "groups": ["Grove"],
+    "title": "Grove-1",
+    "description": "Unspecified",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/Grove-1 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/Grove-1 01 2.5x XPL30 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/Grove-1 01 2.5x PPL00 final.dzi"
+    ]
+  },
+  "Grove-9": {
+    "groups": ["Grove"],
+    "title": "Grove-9",
+    "description": "Unspecified",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/Grove-9 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/Grove-9 01 2.5x XPL30 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/Grove-9 01 2.5x PPL00 final.dzi"
+    ]
+  },
+  "Grove-15": {
+    "groups": ["Grove"],
+    "title": "Grove-15",
+    "description": "Unspecified",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/Grove-15 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/Grove-15 01 2.5x XPL30 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/Grove-15 01 2.5x PPL00 final.dzi"
+    ]
+  },
+  "YSU1-16": {
+    "groups": ["YSU"],
+    "title": "YSU1-16",
+    "description": "Yellow Steer Unit 1",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/YSUI-16 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/YSUI-16 01 2.5x XPL30 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/YSUI-16 01 2.5x PPL00 final.dzi"
+    ]
+  }
 }
