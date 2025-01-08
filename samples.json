@@ -14,49 +14,6 @@
     ],
     "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/SD0004.geojson"
   },
-  "SD0004 (1 layer)": {
-    "groups": ["Favorites", "SedGeo"],
-    "title": "SD0004 (1 layer)",
-    "description": "Budhir, Iceland",
-    "unit": "2",
-    "pixelsPerUnit": "0.398",
-    "pixelsPerMeter": "398000",
-    "tileLabels": ["PPL00"],
-    "tileSets": [
-      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0004 01 2.5x PPL00 final.dzi"
-    ],
-    "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/SD0004.geojson"
-  },
-  "SD0004 (2 layer)": {
-    "groups": ["Favorites", "SedGeo"],
-    "title": "SD0004 (2 layer)",
-    "description": "Budhir, Iceland",
-    "unit": "2",
-    "pixelsPerUnit": "0.398",
-    "pixelsPerMeter": "398000",
-    "tileLabels": ["PPL00", "XPL00"],
-    "tileSets": [
-      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0004 01 2.5x PPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0004 01 2.5x XPL00 final.dzi"
-    ],
-    "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/SD0004.geojson"
-  },
-  "SD0004 (4 layer)": {
-    "groups": ["Favorites", "SedGeo"],
-    "title": "SD0004 (4 layer)",
-    "description": "Budhir, Iceland",
-    "unit": "2",
-    "pixelsPerUnit": "0.398",
-    "pixelsPerMeter": "398000",
-    "tileLabels": ["PPL00", "XPL00", "XPL30", "XPL00"],
-    "tileSets": [
-      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0004 01 2.5x PPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0004 01 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0004 01 2.5x XPL30 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0004 01 2.5x XPL00 final.dzi"
-    ],
-    "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/SD0004.geojson"
-  },
   "ARCS-44": {
     "groups": ["Favorites", "SedGeo"],
     "title": "ARCS-44",
@@ -876,6 +833,20 @@
       "https://raw.githubusercontent.com/grsharman/image-storage7/main/images/IODP_001_XPL45.dzi"
     ]
   },
+  "IODP-002": {
+    "groups": ["IODP"],
+    "title": "IODP-002",
+    "description": "Unknown",
+    "unit": "2",
+    "pixelsPerUnit": "0.913242",
+    "pixelsPerMeter": "913242",
+    "tileLabels": ["PPL00", "XPL00", "XPL30"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage7/main/images/IODP-002 02 PPL00.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage7/main/images/IODP-002 02 XPL00.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage7/main/images/IODP-002 02 XPL30.dzi"
+    ]
+  },
   "IODP-011": {
     "groups": ["IODP"],
     "title": "IODP-011",
@@ -907,7 +878,7 @@
   },
   "IODP-041": {
     "groups": ["IODP"],
-    "title": "IODP-41",
+    "title": "IODP-041",
     "description": "Unknown",
     "unit": "2",
     "pixelsPerUnit": "0.913242",

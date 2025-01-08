@@ -235,12 +235,12 @@ function showTooltip() {
     tooltip.textContent = `${descriptions[dropdown.value]}`;
     tooltip.style.display = "block";
     const buttonRect = infoButton.getBoundingClientRect();
+    console.log("buttonRect.top", buttonRect.top);
+    console.log("buttonRect.height", buttonRect.height);
     // Wait for the tooltip to be displayed before calculating its height
     const tooltipHeight = tooltip.offsetHeight;
     // Align tooltip vertically centered with the button
-    tooltip.style.top = `${
-      buttonRect.top - buttonRect.height / 1.25 - tooltipHeight
-    }px`;
+    tooltip.style.top = `${buttonRect.top - tooltipHeight}px`;
     // Position tooltip directly to the right of the button
     tooltip.style.left = `${buttonRect.right + 2}px`; // Align to the right, accounting for scrolling
   }
@@ -1676,7 +1676,6 @@ function drawPath(ctx, coordinates, image, shape, closePath) {
     ctx.globalAlpha = shape.properties.fillOpacity;
     ctx.fill();
   }
-  console.log("lineStyle", shape.properties.lineStyle);
   // Set styles
   if (shape.properties.lineStyle === "dashed") {
     ctx.setLineDash([4, 2]);
@@ -2220,9 +2219,9 @@ function loadAnnotations(geoJSONData) {
             xLabel: properties.xLabel,
             yLabel: properties.yLabel,
             imageTitle: properties.imageTitle,
-            pixelsPerMeter: Number(properties.pixelsPerMeter),
-            imageWidth: Number(properties.imageWidth),
-            imageHeight: Number(properties.imageHeight),
+            pixelsPerMeter: Number(properties.pixelsPerMeter), // Required
+            imageWidth: Number(properties.imageWidth), // Required
+            imageHeight: Number(properties.imageHeight), // Required
             labelFontSize: Number(properties.labelFontSize),
             labelFontColor: properties.labelFontColor,
             labelBackgroundColor: properties.labelBackgroundColor,
@@ -2350,6 +2349,7 @@ function loadAnnotations(geoJSONData) {
         geometry.type === "Polygon" &&
         properties.canvasDraw === true
       ) {
+        console.log("Drawing polygon!");
         const image = viewer.world.getItemAt(0);
         // Calculate viewport coordinates from image coordinates
         const viewportPoint = image.imageToViewportCoordinates(

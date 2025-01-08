@@ -1,5 +1,5 @@
 {
-  "1": {
+  {
     "type": "Feature",
     "geometry": {
       "type": "Polygon",
@@ -84,7 +84,7 @@
       "canvasDraw": true
     }
   },
-  "2": {
+  {
     "type": "Feature",
     "geometry": {
       "type": "Polygon",
