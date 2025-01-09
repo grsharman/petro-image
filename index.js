@@ -1622,19 +1622,65 @@ function drawPolygon(ctx, coordinates, image, feature) {
   });
 
   // Use "evenodd" fill rule to create the donut effect
-  if (feature.properties.fillColor) {
-    ctx.fillStyle = feature.properties.fillColor;
-    ctx.globalAlpha = feature.properties.fillOpacity || 1;
+  if (feature.properties.fillColor && feature.properties.fillOpacity) {
+    const fillColorToPlot = applyOpacityToColor(
+      feature.properties.fillColor,
+      feature.properties.fillOpacity
+    );
+    ctx.fillStyle = fillColorToPlot;
+    ctx.fill("evenodd");
+  } else {
+    // Apply current annotation style
+    const fillColor = document.getElementById("fillColor").value;
+    const fillOpacity = Number(document.getElementById("fillOpacity").value);
+    const fillColorToPlot = applyOpacityToColor(fillColor, fillOpacity);
+    ctx.fillStyle = fillColorToPlot;
     ctx.fill("evenodd");
   }
 
   // Stroke the outline of the polygon
-  if (feature.properties.lineColor) {
-    ctx.strokeStyle = feature.properties.lineColor || "black";
-    ctx.lineWidth = feature.properties.lineWeight || 1;
-    ctx.globalAlpha = feature.properties.lineOpacity || 1;
-    ctx.stroke();
+  if (feature.properties.lineColor && feature.properties.lineOpacity) {
+    const lineColorToPlot = applyOpacityToColor(
+      feature.properties.lineColor,
+      feature.properties.lineOpacity
+    );
+    ctx.strokeStyle = lineColorToPlot;
+  } else {
+    // Apply current annotation style
+    const lineColor = document.getElementById("lineColor").value;
+    const lineOpacity = Number(document.getElementById("lineOpacity").value);
+    const lineColorToPlot = applyOpacityToColor(lineColor, lineOpacity);
+    ctx.strokeStyle = lineColorToPlot;
   }
+  if (feature.properties.lineWeight) {
+    ctx.lineWidth = feature.properties.lineWeight;
+  } else {
+    const lineWeight = Number(document.getElementById("lineWeight").value);
+    ctx.lineWidth = lineWeight;
+  }
+  // Set line style
+  if (feature.properties.lineStyle) {
+    // Apply line styles
+    if (feature.properties.lineStyle === "dashed") {
+      ctx.setLineDash([4, 2]);
+    } else if (feature.properties.lineStyle === "dotted") {
+      ctx.setLineDash([2, 2]);
+    } else {
+      ctx.setLineDash([]); // Reset to solid line
+    }
+  } else {
+    // Apply current annotation style
+    const lineStyle = document.getElementById("lineStyle").value;
+    // Apply line styles
+    if (lineStyle === "dashed") {
+      ctx.setLineDash([4, 2]);
+    } else if (lineStyle === "dotted") {
+      ctx.setLineDash([2, 2]);
+    } else {
+      ctx.setLineDash([]); // Reset to solid line
+    }
+  }
+  ctx.stroke();
 }
 
 function drawLineString(ctx, coordinates, image, feature) {
@@ -1669,18 +1715,49 @@ function drawPath(ctx, coordinates, image, shape, closePath) {
     ctx.closePath(); // Close the shape for polygons
   }
 
-  // Apply line styles
-  if (shape.properties.lineStyle === "dashed") {
-    ctx.setLineDash([4, 2]);
-  } else if (shape.properties.lineStyle === "dotted") {
-    ctx.setLineDash([2, 2]);
+  // Set line color
+  if (shape.properties.lineColor && shape.properties.lineOpacity) {
+    const lineColorToPlot = applyOpacityToColor(
+      shape.properties.lineColor,
+      shape.properties.lineOpacity
+    );
+    ctx.strokeStyle = lineColorToPlot;
   } else {
-    ctx.setLineDash([]); // Reset to solid line
+    // Apply current annotation style
+    const lineColor = document.getElementById("lineColor").value;
+    const lineOpacity = Number(document.getElementById("lineOpacity").value);
+    const lineColorToPlot = applyOpacityToColor(lineColor, lineOpacity);
+    ctx.strokeStyle = lineColorToPlot;
   }
-
-  ctx.strokeStyle = shape.properties.lineColor || "black";
-  ctx.lineWidth = shape.properties.lineWeight || 1;
-  ctx.globalAlpha = shape.properties.lineOpacity || 1;
+  // Set line weight
+  if (shape.properties.lineWeight) {
+    ctx.lineWidth = shape.properties.lineWeight;
+  } else {
+    const lineWeight = Number(document.getElementById("lineWeight").value);
+    ctx.lineWidth = lineWeight;
+  }
+  // Set line style
+  if (shape.properties.lineStyle) {
+    // Apply line styles
+    if (shape.properties.lineStyle === "dashed") {
+      ctx.setLineDash([4, 2]);
+    } else if (shape.properties.lineStyle === "dotted") {
+      ctx.setLineDash([2, 2]);
+    } else {
+      ctx.setLineDash([]); // Reset to solid line
+    }
+  } else {
+    // Apply current annotation style
+    const lineStyle = document.getElementById("lineStyle").value;
+    // Apply line styles
+    if (lineStyle === "dashed") {
+      ctx.setLineDash([4, 2]);
+    } else if (lineStyle === "dotted") {
+      ctx.setLineDash([2, 2]);
+    } else {
+      ctx.setLineDash([]); // Reset to solid line
+    }
+  }
   ctx.stroke();
 }
 
