@@ -817,7 +817,6 @@ function applyCurrentAnno(id, changeLabel = false) {
     document.getElementById("annoLabelFontSize").value
   );
   const labelFontColor = document.getElementById("annoLabelFontColor").value;
-  console.log("labelFontColor", labelFontColor);
   const labelBackgroundColor = document.getElementById(
     "annoLabelBackgroundColor"
   ).value;
@@ -832,7 +831,6 @@ function applyCurrentAnno(id, changeLabel = false) {
   const fillOpacity = Number(document.getElementById("fillOpacity").value);
   const uuid = annoJSON.features[id - 1].properties.uuid;
   const type = annoJSON.features[id - 1].geometry.type;
-  console.log("type", type);
   if (type === "Point") {
     if (changeLabel) {
       annoJSON.features[id - 1].properties.labelFontSize = labelFontSize;
@@ -1600,7 +1598,7 @@ function drawShape(canvas, JSONArray) {
         drawPolygon(ctx, coordinates, image, feature);
       } else if (type === "MultiPolygon") {
         coordinates.forEach((polygon) => {
-          drawPolygon(ctx, polygon, image, feature);
+          drawPolygon(ctx, [polygon], image, feature);
         });
       } else if (type === "LineString") {
         drawLineString(ctx, coordinates, image, feature);
@@ -2111,7 +2109,6 @@ function deleteText(uuid) {
     annotateLabels = annotateLabels.filter(
       (label) => label.id !== `annotate-label-${uuid}`
     ); // Clean up the array
-    console.log(`Overlay with ID annotate-label-${uuid} removed.`);
     hasUnsavedAnnotations = true;
   } else {
     console.warn(`Overlay with ID annotate-label-${uuid} not found.`);
@@ -2278,8 +2275,6 @@ function loadAnnotations(geoJSONData) {
   }
 
   const features = geoJSON.features || Object.values(geoJSON); // Supports both formats
-  console.log("Features:", features);
-
   features.forEach((feature) => {
     const geometry = feature.geometry;
     const properties = feature.properties;
@@ -2296,8 +2291,6 @@ function loadAnnotations(geoJSONData) {
     }
 
     const { type, coordinates } = geometry;
-
-    console.log("type", type);
 
     // Helper function to handle individual geometry parts
     // const processGeometry = (geometryType, coords) => {
@@ -2327,13 +2320,14 @@ function loadAnnotations(geoJSONData) {
     } else if (type === "MultiPolygon") {
       handleMultiPolygon(coordinates, properties);
     }
+
+    // else if (type === "MultiPolygon") {
+    //   coordinates.forEach((polygon) => handlePolygon(polygon, properties));
+    // }
     // else if (type === "MultiPoint") {
     //   coordinates.forEach((point) => processGeometry("Point", point));
     // } else if (type === "MultiLineString") {
     //   coordinates.forEach((line) => processGeometry("LineString", line));
-    // } else if (type === "MultiPolygon") {
-    //   coordinates.forEach((polygon) => processGeometry("Polygon", polygon));
-    // }
 
     // Redraw the shapes and enable annotation features
     drawShape(polyCanvas, [annoJSON]);
@@ -2483,6 +2477,7 @@ function handlePolygon(coords, properties) {
 }
 
 function handleMultiPolygon(coords, properties) {
+  console.log("loading MultiPolygon");
   const image = viewer.world.getItemAt(0);
   const viewportPoint = image.imageToViewportCoordinates(
     new OpenSeadragon.Point(properties.xLabel, properties.yLabel)
@@ -2534,7 +2529,6 @@ document
       const reader = new FileReader();
       reader.onload = function (event) {
         const geoJSONData = event.target.result;
-        console.log("geoJSONData", geoJSONData);
         loadAnnotations(geoJSONData);
         fileInput.value = "";
       };

@@ -35,11 +35,11 @@
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileLabels": ["PPL00", "XPL00", "XPL30"],
     "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/ARCS-46 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/ARCS-46 01 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/ARCS-46 01 2.5x XPL30 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/ARCS-46 01 2.5x PPL00 final.dzi"
+      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/ARCS-46 01 2.5x XPL30 final.dzi"
     ]
   },
   "ARCS-51": {
@@ -63,11 +63,11 @@
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileLabels": ["PPL00", "XPL00", "XPL30"],
     "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/ARCS-59 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/ARCS-59 01 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/ARCS-59 01 2.5x XPL30 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/ARCS-59 01 2.5x PPL00 final.dzi"
+      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/ARCS-59 01 2.5x XPL30 final.dzi"
     ]
   },
   "ARCS-60": {
@@ -77,11 +77,11 @@
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileLabels": ["PPL00", "XPL00", "XPL30"],
     "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/ARCS-60 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/ARCS-60 01 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/ARCS-60 01 2.5x XPL30 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/ARCS-60 01 2.5x PPL00 final.dzi"
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/ARCS-60 01 2.5x XPL30 final.dzi"
     ]
   },
   "ARC-45": {
@@ -91,11 +91,11 @@
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileLabels": ["PPL00", "XPL00", "XPL30"],
     "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/ARC-45 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/ARC-45 01 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/ARC-45 01 2.5x XPL30 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/ARC-45 01 2.5x PPL00 final.dzi"
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/ARC-45 01 2.5x XPL30 final.dzi"
     ]
   },
   "ARC-50": {
@@ -105,11 +105,11 @@
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileLabels": ["PPL00", "XPL00", "XPL30"],
     "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/ARC-50 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/ARC-50 01 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/ARC-50 01 2.5x XPL30 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/ARC-50 01 2.5x PPL00 final.dzi"
+      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/ARC-50 01 2.5x XPL30 final.dzi"
     ]
   },
   "ARC-62": {
@@ -119,11 +119,11 @@
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileLabels": ["PPL00", "XPL00", "XPL30"],
     "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/ARC-62 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/ARC-62 01 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/ARC-62 01 2.5x XPL30 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/ARC-62 01 2.5x PPL00 final.dzi"
+      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/ARC-62 01 2.5x XPL30 final.dzi"
     ]
   },
   "ARC-63": {
@@ -133,11 +133,11 @@
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileLabels": ["PPL00", "XPL00", "XPL30"],
     "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/ARC-63 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/ARC-63 01 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/ARC-63 01 2.5x XPL30 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/ARC-63 01 2.5x PPL00 final.dzi"
+      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/ARC-63 01 2.5x XPL30 final.dzi"
     ]
   },
   "NWA-01": {
@@ -149,11 +149,11 @@
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["XPL00", "XPL45", "PPL00"],
+    "tileLabels": ["PPL00", "XPL00", "XPL45"],
     "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-01 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-01 01 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-01 01 2.5x XPL45 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-01 01 2.5x PPL00 final.dzi"
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-01 01 2.5x XPL45 final.dzi"
     ]
   },
   "NWA-02": {
@@ -165,11 +165,11 @@
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["XPL00", "XPL45", "PPL00"],
+    "tileLabels": ["PPL00", "XPL00", "XPL45"],
     "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-02 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-02 01 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-02 01 2.5x XPL45 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-02 01 2.5x PPL00 final.dzi"
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-02 01 2.5x XPL45 final.dzi"
     ]
   },
   "NWA-03": {
@@ -181,11 +181,11 @@
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["XPL00", "XPL45", "PPL00"],
+    "tileLabels": ["PPL00", "XPL00", "XPL45"],
     "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-03 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-03 01 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-03 01 2.5x XPL45 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-03 01 2.5x PPL00 final.dzi"
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-03 01 2.5x XPL45 final.dzi"
     ]
   },
   "NWA-04": {
@@ -197,11 +197,11 @@
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["XPL00", "XPL45", "PPL00"],
+    "tileLabels": ["PPL00", "XPL00", "XPL45"],
     "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-04 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-04 01 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-04 01 2.5x XPL45 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-04 01 2.5x PPL00 final.dzi"
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-04 01 2.5x XPL45 final.dzi"
     ]
   },
   "NWA-05": {
@@ -213,11 +213,11 @@
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["XPL00", "XPL45", "PPL00"],
+    "tileLabels": ["PPL00", "XPL00", "XPL45"],
     "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-05 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-05 01 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-05 01 2.5x XPL45 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-05 01 2.5x PPL00 final.dzi"
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-05 01 2.5x XPL45 final.dzi"
     ]
   },
   "NWA-06": {
@@ -229,11 +229,11 @@
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["XPL00", "XPL45", "PPL00"],
+    "tileLabels": ["PPL00", "XPL00", "XPL45"],
     "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-06 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-06 01 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-06 01 2.5x XPL45 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-06 01 2.5x PPL00 final.dzi"
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-06 01 2.5x XPL45 final.dzi"
     ]
   },
   "NWA-07": {
@@ -245,11 +245,11 @@
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["XPL00", "XPL45", "PPL00"],
+    "tileLabels": ["PPL00", "XPL00", "XPL45"],
     "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-07 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-07 01 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-07 01 2.5x XPL45 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-07 01 2.5x PPL00 final.dzi"
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-07 01 2.5x XPL45 final.dzi"
     ]
   },
   "NWA-08": {
@@ -261,11 +261,11 @@
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["XPL00", "XPL45", "PPL00"],
+    "tileLabels": ["PPL00", "XPL00", "XPL45"],
     "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-08 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-08 01 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-08 01 2.5x XPL45 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-08 01 2.5x PPL00 final.dzi"
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-08 01 2.5x XPL45 final.dzi"
     ]
   },
   "NWA-10": {
@@ -277,11 +277,11 @@
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileLabels": ["PPL00", "XPL00", "XPL30"],
     "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/NWA-10 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/NWA-10 01 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/NWA-10 01 2.5x XPL30 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/NWA-10 01 2.5x PPL00 final.dzi"
+      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/NWA-10 01 2.5x XPL30 final.dzi"
     ]
   },
   "NWA-12": {
@@ -293,11 +293,11 @@
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["XPL00", "XPL45", "PPL00"],
+    "tileLabels": ["PPL00", "XPL00", "XPL45"],
     "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-12 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-12 01 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-12 01 2.5x XPL45 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-12 01 2.5x PPL00 final.dzi"
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-12 01 2.5x XPL45 final.dzi"
     ]
   },
   "NWA-14": {
@@ -309,11 +309,11 @@
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileLabels": ["PPL00", "XPL00", "XPL30"],
     "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/NWA-14 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/NWA-14 01 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/NWA-14 01 2.5x XPL30 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/NWA-14 01 2.5x PPL00 final.dzi"
+      "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/NWA-14 01 2.5x XPL30 final.dzi"
     ]
   },
   "NWA-15": {
@@ -325,11 +325,11 @@
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileLabels": ["PPL00", "XPL00", "XPL30"],
     "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/NWA-15 02 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/NWA-15 02 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/NWA-15 02 2.5x XPL30 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/NWA-15 02 2.5x PPL00 final.dzi"
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/NWA-15 02 2.5x XPL30 final.dzi"
     ]
   },
   "NWA-16": {
@@ -341,11 +341,11 @@
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileLabels": ["PPL00", "XPL00", "XPL30"],
     "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/NWA-16 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/NWA-16 01 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/NWA-16 01 2.5x XPL30 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/NWA-16 01 2.5x PPL00 final.dzi"
+      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/NWA-16 01 2.5x XPL30 final.dzi"
     ]
   },
   "NWA-17": {
@@ -357,11 +357,11 @@
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["XPL00", "XPL45", "PPL00"],
+    "tileLabels": ["PPL00", "XPL00", "XPL45"],
     "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-17 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-17 01 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-17 01 2.5x XPL45 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-17 01 2.5x PPL00 final.dzi"
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-17 01 2.5x XPL45 final.dzi"
     ]
   },
   "NWA-18": {
@@ -373,11 +373,11 @@
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileLabels": ["PPL00", "XPL00", "XPL30"],
     "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/NWA-18 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/NWA-18 01 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/NWA-18 01 2.5x XPL30 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/NWA-18 01 2.5x PPL00 final.dzi"
+      "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/NWA-18 01 2.5x XPL30 final.dzi"
     ]
   },
   "NWA-19": {
@@ -387,11 +387,11 @@
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["XPL00", "XPL45", "PPL00"],
+    "tileLabels": ["PPL00", "XPL00", "XPL45"],
     "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-19 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-19 01 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-19 01 2.5x XPL45 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-19 01 2.5x PPL00 final.dzi"
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-19 01 2.5x XPL45 final.dzi"
     ]
   },
   "NWA-20": {
@@ -401,11 +401,11 @@
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["XPL00", "XPL45", "PPL00"],
+    "tileLabels": ["PPL00", "XPL00", "XPL45"],
     "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-20 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-20 01 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-20 01 2.5x XPL45 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-20 01 2.5x PPL00 final.dzi"
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NWA-20 01 2.5x XPL45 final.dzi"
     ]
   },
   "CH-041918": {
@@ -415,11 +415,11 @@
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileLabels": ["PPL00", "XPL00", "XPL30"],
     "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/CH-041918 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/CH-041918 01 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/CH-041918 01 2.5x XPL30 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/CH-041918 01 2.5x PPL00 final.dzi"
+      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/CH-041918 01 2.5x XPL30 final.dzi"
     ]
   },
   "PG-001": {
@@ -429,11 +429,11 @@
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileLabels": ["PPL00", "XPL00", "XPL30"],
     "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/PG-001 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/PG-001 01 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/PG-001 01 2.5x XPL30 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/PG-001 01 2.5x PPL00 final.dzi"
+      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/PG-001 01 2.5x XPL30 final.dzi"
     ]
   },
   "OD5A-103118": {
@@ -443,11 +443,11 @@
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileLabels": ["PPL00", "XPL00", "XPL30"],
     "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/ODSA-103118 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/ODSA-103118 01 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/ODSA-103118 01 2.5x XPL30 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/ODSA-103118 01 2.5x PPL00 final.dzi"
+      "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/ODSA-103118 01 2.5x XPL30 final.dzi"
     ]
   },
   "PSB02": {
@@ -457,11 +457,11 @@
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileLabels": ["PPL00", "XPL00", "XPL30"],
     "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/PSB02 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/PSB02 01 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/PSB02 01 2.5x XPL30 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/PSB02 01 2.5x PPL00 final.dzi"
+      "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/PSB02 01 2.5x XPL30 final.dzi"
     ]
   },
   "NZ23-049": {
@@ -473,11 +473,11 @@
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileLabels": ["PPL00", "XPL00", "XPL30"],
     "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/NZ23-049 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/NZ23-049 01 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/NZ23-049 01 2.5x XPL30 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/NZ23-049 01 2.5x PPL00 final.dzi"
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/NZ23-049 01 2.5x XPL30 final.dzi"
     ]
   },
   "NZ23-052": {
@@ -489,11 +489,11 @@
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["XPL00", "XPL45", "PPL00"],
+    "tileLabels": ["PPL00", "XPL00", "XPL45"],
     "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NZ23-052 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NZ23-052 01 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NZ23-052 01 2.5x XPL45 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NZ23-052 01 2.5x PPL00 final.dzi"
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NZ23-052 01 2.5x XPL45 final.dzi"
     ]
   },
   "NZ23-055": {
@@ -505,11 +505,11 @@
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["XPL00", "XPL45", "PPL00"],
+    "tileLabels": ["PPL00", "XPL00", "XPL45"],
     "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NZ23-055 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NZ23-055 01 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NZ23-055 01 2.5x XPL45 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NZ23-055 01 2.5x PPL00 final.dzi"
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NZ23-055 01 2.5x XPL45 final.dzi"
     ]
   },
   "NZ23-056": {
@@ -521,11 +521,11 @@
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["XPL00", "XPL45", "PPL00"],
+    "tileLabels": ["PPL00", "XPL00", "XPL45"],
     "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/NZ23-056 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/NZ23-056 01 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/NZ23-056 01 2.5x XPL45 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/NZ23-056 01 2.5x PPL00 final.dzi"
+      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/NZ23-056 01 2.5x XPL45 final.dzi"
     ]
   },
   "NZ23-057": {
@@ -537,11 +537,11 @@
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["XPL00", "XPL45", "PPL00"],
+    "tileLabels": ["PPL00", "XPL00", "XPL45"],
     "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/NZ23-057 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/NZ23-057 01 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/NZ23-057 01 2.5x XPL45 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/NZ23-057 01 2.5x PPL00 final.dzi"
+      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/NZ23-057 01 2.5x XPL45 final.dzi"
     ]
   },
   "NZ23-060": {
@@ -553,11 +553,11 @@
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["XPL00", "XPL45", "PPL00"],
+    "tileLabels": ["PPL00", "XPL00", "XPL45"],
     "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/NZ23-060 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/NZ23-060 01 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/NZ23-060 01 2.5x XPL45 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/NZ23-060 01 2.5x PPL00 final.dzi"
+      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/NZ23-060 01 2.5x XPL45 final.dzi"
     ]
   },
   "NZ23-069": {
@@ -569,11 +569,11 @@
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["XPL00", "XPL45", "PPL45"],
+    "tileLabels": ["PPL45", "XPL00", "XPL45"],
     "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NZ23-069 test1 2.5x PPL45 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NZ23-069 test1 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NZ23-069 test1 2.5x XPL45 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NZ23-069 test1 2.5x PPL45 final.dzi"
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NZ23-069 test1 2.5x XPL45 final.dzi"
     ]
   },
   "NZ23-067b": {
@@ -585,11 +585,11 @@
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["XPL00", "XPL45", "PPL00"],
+    "tileLabels": ["PPL00", "XPL00", "XPL45"],
     "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NZ23-067b 02 5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NZ23-067b 02 5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NZ23-067b 02 5x XPL45 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NZ23-067b 02 5x PPL00 final.dzi"
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NZ23-067b 02 5x XPL45 final.dzi"
     ]
   },
   "FWS-24-01": {
@@ -601,11 +601,11 @@
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileLabels": ["PPL00", "XPL00", "XPL30"],
     "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/FWS-24-01 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/FWS-24-01 01 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/FWS-24-01 01 2.5x XPL30 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/FWS-24-01 01 2.5x PPL00 final.dzi"
+      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/FWS-24-01 01 2.5x XPL30 final.dzi"
     ]
   },
   "131-011s": {
@@ -615,11 +615,11 @@
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileLabels": ["PPL00", "XPL00", "XPL30"],
     "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/131-011s 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/131-011s 01 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/131-011s 01 2.5x XPL30 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/131-011s 01 2.5x PPL00 final.dzi"
+      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/131-011s 01 2.5x XPL30 final.dzi"
     ]
   },
   "133-003s": {
@@ -629,11 +629,11 @@
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileLabels": ["PPL00", "XPL00", "XPL30"],
     "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/133-003s 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/133-003s 01 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/133-003s 01 2.5x XPL30 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/133-003s 01 2.5x PPL00 final.dzi"
+      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/133-003s 01 2.5x XPL30 final.dzi"
     ]
   },
   "133-004s": {
@@ -643,11 +643,11 @@
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileLabels": ["PPL00", "XPL00", "XPL30"],
     "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/133-004s 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/133-004s 01 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/133-004s 01 2.5x XPL30 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/133-004s 01 2.5x PPL00 final.dzi"
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/133-004s 01 2.5x XPL30 final.dzi"
     ]
   },
   "133-007s": {
@@ -657,11 +657,11 @@
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileLabels": ["PPL00", "XPL00", "XPL30"],
     "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/133-007s 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/133-007s 01 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/133-007s 01 2.5x XPL30 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/133-007s 01 2.5x PPL00 final.dzi"
+      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/133-007s 01 2.5x XPL30 final.dzi"
     ],
     "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/main/annotations/133-007s.csv"
   },
@@ -672,11 +672,11 @@
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileLabels": ["PPL00", "XPL00", "XPL30"],
     "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/133-008s 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/133-008s 01 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/133-008s 01 2.5x XPL30 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/133-008s 01 2.5x PPL00 final.dzi"
+      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/133-008s 01 2.5x XPL30 final.dzi"
     ]
   },
   "133-010s": {
@@ -686,11 +686,11 @@
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileLabels": ["PPL00", "XPL00", "XPL30"],
     "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/133-010s 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/133-010s 01 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/133-010s 01 2.5x XPL30 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/133-010s 01 2.5x PPL00 final.dzi"
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/133-010s 01 2.5x XPL30 final.dzi"
     ]
   },
   "133-311s": {
@@ -700,11 +700,11 @@
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileLabels": ["PPL00", "XPL00", "XPL30"],
     "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/133-311s 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/133-311s 01 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/133-311s 01 2.5x XPL30 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/133-311s 01 2.5x PPL00 final.dzi"
+      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/133-311s 01 2.5x XPL30 final.dzi"
     ]
   },
   "133-312s": {
@@ -714,11 +714,11 @@
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileLabels": ["PPL00", "XPL00", "XPL30"],
     "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/133-312s 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/133-312s 01 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/133-312s 01 2.5x XPL30 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/133-312s 01 2.5x PPL00 final.dzi"
+      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/133-312s 01 2.5x XPL30 final.dzi"
     ]
   },
   "137-002s": {
@@ -728,11 +728,11 @@
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileLabels": ["PPL00", "XPL00", "XPL30"],
     "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/137-002s 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/137-002s 01 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/137-002s 01 2.5x XPL30 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/137-002s 01 2.5x PPL00 final.dzi"
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/137-002s 01 2.5x XPL30 final.dzi"
     ]
   },
   "SD0001": {
@@ -742,11 +742,11 @@
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileLabels": ["PPL00", "XPL00", "XPL30"],
     "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/SD0001 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/SD0001 01 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/SD0001 01 2.5x XPL30 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/SD0001 01 2.5x PPL00 final.dzi"
+      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/SD0001 01 2.5x XPL30 final.dzi"
     ]
   },
   "SD0003": {
@@ -756,11 +756,11 @@
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileLabels": ["PPL00", "XPL00", "XPL30"],
     "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0003 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0003 01 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0003 01 2.5x XPL30 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0003 01 2.5x PPL00 final.dzi"
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0003 01 2.5x XPL30 final.dzi"
     ]
   },
   "SD0020": {
@@ -770,11 +770,11 @@
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileLabels": ["PPL00", "XPL00", "XPL30"],
     "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0020 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0020 01 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0020 01 2.5x XPL30 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0020 01 2.5x PPL00 final.dzi"
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0020 01 2.5x XPL30 final.dzi"
     ]
   },
   "SD0031": {
@@ -784,11 +784,11 @@
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileLabels": ["PPL00", "XPL00", "XPL30"],
     "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/SD0031 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/SD0031 01 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/SD0031 01 2.5x XPL30 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/SD0031 01 2.5x PPL00 final.dzi"
+      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/SD0031 01 2.5x XPL30 final.dzi"
     ]
   },
   "WS-208": {
@@ -798,11 +798,11 @@
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileLabels": ["PPL00", "XPL00", "XPL30"],
     "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/WS-208 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/WS-208 01 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/WS-208 01 2.5x XPL30 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/WS-208 01 2.5x PPL00 final.dzi"
+      "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/WS-208 01 2.5x XPL30 final.dzi"
     ]
   },
   "WS-846": {
@@ -812,11 +812,11 @@
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileLabels": ["PPL00", "XPL00", "XPL30"],
     "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/WS-846 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/WS-846 01 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/WS-846 01 2.5x XPL30 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/WS-846 01 2.5x PPL00 final.dzi"
+      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/WS-846 01 2.5x XPL30 final.dzi"
     ]
   },
   "IODP-001": {
@@ -826,11 +826,11 @@
     "unit": "2",
     "pixelsPerUnit": "0.913242",
     "pixelsPerMeter": "913242",
-    "tileLabels": ["PPL00", "XPL00", "XPL45"],
+    "tileLabels": ["XPL45", "PPL00", "XPL00"],
     "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage7/main/images/IODP_001_XPL45.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage7/main/images/IODP_001_PPL00.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage7/main/images/IODP_001_XPL00.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage7/main/images/IODP_001_XPL45.dzi"
+      "https://raw.githubusercontent.com/grsharman/image-storage7/main/images/IODP_001_XPL00.dzi"
     ]
   },
   "IODP-002": {
@@ -869,11 +869,11 @@
     "unit": "2",
     "pixelsPerUnit": "0.913242",
     "pixelsPerMeter": "913242",
-    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileLabels": ["PPL00", "XPL00", "XPL30"],
     "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/IODP_021_PPL00 raw.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/IODP_021_XPL00 raw.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/IODP_021_XPL30 raw.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/IODP_021_PPL00 raw.dzi"
+      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/IODP_021_XPL30 raw.dzi"
     ]
   },
   "IODP-041": {
@@ -883,11 +883,11 @@
     "unit": "2",
     "pixelsPerUnit": "0.913242",
     "pixelsPerMeter": "913242",
-    "tileLabels": ["XPL00", "XPL15", "PPL00"],
+    "tileLabels": ["PPL00", "XPL00", "XPL15"],
     "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/IODP_041_PPL.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/IODP_041_XPL_0.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/IODP_041_XPL_15.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/IODP_041_PPL.dzi"
+      "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/IODP_041_XPL_15.dzi"
     ]
   },
   "TMC1": {
@@ -897,11 +897,11 @@
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileLabels": ["PPL00", "XPL00", "XPL30"],
     "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/TMC 1 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/TMC 1 01 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/TMC 1 01 2.5x XPL30 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/TMC 1 01 2.5x PPL00 final.dzi"
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/TMC 1 01 2.5x XPL30 final.dzi"
     ]
   },
   "TMC2": {
@@ -911,11 +911,11 @@
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileLabels": ["PPL00", "XPL00", "XPL30"],
     "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/TCM2 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/TCM2 01 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/TCM2 01 2.5x XPL30 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/TCM2 01 2.5x PPL00 final.dzi"
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/TCM2 01 2.5x XPL30 final.dzi"
     ]
   },
   "TMC3": {
@@ -925,11 +925,11 @@
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileLabels": ["PPL00", "XPL00", "XPL30"],
     "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/TMC 3 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/TMC 3 01 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/TMC 3 01 2.5x XPL30 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/TMC 3 01 2.5x PPL00 final.dzi"
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/TMC 3 01 2.5x XPL30 final.dzi"
     ]
   },
   "UA-25-2812": {
@@ -939,11 +939,11 @@
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileLabels": ["PPL00", "XPL00", "XPL30"],
     "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/UA-25-2812 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/UA-25-2812 01 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/UA-25-2812 01 2.5x XPL30 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/UA-25-2812 01 2.5x PPL00 final.dzi"
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/UA-25-2812 01 2.5x XPL30 final.dzi"
     ]
   },
   "GM-Kl-02": {
@@ -953,11 +953,11 @@
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileLabels": ["PPL00", "XPL00", "XPL30"],
     "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/GM-Kl-02 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/GM-Kl-02 01 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/GM-Kl-02 01 2.5x XPL30 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/GM-Kl-02 01 2.5x PPL00 final.dzi"
+      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/GM-Kl-02 01 2.5x XPL30 final.dzi"
     ]
   },
   "GM-Tgml-02": {
@@ -967,11 +967,11 @@
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileLabels": ["PPL00", "XPL00", "XPL30"],
     "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/GM-Tgml-02 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/GM-Tgml-02 01 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/GM-Tgml-02 01 2.5x XPL30 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/GM-Tgml-02 01 2.5x PPL00 final.dzi"
+      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/GM-Tgml-02 01 2.5x XPL30 final.dzi"
     ]
   },
   "CC-01": {
@@ -981,11 +981,11 @@
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileLabels": ["PPL00", "XPL00", "XPL30"],
     "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/CC-01 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/CC-01 01 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/CC-01 01 2.5x XPL30 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/CC-01 01 2.5x PPL00 final.dzi"
+      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/CC-01 01 2.5x XPL30 final.dzi"
     ]
   },
   "Well-T-11445": {
@@ -995,11 +995,11 @@
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileLabels": ["PPL00", "XPL00", "XPL30"],
     "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/Well-T-11445 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/Well-T-11445 01 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/Well-T-11445 01 2.5x XPL30 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/Well-T-11445 01 2.5x PPL00 final.dzi"
+      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/Well-T-11445 01 2.5x XPL30 final.dzi"
     ]
   },
   "Well-S-4463": {
@@ -1009,11 +1009,11 @@
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileLabels": ["PPL00", "XPL00", "XPL30"],
     "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/Well-S-4463 01 2.5x PPL00 final_v2.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/Well-S-4463 01 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/Well-S-4463 01 2.5x XPL30 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/Well-S-4463 01 2.5x PPL00 final_v2.dzi"
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/Well-S-4463 01 2.5x XPL30 final.dzi"
     ]
   },
   "Grove-1": {
@@ -1023,11 +1023,11 @@
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileLabels": ["PPL00", "XPL00", "XPL30"],
     "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/Grove-1 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/Grove-1 01 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/Grove-1 01 2.5x XPL30 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/Grove-1 01 2.5x PPL00 final.dzi"
+      "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/Grove-1 01 2.5x XPL30 final.dzi"
     ]
   },
   "Grove-9": {
@@ -1037,11 +1037,11 @@
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileLabels": ["PPL00", "XPL00", "XPL30"],
     "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/Grove-9 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/Grove-9 01 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/Grove-9 01 2.5x XPL30 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/Grove-9 01 2.5x PPL00 final.dzi"
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/Grove-9 01 2.5x XPL30 final.dzi"
     ]
   },
   "Grove-15": {
@@ -1051,11 +1051,11 @@
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileLabels": ["PPL00", "XPL00", "XPL30"],
     "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/Grove-15 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/Grove-15 01 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/Grove-15 01 2.5x XPL30 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/Grove-15 01 2.5x PPL00 final.dzi"
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/Grove-15 01 2.5x XPL30 final.dzi"
     ]
   },
   "YSU1-16": {
@@ -1065,11 +1065,11 @@
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["XPL00", "XPL30", "PPL00"],
+    "tileLabels": ["PPL00", "XPL00", "XPL30"],
     "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/YSUI-16 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/YSUI-16 01 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/YSUI-16 01 2.5x XPL30 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/YSUI-16 01 2.5x PPL00 final.dzi"
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/YSUI-16 01 2.5x XPL30 final.dzi"
     ]
   }
 }
