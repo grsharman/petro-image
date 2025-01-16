@@ -871,9 +871,9 @@
     "pixelsPerMeter": "913242",
     "tileLabels": ["PPL00", "XPL00", "XPL30"],
     "tileSets": [
-      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/IODP_021_PPL00 raw.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/IODP_021_XPL00 raw.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/IODP_021_XPL30 raw.dzi"
+      "https://raw.githubusercontent.com/grsharman/image-storage7/main/images/IODP-021 03 PPL00.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage7/main/images/IODP-021 03 XPL00.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage7/main/images/IODP-021 03 XPL30.dzi"
     ]
   },
   "IODP-041": {
@@ -888,6 +888,150 @@
       "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/IODP_041_PPL.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/IODP_041_XPL_0.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/IODP_041_XPL_15.dzi"
+    ]
+  },
+  "IODP-045": {
+    "groups": ["IODP"],
+    "title": "IODP-045",
+    "description": "Unknown",
+    "unit": "2",
+    "pixelsPerUnit": "0.913242",
+    "pixelsPerMeter": "913242",
+    "tileLabels": ["PPL00", "XPL00", "XPL15"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage8/main/images/IODP_045_PPL00.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage8/main/images/IODP_045_XPL00.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage8/main/images/IODP_045_XPL15.dzi"
+    ]
+  },
+  "IODP-046": {
+    "groups": ["IODP"],
+    "title": "IODP-046",
+    "description": "Unknown",
+    "unit": "2",
+    "pixelsPerUnit": "0.913242",
+    "pixelsPerMeter": "913242",
+    "tileLabels": ["PPL00", "XPL00"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage8/main/images/IODP_046_PPL00.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage8/main/images/IODP_046_XPL00.dzi"
+    ]
+  },
+  "IODP-047": {
+    "groups": ["IODP"],
+    "title": "IODP-047",
+    "description": "Unknown",
+    "unit": "2",
+    "pixelsPerUnit": "0.913242",
+    "pixelsPerMeter": "913242",
+    "tileLabels": ["PPL00", "XPL00"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage8/main/images/IODP_047_PPL00.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage8/main/images/IODP_047_XPL00.dzi"
+    ]
+  },
+  "IODP-053": {
+    "groups": ["IODP"],
+    "title": "IODP-053",
+    "description": "Unknown",
+    "unit": "2",
+    "pixelsPerUnit": "0.913242",
+    "pixelsPerMeter": "913242",
+    "tileLabels": ["PPL00", "XPL00"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage8/main/images/IODP_053_PPL00.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage8/main/images/IODP_053_XPL00.dzi"
+    ]
+  },
+  "IODP-058": {
+    "groups": ["IODP"],
+    "title": "IODP-058",
+    "description": "Unknown",
+    "unit": "2",
+    "pixelsPerUnit": "0.913242",
+    "pixelsPerMeter": "913242",
+    "tileLabels": ["PPL00", "XPL00"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage8/main/images/IODP_058_PPL00.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage8/main/images/IODP_058_XPL00.dzi"
+    ]
+  },
+  "IODP-059": {
+    "groups": ["IODP"],
+    "title": "IODP-059",
+    "description": "Unknown",
+    "unit": "2",
+    "pixelsPerUnit": "0.913242",
+    "pixelsPerMeter": "913242",
+    "tileLabels": ["PPL00", "XPL00"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage8/main/images/IODP_059_PPL00.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage8/main/images/IODP_059_XPL00.dzi"
+    ]
+  },
+  "IODP-065": {
+    "groups": ["IODP"],
+    "title": "IODP-065",
+    "description": "Unknown",
+    "unit": "2",
+    "pixelsPerUnit": "0.913242",
+    "pixelsPerMeter": "913242",
+    "tileLabels": ["PPL00", "XPL00"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage8/main/images/IODP_065_PPL00.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage8/main/images/IODP_065_XPL00.dzi"
+    ]
+  },
+  "IODP-074": {
+    "groups": ["IODP"],
+    "title": "IODP-074",
+    "description": "Unknown",
+    "unit": "2",
+    "pixelsPerUnit": "0.913242",
+    "pixelsPerMeter": "913242",
+    "tileLabels": ["PPL00", "XPL00"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage8/main/images/IODP-074 01 PPL00.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage8/main/images/IODP_074 01 XPL00.dzi"
+    ]
+  },
+  "IODP-075": {
+    "groups": ["IODP"],
+    "title": "IODP-075",
+    "description": "Unknown",
+    "unit": "2",
+    "pixelsPerUnit": "0.913242",
+    "pixelsPerMeter": "913242",
+    "tileLabels": ["PPL00", "XPL00"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage8/main/images/IODP-075 01 PPL00.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage8/main/images/IODP_075 01 XPL00.dzi"
+    ]
+  },
+  "IODP-079": {
+    "groups": ["IODP"],
+    "title": "IODP-079",
+    "description": "Unknown",
+    "unit": "2",
+    "pixelsPerUnit": "0.913242",
+    "pixelsPerMeter": "913242",
+    "tileLabels": ["PPL00", "XPL00"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage9/main/images/IODP-079 01 PPL00.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage9/main/images/IODP_079 01 XPL00.dzi"
+    ]
+  },
+  "IODP-094": {
+    "groups": ["IODP"],
+    "title": "IODP-094",
+    "description": "Unknown",
+    "unit": "2",
+    "pixelsPerUnit": "0.913242",
+    "pixelsPerMeter": "913242",
+    "tileLabels": ["PPL00", "XPL00"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage9/main/images/IODP-094 01 PPL00.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage9/main/images/IODP_094 01 XPL00.dzi"
     ]
   },
   "TMC1": {
