@@ -992,7 +992,7 @@
     "tileLabels": ["PPL00", "XPL00"],
     "tileSets": [
       "https://raw.githubusercontent.com/grsharman/image-storage8/main/images/IODP-074 01 PPL00.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage8/main/images/IODP_074 01 XPL00.dzi"
+      "https://raw.githubusercontent.com/grsharman/image-storage8/main/images/IODP-074 01 XPL00.dzi"
     ]
   },
   "IODP-075": {
@@ -1005,7 +1005,7 @@
     "tileLabels": ["PPL00", "XPL00"],
     "tileSets": [
       "https://raw.githubusercontent.com/grsharman/image-storage8/main/images/IODP-075 01 PPL00.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage8/main/images/IODP_075 01 XPL00.dzi"
+      "https://raw.githubusercontent.com/grsharman/image-storage8/main/images/IODP-075 01 XPL00.dzi"
     ]
   },
   "IODP-079": {
@@ -1018,7 +1018,7 @@
     "tileLabels": ["PPL00", "XPL00"],
     "tileSets": [
       "https://raw.githubusercontent.com/grsharman/image-storage9/main/images/IODP-079 01 PPL00.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage9/main/images/IODP_079 01 XPL00.dzi"
+      "https://raw.githubusercontent.com/grsharman/image-storage9/main/images/IODP-079 01 XPL00.dzi"
     ]
   },
   "IODP-094": {
@@ -1031,7 +1031,7 @@
     "tileLabels": ["PPL00", "XPL00"],
     "tileSets": [
       "https://raw.githubusercontent.com/grsharman/image-storage9/main/images/IODP-094 01 PPL00.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage9/main/images/IODP_094 01 XPL00.dzi"
+      "https://raw.githubusercontent.com/grsharman/image-storage9/main/images/IODP-094 01 XPL00.dzi"
     ]
   },
   "TMC1": {
