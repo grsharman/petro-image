@@ -828,9 +828,9 @@
     "pixelsPerMeter": "913242",
     "tileLabels": ["PPL00", "XPL00", "XPL45"],
     "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage7/main/images/IODP_001_PPL00.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage7/main/images/IODP_001_XPL00.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage7/main/images/IODP_001_XPL45.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage7/main/images/IODP_001_PPL00.dzi"
+      "https://raw.githubusercontent.com/grsharman/image-storage7/main/images/IODP_001_XPL45.dzi"
     ]
   },
   "IODP-002": {
