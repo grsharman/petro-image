@@ -21,6 +21,10 @@ let annoJSON = {
   type: "FeatureCollection",
   features: [],
 };
+let countJSON = {
+  type: "FeatureCollection",
+  features: [],
+};
 let annoJSONTemp = {
   type: "FeatureCollection",
   features: [],
@@ -2255,9 +2259,86 @@ function loadAnnotationsFromJSON(file) {
   updateRepeatButton();
 }
 
-// New loadAnnotations() for testing
-function loadAnnotations(geoJSONData) {
-  console.log("Starting annotation load");
+// TODO: Testing new loadCounts() function
+function loadCounts(geoJSONData) {
+  console.log("Starting counts load");
+  const geoJSON = parseJSON(geoJSONData);
+
+  const features = geoJSON.features || Object.values(geoJSON); // Supports both formats
+  features.forEach((feature) => {
+    const geometry = feature.geometry;
+    const properties = feature.properties;
+
+    if (!geometry || !properties) {
+      console.warn("Invalid feature, skipping:", feature);
+      return;
+    }
+
+    const { type, coordinates } = geometry;
+
+    if (type !== "Point") {
+      console.warn("Skipping non-point feature", feature);
+      return;
+    }
+
+    handleCount(coordinates, properties);
+  });
+}
+
+// Helper functions for specific geometry types
+function handleCount(coords, properties) {
+  const [x, y] = coords;
+  if (isNaN(x) || isNaN(y)) {
+    console.log("Invalid point geometry, skipping");
+    return;
+  }
+  const image = viewer.world.getItemAt(0);
+  const viewportPoint = image.imageToViewportCoordinates(
+    new OpenSeadragon.Point(x, y)
+  );
+  // TODO: Enable custom appearance attributes
+  // TODO: Should these functions be called later?
+  // TODO: Probably wrap these up in a updateGrid() or similar
+  addText(
+    properties.uuid,
+    properties.label, // This should probably be a number that corresponds to the count number
+    viewportPoint,
+    "#000000", // Font color
+    16, // Font size
+    "#ffffff", // Background color
+    0.5 // Background size
+  );
+  addCrosshairs(
+    properties.uuid,
+    viewportPoint,
+    "#008000", // lineColor
+    2, // lineWeight
+    1 // lineOpacity
+  );
+  saveCountToJSON("Point", coords, properties);
+}
+
+// Save the annotation as GeoJSON
+function saveCountToJSON(type, coordinates, properties) {
+  const geoJSONFeature = {
+    type: "Feature",
+    geometry: { type, coordinates },
+    properties: {
+      ...properties,
+      // TODO: Do I need any of the properties below?
+      // pixelsPerMeter: Number(properties.pixelsPerMeter),
+      // imageWidth: Number(properties.imageWidth),
+      // imageHeight: Number(properties.imageHeight),
+      // labelFontSize: 16,
+      // labelBackgroundOpacity: 0.5,
+      // lineWeight: 2,
+      // lineOpacity: 1
+    },
+  };
+  countJSON.features.push(geoJSONFeature);
+}
+
+function parseJSON(geoJSONData) {
   let geoJSON;
 
   // Parse the GeoJSON data
@@ -2273,6 +2354,13 @@ function loadAnnotations(geoJSONData) {
     geoJSON = geoJSONData;
     console.log("GeoJSON is already parsed:", geoJSON);
   }
+  return geoJSON;
+}
+
+// New loadAnnotations() for testing
+function loadAnnotations(geoJSONData) {
+  console.log("Starting annotation load");
+  const geoJSON = parseJSON(geoJSONData);
 
   const features = geoJSON.features || Object.values(geoJSON); // Supports both formats
   features.forEach((feature) => {
@@ -2291,20 +2379,6 @@ function loadAnnotations(geoJSONData) {
     }
 
     const { type, coordinates } = geometry;
-
-    // Helper function to handle individual geometry parts
-    // const processGeometry = (geometryType, coords) => {
-    //   if (geometryType === "Point") {
-    //     handlePoint(coords, properties);
-    //   } else if (geometryType === "LineString") {
-    //     handleLineString(coords, properties);
-    //   } else if (geometryType === "Polygon") {
-    //     handlePolygon(coords, properties);
-    //   } else if (geometryType === "MultiPolygon") {
-    //     console.log("Handling MultiPolygon...");
-    //     handleMultiPolygon(coords, properties);
-    //   }
-    // };
 
     // Handle different geometry types
     if (type === "Point") {
@@ -2696,6 +2770,11 @@ let gridOverlayCrosshairs = []; ///
 const applyGridSettings = () => {
   clearGridOverlayCrosshairs();
   clearGridOverlayPoints();
+  // Clear the countJSON
+  countJSON = {
+    type: "FeatureCollection",
+    features: [],
+  };
 
   // Enable buttons and input field after settings are applied
   document.getElementById("first-button").disabled = false;
@@ -2749,6 +2828,27 @@ const applyGridSettings = () => {
     // Convert to view-space coordinates, measuring from the top-left of the
     // first image.
     const location = image.imageToViewportCoordinates(xPixels, yPixels);
+
+    // TODO: Figure out what should go in here
+    coords = [xPixels, yPixels];
+    properties = {
+      uuid: generateUniqueId(16),
+      label: constPointLabel,
+      xLabel: xPixels,
+      yLabel: yPixels,
+      imageTitle: sampleName,
+      pixelsPerMeter: Number(pixelsPerMeters[sampleIdx]),
+      imageWidth: imageSize.x,
+      imageHeight: imageSize.y,
+      labelFontSize: labelFontSize,
+      labelFontColor: labelFontColor,
+      labelBackgroundColor: labelBackgroundColor,
+      labelBackgroundOpacity: labelBackgroundOpacity,
+      lineWeight: lineWeight,
+      lineColor: lineColor,
+      lineOpacity: lineOpacity,
+    };
+    saveCountToJSON("Point", coords, properties);
 
     // Add point label with coordinates.
     const pointLabel = document.createElement("div");
@@ -3360,6 +3460,33 @@ document.getElementById("count-export").addEventListener("click", function () {
 });
 
 // Import CSV of previously generated point-count data
+// saved as a geoJSON
+// New loading code
+document
+  .getElementById("count-geojson-input")
+  .addEventListener("change", function (event) {
+    console.log("load count geoJSON clicked");
+    const fileInput = event.target;
+    const file = fileInput.files[0];
+    if (!file) {
+      console.log("not a file!");
+      return;
+    }
+
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = function (event) {
+        const geoJSONData = event.target.result;
+        loadCounts(geoJSONData);
+        fileInput.value = "";
+      };
+      reader.readAsText(file);
+    } else {
+      alert("Please select a GeoJSON file to load counts.");
+    }
+  });
+
+// Import CSV of previously generated point-count data
 // Handle the file selection
 document
   .getElementById("count-file-input")
@@ -3482,10 +3609,11 @@ function populateFilterDropdown() {
   // Clear existing options
   filterDropdown.innerHTML = "";
 
+  const isFirst = true;
   // Add checkboxes for each unique label
   uniqueLabels.forEach((label) => {
     const isChecked =
-      checkboxStates[label] !== undefined ? checkboxStates[label] : true;
+      checkboxStates[label] !== undefined ? checkboxStates[label] : isFirst;
 
     const checkbox = document.createElement("input");
     checkbox.type = "checkbox";
@@ -3495,7 +3623,11 @@ function populateFilterDropdown() {
 
     // Update the state in the `checkboxStates` object when the checkbox changes
     checkbox.addEventListener("change", () => {
-      checkboxStates[label] = checkbox.checked;
+      if (isFirstCheckbox) {
+        checkboxStates[label] = checkbox.checked;
+      } else {
+        checkboxStates[label] = checkbox.checked;
+      }
     });
 
     const labelElement = document.createElement("label");
@@ -3510,6 +3642,8 @@ function populateFilterDropdown() {
 
     // Store the current state in `checkboxStates`
     checkboxStates[label] = isChecked;
+
+    isFirst = false;
   });
 }
 
