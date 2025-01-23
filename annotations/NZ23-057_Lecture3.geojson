@@ -1,0 +1,105 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              5790.752359147639,
+              2515.6147762274995
+            ],
+            [
+              6099.880313850564,
+              2515.6147762274995
+            ],
+            [
+              6099.880313850564,
+              2924.744408617396
+            ],
+            [
+              5790.752359147639,
+              2924.744408617396
+            ],
+            [
+              5790.752359147639,
+              2515.6147762274995
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "uuid": "m69jwqdk",
+        "label": "A",
+        "xLabel": 5790.752359147639,
+        "yLabel": 2515.6147762274995,
+        "imageTitle": "NZ23-057",
+        "pixelsPerMeter": 398000,
+        "imageWidth": 21144,
+        "imageHeight": 12014,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineStyle": "solid",
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillColor": "#ffffff",
+        "fillOpacity": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              11872.214644363183,
+              1426.5347219522637
+            ],
+            [
+              12159.50310705791,
+              1426.5347219522637
+            ],
+            [
+              12159.50310705791,
+              1738.6931762098075
+            ],
+            [
+              11872.214644363183,
+              1738.6931762098075
+            ],
+            [
+              11872.214644363183,
+              1426.5347219522637
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "uuid": "m69k0a1u",
+        "label": "B",
+        "xLabel": 11872.214644363183,
+        "yLabel": 1426.5347219522637,
+        "imageTitle": "NZ23-057",
+        "pixelsPerMeter": 398000,
+        "imageWidth": 21144,
+        "imageHeight": 12014,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineStyle": "solid",
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillColor": "#ffffff",
+        "fillOpacity": 0
+      }
+    }
+  ]
+}
