@@ -44,8 +44,8 @@
         "labelBackgroundColor": "#000000",
         "labelBackgroundOpacity": 0.5,
         "lineStyle": "solid",
-        "lineWeight": 2,
-        "lineColor": "#008000",
+        "lineWeight": 3,
+        "lineColor": "#ff0000",
         "lineOpacity": 1,
         "fillColor": "#ffffff",
         "fillOpacity": 0
@@ -94,8 +94,8 @@
         "labelBackgroundColor": "#000000",
         "labelBackgroundOpacity": 0.5,
         "lineStyle": "solid",
-        "lineWeight": 2,
-        "lineColor": "#008000",
+        "lineWeight": 3,
+        "lineColor": "#ff0000",
         "lineOpacity": 1,
         "fillColor": "#ffffff",
         "fillOpacity": 0
@@ -144,8 +144,58 @@
         "labelBackgroundColor": "#000000",
         "labelBackgroundOpacity": 0.5,
         "lineStyle": "solid",
-        "lineWeight": 2,
-        "lineColor": "#008000",
+        "lineWeight": 3,
+        "lineColor": "#ff0000",
+        "lineOpacity": 1,
+        "fillColor": "#ffffff",
+        "fillOpacity": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              7576.418056915291,
+              2388.90171712527
+            ],
+            [
+              7986.098379979326,
+              2388.90171712527
+            ],
+            [
+              7986.098379979326,
+              2797.3004541943183
+            ],
+            [
+              7576.418056915291,
+              2797.3004541943183
+            ],
+            [
+              7576.418056915291,
+              2388.90171712527
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "uuid": "m69qf7px",
+        "label": "D",
+        "xLabel": 7576.418056915291,
+        "yLabel": 2388.90171712527,
+        "imageTitle": "137-002s",
+        "pixelsPerMeter": 398000,
+        "imageWidth": 17861,
+        "imageHeight": 10324,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineStyle": "solid",
+        "lineWeight": 3,
+        "lineColor": "#ff0000",
         "lineOpacity": 1,
         "fillColor": "#ffffff",
         "fillOpacity": 0

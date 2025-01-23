@@ -44,8 +44,8 @@
         "labelBackgroundColor": "#000000",
         "labelBackgroundOpacity": 0.5,
         "lineStyle": "solid",
-        "lineWeight": 2,
-        "lineColor": "#008000",
+        "lineWeight": 3,
+        "lineColor": "#ff0000",
         "lineOpacity": 1,
         "fillColor": "#ffffff",
         "fillOpacity": 0
@@ -94,8 +94,8 @@
         "labelBackgroundColor": "#000000",
         "labelBackgroundOpacity": 0.5,
         "lineStyle": "solid",
-        "lineWeight": 2,
-        "lineColor": "#008000",
+        "lineWeight": 3,
+        "lineColor": "#ff0000",
         "lineOpacity": 1,
         "fillColor": "#ffffff",
         "fillOpacity": 0
@@ -144,8 +144,108 @@
         "labelBackgroundColor": "#000000",
         "labelBackgroundOpacity": 0.5,
         "lineStyle": "solid",
-        "lineWeight": 2,
-        "lineColor": "#008000",
+        "lineWeight": 3,
+        "lineColor": "#ff0000",
+        "lineOpacity": 1,
+        "fillColor": "#ffffff",
+        "fillOpacity": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              5393.769773160261,
+              1657.345705052458
+            ],
+            [
+              5535.292092515284,
+              1657.345705052458
+            ],
+            [
+              5535.292092515284,
+              1796.2606257192544
+            ],
+            [
+              5393.769773160261,
+              1796.2606257192544
+            ],
+            [
+              5393.769773160261,
+              1657.345705052458
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "uuid": "m69pp77y",
+        "label": "D",
+        "xLabel": 5393.769773160261,
+        "yLabel": 1657.345705052458,
+        "imageTitle": "SD0003",
+        "pixelsPerMeter": 398000,
+        "imageWidth": 17847,
+        "imageHeight": 10440,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineStyle": "solid",
+        "lineWeight": 3,
+        "lineColor": "#ff0000",
+        "lineOpacity": 1,
+        "fillColor": "#ffffff",
+        "fillOpacity": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              5749.280820997921,
+              1632.267562433046
+            ],
+            [
+              5880.4110236099295,
+              1632.267562433046
+            ],
+            [
+              5880.4110236099295,
+              1753.931890546523
+            ],
+            [
+              5749.280820997921,
+              1753.931890546523
+            ],
+            [
+              5749.280820997921,
+              1632.267562433046
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "uuid": "m69py5x7",
+        "label": "E",
+        "xLabel": 5749.280820997921,
+        "yLabel": 1632.267562433046,
+        "imageTitle": "SD0003",
+        "pixelsPerMeter": 398000,
+        "imageWidth": 17847,
+        "imageHeight": 10440,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineStyle": "solid",
+        "lineWeight": 3,
+        "lineColor": "#ff0000",
         "lineOpacity": 1,
         "fillColor": "#ffffff",
         "fillOpacity": 0

@@ -44,8 +44,8 @@
         "labelBackgroundColor": "#000000",
         "labelBackgroundOpacity": 0.5,
         "lineStyle": "solid",
-        "lineWeight": 2,
-        "lineColor": "#008000",
+        "lineWeight": 3,
+        "lineColor": "#ff0000",
         "lineOpacity": 1,
         "fillColor": "#ffffff",
         "fillOpacity": 0
@@ -94,8 +94,8 @@
         "labelBackgroundColor": "#000000",
         "labelBackgroundOpacity": 0.5,
         "lineStyle": "solid",
-        "lineWeight": 2,
-        "lineColor": "#008000",
+        "lineWeight": 3,
+        "lineColor": "#ff0000",
         "lineOpacity": 1,
         "fillColor": "#ffffff",
         "fillOpacity": 0
