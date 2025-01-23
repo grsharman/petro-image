@@ -721,7 +721,8 @@
       "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/133-312s 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/133-312s 01 2.5x XPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/133-312s 01 2.5x XPL30 final.dzi"
-    ]
+    ],
+    "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/133-312s_Lecture3.geojson"
   },
   "137-002s": {
     "groups": ["SedGeo"],
