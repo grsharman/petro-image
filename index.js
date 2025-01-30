@@ -21,6 +21,10 @@ let annoJSON = {
   type: "FeatureCollection",
   features: [],
 };
+let countJSON = {
+  type: "FeatureCollection",
+  features: [],
+};
 let annoJSONTemp = {
   type: "FeatureCollection",
   features: [],
@@ -65,9 +69,12 @@ fetch("samples.json")
 
     // Example: initialize OpenSeadragon with the first tile source
     loadTileSet(0);
-    updateButtonLabels(0);
     addScalebar(pixelsPerMeters[0]);
     populateGroupDropdown();
+    updateButtonLabels(0);
+    divideImages();
+    disableCountButtons();
+    // deselectAllButFirstImage();
 
     const sampleParam = getQueryParameter("sample");
     if (sampleParam) {
@@ -169,9 +176,9 @@ document
     clearAnnotations();
     updateButtonLabels(currentIndex);
     addScalebar(pixelsPerMeters[currentIndex]);
-    clearGridOverlayPoints();
-    clearGridOverlayCrosshairs();
+    clearGrid();
     enableGridButtons();
+    disableCountButtons();
     removeAoiRectangle();
     updateOpacityImageSliderVisibility();
     updateImageLabels();
@@ -219,11 +226,31 @@ function updateButtonLabels(index) {
       checkbox.style.display = "inline";
       label.style.display = "inline";
       label.textContent = tileLabels[index][i - 1];
-      checkbox.checked = true;
+      if (i === 1) {
+        checkbox.checked = true;
+      } else {
+        checkbox.checked = true;
+      }
     } else {
       checkbox.style.display = "none";
       label.style.display = "none";
       label.textContent = "";
+    }
+  }
+}
+
+// TODO: Only select the first image upon first load (not currently working
+// because the image is undefined when toggleImage() is called)
+function deselectAllButFirstImage() {
+  for (let i = 1; i <= 4; i++) {
+    const checkbox = document.getElementById(`image${i}`);
+    console.log(checkbox);
+    if (checkbox) {
+      if (i > 1 && checkbox.checked === true) {
+        console.log(`deselecting image${i}`);
+        toggleImage(checkbox, i);
+        // checkbox.click();
+      }
     }
   }
 }
@@ -376,16 +403,25 @@ const divideImages = () => {
 const toggleImage = (checkbox, idx) => {
   const imageOpacity = document.getElementById(`opacityImage${idx + 1}`).value;
   console.log(`image${idx + 1}Opacity`, imageOpacity);
-  viewer.world
-    .getItemAt(idx)
-    .setOpacity(checkbox.checked ? imageOpacity / 100 : 0);
-  if (enableDivideImages) {
-    divideImages();
+  const image = viewer.world.getItemAt(idx);
+  if (image) {
+    image.setOpacity(checkbox.checked ? imageOpacity / 100 : 0);
+    if (enableDivideImages) {
+      divideImages();
+    }
+  } else {
+    console.warn(`Image at index ${idx} is not loaded yet.`);
   }
 };
 
-const toggleGrid = (event) => {
-  for (let el of document.getElementsByClassName("grid")) {
+const toggleGridCrosshairs = (event) => {
+  for (let el of document.getElementsByClassName("grid-crosshairs")) {
+    el.style.visibility = event.checked ? "visible" : "hidden";
+  }
+};
+
+const toggleGridLabels = (event) => {
+  for (let el of document.getElementsByClassName("grid-label")) {
     el.style.visibility = event.checked ? "visible" : "hidden";
   }
 };
@@ -651,7 +687,7 @@ window.addEventListener("click", function (event) {
   }
 });
 
-// Show or hide the settings menu when the gear button is clicked
+// Show or hide the annotations settings menu when the gear button is clicked
 document
   .getElementById("gearButton")
   .addEventListener("click", function (event) {
@@ -664,12 +700,36 @@ document
     }
   });
 
-// Close the menu if clicked outside
+// Show or hide the grid settings menu when the gear button is clicked
+document
+  .getElementById("gridSettingsButton")
+  .addEventListener("click", function (event) {
+    event.stopPropagation(); // Prevent click from reaching the window listener
+    const menu = document.getElementById("gridSettingsMenu");
+    if (menu.style.display === "none" || menu.style.display === "") {
+      menu.style.display = "block";
+    } else {
+      menu.style.display = "none";
+    }
+  });
+
+// Close the menu if clicked outside (annotations menu)
 window.addEventListener("click", function (event) {
   const menu = document.getElementById("annoSettingsMenu");
   if (
     !event.target.closest("#gearButton") &&
     !event.target.closest("#annoSettingsMenu")
+  ) {
+    menu.style.display = "none";
+  }
+});
+
+// Close the menu if clicked outside (grid menu)
+window.addEventListener("click", function (event) {
+  const menu = document.getElementById("gridSettingsMenu");
+  if (
+    !event.target.closest("#gridSettingsButton") &&
+    !event.target.closest("#gridSettingsMenu")
   ) {
     menu.style.display = "none";
   }
@@ -709,7 +769,7 @@ document
       annoJSON.features[firstId - 1].properties.xLabel,
       annoJSON.features[firstId - 1].properties.yLabel
     );
-    goToAnnoPoint(viewportPoint.x, viewportPoint.y);
+    goToPoint(viewportPoint.x, viewportPoint.y);
     annoLabelToText();
   });
 
@@ -730,7 +790,7 @@ document
       annoJSON.features[lastId - 1].properties.xLabel,
       annoJSON.features[lastId - 1].properties.yLabel
     );
-    goToAnnoPoint(viewportPoint.x, viewportPoint.y);
+    goToPoint(viewportPoint.x, viewportPoint.y);
     annoLabelToText();
   });
 
@@ -763,7 +823,7 @@ document
         annoJSON.features[nextId - 1].properties.xLabel,
         annoJSON.features[nextId - 1].properties.yLabel
       );
-      goToAnnoPoint(viewportPoint.x, viewportPoint.y);
+      goToPoint(viewportPoint.x, viewportPoint.y);
       annoLabelToText();
     }
   });
@@ -795,7 +855,7 @@ document
         annoJSON.features[nextId - 1].properties.xLabel,
         annoJSON.features[nextId - 1].properties.yLabel
       );
-      goToAnnoPoint(viewportPoint.x, viewportPoint.y);
+      goToPoint(viewportPoint.x, viewportPoint.y);
       annoLabelToText();
     }
   });
@@ -804,8 +864,8 @@ document
 document.getElementById("deleteButton").addEventListener("click", function () {
   const id = parseInt(document.getElementById("anno-id").value);
   const uuid = annoJSON.features[id - 1].properties.uuid;
-  deleteText(uuid);
-  deleteCrosshairs(uuid);
+  deleteText(uuid, "anno");
+  deleteCrosshairs(uuid, "anno");
   deleteFromGeoJSON(id);
   selectNextAnno(id);
   drawShape(polyCanvas, [annoJSON]);
@@ -841,6 +901,7 @@ function applyCurrentAnno(id, changeLabel = false) {
         labelBackgroundOpacity;
       updateText(
         uuid,
+        "anno",
         undefined,
         labelFontColor,
         labelFontSize,
@@ -851,7 +912,7 @@ function applyCurrentAnno(id, changeLabel = false) {
       annoJSON.features[id - 1].properties.lineWeight = lineWeight;
       annoJSON.features[id - 1].properties.lineColor = lineColor;
       annoJSON.features[id - 1].properties.lineOpacity = lineOpacity;
-      updateCrosshair(uuid, lineColor, lineWeight, lineOpacity);
+      updateCrosshair(uuid, "anno", lineColor, lineWeight, lineOpacity);
     }
   }
   if ((type === "Polygon") | (type === "MultiPolygon")) {
@@ -864,6 +925,7 @@ function applyCurrentAnno(id, changeLabel = false) {
         labelBackgroundOpacity;
       updateText(
         uuid,
+        "anno",
         undefined,
         String(labelFontColor),
         labelFontSize,
@@ -890,6 +952,7 @@ function applyCurrentAnno(id, changeLabel = false) {
         labelBackgroundOpacity;
       updateText(
         uuid,
+        "anno",
         undefined,
         String(labelFontColor),
         labelFontSize,
@@ -906,6 +969,51 @@ function applyCurrentAnno(id, changeLabel = false) {
   }
 }
 
+function applyCurrentGrid(id, changeLabel = false) {
+  const labelFontSize = Number(
+    document.getElementById("gridLabelFontSize").value
+  );
+  const labelFontColor = document.getElementById("gridLabelFontColor").value;
+  const labelBackgroundColor = document.getElementById(
+    "gridLabelBackgroundColor"
+  ).value;
+  const labelBackgroundOpacity = Number(
+    document.getElementById("gridLabelBackgroundOpacity").value
+  );
+  const lineWeight = Number(document.getElementById("gridLineWeight").value);
+  const lineColor = document.getElementById("gridLineColor").value;
+  const lineOpacity = Number(document.getElementById("gridLineOpacity").value);
+  const uuid = countJSON.features[id - 1].properties.uuid;
+  const type = countJSON.features[id - 1].geometry.type;
+  if (type === "Point") {
+    if (changeLabel) {
+      countJSON.features[id - 1].properties.labelFontSize = labelFontSize;
+      countJSON.features[id - 1].properties.labelFontColor = labelFontColor;
+      countJSON.features[id - 1].properties.labelBackgroundColor =
+        labelBackgroundColor;
+      countJSON.features[id - 1].properties.labelBackgroundOpacity =
+        labelBackgroundOpacity;
+      updateText(
+        uuid,
+        "grid",
+        undefined,
+        labelFontColor,
+        labelFontSize,
+        labelBackgroundColor,
+        labelBackgroundOpacity
+      );
+    } else {
+      countJSON.features[id - 1].properties.lineWeight = lineWeight;
+      countJSON.features[id - 1].properties.lineColor = lineColor;
+      countJSON.features[id - 1].properties.lineOpacity = lineOpacity;
+      updateCrosshair(uuid, "grid", lineColor, lineWeight, lineOpacity);
+    }
+  } else {
+    console.warning("Feature type not supported");
+  }
+}
+
+// Apply current annotation text label style
 document
   .getElementById("applyCurrentAnnoLabel")
   .addEventListener("click", function () {
@@ -913,6 +1021,15 @@ document
     applyCurrentAnno(id, true);
   });
 
+// Apply current grid text label style
+document
+  .getElementById("applyCurrentGridLabel")
+  .addEventListener("click", function () {
+    const id = parseInt(document.getElementById("count-id").value);
+    applyCurrentGrid(id, true);
+  });
+
+// Apply all annotations text label style
 document
   .getElementById("applyAllAnnoLabel")
   .addEventListener("click", function () {
@@ -926,6 +1043,20 @@ document
     }
   });
 
+// Apply all grid text label style
+document
+  .getElementById("applyAllGridLabel")
+  .addEventListener("click", function () {
+    const gridIds = Array.from(
+      { length: countJSON.features.length },
+      (_, i) => i + 1
+    );
+    for (let i = 0; i < gridIds.length; i++) {
+      applyCurrentGrid(gridIds[i], true);
+    }
+  });
+
+// Apply current annotation feature style
 document
   .getElementById("applyCurrentAnno")
   .addEventListener("click", function () {
@@ -933,6 +1064,15 @@ document
     applyCurrentAnno(id, false);
   });
 
+// Apply current grid feature style
+document
+  .getElementById("applyCurrentGrid")
+  .addEventListener("click", function () {
+    const id = parseInt(document.getElementById("count-id").value);
+    applyCurrentGrid(id, false);
+  });
+
+// Apply all annotations feature style
 document.getElementById("applyAllAnno").addEventListener("click", function () {
   const annoIds = Array.from(
     { length: annoJSON.features.length },
@@ -941,6 +1081,17 @@ document.getElementById("applyAllAnno").addEventListener("click", function () {
   // const annoIds = Object.keys(annoDict).map(Number);
   for (let i = 0; i < annoIds.length; i++) {
     applyCurrentAnno(annoIds[i], false);
+  }
+});
+
+// Apply all grid feature style
+document.getElementById("applyAllGrid").addEventListener("click", function () {
+  const gridIds = Array.from(
+    { length: countJSON.features.length },
+    (_, i) => i + 1
+  );
+  for (let i = 0; i < gridIds.length; i++) {
+    applyCurrentGrid(gridIds[i], false);
   }
 });
 
@@ -1032,7 +1183,7 @@ document.addEventListener("keydown", function (event) {
     annoTextToLabel();
     const idInput = parseInt(document.getElementById("anno-id").value);
     const uuid = annoJSON.features[idInput - 1].properties.uuid;
-    updateText(uuid, textInput.value);
+    updateText(uuid, "anno", textInput.value);
   }
 });
 
@@ -1055,7 +1206,7 @@ document.addEventListener("keydown", function (event) {
       annoJSON.features[parseInt(idInput.value) - 1].properties.xLabel,
       annoJSON.features[parseInt(idInput.value) - 1].properties.yLabel
     );
-    goToAnnoPoint(viewportPoint.x, viewportPoint.y);
+    goToPoint(viewportPoint.x, viewportPoint.y);
 
     // Provide visual feedback by changing the border color
     idInput.style.borderColor = "green";
@@ -1067,7 +1218,7 @@ document.addEventListener("keydown", function (event) {
   }
 });
 
-function goToAnnoPoint(x, y) {
+function goToPoint(x, y) {
   // Center the viewport on the specified coordinates without changing the zoom level
   viewer.viewport.panTo(
     new OpenSeadragon.Point(x, y),
@@ -1170,7 +1321,7 @@ const toggleDivideImages = (event) => {
 
 // Import, add, and export points with labels
 const toggleAnnotation = (event) => {
-  for (let el of document.getElementsByClassName("annotate-symbol")) {
+  for (let el of document.getElementsByClassName("annotate-crosshairs")) {
     el.style.visibility = event.checked ? "visible" : "hidden";
   }
   if (document.getElementById("show-annotation-labels").checked) {
@@ -1282,13 +1433,21 @@ viewer.addHandler("canvas-click", function (event) {
       uniqueID,
       constPointLabel,
       viewportPoint,
+      "anno",
       labelFontColor,
       labelFontSize,
       labelBackgroundColor,
       labelBackgroundOpacity
     );
 
-    addCrosshairs(uniqueID, viewportPoint, lineColor, lineWeight, lineOpacity);
+    addCrosshairs(
+      uniqueID,
+      viewportPoint,
+      "anno",
+      lineColor,
+      lineWeight,
+      lineOpacity
+    );
     // Store annotation
     isQPressed = false; // Reset
     enableAnnoButtons();
@@ -1505,6 +1664,7 @@ viewer.addHandler("canvas-click", function (event) {
         uniqueID,
         constPolylineLabel,
         labelViewportPoint,
+        "anno",
         labelFontColor,
         labelFontSize,
         labelBackgroundColor,
@@ -1759,102 +1919,6 @@ function drawPath(ctx, coordinates, image, shape, closePath) {
   ctx.stroke();
 }
 
-// function drawShape(canvas, JSONArray) {
-//   // Note: JSONArray must be an array with one or more entries
-
-//   // Update canvas size dynamically
-//   const viewerContainer = viewer.container;
-//   canvas.width = viewerContainer.clientWidth;
-//   canvas.height = viewerContainer.clientHeight;
-//   const ctx = canvas.getContext("2d");
-//   ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear the canvas
-
-//   const image = viewer.world.getItemAt(0); // Get image to use for drawing
-
-//   // Flatten the geoJSON array into a single array of features
-//   const allFeatures = JSONArray.flatMap((geoJSON) => geoJSON.features);
-
-//   allFeatures.forEach((feature) => {
-//     // Only process features that have geometry and properties
-//     if (feature.geometry && feature.properties) {
-//       const coordinates = feature.geometry.coordinates;
-//       // Ensure geometry type is either 'Polygon' or 'LineString'
-//       if (feature.geometry.type === "Polygon") {
-//         // Begin a new path for the entire polygon (outer ring + holes)
-//         ctx.beginPath();
-//         // Handle outer boundary and holes
-//         coordinates.forEach((ring, index) => {
-//           const isOuterBoundary = index === 0;
-//           drawPath(ctx, ring, image, feature, isOuterBoundary);
-//         });
-//         // console.log("coordinates[0]", coordinates[0]);
-//         // drawPath(ctx, coordinates[0], image, feature, true); // 'true' for closed paths (Polygon)
-//         // Use "evenodd" fill rule to create the donut effect
-//         if (feature.properties.fillColor) {
-//           ctx.fillStyle = feature.properties.fillColor;
-//           ctx.globalAlpha = feature.properties.fillOpacity || 1;
-//           ctx.fill("evenodd");
-//         }
-//         // Stroke the outline of the polygon
-//         if (feature.properties.lineColor) {
-//           ctx.strokeStyle = feature.properties.lineColor || "black";
-//           ctx.lineWidth = feature.properties.lineWeight || 1;
-//           ctx.globalAlpha = feature.properties.lineOpacity || 1;
-//           ctx.stroke();
-//         }
-//       } else if (feature.geometry.type === "LineString") {
-//         ctx.beginPath();
-//         drawPath(ctx, coordinates, image, feature, false); // 'false' for open paths (LineString)
-//       }
-//     }
-//   });
-// }
-
-// function drawPath(ctx, coordinates, image, shape, closePath) {
-//   if (coordinates.length < 2) {
-//     // console.warn('Skipping path with less than 2 points');
-//     return;
-//   }
-//   // ctx.beginPath();
-//   const startingViewportPoint = image.imageToViewportCoordinates(
-//     coordinates[0][0],
-//     coordinates[0][1]
-//   );
-//   const startingViewerElementPoint =
-//     viewer.viewport.viewportToViewerElementCoordinates(startingViewportPoint);
-//   ctx.moveTo(startingViewerElementPoint.x, startingViewerElementPoint.y);
-
-//   for (let i = 1; i < coordinates.length; i++) {
-//     const nextViewportPoint = image.imageToViewportCoordinates(
-//       coordinates[i][0],
-//       coordinates[i][1]
-//     );
-//     const nextViewerElementPoint =
-//       viewer.viewport.viewportToViewerElementCoordinates(nextViewportPoint);
-//     ctx.lineTo(nextViewerElementPoint.x, nextViewerElementPoint.y);
-//   }
-
-//   if (closePath) {
-//     ctx.closePath(); // Close the shape for polygons
-//   }
-//   // if (closePath && shape.properties.fillColor) {
-//   //   ctx.fillStyle = shape.properties.fillColor;
-//   //   ctx.globalAlpha = shape.properties.fillOpacity;
-//   //   ctx.fill();
-//   // }
-//   // Set line styles
-//   if (shape.properties.lineStyle === "dashed") {
-//     ctx.setLineDash([4, 2]);
-//   }
-//   if (shape.properties.lineStyle === "dotted") {
-//     ctx.setLineDash([2, 2]);
-//   }
-//   ctx.strokeStyle = shape.properties.lineColor || "black";
-//   ctx.lineWidth = shape.properties.lineWeight || 1;
-//   ctx.globalAlpha = shape.properties.lineOpacity || 1;
-//   ctx.stroke();
-// }
-
 let startPoint = null;
 let startPointImage = null;
 let overlayElement = null;
@@ -1924,21 +1988,6 @@ viewer.addHandler("canvas-drag", function (event) {
         fillOpacity: fillOpacity,
       });
       drawShape(polyCanvas, [annoJSON, annoJSONTemp]);
-
-      // // Mouse move - update overlay dimensions
-      // const width = viewportPoint.x - startPoint.x;
-      // const height = viewportPoint.y - startPoint.y;
-
-      // // Update the overlay's location and size
-      // viewer.updateOverlay(
-      //   overlayElement,
-      //   new OpenSeadragon.Rect(
-      //     Math.min(startPoint.x, startPoint.x + width),
-      //     Math.min(startPoint.y, startPoint.y + height),
-      //     Math.abs(width),
-      //     Math.abs(height)
-      //   )
-      // );
     }
   }
 });
@@ -2044,6 +2093,7 @@ viewer.addHandler("canvas-release", function (event) {
       currentRectUniqueId,
       constRectLabel,
       finalPoint,
+      "anno",
       labelFontColor,
       labelFontSize,
       labelBackgroundColor,
@@ -2067,16 +2117,26 @@ function addText(
   i,
   label,
   location,
+  type = "anno", // Options: "grid", "anno"
   color = "#FFFFFF",
   fontSize = 16,
   backgroundColor = "#000000",
   backgroundOpacity = 0.5
 ) {
+  let className;
+  if (type === "anno") {
+    className = "annotate-label";
+  } else if (type === "grid") {
+    className = "grid-label";
+  }
+
   const pointLabel = document.createElement("div");
 
   pointLabel.innerHTML = `${label}`;
-  pointLabel.className = "annotate-label";
-  pointLabel.id = `annotate-label-${i}`;
+  pointLabel.className = `${className}`;
+  // pointLabel.className = "annotate-label";
+  pointLabel.id = `${className}-${i}`;
+  // pointLabel.id = `annotate-label-${i}`;
 
   const backgroundColorToPlot = applyOpacityToColor(
     backgroundColor,
@@ -2084,40 +2144,48 @@ function addText(
   );
 
   // Apply inline styles for customization
-  pointLabel.style.setProperty("--annoLabel-color", color);
-  pointLabel.style.setProperty("--annoLabel-font-size", `${fontSize}px`);
-  pointLabel.style.setProperty(
-    "--annoLabelBackground-color",
-    backgroundColorToPlot
-  );
+  pointLabel.style.setProperty("--color", color);
+  pointLabel.style.setProperty("--font-size", `${fontSize}px`);
+  pointLabel.style.setProperty("--background-color", backgroundColorToPlot);
 
   const overlay = viewer.addOverlay({
     element: pointLabel,
     location: location,
     checkResize: false,
   });
-  annotateLabels.push(pointLabel);
-  hasUnsavedAnnotations = true;
-  updateRepeatButton();
+  if (type === "anno") {
+    annotateLabels.push(pointLabel);
+    hasUnsavedAnnotations = true;
+    updateRepeatButton();
+  }
 }
 
 // Function to delete the text of an existing annotation label
-function deleteText(uuid) {
-  const overlayElement = document.getElementById(`annotate-label-${uuid}`);
+function deleteText(uuid, type = "anno") {
+  let overlayElement;
+  if (type === "anno") {
+    overlayElement = document.getElementById(`annotate-label-${uuid}`);
+  } else if (type === "grid") {
+    overlayElement = document.getElementById(`grid-label-${uuid}`);
+  }
   if (overlayElement) {
     viewer.removeOverlay(overlayElement); // Remove the overlay using the element
-    annotateLabels = annotateLabels.filter(
-      (label) => label.id !== `annotate-label-${uuid}`
-    ); // Clean up the array
-    hasUnsavedAnnotations = true;
+    if (type === "anno") {
+      // TODO: Is this code necessary?
+      annotateLabels = annotateLabels.filter(
+        (label) => label.id !== `annotate-label-${uuid}`
+      ); // Clean up the array
+      hasUnsavedAnnotations = true;
+    }
   } else {
-    console.warn(`Overlay with ID annotate-label-${uuid} not found.`);
+    console.warn(`Text overlay with ID-${uuid} not found.`);
   }
 }
 
 // Function to update the text of an existing annotation label
 function updateText(
   uuid,
+  type = "anno", // Options: "anno", "grid"
   newLabel = undefined,
   color = undefined,
   fontSize = undefined,
@@ -2125,7 +2193,12 @@ function updateText(
   backgroundOpacity = undefined
 ) {
   // Find the label element by id
-  const pointLabel = document.getElementById(`annotate-label-${uuid}`);
+  let pointLabel;
+  if (type === "anno") {
+    pointLabel = document.getElementById(`annotate-label-${uuid}`);
+  } else if (type === "grid") {
+    pointLabel = document.getElementById(`grid-label-${uuid}`);
+  }
 
   if (pointLabel) {
     if (newLabel !== undefined && newLabel !== null) {
@@ -2135,26 +2208,25 @@ function updateText(
     }
 
     console.log(`Label updated for ID ${uuid}:`, newLabel);
-    hasUnsavedAnnotations = true;
+    if (type === "anno") {
+      hasUnsavedAnnotations = true;
+    }
 
     // Update the CSS variables if new values are provided
     if (color !== undefined) {
       const colorToPlot = applyOpacityToColor(color, 1.0);
       console.log("colorToPlot", colorToPlot);
-      pointLabel.style.setProperty("--annoLabel-color", colorToPlot);
+      pointLabel.style.setProperty("--color", colorToPlot);
     }
     if (fontSize !== undefined) {
-      pointLabel.style.setProperty("--annoLabel-font-size", `${fontSize}px`);
+      pointLabel.style.setProperty("--font-size", `${fontSize}px`);
     }
     if (backgroundColor !== undefined && backgroundOpacity !== undefined) {
       const backgroundColorToPlot = applyOpacityToColor(
         backgroundColor,
         backgroundOpacity
       );
-      pointLabel.style.setProperty(
-        "--annoLabelBackground-color",
-        backgroundColorToPlot
-      );
+      pointLabel.style.setProperty("--background-color", backgroundColorToPlot);
     }
   } else {
     console.log(`No annotation found with ID ${uuid}.`);
@@ -2164,40 +2236,55 @@ function updateText(
 function addCrosshairs(
   uuid,
   location,
+  type = "anno", // Options: "anno", "grid"
   color = "purple",
   lineWeight = 2,
   opacity = 1
 ) {
-  console.log("Crosshairs added");
-
-  console.log("lw,op", lineWeight, opacity);
-  const crosshairsAnnotate = document.createElement("div");
-  crosshairsAnnotate.className = "annotate-symbol"; // Used for css styling
-  crosshairsAnnotate.id = `annotate-crosshair-${uuid}`;
+  const crosshair = document.createElement("div");
+  if (type === "anno") {
+    crosshair.className = "annotate-crosshairs"; // Used for css styling
+    crosshair.id = `annotate-crosshair-${uuid}`;
+  } else if (type === "grid") {
+    crosshair.className = "grid-crosshairs"; // Used for css styling
+    crosshair.id = `grid-crosshair-${uuid}`;
+  }
 
   // Apply inline styles for customization
-  crosshairsAnnotate.style.setProperty("--crosshair-color", color);
-  crosshairsAnnotate.style.setProperty(
+  crosshair.style.setProperty("--crosshair-color", color);
+  crosshair.style.setProperty(
     "--crosshair-line-weight",
     `${Number(lineWeight)}px`
   );
-  crosshairsAnnotate.style.setProperty("--crosshair-opacity", Number(opacity));
+  crosshair.style.setProperty("--crosshair-opacity", Number(opacity));
 
   const overlay = viewer.addOverlay({
-    element: crosshairsAnnotate,
+    element: crosshair,
     location: location,
     checkResize: false,
   });
-  annotatePoints.push(crosshairsAnnotate);
-  hasUnsavedAnnotations = true;
-  updateRepeatButton();
+  if (type === "anno") {
+    annotatePoints.push(crosshair);
+    hasUnsavedAnnotations = true;
+    updateRepeatButton();
+  }
 }
 
-function updateCrosshair(uuid, newColor, newLineWeight, newOpacity) {
+// TOOD: update this function
+function updateCrosshair(
+  uuid,
+  type = "anno",
+  newColor,
+  newLineWeight,
+  newOpacity
+) {
   // Find the existing crosshair element by its ID
-  const crosshairElement = document.getElementById(
-    `annotate-crosshair-${uuid}`
-  );
+  let crosshairElement;
+  if (type === "anno") {
+    crosshairElement = document.getElementById(`annotate-crosshair-${uuid}`);
+  } else if (type === "grid") {
+    crosshairElement = document.getElementById(`grid-crosshair-${uuid}`);
+  }
 
   if (!crosshairElement) {
     console.error(`Crosshair with ID "${uuid}" not found.`);
@@ -2219,18 +2306,27 @@ function updateCrosshair(uuid, newColor, newLineWeight, newOpacity) {
   }
 }
 
-function deleteCrosshairs(uuid) {
-  const overlayElement = document.getElementById(`annotate-crosshair-${uuid}`);
+function deleteCrosshairs(uuid, type = "anno") {
+  let overlayElement;
+  if (type === "anno") {
+    overlayElement = document.getElementById(`annotate-crosshair-${uuid}`);
+  } else if (type === "grid") {
+    overlayElement = document.getElementById(`grid-crosshair-${uuid}`);
+  }
   if (overlayElement) {
     viewer.removeOverlay(overlayElement); // Remove the overlay using the element
-    annotatePoints = annotatePoints.filter(
-      (label) => label.id !== `annotate-crosshair-${uuid}`
-    ); // Clean up the array
-    console.log(`Overlay with ID annotate-crosshair-${uuid} removed.`);
+    if (type === "anno") {
+      annotatePoints = annotatePoints.filter(
+        (label) => label.id !== `annotate-crosshair-${uuid}`
+      ); // Clean up the array
+    }
+    console.log(`Crosshair with ID ${uuid} removed.`);
   } else {
-    console.warn(`Overlay with ID annotate-crosshair-${uuid} not found.`);
+    console.warn(`Crosshair with ID ${uuid} not found.`);
   }
-  updateRepeatButton();
+  if (type === "anno") {
+    updateRepeatButton();
+  }
 }
 
 function loadAnnotationsFromJSON(file) {
@@ -2255,9 +2351,98 @@ function loadAnnotationsFromJSON(file) {
   updateRepeatButton();
 }
 
-// New loadAnnotations() for testing
-function loadAnnotations(geoJSONData) {
-  console.log("Starting annotation load");
+function loadCounts(geoJSONData) {
+  console.log("Starting counts load");
+  const geoJSON = parseJSON(geoJSONData);
+
+  const features = geoJSON.features || Object.values(geoJSON); // Supports both formats
+  features.forEach((feature) => {
+    const geometry = feature.geometry;
+    const properties = feature.properties;
+
+    if (!geometry || !properties) {
+      console.warn("Invalid feature, skipping:", feature);
+      return;
+    }
+
+    const { type, coordinates } = geometry;
+
+    if (type !== "Point") {
+      console.warn("Skipping non-point feature", feature);
+      return;
+    }
+
+    handleCount(coordinates, properties);
+  });
+  enableCountButtons();
+  populateDropdown(); // Repopulate dropdown for filtering
+  populateFilterDropdown(); // Repopulate filter dropdown
+}
+
+// Helper functions for specific geometry types
+function handleCount(coords, properties) {
+  const [x, y] = coords;
+  if (isNaN(x) || isNaN(y)) {
+    console.log("Invalid point geometry, skipping");
+    return;
+  }
+  const image = viewer.world.getItemAt(0);
+  const viewportPoint = image.imageToViewportCoordinates(
+    new OpenSeadragon.Point(x, y)
+  );
+
+  const fontColor =
+    properties.labelFontColor || document.getElementById("gridLabelFontColor");
+  const fontSize =
+    properties.labelFontSize || document.getElementById("gridLabelFontSize");
+  const fontBackgroundColor =
+    properties.labelBackgroundColor ||
+    document.getElementById("gridLabelBackgroundColor");
+  const fontBackgroundOpacity =
+    properties.labelBackgroundOpacity ||
+    document.getElementById("gridLabelBackgroundOpacity");
+
+  const crosshairColor =
+    properties.lineColor || document.getElementById("gridLineColor");
+  const crosshairOpacity =
+    properties.lineOpacity || document.getElementById("gridLineOpacity");
+  const crosshairLineWeight =
+    properties.lineWeight || document.getElementById("gridLineWeight");
+
+  addText(
+    properties.uuid,
+    properties.label, // This shoud be a number that corresponds to the count number
+    viewportPoint,
+    "grid",
+    fontColor, // Font color
+    fontSize, // Font size
+    fontBackgroundColor, // Background color
+    fontBackgroundOpacity // Background size
+  );
+  addCrosshairs(
+    properties.uuid,
+    viewportPoint,
+    "grid",
+    crosshairColor, // lineColor
+    crosshairLineWeight, // lineWeight
+    crosshairOpacity // lineOpacity
+  );
+  saveCountToJSON("Point", coords, properties);
+}
+
+// Save the annotation as GeoJSON
+function saveCountToJSON(type, coordinates, properties) {
+  const geoJSONFeature = {
+    type: "Feature",
+    geometry: { type, coordinates },
+    properties: {
+      ...properties,
+    },
+  };
+  countJSON.features.push(geoJSONFeature);
+}
+
+function parseJSON(geoJSONData) {
   let geoJSON;
 
   // Parse the GeoJSON data
@@ -2273,6 +2458,13 @@ function loadAnnotations(geoJSONData) {
     geoJSON = geoJSONData;
     console.log("GeoJSON is already parsed:", geoJSON);
   }
+  return geoJSON;
+}
+
+// New loadAnnotations() for testing
+function loadAnnotations(geoJSONData) {
+  console.log("Starting annotation load");
+  const geoJSON = parseJSON(geoJSONData);
 
   const features = geoJSON.features || Object.values(geoJSON); // Supports both formats
   features.forEach((feature) => {
@@ -2292,20 +2484,6 @@ function loadAnnotations(geoJSONData) {
 
     const { type, coordinates } = geometry;
 
-    // Helper function to handle individual geometry parts
-    // const processGeometry = (geometryType, coords) => {
-    //   if (geometryType === "Point") {
-    //     handlePoint(coords, properties);
-    //   } else if (geometryType === "LineString") {
-    //     handleLineString(coords, properties);
-    //   } else if (geometryType === "Polygon") {
-    //     handlePolygon(coords, properties);
-    //   } else if (geometryType === "MultiPolygon") {
-    //     console.log("Handling MultiPolygon...");
-    //     handleMultiPolygon(coords, properties);
-    //   }
-    // };
-
     // Handle different geometry types
     if (type === "Point") {
       handlePoint(coordinates, properties);
@@ -2320,14 +2498,6 @@ function loadAnnotations(geoJSONData) {
     } else if (type === "MultiPolygon") {
       handleMultiPolygon(coordinates, properties);
     }
-
-    // else if (type === "MultiPolygon") {
-    //   coordinates.forEach((polygon) => handlePolygon(polygon, properties));
-    // }
-    // else if (type === "MultiPoint") {
-    //   coordinates.forEach((point) => processGeometry("Point", point));
-    // } else if (type === "MultiLineString") {
-    //   coordinates.forEach((line) => processGeometry("LineString", line));
 
     // Redraw the shapes and enable annotation features
     drawShape(polyCanvas, [annoJSON]);
@@ -2351,6 +2521,7 @@ function handlePoint(coords, properties) {
     properties.uuid,
     properties.label,
     viewportPoint,
+    "anno",
     properties.labelFontColor,
     Number(properties.labelFontSize),
     properties.labelBackgroundColor,
@@ -2359,6 +2530,7 @@ function handlePoint(coords, properties) {
   addCrosshairs(
     properties.uuid,
     viewportPoint,
+    "anno",
     properties.lineColor,
     Number(properties.lineWeight),
     Number(properties.lineOpacity)
@@ -2403,6 +2575,7 @@ function handleMultiPoint(coords, properties) {
       newUUID,
       properties.label,
       viewportPoint,
+      "anno",
       properties.labelFontColor,
       Number(properties.labelFontSize),
       properties.labelBackgroundColor,
@@ -2413,6 +2586,7 @@ function handleMultiPoint(coords, properties) {
     addCrosshairs(
       newUUID,
       viewportPoint,
+      "anno",
       properties.lineColor,
       Number(properties.lineWeight),
       Number(properties.lineOpacity)
@@ -2424,7 +2598,6 @@ function handleMultiPoint(coords, properties) {
 }
 
 // TODO: These functions could be combined a bit
-
 function handleLineString(coords, properties) {
   const image = viewer.world.getItemAt(0);
   const viewportPoint = image.imageToViewportCoordinates(
@@ -2434,6 +2607,7 @@ function handleLineString(coords, properties) {
     properties.uuid,
     properties.label,
     viewportPoint,
+    "anno",
     properties.labelFontColor,
     Number(properties.labelFontSize),
     properties.labelBackgroundColor,
@@ -2451,6 +2625,7 @@ function handleMultiLineString(coords, properties) {
     properties.uuid,
     properties.label,
     viewportPoint,
+    "anno",
     properties.labelFontColor,
     Number(properties.labelFontSize),
     properties.labelBackgroundColor,
@@ -2468,6 +2643,7 @@ function handlePolygon(coords, properties) {
     properties.uuid,
     properties.label,
     viewportPoint,
+    "anno",
     properties.labelFontColor,
     Number(properties.labelFontSize),
     properties.labelBackgroundColor,
@@ -2486,6 +2662,7 @@ function handleMultiPolygon(coords, properties) {
     properties.uuid,
     properties.label,
     viewportPoint,
+    "anno",
     properties.labelFontColor,
     Number(properties.labelFontSize),
     properties.labelBackgroundColor,
@@ -2552,6 +2729,18 @@ document.getElementById("exportBtn").addEventListener("click", function () {
   hasUnsavedAnnotations = false;
 });
 
+// Attach export functionality to the button (GeoJSON version)
+document.getElementById("save-counts").addEventListener("click", function () {
+  const geoJSON = countJSON;
+  console.log(geoJSON);
+  // Create a Blob from the GeoJSON object
+  const geoJSONBlob = new Blob([JSON.stringify(geoJSON, null, 2)], {
+    type: "application/geo+json",
+  });
+  // Trigger the download with 'saveAs'
+  saveAs(geoJSONBlob, "counts.geojson");
+});
+
 const clearAnnotations = () => {
   const annoIds = Array.from(
     { length: annoJSON.features.length },
@@ -2562,9 +2751,12 @@ const clearAnnotations = () => {
   } else {
     for (let i = 0; i < annoIds.length; i++) {
       const type = annoJSON.features[annoIds[i] - 1].geometry.type;
-      deleteText(annoJSON.features[annoIds[i] - 1].properties.uuid);
+      deleteText(annoJSON.features[annoIds[i] - 1].properties.uuid, "anno");
       if (type === "Point") {
-        deleteCrosshairs(annoJSON.features[annoIds[i] - 1].properties.uuid);
+        deleteCrosshairs(
+          annoJSON.features[annoIds[i] - 1].properties.uuid,
+          "anno"
+        );
       }
     }
   }
@@ -2669,8 +2861,6 @@ const Grid = class {
 
 // Initialize grid with default settings.
 let grid = new Grid({
-  //unit: 2,
-  //pixelsPerUnit: 0.37,
   xMin: 20,
   yMin: 10,
   xMax: 80,
@@ -2689,23 +2879,48 @@ const enableGridButtons = () => {
 let gridOverlayPoints = []; ///
 let gridOverlayCrosshairs = []; ///
 
+// TODO: Could combine enableGridButtons() and disableGridButtons() into a single function
+function enableCountButtons() {
+  // Enable buttons and input fields
+  document.getElementById("count-first").disabled = false;
+  document.getElementById("count-prev").disabled = false;
+  document.getElementById("count-next").disabled = false;
+  document.getElementById("count-last").disabled = false;
+  document.getElementById("count-id").disabled = false;
+  document.getElementById("count-text").disabled = false;
+  document.getElementById("count-notes").disabled = false;
+  document.getElementById("count-export").disabled = false;
+  document.getElementById("save-counts").disabled = false;
+  document.getElementById("filterDropdown").disabled = false;
+  document.getElementById("filterButton").disabled = false;
+  document.getElementById("summarizeButton").disabled = false;
+}
+
+function disableCountButtons() {
+  // Enable buttons and input fields
+  document.getElementById("count-first").disabled = true;
+  document.getElementById("count-prev").disabled = true;
+  document.getElementById("count-next").disabled = true;
+  document.getElementById("count-last").disabled = true;
+  document.getElementById("count-id").disabled = true;
+  document.getElementById("count-text").disabled = true;
+  document.getElementById("count-notes").disabled = true;
+  document.getElementById("count-export").disabled = true;
+  document.getElementById("save-counts").disabled = true;
+  document.getElementById("filterDropdown").disabled = true;
+  document.getElementById("filterButton").disabled = true;
+  document.getElementById("summarizeButton").disabled = true;
+}
+
 // TODO: Currently adding more counts results in erasing the existing
 // counts. It would be better if there were a way of changing the point counts
 // without changing modifying the underlying count data. This way more points
 // count be added on the fly without having to mess with CSV file.
 const applyGridSettings = () => {
-  clearGridOverlayCrosshairs();
-  clearGridOverlayPoints();
+  clearGrid();
 
   // Enable buttons and input field after settings are applied
-  document.getElementById("first-button").disabled = false;
-  document.getElementById("prev-button").disabled = false;
-  document.getElementById("next-button").disabled = false;
-  document.getElementById("last-button").disabled = false;
-  document.getElementById("sample-input").disabled = false;
-  document.getElementById("sample-text").disabled = false;
-  document.getElementById("sample-notes").disabled = false;
-  document.getElementById("count-export").disabled = false;
+  enableCountButtons();
 
   const image = viewer.world.getItemAt(0);
   grid = new Grid({
@@ -2750,29 +2965,67 @@ const applyGridSettings = () => {
     // first image.
     const location = image.imageToViewportCoordinates(xPixels, yPixels);
 
-    // Add point label with coordinates.
-    const pointLabel = document.createElement("div");
-    pointLabel.innerHTML = `${A[i]}`;
-    pointLabel.className = "grid point-label";
-    pointLabel.id = `pointLabel-${i}`;
-    const labelOverlay = viewer.addOverlay({
-      element: pointLabel,
-      location: location,
-      checkResize: false,
-    });
-    gridOverlayPoints.push(labelOverlay);
+    const labelFontSize = document.getElementById("gridLabelFontSize").value;
+    const labelFontColor = document.getElementById("gridLabelFontColor").value;
+    const labelBackgroundColor = document.getElementById(
+      "gridLabelBackgroundColor"
+    ).value;
+    const labelBackgroundOpacity = document.getElementById(
+      "gridLabelBackgroundOpacity"
+    ).value;
+    const lineWeight = document.getElementById("gridLineWeight").value;
+    const lineColor = document.getElementById("gridLineColor").value;
+    const lineOpacity = document.getElementById("gridLineOpacity").value;
 
-    // Add crosshairs.
-    const crosshairs = document.createElement("div");
-    crosshairs.className = "grid crosshairs";
-    crosshairs.id = `crosshair-${i}`; // Set a unique ID for each overlay
-    const crosshairOverlay = viewer.addOverlay({
-      element: crosshairs,
-      location: location,
-      checkResize: false,
-    });
-    // Store the crosshairs overlay in the array
-    gridOverlayCrosshairs.push(crosshairOverlay);
+    const sampleIdx = samples.indexOf(sampleName);
+
+    const coords = [xPixels, yPixels];
+    const properties = {
+      uuid: generateUniqueId(16),
+      label: `${A[i]}`,
+      id: "",
+      notes: "",
+      xLabel: xPixels,
+      yLabel: yPixels,
+      imageTitle: sampleName,
+      pixelsPerMeter: Number(pixelsPerMeters[sampleIdx]),
+      imageWidth: imageSize.x,
+      imageHeight: imageSize.y,
+      xMin: parseFloat(document.getElementById("grid-left").value),
+      yMin: parseFloat(document.getElementById("grid-top").value),
+      xMax: parseFloat(document.getElementById("grid-right").value),
+      yMax: parseFloat(document.getElementById("grid-bottom").value),
+      step: parseInt(document.getElementById("step-size").value),
+      noPoints: parseInt(document.getElementById("no-points").value),
+      labelFontSize: labelFontSize,
+      labelFontColor: labelFontColor,
+      labelBackgroundColor: labelBackgroundColor,
+      labelBackgroundOpacity: labelBackgroundOpacity,
+      lineWeight: lineWeight,
+      lineColor: lineColor,
+      lineOpacity: lineOpacity,
+    };
+    saveCountToJSON("Point", coords, properties);
+
+    // Make text and crosshairs
+    addText(
+      properties.uuid,
+      `${A[i]}`,
+      location,
+      "grid",
+      labelFontColor,
+      labelFontSize,
+      labelBackgroundColor,
+      labelBackgroundOpacity
+    );
+    addCrosshairs(
+      properties.uuid,
+      location,
+      "grid",
+      lineColor,
+      lineWeight,
+      lineOpacity
+    );
   }
 
   // Always show the grid right after generating it. (The newly added overlay
@@ -2782,116 +3035,52 @@ const applyGridSettings = () => {
   document.getElementById("show-grid").checked = true;
   document.getElementById("apply-grid-settings").disabled = true;
   document.getElementById("restore-grid-settings").disabled = true;
+  document.getElementById("clear-grid").disabled = false;
   gridApplied = true;
 
   // Update AOI rectangle after grid is applied
   updateAoiRectangle();
 };
 
-// TODO: IN PROGRESS. Developing an approach for loading pre-existing
-// points that is independent of defining a new grid. Will allow custom point
-// configuration provided that point locations in pixels are provided
+const clearGrid = () => {
+  const gridIds = Array.from(
+    { length: countJSON.features.length },
+    (_, i) => i + 1
+  );
+  if (gridIds.length === 0) {
+    return; // Nothing to remove
+  } else {
+    for (let i = 0; i < gridIds.length; i++) {
+      const type = countJSON.features[gridIds[i] - 1].geometry.type;
+      deleteText(countJSON.features[gridIds[i] - 1].properties.uuid, "grid");
+      if (type === "Point") {
+        deleteCrosshairs(
+          countJSON.features[gridIds[i] - 1].properties.uuid,
+          "grid"
+        );
+      }
+    }
+  }
+  countJSON = {
+    type: "FeatureCollection",
+    features: [],
+  };
 
-// toggleButton.addEventListener("click", () => {
-//   if (!detailsMenu.hasAttribute("disabled")) {
-//     detailsMenu.setAttribute("disabled", "true");
-//   } else {
-//     detailsMenu.removeAttribute("disabled");
-//   }
-// });
-
-// const loadExistingGrid = () => {
-//   clearGridOverlayCrosshairs();
-//   clearGridOverlayPoints();
-
-//   const gridDropdown = document.getElementById("detailsMenu");
-//   detailsMenu.setAttribute("disabled", "true");
-
-//   // Enable buttons and input field after settings are applied
-//   document.getElementById('prev-button').disabled = false;
-//   document.getElementById('next-button').disabled = false;
-//   document.getElementById('sample-input').disabled = false;
-//   document.getElementById('sample-text').disabled = false;
-//   document.getElementById('sample-notes').disabled = false;
-//   document.getElementById('count-export').disabled = false;
-
-//   const image = viewer.world.getItemAt(0);
-//   grid = new Grid({
-//     unit: units[currentIndex],
-//     pixelsPerUnit: pixelsPerUnits[currentIndex],
-//     xMin: parseFloat(document.getElementById("grid-left").value),
-//     yMin: parseFloat(document.getElementById("grid-top").value),
-//     xMax: parseFloat(document.getElementById("grid-right").value),
-//     yMax: parseFloat(document.getElementById("grid-bottom").value),
-//     step: parseInt(document.getElementById("step-size").value),
-//     noPoints: parseInt(document.getElementById("no-points").value),
-//   });
-
-//   const imageSize = image.getContentSize();
-//   console.log('image size:',imageSize);
-//   const x_min_um = grid.xMin / 100 * imageSize.x / grid.pixelsPerUnit;
-//   const x_max_um = grid.xMax / 100 * imageSize.x / grid.pixelsPerUnit;
-//   const y_min_um = grid.yMin / 100 * imageSize.y / grid.pixelsPerUnit;
-//   const y_max_um = grid.yMax / 100 * imageSize.y / grid.pixelsPerUnit;
-
-//   // Get the coordinates and labels for point counts
-//   let [X, Y, A]  = makePoints(x_min_um, x_max_um, y_min_um, y_max_um, grid.step, grid.noPoints);
-
-//   for (let i = 0; i < X.length; i++) {
-//     // Get the coordinates in the specified unit.
-//     const xUnits = X[i];
-//     const yUnits = Y[i];
-
-//     // Convert to coordinates in pixels.
-//     const xPixels = xUnits * pixelsPerUnits[currentIndex];
-//     const yPixels = yUnits * pixelsPerUnits[currentIndex];
-
-//     // Convert to view-space coordinates, measuring from the top-left of the
-//     // first image.
-//     const location = image.imageToViewportCoordinates(xPixels, yPixels);
-
-//     // Add point label with coordinates.
-//     const pointLabel = document.createElement("div");
-//     pointLabel.innerHTML = `${A[i]}`;
-//     pointLabel.className = "grid point-label";
-//     pointLabel.id = `pointLabel-${i}`;
-//     const labelOverlay = viewer.addOverlay({
-//       element: pointLabel,
-//       location: location,
-//       checkResize: false,
-//     });
-//     gridOverlayPoints.push(labelOverlay);
-
-//     // Add crosshairs.
-//     const crosshairs = document.createElement("div");
-//     crosshairs.className = "grid crosshairs";
-//     crosshairs.id = `crosshair-${i}`; // Set a unique ID for each overlay
-//     const crosshairOverlay = viewer.addOverlay({
-//       element: crosshairs,
-//       location: location,
-//       checkResize: false,
-//     });
-//     // Store the crosshairs overlay in the array
-//     gridOverlayCrosshairs.push(crosshairOverlay);
-//   }
-
-//   // Always show the grid right after generating it. (The newly added overlay
-//   // elements will be visible by default, so checking the box here doesn't
-//   // actually affect them - it just makes the checkbox state consistent with the
-//   // visibility states.)
-//   document.getElementById("show-grid").checked = true;
-//   document.getElementById("apply-grid-settings").disabled = true;
-//   document.getElementById("restore-grid-settings").disabled = true;
-//   gridApplied = true;
-
-//   // Update AOI rectangle after grid is applied
-//   updateAoiRectangle();
-// };
+  console.log("Cleared grid");
+  document.getElementById("count-id").innerHTML = 1;
+  document.getElementById("count-text").value = "";
+  document.getElementById("count-notes").value = "";
+  disableCountButtons();
+  document.getElementById("apply-grid-settings").disabled = false;
+  document.getElementById("restore-grid-settings").disabled = false;
+  document.getElementById("clear-grid").disabled = true;
+  enableGridOptions();
+};
 
 const clearGridOverlayPoints = () => {
   // Loop through each overlay in the array and remove it from the viewer
   gridOverlayPoints.forEach((_, i) => {
-    viewer.removeOverlay(`pointLabel-${i}`);
+    viewer.removeOverlay(`grid-label-${i}`);
   });
 
   // Clear the overlayPoints array
@@ -3111,70 +3300,107 @@ document
 //// Point counting functionality ////////
 //////////////////////////////////////////
 
-document.getElementById("first-button").addEventListener("click", function () {
-  const input = document.getElementById("sample-input");
+document.getElementById("count-first").addEventListener("click", function () {
+  const input = document.getElementById("count-id");
   input.value = 1;
-  const overlay = viewer.getOverlayById(`pointLabel-${1}`);
-  // Center the viewport on the specified coordinates without changing the zoom level
-  goToAnnoPoint(overlay.location.x, overlay.location.y);
+
+  const image = viewer.world.getItemAt(0);
+  const imagePoint = countJSON.features[0].geometry.coordinates;
+  const viewportPoint = image.imageToViewportCoordinates(
+    imagePoint[0],
+    imagePoint[1]
+  );
+  goToPoint(viewportPoint.x, viewportPoint.y);
   inputSampleLabelFromOverlay();
 });
 
-document.getElementById("prev-button").addEventListener("click", function () {
+document.getElementById("count-prev").addEventListener("click", function () {
   console.log("prev button clicked");
-  const input = document.getElementById("sample-input");
+  const input = document.getElementById("count-id");
   let value = parseInt(input.value, 10) || 0; // Parse current value or default to 0
   const min = parseInt(input.min, 10);
 
   if (value > min) {
     input.value = value - 1;
-    const overlay = viewer.getOverlayById(`pointLabel-${input.value - 1}`);
-    goToAnnoPoint(overlay.location.x, overlay.location.y);
+    const image = viewer.world.getItemAt(0);
+    const imagePoint = countJSON.features[input.value - 1].geometry.coordinates;
+    const viewportPoint = image.imageToViewportCoordinates(
+      imagePoint[0],
+      imagePoint[1]
+    );
+    // const overlay = viewer.getOverlayById(`grid-label-${input.value - 1}`);
+    goToPoint(viewportPoint.x, viewportPoint.y);
   }
   inputSampleLabelFromOverlay();
 });
 
-document.getElementById("next-button").addEventListener("click", function () {
-  const input = document.getElementById("sample-input");
+document.getElementById("count-next").addEventListener("click", function () {
+  const input = document.getElementById("count-id");
   let value = parseInt(input.value, 10) || 0; // Parse current value or default to 0
-  const max = parseInt(document.getElementById("no-points").value);
+  // const max = parseInt(document.getElementById("no-points").value);
+  const max = parseInt(countJSON.features.length);
 
   if (value < max) {
     input.value = value + 1;
   } else {
     input.value = max;
   }
-  const overlay = viewer.getOverlayById(`pointLabel-${input.value - 1}`);
-  goToAnnoPoint(overlay.location.x, overlay.location.y);
+
+  const image = viewer.world.getItemAt(0);
+  const imagePoint = countJSON.features[input.value - 1].geometry.coordinates;
+  const viewportPoint = image.imageToViewportCoordinates(
+    imagePoint[0],
+    imagePoint[1]
+  );
+  // const overlay = viewer.getOverlayById(`grid-label-${gridInput.value - 1}`);
+  goToPoint(viewportPoint.x, viewportPoint.y);
   inputSampleLabelFromOverlay();
 });
 
-document.getElementById("last-button").addEventListener("click", function () {
-  const input = document.getElementById("sample-input");
-  const noPoints = parseInt(document.getElementById("no-points").value);
+document.getElementById("count-last").addEventListener("click", function () {
+  const input = document.getElementById("count-id");
+  // const noPoints = parseInt(document.getElementById("no-points").value);
+  const noPoints = parseInt(countJSON.features.length);
   input.value = noPoints;
-  const overlay = viewer.getOverlayById(`pointLabel-${parseInt(noPoints) - 1}`);
-  goToAnnoPoint(overlay.location.x, overlay.location.y);
+
+  const image = viewer.world.getItemAt(0);
+  const imagePoint =
+    countJSON.features[parseInt(input.value) - 1].geometry.coordinates;
+  const viewportPoint = image.imageToViewportCoordinates(
+    imagePoint[0],
+    imagePoint[1]
+  );
+  goToPoint(viewportPoint.x, viewportPoint.y);
+
+  // const overlay = viewer.getOverlayById(`grid-label-${parseInt(noPoints) - 1}`);
   inputSampleLabelFromOverlay();
 });
 
-// When you get hit Enter on the sample-input field
+// When you get hit Enter on the count-id field
 document.addEventListener("keydown", function (event) {
-  // Check for Enter key in sample-input field
-  const gridInput = document.getElementById("sample-input");
+  // Check for Enter key in count-id field
+  const gridInput = document.getElementById("count-id");
   if (event.code === "Enter" && document.activeElement === gridInput) {
     event.preventDefault(); // Prevent any default action for Enter key
-    const overlay = viewer.getOverlayById(`pointLabel-${gridInput.value - 1}`);
-    goToAnnoPoint(overlay.location.x, overlay.location.y);
+
+    const image = viewer.world.getItemAt(0);
+    const imagePoint =
+      countJSON.features[parseInt(gridInput.value) - 1].geometry.coordinates;
+    const viewportPoint = image.imageToViewportCoordinates(
+      imagePoint[0],
+      imagePoint[1]
+    );
+    // const overlay = viewer.getOverlayById(`grid-label-${gridInput.value - 1}`);
+    goToPoint(viewportPoint.x, viewportPoint.y);
     inputSampleLabelFromOverlay();
     console.log("Enter clicked");
   }
 });
 
-// When you hit Enter on the sample-notes field
+// When you hit Enter on the count-notes field
 document.addEventListener("keydown", function (event) {
-  // Check for Enter key in sample-notes field
-  const notesInput = document.getElementById("sample-notes");
+  // Check for Enter key in count-notes field
+  const notesInput = document.getElementById("count-notes");
   if (event.code === "Enter" && document.activeElement === notesInput) {
     event.preventDefault(); // Prevent any default action for Enter key
     inputNotesText();
@@ -3183,9 +3409,9 @@ document.addEventListener("keydown", function (event) {
 
 // Function to handle keyboard shortcuts
 document.addEventListener("keydown", function (event) {
-  // Check for Enter key in sample-text field
-  const textInput = document.getElementById("sample-text");
-  // const gridInput = document.getElementById('sample-input'); // Placeholder for changing color of crosshairs
+  // Check for Enter key in count-text field
+  const textInput = document.getElementById("count-text");
+  // const gridInput = document.getElementById('count-id'); // Placeholder for changing color of crosshairs
   if (event.code === "Enter" && document.activeElement === textInput) {
     event.preventDefault(); // Prevent any default action for Enter key
     inputSampleLabel();
@@ -3198,63 +3424,49 @@ document.addEventListener("keydown", function (event) {
   // Check if the space bar is pressed without modifiers
   if (
     event.code === "Space" &&
-    document.activeElement.id !== "sample-notes" &&
+    document.activeElement.id !== "count-notes" &&
     document.activeElement.id !== "anno-label"
   ) {
     event.preventDefault();
     if (event.shiftKey) {
-      const prevButton = document.getElementById("prev-button");
+      const prevButton = document.getElementById("count-prev");
       prevButton.click(); // Simulate a click on the next button
     } else {
-      const nextButton = document.getElementById("next-button");
+      const nextButton = document.getElementById("count-next");
       nextButton.click(); // Simultae a click on the next button
     }
   }
 });
 
-// Function to update the sample-text input based on the current overlay
+// Function to update the count-text input based on the current overlay
 function inputSampleLabelFromOverlay() {
-  const input = document.getElementById("sample-input");
+  const input = document.getElementById("count-id");
   let value = parseInt(input.value, 10);
-  const textInput = document.getElementById("sample-text");
-  const notesInput = document.getElementById("sample-notes");
+  const textInput = document.getElementById("count-text");
+  const notesInput = document.getElementById("count-notes");
 
-  const overlay = viewer.getOverlayById(`pointLabel-${value - 1}`);
-
-  // Populate the sample-text with the label of the current overlay
-  if (overlay) {
-    textInput.value = overlay.label || ""; // Set the text input to the label of the overlay, defaulting to an empty string
-    notesInput.value = overlay.notes || ""; // Set the text input to the label of the overlay, defaulting to an empty string
-  }
+  // Populate the count-text with the text and notes of the current count
+  textInput.value = countJSON.features[value - 1].properties.id || "";
+  notesInput.value = countJSON.features[value - 1].properties.notes || "";
 }
 
 function inputSampleLabel() {
-  const input = document.getElementById("sample-input");
-  let value = parseInt(input.value, 10);
-  const textInput = document.getElementById("sample-text");
+  const input = document.getElementById("count-id");
+  let id = parseInt(input.value, 10);
+  const textInput = document.getElementById("count-text");
 
-  // Store the text in the object with sampleNumber as key
-  const overlay = viewer.getOverlayById(`pointLabel-${value - 1}`);
-  if (overlay) {
-    overlay.label = textInput.value;
-  } else {
-    console.error("Overlay not found for value: ", value);
-  }
+  // Store the text in the geoJSON
+  countJSON.features[id - 1].properties.id = textInput.value;
   hasUnsavedCounts = true;
 }
 
 function inputNotesText() {
-  const input = document.getElementById("sample-input");
+  const input = document.getElementById("count-id");
   let value = parseInt(input.value, 10);
-  const textInput = document.getElementById("sample-notes");
+  const textInput = document.getElementById("count-notes");
 
   // Store the text in the object with sampleNumber as key
-  const overlay = viewer.getOverlayById(`pointLabel-${value - 1}`);
-  if (overlay) {
-    overlay.notes = textInput.value;
-  } else {
-    console.error("Overlay not found for value: ", value);
-  }
+  countJSON.features[value - 1].properties.notes = textInput.value;
   hasUnsavedCounts = true;
 }
 
@@ -3266,9 +3478,9 @@ function updateRepeatButton() {
 
 // Shortcut for entering labels and notes
 document.addEventListener("keydown", function (event) {
-  // Check for Enter key in sample-text field
-  const textInput = document.getElementById("sample-text");
-  const notesInput = document.getElementById("sample-notes");
+  // Check for Enter key in count-text field
+  const textInput = document.getElementById("count-text");
+  const notesInput = document.getElementById("count-notes");
   if (event.code === "Enter" && document.activeElement === textInput) {
     event.preventDefault(); // Prevent any default action for Enter key
     inputSampleLabel();
@@ -3299,52 +3511,17 @@ document.addEventListener("keydown", function (event) {
 
 // Export a CSV of point counts when the Export button is clicked
 document.getElementById("count-export").addEventListener("click", function () {
-  let csvContent = "Parameter,Value\n";
-  const headerInfo = {
-    sample: sampleName,
-    xMin: parseFloat(document.getElementById("grid-left").value),
-    yMin: parseFloat(document.getElementById("grid-top").value),
-    xMax: parseFloat(document.getElementById("grid-right").value),
-    yMax: parseFloat(document.getElementById("grid-bottom").value),
-    step: parseInt(document.getElementById("step-size").value),
-    noPoints: parseInt(document.getElementById("no-points").value),
-    version: 1,
-  };
+  let csvContent = "Sample,Number,X_px,Y_px,Label,Notes\n";
+  const noPoints = countJSON.features.length;
+  for (let i = 0; i < noPoints; i++) {
+    const pointNumber = countJSON.features[i].properties.label;
+    const x_px = countJSON.features[i].geometry.coordinates[0];
+    const y_px = countJSON.features[i].geometry.coordinates[1];
+    const label = countJSON.features[i].properties.id || "";
+    const notes = countJSON.features[i].properties.notes || "";
 
-  // Append each key-value pair in the header to csvContent
-  for (const [key, value] of Object.entries(headerInfo)) {
-    csvContent += `${key},${value}\n`;
-  }
-
-  // Add a blank line to separate headers from data
-  csvContent += "\n";
-
-  // Define data headers for point information
-  csvContent += "Point Number,X_viewer,Y_viewer,X_image,Y_image,Label,Notes\n";
-
-  // const overlayCount = gridOverlayPoints.length;
-  for (let i = 0; i < headerInfo.noPoints; i++) {
-    // Get the overlay by its ID
-    const overlay = viewer.getOverlayById(`pointLabel-${i}`);
-
-    if (overlay && overlay.location) {
-      const image = viewer.world.getItemAt(0);
-      const imagePoint = image.viewportToImageCoordinates(
-        overlay.location.x,
-        overlay.location.y
-      );
-      // const imagePoint = viewer.viewport.viewportToImageCoordinates(overlay.location.x, overlay.location.y);
-      const pointNumber = i + 1; // Point number, assuming 1-based index for CSV
-      const x = overlay.location ? overlay.location.x : "N/A";
-      const y = overlay.location ? overlay.location.y : "N/A";
-      const x_px = imagePoint.x;
-      const y_px = imagePoint.y;
-      const label = overlay.label || "";
-      const notes = overlay.notes || ""; // Adjust if your notes are stored differently
-
-      // Append the row as a CSV line
-      csvContent += `${pointNumber},${x},${y},${x_px},${y_px},"${label}","${notes}"\n`;
-    }
+    // Append the row as a CSV line
+    csvContent += `${sampleName},${pointNumber},${x_px},${y_px},"${label}","${notes}"\n`;
   }
 
   // Create a blob and trigger a download
@@ -3360,112 +3537,175 @@ document.getElementById("count-export").addEventListener("click", function () {
 });
 
 // Import CSV of previously generated point-count data
-// Handle the file selection
+// saved as a geoJSON
+// New loading code
+document
+  .getElementById("count-geojson-input")
+  .addEventListener("change", function (event) {
+    console.log("load count geoJSON clicked");
+    const fileInput = event.target;
+    const file = fileInput.files[0];
+    if (!file) {
+      console.log("not a file!");
+      return;
+    }
+
+    clearGrid();
+
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = function (event) {
+        const geoJSONData = event.target.result;
+        loadCounts(geoJSONData);
+        fileInput.value = "";
+      };
+      reader.readAsText(file);
+    } else {
+      alert("Please select a GeoJSON file to load counts.");
+    }
+    document.getElementById("apply-grid-settings").disabled = true;
+    document.getElementById("restore-grid-settings").disabled = true;
+    document.getElementById("clear-grid").disabled = false;
+    disableGridOptions();
+    populateFilterDropdown();
+    getSelectedLabels();
+  });
+
 document
   .getElementById("count-file-input")
   .addEventListener("change", function (event) {
-    const file = event.target.files[0];
+    const fileInput = event.target;
+    const file = fileInput.files[0];
     if (!file) return;
+
+    console.log("Loading CSV");
+
+    // Clear existing grid
+    clearGrid();
 
     const reader = new FileReader();
     reader.onload = function (e) {
       const content = e.target.result;
-      const lines = content.split("\n");
-
-      // Check if the file has at least three lines (header + data)
-      if (lines.length < 3) {
-        console.error("The file does not contain enough data.");
-        return;
-      }
-      const headerInfo = {};
-      // Parse header information from the first lines (until an empty line)
-      let lineIndex = 0;
-      while (lines[lineIndex] && lines[lineIndex].trim() !== "") {
-        const [key, value] = lines[lineIndex]
-          .split(",")
-          .map((item) => item.trim());
-        if (key && value) {
-          headerInfo[key] = value;
-        }
-        lineIndex++;
-      }
-
-      // Use trim to remove any extra whitespace and parse the values
-      const xMin = parseFloat(headerInfo.xMin);
-      const xMax = parseFloat(headerInfo.xMax);
-      const yMin = parseFloat(headerInfo.yMin);
-      const yMax = parseFloat(headerInfo.yMax);
-      const stepSize = parseInt(headerInfo.step);
-      const noPoints = parseInt(headerInfo.noPoints);
-      const version = parseInt(headerInfo.version);
-
-      // Update your grid settings based on header info
-      document.getElementById("grid-left").value = xMin;
-      document.getElementById("grid-top").value = yMin;
-      document.getElementById("grid-right").value = xMax;
-      document.getElementById("grid-bottom").value = yMax;
-      document.getElementById("step-size").value = stepSize;
-      document.getElementById("no-points").value = noPoints;
-      applyGridSettings();
-
-      // Update the slider values displayed next to the sliders
-      document.getElementById("grid-left-value").innerText = xMin;
-      document.getElementById("grid-right-value").innerText = xMax;
-      document.getElementById("grid-top-value").innerText = yMin;
-      document.getElementById("grid-bottom-value").innerText = yMax;
-      document.getElementById("step-size").innerText = stepSize;
-      document.getElementById("no-points").innerText = noPoints;
-
-      const labels = [];
-      const notes = [];
-
-      // Move to the start of data rows, skipping the blank line between headers and data
-      lineIndex++;
-      const dataHeaders = lines[lineIndex++]; // Skip over the point data headers
-
-      // Parse CSV data rows for points
-      for (let i = lineIndex; i < lines.length; i++) {
-        const dataLine = lines[i].split(",");
-        if (dataLine.length > 1) {
-          // Ensure there's data
-          const pointNumber = parseInt(dataLine[0]);
-          const label = dataLine[5].replace(/"/g, ""); // Remove quotes
-          const note = dataLine[6] ? dataLine[6].replace(/"/g, "") : ""; // Handle optional notes
-
-          labels[pointNumber - 1] = label;
-          notes[pointNumber - 1] = note;
-        }
-      }
-
-      for (let value = 1; value <= noPoints; value++) {
-        const overlay = viewer.getOverlayById(`pointLabel-${value - 1}`);
-        if (overlay) {
-          overlay.label = labels[value - 1] || "";
-          overlay.notes = notes[value - 1] || "";
-        }
-      }
-      populateDropdown();
-      populateFilterDropdown();
+      // Parse CSV using PapaParse
+      Papa.parse(content, {
+        header: true, // Treats the first row as headers
+        skipEmptyLines: true,
+        complete: function (results) {
+          const parsedData = results.data;
+          processCSVData(parsedData);
+        },
+      });
+      // Reset file input to allow reloading the same file
+      fileInput.value = "";
     };
-
     reader.readAsText(file);
-    hasUnsavedCounts = false;
+
+    enableCountButtons();
+
+    disableGridOptions();
+    document.getElementById("apply-grid-settings").disabled = true;
+    document.getElementById("restore-grid-settings").disabled = true;
+    document.getElementById("clear-grid").disabled = false;
+    // TODO: Fix the issue where filter dropdown is not populated after loading a CSV
+    populateFilterDropdown();
+    getSelectedLabels();
   });
+
+function disableGridOptions() {
+  document.getElementById("show-aoi").disabled = true;
+  document.getElementById("grid-left").disabled = true;
+  document.getElementById("grid-right").disabled = true;
+  document.getElementById("grid-top").disabled = true;
+  document.getElementById("grid-bottom").disabled = true;
+  document.getElementById("step-size").disabled = true;
+  document.getElementById("no-points").disabled = true;
+}
+
+function enableGridOptions() {
+  document.getElementById("show-aoi").disabled = false;
+  document.getElementById("grid-left").disabled = false;
+  document.getElementById("grid-right").disabled = false;
+  document.getElementById("grid-top").disabled = false;
+  document.getElementById("grid-bottom").disabled = false;
+  document.getElementById("step-size").disabled = false;
+  document.getElementById("no-points").disabled = false;
+}
+
+// Function to process parsed CSV data
+function processCSVData(data) {
+  const filteredData = data.map((row) => ({
+    Number: row["Number"],
+    X_px: parseFloat(row["X_px"]), // Convert to number if needed
+    Y_px: parseFloat(row["Y_px"]),
+    Label: row["Label"],
+    Notes: row["Notes"],
+  }));
+
+  let image = viewer.world.getItemAt(0);
+  const imageSize = image.getContentSize();
+
+  filteredData.forEach((row) => {
+    const viewportPoint = image.imageToViewportCoordinates(
+      row["X_px"],
+      row["Y_px"]
+    );
+    const properties = {
+      uuid: generateUniqueId(16),
+      label: row["Number"],
+      id: row["Label"],
+      notes: row["Notes"],
+      xLabel: row["X_px"],
+      yLabel: row["Y_px"],
+      imageTitle: sampleName,
+      pixelsPerMeter: pixelsPerMeters[currentIndex],
+      imageWidth: imageSize.x,
+      imageHeight: imageSize.y,
+      labelFontSize: parseFloat(
+        document.getElementById("gridLabelFontSize").value
+      ),
+      labelFontColor: document.getElementById("gridLabelFontColor").value,
+      labelBackgroundColor: document.getElementById("gridLabelBackgroundColor")
+        .value,
+      labelBackgroundOpacity: parseFloat(
+        document.getElementById("gridLabelBackgroundOpacity").value
+      ),
+      lineColor: document.getElementById("gridLineColor").value,
+      lineWeight: parseFloat(document.getElementById("gridLineWeight").value),
+      lineOpacity: parseFloat(document.getElementById("gridLineOpacity").value),
+    };
+    saveCountToJSON("Point", [row["X_px"], row["Y_px"]], properties);
+    // Make text and crosshairs
+    addText(
+      properties.uuid,
+      properties.label,
+      viewportPoint,
+      "grid",
+      properties.labelFontColor,
+      properties.labelFontSize,
+      properties.labelBackgroundColor,
+      properties.labelBackgroundOpacity
+    );
+    addCrosshairs(
+      properties.uuid,
+      viewportPoint,
+      "grid",
+      properties.lineColor,
+      properties.lineWeight,
+      properties.lineOpacity
+    );
+  });
+}
 
 // Function to count labels dynamically
 function getLabelCounts(noPoints) {
   const labelCounts = {};
   let totalCount = 0;
   for (let value = 1; value <= noPoints; value++) {
-    const overlayId = `pointLabel-${value - 1}`;
-    const overlay = viewer.getOverlayById(overlayId);
+    const label = countJSON.features[value - 1].properties.id;
 
-    if (overlay) {
-      const label = overlay.label || ""; // Ensure label is not undefined
-      if (label) {
-        labelCounts[label] = (labelCounts[label] || 0) + 1;
-        totalCount++;
-      }
+    if (label) {
+      labelCounts[label] = (labelCounts[label] || 0) + 1;
+      totalCount++;
     }
   }
   return { labelCounts, totalCount };
@@ -3478,6 +3718,7 @@ const checkboxStates = {};
 function populateFilterDropdown() {
   const filterDropdown = document.getElementById("includeDropdown");
   const uniqueLabels = getUniqueLabels();
+  console.log("unique labels", uniqueLabels);
 
   // Clear existing options
   filterDropdown.innerHTML = "";
@@ -3493,7 +3734,8 @@ function populateFilterDropdown() {
     checkbox.id = `checkbox-${label}`;
     checkbox.checked = isChecked; // Default to checked
 
-    // Update the state in the `checkboxStates` object when the checkbox changes
+    console.log(checkbox.id, checkbox.checked);
+
     checkbox.addEventListener("change", () => {
       checkboxStates[label] = checkbox.checked;
     });
@@ -3560,7 +3802,9 @@ function getResults(noPoints) {
 
 // Function to display summary results
 function showResults() {
-  const noPoints = parseInt(document.getElementById("no-points").value);
+  // const noPoints = parseInt(document.getElementById("no-points").value);
+  const noPoints = parseInt(countJSON.features.length);
+
   //const noPoints = viewer.overlays.length; // Total number of overlays
   const resultsContent = document.getElementById("resultsContent");
   resultsContent.innerHTML = getResults(noPoints);
@@ -3600,16 +3844,22 @@ function closeModal() {
 
 // Function to get unique labels from the overlays
 function getUniqueLabels() {
-  const noPoints = parseInt(document.getElementById("no-points").value);
+  // const noPoints = parseInt(document.getElementById("no-points").value);
+  const noPoints = parseInt(countJSON.features.length);
+  if (noPoints === 0) {
+    return [];
+  }
   const labels = new Set();
 
   for (let value = 1; value <= noPoints; value++) {
-    const overlayId = `pointLabel-${value - 1}`;
-    const overlay = viewer.getOverlayById(overlayId);
-    if (overlay && overlay.label) {
-      labels.add(overlay.label); // Add label to the Set (automatically ensures uniqueness)
+    const label = countJSON.features[value - 1].properties.id;
+    console.log("label", label);
+    if (label !== "") {
+      // Don't count uncounted locations
+      labels.add(label); // Add label to the Set (automatically ensures uniqueness)
     }
   }
+  console.log("labels", labels);
   return Array.from(labels); // Convert Set to Array
 }
 
@@ -3632,37 +3882,38 @@ function populateDropdown() {
   });
 }
 
-// // Function to filter overlays based on selected label
+// TODO: Enable checkbox-style filtering, such that any combination of
+// unique counts could be shown or ommitted
+// Function to filter overlays based on selected label
 function filterOverlays() {
   const filterDropdown = document.getElementById("filterDropdown");
   const selectedLabel = filterDropdown.value;
-
   const noPoints = parseInt(document.getElementById("no-points").value);
-  for (let value = 1; value <= noPoints; value++) {
-    const overlayId = `pointLabel-${value - 1}`;
-    const overlay = viewer.getOverlayById(overlayId);
-    const crosshairId = `crosshair-${value - 1}`;
-    const overlayCrosshair = viewer.getOverlayById(crosshairId);
 
-    if (overlay) {
-      // Manage visibility by changing the opacity of the overlay element
-      if (selectedLabel === "all" || overlay.label === selectedLabel) {
-        overlay.element.style.visibility = "visible"; // Make overlay visible
-        overlayCrosshair.element.style.visibility = "visible"; // Make overlay visible
-      } else {
-        overlay.element.style.visibility = "hidden"; // Hide overlay
-        overlayCrosshair.element.style.visibility = "hidden"; // Hide overlay
-      }
+  for (let value = 1; value <= noPoints; value++) {
+    const label = countJSON.features[value - 1].properties.id;
+    const uuid = countJSON.features[value - 1].properties.uuid;
+    const textOverlay = viewer.getOverlayById(`grid-label-${uuid}`);
+    const crosshairOverlay = viewer.getOverlayById(`grid-crosshair-${uuid}`);
+
+    // Manage visibility by changing the opacity of the overlay element
+    if (selectedLabel === "all" || label === selectedLabel) {
+      textOverlay.element.style.visibility = "visible"; // Make overlay visible
+      crosshairOverlay.element.style.visibility = "visible"; // Make overlay visible
+    } else {
+      textOverlay.element.style.visibility = "hidden"; // Hide overlay
+      crosshairOverlay.element.style.visibility = "hidden"; // Hide overlay
     }
   }
 }
 
 // Ensure overlays respect the filter on each viewport update (for panning, zooming, etc.)
 function enforceOverlayVisibility() {
-  const noPoints = parseInt(document.getElementById("no-points").value);
+  // const noPoints = parseInt(document.getElementById("no-points").value);
+  const noPoints = parseInt(countJSON.features.length);
 
   for (let value = 1; value <= noPoints; value++) {
-    const overlayId = `pointLabel-${value - 1}`;
+    const overlayId = `grid-label-${value - 1}`;
     const overlay = viewer.getOverlayById(overlayId);
 
     if (overlay) {
