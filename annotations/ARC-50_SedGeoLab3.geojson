@@ -1,0 +1,615 @@
+{
+  "1": {
+    "type": "Feature",
+    "geometry": {
+      "type": "Polygon",
+      "coordinates": [
+        [
+          [
+            4568.764857963124,
+            6439.135529164654
+          ],
+          [
+            5645.40735476715,
+            6439.135529164654
+          ],
+          [
+            5645.40735476715,
+            7170.199678961438
+          ],
+          [
+            4568.764857963124,
+            7170.199678961438
+          ],
+          [
+            4568.764857963124,
+            6439.135529164654
+          ]
+        ]
+      ]
+    },
+    "properties": {
+      "uuid": "m5mxhj74",
+      "label": "K-feldspar",
+      "xLabel": 4568.764857963124,
+      "yLabel": 6439.135529164654,
+      "w": 1076.6424968040255,
+      "h": 731.0641497967836,
+      "imageTitle": "ARC-50",
+      "pixelsPerMeter": 398000,
+      "imageWidth": 18031,
+      "imageHeight": 10340,
+      "labelFontSize": 16,
+      "labelFontColor": "#ffffff",
+      "labelBackgroundColor": "#000000",
+      "labelBackgroundOpacity": 0.5,
+      "lineStyle": "solid",
+      "lineWeight": 2,
+      "lineColor": "#008000",
+      "lineOpacity": 1,
+      "fillColor": "#ffffff",
+      "fillOpacity": 0,
+      "canvasDraw": false
+    }
+  },
+  "2": {
+    "type": "Feature",
+    "geometry": {
+      "type": "Polygon",
+      "coordinates": [
+        [
+          [
+            2905.49324092781,
+            7122.903526844519
+          ],
+          [
+            3402.470500825594,
+            7122.903526844519
+          ],
+          [
+            3402.470500825594,
+            7386.984624085289
+          ],
+          [
+            2905.49324092781,
+            7386.984624085289
+          ],
+          [
+            2905.49324092781,
+            7122.903526844519
+          ]
+        ]
+      ]
+    },
+    "properties": {
+      "uuid": "m5mxirb6",
+      "label": "Qp",
+      "xLabel": 2905.49324092781,
+      "yLabel": 7122.903526844519,
+      "w": 496.9772598977843,
+      "h": 264.08109724077076,
+      "imageTitle": "ARC-50",
+      "pixelsPerMeter": 398000,
+      "imageWidth": 18031,
+      "imageHeight": 10340,
+      "labelFontSize": 16,
+      "labelFontColor": "#ffffff",
+      "labelBackgroundColor": "#000000",
+      "labelBackgroundOpacity": 0.5,
+      "lineStyle": "solid",
+      "lineWeight": 2,
+      "lineColor": "#008000",
+      "lineOpacity": 1,
+      "fillColor": "#ffffff",
+      "fillOpacity": 0,
+      "canvasDraw": false
+    }
+  },
+  "3": {
+    "type": "Feature",
+    "geometry": {
+      "type": "Polygon",
+      "coordinates": [
+        [
+          [
+            2779.3651903312043,
+            7888.586607231503
+          ],
+          [
+            3688.7171278628202,
+            7888.586607231503
+          ],
+          [
+            3688.7171278628202,
+            8577.926535026734
+          ],
+          [
+            2779.3651903312043,
+            8577.926535026734
+          ],
+          [
+            2779.3651903312043,
+            7888.586607231503
+          ]
+        ]
+      ]
+    },
+    "properties": {
+      "uuid": "m5mxkd18",
+      "label": "Intergrowth of K and P",
+      "xLabel": 2779.3651903312043,
+      "yLabel": 7888.586607231503,
+      "w": 909.3519375316159,
+      "h": 689.3399277952312,
+      "imageTitle": "ARC-50",
+      "pixelsPerMeter": 398000,
+      "imageWidth": 18031,
+      "imageHeight": 10340,
+      "labelFontSize": 16,
+      "labelFontColor": "#ffffff",
+      "labelBackgroundColor": "#000000",
+      "labelBackgroundOpacity": 0.5,
+      "lineStyle": "solid",
+      "lineWeight": 2,
+      "lineColor": "#008000",
+      "lineOpacity": 1,
+      "fillColor": "#ffffff",
+      "fillOpacity": 0,
+      "canvasDraw": false
+    }
+  },
+  "4": {
+    "type": "Feature",
+    "geometry": {
+      "type": "Polygon",
+      "coordinates": [
+        [
+          [
+            6607.260452585919,
+            6957.047259982132
+          ],
+          [
+            8113.785932624848,
+            6957.047259982132
+          ],
+          [
+            8113.785932624848,
+            8017.263669701697
+          ],
+          [
+            6607.260452585919,
+            8017.263669701697
+          ],
+          [
+            6607.260452585919,
+            6957.047259982132
+          ]
+        ]
+      ]
+    },
+    "properties": {
+      "uuid": "m5mxkz6c",
+      "label": "Large Q with two domains",
+      "xLabel": 6607.260452585919,
+      "yLabel": 6957.047259982132,
+      "w": 1506.5254800389293,
+      "h": 1060.2164097195646,
+      "imageTitle": "ARC-50",
+      "pixelsPerMeter": 398000,
+      "imageWidth": 18031,
+      "imageHeight": 10340,
+      "labelFontSize": 16,
+      "labelFontColor": "#ffffff",
+      "labelBackgroundColor": "#000000",
+      "labelBackgroundOpacity": 0.5,
+      "lineStyle": "solid",
+      "lineWeight": 2,
+      "lineColor": "#008000",
+      "lineOpacity": 1,
+      "fillColor": "#ffffff",
+      "fillOpacity": 0,
+      "canvasDraw": false
+    }
+  },
+  "5": {
+    "type": "Feature",
+    "geometry": {
+      "type": "Polygon",
+      "coordinates": [
+        [
+          [
+            3794.538636921854,
+            3922.1894325235558
+          ],
+          [
+            5898.6946933878335,
+            3922.1894325235558
+          ],
+          [
+            5898.6946933878335,
+            5076.28931147492
+          ],
+          [
+            3794.538636921854,
+            5076.28931147492
+          ],
+          [
+            3794.538636921854,
+            3922.1894325235558
+          ]
+        ]
+      ]
+    },
+    "properties": {
+      "uuid": "m5mxln0m",
+      "label": "Plutonic lithic with Q, K, and P",
+      "xLabel": 3794.538636921854,
+      "yLabel": 3922.1894325235558,
+      "w": 2104.1560564659794,
+      "h": 1154.0998789513646,
+      "imageTitle": "ARC-50",
+      "pixelsPerMeter": 398000,
+      "imageWidth": 18031,
+      "imageHeight": 10340,
+      "labelFontSize": 16,
+      "labelFontColor": "#ffffff",
+      "labelBackgroundColor": "#000000",
+      "labelBackgroundOpacity": 0.5,
+      "lineStyle": "solid",
+      "lineWeight": 2,
+      "lineColor": "#008000",
+      "lineOpacity": 1,
+      "fillColor": "#ffffff",
+      "fillOpacity": 0,
+      "canvasDraw": false
+    }
+  },
+  "6": {
+    "type": "Feature",
+    "geometry": {
+      "type": "Polygon",
+      "coordinates": [
+        [
+          [
+            1787.5776306226726,
+            3028.855216052778
+          ],
+          [
+            2172.3092575078585,
+            3028.855216052778
+          ],
+          [
+            2172.3092575078585,
+            3408.7112479606753
+          ],
+          [
+            1787.5776306226726,
+            3408.7112479606753
+          ],
+          [
+            1787.5776306226726,
+            3028.855216052778
+          ]
+        ]
+      ]
+    },
+    "properties": {
+      "uuid": "m5mxmdeh",
+      "label": "Twinned P, partially altered",
+      "xLabel": 1787.5776306226726,
+      "yLabel": 3028.855216052778,
+      "w": 384.73162688518596,
+      "h": 379.85603190789743,
+      "imageTitle": "ARC-50",
+      "pixelsPerMeter": 398000,
+      "imageWidth": 18031,
+      "imageHeight": 10340,
+      "labelFontSize": 16,
+      "labelFontColor": "#ffffff",
+      "labelBackgroundColor": "#000000",
+      "labelBackgroundOpacity": 0.5,
+      "lineStyle": "solid",
+      "lineWeight": 2,
+      "lineColor": "#008000",
+      "lineOpacity": 1,
+      "fillColor": "#ffffff",
+      "fillOpacity": 0,
+      "canvasDraw": false
+    }
+  },
+  "7": {
+    "type": "Feature",
+    "geometry": {
+      "type": "Point",
+      "coordinates": [
+        6473.791409777759,
+        3855.1362380291444
+      ]
+    },
+    "properties": {
+      "uuid": "m5mxn5yb",
+      "label": "P",
+      "xLabel": 6473.791409777759,
+      "yLabel": 3855.1362380291444,
+      "imageTitle": "ARC-50",
+      "pixelsPerMeter": 398000,
+      "imageWidth": 18031,
+      "imageHeight": 10340,
+      "labelFontSize": 16,
+      "labelFontColor": "#ffffff",
+      "labelBackgroundColor": "#000000",
+      "labelBackgroundOpacity": 0.5,
+      "lineWeight": 2,
+      "lineColor": "#008000",
+      "lineOpacity": 1
+    }
+  },
+  "8": {
+    "type": "Feature",
+    "geometry": {
+      "type": "Point",
+      "coordinates": [
+        6670.2529965882095,
+        5700.492275850278
+      ]
+    },
+    "properties": {
+      "uuid": "m5mxna70",
+      "label": "K",
+      "xLabel": 6670.2529965882095,
+      "yLabel": 5700.492275850278,
+      "imageTitle": "ARC-50",
+      "pixelsPerMeter": 398000,
+      "imageWidth": 18031,
+      "imageHeight": 10340,
+      "labelFontSize": 16,
+      "labelFontColor": "#ffffff",
+      "labelBackgroundColor": "#000000",
+      "labelBackgroundOpacity": 0.5,
+      "lineWeight": 2,
+      "lineColor": "#008000",
+      "lineOpacity": 1
+    }
+  },
+  "9": {
+    "type": "Feature",
+    "geometry": {
+      "type": "Point",
+      "coordinates": [
+        6155.165692832387,
+        2593.0618678529017
+      ]
+    },
+    "properties": {
+      "uuid": "m5mxndzd",
+      "label": "P",
+      "xLabel": 6155.165692832387,
+      "yLabel": 2593.0618678529017,
+      "imageTitle": "ARC-50",
+      "pixelsPerMeter": 398000,
+      "imageWidth": 18031,
+      "imageHeight": 10340,
+      "labelFontSize": 16,
+      "labelFontColor": "#ffffff",
+      "labelBackgroundColor": "#000000",
+      "labelBackgroundOpacity": 0.5,
+      "lineWeight": 2,
+      "lineColor": "#008000",
+      "lineOpacity": 1
+    }
+  },
+  "10": {
+    "type": "Feature",
+    "geometry": {
+      "type": "Point",
+      "coordinates": [
+        4205.103770309116,
+        2822.6908686228203
+      ]
+    },
+    "properties": {
+      "uuid": "m5mxngq5",
+      "label": "K",
+      "xLabel": 4205.103770309116,
+      "yLabel": 2822.6908686228203,
+      "imageTitle": "ARC-50",
+      "pixelsPerMeter": 398000,
+      "imageWidth": 18031,
+      "imageHeight": 10340,
+      "labelFontSize": 16,
+      "labelFontColor": "#ffffff",
+      "labelBackgroundColor": "#000000",
+      "labelBackgroundOpacity": 0.5,
+      "lineWeight": 2,
+      "lineColor": "#008000",
+      "lineOpacity": 1
+    }
+  },
+  "11": {
+    "type": "Feature",
+    "geometry": {
+      "type": "Point",
+      "coordinates": [
+        3045.913130624059,
+        5398.615799870845
+      ]
+    },
+    "properties": {
+      "uuid": "m5mxnjgi",
+      "label": "P",
+      "xLabel": 3045.913130624059,
+      "yLabel": 5398.615799870845,
+      "imageTitle": "ARC-50",
+      "pixelsPerMeter": 398000,
+      "imageWidth": 18031,
+      "imageHeight": 10340,
+      "labelFontSize": 16,
+      "labelFontColor": "#ffffff",
+      "labelBackgroundColor": "#000000",
+      "labelBackgroundOpacity": 0.5,
+      "lineWeight": 2,
+      "lineColor": "#008000",
+      "lineOpacity": 1
+    }
+  },
+  "12": {
+    "type": "Feature",
+    "geometry": {
+      "type": "Point",
+      "coordinates": [
+        2892.0819880107683,
+        1478.2604075542404
+      ]
+    },
+    "properties": {
+      "uuid": "m5mxnq4w",
+      "label": "K",
+      "xLabel": 2892.0819880107683,
+      "yLabel": 1478.2604075542404,
+      "imageTitle": "ARC-50",
+      "pixelsPerMeter": 398000,
+      "imageWidth": 18031,
+      "imageHeight": 10340,
+      "labelFontSize": 16,
+      "labelFontColor": "#ffffff",
+      "labelBackgroundColor": "#000000",
+      "labelBackgroundOpacity": 0.5,
+      "lineWeight": 2,
+      "lineColor": "#008000",
+      "lineOpacity": 1
+    }
+  },
+  "13": {
+    "type": "Feature",
+    "geometry": {
+      "type": "Polygon",
+      "coordinates": [
+        [
+          [
+            8970.44867591977,
+            5922.05354638625
+          ],
+          [
+            11705.070089375278,
+            5922.05354638625
+          ],
+          [
+            11705.070089375278,
+            7346.189165362777
+          ],
+          [
+            8970.44867591977,
+            7346.189165362777
+          ],
+          [
+            8970.44867591977,
+            5922.05354638625
+          ]
+        ]
+      ]
+    },
+    "properties": {
+      "uuid": "m5mxp981",
+      "label": "Plutonic rock fragment with K and P",
+      "xLabel": 8970.44867591977,
+      "yLabel": 5922.05354638625,
+      "w": 2734.6214134555084,
+      "h": 1424.1356189765274,
+      "imageTitle": "ARC-50",
+      "pixelsPerMeter": 398000,
+      "imageWidth": 18031,
+      "imageHeight": 10340,
+      "labelFontSize": 16,
+      "labelFontColor": "#ffffff",
+      "labelBackgroundColor": "#000000",
+      "labelBackgroundOpacity": 0.5,
+      "lineStyle": "solid",
+      "lineWeight": 2,
+      "lineColor": "#008000",
+      "lineOpacity": 1,
+      "fillColor": "#ffffff",
+      "fillOpacity": 0,
+      "canvasDraw": false
+    }
+  },
+  "14": {
+    "type": "Feature",
+    "geometry": {
+      "type": "Point",
+      "coordinates": [
+        12538.79453195535,
+        1901.9549383753251
+      ]
+    },
+    "properties": {
+      "uuid": "m5mxtgg5",
+      "label": "X",
+      "xLabel": 12538.79453195535,
+      "yLabel": 1901.9549383753251,
+      "imageTitle": "ARC-50",
+      "pixelsPerMeter": 398000,
+      "imageWidth": 18031,
+      "imageHeight": 10340,
+      "labelFontSize": 16,
+      "labelFontColor": "#ffffff",
+      "labelBackgroundColor": "#000000",
+      "labelBackgroundOpacity": 0.5,
+      "lineWeight": 2,
+      "lineColor": "#008000",
+      "lineOpacity": 1
+    }
+  },
+  "15": {
+    "type": "Feature",
+    "geometry": {
+      "type": "Polygon",
+      "coordinates": [
+        [
+          [
+            8593.561347575804,
+            2480.202751820882
+          ],
+          [
+            9444.252199884058,
+            2480.202751820882
+          ],
+          [
+            9444.252199884058,
+            3643.2871242442343
+          ],
+          [
+            8593.561347575804,
+            3643.2871242442343
+          ],
+          [
+            8593.561347575804,
+            2480.202751820882
+          ]
+        ]
+      ]
+    },
+    "properties": {
+      "uuid": "m5mxu0jz",
+      "label": "Qp",
+      "xLabel": 8593.561347575804,
+      "yLabel": 2480.202751820882,
+      "w": 850.6908523082548,
+      "h": 1163.0843724233523,
+      "imageTitle": "ARC-50",
+      "pixelsPerMeter": 398000,
+      "imageWidth": 18031,
+      "imageHeight": 10340,
+      "labelFontSize": 16,
+      "labelFontColor": "#ffffff",
+      "labelBackgroundColor": "#000000",
+      "labelBackgroundOpacity": 0.5,
+      "lineStyle": "solid",
+      "lineWeight": 2,
+      "lineColor": "#008000",
+      "lineOpacity": 1,
+      "fillColor": "#ffffff",
+      "fillOpacity": 0,
+      "canvasDraw": false
+    }
+  }
+}

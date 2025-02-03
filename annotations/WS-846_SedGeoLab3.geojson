@@ -1,0 +1,267 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              11956.860923875427,
+              8621.512861338455
+            ],
+            [
+              12137.986469430349,
+              8621.512861338455
+            ],
+            [
+              12137.986469430349,
+              8755.9863431099
+            ],
+            [
+              11956.860923875427,
+              8755.9863431099
+            ],
+            [
+              11956.860923875427,
+              8621.512861338455
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "uuid": "m5mx9n80",
+        "label": "Moldic pore",
+        "xLabel": 11956.860923875427,
+        "yLabel": 8621.512861338455,
+        "w": 181.1255455549217,
+        "h": 134.47348177144522,
+        "imageTitle": "WS-846",
+        "pixelsPerMeter": 398000,
+        "imageWidth": 17744,
+        "imageHeight": 10613,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineStyle": "solid",
+        "lineWeight": 3,
+        "lineColor": "#ff0000",
+        "lineOpacity": 1,
+        "fillColor": "#ffffff",
+        "fillOpacity": 0,
+        "canvasDraw": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              11714.392455519426,
+              9405.80015485981
+            ],
+            [
+              12276.329086304488,
+              9405.80015485981
+            ],
+            [
+              12276.329086304488,
+              9597.904622733027
+            ],
+            [
+              11714.392455519426,
+              9597.904622733027
+            ],
+            [
+              11714.392455519426,
+              9405.80015485981
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "uuid": "m5mxal01",
+        "label": "Irregular contact due to pressure solution",
+        "xLabel": 11714.392455519426,
+        "yLabel": 9405.80015485981,
+        "w": 561.9366307850614,
+        "h": 192.1044678732178,
+        "imageTitle": "WS-846",
+        "pixelsPerMeter": 398000,
+        "imageWidth": 17744,
+        "imageHeight": 10613,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineStyle": "solid",
+        "lineWeight": 3,
+        "lineColor": "#ff0000",
+        "lineOpacity": 1,
+        "fillColor": "#ffffff",
+        "fillOpacity": 0,
+        "canvasDraw": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              3305.021675244166,
+              8776.243155905753
+            ],
+            [
+              3453.386044226737,
+              8776.243155905753
+            ],
+            [
+              3453.386044226737,
+              8936.283636996559
+            ],
+            [
+              3305.021675244166,
+              8936.283636996559
+            ],
+            [
+              3305.021675244166,
+              8776.243155905753
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "uuid": "m5mxblge",
+        "label": "Partially dissolved grain",
+        "xLabel": 3305.021675244166,
+        "yLabel": 8776.243155905753,
+        "w": 148.3643689825708,
+        "h": 160.04048109080577,
+        "imageTitle": "WS-846",
+        "pixelsPerMeter": 398000,
+        "imageWidth": 17744,
+        "imageHeight": 10613,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineStyle": "solid",
+        "lineWeight": 3,
+        "lineColor": "#ff0000",
+        "lineOpacity": 1,
+        "fillColor": "#ffffff",
+        "fillOpacity": 0,
+        "canvasDraw": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              13069.377295044556,
+              5375.413439216115
+            ],
+            [
+              13281.434694354777,
+              5375.413439216115
+            ],
+            [
+              13281.434694354777,
+              5615.626785085467
+            ],
+            [
+              13069.377295044556,
+              5615.626785085467
+            ],
+            [
+              13069.377295044556,
+              5375.413439216115
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "uuid": "m5mxd3ic",
+        "label": "Partially dissolved grain",
+        "xLabel": 13069.377295044556,
+        "yLabel": 5375.413439216115,
+        "w": 212.05739931022072,
+        "h": 240.21334586935245,
+        "imageTitle": "WS-846",
+        "pixelsPerMeter": 398000,
+        "imageWidth": 17744,
+        "imageHeight": 10613,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineStyle": "solid",
+        "lineWeight": 3,
+        "lineColor": "#ff0000",
+        "lineOpacity": 1,
+        "fillColor": "#ffffff",
+        "fillOpacity": 0,
+        "canvasDraw": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              11862.808879244683,
+              9064.639421168698
+            ],
+            [
+              12186.17106044982,
+              9064.639421168698
+            ],
+            [
+              12186.17106044982,
+              9289.377452656234
+            ],
+            [
+              11862.808879244683,
+              9289.377452656234
+            ],
+            [
+              11862.808879244683,
+              9064.639421168698
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "uuid": "m6phoigq",
+        "label": "Partially dissolved grain",
+        "xLabel": 11862.808879244683,
+        "yLabel": 9064.639421168698,
+        "imageTitle": "WS-846",
+        "pixelsPerMeter": 398000,
+        "imageWidth": 17744,
+        "imageHeight": 10613,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineStyle": "solid",
+        "lineWeight": 3,
+        "lineColor": "#ff0000",
+        "lineOpacity": 1,
+        "fillColor": "#ffffff",
+        "fillOpacity": 0
+      }
+    }
+  ]
+}

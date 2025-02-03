@@ -1,0 +1,360 @@
+{
+  "1": {
+    "type": "Feature",
+    "geometry": {
+      "type": "Polygon",
+      "coordinates": [
+        [
+          [5546.035323127192, 10197.563821108793],
+          [5985.93987324965, 10197.563821108793],
+          [5985.93987324965, 10504.539752522202],
+          [5546.035323127192, 10504.539752522202],
+          [5546.035323127192, 10197.563821108793]
+        ]
+      ]
+    },
+    "properties": {
+      "uuid": "m5my7km0",
+      "label": "P",
+      "xLabel": 5546.035323127192,
+      "yLabel": 10197.563821108793,
+      "w": 439.9045501224582,
+      "h": 306.97593141340803,
+      "imageTitle": "ARC-45",
+      "pixelsPerMeter": 398000,
+      "imageWidth": 18100,
+      "imageHeight": 10568,
+      "labelFontSize": 16,
+      "labelFontColor": "#ffffff",
+      "labelBackgroundColor": "#000000",
+      "labelBackgroundOpacity": 0.5,
+      "lineStyle": "solid",
+      "lineWeight": 2,
+      "lineColor": "#008000",
+      "lineOpacity": 1,
+      "fillColor": "#ffffff",
+      "fillOpacity": 0,
+      "canvasDraw": false
+    }
+  },
+  "2": {
+    "type": "Feature",
+    "geometry": {
+      "type": "Polygon",
+      "coordinates": [
+        [
+          [6452.065133351591, 10145.959098690857],
+          [6661.966050851693, 10145.959098690857],
+          [6661.966050851693, 10496.64019325787],
+          [6452.065133351591, 10496.64019325787],
+          [6452.065133351591, 10145.959098690857]
+        ]
+      ]
+    },
+    "properties": {
+      "uuid": "m5my7otv",
+      "label": "K",
+      "xLabel": 6452.065133351591,
+      "yLabel": 10145.959098690857,
+      "w": 209.90091750010197,
+      "h": 350.68109456701313,
+      "imageTitle": "ARC-45",
+      "pixelsPerMeter": 398000,
+      "imageWidth": 18100,
+      "imageHeight": 10568,
+      "labelFontSize": 16,
+      "labelFontColor": "#ffffff",
+      "labelBackgroundColor": "#000000",
+      "labelBackgroundOpacity": 0.5,
+      "lineStyle": "solid",
+      "lineWeight": 2,
+      "lineColor": "#008000",
+      "lineOpacity": 1,
+      "fillColor": "#ffffff",
+      "fillOpacity": 0,
+      "canvasDraw": false
+    }
+  },
+  "3": {
+    "type": "Feature",
+    "geometry": {
+      "type": "Point",
+      "coordinates": [6197.217939839227, 10486.579672813798]
+    },
+    "properties": {
+      "uuid": "m5my7tpz",
+      "label": "K",
+      "xLabel": 6197.217939839227,
+      "yLabel": 10486.579672813798,
+      "imageTitle": "ARC-45",
+      "pixelsPerMeter": 398000,
+      "imageWidth": 18100,
+      "imageHeight": 10568,
+      "labelFontSize": 16,
+      "labelFontColor": "#ffffff",
+      "labelBackgroundColor": "#000000",
+      "labelBackgroundOpacity": 0.5,
+      "lineWeight": 2,
+      "lineColor": "#008000",
+      "lineOpacity": 1
+    }
+  },
+  "4": {
+    "type": "Feature",
+    "geometry": {
+      "type": "Point",
+      "coordinates": [6126.926648548732, 10422.888605717975]
+    },
+    "properties": {
+      "uuid": "m5my7w0r",
+      "label": "P",
+      "xLabel": 6126.926648548732,
+      "yLabel": 10422.888605717975,
+      "imageTitle": "ARC-45",
+      "pixelsPerMeter": 398000,
+      "imageWidth": 18100,
+      "imageHeight": 10568,
+      "labelFontSize": 16,
+      "labelFontColor": "#ffffff",
+      "labelBackgroundColor": "#000000",
+      "labelBackgroundOpacity": 0.5,
+      "lineWeight": 2,
+      "lineColor": "#008000",
+      "lineOpacity": 1
+    }
+  },
+  "5": {
+    "type": "Feature",
+    "geometry": {
+      "type": "Point",
+      "coordinates": [4926.99453327682, 10488.24082570056]
+    },
+    "properties": {
+      "uuid": "m5my846s",
+      "label": "K",
+      "xLabel": 4926.99453327682,
+      "yLabel": 10488.24082570056,
+      "imageTitle": "ARC-45",
+      "pixelsPerMeter": 398000,
+      "imageWidth": 18100,
+      "imageHeight": 10568,
+      "labelFontSize": 16,
+      "labelFontColor": "#ffffff",
+      "labelBackgroundColor": "#000000",
+      "labelBackgroundOpacity": 0.5,
+      "lineWeight": 2,
+      "lineColor": "#008000",
+      "lineOpacity": 1
+    }
+  },
+  "6": {
+    "type": "Feature",
+    "geometry": {
+      "type": "Point",
+      "coordinates": [4452.1652835093, 10261.716980171186]
+    },
+    "properties": {
+      "uuid": "m5my86vh",
+      "label": "K?",
+      "xLabel": 4452.1652835093,
+      "yLabel": 10261.716980171186,
+      "imageTitle": "ARC-45",
+      "pixelsPerMeter": 398000,
+      "imageWidth": 18100,
+      "imageHeight": 10568,
+      "labelFontSize": 16,
+      "labelFontColor": "#ffffff",
+      "labelBackgroundColor": "#000000",
+      "labelBackgroundOpacity": 0.5,
+      "lineWeight": 2,
+      "lineColor": "#008000",
+      "lineOpacity": 1
+    }
+  },
+  "7": {
+    "type": "Feature",
+    "geometry": {
+      "type": "Point",
+      "coordinates": [8642.545270644827, 10329.624404320124]
+    },
+    "properties": {
+      "uuid": "m5my8b0e",
+      "label": "K",
+      "xLabel": 8642.545270644827,
+      "yLabel": 10329.624404320124,
+      "imageTitle": "ARC-45",
+      "pixelsPerMeter": 398000,
+      "imageWidth": 18100,
+      "imageHeight": 10568,
+      "labelFontSize": 16,
+      "labelFontColor": "#ffffff",
+      "labelBackgroundColor": "#000000",
+      "labelBackgroundOpacity": 0.5,
+      "lineWeight": 2,
+      "lineColor": "#008000",
+      "lineOpacity": 1
+    }
+  },
+  "8": {
+    "type": "Feature",
+    "geometry": {
+      "type": "Point",
+      "coordinates": [10717.171369007601, 10152.92616935484]
+    },
+    "properties": {
+      "uuid": "m5my90fd",
+      "label": "K",
+      "xLabel": 10717.171369007601,
+      "yLabel": 10152.92616935484,
+      "imageTitle": "ARC-45",
+      "pixelsPerMeter": 398000,
+      "imageWidth": 18100,
+      "imageHeight": 10568,
+      "labelFontSize": 16,
+      "labelFontColor": "#ffffff",
+      "labelBackgroundColor": "#000000",
+      "labelBackgroundOpacity": 0.5,
+      "lineWeight": 2,
+      "lineColor": "#008000",
+      "lineOpacity": 1
+    }
+  },
+  "9": {
+    "type": "Feature",
+    "geometry": {
+      "type": "Point",
+      "coordinates": [13517.575342116708, 10098.202840956706]
+    },
+    "properties": {
+      "uuid": "m5my9727",
+      "label": "P",
+      "xLabel": 13517.575342116708,
+      "yLabel": 10098.202840956706,
+      "imageTitle": "ARC-45",
+      "pixelsPerMeter": 398000,
+      "imageWidth": 18100,
+      "imageHeight": 10568,
+      "labelFontSize": 16,
+      "labelFontColor": "#ffffff",
+      "labelBackgroundColor": "#000000",
+      "labelBackgroundOpacity": 0.5,
+      "lineWeight": 2,
+      "lineColor": "#008000",
+      "lineOpacity": 1
+    }
+  },
+  "10": {
+    "type": "Feature",
+    "geometry": {
+      "type": "Polygon",
+      "coordinates": [
+        [
+          [8841.441629210625, 5192.508569354274],
+          [9051.27560596514, 5192.508569354274],
+          [9051.27560596514, 5379.172206905361],
+          [8841.441629210625, 5379.172206905361],
+          [8841.441629210625, 5192.508569354274]
+        ]
+      ]
+    },
+    "properties": {
+      "uuid": "m5myaif1",
+      "label": "Poikilotopic calcite",
+      "xLabel": 8841.441629210625,
+      "yLabel": 5192.508569354274,
+      "w": 209.83397675451488,
+      "h": 186.66363755108705,
+      "imageTitle": "ARC-45",
+      "pixelsPerMeter": 398000,
+      "imageWidth": 18100,
+      "imageHeight": 10568,
+      "labelFontSize": 16,
+      "labelFontColor": "#ffffff",
+      "labelBackgroundColor": "#000000",
+      "labelBackgroundOpacity": 0.5,
+      "lineStyle": "solid",
+      "lineWeight": 2,
+      "lineColor": "#008000",
+      "lineOpacity": 1,
+      "fillColor": "#ffffff",
+      "fillOpacity": 0,
+      "canvasDraw": false
+    }
+  },
+  "11": {
+    "type": "Feature",
+    "geometry": {
+      "type": "Polygon",
+      "coordinates": [
+        [
+          [7919.430259353883, 7550.418710284428],
+          [8129.753018159724, 7550.418710284428],
+          [8129.753018159724, 7802.2943755650285],
+          [7919.430259353883, 7802.2943755650285],
+          [7919.430259353883, 7550.418710284428]
+        ]
+      ]
+    },
+    "properties": {
+      "uuid": "m5myavk6",
+      "label": "Poikilotopic calcite",
+      "xLabel": 7919.430259353883,
+      "yLabel": 7550.418710284428,
+      "w": 210.32275880584075,
+      "h": 251.87566528060051,
+      "imageTitle": "ARC-45",
+      "pixelsPerMeter": 398000,
+      "imageWidth": 18100,
+      "imageHeight": 10568,
+      "labelFontSize": 16,
+      "labelFontColor": "#ffffff",
+      "labelBackgroundColor": "#000000",
+      "labelBackgroundOpacity": 0.5,
+      "lineStyle": "solid",
+      "lineWeight": 2,
+      "lineColor": "#008000",
+      "lineOpacity": 1,
+      "fillColor": "#ffffff",
+      "fillOpacity": 0,
+      "canvasDraw": false
+    }
+  },
+  "12": {
+    "type": "Feature",
+    "geometry": {
+      "type": "Polygon",
+      "coordinates": [
+        [
+          [5919.305683267113, 6417.447738077011],
+          [6122.7943228902095, 6417.447738077011],
+          [6122.7943228902095, 6617.895742855165],
+          [5919.305683267113, 6617.895742855165],
+          [5919.305683267113, 6417.447738077011]
+        ]
+      ]
+    },
+    "properties": {
+      "uuid": "m5mybpq7",
+      "label": "Poikilotopic calcite",
+      "xLabel": 5919.305683267113,
+      "yLabel": 6417.447738077011,
+      "w": 203.4886396230968,
+      "h": 200.44800477815352,
+      "imageTitle": "ARC-45",
+      "pixelsPerMeter": 398000,
+      "imageWidth": 18100,
+      "imageHeight": 10568,
+      "labelFontSize": 16,
+      "labelFontColor": "#ffffff",
+      "labelBackgroundColor": "#000000",
+      "labelBackgroundOpacity": 0.5,
+      "lineStyle": "solid",
+      "lineWeight": 2,
+      "lineColor": "#008000",
+      "lineOpacity": 1,
+      "fillColor": "#ffffff",
+      "fillOpacity": 0,
+      "canvasDraw": false
+    }
+  }
+}

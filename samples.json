@@ -26,7 +26,8 @@
       "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/ARCS-44 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/ARCS-44 01 2.5x XPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/ARCS-44 01 2.5x XPL30 final.dzi"
-    ]
+    ],
+    "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/ARCS-44_SedGeoLab3.geojson"
   },
   "ARCS-46": {
     "groups": ["Favorites", "SedGeo"],
@@ -54,7 +55,8 @@
       "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/ARCS-51 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/ARCS-51 01 2.5x XPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/ARCS-51 01 2.5x XPL45 final.dzi"
-    ]
+    ],
+    "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/ARCs-51_SedGeoLab3.geojson"
   },
   "ARCS-59": {
     "groups": ["Favorites", "SedGeo"],
@@ -96,7 +98,8 @@
       "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/ARC-45 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/ARC-45 01 2.5x XPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/ARC-45 01 2.5x XPL30 final.dzi"
-    ]
+    ],
+    "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/ARC-45_SedGeoLab3.geojson"
   },
   "ARC-50": {
     "groups": ["Favorites", "SedGeo"],
@@ -110,7 +113,8 @@
       "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/ARC-50 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/ARC-50 01 2.5x XPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/ARC-50 01 2.5x XPL30 final.dzi"
-    ]
+    ],
+    "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/ARC-50_SedGeoLab3.geojson"
   },
   "ARC-62": {
     "groups": ["Favorites", "SedGeo"],
@@ -808,7 +812,8 @@
       "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/WS-208 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/WS-208 01 2.5x XPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/WS-208 01 2.5x XPL30 final.dzi"
-    ]
+    ],
+    "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/WS-208_SedGeoLab3.geojson"
   },
   "WS-846": {
     "groups": ["SedGeo"],

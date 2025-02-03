@@ -1,0 +1,205 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              4491.061745399178,
+              2960.4889418753937
+            ],
+            [
+              4616.427518243073,
+              2960.4889418753937
+            ],
+            [
+              4616.427518243073,
+              3085.9926702078264
+            ],
+            [
+              4491.061745399178,
+              3085.9926702078264
+            ],
+            [
+              4491.061745399178,
+              2960.4889418753937
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "uuid": "m6phlthk",
+        "label": "Accessory mineral",
+        "xLabel": 4491.061745399178,
+        "yLabel": 2960.4889418753937,
+        "imageTitle": "WS-208",
+        "pixelsPerMeter": 398000,
+        "imageWidth": 17863,
+        "imageHeight": 10649,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineStyle": "solid",
+        "lineWeight": 3,
+        "lineColor": "#ff0000",
+        "lineOpacity": 1,
+        "fillColor": "#ffffff",
+        "fillOpacity": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              5855.422590569129,
+              3549.609458263762
+            ],
+            [
+              5952.5381450378245,
+              3549.609458263762
+            ],
+            [
+              5952.5381450378245,
+              3649.1622263633067
+            ],
+            [
+              5855.422590569129,
+              3649.1622263633067
+            ],
+            [
+              5855.422590569129,
+              3549.609458263762
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "uuid": "m6phm26z",
+        "label": "Accessory mineral?",
+        "xLabel": 5855.422590569129,
+        "yLabel": 3549.609458263762,
+        "imageTitle": "WS-208",
+        "pixelsPerMeter": 398000,
+        "imageWidth": 17863,
+        "imageHeight": 10649,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineStyle": "solid",
+        "lineWeight": 3,
+        "lineColor": "#ff0000",
+        "lineOpacity": 1,
+        "fillColor": "#ffffff",
+        "fillOpacity": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              7413.12739089812,
+              2334.8122522753747
+            ],
+            [
+              7512.308190124862,
+              2334.8122522753747
+            ],
+            [
+              7512.308190124862,
+              2443.478257758534
+            ],
+            [
+              7413.12739089812,
+              2443.478257758534
+            ],
+            [
+              7413.12739089812,
+              2334.8122522753747
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "uuid": "m6phm82i",
+        "label": "Accessory mineral",
+        "xLabel": 7413.12739089812,
+        "yLabel": 2334.8122522753747,
+        "imageTitle": "WS-208",
+        "pixelsPerMeter": 398000,
+        "imageWidth": 17863,
+        "imageHeight": 10649,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineStyle": "solid",
+        "lineWeight": 3,
+        "lineColor": "#ff0000",
+        "lineOpacity": 1,
+        "fillColor": "#ffffff",
+        "fillOpacity": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              4278.580936519355,
+              4999.025027236398
+            ],
+            [
+              4364.841744392824,
+              4999.025027236398
+            ],
+            [
+              4364.841744392824,
+              5086.713214564613
+            ],
+            [
+              4278.580936519355,
+              5086.713214564613
+            ],
+            [
+              4278.580936519355,
+              4999.025027236398
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "uuid": "m6phmgxi",
+        "label": "Accessory mineral",
+        "xLabel": 4278.580936519355,
+        "yLabel": 4999.025027236398,
+        "imageTitle": "WS-208",
+        "pixelsPerMeter": 398000,
+        "imageWidth": 17863,
+        "imageHeight": 10649,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineStyle": "solid",
+        "lineWeight": 3,
+        "lineColor": "#ff0000",
+        "lineOpacity": 1,
+        "fillColor": "#ffffff",
+        "fillOpacity": 0
+      }
+    }
+  ]
+}
