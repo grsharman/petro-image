@@ -56,7 +56,7 @@
       "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/ARCS-51 01 2.5x XPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/ARCS-51 01 2.5x XPL45 final.dzi"
     ],
-    "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/ARCs-51_SedGeoLab3.geojson"
+    "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/ARCS-51_SedGeoLab3.geojson"
   },
   "ARCS-59": {
     "groups": ["Favorites", "SedGeo"],
