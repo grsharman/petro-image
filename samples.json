@@ -827,7 +827,8 @@
       "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/WS-846 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/WS-846 01 2.5x XPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/WS-846 01 2.5x XPL30 final.dzi"
-    ]
+    ],
+    "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/WS-846_SedGeoLab3.geojson"
   },
   "IODP-001": {
     "groups": ["IODP"],
