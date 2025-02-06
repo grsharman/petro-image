@@ -1,0 +1,105 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              8426.247547810113,
+              4495.2511218543095
+            ],
+            [
+              8749.794242401105,
+              4495.2511218543095
+            ],
+            [
+              8749.794242401105,
+              4907.611301107271
+            ],
+            [
+              8426.247547810113,
+              4907.611301107271
+            ],
+            [
+              8426.247547810113,
+              4495.2511218543095
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "uuid": "m6tfzzdc",
+        "label": "Grain 1",
+        "xLabel": 8426.247547810113,
+        "yLabel": 4495.2511218543095,
+        "imageTitle": "SD0020",
+        "pixelsPerMeter": 398000,
+        "imageWidth": 17764,
+        "imageHeight": 10422,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineStyle": "solid",
+        "lineWeight": 3,
+        "lineColor": "#ff0000",
+        "lineOpacity": 1,
+        "fillColor": "#ffffff",
+        "fillOpacity": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              5640.186763293881,
+              6229.3046748597835
+            ],
+            [
+              6012.856563837258,
+              6229.3046748597835
+            ],
+            [
+              6012.856563837258,
+              6457.973706380142
+            ],
+            [
+              5640.186763293881,
+              6457.973706380142
+            ],
+            [
+              5640.186763293881,
+              6229.3046748597835
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "uuid": "m6tg14ut",
+        "label": "Grain 2",
+        "xLabel": 5640.186763293881,
+        "yLabel": 6229.3046748597835,
+        "imageTitle": "SD0020",
+        "pixelsPerMeter": 398000,
+        "imageWidth": 17764,
+        "imageHeight": 10422,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineStyle": "solid",
+        "lineWeight": 3,
+        "lineColor": "#ff0000",
+        "lineOpacity": 1,
+        "fillColor": "#ffffff",
+        "fillOpacity": 0
+      }
+    }
+  ]
+}
