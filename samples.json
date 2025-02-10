@@ -626,7 +626,8 @@
       "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/131-011s 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/131-011s 01 2.5x XPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/131-011s 01 2.5x XPL30 final.dzi"
-    ]
+    ],
+    "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/131-011s_SedGeoLab4.geojson"
   },
   "133-003s": {
     "groups": ["SedGeo"],
@@ -640,7 +641,8 @@
       "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/133-003s 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/133-003s 01 2.5x XPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/133-003s 01 2.5x XPL30 final.dzi"
-    ]
+    ],
+    "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/133-003s_SedGeoLab4.geojson"
   },
   "133-004s": {
     "groups": ["SedGeo"],
