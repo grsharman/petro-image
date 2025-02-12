@@ -745,6 +745,15 @@ input[type="range"] {
   z-index: 1000; /* Above viewer */
 }
 
+#circle-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1000; /* Above viewer */
+}
+
 /* Length display field */
 #distance::-webkit-inner-spin-button,
 #distance::-webkit-outer-spin-button {

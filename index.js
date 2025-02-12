@@ -1463,6 +1463,7 @@ let clickTimeout; // Timeout reference to detect double-click
 const clickDelay = 300; // Maximum delay between clicks for detecting double-click
 let lastClickTime = 0; // Timestamp of the last click
 const polyCanvas = document.getElementById("annotation-overlay"); // Includes polyline and polygon
+const circleCanvas = document.getElementById("circle-overlay"); // Includes circles
 let activelyMakingPoly = false; // Either polyline or polygon
 viewer.addHandler("canvas-click", function (event) {
   console.log("canvas clicked");
@@ -1709,11 +1710,13 @@ function updateViewerElementCoordinates(canvas, viewportPoint) {
 // Update previously draw lines
 viewer.addHandler("viewport-change", () => {
   drawShape(polyCanvas, [annoJSONTemp, annoJSON]);
+  drawShape(circleCanvas, [circleJSON]);
 });
 
 // TOOD: Is this necessary? Could be partially redundant with the above function
 viewerContainer.addEventListener("mousemove", () => {
   drawShape(polyCanvas, [annoJSONTemp, annoJSON]);
+  drawShape(circleCanvas, [circleJSON]);
 });
 
 // Event listener for double-click to end collection
@@ -3997,6 +4000,7 @@ let firstViewportPoint;
 let secondViewerElementPoint;
 let secondViewportPoint;
 const measurementButton = document.getElementById("toggleMeasurementButton");
+const circleButton = document.getElementById("toggleCircleButton");
 const distanceElement = document.getElementById("distance");
 const x0 = document.getElementById("x0");
 const y0 = document.getElementById("y0");
@@ -4098,6 +4102,121 @@ function toggleMeasurementMode() {
     console.log("Measurement mode enabled");
   }
 }
+
+let circleJSON = {
+  type: "FeatureCollection",
+  features: [],
+};
+let circleModeActive = false;
+function toggleCircleMode() {
+  const isMeasuring = circleButton.classList.contains("active");
+
+  // Toggle the active state of the button
+  circleButton.classList.toggle("active");
+
+  if (isMeasuring) {
+    // Disable measurement mode
+    circleButton.textContent = "Draw Circle";
+    circleModeActive = false;
+    console.log("Circle mode disabled");
+    circleJSON = {
+      type: "FeatureCollection",
+      features: [],
+    };
+    drawShape(circleCanvas, [circleJSON]);
+  } else {
+    // Enable measurement mode
+    circleButton.textContent = "Stop";
+    circleModeActive = true;
+    console.log("Circle mode enabled");
+  }
+}
+
+function getCircleCoordinatesInImageSpace(centerX, centerY, diameter) {
+  const radius = diameter / 2;
+  const coordinates = [];
+
+  for (let angle = 0; angle <= 360; angle += 5) {
+    const radians = (Math.PI / 180) * angle; // Convert degrees to radians
+
+    // Calculate the x and y offsets from the center
+    const offsetX = radius * Math.cos(radians);
+    const offsetY = radius * Math.sin(radians);
+
+    // Calculate the coordinates of each point along the circle's perimeter
+    const x = centerX + offsetX;
+    const y = centerY + offsetY;
+
+    coordinates.push([x, y]);
+  }
+
+  return coordinates;
+}
+
+// function drawCircle(canvasId, x, y, diameter) {
+//   const canvas = document.getElementById(canvasId);
+
+//   if (!canvas) {
+//     console.error("Canvas not found");
+//     return;
+//   }
+//   const ctx = canvas.getContext("2d");
+
+//   const radius = diameter / 2;
+
+//   ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear previous drawings
+//   ctx.beginPath();
+//   ctx.arc(x, y, radius, 0, Math.PI * 2);
+//   ctx.stroke();
+// }
+
+viewerContainer.addEventListener("mousemove", function (event) {
+  if (!circleModeActive) return; // Only draw when mode is active
+
+  circleJSON = {
+    type: "FeatureCollection",
+    features: [],
+  };
+
+  const circleDiameter = parseFloat(document.getElementById("circle").value);
+  // const rect = viewerContainer.getBoundingClientRect(); // Get container bounds
+  const image = viewer.world.getItemAt(0);
+  const positionPoint = new OpenSeadragon.Point(event.clientX, event.clientY);
+  const viewportPoint = viewer.viewport.pointFromPixel(positionPoint);
+  const imagePoint = image.viewportToImageCoordinates(
+    viewportPoint.x,
+    viewportPoint.y
+  );
+  const coordinates = getCircleCoordinatesInImageSpace(
+    imagePoint.x,
+    imagePoint.y,
+    circleDiameter * (pixelsPerMeters[currentIndex] / 1000000) // Convert microns to meters
+  );
+
+  const properties = {
+    uuid: generateUniqueId(16),
+    label: "circle",
+    lineColor: "#ff0000",
+    lineWeight: 2,
+    lineOpacity: 1,
+    lineStyle: "dashed",
+    fillColor: "#ffffff",
+    fillOpacity: 0.0,
+  };
+
+  addPolygonToGeoJSON(circleJSON, coordinates, properties);
+  drawShape(circleCanvas, [circleJSON]);
+});
+
+// When Enter is pressed in the anno-label text box
+document.addEventListener("keydown", function (event) {
+  const circleValueInput = document.getElementById("circle");
+  // Check for Enter key in anno-label field
+  if (event.code === "Enter" && document.activeElement === circleValueInput) {
+    event.preventDefault(); // Prevent any default action for Enter key
+    drawShape(circleCanvas, [circleJSON]);
+  }
+});
 
 function addMeasurementCrosshairs(
   i,

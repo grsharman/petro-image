@@ -19,6 +19,7 @@
     <div id="viewer-container">
       <canvas id="annotation-overlay" style="position: absolute; top: 0; left: 0; z-index: 1000; pointer-events: none;"></canvas>
       <canvas id="measurement-overlay" style="position: absolute; top: 0; left: 0; z-index: 1000; pointer-events: none;"></canvas>
+      <canvas id="circle-overlay" style="position: absolute; top: 0; left: 0; z-index: 1001; pointer-events: none;"></canvas>
     </div>
     <div class="controls">
       <div id="image-container"></div>
@@ -546,6 +547,16 @@
             <output id="x1">0.00</output>
             <label for="y1">y2:</label>
             <output id="y1">0.00</output>
+          </div>
+          <div>
+            <button id="toggleCircleButton"
+            class="custom-button"
+            style="width: 80px;"
+            onclick="toggleCircleMode(this)" title="Start/stop measuring">Draw Circle</button>
+          </div>
+          <div>
+            <label for="circle">Diameter (µm):</label>
+            <input type="number" id="circle" value="100.0" style="width: 50px;">
           </div>
           <!-- <div>
             <label for="distance">Distance:</label>
