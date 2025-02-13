@@ -1247,7 +1247,8 @@
       "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-01 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-01 01 2.5x XPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-01 01 2.5x XPL30 final.dzi"
-    ]
+    ],
+    "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/PNW-01_SedPetLab5.geojson"
   },
   "PNW-02": {
     "groups": ["PNW"],
@@ -1261,7 +1262,8 @@
       "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-02 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-02 01 2.5x XPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-02 01 2.5x XPL30 final.dzi"
-    ]
+    ],
+    "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/PNW-02_SedPetLab5.geojson"
   },
   "PNW-03": {
     "groups": ["PNW"],
@@ -1275,7 +1277,8 @@
       "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-03 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-03 01 2.5x XPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-03 01 2.5x XPL30 final.dzi"
-    ]
+    ],
+    "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/PNW-03_SedPetLab5.geojson"
   },
   "PNW-04": {
     "groups": ["PNW"],
@@ -1289,7 +1292,8 @@
       "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-04 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-04 01 2.5x XPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-04 01 2.5x XPL30 final.dzi"
-    ]
+    ],
+    "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/PNW-04_SedPetLab5.geojson"
   },
   "PNW-05": {
     "groups": ["PNW"],
@@ -1303,7 +1307,8 @@
       "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-05 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-05 01 2.5x XPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-05 01 2.5x XPL30 final.dzi"
-    ]
+    ],
+    "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/PNW-05_SedPetLab5.geojson"
   },
   "PNW-06": {
     "groups": ["PNW"],
@@ -1317,7 +1322,8 @@
       "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-06 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-06 01 2.5x XPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-06 01 2.5x XPL30 final.dzi"
-    ]
+    ],
+    "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/PNW-06_SedPetLab5.geojson"
   },
   "PNW-07": {
     "groups": ["PNW"],
@@ -1331,7 +1337,8 @@
       "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-07 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-07 01 2.5x XPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-07 01 2.5x XPL30 final.dzi"
-    ]
+    ],
+    "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/PNW-07_SedPetLab5.geojson"
   },
   "PNW-08": {
     "groups": ["PNW"],
@@ -1345,7 +1352,8 @@
       "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-08 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-08 01 2.5x XPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-08 01 2.5x XPL30 final.dzi"
-    ]
+    ],
+    "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/PNW-08_SedPetLab5.geojson"
   },
   "PNW-09": {
     "groups": ["PNW"],
@@ -1359,7 +1367,8 @@
       "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-09 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-09 01 2.5x XPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-09 01 2.5x XPL30 final.dzi"
-    ]
+    ],
+    "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/PNW-09_SedPetLab5.geojson"
   },
   "PNW-10": {
     "groups": ["PNW"],
@@ -1373,7 +1382,8 @@
       "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-10 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-10 01 2.5x XPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-10 01 2.5x XPL30 final.dzi"
-    ]
+    ],
+    "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/PNW-10_SedPetLab5.geojson"
   },
   "PNW-11": {
     "groups": ["PNW"],
@@ -1387,7 +1397,8 @@
       "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-11 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-11 01 2.5x XPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-11 01 2.5x XPL30 final.dzi"
-    ]
+    ],
+    "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/PNW-11_SedPetLab5.geojson"
   },
   "PNW-12": {
     "groups": ["PNW"],
@@ -1401,7 +1412,8 @@
       "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-12 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-12 01 2.5x XPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-12 01 2.5x XPL30 final.dzi"
-    ]
+    ],
+    "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/PNW-12_SedPetLab5.geojson"
   },
   "PNW-13": {
     "groups": ["PNW"],
@@ -1415,7 +1427,8 @@
       "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-13 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-13 01 2.5x XPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-13 01 2.5x XPL30 final.dzi"
-    ]
+    ],
+    "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/PNW-13_SedPetLab5.geojson"
   },
   "JUN-03": {
     "groups": ["PNW"],
