@@ -1428,7 +1428,7 @@
       "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-13 01 2.5x XPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-13 01 2.5x XPL30 final.dzi"
     ],
-    "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/PNW-13_CountingExercise.geojson"
+    "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/PNW-13_SedPetLab5.geojson"
   },
   "JUN-03": {
     "groups": ["PNW"],
