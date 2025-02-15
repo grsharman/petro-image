@@ -545,6 +545,7 @@ let polylineButton = document.getElementById("polylineButton");
 let rectButton = document.getElementById("rectangleButton");
 let repeatButton = document.getElementById("repeatButton");
 let polygonButton = document.getElementById("polygonButton");
+let ellipseButton = document.getElementById("ellipseButton");
 
 // Flags to track modes
 let isPointMode = false;
@@ -552,11 +553,14 @@ let isPolylineMode = false;
 let isRectangleMode = false;
 let isRepeatMode = false;
 let isPolygonMode = false;
+let isEllipseMode = false;
 
 function removeTemporaryPoints() {
   clickCoordinates = [];
   clickImageCoordinates = [];
   clickCoordinatesArray = [];
+  ellipseCoordinates = [];
+  ellipseImageCoordinates = [];
   annoJSONTemp = {
     type: "FeatureCollection",
     features: [],
@@ -571,6 +575,8 @@ pointButton.addEventListener("click", () => {
   isPolygonMode = false;
   polygonButton.classList.remove("active");
   isPolygonMode = false;
+  ellipseButton.classList.remove("active");
+  isEllipseMode = false;
   removeTemporaryPoints();
   // Remove any existing temporary points
 
@@ -593,6 +599,8 @@ polylineButton.addEventListener("click", () => {
   isRectangleMode = false;
   polygonButton.classList.remove("active");
   isPolygonMode = false;
+  ellipseButton.classList.remove("active");
+  isEllipseMode = false;
   removeTemporaryPoints();
 
   if (isPolylineMode === false) {
@@ -615,6 +623,8 @@ rectButton.addEventListener("click", () => {
   isPolylineMode = false;
   polygonButton.classList.remove("active");
   isPolygonMode = false;
+  ellipseButton.classList.remove("active");
+  isEllipseMode = false;
   removeTemporaryPoints();
 
   if (isRectangleMode === false) {
@@ -649,6 +659,8 @@ polygonButton.addEventListener("click", () => {
   isRectangleMode = false;
   polylineButton.classList.remove("active");
   isPolylineMode = false;
+  ellipseButton.classList.remove("active");
+  isEllipseMode = false;
   removeTemporaryPoints();
 
   if (isPolygonMode === false) {
@@ -659,6 +671,30 @@ polygonButton.addEventListener("click", () => {
     console.log("poly mode deactivated");
     polygonButton.classList.remove("active");
     isPolygonMode = false;
+  }
+});
+
+ellipseButton.addEventListener("click", () => {
+  console.log("ellipse button clicked");
+  // Deactivate point and rect buttons
+  pointButton.classList.remove("active");
+  isPointMode = false;
+  rectButton.classList.remove("active");
+  isRectangleMode = false;
+  polylineButton.classList.remove("active");
+  isPolylineMode = false;
+  polygonButton.classList.remove("active");
+  isPolygonMode = false;
+  removeTemporaryPoints();
+
+  if (isEllipseMode === false) {
+    console.log("ellipse mode activated");
+    ellipseButton.classList.add("active");
+    isEllipseMode = true;
+  } else {
+    console.log("ellipse mode deactivated");
+    ellipseButton.classList.remove("active");
+    isEllipseMode = false;
   }
 });
 
@@ -1373,6 +1409,7 @@ const toggleAnnotationLabels = (event) => {
 let isQPressed = false;
 let isZPressed = false;
 let isXPressed = false;
+let isCPressed = false;
 document.addEventListener("keydown", function (event) {
   if (event.key === "q" || event.key === "Q") {
     console.log("Q pressed");
@@ -1385,6 +1422,10 @@ document.addEventListener("keydown", function (event) {
   if (event.key === "x" || event.key === "X") {
     console.log("X pressed");
     isXPressed = true;
+  }
+  if (event.key === "c" || event.key === "C") {
+    console.log("C pressed");
+    isCPressed = true;
   }
 });
 document.addEventListener("keyup", function (event) {
@@ -1399,6 +1440,10 @@ document.addEventListener("keyup", function (event) {
   if (event.key === "x" || event.key === "X") {
     console.log("X released");
     isXPressed = false;
+  }
+  if (event.key === "c" || event.key === "C") {
+    console.log("C released");
+    isCPressed = false;
   }
 });
 
@@ -1476,6 +1521,307 @@ viewer.addHandler("canvas-click", function (event) {
     isQPressed = false; // Reset
     enableAnnoButtons();
     hasUnsavedAnnotations = true;
+  }
+});
+
+// Function where the first click is the first point of long axis,
+// the second is the end of long axis, and the third is the short axis
+// I find this less intuitive than the first click defining the center
+// function getEllipsePoints(points, numPoints = 100) {
+//   let [[x1, y1], [x2, y2], [x3, y3]] = points;
+
+//   // Calculate center as midpoint of long axis
+//   let centerX = (x1 + x2) / 2;
+//   let centerY = (y1 + y2) / 2;
+
+//   // Calculate major axis length
+//   let majorAxis = Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2) / 2;
+
+//   // Calculate rotation angle in radians
+//   let angle = Math.atan2(y2 - y1, x2 - x1);
+
+//   // Calculate minor axis using perpendicular distance from center to p3
+//   let dx = x3 - centerX;
+//   let dy = y3 - centerY;
+//   let minorAxis = Math.abs(dx * Math.sin(angle) - dy * Math.cos(angle));
+
+//   // Generate ellipse points
+//   let ellipsePoints = [];
+//   for (let i = 0; i < numPoints; i++) {
+//     let theta = (i / numPoints) * 2 * Math.PI; // Angle around ellipse
+
+//     // Unrotated ellipse point
+//     let x = centerX + majorAxis * Math.cos(theta);
+//     let y = centerY + minorAxis * Math.sin(theta);
+
+//     // Apply rotation transformation
+//     let rotatedX =
+//       centerX +
+//       (x - centerX) * Math.cos(angle) -
+//       (y - centerY) * Math.sin(angle);
+//     let rotatedY =
+//       centerY +
+//       (x - centerX) * Math.sin(angle) +
+//       (y - centerY) * Math.cos(angle);
+
+//     ellipsePoints.push([rotatedX, rotatedY]);
+//   }
+
+//   return ellipsePoints;
+// }
+
+function getLongAxisLine(points) {
+  let [[cx, cy], [lx, ly]] = points;
+
+  // Compute vector from center to lx, ly
+  let dx = lx - cx;
+  let dy = ly - cy;
+
+  // Compute the second endpoint by mirroring the first endpoint across the center
+  let x2 = cx - dx;
+  let y2 = cy - dy;
+
+  return [
+    [lx, ly],
+    [x2, y2],
+  ]; // Return endpoints of the long axis
+}
+
+// Function where the first click is the center, the second is the long axis, and the third is the short axis
+function getEllipsePoints(points, numPoints = 50) {
+  let [[cx, cy], [lx, ly], [sx, sy]] = points;
+
+  // Compute major axis length (distance from center to lx, ly)
+  let majorAxis = Math.sqrt((lx - cx) ** 2 + (ly - cy) ** 2);
+
+  // Compute minor axis length (distance from center to sx, sy)
+  let minorAxis = Math.sqrt((sx - cx) ** 2 + (sy - cy) ** 2);
+
+  // Compute rotation angle (angle of long axis)
+  let angle = Math.atan2(ly - cy, lx - cx); // Angle in radians
+
+  // Generate ellipse points
+  let ellipsePoints = [];
+  for (let i = 0; i <= numPoints; i++) {
+    let theta = (i / numPoints) * 2 * Math.PI; // Angle around ellipse
+
+    // Unrotated ellipse point
+    let x = cx + majorAxis * Math.cos(theta);
+    let y = cy + minorAxis * Math.sin(theta);
+
+    // Apply rotation transformation
+    let rotatedX = cx + (x - cx) * Math.cos(angle) - (y - cy) * Math.sin(angle);
+    let rotatedY = cy + (x - cx) * Math.sin(angle) + (y - cy) * Math.cos(angle);
+
+    ellipsePoints.push([rotatedX, rotatedY]);
+  }
+
+  return ellipsePoints;
+}
+
+// TODO: This function doesn't really work as intended
+function getLowestYPoint(points) {
+  let minIndex = points.reduce(
+    (minIndex, point, currentIndex, array) =>
+      point[1] < array[minIndex][1] ? currentIndex : minIndex,
+    0
+  );
+
+  return points[minIndex];
+}
+
+// TODO: There is a fair bit of code redundancy between ellipse and polyline/
+// polygon drawing. Could be refactored to reduce redundancy.
+let ellipseCoordinates = []; // Array to store ellipse viewport coordinates
+let ellipseImageCoordinates = []; // Array to store ellipse image coordinates
+let activelyMakingEllipse = false;
+// Event listener to add ellipse annotations
+viewer.addHandler("canvas-click", function (event) {
+  if (isEllipseMode || isCPressed) {
+    console.log("ellipse clicked");
+    activelyMakingEllipse = true;
+    const image = viewer.world.getItemAt(0);
+    const imageSize = image.getContentSize();
+    const viewportPoint = viewer.viewport.pointFromPixel(event.position);
+    const imagePoint = image.viewportToImageCoordinates(
+      viewportPoint.x,
+      viewportPoint.y
+    );
+    const x = viewportPoint.x;
+    const y = viewportPoint.y;
+    const uniqueID = generateUniqueId(8);
+    const labelFontSize = Number(
+      document.getElementById("annoLabelFontSize").value
+    );
+    const labelFontColor = document.getElementById("annoLabelFontColor").value;
+    const labelBackgroundColor = document.getElementById(
+      "annoLabelBackgroundColor"
+    ).value;
+    const labelBackgroundOpacity = Number(
+      document.getElementById("annoLabelBackgroundOpacity").value
+    );
+    const lineWeight = Number(document.getElementById("lineWeight").value);
+    const lineColor = document.getElementById("lineColor").value;
+    const lineStyle = document.getElementById("lineStyle").value;
+    const lineOpacity = Number(document.getElementById("lineOpacity").value);
+    const fillColor = document.getElementById("fillColor").value;
+    const fillOpacity = Number(document.getElementById("fillOpacity").value);
+    ellipseCoordinates.push({ x, y });
+    ellipseImageCoordinates.push([imagePoint.x, imagePoint.y]);
+
+    document.addEventListener("keydown", function (event) {
+      // Check if the Escape key was pressed
+      if (event.key === "Escape") {
+        removeTemporaryPoints();
+        console.log("Escape key pressed");
+      }
+    });
+
+    // Continually update the annoJSONTemp with the latest coordinates
+    viewerContainer.addEventListener("mousemove", function (subevent) {
+      if (activelyMakingEllipse) {
+        // Draw a line that represents the long axis of the ellipse
+        if (ellipseCoordinates.length === 1) {
+          // Clear to avoid duplicating lines
+          annoJSONTemp = {
+            type: "FeatureCollection",
+            features: [],
+          };
+          const rect = viewerContainer.getBoundingClientRect(); // Get container bounds
+          const position = {
+            x: subevent.clientX - rect.left,
+            y: subevent.clientY - rect.top,
+          };
+          const positionPoint = new OpenSeadragon.Point(position.x, position.y);
+          const subeventViewportPoint =
+            viewer.viewport.pointFromPixel(positionPoint);
+          const subeventImagePoint = image.viewportToImageCoordinates(
+            subeventViewportPoint.x,
+            subeventViewportPoint.y
+          );
+
+          const points = [
+            ellipseImageCoordinates[0],
+            [subeventImagePoint.x, subeventImagePoint.y],
+          ];
+          const longAxisImagePoints = getLongAxisLine(points);
+          addPolylineToGeoJSON(annoJSONTemp, [...longAxisImagePoints], {
+            labelFontSize: labelFontSize,
+            labelFontColor: labelFontColor,
+            labelBackgroundColor: labelBackgroundColor,
+            labelBackgroundOpacity: labelBackgroundOpacity,
+            lineStyle: lineStyle,
+            lineWeight: lineWeight,
+            lineColor: lineColor,
+            lineOpacity: lineOpacity,
+            // canvasDraw: true,
+          });
+          drawShape(polyCanvas, [annoJSON, annoJSONTemp]);
+        }
+        // Draw a preliminary ellipse
+        if (ellipseCoordinates.length === 2) {
+          // Clear to avoid duplicating lines
+          annoJSONTemp = {
+            type: "FeatureCollection",
+            features: [],
+          };
+          const rect = viewerContainer.getBoundingClientRect(); // Get container bounds
+          const position = {
+            x: subevent.clientX - rect.left,
+            y: subevent.clientY - rect.top,
+          };
+          const positionPoint = new OpenSeadragon.Point(position.x, position.y);
+          const subeventViewportPoint =
+            viewer.viewport.pointFromPixel(positionPoint);
+          const subeventImagePoint = image.viewportToImageCoordinates(
+            subeventViewportPoint.x,
+            subeventViewportPoint.y
+          );
+          const ellipseTempCoordinates = [
+            ellipseImageCoordinates[0],
+            ellipseImageCoordinates[1],
+            [subeventImagePoint.x, subeventImagePoint.y],
+          ];
+          const ellipseTempPoints = getEllipsePoints(ellipseTempCoordinates);
+          addPolygonToGeoJSON(annoJSONTemp, [...ellipseTempPoints], {
+            labelFontSize: labelFontSize,
+            labelFontColor: labelFontColor,
+            labelBackgroundColor: labelBackgroundColor,
+            labelBackgroundOpacity: labelBackgroundOpacity,
+            lineStyle: lineStyle,
+            lineWeight: lineWeight,
+            lineColor: lineColor,
+            lineOpacity: lineOpacity,
+          });
+          drawShape(polyCanvas, [annoJSON, annoJSONTemp]);
+        }
+      }
+    });
+
+    if (ellipseCoordinates.length === 3) {
+      if (isRepeatMode) {
+        const annoId = parseInt(document.getElementById("anno-id").value);
+        var constEllipseLabel = annoJSON.features[annoId - 1].properties.label;
+        drawPath(polyCanvas, [annoJSON]);
+      } else {
+        var constEllipseLabel = prompt("Enter a label for this polyline:");
+        drawPath(polyCanvas, [annoJSON]);
+      }
+      const ellipsePoints = getEllipsePoints(ellipseImageCoordinates);
+      const labelImagePoint = getLowestYPoint(ellipseImageCoordinates);
+      const labelViewportPoint = image.imageToViewportCoordinates(
+        labelImagePoint[0],
+        labelImagePoint[1]
+      );
+      // Clear to avoid duplicating lines
+      annoJSONTemp = {
+        type: "FeatureCollection",
+        features: [],
+      };
+      const sampleIdx = samples.indexOf(sampleName);
+      addPolylineToGeoJSON(annoJSON, [...ellipsePoints], {
+        uuid: uniqueID,
+        label: constEllipseLabel,
+        xLabel: labelImagePoint[0],
+        yLabel: labelImagePoint[1],
+        imageTitle: sampleName,
+        pixelsPerMeter: Number(pixelsPerMeters[sampleIdx]),
+        imageWidth: imageSize.x,
+        imageHeight: imageSize.y,
+        labelFontSize: labelFontSize,
+        labelFontColor: labelFontColor,
+        labelBackgroundColor: labelBackgroundColor,
+        labelBackgroundOpacity: labelBackgroundOpacity,
+        lineStyle: lineStyle,
+        lineWeight: lineWeight,
+        lineColor: lineColor,
+        lineOpacity: lineOpacity,
+        fillColor: fillColor,
+        fillOpacity: fillOpacity,
+      });
+      drawShape(polyCanvas, [annoJSON, annoJSONTemp]);
+
+      // Make text and crosshairs
+      addText(
+        uniqueID,
+        constEllipseLabel,
+        labelViewportPoint,
+        "anno",
+        labelFontColor,
+        labelFontSize,
+        labelBackgroundColor,
+        labelBackgroundOpacity
+      );
+      // Reset for the next one
+      ellipseCoordinates = [];
+      ellipseImageCoordinates = [];
+      annoJSONTemp = {
+        type: "FeatureCollection",
+        features: [],
+      };
+      hasUnsavedAnnotations = true;
+      enableAnnoButtons();
+    }
   }
 });
 
@@ -1684,6 +2030,8 @@ viewer.addHandler("canvas-click", function (event) {
       clickCoordinates = [];
       clickImageCoordinates = []; // Clear
 
+      console.log(labelViewportPoint);
+
       // Make text and crosshairs
       addText(
         uniqueID,
@@ -1701,7 +2049,6 @@ viewer.addHandler("canvas-click", function (event) {
       };
       hasUnsavedAnnotations = true;
       enableAnnoButtons();
-      hasUnsavedAnnotations = true;
       isXPressed = false; // reset (because keyup not detected)
       XWasPressed = false; // reset
       isZPressed = false; // reset (because keyup not detected)
