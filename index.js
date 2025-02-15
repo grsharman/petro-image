@@ -216,20 +216,53 @@ document
     }
   });
 
+// OG function
+// Function to update the button labels based on tileLabels array
+// function updateButtonLabels(index) {
+//   const numButtons = tileSets[index].length;
+//   for (let i = 1; i <= 4; i++) {
+//     const checkbox = document.getElementById(`image${i}`);
+//     const label = document.getElementById(`label${i}`);
+//     if (i <= numButtons) {
+//       checkbox.style.display = "inline";
+//       label.style.display = "inline";
+//       label.textContent = tileLabels[index][i - 1];
+//       if (i === 1) {
+//         checkbox.checked = true;
+//       } else {
+//         checkbox.checked = true;
+//       }
+//     } else {
+//       checkbox.style.display = "none";
+//       label.style.display = "none";
+//       label.textContent = "";
+//     }
+//   }
+// }
+
+// TOD: Testing new function
+// Function to update the button labels based on tileLabels array
 // Function to update the button labels based on tileLabels array
 function updateButtonLabels(index) {
   const numButtons = tileSets[index].length;
+  const tileLabelsForIndex = tileLabels[index]; // Get the labels for the current tile set
+
   for (let i = 1; i <= 4; i++) {
     const checkbox = document.getElementById(`image${i}`);
     const label = document.getElementById(`label${i}`);
+
+    const visibleImageIndex = scrollIndex % tileLabelsForIndex.length;
+
     if (i <= numButtons) {
+      // For regular labels, use the normal setup
       checkbox.style.display = "inline";
       label.style.display = "inline";
-      label.textContent = tileLabels[index][i - 1];
-      if (i === 1) {
-        checkbox.checked = true;
+      const currentLabel = tileLabelsForIndex[i - 1];
+      if (Array.isArray(currentLabel)) {
+        // Determine the visible label index based on scrollIndex
+        label.textContent = currentLabel[visibleImageIndex]; // Set the label text based on the scrollIndex logic
       } else {
-        checkbox.checked = true;
+        label.textContent = currentLabel;
       }
     } else {
       checkbox.style.display = "none";
@@ -329,30 +362,82 @@ function addScalebar(pixelsPerMeter) {
   });
 }
 
-// Function to load a set of images based on the current index
-function loadTileSet(index) {
-  viewer.world.removeAll(); // Remove previous images
-  // Add each tile source from the current tile set
-  tileSets[index].forEach((tileSource) => {
+// TODO: Testing new approach for loading nested tiles
+// Function to recursively add tile sources
+function addTiles(tileSource) {
+  if (Array.isArray(tileSource)) {
+    tileSource.forEach(addTiles); // Recursively handle nested lists
+  } else {
     viewer.addTiledImage({
       tileSource: tileSource,
       success: function () {},
     });
-  });
+  }
 }
 
+// Function to load a set of images based on the current index
+function loadTileSet(index) {
+  viewer.world.removeAll(); // Remove previous images
+  const tileSources = tileSets[index]; // Get the tile set
+
+  if (tileSources) {
+    addTiles(tileSources); // Process all tiles (handling nested lists)
+  }
+}
+
+// OG function
+// function setTileSetOpacity() {
+//   for (let i = 0; i < viewer.world.getItemCount(); ++i) {
+//     const opacityValue =
+//       Number(document.getElementById(`opacityImage${i + 1}`).value) / 100; // Convert percent
+//     if (document.getElementById(`image${i + 1}`).checked) {
+//       const tiledImage = viewer.world.getItemAt(i);
+//       if (tiledImage) {
+//         tiledImage.setOpacity(opacityValue);
+//       }
+//     }
+//   }
+// }
+
 function setTileSetOpacity() {
-  for (let i = 0; i < viewer.world.getItemCount(); ++i) {
+  const tileSet = tileSets[currentIndex];
+  let imageIndex = 0;
+
+  // One loop per quadrant
+  for (let i = 0; i < tileSet.length; ++i) {
+    let imagesInQuadrant = [];
+
+    if (Array.isArray(tileSet[i])) {
+      // If it's a nested list, add all images to the same quadrant
+      imagesInQuadrant = tileSet[i];
+    } else {
+      // If it's a single image, treat it as its own group
+      imagesInQuadrant = [tileSet[i]];
+    }
+
+    // Determine which image should be visible in this quadrant
+    const visibleImageIndex = scrollIndex % imagesInQuadrant.length;
+
     const opacityValue =
       Number(document.getElementById(`opacityImage${i + 1}`).value) / 100; // Convert percent
     if (document.getElementById(`image${i + 1}`).checked) {
-      const tiledImage = viewer.world.getItemAt(i);
-      if (tiledImage) {
-        tiledImage.setOpacity(opacityValue);
+      for (let j = 0; j < imagesInQuadrant.length; ++j) {
+        const tiledImage = viewer.world.getItemAt(imageIndex);
+        ++imageIndex;
+        if (tiledImage) {
+          if (j === visibleImageIndex) {
+            tiledImage.setOpacity(opacityValue);
+          } else {
+            tiledImage.setOpacity(0);
+          }
+        }
       }
     }
   }
 }
+
+// console.log("visibleImageIndex", visibleImageIndex);
+// Set opacity: Show only the current image, hide others
 
 const viewerContainer = document.getElementById("viewer-container");
 
@@ -362,6 +447,45 @@ let mousePos = new OpenSeadragon.Point(0, 0);
 // Divides the images at the current mouse position, clipping overlaid images to
 // expose the images underneath. Note that all images are expected to have the
 // same position and size.
+// const divideImages = () => {
+//   // Bail out if there are no images.
+//   if (viewer.world.getItemCount() == 0) {
+//     return;
+//   }
+//   // Bail out if enableDivideImages is false
+//   if (!enableDivideImages) {
+//     for (let i = 0; i < viewer.world.getItemCount(); ++i) {
+//       const image = viewer.world.getItemAt(i);
+//       image.setClip(null); // Clear the clip
+//     }
+//     return; // Exit the function
+//   }
+
+//   // Get the clip point and clamp it to within the image bounds.
+//   const image = viewer.world.getItemAt(0);
+//   const clipPos = image.viewerElementToImageCoordinates(mousePos);
+//   const size = image.getContentSize();
+//   clipPos.x = Math.max(0, Math.min(clipPos.x, size.x));
+//   clipPos.y = Math.max(0, Math.min(clipPos.y, size.y));
+
+//   // Set the clip for each image.
+//   let previousVisibleImages = 0;
+//   for (let i = 0; i < viewer.world.getItemCount(); ++i) {
+//     const image = viewer.world.getItemAt(i);
+//     if (!image.getOpacity()) {
+//       continue;
+//     }
+//     // Determine the quadrants to be clipped by how many visible images are
+//     // underneath this one.
+//     const xClip = previousVisibleImages & 1 ? clipPos.x : 0;
+//     const yClip = previousVisibleImages & 2 ? clipPos.y : 0;
+//     image.setClip(new OpenSeadragon.Rect(xClip, yClip, size.x, size.y));
+//     ++previousVisibleImages;
+//   }
+//   setTileSetOpacity();
+// };
+
+// TODO: Modifying divideImages() to work with the new tileSets structure
 const divideImages = () => {
   // Bail out if there are no images.
   if (viewer.world.getItemCount() == 0) {
@@ -383,34 +507,112 @@ const divideImages = () => {
   clipPos.x = Math.max(0, Math.min(clipPos.x, size.x));
   clipPos.y = Math.max(0, Math.min(clipPos.y, size.y));
 
+  const tileSet = tileSets[currentIndex];
+
   // Set the clip for each image.
+  let imageIndex = 0; // Because a given quadrant may have multiple images
   let previousVisibleImages = 0;
-  for (let i = 0; i < viewer.world.getItemCount(); ++i) {
-    const image = viewer.world.getItemAt(i);
-    if (!image.getOpacity()) {
-      continue;
+  // One loop per top level of image list
+  for (let i = 0; i < tileSet.length; ++i) {
+    console.log("starting image set", i + 1);
+    let imagesInQuadrant = [];
+    const checkbox = document.getElementById(`image${i + 1}`);
+
+    if (Array.isArray(tileSet[i])) {
+      // If it's a nested list, add all images to the same quadrant
+      imagesInQuadrant = tileSet[i];
+    } else {
+      // If it's a single image, treat it as its own group
+      imagesInQuadrant = [tileSet[i]];
     }
-    // Determine the quadrants to be clipped by how many visible images are
-    // underneath this one.
-    const xClip = previousVisibleImages & 1 ? clipPos.x : 0;
-    const yClip = previousVisibleImages & 2 ? clipPos.y : 0;
-    image.setClip(new OpenSeadragon.Rect(xClip, yClip, size.x, size.y));
-    ++previousVisibleImages;
+
+    // One loop per second level of image list
+    for (let j = 0; j < imagesInQuadrant.length; ++j) {
+      ++imageIndex;
+      if (!checkbox.checked) {
+        console.log("skipping subimage because checkbox");
+        continue;
+      }
+      console.log("starting subimage", j + 1);
+      // Check to see if this is the image we should be showing
+      const visibleImageIndex = scrollIndex % imagesInQuadrant.length;
+      if (j !== visibleImageIndex) {
+        console.log("skipping subimage ", j + 1, " because not selected");
+        console.log(
+          "skipping global image ",
+          imageIndex - 1 + 1,
+          " because not selected"
+        );
+        continue;
+      }
+      console.log("showing subimage ", j + 1);
+      console.log("showing global image ", imageIndex - 1 + 1);
+
+      const image = viewer.world.getItemAt(imageIndex - 1);
+      if (image) {
+        // if (!image.getOpacity()) {
+        //   continue;
+        // }
+      } else {
+        console.warn(`Image at index ${imageIndex - 1} is not loaded yet.`);
+        continue;
+      }
+
+      // Determine the quadrants to be clipped by how many visible images are
+      // underneath this one.
+      const xClip = previousVisibleImages & 1 ? clipPos.x : 0;
+      const yClip = previousVisibleImages & 2 ? clipPos.y : 0;
+      image.setClip(new OpenSeadragon.Rect(xClip, yClip, size.x, size.y));
+      ++previousVisibleImages;
+      console.log("previousVisibleImages", previousVisibleImages);
+    }
   }
   setTileSetOpacity();
 };
 
+// OG function
+// const toggleImage = (checkbox, idx) => {
+//   const imageOpacity = document.getElementById(`opacityImage${idx + 1}`).value;
+//   console.log(`image${idx + 1}Opacity`, imageOpacity);
+//   const image = viewer.world.getItemAt(idx);
+//   if (image) {
+//     image.setOpacity(checkbox.checked ? imageOpacity / 100 : 0);
+//     if (enableDivideImages) {
+//       divideImages();
+//     }
+//   } else {
+//     console.warn(`Image at index ${idx} is not loaded yet.`);
+//   }
+// };
+
+// TODO: Ensure this modified function works
 const toggleImage = (checkbox, idx) => {
   const imageOpacity = document.getElementById(`opacityImage${idx + 1}`).value;
   console.log(`image${idx + 1}Opacity`, imageOpacity);
-  const image = viewer.world.getItemAt(idx);
-  if (image) {
-    image.setOpacity(checkbox.checked ? imageOpacity / 100 : 0);
-    if (enableDivideImages) {
-      divideImages();
-    }
+
+  const tileSet = tileSets[currentIndex];
+
+  // Check if the item at idx is a nested list or a single image
+  if (Array.isArray(tileSet[idx])) {
+    // If it's a nested array, loop through the images
+    tileSet[idx].forEach((tileSource, nestedIndex) => {
+      const imageIndex = idx + nestedIndex; // Add nestedIndex to calculate the correct image index
+      const image = viewer.world.getItemAt(imageIndex);
+      if (image) {
+        image.setOpacity(checkbox.checked ? imageOpacity / 100 : 0);
+      }
+    });
   } else {
-    console.warn(`Image at index ${idx} is not loaded yet.`);
+    // If it's a single image, handle it directly
+    const image = viewer.world.getItemAt(idx);
+    if (image) {
+      image.setOpacity(checkbox.checked ? imageOpacity / 100 : 0);
+    }
+  }
+
+  // If divideImages is enabled, re-apply the division logic
+  if (enableDivideImages) {
+    divideImages();
   }
 };
 
@@ -4349,3 +4551,51 @@ function resetMeasurements() {
   firstViewerElementPoint = "";
   secondViewerElementPoint = "";
 }
+
+// // Testing functionality related to scrolling
+// let scrollIndex = 0;
+// viewer.addHandler("canvas-scroll", function (event) {
+//   if (event.originalEvent.shiftKey) {
+//     console.log("Shift key held - preventing zoom in OpenSeadragon");
+//     viewer.zoomPerScroll = 1; // Disables zooming by making the zoom factor 1 (no change)
+//     event.preventDefaultAction = true; // Stops OpenSeadragon from processing the event
+//     ++scrollIndex;
+//     divideImages();
+//   } else {
+//     viewer.zoomPerScroll = 1.2; // Restore default zoom speed when Shift is not pressed
+//   }
+// });
+
+// TODO: Disable this behavior in text boxes? This would prevent the view from
+// changing when typing > or < into a text box
+let scrollIndex = 1e6;
+// Listen for keydown events
+document.addEventListener("keydown", function (event) {
+  if (event.shiftKey && event.key === "<") {
+    scrollIndex--; // Move backward
+  } else if (event.shiftKey && event.key === ">") {
+    scrollIndex++; // Move forward
+  }
+  divideImages();
+  updateButtonLabels(currentIndex);
+});
+
+// document.addEventListener("keydown", function (event) {
+//   // Check for left or right arrow keys (you can also use up/down or any other keys)
+//   if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(event.key)) {
+//     // Prevent the default action (scrolling) when the arrow keys are pressed
+//     event.preventDefault();
+
+//     // Adjust scrollIndex based on the arrow direction
+//     if (event.key === "ArrowRight" || event.key === "ArrowUp") {
+//       // Move forward in the index
+//       scrollIndex++;
+//     } else if (event.key === "ArrowLeft" || event.key === "ArrowDown") {
+//       // Move backward in the index
+//       scrollIndex--;
+//     }
+
+//     // Call divideImages or any other function to update the view
+//     divideImages();
+//   }
+// });
