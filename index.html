@@ -548,12 +548,55 @@
             <label for="y1">y2:</label>
             <output id="y1">0.00</output>
           </div>
-          <div>
+          <div class="dropdown-container">
             <button id="toggleCircleButton"
             class="custom-button"
             style="width: 80px;"
             onclick="toggleCircleMode(this)" title="Start/stop measuring">Draw Circle</button>
+            <button class="custom-button" id="circleGearButton" title="Annotation Settings">
+              <svg class="gear-icon" version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" 
+              viewBox="0 0 64 64" enable-background="new 0 0 64 64" xml:space="preserve">
+              <g>
+                <polygon fill="#444" stroke="#000000" stroke-width="2" stroke-miterlimit="10" points="32,1 26,1 26,10 20,12 14,6 6,14 12,20 
+                  10,26 1,26 1,38 10,38 12,44 6,50 14,58 20,52 26,54 26,63 32,63 38,63 38,54 44,52 50,58 58,50 52,44 54,38 63,38 63,26 54,26 
+                  52,20 58,14 50,6 44,12 38,10 38,1 	"/>
+                <circle fill="#FFFFFF" stroke="#000000" stroke-width="2" stroke-miterlimit="10" cx="32" cy="32" r="6"/>
+              </g>
+              </svg>
+            </button>
           </div>
+          <!-- Hidden Settings Menu -->
+          <div id="circleSettingsMenu" class="hiddenSettingsMenu">
+            <div>
+              <input type="number" id="circleLineWeight" placeholder="2" maxlength="3" value="2" min="1" max="10"/>
+              <label for="circleLineWeight">Line Weight</label>
+            </div>
+            <div>
+              <input type="number" id="circleLineOpacity" placeholder="1" maxlength="3" value="1" min="0" max="1"/>
+              <label for="circleLineOpacity">Line Opacity</label>
+            </div>
+            <div>
+              <input type="color" id="circleLineColor" value="#ff0000"/>
+              <label for="circleLineColor">Line Color</label>
+            </div>
+            <div>
+              <select id="circleLineStyle">
+                <option value="solid">Solid</option>
+                <option value="dashed">Dashed</option>
+                <option value="dotted">Dotted</option>
+              </select>
+              <label for="circleLineStyle">Line Style</label>
+            </div>
+            <div>
+              <input type="color" id="circleFillColor" value="#FFFFFF"/>
+              <label for="circleFillColor">Fill Color</label>
+            </div>
+            <div>
+              <input type="number" id="circleFillOpacity" placeholder="1" maxlength="3" value="0" min="0" max="1"/>
+              <label for="circleFillOpacity">Fill Opacity</label>
+            </div>
+          </div>
+        
           <div>
             <label for="circle">Diameter (µm):</label>
             <input type="number" id="circle" value="100.0" style="width: 50px;">

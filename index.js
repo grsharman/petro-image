@@ -700,6 +700,19 @@ document
     }
   });
 
+// Show or hide the annotations settings menu when the circle gear button is clicked
+document
+  .getElementById("circleGearButton")
+  .addEventListener("click", function (event) {
+    event.stopPropagation(); // Prevent click from reaching the window listener
+    const menu = document.getElementById("circleSettingsMenu");
+    if (menu.style.display === "none" || menu.style.display === "") {
+      menu.style.display = "block";
+    } else {
+      menu.style.display = "none";
+    }
+  });
+
 // Show or hide the grid settings menu when the gear button is clicked
 document
   .getElementById("gridSettingsButton")
@@ -719,6 +732,17 @@ window.addEventListener("click", function (event) {
   if (
     !event.target.closest("#gearButton") &&
     !event.target.closest("#annoSettingsMenu")
+  ) {
+    menu.style.display = "none";
+  }
+});
+
+// Close the menu if clicked outside (circle menu)
+window.addEventListener("click", function (event) {
+  const menu = document.getElementById("circleSettingsMenu");
+  if (
+    !event.target.closest("#circleGearButton") &&
+    !event.target.closest("#circleSettingsMenu")
   ) {
     menu.style.display = "none";
   }
@@ -4193,15 +4217,28 @@ viewerContainer.addEventListener("mousemove", function (event) {
     circleDiameter * (pixelsPerMeters[currentIndex] / 1000000) // Convert microns to meters
   );
 
+  const lineColor = document.getElementById("circleLineColor").value;
+  const lineWeight = parseFloat(
+    document.getElementById("circleLineWeight").value
+  );
+  const lineOpacity = parseFloat(
+    document.getElementById("circleLineOpacity").value
+  );
+  const lineStyle = document.getElementById("circleLineStyle").value;
+  const fillColor = document.getElementById("circleFillColor").value;
+  const fillOpacity = parseFloat(
+    document.getElementById("circleFillOpacity").value
+  );
+
   const properties = {
     uuid: generateUniqueId(16),
     label: "circle",
-    lineColor: "#ff0000",
-    lineWeight: 2,
-    lineOpacity: 1,
-    lineStyle: "dashed",
-    fillColor: "#ffffff",
-    fillOpacity: 0.0,
+    lineColor: lineColor,
+    lineWeight: lineWeight,
+    lineOpacity: lineOpacity,
+    lineStyle: lineStyle,
+    fillColor: fillColor,
+    fillOpacity: fillOpacity,
   };
 
   addPolygonToGeoJSON(circleJSON, coordinates, properties);
