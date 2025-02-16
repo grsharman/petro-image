@@ -2020,6 +2020,11 @@ viewer.addHandler("canvas-click", function (event) {
         });
       }
 
+      const lineLengthPixels = calculateLineStringLength(
+        clickImageCoordinates.slice(0, clickImageCoordinates.length - 1)
+      );
+      const lineLengthM = lineLengthPixels / pixelsPerMeters[currentIndex];
+
       if (isPolylineMode || ZWasPressed) {
         addPolylineToGeoJSON(
           annoJSON,
@@ -2041,6 +2046,7 @@ viewer.addHandler("canvas-click", function (event) {
             lineWeight: lineWeight,
             lineColor: lineColor,
             lineOpacity: lineOpacity,
+            length_m: lineLengthM,
             // canvasDraw: true,
           }
         );
