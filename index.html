@@ -21,6 +21,22 @@
       <canvas id="measurement-overlay" style="position: absolute; top: 0; left: 0; z-index: 1000; pointer-events: none;"></canvas>
       <canvas id="circle-overlay" style="position: absolute; top: 0; left: 0; z-index: 1001; pointer-events: none;"></canvas>
     </div>
+    <!-- Div elements for floating symbols when annotating-->
+    <div id="anno-point-floater" class="crosshair-floater"></div>
+    <!-- SVG container for the polyline -->
+    <svg id="anno-polyline-svg" class="svg-floater">
+      <polyline id="anno-polyline-floater" class="polyline-floater" points="0,100 0,100" />
+    </svg>
+    <svg id="anno-rect-svg" class="svg-floater">
+      <polyline id="anno-rect-floater" class="polyline-floater" points="0,0 0,10, 10,10, 10,0, 0,0" />
+    </svg>
+    <svg id="anno-polygon-svg" class="svg-floater">
+      <polyline id="anno-polygon-floater" class="polyline-floater" points="0,0 0,10, 10,10, 10,0" />
+    </svg>
+    <svg id="anno-ellipse-svg" class="svg-floater">
+      <polyline id="anno-ellipse-floater" class="polyline-floater" points="0,0 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0" />
+    </svg>
+    <!--Controls-->
     <div class="controls">
       <div id="image-container"></div>
       <div class="dropdown-container">

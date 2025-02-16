@@ -1432,6 +1432,38 @@ const toggleAnnotationLabels = (event) => {
   }
 };
 
+function disableOtherAnnoModes(mode) {
+  if (mode !== "point") {
+    isQPressed = false;
+    pointButton.classList.remove("active");
+    isPointMode = false;
+    toggleCrosshairFloaterOn(false);
+  }
+  if (mode !== "rect") {
+    rectButton.classList.remove("active");
+    isRectangleMode = false;
+    toggleRectFloaterOn(false);
+  }
+  if (mode !== "polyline") {
+    isZPressed = false;
+    polylineButton.classList.remove("active");
+    isPolylineMode = false;
+    togglePolylineFloaterOn(false);
+  }
+  if (mode !== "polygon") {
+    isXPressed = false;
+    polygonButton.classList.remove("active");
+    isPolygonMode = false;
+    togglePolygonFloaterOn(false);
+  }
+  if (mode !== "ellipse") {
+    isCPressed = false;
+    ellipseButton.classList.remove("active");
+    isEllipseMode = false;
+    toggleEllipseFloaterOn(false);
+  }
+}
+
 // Functions for detecting when q, z, anc x are pressed and released
 let isQPressed = false;
 let isZPressed = false;
@@ -1439,38 +1471,60 @@ let isXPressed = false;
 let isCPressed = false;
 document.addEventListener("keydown", function (event) {
   if (event.key === "q" || event.key === "Q") {
-    console.log("Q pressed");
+    // console.log("Q pressed");
     isQPressed = true;
+    toggleCrosshairFloaterOn(true);
+    disableOtherAnnoModes("point");
   }
   if (event.key === "z" || event.key === "Z") {
-    console.log("Z pressed");
+    // console.log("Z pressed");
     isZPressed = true;
+    togglePolylineFloaterOn(true);
+    disableOtherAnnoModes("polyline");
   }
   if (event.key === "x" || event.key === "X") {
-    console.log("X pressed");
+    // console.log("X pressed");
     isXPressed = true;
+    togglePolygonFloaterOn(true);
+    disableOtherAnnoModes("polygon");
   }
   if (event.key === "c" || event.key === "C") {
-    console.log("C pressed");
+    // console.log("C pressed");
     isCPressed = true;
+    toggleEllipseFloaterOn(true);
+    disableOtherAnnoModes("ellipse");
   }
 });
 document.addEventListener("keyup", function (event) {
   if (event.key === "q" || event.key === "Q") {
     console.log("Q released");
     isQPressed = false;
+    if (!pointButton.classList.contains("active")) {
+      // Only toggle off if the button is not also pressed
+      toggleCrosshairFloaterOn(false);
+    }
   }
   if (event.key === "z" || event.key === "Z") {
     console.log("Z released");
     isZPressed = false;
+    if (!polylineButton.classList.contains("active")) {
+      // Only toggle off if the button is not also pressed
+      togglePolylineFloaterOn(false);
+    }
   }
   if (event.key === "x" || event.key === "X") {
     console.log("X released");
     isXPressed = false;
+    if (!polygonButton.classList.contains("active")) {
+      togglePolygonFloaterOn(false);
+    }
   }
   if (event.key === "c" || event.key === "C") {
     console.log("C released");
     isCPressed = false;
+    if (!ellipseButton.classList.contains("active")) {
+      toggleEllipseFloaterOn(false);
+    }
   }
 });
 
@@ -1546,6 +1600,9 @@ viewer.addHandler("canvas-click", function (event) {
     );
     // Store annotation
     isQPressed = false; // Reset
+    if (!pointButton.classList.contains("active")) {
+      toggleCrosshairFloaterOn(false);
+    }
     enableAnnoButtons();
     hasUnsavedAnnotations = true;
   }
@@ -1855,11 +1912,17 @@ viewer.addHandler("canvas-click", function (event) {
         features: [],
       };
       hasUnsavedAnnotations = true;
-      ellipseButton.classList.remove("active");
-      isEllipseMode = false;
+      // TODO: can use code below if want to deactive
+      // ellipseMode after each annotation
+      // ellipseButton.classList.remove("active");
+      // isEllipseMode = false;
+      // toggleEllipseFloaterOn(false);
+      // console.log("Ellipse mode disabled");
+      if (!ellipseButton.classList.contains("active")) {
+        toggleEllipseFloaterOn(false);
+      }
       activelyMakingEllipse = false;
       isCPressed = false;
-      console.log("Ellipse mode disabled");
       enableAnnoButtons();
     }
   }
@@ -1987,7 +2050,6 @@ viewer.addHandler("canvas-click", function (event) {
       activelyMakingPoly = false;
       clearTimeout(clickTimeout);
       console.log("Double-click detected, ending collection of points.");
-      console.log("Collected Coordinates:", clickCoordinates);
 
       if (isRepeatMode) {
         const annoId = parseInt(document.getElementById("anno-id").value);
@@ -2046,6 +2108,10 @@ viewer.addHandler("canvas-click", function (event) {
           area_m2: rectAreaM2,
           perimeter_m: rectPerimeterM,
         });
+
+        if (!polygonButton.classList.contains("active")) {
+          togglePolygonFloaterOn(false);
+        }
       }
 
       const lineLengthPixels = calculateLineStringLength(
@@ -2086,8 +2152,6 @@ viewer.addHandler("canvas-click", function (event) {
       clickCoordinates = [];
       clickImageCoordinates = []; // Clear
 
-      console.log(labelViewportPoint);
-
       // Make text and crosshairs
       addText(
         uniqueID,
@@ -2109,13 +2173,16 @@ viewer.addHandler("canvas-click", function (event) {
       XWasPressed = false; // reset
       isZPressed = false; // reset (because keyup not detected)
       ZWasPressed = false; // reset
-      polygonButton.classList.remove("active");
-      polylineButton.classList.remove("active");
-      isPolygonMode = false;
-      isPolylineMode = false;
+      if (!polylineButton.classList.contains("active")) {
+        togglePolylineFloaterOn(false);
+      }
+      // TODO: Could add code in below if wanting to deactivate button
+      // after each annotation
+      // polygonButton.classList.remove("active");
+      // polylineButton.classList.remove("active");
+      // isPolygonMode = false;
+      // isPolylineMode = false;
       activelyMakingPoly = false;
-      isZPressed = false;
-      isXPressed = false;
       console.log("Poly mode disabled");
       enableAnnoButtons();
     } else {
@@ -2366,7 +2433,6 @@ let overlayElement = null;
 let currentRectUniqueId;
 viewer.addHandler("canvas-drag", function (event) {
   if (event.originalEvent.shiftKey || isRectangleMode) {
-    console.log("drawing rectangle");
     event.preventDefaultAction = true; // Prevent default behavior (like panning)
 
     const image = viewer.world.getItemAt(0);
@@ -2550,8 +2616,12 @@ viewer.addHandler("canvas-release", function (event) {
       labelBackgroundOpacity
     );
     enableAnnoButtons();
-    hasUnsavedAnnotations = true;
+    hasUnsavedAnnotations = true; // TODO: Turn off button between each annotation???
     drawShape(polyCanvas, [annoJSON]);
+    if (!rectButton.classList.contains("active")) {
+      toggleRectFloaterOn(false);
+    }
+    shiftKeyHeld = false; // TODO: is this right?
   }
 });
 
@@ -4965,3 +5035,166 @@ document.getElementById("ECDUnits").addEventListener("change", function () {
   // Update the area field
   ECD.value = newECD.toFixed(2);
 });
+
+///////////////////////////////////////////
+//// Floating elements when annotating ////
+///////////////////////////////////////////
+
+// Tracking the current mouse position
+let lastMousePosition = { x: 0, y: 0 }; // Store last known mouse position
+document.addEventListener("mousemove", (event) => {
+  lastMousePosition.x = event.clientX;
+  lastMousePosition.y = event.clientY;
+});
+
+function getMousePosition() {
+  return { x: lastMousePosition.x, y: lastMousePosition.y };
+}
+
+const crosshairFloater = document.getElementById("anno-point-floater");
+const polylineFloater = document.getElementById("anno-polyline-floater");
+const rectFloater = document.getElementById("anno-rect-floater");
+const polygonFloater = document.getElementById("anno-polygon-floater");
+const ellipseFloater = document.getElementById("anno-ellipse-floater");
+
+document.addEventListener("mousemove", (event) => {
+  if (isQPressed || isPointMode) {
+    // crosshairFloater.style.display = "block";
+    // document.body.style.cursor = "default"; // Hide system cursor when crosshair is active
+    toggleCrosshairFloaterOn(true);
+    // crosshairFloater.style.left = `${event.clientX + 5}px`;
+    // crosshairFloater.style.top = `${event.clientY - 5}px`;
+  } else if (isZPressed || isPolylineMode) {
+    togglePolylineFloaterOn(true);
+  } else if (shiftKeyHeld || isRectangleMode) {
+    toggleRectFloaterOn(true);
+  } else if (isXPressed || isPolygonMode) {
+    togglePolygonFloaterOn(true);
+  } else if (isCPressed || isEllipseMode) {
+    toggleEllipseFloaterOn(true);
+  } else {
+    toggleCrosshairFloaterOn(false);
+    togglePolylineFloaterOn(false);
+    toggleRectFloaterOn(false);
+    togglePolygonFloaterOn(false);
+    toggleEllipseFloaterOn(false);
+  }
+});
+
+viewer.addHandler("canvas-drag", function (event) {
+  if (event.originalEvent.shiftKey || isRectangleMode) {
+    const x = event.position.x;
+    const y = event.position.y;
+    rectFloater.setAttribute(
+      "points",
+      `${x + 5},${y + -5} ${x + 15},${y + -5} ${x + 15},${y + 5} ${x + 5},${
+        y + 5
+      } ${x + 5},${y + -5}`
+    );
+  }
+});
+
+let shiftKeyHeld = false; // Track shift key state
+window.addEventListener("keydown", function (event) {
+  if (event.key === "Shift" && !shiftKeyHeld) {
+    disableOtherAnnoModes("rect");
+    shiftKeyHeld = true;
+    toggleRectFloaterOn(true);
+  }
+  if (event.key === "x" || event.key === "X") {
+    togglePolygonFloaterOn(true);
+  }
+  if (event.key === "c" || event.key === "C") {
+    toggleEllipseFloaterOn(true);
+  }
+});
+
+window.addEventListener("keyup", function (event) {
+  if (event.key === "Shift") {
+    shiftKeyHeld = false;
+    toggleRectFloaterOn(false);
+  }
+});
+
+function toggleCrosshairFloaterOn(enable) {
+  crosshairFloater.style.display = enable ? "block" : "none";
+  if (enable) {
+    const currentMousePos = getMousePosition();
+    crosshairFloater.style.left = `${currentMousePos.x + 5}px`;
+    crosshairFloater.style.top = `${currentMousePos.y - 5}px`;
+  }
+  // document.body.style.cursor = enable ? "default" : "default"; // Hide system cursor when crosshair is active
+}
+
+function togglePolylineFloaterOn(enable) {
+  polylineFloater.style.visibility = enable ? "visible" : "hidden";
+  if (enable) {
+    const currentMousePos = getMousePosition();
+    const x = currentMousePos.x;
+    const y = currentMousePos.y;
+    polylineFloater.setAttribute(
+      "points",
+      `${x + 5},${y + -5} ${x + 15},${y + 5}`
+    );
+  }
+}
+
+function toggleRectFloaterOn(enable) {
+  rectFloater.style.visibility = enable ? "visible" : "hidden";
+  if (enable) {
+    const currentMousePos = getMousePosition();
+    const x = currentMousePos.x;
+    const y = currentMousePos.y;
+    rectFloater.setAttribute(
+      "points",
+      `${x + 5},${y + -5} ${x + 15},${y + -5} ${x + 15},${y + 5} ${x + 5},${
+        y + 5
+      } ${x + 5},${y + -5}`
+    );
+  }
+}
+
+function togglePolygonFloaterOn(enable) {
+  polygonFloater.style.visibility = enable ? "visible" : "hidden";
+  if (enable) {
+    const currentMousePos = getMousePosition();
+    const x = currentMousePos.x;
+    const y = currentMousePos.y;
+    polygonFloater.setAttribute(
+      "points",
+      `${x + 5},${y + -5} ${x + 20},${y + -5} ${x + 15},${y + 5} ${x + 5},${
+        y + 5
+      } ${x + 5},${y + -5}`
+    );
+  }
+}
+
+function toggleEllipseFloaterOn(enable) {
+  polygonFloater.style.visibility = enable ? "visible" : "hidden";
+  if (enable) {
+    const currentMousePos = getMousePosition();
+    const x = currentMousePos.x;
+    const y = currentMousePos.y;
+    const yoffset = -2;
+    const xoffset = 8;
+    polygonFloater.setAttribute(
+      "points",
+      `${x + 7.07 + xoffset},${y + 7.07 + yoffset}
+       ${x + 5.02 + xoffset},${y + 7.9 + yoffset}
+       ${x + 2.1 + xoffset},${y + 7.36 + yoffset}
+       ${x + -1.18 + xoffset},${y + 5.55 + yoffset}
+       ${x + -4.26 + xoffset},${y + 2.78 + yoffset}
+       ${x + -6.6 + xoffset},${y + -0.47 + yoffset}
+       ${x + -7.8 + xoffset},${y + -3.64 + yoffset}
+       ${x + -7.65 + xoffset},${y + -6.18 + yoffset}
+       ${x + -6.18 + xoffset},${y + -7.65 + yoffset}
+       ${x + -3.64 + xoffset},${y + -7.8 + yoffset}
+       ${x + -0.47 + xoffset},${y + -6.6 + yoffset}
+       ${x + 2.78 + xoffset},${y + -4.26 + yoffset}
+       ${x + 5.55 + xoffset},${y + -1.18 + yoffset}
+       ${x + 7.36 + xoffset},${y + 2.1 + yoffset}
+       ${x + 7.9 + xoffset},${y + 5.02 + yoffset}
+       ${x + 7.07 + xoffset},${y + 7.07 + yoffset}`
+    );
+  }
+}
