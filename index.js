@@ -802,6 +802,7 @@ const enableAnnoButtons = () => {
   document.getElementById("anno-next-button").disabled = false;
   document.getElementById("anno-last-button").disabled = false;
   document.getElementById("anno-label").disabled = false;
+  document.getElementById("anno-notes").disabled = false;
 };
 
 const disableAnnoButtons = () => {
@@ -811,6 +812,7 @@ const disableAnnoButtons = () => {
   document.getElementById("anno-next-button").disabled = true;
   document.getElementById("anno-last-button").disabled = true;
   document.getElementById("anno-label").disabled = true;
+  document.getElementById("anno-notes").disabled = true;
 };
 
 document
@@ -1159,6 +1161,7 @@ function selectNextAnno(id) {
   console.log("selecting next id");
   const annoIdBox = document.getElementById("anno-id");
   const annoLabelBox = document.getElementById("anno-label");
+  const annoNotesBox = document.getElementById("anno-notes");
   const annoIds = Array.from(
     { length: annoJSON.features.length },
     (_, i) => i + 1
@@ -1168,6 +1171,7 @@ function selectNextAnno(id) {
   // Case where there are no annotations left
   if (annoIds.length === 0) {
     annoLabelBox.value = "";
+    annoNotesBox.value = "";
     annoIdBox.value = 1;
     document.getElementById("anno-id").disabled = false;
     return;
@@ -1207,26 +1211,33 @@ function annoLabelToText() {
   const idInput = parseInt(document.getElementById("anno-id").value);
   // Find the annotation by id
   let label = "";
+  let notes = "";
   if (annoJSON.features[idInput - 1]) {
     // Access the label within the properties of the GeoJSON object
-    label = annoJSON.features[idInput - 1].properties.label;
+    label = annoJSON.features[idInput - 1].properties.label ?? "";
+    // Access the notes within the properties of the GeoJSON object
+    notes = annoJSON.features[idInput - 1].properties.notes ?? "";
   } else {
     console.log("Annotation with this ID not found.");
   }
   const annoLabel = document.getElementById("anno-label");
+  const annoNotes = document.getElementById("anno-notes");
   annoLabel.value = `${label}`;
+  annoNotes.value = `${notes}`;
 }
 
 // Function to update the JSON based on the anno-id text box
 function annoTextToLabel() {
   const idInput = parseInt(document.getElementById("anno-id").value);
   const annoLabel = document.getElementById("anno-label");
+  const annoNotes = document.getElementById("anno-notes");
   // Check if the ID exists in the annoJSON dictionary
   if (annoJSON.features[idInput - 1]) {
     // Update the label within the properties of the GeoJSON object
     annoJSON.features[idInput - 1].properties.label = annoLabel.value;
+    annoJSON.features[idInput - 1].properties.notes = annoNotes.value;
     console.log(
-      `Updated label for ID ${idInput}:`,
+      `Updated label and/or notes for ID ${idInput}:`,
       annoJSON.features[idInput - 1].properties.label
     );
   } else {
@@ -1244,6 +1255,16 @@ document.addEventListener("keydown", function (event) {
     const idInput = parseInt(document.getElementById("anno-id").value);
     const uuid = annoJSON.features[idInput - 1].properties.uuid;
     updateText(uuid, "anno", textInput.value);
+  }
+});
+
+// When Enter is pressed in the anno-notes text box
+document.addEventListener("keydown", function (event) {
+  const textInput = document.getElementById("anno-notes");
+  // Check for Enter key in anno-notes field
+  if (event.code === "Enter" && document.activeElement === textInput) {
+    event.preventDefault(); // Prevent any default action for Enter key
+    annoTextToLabel();
   }
 });
 
@@ -3192,8 +3213,10 @@ const clearAnnotations = () => {
   drawShape(polyCanvas, [annoJSON, annoJSONTemp]);
   console.log("Cleared", geoJSON);
   const annoLabel = document.getElementById("anno-label");
+  const annoNotes = document.getElementById("anno-notes");
   const annoId = document.getElementById("anno-id");
   annoLabel.value = "";
+  annoNotes.value = "";
   annoId.value = 1;
   hasUnsavedAnnotations = false;
 };
@@ -3845,7 +3868,8 @@ document.addEventListener("keydown", function (event) {
   if (
     event.code === "Space" &&
     document.activeElement.id !== "count-notes" &&
-    document.activeElement.id !== "anno-label"
+    document.activeElement.id !== "anno-label" &&
+    document.activeElement.id !== "anno-notes"
   ) {
     event.preventDefault();
     if (event.shiftKey) {
@@ -4638,10 +4662,9 @@ viewerContainer.addEventListener("mousemove", function (event) {
   drawShape(circleCanvas, [circleJSON]);
 });
 
-// When Enter is pressed in the anno-label text box
+// When Enter is pressed in the circle text box
 document.addEventListener("keydown", function (event) {
   const circleValueInput = document.getElementById("circle");
-  // Check for Enter key in anno-label field
   if (event.code === "Enter" && document.activeElement === circleValueInput) {
     event.preventDefault(); // Prevent any default action for Enter key
     drawShape(circleCanvas, [circleJSON]);
