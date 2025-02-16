@@ -1779,7 +1779,13 @@ viewer.addHandler("canvas-click", function (event) {
         features: [],
       };
       const sampleIdx = samples.indexOf(sampleName);
-      addPolylineToGeoJSON(annoJSON, [...ellipsePoints], {
+      const areaPixels2 = calculatePolygonArea([ellipsePoints]);
+      const areaM2 = areaPixels2 / pixelsPerMeters[currentIndex] ** 2;
+      const perimeterPixels = calculatePolygonExteriorPerimeter([
+        ellipsePoints,
+      ]);
+      const perimeterM = perimeterPixels / pixelsPerMeters[currentIndex];
+      addPolygonToGeoJSON(annoJSON, [...ellipsePoints], {
         uuid: uniqueID,
         label: constEllipseLabel,
         xLabel: labelImagePoint[0],
@@ -1798,6 +1804,8 @@ viewer.addHandler("canvas-click", function (event) {
         lineOpacity: lineOpacity,
         fillColor: fillColor,
         fillOpacity: fillOpacity,
+        area_m2: areaM2,
+        perimeter_m: perimeterM,
       });
       drawShape(polyCanvas, [annoJSON, annoJSONTemp]);
 
@@ -1820,6 +1828,11 @@ viewer.addHandler("canvas-click", function (event) {
         features: [],
       };
       hasUnsavedAnnotations = true;
+      ellipseButton.classList.remove("active");
+      isEllipseMode = false;
+      activelyMakingEllipse = false;
+      isCPressed = false;
+      console.log("Ellipse mode disabled");
       enableAnnoButtons();
     }
   }
@@ -1968,6 +1981,14 @@ viewer.addHandler("canvas-click", function (event) {
       );
       const sampleIdx = samples.indexOf(sampleName);
 
+      const rectAreaPixels2 = calculatePolygonArea([clickImageCoordinates]);
+      const rectAreaM2 = rectAreaPixels2 / pixelsPerMeters[currentIndex] ** 2;
+      const rectPerimeterPixels = calculatePolygonExteriorPerimeter([
+        clickImageCoordinates,
+      ]);
+      const rectPerimeterM =
+        rectPerimeterPixels / pixelsPerMeters[currentIndex];
+
       if (isPolygonMode || XWasPressed) {
         // Close the polygon by adding the first point to the end
         clickCoordinates = clickImageCoordinates.slice(
@@ -1994,7 +2015,8 @@ viewer.addHandler("canvas-click", function (event) {
           lineOpacity: lineOpacity,
           fillColor: fillColor,
           fillOpacity: fillOpacity,
-          // canvasDraw: true,
+          area_m2: rectAreaM2,
+          perimeter_m: rectPerimeterM,
         });
       }
 
@@ -2053,6 +2075,15 @@ viewer.addHandler("canvas-click", function (event) {
       XWasPressed = false; // reset
       isZPressed = false; // reset (because keyup not detected)
       ZWasPressed = false; // reset
+      polygonButton.classList.remove("active");
+      polylineButton.classList.remove("active");
+      isPolygonMode = false;
+      isPolylineMode = false;
+      activelyMakingPoly = false;
+      isZPressed = false;
+      isXPressed = false;
+      console.log("Poly mode disabled");
+      enableAnnoButtons();
     } else {
       // It's a single click, so set a timeout to handle it
       clickTimeout = setTimeout(function () {
@@ -2435,6 +2466,13 @@ viewer.addHandler("canvas-release", function (event) {
       [x, y], // Close the loop to the top-left corner
     ];
 
+    const rectAreaPixels2 = calculatePolygonArea([coordinates]);
+    const rectAreaM2 = rectAreaPixels2 / pixelsPerMeters[currentIndex] ** 2;
+    const rectPerimeterPixels = calculatePolygonExteriorPerimeter([
+      coordinates,
+    ]);
+    const rectPerimeterM = rectPerimeterPixels / pixelsPerMeters[currentIndex];
+
     // Add the rectangle to the geoJSON
     const sampleIdx = samples.indexOf(sampleName);
     addPolygonToGeoJSON(annoJSON, coordinates, {
@@ -2456,6 +2494,8 @@ viewer.addHandler("canvas-release", function (event) {
       lineOpacity: Number(lineOpacity),
       fillColor: fillColor,
       fillOpacity: fillOpacity,
+      area_m2: rectAreaM2,
+      perimeter_m: rectPerimeterM,
     });
 
     // Mouse up - finalize and reset for the next rectangle
@@ -4732,4 +4772,68 @@ function resetMeasurements() {
   distanceElement.value = "0";
   firstViewerElementPoint = "";
   secondViewerElementPoint = "";
+}
+
+// Helper function to calculate the distance between two points
+function calculateDistance([x1, y1], [x2, y2]) {
+  return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+}
+
+// Calculate perimeter of a polygon ring
+function calculatePerimeter(ring) {
+  let perimeter = 0;
+  for (let i = 0; i < ring.length - 1; i++) {
+    let [x1, y1] = ring[i];
+    let [x2, y2] = ring[i + 1];
+    // perimeter += Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+    perimeter += calculateDistance([x1, y1], [x2, y2]);
+  }
+  return perimeter;
+}
+
+// Calculate the area of a ring (array of coordinates)
+function calculateArea(ring) {
+  // Input is coordinates of a polygon ring
+  let area = 0;
+  for (let i = 0; i < ring.length - 1; i++) {
+    let [x1, y1] = ring[i];
+    let [x2, y2] = ring[i + 1];
+    area += x1 * y2 - x2 * y1;
+  }
+  return Math.abs(area) / 2;
+}
+
+function calculateLineStringLength(coordinates) {
+  // Initialize total length to 0
+  let totalLength = 0;
+
+  // Loop through the coordinates and calculate the distance between consecutive points
+  for (let i = 0; i < coordinates.length - 1; i++) {
+    totalLength += calculateDistance(coordinates[i], coordinates[i + 1]);
+  }
+
+  return totalLength;
+}
+
+function calculatePolygonArea(coordinates) {
+  // Calculate the perimeter and area of the exterior ring (first ring)
+  let exteriorRing = coordinates[0];
+  let exteriorPerimeter = calculatePerimeter(exteriorRing);
+  let exteriorArea = calculateArea(exteriorRing);
+
+  let interiorArea = 0;
+  for (let i = 1; i < coordinates.length; i++) {
+    let interiorRing = coordinates[i];
+    interiorArea += calculateArea(interiorRing);
+  }
+
+  let totalArea = exteriorArea - interiorArea;
+
+  return totalArea;
+}
+
+function calculatePolygonExteriorPerimeter(coordinates) {
+  let exteriorRing = coordinates[0];
+  let exteriorPerimeter = calculatePerimeter(exteriorRing);
+  return exteriorPerimeter;
 }
