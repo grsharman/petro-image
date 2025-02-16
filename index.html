@@ -556,33 +556,11 @@
         </details>
         <details closed>
           <summary>Measure</summary>
-          <div>
+          <div class="dropdown-container">
             <button id="toggleMeasurementButton"
             class="custom-button"
-            style="width: 40px;"
-            onclick="toggleMeasurementMode(this)" title="Start/stop measuring">Start</button>
-          </div>
-          <div>
-            <label for="distance">Length (µm):</label>
-            <input type="number" id="distance" readonly value="0.0" style="width: 50px;">
-          </div>
-          <div>
-            <label for="x0">x1:</label>
-            <output id="x0">0.00</output>
-            <label for="y0">y1:</label>
-            <output id="y0">0.00</output>
-          </div>
-          <div>
-            <label for="x1">x2:</label>
-            <output id="x1">0.00</output>
-            <label for="y1">y2:</label>
-            <output id="y1">0.00</output>
-          </div>
-          <div class="dropdown-container">
-            <button id="toggleCircleButton"
-            class="custom-button"
-            style="width: 80px;"
-            onclick="toggleCircleMode(this)" title="Start/stop measuring">Draw Circle</button>
+            style="width: 110px;"
+            onclick="toggleMeasurementMode(this)" title="Start/stop measuring">Start Measuring</button>
             <button class="custom-button" id="circleGearButton" title="Annotation Settings">
               <svg class="gear-icon" version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" 
               viewBox="0 0 64 64" enable-background="new 0 0 64 64" xml:space="preserve">
@@ -594,6 +572,45 @@
               </g>
               </svg>
             </button>
+          </div>
+          <div class="dropdown-container">
+            <label for="distance">Length</label>
+            <div>
+              <select id="distanceUnits" style="width: 45px;">
+                <option value=0>m</option>
+                <option value=1 selected>mm</option>
+                <option value=2>µm</option>
+              </select>
+            </div>
+            <input type="number" id="distance" readonly value="0.0" style="width: 55px;">
+          </div>
+          <div class="dropdown-container">
+            <label for="area">Area</label>
+            <div>
+              <select id="areaUnits" style="width: 50px;">
+                <option value=0>m²</option>
+                <option value=1 selected>mm²</option>
+                <option value=2>µm²</option>
+              </select>
+            </div>
+            <input type="number" id="area" readonly value="0.0" style="width: 64px;">
+          </div>
+          <div class="dropdown-container">
+            <label for="ECD">ECD</label>
+            <div>
+              <select id="ECDUnits" style="width: 50px;">
+                <option value=0>m</option>
+                <option value=1 selected>mm</option>
+                <option value=2>µm</option>
+              </select>
+            </div>
+            <input type="number" id="ECD" readonly value="0.0" style="width: 64px;">
+          </div>
+          <div class="dropdown-container">
+            <button id="toggleCircleButton"
+            class="custom-button"
+            style="width: 80px;"
+            onclick="toggleCircleMode(this)" title="Start/stop measuring">Draw Circle</button>
           </div>
           <!-- Hidden Settings Menu -->
           <div id="circleSettingsMenu" class="hiddenSettingsMenu">
@@ -627,9 +644,16 @@
             </div>
           </div>
         
-          <div>
-            <label for="circle">Diameter (µm):</label>
-            <input type="number" id="circle" value="100.0" style="width: 50px;">
+          <div class="dropdown-container">
+            <label for="circle">Diameter</label>
+            <div>
+              <select id="circleUnits" style="width: 45px;">
+                <option value=0>m</option>
+                <option value=1>mm</option>
+                <option value=2 selected>µm</option>
+              </select>
+            </div>
+            <input type="number" id="circle" value="100" style="width: 50px;">
           </div>
           <!-- <div>
             <label for="distance">Distance:</label>

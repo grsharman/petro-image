@@ -25,10 +25,18 @@ let countJSON = {
   type: "FeatureCollection",
   features: [],
 };
+let measureJSON = {
+  type: "FeatureCollection",
+  features: [],
+};
 let annoJSONTemp = {
   type: "FeatureCollection",
   features: [],
 }; // For drawing temporary annotations
+let measureJSONTemp = {
+  type: "FeatureCollection",
+  features: [],
+}; // For drawing temporary measurements
 
 // Load necessary information from JSON
 fetch("samples.json")
@@ -182,9 +190,7 @@ document
     removeAoiRectangle();
     updateOpacityImageSliderVisibility();
     updateImageLabels();
-    if (measurementLineDrawn === true) {
-      resetMeasurements();
-    }
+    resetMeasurements(true);
     document.getElementById("enableDivideImages").checked = true;
     enableDivideImages = true;
     divideImages();
@@ -1868,6 +1874,7 @@ const clickDelay = 300; // Maximum delay between clicks for detecting double-cli
 let lastClickTime = 0; // Timestamp of the last click
 const polyCanvas = document.getElementById("annotation-overlay"); // Includes polyline and polygon
 const circleCanvas = document.getElementById("circle-overlay"); // Includes circles
+const measureCanvas = document.getElementById("measurement-overlay"); // Includes polyline and polygon
 let activelyMakingPoly = false; // Either polyline or polygon
 viewer.addHandler("canvas-click", function (event) {
   console.log("canvas clicked");
@@ -2140,12 +2147,14 @@ function updateViewerElementCoordinates(canvas, viewportPoint) {
 viewer.addHandler("viewport-change", () => {
   drawShape(polyCanvas, [annoJSONTemp, annoJSON]);
   drawShape(circleCanvas, [circleJSON]);
+  drawShape(measureCanvas, [measureJSONTemp, measureJSON]);
 });
 
 // TOOD: Is this necessary? Could be partially redundant with the above function
 viewerContainer.addEventListener("mousemove", () => {
   drawShape(polyCanvas, [annoJSONTemp, annoJSON]);
   drawShape(circleCanvas, [circleJSON]);
+  drawShape(measureCanvas, [measureJSONTemp, measureJSON]);
 });
 
 // Event listener for double-click to end collection
@@ -4297,13 +4306,11 @@ function getUniqueLabels() {
 
   for (let value = 1; value <= noPoints; value++) {
     const label = countJSON.features[value - 1].properties.id;
-    console.log("label", label);
     if (label !== "") {
       // Don't count uncounted locations
       labels.add(label); // Add label to the Set (automatically ensures uniqueness)
     }
   }
-  console.log("labels", labels);
   return Array.from(labels); // Convert Set to Array
 }
 
@@ -4435,85 +4442,10 @@ function applyOpacityToColor(color, opacity) {
 //// Measuring functionality ////
 /////////////////////////////////
 
-// TODO: Enable polyline drawing for measuring distances
-let firstViewerElementPoint;
-let firstViewportPoint;
-let secondViewerElementPoint;
-let secondViewportPoint;
 const measurementButton = document.getElementById("toggleMeasurementButton");
 const circleButton = document.getElementById("toggleCircleButton");
-const distanceElement = document.getElementById("distance");
-const x0 = document.getElementById("x0");
-const y0 = document.getElementById("y0");
-const x1 = document.getElementById("x1");
-const y1 = document.getElementById("y1");
 
-const measureLineCanvas = document.getElementById("measurement-overlay");
-
-viewer.addHandler("canvas-click", function (event) {
-  if (measurmentModeActive) {
-    const image = viewer.world.getItemAt(0);
-    const viewportPoint = viewer.viewport.pointFromPixel(event.position);
-    const imagePoint = image.viewportToImageCoordinates(
-      viewportPoint.x,
-      viewportPoint.y
-    );
-    if (measurementCounter === 0) {
-      secondViewerElementPoint = null;
-      clearLine(measureLineCanvas);
-      event.preventDefaultAction = true; // Prevent default behavior (like panning)
-
-      x0.textContent = imagePoint.x.toFixed(0);
-      y0.textContent = imagePoint.y.toFixed(0);
-      const firstCrosshair = document.getElementById(`measure-crosshair-0`);
-      const secondCrosshair = document.getElementById(`measure-crosshair-1`);
-      firstViewportPoint = viewportPoint;
-      firstViewerElementPoint = event.position;
-      if (firstCrosshair) {
-        viewer.removeOverlay(firstCrosshair); // Remove the overlay using the element
-        viewer.removeOverlay(secondCrosshair); // Remove the overlay using the element
-      }
-      addMeasurementCrosshairs(measurementCounter, viewportPoint);
-      measurementCounter++;
-    } else if (measurementCounter === 1) {
-      // Reference the canvas
-
-      x1.textContent = imagePoint.x.toFixed(0);
-      y1.textContent = imagePoint.y.toFixed(0);
-      addMeasurementCrosshairs(measurementCounter, viewportPoint);
-      const viewportPt1 = image.imageToViewportCoordinates(
-        x0.textContent,
-        y0.textContent
-      );
-      const viewportPt2 = image.imageToViewportCoordinates(
-        x1.textContent,
-        y1.textContent
-      );
-      secondViewportPoint = viewportPoint;
-      secondViewerElementPoint = event.position;
-      addLine(
-        measureLineCanvas,
-        firstViewerElementPoint,
-        secondViewerElementPoint
-      );
-      // addLine(viewportPt1.x, viewportPt1.y, viewportPt2.x, viewportPt2.y);
-      measurementCounter++;
-      const distance = Math.sqrt(
-        (x1.textContent - x0.textContent) ** 2 +
-          (y1.textContent - y0.textContent) ** 2
-      );
-      const distanceInMicrons =
-        ((distance * 1) / pixelsPerMeters[currentIndex]) * 1000000; // Microns
-      distanceElement.value = distanceInMicrons.toFixed(1);
-      measurementCounter = 0;
-    } else {
-      measurementCounter = 0;
-    }
-  }
-});
-
-let measurmentModeActive = false;
-let measurementCounter = 0;
+let measurementModeActive = false;
 function toggleMeasurementMode() {
   const isMeasuring = measurementButton.classList.contains("active");
 
@@ -4521,28 +4453,22 @@ function toggleMeasurementMode() {
   measurementButton.classList.toggle("active");
 
   if (isMeasuring) {
-    const firstCrosshair = document.getElementById(`measure-crosshair-0`);
-    const secondCrosshair = document.getElementById(`measure-crosshair-1`);
     // Disable measurement mode
-    measurementButton.textContent = "Start";
-    measurmentModeActive = false;
+    measurementButton.textContent = "Start Measuring";
+    measurementModeActive = false;
     console.log("Measurement mode disabled");
-    clearLine(measureLineCanvas);
-    if (firstCrosshair) {
-      viewer.removeOverlay(firstCrosshair);
-    }
-    if (secondCrosshair) {
-      viewer.removeOverlay(secondCrosshair);
-    }
-    measurementLineDrawn = false;
     resetMeasurements();
   } else {
     // Enable measurement mode
-    measurementButton.textContent = "Stop";
-    measurmentModeActive = true;
+    measurementButton.textContent = "Stop Measuring";
+    measurementModeActive = true;
     console.log("Measurement mode enabled");
   }
 }
+
+///////////////////////////////////////////////////
+//// Functions for plotting measurement circle ////
+///////////////////////////////////////////////////
 
 let circleJSON = {
   type: "FeatureCollection",
@@ -4594,23 +4520,7 @@ function getCircleCoordinatesInImageSpace(centerX, centerY, diameter) {
   return coordinates;
 }
 
-// function drawCircle(canvasId, x, y, diameter) {
-//   const canvas = document.getElementById(canvasId);
-
-//   if (!canvas) {
-//     console.error("Canvas not found");
-//     return;
-//   }
-//   const ctx = canvas.getContext("2d");
-
-//   const radius = diameter / 2;
-
-//   ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear previous drawings
-//   ctx.beginPath();
-//   ctx.arc(x, y, radius, 0, Math.PI * 2);
-//   ctx.stroke();
-// }
-
+let circleConversion = 0;
 viewerContainer.addEventListener("mousemove", function (event) {
   if (!circleModeActive) return; // Only draw when mode is active
 
@@ -4620,7 +4530,15 @@ viewerContainer.addEventListener("mousemove", function (event) {
   };
 
   const circleDiameter = parseFloat(document.getElementById("circle").value);
-  // const rect = viewerContainer.getBoundingClientRect(); // Get container bounds
+  const circleUnits = parseInt(document.getElementById("circleUnits").value);
+  if (circleUnits === 0) {
+    circleConversion = 1;
+  } else if (circleUnits === 1) {
+    circleConversion = 1000;
+  } else if (circleUnits === 2) {
+    circleConversion = 1000000;
+  }
+
   const image = viewer.world.getItemAt(0);
   const positionPoint = new OpenSeadragon.Point(event.clientX, event.clientY);
   const viewportPoint = viewer.viewport.pointFromPixel(positionPoint);
@@ -4631,7 +4549,7 @@ viewerContainer.addEventListener("mousemove", function (event) {
   const coordinates = getCircleCoordinatesInImageSpace(
     imagePoint.x,
     imagePoint.y,
-    circleDiameter * (pixelsPerMeters[currentIndex] / 1000000) // Convert microns to meters
+    circleDiameter * (pixelsPerMeters[currentIndex] / circleConversion) // Convert microns to meters
   );
 
   const lineColor = document.getElementById("circleLineColor").value;
@@ -4671,137 +4589,9 @@ document.addEventListener("keydown", function (event) {
   }
 });
 
-function addMeasurementCrosshairs(
-  i,
-  location,
-  color = "red",
-  lineWeight = 2,
-  opacity = 1
-) {
-  console.log("adding measurement crosshairs");
-  const crosshairsMeasurement = document.createElement("div");
-  crosshairsMeasurement.className = "measure-symbol"; // Used for css styling
-  crosshairsMeasurement.id = `measure-crosshair-${i}`;
-
-  // Apply inline styles for customization
-  crosshairsMeasurement.style.setProperty("--crosshair-color", color);
-  crosshairsMeasurement.style.setProperty(
-    "--crosshair-line-weight",
-    `${Number(lineWeight)}px`
-  );
-  crosshairsMeasurement.style.setProperty(
-    "--crosshair-opacity",
-    Number(opacity)
-  );
-
-  const overlay = viewer.addOverlay({
-    element: crosshairsMeasurement,
-    location: location,
-    checkResize: false,
-  });
-}
-
-function resizeCanvasToViewport(canvas) {
-  const viewportWidth = viewer.viewport.containerSize.x;
-  const viewportHeight = viewer.viewport.containerSize.y;
-  canvas.width = viewportWidth;
-  canvas.height = viewportHeight;
-  if (firstViewerElementPoint && secondViewerElementPoint) {
-    console.log("resizing canvas");
-    const firstViewerElementPointUpdated =
-      viewer.viewport.viewportToViewerElementCoordinates(firstViewportPoint);
-    const secondViewerElementPointUpdated =
-      viewer.viewport.viewportToViewerElementCoordinates(secondViewportPoint);
-    addLine(
-      canvas,
-      firstViewerElementPointUpdated,
-      secondViewerElementPointUpdated
-    );
-  }
-}
-
-// Wait until the viewer is fully loaded (the open event)
-viewer.addHandler("open", function () {
-  // Resize canvas after the viewer has loaded
-  resizeCanvasToViewport(measureLineCanvas);
-});
-
-// Listen to zoom and pan events to update the line's position
-viewer.addHandler("animation", function () {
-  resizeCanvasToViewport(measureLineCanvas);
-  // adjustCanvasTransform();
-});
-
-// Update size on window resize
-window.addEventListener("resize", resizeCanvasToViewport(measureLineCanvas));
-
-let measurementLineDrawn = false;
-// Draw the line between the two points
-function addLine(
-  canvas,
-  firstPoint,
-  secondPoint,
-  lineColor = "red",
-  lineLw = 2,
-  lineOpacity = 1
-) {
-  const lineContext = canvas.getContext("2d");
-
-  if (firstPoint && secondPoint) {
-    console.log("adding line");
-    console.log("lineContext", lineContext);
-    console.log("lw, color, opacity", lineLw, lineColor, lineOpacity);
-
-    // points are in viewer element coordinates
-    //lineContext.clearRect(0, 0, measureLineCanvas.width, measureLineCanvas.height);
-    // Draw the line
-    lineContext.beginPath();
-    lineContext.moveTo(firstPoint.x, firstPoint.y);
-    lineContext.lineTo(secondPoint.x, secondPoint.y);
-    lineContext.strokeStyle = lineColor;
-    lineContext.lineWidth = lineLw;
-    lineContext.opacity = lineOpacity;
-    lineContext.stroke();
-  }
-  measurementLineDrawn = true;
-}
-
-function clearLine(canvas) {
-  // Update canvas size dynamically
-  const viewerContainer = viewer.container;
-  canvas.width = viewerContainer.clientWidth;
-  canvas.height = viewerContainer.clientHeight;
-  const lineContext = canvas.getContext("2d");
-  lineContext.clearRect(0, 0, canvas.width, canvas.height);
-}
-
-function resetMeasurements() {
-  // Clear the line canvas (if it exists)
-  if (measurementLineDrawn) {
-    console.log("clearing canvas");
-    measureLineCanvas.width = measureLineCanvas.width; // Reset width, this will clear the canvas
-    measureLineCanvas.height = measureLineCanvas.height; // Reset height, this will clear the canvas
-  }
-  // Clear the crosshairs
-  const elements = Array.from(
-    document.getElementsByClassName("measure-symbol")
-  );
-  for (let el of elements) {
-    viewer.removeOverlay(el); // Remove the overlay using the element
-  }
-  // Reset other items
-  if (measurementButton.classList.contains("active")) {
-    toggleMeasurementMode();
-  }
-  measurementCounter = 0;
-  x0.textContent = "";
-  x1.textContent = "";
-  y0.textContent = "";
-  y1.textContent = "";
-  distanceElement.value = "0";
-  firstViewerElementPoint = "";
-  secondViewerElementPoint = "";
-}
+////////////////////////////////////////////////////////////
+//// Helper functions for calculating distance and area ////
+////////////////////////////////////////////////////////////
 
 // Helper function to calculate the distance between two points
 function calculateDistance([x1, y1], [x2, y2]) {
@@ -4866,3 +4656,312 @@ function calculatePolygonExteriorPerimeter(coordinates) {
   let exteriorPerimeter = calculatePerimeter(exteriorRing);
   return exteriorPerimeter;
 }
+
+///////////////////////////////////////
+//// Updated Measurement functions ////
+///////////////////////////////////////
+
+const distanceElement = document.getElementById("distance");
+const areaElement = document.getElementById("area");
+const ECDElement = document.getElementById("ECD");
+
+// Event listener to add polyline annotations
+let measureCoordinates = []; // Array to store viewport coordinates
+let measureImageCoordinates = []; // Array to store image coordinates
+let measureCoordinatesArray = []; // Array to store arrays of coordinates
+let measureTimeout; // Timeout reference to detect double-click
+const measureClickDelay = 300; // Maximum delay between clicks for detecting double-click
+let measureLastClickTime = 0; // Timestamp of the last click
+let distanceConversion = 0; // 0 = 1, 1 = 1000, 2 = 1000000
+let distanceInM = 0;
+let areaConversion = 0; // 0 = 1, 1 = 1e6, 2 = 1e12
+let areaInM2;
+let ECDConversion = 0;
+let ECDInM;
+// let activeMeasurement = false;
+viewer.addHandler("canvas-click", function (event) {
+  const isMeasuring = measurementButton.classList.contains("active");
+  if (measurementModeActive) {
+    const distanceUnits = parseInt(
+      document.getElementById("distanceUnits").value
+    );
+    const areaUnits = parseInt(document.getElementById("areaUnits").value);
+    const ECDUnits = parseInt(document.getElementById("ECDUnits").value);
+    if (distanceUnits === 0) {
+      distanceConversion = 1;
+    } else if (distanceUnits === 1) {
+      distanceConversion = 1e3;
+    } else if (distanceUnits === 2) {
+      distanceConversion = 1e6;
+    }
+    if (areaUnits === 0) {
+      areaConversion = 1;
+    } else if (areaUnits === 1) {
+      areaConversion = 1e6;
+    } else if (areaUnits === 2) {
+      areaConversion = 1e12;
+    }
+    if (ECDUnits === 0) {
+      ECDConversion = 1;
+    } else if (ECDUnits === 1) {
+      ECDConversion = 1e3;
+    } else if (ECDUnits === 2) {
+      ECDConversion = 1e6;
+    }
+    measureJSON = {
+      type: "FeatureCollection",
+      features: [],
+    };
+    // activeMeasurement = true;
+    const image = viewer.world.getItemAt(0);
+    const imageSize = image.getContentSize();
+    const viewportPoint = viewer.viewport.pointFromPixel(event.position);
+    const imagePoint = image.viewportToImageCoordinates(
+      viewportPoint.x,
+      viewportPoint.y
+    );
+    const x = viewportPoint.x;
+    const y = viewportPoint.y;
+    const lineWeight = Number(
+      document.getElementById("circleLineWeight").value
+    );
+    const lineColor = document.getElementById("circleLineColor").value;
+    const lineStyle = document.getElementById("circleLineStyle").value;
+    const lineOpacity = Number(
+      document.getElementById("circleLineOpacity").value
+    );
+    const fillColor = document.getElementById("circleFillColor").value;
+    const fillOpacity = Number(
+      document.getElementById("circleFillOpacity").value
+    );
+    measureCoordinates.push({ x, y });
+    measureImageCoordinates.push([imagePoint.x, imagePoint.y]);
+    if (measureCoordinates.length > 1) {
+      // Draw the polyline (polyline or polygon)
+      drawShape(measureCanvas, [measureJSON, measureJSONTemp]);
+    }
+
+    // Continually update the measureJSONTemp with the latest coordinates
+    viewerContainer.addEventListener("mousemove", function (subevent) {
+      if (measurementModeActive) {
+        // Clear to avoid duplicating lines
+        measureJSONTemp = {
+          type: "FeatureCollection",
+          features: [],
+        };
+        const rect = viewerContainer.getBoundingClientRect(); // Get container bounds
+        const position = {
+          x: subevent.clientX - rect.left,
+          y: subevent.clientY - rect.top,
+        };
+        const positionPoint = new OpenSeadragon.Point(position.x, position.y);
+        const subeventViewportPoint =
+          viewer.viewport.pointFromPixel(positionPoint);
+        const subeventImagePoint = image.viewportToImageCoordinates(
+          subeventViewportPoint.x,
+          subeventViewportPoint.y
+        );
+        addPolylineToGeoJSON(
+          measureJSONTemp,
+          [
+            ...measureImageCoordinates,
+            [subeventImagePoint.x, subeventImagePoint.y],
+          ],
+          {
+            lineStyle: lineStyle,
+            lineWeight: lineWeight,
+            lineColor: lineColor,
+            lineOpacity: lineOpacity,
+          }
+        );
+
+        const currentMeasureImageCoordinates = [
+          ...measureImageCoordinates,
+          [subeventImagePoint.x, subeventImagePoint.y],
+        ];
+
+        const measurePerimeterPixels = calculatePolygonExteriorPerimeter([
+          currentMeasureImageCoordinates,
+        ]);
+        distanceInM = measurePerimeterPixels / pixelsPerMeters[currentIndex];
+        const measurePerimeter = distanceInM * distanceConversion;
+        distanceElement.value = measurePerimeter.toFixed(2);
+
+        if (measureImageCoordinates.length >= 2) {
+          // Close the polygon by adding the first point to the end
+          const currentMeasureImageCoordinatesPolygon = [
+            ...measureImageCoordinates,
+            [subeventImagePoint.x, subeventImagePoint.y],
+            [measureImageCoordinates[0][0], measureImageCoordinates[0][1]],
+          ];
+
+          const measureAreaPixels = calculatePolygonArea([
+            currentMeasureImageCoordinatesPolygon,
+          ]);
+          areaInM2 = measureAreaPixels / pixelsPerMeters[currentIndex] ** 2;
+          const measureArea = areaInM2 * areaConversion;
+          // measureAreaPixels /
+          // (pixelsPerMeters[currentIndex] / areaConversion) ** 2;
+          areaElement.value = measureArea.toFixed(2);
+
+          ECDInM =
+            2 *
+            Math.sqrt(
+              measureAreaPixels / pixelsPerMeters[currentIndex] ** 2 / Math.PI
+            );
+          const ECD = ECDInM * ECDConversion;
+          ECDElement.value = ECD.toFixed(2);
+        } else {
+          areaElement.value = 0.0; // Reset
+          ECDElement.value = 0; // Reset
+        }
+
+        drawShape(measureCanvas, [measureJSON, measureJSONTemp]);
+      }
+    });
+
+    // If the time between this click and the last click is shorter than clickDelay, it's a double-click
+    const measureCurrentTime = new Date().getTime();
+    if (measureCurrentTime - measureLastClickTime < clickDelay) {
+      // It's a double-click, so stop the timeout and end collection
+      clearTimeout(measureTimeout);
+      console.log("Double-click detected, ending measurement.");
+
+      const measurePerimeterPixels = calculatePolygonExteriorPerimeter([
+        measureImageCoordinates,
+      ]);
+      const measurePerimeter =
+        (measurePerimeterPixels / pixelsPerMeters[currentIndex]) *
+        distanceConversion;
+
+      // Close the polygon by adding the first point to the end
+      const finalMeasureImageCoordinatesPolygon = [
+        ...measureImageCoordinates,
+        [measureImageCoordinates[0][0], measureImageCoordinates[0][1]],
+      ];
+
+      const measureAreaPixels = calculatePolygonArea([
+        finalMeasureImageCoordinatesPolygon,
+      ]);
+      areaInM2 = measureAreaPixels / pixelsPerMeters[currentIndex] ** 2;
+      const measureArea = areaInM2 * areaConversion;
+
+      ECDInM =
+        2 *
+        Math.sqrt(
+          measureAreaPixels / pixelsPerMeters[currentIndex] ** 2 / Math.PI
+        );
+      const ECD = ECDInM * ECDConversion;
+      ECDElement.value = ECD.toFixed(2);
+
+      addPolylineToGeoJSON(measureJSON, measureImageCoordinates, {
+        label: "measurement",
+        pixelsPerMeter: Number(pixelsPerMeters[currentIndex]),
+        imageWidth: imageSize.x,
+        imageHeight: imageSize.y,
+        lineStyle: lineStyle,
+        lineWeight: lineWeight,
+        lineColor: lineColor,
+        lineOpacity: lineOpacity, // No line plotted, only fill (if any)
+      });
+
+      if (measurePerimeter > 0) {
+        distanceElement.value = measurePerimeter.toFixed(2);
+      }
+      if (measureArea > 0) {
+        areaElement.value = measureArea.toFixed(2);
+      }
+
+      // Reset the coordinates array for the next set of clicks
+      resetMeasurements();
+      // Disable the active measurement mode
+      toggleMeasurementMode();
+      console.log("Measurement mode disabled");
+    } else {
+      // It's a single click, so set a timeout to handle it
+      measureTimeout = setTimeout(function () {
+        console.log("Single click detected, continuing collection...");
+      }, clickDelay);
+    }
+
+    // Update the last click timestamp
+    measureLastClickTime = measureCurrentTime;
+  }
+});
+
+function resetMeasurements(hardReset = false) {
+  measureCoordinates = [];
+  measureImageCoordinates = []; // Clear
+  measureJSONTemp = {
+    type: "FeatureCollection",
+    features: [],
+  };
+  if (hardReset) {
+    measureJSON = {
+      type: "FeatureCollection",
+      features: [],
+    };
+    distanceElement.value = 0;
+    areaElement.value = 0;
+    ECDElement.value = 0;
+  }
+}
+
+// Update measurement values upon change of units
+document.getElementById("areaUnits").addEventListener("change", function () {
+  console.log("Area units changed");
+  const areaInput = document.getElementById("area");
+  const newUnit = parseInt(this.value, 10);
+
+  // Define conversion factors relative to square meters
+  const conversionFactors = {
+    0: 1, // m² (base)
+    1: 1e6, // mm²
+    2: 1e12, // µm²
+  };
+
+  const newArea = areaInM2 * conversionFactors[newUnit];
+
+  // Update the area field
+  areaInput.value = newArea.toFixed(2);
+});
+
+// Update measurement values upon change of units
+document
+  .getElementById("distanceUnits")
+  .addEventListener("change", function () {
+    console.log("Distance units changed");
+    const distanceInput = document.getElementById("distance");
+    const newUnit = parseInt(this.value, 10);
+
+    // Define conversion factors relative to square meters
+    const conversionFactors = {
+      0: 1, // m
+      1: 1e3, // mm
+      2: 1e6, // µm
+    };
+
+    const newDistance = distanceInM * conversionFactors[newUnit];
+
+    // Update the area field
+    distanceInput.value = newDistance.toFixed(2);
+  });
+
+// Update measurement values upon change of units
+document.getElementById("ECDUnits").addEventListener("change", function () {
+  console.log("ECD units changed");
+  const distanceInput = document.getElementById("ECD");
+  const newUnit = parseInt(this.value, 10);
+
+  // Define conversion factors relative to square meters
+  const conversionFactors = {
+    0: 1, // m
+    1: 1e3, // mm
+    2: 1e6, // µm
+  };
+
+  const newECD = ECDInM * conversionFactors[newUnit];
+
+  // Update the area field
+  ECD.value = newECD.toFixed(2);
+});
