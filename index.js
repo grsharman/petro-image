@@ -420,10 +420,11 @@ function setTileSetOpacity() {
 
     const opacityValue =
       Number(document.getElementById(`opacityImage${i + 1}`).value) / 100; // Convert percent
-    if (document.getElementById(`image${i + 1}`).checked) {
-      for (let j = 0; j < imagesInQuadrant.length; ++j) {
-        const tiledImage = viewer.world.getItemAt(imageIndex);
-        ++imageIndex;
+    const checked = document.getElementById(`image${i + 1}`).checked;
+    for (let j = 0; j < imagesInQuadrant.length; ++j) {
+      ++imageIndex;
+      if (checked) {
+        const tiledImage = viewer.world.getItemAt(imageIndex - 1);
         if (tiledImage) {
           if (j === visibleImageIndex) {
             tiledImage.setOpacity(opacityValue);
