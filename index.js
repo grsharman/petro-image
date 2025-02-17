@@ -420,10 +420,11 @@ function setTileSetOpacity() {
 
     const opacityValue =
       Number(document.getElementById(`opacityImage${i + 1}`).value) / 100; // Convert percent
-    if (document.getElementById(`image${i + 1}`).checked) {
-      for (let j = 0; j < imagesInQuadrant.length; ++j) {
-        const tiledImage = viewer.world.getItemAt(imageIndex);
-        ++imageIndex;
+    const checked = document.getElementById(`image${i + 1}`).checked;
+    for (let j = 0; j < imagesInQuadrant.length; ++j) {
+      ++imageIndex;
+      if (checked) {
+        const tiledImage = viewer.world.getItemAt(imageIndex - 1);
         if (tiledImage) {
           if (j === visibleImageIndex) {
             tiledImage.setOpacity(opacityValue);
@@ -591,12 +592,23 @@ const toggleImage = (checkbox, idx) => {
   console.log(`image${idx + 1}Opacity`, imageOpacity);
 
   const tileSet = tileSets[currentIndex];
+  const tile = tileSet[idx];
 
-  // Check if the item at idx is a nested list or a single image
-  if (Array.isArray(tileSet[idx])) {
+  // Find the index of the first image belonging to the checked tile.
+  let firstImageIdx = 0;
+  for (let i = 0; i < idx; ++i) {
+    if (Array.isArray(tileSet[i])) {
+      firstImageIdx += tileSet[i].length;
+    } else {
+      ++firstImageIdx;
+    }
+  }
+
+  // Check if the tile is a nested list or a single image
+  if (Array.isArray(tile)) {
     // If it's a nested array, loop through the images
-    tileSet[idx].forEach((tileSource, nestedIndex) => {
-      const imageIndex = idx + nestedIndex; // Add nestedIndex to calculate the correct image index
+    tile.forEach((_, nestedIndex) => {
+      const imageIndex = firstImageIdx + nestedIndex; // Add nestedIndex to calculate the correct image index
       const image = viewer.world.getItemAt(imageIndex);
       if (image) {
         image.setOpacity(checkbox.checked ? imageOpacity / 100 : 0);
@@ -604,7 +616,7 @@ const toggleImage = (checkbox, idx) => {
     });
   } else {
     // If it's a single image, handle it directly
-    const image = viewer.world.getItemAt(idx);
+    const image = viewer.world.getItemAt(firstImageIdx);
     if (image) {
       image.setOpacity(checkbox.checked ? imageOpacity / 100 : 0);
     }
