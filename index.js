@@ -38,81 +38,119 @@ let measureJSONTemp = {
   features: [],
 }; // For drawing temporary measurements
 
-// Load necessary information from JSON
-fetch("samples.json")
-  .then((response) => response.json())
-  .then((data) => {
-    // Loop through each sample
-    Object.keys(data).forEach((sampleKey, index) => {
-      ///
-      // Object.keys(data).forEach(sampleKey => {
-      let sample = data[sampleKey];
-      if (sample) {
-        // Extract the relevant details
-        tileSets.push(sample.tileSets);
-        tileLabels.push(sample.tileLabels);
-        samples.push(sample.title);
-        descriptions.push(sample.description);
-        pixelsPerUnits.push(sample.pixelsPerUnit);
-        pixelsPerMeters.push(sample.pixelsPerMeter);
-        units.push(sample.unit);
-        annotation_files[sample.title] = sample.annotations; // || null;
+function loadSampleJSON(JSON) {
+  // Load necessary information from JSON
+  fetch(JSON)
+    // fetch("samples.json")
+    .then((response) => response.json())
+    .then((data) => {
+      // Loop through each sample
+      Object.keys(data).forEach((sampleKey, index) => {
+        ///
+        // Object.keys(data).forEach(sampleKey => {
+        let sample = data[sampleKey];
+        if (sample) {
+          // Extract the relevant details
+          tileSets.push(sample.tileSets);
+          tileLabels.push(sample.tileLabels);
+          samples.push(sample.title);
+          descriptions.push(sample.description);
+          pixelsPerUnits.push(sample.pixelsPerUnit);
+          pixelsPerMeters.push(sample.pixelsPerMeter);
+          units.push(sample.unit);
+          annotation_files[sample.title] = sample.annotations; // || null;
 
-        /// Map sample indices to their groups
-        if (sample.groups) {
-          sample.groups.forEach((group) => {
-            if (!groupMapping[group]) {
-              groupMapping[group] = [];
-            }
-            groupMapping[group].push(index);
-          });
+          /// Map sample indices to their groups
+          if (sample.groups) {
+            sample.groups.forEach((group) => {
+              if (!groupMapping[group]) {
+                groupMapping[group] = [];
+              }
+              groupMapping[group].push(index);
+            });
+          }
+        } else {
+          console.error(`Sample not found for key: ${sampleKey}`);
+        }
+      });
+
+      // Add a default "All" group containing all sample indices
+      groupMapping["All"] = Array.from({ length: samples.length }, (_, i) => i);
+
+      // Example: initialize OpenSeadragon with the first tile source
+      loadTileSet(0);
+      addScalebar(pixelsPerMeters[0]);
+      populateGroupDropdown();
+      updateButtonLabels(0);
+      divideImages();
+      disableCountButtons();
+      // deselectAllButFirstImage();
+
+      const sampleParam = getQueryParameter("sample");
+      if (sampleParam) {
+        const sampleIndex = samples.indexOf(sampleParam);
+        if (sampleIndex !== -1) {
+          // Select the correct group and sample
+          const groupForSample = Object.keys(groupMapping).find((group) =>
+            groupMapping[group].includes(sampleIndex)
+          );
+          document.getElementById("groupDropdown").value =
+            groupForSample || "All";
+          populateSampleDropdown(groupForSample || "All");
+          document.getElementById("sampleDropdown").value = sampleIndex;
+          document
+            .getElementById("sampleDropdown")
+            .dispatchEvent(new Event("change"));
+        } else {
+          console.warn(`Sample "${sampleParam}" not found in JSON.`);
         }
       } else {
-        console.error(`Sample not found for key: ${sampleKey}`);
+        // Default behavior if no sample is specified
+        const firstGroup = Object.keys(groupMapping)[0];
+        if (firstGroup) {
+          document.getElementById("groupDropdown").value = firstGroup;
+          populateSampleDropdown(firstGroup);
+        }
       }
+    })
+    .catch((error) => {
+      console.error("Error loading the JSON file:", error);
     });
+}
 
-    // Add a default "All" group containing all sample indices
-    groupMapping["All"] = Array.from({ length: samples.length }, (_, i) => i);
+// Automatically load the default JSON file when the page loads
+document.addEventListener("DOMContentLoaded", () => {
+  loadSampleJSON("samples.json");
+});
 
-    // Example: initialize OpenSeadragon with the first tile source
-    loadTileSet(0);
-    addScalebar(pixelsPerMeters[0]);
-    populateGroupDropdown();
-    updateButtonLabels(0);
-    divideImages();
-    disableCountButtons();
-    // deselectAllButFirstImage();
-
-    const sampleParam = getQueryParameter("sample");
-    if (sampleParam) {
-      const sampleIndex = samples.indexOf(sampleParam);
-      if (sampleIndex !== -1) {
-        // Select the correct group and sample
-        const groupForSample = Object.keys(groupMapping).find((group) =>
-          groupMapping[group].includes(sampleIndex)
-        );
-        document.getElementById("groupDropdown").value =
-          groupForSample || "All";
-        populateSampleDropdown(groupForSample || "All");
-        document.getElementById("sampleDropdown").value = sampleIndex;
-        document
-          .getElementById("sampleDropdown")
-          .dispatchEvent(new Event("change"));
-      } else {
-        console.warn(`Sample "${sampleParam}" not found in JSON.`);
-      }
-    } else {
-      // Default behavior if no sample is specified
-      const firstGroup = Object.keys(groupMapping)[0];
-      if (firstGroup) {
-        document.getElementById("groupDropdown").value = firstGroup;
-        populateSampleDropdown(firstGroup);
-      }
+document
+  .getElementById("load-sample-JSON")
+  .addEventListener("change", function (event) {
+    console.log("load sample JSON clicked");
+    const fileInput = event.target;
+    const file = fileInput.files[0];
+    if (!file) {
+      console.log("not a file!");
+      return;
     }
-  })
-  .catch((error) => {
-    console.error("Error loading the JSON file:", error);
+
+    console.log("Selected file:", file.name); // Debugging
+
+    const reader = new FileReader();
+    reader.onload = function (event) {
+      const sampleJSON = event.target.result;
+
+      try {
+        const parsedJSON = JSON.parse(sampleJSON);
+        console.log("Successfully loaded JSON:", parsedJSON); // Debugging
+        loadSampleJSON(parsedJSON);
+      } catch (error) {
+        console.error("Error parsing JSON file:", error);
+      }
+      // Reset file input
+      fileInput.value = "";
+    };
+    reader.readAsText(file);
   });
 
 // Parse URL for query parameters
