@@ -577,11 +577,13 @@
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["PPL45", "XPL(0°)", "XPL(45°)"],
+    "tileLabels": ["PPL(45°)", ["XPL(0°)", "XPL(45°)"]],
     "tileSets": [
       "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NZ23-069 test1 2.5x PPL45 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NZ23-069 test1 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NZ23-069 test1 2.5x XPL45 final.dzi"
+      [
+        "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NZ23-069 test1 2.5x XPL00 final.dzi",
+        "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NZ23-069 test1 2.5x XPL45 final.dzi"
+      ]
     ]
   },
   "NZ23-067b": {
