@@ -380,8 +380,8 @@ html {
   /* flex-shrink: 0; */
   display: inline-block;
   width: 50px;
-  height: 18px;
-  padding: 1px;
+  height: 14px;
+  padding: 2px;
   border: 1px solid #444;
   border-radius: 5px;
   background-color: #f0f0f0;
@@ -821,4 +821,9 @@ input[type="range"] {
   stroke-width: 2;
   fill: none;
   visibility: hidden; /* Hidden by default */
+}
+
+#load-sample-JSON {
+  justify-content: center;
+  align-items: center;
 }
