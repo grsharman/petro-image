@@ -263,17 +263,24 @@ document
 // Function to update the button labels based on tileLabels array
 function updateButtonLabels(index) {
   const numButtons = tileSets[index].length;
+  const tileLabelsForIndex = tileLabels[index]; // Get the labels for the current tile set
+
   for (let i = 1; i <= 4; i++) {
     const checkbox = document.getElementById(`image${i}`);
     const label = document.getElementById(`label${i}`);
+
+    const visibleImageIndex = scrollIndex % tileLabelsForIndex.length;
+
     if (i <= numButtons) {
+      // For regular labels, use the normal setup
       checkbox.style.display = "inline";
       label.style.display = "inline";
-      label.textContent = tileLabels[index][i - 1];
-      if (i === 1) {
-        checkbox.checked = true;
+      const currentLabel = tileLabelsForIndex[i - 1];
+      if (Array.isArray(currentLabel)) {
+        // Determine the visible label index based on scrollIndex
+        label.textContent = currentLabel[visibleImageIndex]; // Set the label text based on the scrollIndex logic
       } else {
-        checkbox.checked = true;
+        label.textContent = currentLabel;
       }
     } else {
       checkbox.style.display = "none";
@@ -301,11 +308,20 @@ function deselectAllButFirstImage() {
 
 // Function to update the label dynamically
 function updateImageLabels() {
+  // One loop per quadrant
   for (let i = 0; i < tileLabels[currentIndex].length; i++) {
+    // const currentLabel = tileLabels[currentIndex][i];
+    const tileLabelsForIndex = tileLabels[currentIndex][i]; // Get the labels for the current tile set
+    const visibleImageIndex = scrollIndex % tileLabelsForIndex.length;
     const labelElement = document.getElementById(
       `labelForOpacityImage${i + 1}`
     );
-    labelElement.textContent = tileLabels[currentIndex][i]; // Update the label text
+    if (Array.isArray(tileLabelsForIndex)) {
+      // Determine the visible label index based on scrollIndex
+      labelElement.textContent = tileLabelsForIndex[visibleImageIndex]; // Set the label text based on the scrollIndex logic
+    } else {
+      labelElement.textContent = tileLabelsForIndex;
+    }
   }
 }
 
@@ -373,26 +389,61 @@ function addScalebar(pixelsPerMeter) {
   });
 }
 
-// Function to load a set of images based on the current index
-function loadTileSet(index) {
-  viewer.world.removeAll(); // Remove previous images
-  // Add each tile source from the current tile set
-  tileSets[index].forEach((tileSource) => {
+// Function to recursively add tile sources
+function addTiles(tileSource) {
+  if (Array.isArray(tileSource)) {
+    tileSource.forEach(addTiles); // Recursively handle nested lists
+  } else {
     viewer.addTiledImage({
       tileSource: tileSource,
       success: function () {},
     });
-  });
+  }
+}
+
+// Function to load a set of images based on the current index
+function loadTileSet(index) {
+  viewer.world.removeAll(); // Remove previous images
+  const tileSources = tileSets[index]; // Get the tile set
+
+  if (tileSources) {
+    addTiles(tileSources); // Process all tiles (handling nested lists)
+  }
 }
 
 function setTileSetOpacity() {
-  for (let i = 0; i < viewer.world.getItemCount(); ++i) {
+  const tileSet = tileSets[currentIndex];
+  let imageIndex = 0;
+
+  // One loop per quadrant
+  for (let i = 0; i < tileSet.length; ++i) {
+    let imagesInQuadrant = [];
+
+    if (Array.isArray(tileSet[i])) {
+      // If it's a nested list, add all images to the same quadrant
+      imagesInQuadrant = tileSet[i];
+    } else {
+      // If it's a single image, treat it as its own group
+      imagesInQuadrant = [tileSet[i]];
+    }
+
+    // Determine which image should be visible in this quadrant
+    const visibleImageIndex = scrollIndex % imagesInQuadrant.length;
+
     const opacityValue =
       Number(document.getElementById(`opacityImage${i + 1}`).value) / 100; // Convert percent
-    if (document.getElementById(`image${i + 1}`).checked) {
-      const tiledImage = viewer.world.getItemAt(i);
-      if (tiledImage) {
-        tiledImage.setOpacity(opacityValue);
+    const checked = document.getElementById(`image${i + 1}`).checked;
+    for (let j = 0; j < imagesInQuadrant.length; ++j) {
+      ++imageIndex;
+      if (checked) {
+        const tiledImage = viewer.world.getItemAt(imageIndex - 1);
+        if (tiledImage) {
+          if (j === visibleImageIndex) {
+            tiledImage.setOpacity(opacityValue);
+          } else {
+            tiledImage.setOpacity(0);
+          }
+        }
       }
     }
   }
@@ -407,17 +458,10 @@ let mousePos = new OpenSeadragon.Point(0, 0);
 // expose the images underneath. Note that all images are expected to have the
 // same position and size.
 const divideImages = () => {
+  const tileSet = tileSets[currentIndex];
   // Bail out if there are no images.
   if (viewer.world.getItemCount() == 0) {
     return;
-  }
-  // Bail out if enableDivideImages is false
-  if (!enableDivideImages) {
-    for (let i = 0; i < viewer.world.getItemCount(); ++i) {
-      const image = viewer.world.getItemAt(i);
-      image.setClip(null); // Clear the clip
-    }
-    return; // Exit the function
   }
 
   // Get the clip point and clamp it to within the image bounds.
@@ -428,18 +472,51 @@ const divideImages = () => {
   clipPos.y = Math.max(0, Math.min(clipPos.y, size.y));
 
   // Set the clip for each image.
+  let imageIndex = 0; // Because a given quadrant may have multiple images
   let previousVisibleImages = 0;
-  for (let i = 0; i < viewer.world.getItemCount(); ++i) {
-    const image = viewer.world.getItemAt(i);
-    if (!image.getOpacity()) {
-      continue;
+  // One loop per top level of image list
+  for (let i = 0; i < tileSet.length; ++i) {
+    let imagesInQuadrant = [];
+    const checkbox = document.getElementById(`image${i + 1}`);
+
+    if (Array.isArray(tileSet[i])) {
+      // If it's a nested list, add all images to the same quadrant
+      imagesInQuadrant = tileSet[i];
+    } else {
+      // If it's a single image, treat it as its own group
+      imagesInQuadrant = [tileSet[i]];
     }
-    // Determine the quadrants to be clipped by how many visible images are
-    // underneath this one.
-    const xClip = previousVisibleImages & 1 ? clipPos.x : 0;
-    const yClip = previousVisibleImages & 2 ? clipPos.y : 0;
-    image.setClip(new OpenSeadragon.Rect(xClip, yClip, size.x, size.y));
-    ++previousVisibleImages;
+
+    // One loop per second level of image list
+    for (let j = 0; j < imagesInQuadrant.length; ++j) {
+      ++imageIndex;
+      if (!checkbox.checked) {
+        continue;
+      }
+      // Check to see if this is the image we should be showing
+      const visibleImageIndex = scrollIndex % imagesInQuadrant.length;
+      if (j !== visibleImageIndex) {
+        continue;
+      }
+
+      const image = viewer.world.getItemAt(imageIndex - 1);
+      if (image) {
+      } else {
+        console.warn(`Image at index ${imageIndex - 1} is not loaded yet.`);
+        continue;
+      }
+
+      // Determine the quadrants to be clipped by how many visible images are
+      // underneath this one.
+      const xClip = previousVisibleImages & 1 ? clipPos.x : 0;
+      const yClip = previousVisibleImages & 2 ? clipPos.y : 0;
+      image.setClip(new OpenSeadragon.Rect(xClip, yClip, size.x, size.y));
+      ++previousVisibleImages;
+      // Don't use the clip if enableDivideImages is false
+      if (!enableDivideImages) {
+        image.setClip(null); // Clear the clip
+      }
+    }
   }
   setTileSetOpacity();
 };
@@ -447,14 +524,41 @@ const divideImages = () => {
 const toggleImage = (checkbox, idx) => {
   const imageOpacity = document.getElementById(`opacityImage${idx + 1}`).value;
   console.log(`image${idx + 1}Opacity`, imageOpacity);
-  const image = viewer.world.getItemAt(idx);
-  if (image) {
-    image.setOpacity(checkbox.checked ? imageOpacity / 100 : 0);
-    if (enableDivideImages) {
-      divideImages();
+
+  const tileSet = tileSets[currentIndex];
+  const tile = tileSet[idx];
+
+  // Find the index of the first image belonging to the checked tile.
+  let firstImageIdx = 0;
+  for (let i = 0; i < idx; ++i) {
+    if (Array.isArray(tileSet[i])) {
+      firstImageIdx += tileSet[i].length;
+    } else {
+      ++firstImageIdx;
     }
+  }
+
+  // Check if the tile is a nested list or a single image
+  if (Array.isArray(tile)) {
+    // If it's a nested array, loop through the images
+    tile.forEach((_, nestedIndex) => {
+      const imageIndex = firstImageIdx + nestedIndex; // Add nestedIndex to calculate the correct image index
+      const image = viewer.world.getItemAt(imageIndex);
+      if (image) {
+        image.setOpacity(checkbox.checked ? imageOpacity / 100 : 0);
+      }
+    });
   } else {
-    console.warn(`Image at index ${idx} is not loaded yet.`);
+    // If it's a single image, handle it directly
+    const image = viewer.world.getItemAt(firstImageIdx);
+    if (image) {
+      image.setOpacity(checkbox.checked ? imageOpacity / 100 : 0);
+    }
+  }
+
+  // If divideImages is enabled, re-apply the division logic
+  if (enableDivideImages) {
+    divideImages();
   }
 };
 
@@ -531,7 +635,7 @@ function updateOpacityImageSliderVisibility() {
         // Attach an event listener to dynamically update opacity
         sliderInput.addEventListener("input", () => {
           console.log("slider input event listener");
-          const opacity = sliderInput.value / 100;
+          // const opacity = sliderInput.value / 100;
           setTileSetOpacity();
           // Update the displayed slider value
           if (sliderValueSpan) {
@@ -5236,3 +5340,18 @@ function toggleEllipseFloaterOn(enable) {
     );
   }
 }
+
+// TODO: Disable this behavior in text boxes? This would prevent the view from
+// changing when typing > or < into a text box
+let scrollIndex = 1e6;
+// Listen for keydown events
+document.addEventListener("keydown", function (event) {
+  if (event.shiftKey && event.key === "<") {
+    scrollIndex--; // Move backward
+  } else if (event.shiftKey && event.key === ">") {
+    scrollIndex++; // Move forward
+  }
+  divideImages();
+  updateButtonLabels(currentIndex);
+  updateImageLabels();
+});
