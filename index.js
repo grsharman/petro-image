@@ -338,6 +338,7 @@ document
     document.getElementById("enableDivideImages").checked = true;
     enableDivideImages = true;
     divideImages();
+    toggleOnImages();
 
     const annoJSONButtonContainer = document.getElementById("loadAnnoFromJSON");
 
@@ -392,6 +393,16 @@ function updateButtonLabels(index) {
       checkbox.style.display = "none";
       label.style.display = "none";
       label.textContent = "";
+    }
+  }
+}
+
+function toggleOnImages() {
+  const numButtons = tileSets[currentIndex].length;
+  for (let i = 1; i <= 4; i++) {
+    const checkbox = document.getElementById(`image${i}`);
+    if (i <= numButtons) {
+      checkbox.checked = true;
     }
   }
 }

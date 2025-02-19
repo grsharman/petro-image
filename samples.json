@@ -1247,11 +1247,13 @@
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileLabels": ["PPL(0°)", ["XPL(0°)", "XPL(30°)"]],
     "tileSets": [
       "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-01 01 2.5x PPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-01 01 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-01 01 2.5x XPL30 final.dzi"
+      [
+        "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-01 01 2.5x XPL00 final.dzi",
+        "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-01 01 2.5x XPL30 final.dzi"
+      ]
     ],
     "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/PNW-01_SedPetLab5.geojson"
   },
@@ -1262,11 +1264,13 @@
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileLabels": ["PPL(0°)", ["XPL(0°)", "XPL(30°)"]],
     "tileSets": [
       "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-02 01 2.5x PPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-02 01 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-02 01 2.5x XPL30 final.dzi"
+      [
+        "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-02 01 2.5x XPL00 final.dzi",
+        "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-02 01 2.5x XPL30 final.dzi"
+      ]
     ],
     "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/PNW-02_SedPetLab5.geojson"
   },
@@ -1277,11 +1281,13 @@
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileLabels": ["PPL(0°)", ["XPL(0°)", "XPL(30°)"]],
     "tileSets": [
       "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-03 01 2.5x PPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-03 01 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-03 01 2.5x XPL30 final.dzi"
+      [
+        "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-03 01 2.5x XPL00 final.dzi",
+        "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-03 01 2.5x XPL30 final.dzi"
+      ]
     ],
     "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/PNW-03_SedPetLab5.geojson"
   },
@@ -1292,11 +1298,13 @@
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileLabels": ["PPL(0°)", ["XPL(0°)", "XPL(30°)"]],
     "tileSets": [
       "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-04 01 2.5x PPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-04 01 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-04 01 2.5x XPL30 final.dzi"
+      [
+        "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-04 01 2.5x XPL00 final.dzi",
+        "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-04 01 2.5x XPL30 final.dzi"
+      ]
     ],
     "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/PNW-04_SedPetLab5.geojson"
   },
@@ -1307,11 +1315,13 @@
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileLabels": ["PPL(0°)", ["XPL(0°)", "XPL(30°)"]],
     "tileSets": [
       "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-05 01 2.5x PPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-05 01 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-05 01 2.5x XPL30 final.dzi"
+      [
+        "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-05 01 2.5x XPL00 final.dzi",
+        "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-05 01 2.5x XPL30 final.dzi"
+      ]
     ],
     "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/PNW-05_SedPetLab5.geojson"
   },
@@ -1322,11 +1332,13 @@
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileLabels": ["PPL(0°)", ["XPL(0°)", "XPL(30°)"]],
     "tileSets": [
       "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-06 01 2.5x PPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-06 01 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-06 01 2.5x XPL30 final.dzi"
+      [
+        "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-06 01 2.5x XPL00 final.dzi",
+        "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-06 01 2.5x XPL30 final.dzi"
+      ]
     ],
     "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/PNW-06_SedPetLab5.geojson"
   },
@@ -1337,11 +1349,13 @@
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileLabels": ["PPL(0°)", ["XPL(0°)", "XPL(30°)"]],
     "tileSets": [
       "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-07 01 2.5x PPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-07 01 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-07 01 2.5x XPL30 final.dzi"
+      [
+        "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-07 01 2.5x XPL00 final.dzi",
+        "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-07 01 2.5x XPL30 final.dzi"
+      ]
     ],
     "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/PNW-07_SedPetLab5.geojson"
   },
@@ -1352,11 +1366,13 @@
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileLabels": ["PPL(0°)", ["XPL(0°)", "XPL(30°)"]],
     "tileSets": [
       "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-08 01 2.5x PPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-08 01 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-08 01 2.5x XPL30 final.dzi"
+      [
+        "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-08 01 2.5x XPL00 final.dzi",
+        "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-08 01 2.5x XPL30 final.dzi"
+      ]
     ],
     "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/PNW-08_SedPetLab5.geojson"
   },
@@ -1367,11 +1383,13 @@
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileLabels": ["PPL(0°)", ["XPL(0°)", "XPL(30°)"]],
     "tileSets": [
       "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-09 01 2.5x PPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-09 01 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-09 01 2.5x XPL30 final.dzi"
+      [
+        "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-09 01 2.5x XPL00 final.dzi",
+        "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-09 01 2.5x XPL30 final.dzi"
+      ]
     ],
     "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/PNW-09_SedPetLab5.geojson"
   },
@@ -1382,11 +1400,13 @@
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileLabels": ["PPL(0°)", ["XPL(0°)", "XPL(30°)"]],
     "tileSets": [
       "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-10 01 2.5x PPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-10 01 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-10 01 2.5x XPL30 final.dzi"
+      [
+        "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-10 01 2.5x XPL00 final.dzi",
+        "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-10 01 2.5x XPL30 final.dzi"
+      ]
     ],
     "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/PNW-10_SedPetLab5.geojson"
   },
@@ -1397,11 +1417,13 @@
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileLabels": ["PPL(0°)", ["XPL(0°)", "XPL(30°)"]],
     "tileSets": [
       "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-11 01 2.5x PPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-11 01 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-11 01 2.5x XPL30 final.dzi"
+      [
+        "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-11 01 2.5x XPL00 final.dzi",
+        "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-11 01 2.5x XPL30 final.dzi"
+      ]
     ],
     "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/PNW-11_SedPetLab5.geojson"
   },
@@ -1412,11 +1434,13 @@
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileLabels": ["PPL(0°)", ["XPL(0°)", "XPL(30°)"]],
     "tileSets": [
       "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-12 01 2.5x PPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-12 01 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-12 01 2.5x XPL30 final.dzi"
+      [
+        "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-12 01 2.5x XPL00 final.dzi",
+        "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-12 01 2.5x XPL30 final.dzi"
+      ]
     ],
     "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/PNW-12_SedPetLab5.geojson"
   },
@@ -1427,11 +1451,13 @@
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileLabels": ["PPL(0°)", ["XPL(0°)", "XPL(30°)"]],
     "tileSets": [
       "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-13 01 2.5x PPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-13 01 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-13 01 2.5x XPL30 final.dzi"
+      [
+        "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-13 01 2.5x XPL00 final.dzi",
+        "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-13 01 2.5x XPL30 final.dzi"
+      ]
     ],
     "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/PNW-13_SedPetLab5.geojson"
   },
@@ -1442,11 +1468,13 @@
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileLabels": ["PPL(0°)", ["XPL(0°)", "XPL(30°)"]],
     "tileSets": [
       "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/JUN-03 01 2.5x PPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/JUN-03 01 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/JUN-03 01 2.5x XPL30 final.dzi"
+      [
+        "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/JUN-03 01 2.5x XPL00 final.dzi",
+        "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/JUN-03 01 2.5x XPL30 final.dzi"
+      ]
     ]
   },
   "24CM01": {
