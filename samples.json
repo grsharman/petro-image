@@ -14,7 +14,8 @@
         "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0004 01 2.5x XPL30 final.dzi"
       ]
     ],
-    "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/SD0004_segmented.geojson"
+    "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/SD0004_segmented.geojson",
+    "info": "https://raw.githubusercontent.com/grsharman/petro-image/main/info/SD0004.html"
   },
   "ARCS-44": {
     "groups": ["Favorites", "SedGeo"],
