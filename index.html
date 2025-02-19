@@ -16,6 +16,13 @@
     <link rel="manifest" href="/site.webmanifest">
   </head>
   <body>
+    <!-- Modal pop-up for info button-->
+    <div id="info-modal" class="modal">
+      <div class="modal-content">
+        <span class="close-btn">&times;</span>
+        <div id="info-modal-body">Loading content...</div>
+      </div>
+    </div>
     <div id="viewer-container">
       <canvas id="annotation-overlay" style="position: absolute; top: 0; left: 0; z-index: 1000; pointer-events: none;"></canvas>
       <canvas id="measurement-overlay" style="position: absolute; top: 0; left: 0; z-index: 1000; pointer-events: none;"></canvas>

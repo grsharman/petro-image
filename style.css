@@ -224,6 +224,11 @@ html {
   cursor: pointer;
 }
 
+/* Active state */
+#info-button.active {
+  background-color: darkred; /* Color when active */
+}
+
 #tooltip-desc {
   position: absolute;
   background-color: #333;
@@ -826,4 +831,53 @@ input[type="range"] {
 #load-sample-JSON {
   justify-content: center;
   align-items: center;
+}
+
+/* Styles for modal info pop-up*/
+.modal {
+  display: none; /* Hidden by default */
+  position: fixed;
+  z-index: 4000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.modal-content {
+  background-color: white;
+  margin: 2% auto;
+  padding: 10px;
+  border-radius: 8px;
+  width: 80%;
+  height: 80%;
+  max-width: 700px; /* Maximum width */
+  max-height: 80vh; /* Limits height to 70% of viewport height */
+  overflow-y: auto; /* Enables vertical scrolling when content overflows */
+  box-shadow: 0px 0px 10px 2px rgba(0, 0, 0, 0.2);
+  text-align: center;
+  overflow-x: hidden; /* Prevents horizontal scrolling */
+}
+
+#modal-body {
+  width: 100%; /* Make sure content fits inside */
+  word-wrap: break-word; /* Prevents long text from overflowing */
+  overflow-x: hidden; /* Ensure no horizontal scroll */
+}
+
+/* Force all images to resize within the modal */
+#modal-body img {
+  max-width: 100%; /* Images will never be wider than the modal */
+  height: auto; /* Maintain aspect ratio */
+  display: block; /* Prevents inline spacing issues */
+  margin: 0 auto; /* Center image inside the modal */
+  max-height: 300px; /* Adjust this value to control image height */
+  object-fit: contain; /* Ensures image stays fully visible */
+}
+
+.close-btn {
+  float: right;
+  font-size: 20px;
+  cursor: pointer;
 }

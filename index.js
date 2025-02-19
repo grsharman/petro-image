@@ -9,8 +9,10 @@ let descriptions = [];
 let pixelsPerUnits = [];
 let pixelsPerMeters = [];
 let units = []; // 2 for microns
+let infos = [];
 let annotation_files = {}; // For loading predefined annotations
 let groupMapping = {}; // To map groups to sample indices ///
+let scrollIndex = 1e6;
 
 // Global variables related to annotations
 let hasAnnotationInJSON = false; // for keeping track of whether the selected sample has annotations in the JSON
@@ -147,6 +149,7 @@ function processJSON(data) {
   pixelsPerUnits = [];
   pixelsPerMeters = [];
   units = []; // 2 for microns
+  infos = [];
   annotation_files = {}; // For loading predefined annotations
   groupMapping = {}; // To map groups to sample indices ///
   // Loop through each sample
@@ -161,6 +164,7 @@ function processJSON(data) {
       pixelsPerUnits.push(sample.pixelsPerUnit);
       pixelsPerMeters.push(sample.pixelsPerMeter);
       units.push(sample.unit);
+      infos.push(sample.info);
       annotation_files[sample.title] = sample.annotations; // || null;
 
       /// Map sample indices to their groups
@@ -455,6 +459,31 @@ function hideTooltip() {
 // Event listeners for tooltip
 infoButton.addEventListener("mouseenter", showTooltip);
 infoButton.addEventListener("mouseleave", hideTooltip);
+
+// TODO: Testing HTML pop-up when button is clicked
+infoButton.addEventListener("click", function () {
+  if (infos[currentIndex]) {
+    fetch(infos[currentIndex])
+      .then((response) => response.text())
+      .then((data) => {
+        document.getElementById("info-modal-body").innerHTML = data;
+        document.getElementById("info-modal").style.display = "block";
+      });
+  } else {
+    return;
+  }
+});
+
+document.querySelector(".close-btn").addEventListener("click", function () {
+  document.getElementById("info-modal").style.display = "none";
+});
+
+// Close modal when clicking outside of content
+window.onclick = function (event) {
+  if (event.target == document.getElementById("info-modal")) {
+    document.getElementById("info-modal").style.display = "none";
+  }
+};
 
 // A message to discourage loss of data upon reload
 let hasUnsavedAnnotations = false;
@@ -5445,7 +5474,6 @@ function toggleEllipseFloaterOn(enable) {
 
 // TODO: Disable this behavior in text boxes? This would prevent the view from
 // changing when typing > or < into a text box
-let scrollIndex = 1e6;
 // Listen for keydown events
 document.addEventListener("keydown", function (event) {
   if (event.shiftKey && event.key === "<") {
