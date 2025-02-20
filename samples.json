@@ -1482,8 +1482,8 @@
     "title": "24CM01",
     "description": "????",
     "unit": "2",
-    "pixelsPerUnit": "0.398",
-    "pixelsPerMeter": "398000",
+    "pixelsPerUnit": "0.913242",
+    "pixelsPerMeter": "913242",
     "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
     "tileSets": [
       "https://raw.githubusercontent.com/grsharman/image-storage9/main/images/24CM01 01 5x PPL00.dzi",
