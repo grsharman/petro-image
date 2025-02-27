@@ -1128,6 +1128,20 @@
       "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/GM-Kl-02 01 2.5x XPL30 final.dzi"
     ]
   },
+  "GM-Tgml-01": {
+    "groups": ["Green Mtn, CO"],
+    "title": "GM-Tgml-01",
+    "description": "Tgml (lower unit)",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage11/main/images/GM-Tgml-01 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage11/main/images/GM-Tgml-01 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage11/main/images/GM-Tgml-01 01 2.5x XPL30 final.dzi"
+    ]
+  },
   "GM-Tgml-02": {
     "groups": ["Green Mtn, CO"],
     "title": "GM-Tgml-02",
