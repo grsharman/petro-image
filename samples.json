@@ -1140,7 +1140,8 @@
       "https://raw.githubusercontent.com/grsharman/image-storage11/main/images/GM-Tgml-01 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage11/main/images/GM-Tgml-01 01 2.5x XPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage11/main/images/GM-Tgml-01 01 2.5x XPL30 final.dzi"
-    ]
+    ],
+    "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/GM-Tgml-01_SedPet_Lab6.geojson"
   },
   "GM-Tgml-02": {
     "groups": ["Green Mtn, CO"],
