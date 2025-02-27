@@ -1,0 +1,167 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          3311.2749530089695,
+          2169.745956447785
+        ]
+      },
+      "properties": {
+        "uuid": "m7nj1ilm",
+        "label": "Altered volcanic lithic",
+        "xLabel": 3311.2749530089695,
+        "yLabel": 2169.745956447785,
+        "imageTitle": "GM-Tgml-01",
+        "pixelsPerMeter": 398000,
+        "imageWidth": 17887,
+        "imageHeight": 10306,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          9118.70911063435,
+          2632.4968632548303
+        ]
+      },
+      "properties": {
+        "uuid": "m7nj5up2",
+        "label": "Altered volcanic lithic",
+        "xLabel": 9118.70911063435,
+        "yLabel": 2632.4968632548303,
+        "imageTitle": "GM-Tgml-01",
+        "pixelsPerMeter": 398000,
+        "imageWidth": 17887,
+        "imageHeight": 10306,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7581.292317005388,
+          3012.5369499205935
+        ]
+      },
+      "properties": {
+        "uuid": "m7njbr50",
+        "label": "Altered plagioclase",
+        "xLabel": 7581.292317005388,
+        "yLabel": 3012.5369499205935,
+        "imageTitle": "GM-Tgml-01",
+        "pixelsPerMeter": 398000,
+        "imageWidth": 17887,
+        "imageHeight": 10306,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          9750.70896076153,
+          2953.193975579089
+        ]
+      },
+      "properties": {
+        "uuid": "m7njcvfp",
+        "label": "Note partially dissolved phenocryst",
+        "xLabel": 9750.70896076153,
+        "yLabel": 2953.193975579089,
+        "imageTitle": "GM-Tgml-01",
+        "pixelsPerMeter": 398000,
+        "imageWidth": 17887,
+        "imageHeight": 10306,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          3214.340024081908,
+          4907.879026062297
+        ]
+      },
+      "properties": {
+        "uuid": "m7njqdxf",
+        "label": "Dissolved phenocryst",
+        "xLabel": 3214.340024081908,
+        "yLabel": 4907.879026062297,
+        "imageTitle": "GM-Tgml-01",
+        "pixelsPerMeter": 398000,
+        "imageWidth": 17887,
+        "imageHeight": 10306,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          8442.520417700423,
+          5561.629904935659
+        ]
+      },
+      "properties": {
+        "uuid": "m7nju9vf",
+        "label": "Is this a Qp or an Ls?",
+        "xLabel": 8442.520417700423,
+        "yLabel": 5561.629904935659,
+        "imageTitle": "GM-Tgml-01",
+        "pixelsPerMeter": 398000,
+        "imageWidth": 17887,
+        "imageHeight": 10306,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1
+      }
+    }
+  ]
+}
