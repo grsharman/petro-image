@@ -1114,6 +1114,20 @@
       "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/UA-25-2812 01 2.5x XPL30 final.dzi"
     ]
   },
+  "GM-Kfh-01": {
+    "groups": ["Green Mtn, CO"],
+    "title": "GM-Kfh-01",
+    "description": "Fox Hills Fm.",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage11/main/images/GM-Kfh-01 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage11/main/images/GM-Kfh-01 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage11/main/images/GM-Kfh-01 01 2.5x XPL30 final.dzi"
+    ]
+  },
   "GM-Kl-02": {
     "groups": ["Green Mtn, CO"],
     "title": "GM-Kl-02",
@@ -1128,10 +1142,24 @@
       "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/GM-Kl-02 01 2.5x XPL30 final.dzi"
     ]
   },
+  "GM-Td-01": {
+    "groups": ["Green Mtn, CO"],
+    "title": "GM-Td-01",
+    "description": "D1 Sequence basal unit",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage11/main/images/GM-Td-01 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage11/main/images/GM-Td-01 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage11/main/images/GM-Td-01 01 2.5x XPL30 final.dzi"
+    ]
+  },
   "GM-Tgml-01": {
     "groups": ["Green Mtn, CO"],
     "title": "GM-Tgml-01",
-    "description": "Tgml (lower unit)",
+    "description": "Tgml (D1 Sequence lower unit)",
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
@@ -1146,7 +1174,7 @@
   "GM-Tgml-02": {
     "groups": ["Green Mtn, CO"],
     "title": "GM-Tgml-02",
-    "description": "Tgml (lower unit)",
+    "description": "Tgml (D1 Sequence lower unit)",
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
@@ -1155,6 +1183,76 @@
       "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/GM-Tgml-02 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/GM-Tgml-02 01 2.5x XPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/GM-Tgml-02 01 2.5x XPL30 final.dzi"
+    ]
+  },
+  "GM-Tgmu-01": {
+    "groups": ["Green Mtn, CO"],
+    "title": "GM-Tgmu-01",
+    "description": "Tgmu (D1 Sequence upper unit)",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage11/main/images/GM-Tgmu-01 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage11/main/images/GM-Tgmu-01 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage11/main/images/GM-Tgmu-01 01 2.5x XPL30 final.dzi"
+    ]
+  },
+  "GM-Tgmu-02": {
+    "groups": ["Green Mtn, CO"],
+    "title": "GM-Tgmu-02",
+    "description": "Tgmu (D1 Sequence upper unit)",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage11/main/images/GM-Tgmu-02 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage11/main/images/GM-Tgmu-02 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage11/main/images/GM-Tgmu-02 01 2.5x XPL30 final.dzi"
+    ]
+  },
+  "GM-Tgmu-03": {
+    "groups": ["Green Mtn, CO"],
+    "title": "GM-Tgmu-03",
+    "description": "Tgmu (D1 Sequence upper unit)",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage11/main/images/GM-Tgmu-03 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage11/main/images/GM-Tgmu-03 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage11/main/images/GM-Tgmu-03 01 2.5x XPL30 final.dzi"
+    ]
+  },
+  "GM-Tgmu-04": {
+    "groups": ["Green Mtn, CO"],
+    "title": "GM-Tgmu-04",
+    "description": "Tgmu (D1 Sequence upper unit)",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage11/main/images/GM-Tgmu-04 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage11/main/images/GM-Tgmu-04 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage11/main/images/GM-Tgmu-04 01 2.5x XPL30 final.dzi"
+    ]
+  },
+  "GM-Tgmu-05": {
+    "groups": ["Green Mtn, CO"],
+    "title": "GM-Tgmu-05",
+    "description": "Tgmu (D1 Sequence upper unit)",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage11/main/images/GM-Tgmu-05 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage11/main/images/GM-Tgmu-05 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage11/main/images/GM-Tgmu-05 01 2.5x XPL30 final.dzi"
     ]
   },
   "CC-01": {
