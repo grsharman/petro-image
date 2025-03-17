@@ -1625,7 +1625,7 @@
     "pixelsPerMeter": "6456000",
     "tileLabels": ["CL"],
     "tileSets": [
-      "https://raw.githubusercontent.com/grsharman/images-mounts01/main/images/marge_mount.dzi"
+      "https://raw.githubusercontent.com/grsharman/images-mounts01/main/images/medium_mount.dzi"
     ]
   },
   "Small mount": {
@@ -1637,7 +1637,7 @@
     "pixelsPerMeter": "7116000",
     "tileLabels": ["CL"],
     "tileSets": [
-      "https://raw.githubusercontent.com/grsharman/images-mounts01/main/images/marge_mount.dzi"
+      "https://raw.githubusercontent.com/grsharman/images-mounts01/main/images/small_mount.dzi"
     ]
   }
 }
