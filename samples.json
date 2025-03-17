@@ -1603,5 +1603,41 @@
       "https://raw.githubusercontent.com/grsharman/image-storage9/main/images/24CM01 01 5x XPL00.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage9/main/images/24CM01 01 5x XPL30.dzi"
     ]
+  },
+  "Large mount": {
+    "groups": ["CL-zircon"],
+    "title": "Large mount (E. Oleson study)",
+    "description": "????",
+    "unit": "2",
+    "pixelsPerUnit": "7.116",
+    "pixelsPerMeter": "7116000",
+    "tileLabels": ["CL"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/images-mounts01/main/images/Large_mount.dzi"
+    ]
+  },
+  "Medium mount": {
+    "groups": ["CL-zircon"],
+    "title": "Medium mount (E. Oleson study)",
+    "description": "????",
+    "unit": "2",
+    "pixelsPerUnit": "6.456",
+    "pixelsPerMeter": "6456000",
+    "tileLabels": ["CL"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/images-mounts01/main/images/marge_mount.dzi"
+    ]
+  },
+  "Small mount": {
+    "groups": ["CL-zircon"],
+    "title": "Small mount (E. Oleson study)",
+    "description": "????",
+    "unit": "2",
+    "pixelsPerUnit": "5.6",
+    "pixelsPerMeter": "5600000",
+    "tileLabels": ["CL"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/images-mounts01/main/images/marge_mount.dzi"
+    ]
   }
 }
