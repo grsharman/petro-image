@@ -14,7 +14,7 @@
         "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0004 01 2.5x XPL30 final.dzi"
       ]
     ],
-    "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/SD0004_segmented.geojson",
+    "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/SD0004_medium_all_polygons_by_rect.geojson",
     "info": "https://raw.githubusercontent.com/grsharman/petro-image/main/info/SD0004.html"
   },
   "ARCS-44": {
@@ -551,7 +551,7 @@
       "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/NZ23-057 01 2.5x XPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/NZ23-057 01 2.5x XPL45 final.dzi"
     ],
-    "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/NZ23-057_Lecture3.geojson"
+    "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/NZ23-057_polygons.geojson"
   },
   "NZ23-060": {
     "groups": ["New Zealand"],
@@ -1169,7 +1169,7 @@
       "https://raw.githubusercontent.com/grsharman/image-storage11/main/images/GM-Tgml-01 01 2.5x XPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage11/main/images/GM-Tgml-01 01 2.5x XPL30 final.dzi"
     ],
-    "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/GM-Tgml-01_SedPet_Lab6.geojson"
+    "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/GM-Tgml-01_polygons_by_rect.geojson"
   },
   "GM-Tgml-02": {
     "groups": ["Green Mtn, CO"],
@@ -1267,7 +1267,8 @@
       "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/CC-01 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/CC-01 01 2.5x XPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/CC-01 01 2.5x XPL30 final.dzi"
-    ]
+    ],
+    "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/CC-01_medium_all_polygons_by_rect.geojson"
   },
   "Well-T-11445": {
     "groups": ["Stevens Ss"],
@@ -1572,7 +1573,7 @@
         "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-13 01 2.5x XPL30 final.dzi"
       ]
     ],
-    "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/PNW-13_SedPetLab5.geojson"
+    "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/PNW-13_polygons_by_rect.geojson"
   },
   "JUN-03": {
     "groups": ["PNW"],
@@ -1614,7 +1615,8 @@
     "tileLabels": ["CL"],
     "tileSets": [
       "https://raw.githubusercontent.com/grsharman/images-mounts01/main/images/Large_mount.dzi"
-    ]
+    ],
+    "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/CL-zircon_L_polygons_by_rect.geojson"
   },
   "Medium mount": {
     "groups": ["CL-zircon"],
