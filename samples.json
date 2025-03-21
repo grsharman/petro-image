@@ -1607,8 +1607,8 @@
   },
   "CL-zircon_L": {
     "groups": ["CL-zircon"],
-    "title": "Large mount (E. Oleson study)",
-    "description": "????",
+    "title": "CL-zircon_L",
+    "description": "Large mount (E. Oleson study)",
     "unit": "2",
     "pixelsPerUnit": "5.6",
     "pixelsPerMeter": "5600000",
@@ -1620,8 +1620,8 @@
   },
   "CL-zircon_M": {
     "groups": ["CL-zircon"],
-    "title": "Medium mount (E. Oleson study)",
-    "description": "????",
+    "title": "CL-zircon_M",
+    "description": "Medium mount (E. Oleson study)",
     "unit": "2",
     "pixelsPerUnit": "6.456",
     "pixelsPerMeter": "6456000",
@@ -1632,8 +1632,8 @@
   },
   "CL-zircon_S": {
     "groups": ["CL-zircon"],
-    "title": "Small mount (E. Oleson study)",
-    "description": "????",
+    "title": "CL-zircon_S",
+    "description": "Small mount (E. Oleson study)",
     "unit": "2",
     "pixelsPerUnit": "7.116",
     "pixelsPerMeter": "7116000",
