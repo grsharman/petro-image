@@ -635,6 +635,20 @@
       "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/FWS-24-01 01 2.5x XPL30 final.dzi"
     ]
   },
+  "FWS-24-02": {
+    "groups": ["New Zealand"],
+    "title": "FWS-24-02",
+    "description": "Farewell Split dune",
+    "unit": "2",
+    "pixelsPerUnit": "0.913242",
+    "pixelsPerMeter": "913242",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage12/main/images/FWS-24-02_PPL_00_5x.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage12/main/images/FWS-24-02_XPL_00_5x.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage12/main/images/FWS-24-02_XPL_30_5x.dzi"
+    ]
+  },
   "131-011s": {
     "groups": ["SedGeo"],
     "title": "131-011s",
