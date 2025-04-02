@@ -1,4 +1,20 @@
 {
+  "SD0004 (5x)": {
+    "groups": ["Favorites", "SedGeo"],
+    "title": "SD0004 (5x)",
+    "description": "Budhir, Iceland",
+    "unit": "2",
+    "pixelsPerUnit": "0.913242",
+    "pixelsPerMeter": "913242",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)", "XPL(60°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage12/main/images/SD0004_PPL_00.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage12/main/images/SD0004_XPL_00.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage12/main/images/SD0004_XPL_30.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage12/main/images/SD0004_XPL_60.dzi"
+    ],
+    "info": "https://raw.githubusercontent.com/grsharman/petro-image/main/info/SD0004.html"
+  },
   "SD0004": {
     "groups": ["Favorites", "SedGeo"],
     "title": "SD0004",
@@ -15,22 +31,6 @@
       ]
     ],
     "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/SD0004_medium_all_polygons_by_rect.geojson",
-    "info": "https://raw.githubusercontent.com/grsharman/petro-image/main/info/SD0004.html"
-  },
-  "SD0004 (5x)": {
-    "groups": ["Favorites", "SedGeo"],
-    "title": "SD0004 (5x)",
-    "description": "Budhir, Iceland",
-    "unit": "2",
-    "pixelsPerUnit": "0.913242",
-    "pixelsPerMeter": "913242",
-    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)", "XPL(60°)"],
-    "tileSets": [
-      "https://raw.githubusercontent.com/grsharman/image-storage12/main/images/SD0004_PPL_00.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage12/main/images/SD0004_XPL_00.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage12/main/images/SD0004_XPL_30.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage12/main/images/SD0004_XPL_60.dzi"
-    ],
     "info": "https://raw.githubusercontent.com/grsharman/petro-image/main/info/SD0004.html"
   },
   "ARCS-44": {
