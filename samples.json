@@ -658,7 +658,7 @@
     "pixelsPerMeter": "456621",
     "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)", "XPL(60°)"],
     "tileSets": [
-      "https://raw.githubusercontent.com/grsharman/image-storage12/main/images/FWS-24-02_PPL_00_2.5x.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage12/main/images/FWS-24-02_PPL_00_2.5x_v2.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage12/main/images/FWS-24-02_XPL_00_2.5x.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage12/main/images/FWS-24-02_XPL_30_2.5x.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage12/main/images/FWS-24-02_XPL_60_2.5x.dzi"
