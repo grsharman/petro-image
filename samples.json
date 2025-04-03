@@ -1385,6 +1385,34 @@
       "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/Grove-15 01 2.5x XPL30 final.dzi"
     ]
   },
+  "YSU1-1": {
+    "groups": ["YSU"],
+    "title": "YSU1-1",
+    "description": "Yellow Steer Unit 1",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage13/main/images/YSUI-1 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage13/main/images/YSUI-1 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage13/main/images/YSUI-1 01 2.5x XPL30 final.dzi"
+    ]
+  },
+  "YSU1-8": {
+    "groups": ["YSU"],
+    "title": "YSU1-8",
+    "description": "Yellow Steer Unit 1",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage13/main/images/YSUI-8 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage13/main/images/YSUI-8 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage13/main/images/YSUI-8 01 2.5x XPL30 final.dzi"
+    ]
+  },
   "YSU1-16": {
     "groups": ["YSU"],
     "title": "YSU1-16",
