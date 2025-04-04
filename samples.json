@@ -1664,6 +1664,160 @@
       ]
     ]
   },
+  "VR-01": {
+    "groups": ["S. California"],
+    "title": "VR-01",
+    "description": "Ventura River",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage13/main/images/VR-01 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/VR-01 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/VR-01 01 2.5x XPL30 final.dzi"
+    ]
+  },
+  "SCD-01": {
+    "groups": ["S. California"],
+    "title": "SCD-01",
+    "description": "",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/SCD-01 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/SCD-01 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/SCD-01 01 2.5x XPL30 final.dzi"
+    ]
+  },
+  "PBSD-01": {
+    "groups": ["S. California"],
+    "title": "PBSD-01",
+    "description": "",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PBSD-01 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PBSD-01 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PBSD-01 01 2.5x XPL30 final.dzi"
+    ]
+  },
+  "SYR-01": {
+    "groups": ["S. California"],
+    "title": "SYR-01",
+    "description": "Santa Ynez River",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/SYR-01 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/SYR-01 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/SYR-01 01 2.5x XPL30 final.dzi"
+    ]
+  },
+  "MCK-01": {
+    "groups": ["S. California"],
+    "title": "MCK-01",
+    "description": "Malibu Creek",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/MCK-01 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/MCK-01 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/MCK-01 01 2.5x XPL30 final.dzi"
+    ]
+  },
+  "GCK-01": {
+    "groups": ["S. California"],
+    "title": "GCK-01",
+    "description": "Gaviota Creek",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/GCK-01 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/GCK-01 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/GCK-01 01 2.5x XPL30 final.dzi"
+    ]
+  },
+  "SMRR-01": {
+    "groups": ["S. California"],
+    "title": "SMRR-01",
+    "description": "Santa Maria River",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/SMRR-01 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/SMRR-01 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/SMRR-01 01 2.5x XPL30 final.dzi"
+    ]
+  },
+  "CCK-01": {
+    "groups": ["S. California"],
+    "title": "CCK-01",
+    "description": "Calleguas Creek",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/CCK-01 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/CCK-01 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/CCK-01 01 2.5x XPL30 final.dzi"
+    ]
+  },
+  "DPC-01": {
+    "groups": ["S. California"],
+    "title": "DPC-01",
+    "description": "",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/DPC-01 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/DPC-01 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/DPC-01 01 2.5x XPL30 final.dzi"
+    ]
+  },
+  "SCR-01": {
+    "groups": ["S. California"],
+    "title": "SCR-01",
+    "description": "",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/SCR-01 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/SCR-01 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/SCR-01 01 2.5x XPL30 final.dzi"
+    ]
+  },
+  "RCK-01": {
+    "groups": ["S. California"],
+    "title": "RCK-01",
+    "description": "",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/RCK-01 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/RCK-01 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/RCK-01 01 2.5x XPL30 final.dzi"
+    ]
+  },
   "24CM01": {
     "groups": ["Misc"],
     "title": "24CM01",
