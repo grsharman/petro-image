@@ -1868,5 +1868,117 @@
     "tileSets": [
       "https://raw.githubusercontent.com/grsharman/images-mounts01/main/images/small_mount.dzi"
     ]
+  },
+  "M81": {
+    "groups": ["SedPet2025"],
+    "title": "M81",
+    "description": "Upper Boone Fm. (NWA Mall)",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage14/main/images/SP25_M81 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage14/main/images/SP25_M81 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage14/main/images/SP25_M81 01 2.5x XPL30 final.dzi"
+    ]
+  },
+  "M105": {
+    "groups": ["SedPet2025"],
+    "title": "M105",
+    "description": "Upper Boone Fm. (NWA Mall)",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage14/main/images/SP25_M105 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage14/main/images/SP25_M105 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage14/main/images/SP25_M105 01 2.5x XPL30 final.dzi"
+    ]
+  },
+  "BV85": {
+    "groups": ["SedPet2025"],
+    "title": "BV85",
+    "description": "Lower Boone Fm. (Bella Visa, AR)",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage14/main/images/SP25_BV85 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage14/main/images/SP25_BV85 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage14/main/images/SP25_MV85 01 2.5x XPL30 final.dzi"
+    ]
+  },
+  "BV98": {
+    "groups": ["SedPet2025"],
+    "title": "BV98",
+    "description": "Lower Boone Fm. (Bella Visa, AR)",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage14/main/images/SP25_BV98 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage14/main/images/SP25_BV98 02 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage14/main/images/SP25_MV98 01 2.5x XPL30 final.dzi"
+    ]
+  },
+  "P20": {
+    "groups": ["SedPet2025"],
+    "title": "P20",
+    "description": "Upper Boone Fm. (Pineville, MO)",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage14/main/images/SP25_P20 01 2.5x PPL00 final_v2.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage14/main/images/SP25_P20 01 2.5x XPL00 final_v2.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage14/main/images/SP25_P20 01 2.5x XPL30 final_v2.dzi"
+    ]
+  },
+  "P50": {
+    "groups": ["SedPet2025"],
+    "title": "P50",
+    "description": "Upper Boone Fm. (Pineville, MO)",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage14/main/images/SP25_P50 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage14/main/images/SP25_P50 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage14/main/images/SP25_P50 01 2.5x XPL30 final.dzi"
+    ]
+  },
+  "P140": {
+    "groups": ["SedPet2025"],
+    "title": "P140",
+    "description": "Upper Boone Fm. (Pineville, MO)",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage14/main/images/SP25_P140 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage14/main/images/SP25_P140 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage14/main/images/SP25_P140 01 2.5x XPL30 final.dzi"
+    ]
+  },
+  "P170": {
+    "groups": ["SedPet2025"],
+    "title": "P170",
+    "description": "Upper Boone Fm. (Pineville, MO)",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage14/main/images/SP25_P170 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage14/main/images/SP25_P170 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage14/main/images/SP25_P170 01 2.5x XPL30 final.dzi"
+    ]
   }
 }
