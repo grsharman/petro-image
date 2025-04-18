@@ -1959,7 +1959,7 @@
     ]
   },
   "CL-zircon_L": {
-    "groups": ["CL-zircon"],
+    "groups": ["Zircon"],
     "title": "CL-zircon_L",
     "description": "Large mount (E. Oleson study)",
     "unit": "2",
@@ -1972,7 +1972,7 @@
     "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/CL-zircon_L_polygons_by_rect.geojson"
   },
   "CL-zircon_M": {
-    "groups": ["CL-zircon"],
+    "groups": ["Zircon"],
     "title": "CL-zircon_M",
     "description": "Medium mount (E. Oleson study)",
     "unit": "2",
@@ -1984,7 +1984,7 @@
     ]
   },
   "CL-zircon_S": {
-    "groups": ["CL-zircon"],
+    "groups": ["Zircon"],
     "title": "CL-zircon_S",
     "description": "Small mount (E. Oleson study)",
     "unit": "2",
@@ -1993,6 +1993,42 @@
     "tileLabels": ["CL"],
     "tileSets": [
       "https://raw.githubusercontent.com/grsharman/images-mounts01/main/images/small_mount.dzi"
+    ]
+  },
+  "Taimana-1-210-240": {
+    "groups": ["Zircon"],
+    "title": "Taimana-1-210-240",
+    "description": "Zircon polished mount (A. Kulkarni)",
+    "unit": "2",
+    "pixelsPerUnit": "2.047",
+    "pixelsPerMeter": "2047000",
+    "tileLabels": ["trans"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/images-mounts01/main/images/Taimana-1-210-240 5x mosaic.dzi"
+    ]
+  },
+  "Taimana-1-630-660": {
+    "groups": ["Zircon"],
+    "title": "Taimana-1-630-660",
+    "description": "Zircon polished mount (A. Kulkarni)",
+    "unit": "2",
+    "pixelsPerUnit": "2.047",
+    "pixelsPerMeter": "2047000",
+    "tileLabels": ["trans"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/images-mounts01/main/images/Taimana-1-630-660 5x mosaic.dzi"
+    ]
+  },
+  "Taimana-1-1800-1805": {
+    "groups": ["Zircon"],
+    "title": "Taimana-1-1800-1805",
+    "description": "Zircon polished mount (A. Kulkarni)",
+    "unit": "2",
+    "pixelsPerUnit": "2.047",
+    "pixelsPerMeter": "2047000",
+    "tileLabels": ["trans"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/images-mounts01/main/images/Taimana-1-1800-1805 5x mosaic.dzi"
     ]
   },
   "M81": {
