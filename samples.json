@@ -720,6 +720,20 @@
       "https://raw.githubusercontent.com/grsharman/image-storage12/main/images/FWS-24-02_XPL_60_2.5x.dzi"
     ]
   },
+  "Taimana-1 210-220": {
+    "groups": ["New Zealand"],
+    "title": "Taimana-1 210-220",
+    "description": "Taimana-1",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage14/main/images/Taimana-1 210-220 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage14/main/images/Taimana-1 210-220 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage14/main/images/Taimana-1 210-220 01 2.5x XPL30 final.dzi"
+    ]
+  },
   "131-011s": {
     "groups": ["SedGeo"],
     "title": "131-011s",
@@ -2029,6 +2043,66 @@
     "tileLabels": ["trans"],
     "tileSets": [
       "https://raw.githubusercontent.com/grsharman/images-mounts01/main/images/Taimana-1-1800-1805 5x mosaic.dzi"
+    ]
+  },
+  "JP-02": {
+    "groups": ["Zircon"],
+    "title": "JP-02",
+    "description": "Zircon sticky tape mount (J. Fekete)",
+    "unit": "2",
+    "pixelsPerUnit": "2.047",
+    "pixelsPerMeter": "2047000",
+    "tileLabels": ["reflected"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/images-mounts01/main/images/JP-02 Mount Mosaic.dzi"
+    ]
+  },
+  "JP-03": {
+    "groups": ["Zircon"],
+    "title": "JP-03",
+    "description": "Zircon sticky tape mount (J. Fekete)",
+    "unit": "2",
+    "pixelsPerUnit": "2.047",
+    "pixelsPerMeter": "2047000",
+    "tileLabels": ["reflected"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/images-mounts01/main/images/JP-03 Mount Mosaic.dzi"
+    ]
+  },
+  "YA-09": {
+    "groups": ["Zircon"],
+    "title": "YA-09",
+    "description": "Zircon sticky tape mount (J. Fekete)",
+    "unit": "2",
+    "pixelsPerUnit": "2.047",
+    "pixelsPerMeter": "2047000",
+    "tileLabels": ["reflected"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/images-mounts01/main/images/YA-09 Mount Mosaic.dzi"
+    ]
+  },
+  "YA-11": {
+    "groups": ["Zircon"],
+    "title": "YA-11",
+    "description": "Zircon sticky tape mount (J. Fekete)",
+    "unit": "2",
+    "pixelsPerUnit": "2.047",
+    "pixelsPerMeter": "2047000",
+    "tileLabels": ["reflected"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/images-mounts01/main/images/YA-11 Mount Mosaic.dzi"
+    ]
+  },
+  "YA-12": {
+    "groups": ["Zircon"],
+    "title": "YA-12",
+    "description": "Zircon sticky tape mount (J. Fekete)",
+    "unit": "2",
+    "pixelsPerUnit": "2.047",
+    "pixelsPerMeter": "2047000",
+    "tileLabels": ["reflected"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/images-mounts01/main/images/YA-12 Mount Mosaic.dzi"
     ]
   },
   "M81": {
