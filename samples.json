@@ -543,6 +543,22 @@
       "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/PSB02 01 2.5x XPL30 final.dzi"
     ]
   },
+  "NZ23-046": {
+    "groups": ["New Zealand"],
+    "title": "NZ23-046",
+    "description": "Paturau beach",
+    "latitude": "-40.64192",
+    "longitude": "172.4301",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage14/main/images/NZ23-046 02 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage14/main/images/NZ23-046 02 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage14/main/images/NZ23-046 02 2.5x XPL30 final.dzi"
+    ]
+  },
   "NZ23-049": {
     "groups": ["New Zealand"],
     "title": "NZ23-049",
@@ -1509,6 +1525,34 @@
       "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/YSUI-16 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/YSUI-16 01 2.5x XPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/YSUI-16 01 2.5x XPL30 final.dzi"
+    ]
+  },
+  "YSU1-22": {
+    "groups": ["YSU"],
+    "title": "YSU1-22",
+    "description": "Yellow Steer Unit 1",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage14/main/images/YSUI-22 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage14/main/images/YSUI-22 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage14/main/images/YSUI-22 01 2.5x XPL30 final.dzi"
+    ]
+  },
+  "YSU1-28": {
+    "groups": ["YSU"],
+    "title": "YSU1-28",
+    "description": "Yellow Steer Unit 1",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/YSUI-28 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/YSUI-28 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/YSUI-28 01 2.5x XPL30 final.dzi"
     ]
   },
   "PNW-01": {
