@@ -1765,9 +1765,9 @@
     "pixelsPerMeter": "398000",
     "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
     "tileSets": [
-      "https://raw.githubusercontent.com/grsharman/image-storage15/main/images/YSUI-35 01 2.5x PPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage15/main/images/YSUI-35 01 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage15/main/images/YSUI-35 01 2.5x XPL30 final.dzi"
+      "https://raw.githubusercontent.com/grsharman/image-storage15/main/images/YSU1-35 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage15/main/images/YSU1-35 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage15/main/images/YSU1-35 01 2.5x XPL30 final.dzi"
     ]
   },
   "PNW-01": {
