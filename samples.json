@@ -1644,6 +1644,34 @@
       "https://raw.githubusercontent.com/grsharman/image-storage5/main/images/Grove-1 01 2.5x XPL30 final.dzi"
     ]
   },
+  "Grove-5": {
+    "groups": ["Grove"],
+    "title": "Grove-5",
+    "description": "Unspecified",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage16/main/images/Grove-5 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage16/main/images/Grove-5 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage16/main/images/Grove-5 01 2.5x XPL30 final.dzi"
+    ]
+  },
+  "Grove-6": {
+    "groups": ["Grove"],
+    "title": "Grove-6",
+    "description": "Unspecified",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage16/main/images/Grove-6 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage16/main/images/Grove-6 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage16/main/images/Grove-6 01 2.5x XPL30 final.dzi"
+    ]
+  },
   "Grove-9": {
     "groups": ["Grove"],
     "title": "Grove-9",
@@ -2021,6 +2049,20 @@
       "https://raw.githubusercontent.com/grsharman/image-storage13/main/images/VR-01 01 2.5x XPL30 final.dzi"
     ]
   },
+  "VR-02": {
+    "groups": ["S. California"],
+    "title": "VR-02",
+    "description": "Ventura River",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage16/main/images/VR-02 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage16/main/images/VR-02 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage16/main/images/VR-02 01 2.5x XPL30 final.dzi"
+    ]
+  },
   "SCD-01": {
     "groups": ["S. California"],
     "title": "SCD-01",
@@ -2058,9 +2100,9 @@
     "pixelsPerMeter": "398000",
     "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
     "tileSets": [
-      "https://raw.githubusercontent.com/grsharman/image-storage13/main/images/SYR-01 01 2.5x PPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage13/main/images/SYR-01 01 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage13/main/images/SYR-01 01 2.5x XPL30 final.dzi"
+      "https://raw.githubusercontent.com/grsharman/image-storage13/main/images/SYR-01 02 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage13/main/images/SYR-01 02 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage13/main/images/SYR-01 02 2.5x XPL30 final.dzi"
     ]
   },
   "MCK-01": {
