@@ -2189,20 +2189,6 @@
       "https://raw.githubusercontent.com/grsharman/image-storage13/main/images/SCR-01 01 2.5x XPL30 final.dzi"
     ]
   },
-  "RCK-01": {
-    "groups": ["S. California"],
-    "title": "RCK-01",
-    "description": "",
-    "unit": "2",
-    "pixelsPerUnit": "0.398",
-    "pixelsPerMeter": "398000",
-    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
-    "tileSets": [
-      "https://raw.githubusercontent.com/grsharman/image-storage13/main/images/RCK-01 01 2.5x PPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage13/main/images/RCK-01 01 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage13/main/images/RCK-01 01 2.5x XPL30 final.dzi"
-    ]
-  },
   "SYR-02": {
     "groups": ["S. California"],
     "title": "SYR-02",
