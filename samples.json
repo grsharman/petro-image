@@ -671,6 +671,22 @@
       "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/NZ23-060 01 2.5x XPL45 final.dzi"
     ]
   },
+  "NZ23-065": {
+    "groups": ["New Zealand"],
+    "title": "NZ23-065",
+    "description": "Buller River",
+    "latitude": "-41.86382",
+    "longitude": "171.77689",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage16/main/images/NZ23-065 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage16/main/images/NZ23-065 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage16/main/images/NZ23-065 01 2.5x XPL30 final.dzi"
+    ]
+  },
   "NZ23-069": {
     "groups": ["Favorites", "New Zealand"],
     "title": "NZ23-069",
@@ -703,6 +719,22 @@
       "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NZ23-067b 02 5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NZ23-067b 02 5x XPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NZ23-067b 02 5x XPL45 final.dzi"
+    ]
+  },
+  "NZ23-071": {
+    "groups": ["New Zealand"],
+    "title": "NZ23-071",
+    "description": "Punakaiki Beach",
+    "latitude": "-42.10546",
+    "longitude": "171.33545 ",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage16/main/images/NZ23-071 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage16/main/images/NZ23-071 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage16/main/images/NZ23-071 01 2.5x XPL30 final.dzi"
     ]
   },
   "FWS-24-01": {
@@ -1722,6 +1754,20 @@
       "https://raw.githubusercontent.com/grsharman/image-storage14/main/images/YSUI-28 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage14/main/images/YSUI-28 01 2.5x XPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage14/main/images/YSUI-28 01 2.5x XPL30 final.dzi"
+    ]
+  },
+  "YSU1-35": {
+    "groups": ["YSU"],
+    "title": "YSU1-35",
+    "description": "Yellow Steer Unit 1",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage15/main/images/YSUI-35 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage15/main/images/YSUI-35 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage15/main/images/YSUI-35 01 2.5x XPL30 final.dzi"
     ]
   },
   "PNW-01": {
