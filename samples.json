@@ -62,6 +62,20 @@
       "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/ARCS-46 01 2.5x XPL30 final.dzi"
     ]
   },
+  "ARCS-49": {
+    "groups": ["SedGeo"],
+    "title": "ARCS-49",
+    "description": "Unknown",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage15/main/images/ARCS-49 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage15/main/images/ARCS-49 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage15/main/images/ARCS-49 01 2.5x XPL30 final.dzi"
+    ]
+  },
   "ARCS-51": {
     "groups": ["Favorites", "SedGeo"],
     "title": "ARCS-51",
@@ -750,6 +764,104 @@
       "https://raw.githubusercontent.com/grsharman/image-storage14/main/images/Taimana-1 210-220 01 2.5x XPL30 final.dzi"
     ]
   },
+  "TANN2205 004/RD/003": {
+    "groups": ["New Zealand"],
+    "title": "TANN2205 004/RD/003",
+    "description": "TANN2205 rock dredge",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage15/main/images/TANN2205 004_RD_003 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage15/main/images/TANN2205 004_RD_003 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage15/main/images/TANN2205 004_RD_003 01 2.5x XPL30 final.dzi"
+    ]
+  },
+  "TANN2205 004/RD/004": {
+    "groups": ["New Zealand"],
+    "title": "TANN2205 004/RD/004",
+    "description": "TANN2205 rock dredge",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage15/main/images/TANN2205 004_RD_004 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage15/main/images/TANN2205 004_RD_004 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage15/main/images/TANN2205 004_RD_004 01 2.5x XPL30 final.dzi"
+    ]
+  },
+  "TANN2205 002/0.7-1.5": {
+    "groups": ["New Zealand"],
+    "title": "TANN2205 002/0.7-1.5",
+    "description": "TANN2205 piston core",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage15/main/images/TANN2205 002_0.7-1.5 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage15/main/images/TANN2205 002_0.7-1.5 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage15/main/images/TANN2205 002_0.7-1.5 01 2.5x XPL30 final.dzi"
+    ]
+  },
+  "TANN2205 006/2-3 90-100": {
+    "groups": ["New Zealand"],
+    "title": "TANN2205 006/2-3 90-100",
+    "description": "TANN2205 piston core",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage15/main/images/TANN2205 006_2-3 90-100 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage15/main/images/TANN2205 006_2-3 90-100 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage15/main/images/TANN2205 006_2-3 90-100 01 2.5x XPL30 final.dzi"
+    ]
+  },
+  "TANN2205 042/1-2 75-90": {
+    "groups": ["New Zealand"],
+    "title": "TANN2205 042/1-2 75-90",
+    "description": "TANN2205 piston core",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage15/main/images/TANN2205 042_1-2 75-90 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage15/main/images/TANN2205 042_1-2 75-90 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage15/main/images/TANN2205 042_1-2 75-90 01 2.5x XPL30 final.dzi"
+    ]
+  },
+  "TANN2205 056/MC 25-36": {
+    "groups": ["New Zealand"],
+    "title": "TANN2205 056/MC 25-36",
+    "description": "TANN2205 multicore",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage15/main/images/TANN2205 056_MC 25-36 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage15/main/images/TANN2205 056_MC 25-36 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage15/main/images/TANN2205 056_MC 25-36 01 2.5x XPL30 final.dzi"
+    ]
+  },
+  "TANN2205 069/MC 25-43": {
+    "groups": ["New Zealand"],
+    "title": "TANN2205 069/MC 25-43",
+    "description": "TANN2205 multicore",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage15/main/images/TANN2205 069_MC 25-43 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage15/main/images/TANN2205 069_MC 25-43 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage15/main/images/TANN2205 069_MC 25-43 01 2.5x XPL30 final.dzi"
+    ]
+  },
   "131-011s": {
     "groups": ["SedGeo"],
     "title": "131-011s",
@@ -898,6 +1010,20 @@
     ],
     "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/137-002s_SedPetLab4.geojson"
   },
+  "M-25": {
+    "groups": ["SedGeo"],
+    "title": "M-25",
+    "description": "Unknown",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage15/main/images/M-25 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage15/main/images/M-25 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage15/main/images/M-25 01 2.5x XPL30 final.dzi"
+    ]
+  },
   "SD0001": {
     "groups": ["SedGeo"],
     "title": "SD0001",
@@ -926,6 +1052,20 @@
       "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0003 01 2.5x XPL30 final.dzi"
     ],
     "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/SD0003_Lecture3.geojson"
+  },
+  "SD0018": {
+    "groups": ["SedGeo"],
+    "title": "SD0018",
+    "description": "Harbour Island, Bahamas",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage15/main/images/SD0018 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage15/main/images/SD0018 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage15/main/images/SD0018 01 2.5x XPL30 final.dzi"
+    ]
   },
   "SD0020": {
     "groups": ["SedGeo"],
@@ -968,6 +1108,21 @@
       "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/WS-208 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/WS-208 01 2.5x XPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage2/main/images/WS-208 01 2.5x XPL30 final.dzi"
+    ],
+    "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/WS-208_SedGeoLab3.geojson"
+  },
+  "WS-266": {
+    "groups": ["SedGeo"],
+    "title": "WS-266",
+    "description": "Unknown",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage15/main/images/WS-266 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage15/main/images/WS-266 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage15/main/images/WS-266 01 2.5x XPL30 final.dzi"
     ],
     "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/WS-208_SedGeoLab3.geojson"
   },
@@ -1499,6 +1654,20 @@
       "https://raw.githubusercontent.com/grsharman/image-storage13/main/images/YSUI-01 01 2.5x XPL30 final.dzi"
     ]
   },
+  "YSU1-2": {
+    "groups": ["YSU"],
+    "title": "YSU1-2",
+    "description": "Yellow Steer Unit 1",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage15/main/images/YSUI-02 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage15/main/images/YSUI-02 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage15/main/images/YSUI-02 01 2.5x XPL30 final.dzi"
+    ]
+  },
   "YSU1-8": {
     "groups": ["YSU"],
     "title": "YSU1-8",
@@ -1953,11 +2122,11 @@
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(45°)"],
     "tileSets": [
-      "https://raw.githubusercontent.com/grsharman/image-storage13/main/images/SYR-02 01 2.5x PPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage13/main/images/SYR-02 01 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage13/main/images/SYR-02 01 2.5x XPL30 final.dzi"
+      "https://raw.githubusercontent.com/grsharman/image-storage13/main/images/SYR-02 02 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage13/main/images/SYR-02 02 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage13/main/images/SYR-02 02 2.5x XPL45 final.dzi"
     ]
   },
   "PMB-01": {
@@ -1967,11 +2136,11 @@
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(45°)"],
     "tileSets": [
-      "https://raw.githubusercontent.com/grsharman/image-storage13/main/images/PMB-01 01 2.5x PPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage13/main/images/PMB-01 01 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage13/main/images/PMB-01 01 2.5x XPL30 final.dzi"
+      "https://raw.githubusercontent.com/grsharman/image-storage13/main/images/PMB-01 02 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage13/main/images/PMB-01 02 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage13/main/images/PMB-01 02 2.5x XPL45 final.dzi"
     ]
   },
   "SMB-01": {
@@ -1981,11 +2150,11 @@
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(45°)"],
     "tileSets": [
-      "https://raw.githubusercontent.com/grsharman/image-storage13/main/images/SMB-01 01 2.5x PPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage13/main/images/SMB-01 01 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage13/main/images/SMB-01 01 2.5x XPL30 final.dzi"
+      "https://raw.githubusercontent.com/grsharman/image-storage13/main/images/SMB-01 02 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage13/main/images/SMB-01 02 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage13/main/images/SMB-01 02 2.5x XPL45 final.dzi"
     ]
   },
   "SCR-02": {
@@ -1995,11 +2164,67 @@
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(45°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage13/main/images/SCR-02 02 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage13/main/images/SCR-02 02 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage13/main/images/SCR-02 02 2.5x XPL45 final.dzi"
+    ]
+  },
+  "DBB-01": {
+    "groups": ["S. California"],
+    "title": "DBB-01",
+    "description": "",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
     "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
     "tileSets": [
-      "https://raw.githubusercontent.com/grsharman/image-storage13/main/images/SCR-02 01 2.5x PPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage13/main/images/SCR-02 01 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage13/main/images/SCR-02 01 2.5x XPL30 final.dzi"
+      "https://raw.githubusercontent.com/grsharman/image-storage15/main/images/DBB-01 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage15/main/images/DBB-01 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage15/main/images/DBB-01 01 2.5x XPL30 final.dzi"
+    ]
+  },
+  "DSB-01": {
+    "groups": ["S. California"],
+    "title": "DSB-01",
+    "description": "",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage15/main/images/DSB-01 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage15/main/images/DSB-01 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage15/main/images/DSB-01 01 2.5x XPL30 final.dzi"
+    ]
+  },
+  "ECC-01": {
+    "groups": ["S. California"],
+    "title": "ECC-01",
+    "description": "",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage15/main/images/ECC-01 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage15/main/images/ECC-01 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage15/main/images/ECC-01 01 2.5x XPL30 final.dzi"
+    ]
+  },
+  "ECK-01": {
+    "groups": ["S. California"],
+    "title": "ECK-01",
+    "description": "",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage15/main/images/ECK-01 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage15/main/images/ECK-01 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage15/main/images/ECK-01 01 2.5x XPL30 final.dzi"
     ]
   },
   "24CM01": {
