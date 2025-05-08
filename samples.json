@@ -726,7 +726,7 @@
     "title": "NZ23-071",
     "description": "Punakaiki Beach",
     "latitude": "-42.10546",
-    "longitude": "171.33545 ",
+    "longitude": "171.33545",
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
@@ -735,6 +735,150 @@
       "https://raw.githubusercontent.com/grsharman/image-storage16/main/images/NZ23-071 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage16/main/images/NZ23-071 01 2.5x XPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage16/main/images/NZ23-071 01 2.5x XPL30 final.dzi"
+    ]
+  },
+  "NZ23-074": {
+    "groups": ["New Zealand"],
+    "title": "NZ23-074",
+    "description": "Grey River",
+    "latitude": "-42.44711",
+    "longitude": "171.22139",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage16/main/images/NZ23-074 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage16/main/images/NZ23-074 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage16/main/images/NZ23-074 01 2.5x XPL30 final.dzi"
+    ]
+  },
+  "NZ23-075": {
+    "groups": ["New Zealand"],
+    "title": "NZ23-075",
+    "description": "Hokitika beach",
+    "latitude": "-42.71815",
+    "longitude": "170.95815",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage16/main/images/NZ23-075 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage16/main/images/NZ23-075 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage16/main/images/NZ23-075 01 2.5x XPL30 final.dzi"
+    ]
+  },
+  "NZ23-077": {
+    "groups": ["New Zealand"],
+    "title": "NZ23-077",
+    "description": "Fox River",
+    "latitude": "-43.47892",
+    "longitude": "170.00911",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage16/main/images/NZ23-077 02 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage16/main/images/NZ23-077 02 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage16/main/images/NZ23-077 02 2.5x XPL30 final.dzi"
+    ]
+  },
+  "NZ23-080": {
+    "groups": ["New Zealand"],
+    "title": "NZ23-080",
+    "description": "Tauperikaka Point beach",
+    "latitude": "-43.75764",
+    "longitude": "169.14714",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage16/main/images/NZ23-080 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage16/main/images/NZ23-080 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage16/main/images/NZ23-080 01 2.5x XPL30 final.dzi"
+    ]
+  },
+  "NZ23-081": {
+    "groups": ["New Zealand"],
+    "title": "NZ23-081",
+    "description": "Haast River",
+    "latitude": "-43.93711",
+    "longitude": "169.29107",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage16/main/images/NZ23-081 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage16/main/images/NZ23-081 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage16/main/images/NZ23-081 01 2.5x XPL30 final.dzi"
+    ]
+  },
+  "NZ23-083": {
+    "groups": ["New Zealand"],
+    "title": "NZ23-083",
+    "description": "Waiho River",
+    "latitude": "-43.4066",
+    "longitude": "170.17784",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage16/main/images/NZ23-083 02 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage16/main/images/NZ23-083 02 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage16/main/images/NZ23-083 02 2.5x XPL30 final.dzi"
+    ]
+  },
+  "NZ23-084": {
+    "groups": ["New Zealand"],
+    "title": "NZ23-084",
+    "description": "Whataroa River",
+    "latitude": "-43.29354",
+    "longitude": "170.41385",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage16/main/images/NZ23-084 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage16/main/images/NZ23-084 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage16/main/images/NZ23-084 01 2.5x XPL30 final.dzi"
+    ]
+  },
+  "NZ24-011": {
+    "groups": ["New Zealand"],
+    "title": "NZ24-011",
+    "description": "Manawatu River",
+    "latitude": "-40.37549",
+    "longitude": "175.64103",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage16/main/images/NZ24-011 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage16/main/images/NZ24-011 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage16/main/images/NZ24-011 01 2.5x XPL30 final.dzi"
+    ]
+  },
+  "NZ24-013": {
+    "groups": ["New Zealand"],
+    "title": "NZ24-013",
+    "description": "Ohau River",
+    "latitude": "-40.67121",
+    "longitude": "175.24117",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage16/main/images/NZ24-013 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage16/main/images/NZ24-013 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage16/main/images/NZ24-013 01 2.5x XPL30 final.dzi"
     ]
   },
   "FWS-24-01": {
@@ -1084,6 +1228,20 @@
       "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0003 01 2.5x XPL30 final.dzi"
     ],
     "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/SD0003_Lecture3.geojson"
+  },
+  "SD0017": {
+    "groups": ["SedGeo"],
+    "title": "SD0017",
+    "description": "",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage16/main/images/SD0017 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage16/main/images/SD0017 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage16/main/images/SD0017 01 2.5x XPL30 final.dzi"
+    ]
   },
   "SD0018": {
     "groups": ["SedGeo"],
@@ -1460,6 +1618,20 @@
       "https://raw.githubusercontent.com/grsharman/image-storage11/main/images/GM-Kfh-01 01 2.5x XPL30 final.dzi"
     ]
   },
+  "GM-Kl-01": {
+    "groups": ["Green Mtn, CO"],
+    "title": "GM-Kl-01",
+    "description": "Laramie Fm.",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage16/main/images/GM-Kl-01 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage16/main/images/GM-Kl-01 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage16/main/images/GM-Kl-01 01 2.5x XPL30 final.dzi"
+    ]
+  },
   "GM-Kl-02": {
     "groups": ["Green Mtn, CO"],
     "title": "GM-Kl-02",
@@ -1472,6 +1644,20 @@
       "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/GM-Kl-02 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/GM-Kl-02 01 2.5x XPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage3/main/images/GM-Kl-02 01 2.5x XPL30 final.dzi"
+    ]
+  },
+  "GM-Ka-01": {
+    "groups": ["Green Mtn, CO"],
+    "title": "GM-Ka-01",
+    "description": "Arapahoe Conglomerate",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage16/main/images/GM-Ka-01 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage16/main/images/GM-Ka-01 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage16/main/images/GM-Ka-01 01 2.5x XPL30 final.dzi"
     ]
   },
   "GM-Td-01": {
@@ -2558,6 +2744,132 @@
       "https://raw.githubusercontent.com/grsharman/image-storage14/main/images/SP25_P170 01 2.5x PPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage14/main/images/SP25_P170 01 2.5x XPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage14/main/images/SP25_P170 01 2.5x XPL30 final.dzi"
+    ]
+  },
+  "EWO-SWM-Pp": {
+    "groups": ["SW Montana"],
+    "title": "EWO-SWM-Pp",
+    "description": "Phosphoria Formation",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage17/main/images/EWO-SWM-Pp 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage17/main/images/EWO-SWM-Pp 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage17/main/images/EWO-SWM-Pp 01 2.5x XPL30 final.dzi"
+    ]
+  },
+  "EWO-SWM-Trd": {
+    "groups": ["SW Montana"],
+    "title": "EWO-SWM-Trd",
+    "description": "Dinwoody Formation",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage17/main/images/EWO-SWM-Trd 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage17/main/images/EWO-SWM-Trd 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage17/main/images/EWO-SWM-Trd 01 2.5x XPL30 final.dzi"
+    ]
+  },
+  "EWO-SWM-Jm": {
+    "groups": ["SW Montana"],
+    "title": "EWO-SWM-Jm",
+    "description": "Morrison Formation",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage17/main/images/EWO-SWM-Jm 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage17/main/images/EWO-SWM-Jm 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage17/main/images/EWO-SWM-Jm 01 2.5x XPL30 final.dzi"
+    ]
+  },
+  "EWO-SWM-K1": {
+    "groups": ["SW Montana"],
+    "title": "EWO-SWM-K1",
+    "description": "Kootenai Formation (K1)",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage17/main/images/EWO-SWM-K1 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage17/main/images/EWO-SWM-K1 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage17/main/images/EWO-SWM-K1 01 2.5x XPL30 final.dzi"
+    ]
+  },
+  "EWO-SWM-K2": {
+    "groups": ["SW Montana"],
+    "title": "EWO-SWM-K2",
+    "description": "Kootenai Formation (K2)",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage17/main/images/EWO-SWM-K2 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage17/main/images/EWO-SWM-K2 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage17/main/images/EWO-SWM-K2 01 2.5x XPL30 final.dzi"
+    ]
+  },
+  "EWO-SWM-K3": {
+    "groups": ["SW Montana"],
+    "title": "EWO-SWM-K3",
+    "description": "Kootenai Formation (K3)",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage17/main/images/EWO-SWM-K3 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage17/main/images/EWO-SWM-K3 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage17/main/images/EWO-SWM-K3 01 2.5x XPL30 final.dzi"
+    ]
+  },
+  "EWO-SWM-K4": {
+    "groups": ["SW Montana"],
+    "title": "EWO-SWM-K4",
+    "description": "Kootenai Formation (K4)",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage17/main/images/EWO-SWM-K4 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage17/main/images/EWO-SWM-K4 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage17/main/images/EWO-SWM-K4 01 2.5x XPL30 final.dzi"
+    ]
+  },
+  "EWO-SWM-K5": {
+    "groups": ["SW Montana"],
+    "title": "EWO-SWM-K5",
+    "description": "Kootenai Formation (K5)",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage17/main/images/EWO-SWM-K5 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage17/main/images/EWO-SWM-K5 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage17/main/images/EWO-SWM-K5 01 2.5x XPL30 final.dzi"
+    ]
+  },
+  "EWO-SWM-Kb": {
+    "groups": ["SW Montana"],
+    "title": "EWO-SWM-Kb",
+    "description": "Blackleaf Formation",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage17/main/images/EWO-SWM-Kb 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage17/main/images/EWO-SWM-Kb 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage17/main/images/EWO-SWM-Kb 01 2.5x XPL30 final.dzi"
     ]
   }
 }
