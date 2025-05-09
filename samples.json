@@ -2512,7 +2512,7 @@
     "tileSets": [
       "https://raw.githubusercontent.com/grsharman/images-mounts01/main/images/Large_mount.dzi"
     ],
-    "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/CL-zircon_L_polygons_by_rect.geojson"
+    "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/CL-zircon_L_spots.geojson"
   },
   "CL-zircon_M": {
     "groups": ["Zircon"],
@@ -2524,7 +2524,8 @@
     "tileLabels": ["CL"],
     "tileSets": [
       "https://raw.githubusercontent.com/grsharman/images-mounts01/main/images/medium_mount.dzi"
-    ]
+    ],
+    "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/CL-zircon_M_spots.geojson"
   },
   "CL-zircon_S": {
     "groups": ["Zircon"],
@@ -2536,7 +2537,8 @@
     "tileLabels": ["CL"],
     "tileSets": [
       "https://raw.githubusercontent.com/grsharman/images-mounts01/main/images/small_mount.dzi"
-    ]
+    ],
+    "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/CL-zircon_S_spots.geojson"
   },
   "Taimana-1-210-240": {
     "groups": ["Zircon"],
