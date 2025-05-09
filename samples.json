@@ -2825,9 +2825,9 @@
     "pixelsPerMeter": "398000",
     "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
     "tileSets": [
-      "https://raw.githubusercontent.com/grsharman/image-storage17/main/images/EWO-SWM-K3 01 2.5x PPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage17/main/images/EWO-SWM-K3 01 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage17/main/images/EWO-SWM-K3 01 2.5x XPL30 final.dzi"
+      "https://raw.githubusercontent.com/grsharman/image-storage17/main/images/EWO-SWM-K3 01 2.5X PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage17/main/images/EWO-SWM-K3 01 2.5X XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage17/main/images/EWO-SWM-K3 01 2.5X XPL30 final.dzi"
     ]
   },
   "EWO-SWM-K4": {
