@@ -1038,6 +1038,132 @@
       "https://raw.githubusercontent.com/grsharman/image-storage15/main/images/TANN2205 069_MC 25-43 01 2.5x XPL30 final.dzi"
     ]
   },
+  "AK24-KIB1": {
+    "groups": ["New Zealand"],
+    "title": "AK24-KIB1",
+    "description": "Upper Okehu Siltstone, Kai-iwi Beach",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage17/main/images/AK24-KIB1 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage17/main/images/AK24-KIB1 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage17/main/images/AK24-KIB1 01 2.5x XPL30 final.dzi"
+    ]
+  },
+  "AK24-KIB2": {
+    "groups": ["New Zealand"],
+    "title": "AK24-KIB2",
+    "description": "Kalmatira Pumaceous Sand, Kai-iwi Beach",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage17/main/images/AK24-KIB2 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage17/main/images/AK24-KIB2 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage17/main/images/AK24-KIB2 01 2.5x XPL30 final.dzi"
+    ]
+  },
+  "AK24-MGW": {
+    "groups": ["New Zealand"],
+    "title": "AK24-MGW",
+    "description": "Mangaweka Mudstone",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage17/main/images/AK24-MGW 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage17/main/images/AK24-MGW 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage17/main/images/AK24-MGW 01 2.5x XPL30 final.dzi"
+    ]
+  },
+  "AK24-MKU": {
+    "groups": ["New Zealand"],
+    "title": "AK24-MKU",
+    "description": "Moukuku Sandstone",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage17/main/images/AK24-MKU 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage17/main/images/AK24-MKU 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage17/main/images/AK24-MKU 01 2.5x XPL30 final.dzi"
+    ]
+  },
+  "AK24-OKR": {
+    "groups": ["New Zealand"],
+    "title": "AK24-OKR",
+    "description": "Nukumaru Group, Okura Beach",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage17/main/images/AK24-OKR 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage17/main/images/AK24-OKR 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage17/main/images/AK24-OKR 01 2.5x XPL30 final.dzi"
+    ]
+  },
+  "AK24-OTK": {
+    "groups": ["New Zealand"],
+    "title": "AK24-OTK",
+    "description": "Ototoka Beach",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage17/main/images/AK24-OTK 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage17/main/images/AK24-OTK 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage17/main/images/AK24-OTK 01 2.5x XPL30 final.dzi"
+    ]
+  },
+  "AK24-PRU": {
+    "groups": ["New Zealand"],
+    "title": "AK24-PRU",
+    "description": "Nukumaru Group, Whanganui Road",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage17/main/images/AK24-PRU 02 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage17/main/images/AK24-PRU 02 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage17/main/images/AK24-PRU 02 2.5x XPL30 final.dzi"
+    ]
+  },
+  "AK24-RPU": {
+    "groups": ["New Zealand"],
+    "title": "AK24-RPU",
+    "description": "Tangahoe Mudstone, Koriniti Sandstone Mbr.",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage17/main/images/AK24-RPU 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage17/main/images/AK24-RPU 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage17/main/images/AK24-RPU 01 2.5x XPL30 final.dzi"
+    ]
+  },
+  "P91852": {
+    "groups": ["New Zealand"],
+    "title": "P91852",
+    "description": "Old Man Group - Maori Point Conglomerate",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage17/main/images/P91852 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage17/main/images/P91852 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage17/main/images/P91852 01 2.5x XPL30 final.dzi"
+    ]
+  },
   "131-011s": {
     "groups": ["SedGeo"],
     "title": "131-011s",
