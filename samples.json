@@ -2111,223 +2111,197 @@
     ]
   },
   "PNW-01": {
-    "groups": ["PNW"],
+    "groups": ["Pacific Northwest"],
     "title": "PNW-01",
     "description": "????",
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["PPL(0°)", ["XPL(0°)", "XPL(30°)"]],
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
     "tileSets": [
       "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-01 01 2.5x PPL00 final.dzi",
-      [
-        "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-01 01 2.5x XPL00 final.dzi",
-        "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-01 01 2.5x XPL30 final.dzi"
-      ]
+      "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-01 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-01 01 2.5x XPL30 final.dzi"
     ],
     "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/PNW-01_SedPetLab5.geojson"
   },
   "PNW-02": {
-    "groups": ["PNW"],
+    "groups": ["Pacific Northwest"],
     "title": "PNW-02",
     "description": "????",
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["PPL(0°)", ["XPL(0°)", "XPL(30°)"]],
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
     "tileSets": [
       "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-02 01 2.5x PPL00 final.dzi",
-      [
-        "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-02 01 2.5x XPL00 final.dzi",
-        "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-02 01 2.5x XPL30 final.dzi"
-      ]
+      "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-02 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-02 01 2.5x XPL30 final.dzi"
     ],
     "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/PNW-02_SedPetLab5.geojson"
   },
   "PNW-03": {
-    "groups": ["PNW"],
+    "groups": ["Pacific Northwest"],
     "title": "PNW-03",
     "description": "????",
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["PPL(0°)", ["XPL(0°)", "XPL(30°)"]],
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
     "tileSets": [
       "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-03 01 2.5x PPL00 final.dzi",
-      [
-        "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-03 01 2.5x XPL00 final.dzi",
-        "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-03 01 2.5x XPL30 final.dzi"
-      ]
+      "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-03 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-03 01 2.5x XPL30 final.dzi"
     ],
     "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/PNW-03_SedPetLab5.geojson"
   },
   "PNW-04": {
-    "groups": ["PNW"],
+    "groups": ["Pacific Northwest"],
     "title": "PNW-04",
     "description": "????",
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["PPL(0°)", ["XPL(0°)", "XPL(30°)"]],
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
     "tileSets": [
       "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-04 01 2.5x PPL00 final.dzi",
-      [
-        "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-04 01 2.5x XPL00 final.dzi",
-        "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-04 01 2.5x XPL30 final.dzi"
-      ]
+      "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-04 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-04 01 2.5x XPL30 final.dzi"
     ],
     "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/PNW-04_SedPetLab5.geojson"
   },
   "PNW-05": {
-    "groups": ["PNW"],
+    "groups": ["Pacific Northwest"],
     "title": "PNW-05",
     "description": "????",
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["PPL(0°)", ["XPL(0°)", "XPL(30°)"]],
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
     "tileSets": [
       "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-05 01 2.5x PPL00 final.dzi",
-      [
-        "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-05 01 2.5x XPL00 final.dzi",
-        "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-05 01 2.5x XPL30 final.dzi"
-      ]
+      "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-05 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-05 01 2.5x XPL30 final.dzi"
     ],
     "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/PNW-05_SedPetLab5.geojson"
   },
   "PNW-06": {
-    "groups": ["PNW"],
+    "groups": ["Pacific Northwest"],
     "title": "PNW-06",
     "description": "????",
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["PPL(0°)", ["XPL(0°)", "XPL(30°)"]],
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
     "tileSets": [
       "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-06 01 2.5x PPL00 final.dzi",
-      [
-        "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-06 01 2.5x XPL00 final.dzi",
-        "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-06 01 2.5x XPL30 final.dzi"
-      ]
+      "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-06 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-06 01 2.5x XPL30 final.dzi"
     ],
     "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/PNW-06_SedPetLab5.geojson"
   },
   "PNW-07": {
-    "groups": ["PNW"],
+    "groups": ["Pacific Northwest"],
     "title": "PNW-07",
     "description": "????",
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["PPL(0°)", ["XPL(0°)", "XPL(30°)"]],
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
     "tileSets": [
       "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-07 01 2.5x PPL00 final.dzi",
-      [
-        "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-07 01 2.5x XPL00 final.dzi",
-        "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-07 01 2.5x XPL30 final.dzi"
-      ]
+      "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-07 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-07 01 2.5x XPL30 final.dzi"
     ],
     "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/PNW-07_SedPetLab5.geojson"
   },
   "PNW-08": {
-    "groups": ["PNW"],
+    "groups": ["Pacific Northwest"],
     "title": "PNW-08",
     "description": "????",
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["PPL(0°)", ["XPL(0°)", "XPL(30°)"]],
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
     "tileSets": [
       "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-08 01 2.5x PPL00 final.dzi",
-      [
-        "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-08 01 2.5x XPL00 final.dzi",
-        "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-08 01 2.5x XPL30 final.dzi"
-      ]
+      "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-08 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-08 01 2.5x XPL30 final.dzi"
     ],
     "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/PNW-08_SedPetLab5.geojson"
   },
   "PNW-09": {
-    "groups": ["PNW"],
+    "groups": ["Pacific Northwest"],
     "title": "PNW-09",
     "description": "????",
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["PPL(0°)", ["XPL(0°)", "XPL(30°)"]],
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
     "tileSets": [
       "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-09 01 2.5x PPL00 final.dzi",
-      [
-        "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-09 01 2.5x XPL00 final.dzi",
-        "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-09 01 2.5x XPL30 final.dzi"
-      ]
+      "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-09 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-09 01 2.5x XPL30 final.dzi"
     ],
     "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/PNW-09_SedPetLab5.geojson"
   },
   "PNW-10": {
-    "groups": ["PNW"],
+    "groups": ["Pacific Northwest"],
     "title": "PNW-10",
     "description": "????",
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["PPL(0°)", ["XPL(0°)", "XPL(30°)"]],
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
     "tileSets": [
       "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-10 01 2.5x PPL00 final.dzi",
-      [
-        "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-10 01 2.5x XPL00 final.dzi",
-        "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-10 01 2.5x XPL30 final.dzi"
-      ]
+      "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-10 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-10 01 2.5x XPL30 final.dzi"
     ],
     "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/PNW-10_SedPetLab5.geojson"
   },
   "PNW-11": {
-    "groups": ["PNW"],
+    "groups": ["Pacific Northwest"],
     "title": "PNW-11",
     "description": "????",
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["PPL(0°)", ["XPL(0°)", "XPL(30°)"]],
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
     "tileSets": [
       "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-11 01 2.5x PPL00 final.dzi",
-      [
-        "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-11 01 2.5x XPL00 final.dzi",
-        "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-11 01 2.5x XPL30 final.dzi"
-      ]
+      "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-11 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-11 01 2.5x XPL30 final.dzi"
     ],
     "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/PNW-11_SedPetLab5.geojson"
   },
   "PNW-12": {
-    "groups": ["PNW"],
+    "groups": ["Pacific Northwest"],
     "title": "PNW-12",
     "description": "????",
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["PPL(0°)", ["XPL(0°)", "XPL(30°)"]],
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
     "tileSets": [
       "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-12 01 2.5x PPL00 final.dzi",
-      [
-        "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-12 01 2.5x XPL00 final.dzi",
-        "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-12 01 2.5x XPL30 final.dzi"
-      ]
+      "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-12 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-12 01 2.5x XPL30 final.dzi"
     ],
     "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/PNW-12_SedPetLab5.geojson"
   },
   "PNW-13": {
-    "groups": ["PNW"],
+    "groups": ["Pacific Northwest"],
     "title": "PNW-13",
     "description": "????",
     "unit": "2",
     "pixelsPerUnit": "0.398",
     "pixelsPerMeter": "398000",
-    "tileLabels": ["PPL(0°)", ["XPL(0°)", "XPL(30°)"]],
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
     "tileSets": [
       "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-13 01 2.5x PPL00 final.dzi",
-      [
-        "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-13 01 2.5x XPL00 final.dzi",
-        "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-13 01 2.5x XPL30 final.dzi"
-      ]
+      "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-13 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/PNW-13 01 2.5x XPL30 final.dzi"
     ],
     "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/PNW-13_polygons_by_rect.geojson"
   },
