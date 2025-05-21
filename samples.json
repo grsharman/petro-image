@@ -2306,7 +2306,7 @@
     "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/PNW-13_polygons_by_rect.geojson"
   },
   "JUN-03": {
-    "groups": ["PNW"],
+    "groups": ["Pacific Northwest"],
     "title": "JUN-03",
     "description": "????",
     "unit": "2",
@@ -2734,6 +2734,150 @@
     "tileLabels": ["reflected"],
     "tileSets": [
       "https://raw.githubusercontent.com/grsharman/images-mounts01/main/images/YA-12 Mount Mosaic.dzi"
+    ]
+  },
+  "FWS24-01 Zr": {
+    "groups": ["Zircon"],
+    "title": "FWS24-01 Zr polished",
+    "description": "FWS24-01 Zr polished mount",
+    "unit": "2",
+    "pixelsPerUnit": "1.0235",
+    "pixelsPerMeter": "1023500",
+    "tileLabels": ["trans"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/images-mounts01/main/images/FWS24-01 2.5x Zr.dzi"
+    ]
+  },
+  "FWS24-01 Zr sticky": {
+    "groups": ["Zircon"],
+    "title": "FWS24-01 Zr sticky",
+    "description": "FWS24-01 Zr sticky tape",
+    "unit": "2",
+    "pixelsPerUnit": "2.047",
+    "pixelsPerMeter": "2047000",
+    "tileLabels": ["trans"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/images-mounts01/main/images/FWS24-01 5x Zr sticky tape mount.dzi"
+    ]
+  },
+  "NZ23-049 Zr": {
+    "groups": ["Zircon"],
+    "title": "NZ23-049 Zr polished",
+    "description": "NZ23-049 Zr polished mount",
+    "unit": "2",
+    "pixelsPerUnit": "2.047",
+    "pixelsPerMeter": "2047000",
+    "tileLabels": ["trans"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/images-mounts01/main/images/NZ23-049 5x Zr.dzi"
+    ]
+  },
+  "NZ23-057 Zr row 1": {
+    "groups": ["Zircon"],
+    "title": "NZ23-057 Zr polished row 1",
+    "description": "NZ23-057 Zr polished mount",
+    "unit": "2",
+    "pixelsPerUnit": "2.047",
+    "pixelsPerMeter": "2047000",
+    "tileLabels": ["trans"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/images-mounts01/main/images/NZ23-057 5x Zr row 1 trans.dzi"
+    ]
+  },
+  "NZ23-057 Zr row 2": {
+    "groups": ["Zircon"],
+    "title": "NZ23-057 Zr polished row 2",
+    "description": "NZ23-057 Zr polished mount",
+    "unit": "2",
+    "pixelsPerUnit": "2.047",
+    "pixelsPerMeter": "2047000",
+    "tileLabels": ["trans"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/images-mounts01/main/images/NZ23-057 5x Zr row 2 trans.dzi"
+    ]
+  },
+  "NZ23-060 Zr": {
+    "groups": ["Zircon"],
+    "title": "NZ23-060 Zr polished",
+    "description": "NZ23-060 Zr polished mount",
+    "unit": "2",
+    "pixelsPerUnit": "2.047",
+    "pixelsPerMeter": "2047000",
+    "tileLabels": ["trans"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/images-mounts01/main/images/NZ23-060 5x Zr trans.dzi"
+    ]
+  },
+  "NZ23-069 Zr": {
+    "groups": ["Zircon"],
+    "title": "NZ23-069 Zr polished",
+    "description": "NZ23-069 Zr polished mount",
+    "unit": "2",
+    "pixelsPerUnit": "2.047",
+    "pixelsPerMeter": "2047000",
+    "tileLabels": ["trans"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/images-mounts01/main/images/NZ23-069 5x Zr trans.dzi"
+    ]
+  },
+  "TANN2205 002 Ap": {
+    "groups": ["New Zealand"],
+    "title": "TANN2205 002 Ap polished",
+    "description": "TANN2205 002 Ap polished mount",
+    "unit": "2",
+    "pixelsPerUnit": "1.0235",
+    "pixelsPerMeter": "1023500",
+    "tileLabels": ["trans"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/images-mounts01/main/images/TANN2205 002 2.5x Ap.dzi"
+    ]
+  },
+  "TANN2205 002 Zr polished": {
+    "groups": ["Zircon"],
+    "title": "TANN2205 002 Zr polished",
+    "description": "TANN2205 002 Zr polished mount",
+    "unit": "2",
+    "pixelsPerUnit": "2.047",
+    "pixelsPerMeter": "2047000",
+    "tileLabels": ["trans"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/images-mounts01/main/images/TANN2205 002 5x Zr.dzi"
+    ]
+  },
+  "TANN2205 002 Zr sticky": {
+    "groups": ["Zircon"],
+    "title": "TANN2205 002 sticky tape",
+    "description": "TANN2205 002 Zr sticky tape mount",
+    "unit": "2",
+    "pixelsPerUnit": "2.047",
+    "pixelsPerMeter": "2047000",
+    "tileLabels": ["trans"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/images-mounts01/main/images/TANN2205 002 5x Zr sticky tape mount.dzi"
+    ]
+  },
+  "TANN2205 006 Zr polished": {
+    "groups": ["Zircon"],
+    "title": "TANN2205 006 Zr polished",
+    "description": "TANN2205 006 Zr polished mount",
+    "unit": "2",
+    "pixelsPerUnit": "2.047",
+    "pixelsPerMeter": "2047000",
+    "tileLabels": ["trans"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/images-mounts01/main/images/TANN2205 006 5x Zr trans.dzi"
+    ]
+  },
+  "TANN2205 042 Zr polished": {
+    "groups": ["Zircon"],
+    "title": "TANN2205 042 Zr polished",
+    "description": "TANN2205 042 Zr polished mount",
+    "unit": "2",
+    "pixelsPerUnit": "2.047",
+    "pixelsPerMeter": "2047000",
+    "tileLabels": ["trans"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/images-mounts01/main/images/TANN2205 042 5x Zr trans.dzi"
     ]
   },
   "M81": {
