@@ -1914,6 +1914,20 @@
     ],
     "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/CC-01_medium_all_polygons_by_rect.geojson"
   },
+  "Well-A-5200-5300": {
+    "groups": ["Stevens Ss"],
+    "title": "Well-A-5200-5300",
+    "description": "Stevens Sandstone",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/uacsrg/image-storage1/main/images/Well-A-5200-5300 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/uacsrg/image-storage1/main/images/Well-A-5200-5300 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/uacsrg/image-storage1/main/images/Well-A-5200-5300 01 2.5x XPL30 final.dzi"
+    ]
+  },
   "Well-T-11445": {
     "groups": ["Stevens Ss"],
     "title": "Well-T-11445",
