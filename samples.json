@@ -605,6 +605,22 @@
       "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NZ23-052 01 2.5x XPL45 final.dzi"
     ]
   },
+  "NZ23-054": {
+    "groups": ["New Zealand"],
+    "title": "NZ23-054",
+    "description": "Waiwhakaiho River",
+    "latitude": "-39.06926",
+    "longitude": "174.1098",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/grsharman/image-storage18/main/images/NZ23-054 01 2.5x PPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage18/main/images/NZ23-054 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage18/main/images/NZ23-054 01 2.5x XPL30 final.dzi"
+    ]
+  },
   "NZ23-055": {
     "groups": ["New Zealand"],
     "title": "NZ23-055",
