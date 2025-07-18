@@ -1093,6 +1093,11 @@ const enableAnnoButtons = () => {
   document.getElementById("anno-last-button").disabled = false;
   document.getElementById("anno-label").disabled = false;
   document.getElementById("anno-notes").disabled = false;
+  document.getElementById("deleteButton").disabled = false;
+  document.getElementById("gearButton").disabled = false;
+  document.getElementById("repeatButton").disabled = false;
+  document.getElementById("exportBtn").disabled = false;
+  document.getElementById("clearBtn").disabled = false;
 };
 
 const disableAnnoButtons = () => {
@@ -1103,6 +1108,13 @@ const disableAnnoButtons = () => {
   document.getElementById("anno-last-button").disabled = true;
   document.getElementById("anno-label").disabled = true;
   document.getElementById("anno-notes").disabled = true;
+  document.getElementById("deleteButton").disabled = true;
+  document.getElementById("gearButton").disabled = true;
+  document.getElementById("repeatButton").disabled = true;
+  document.getElementById("exportBtn").disabled = true;
+  document.getElementById("clearBtn").disabled = true;
+  isRepeatMode = false; // Reset repeat mode when disabling buttons
+  repeatButton.classList.remove("active");
 };
 
 document
@@ -1214,13 +1226,26 @@ document
 
 // When the delete annotation button is clicked
 document.getElementById("deleteButton").addEventListener("click", function () {
-  const id = parseInt(document.getElementById("anno-id").value);
-  const uuid = annoJSON.features[id - 1].properties.uuid;
-  deleteText(uuid, "anno");
-  deleteCrosshairs(uuid, "anno");
-  deleteFromGeoJSON(id);
-  selectNextAnno(id);
-  drawShape(polyCanvas, [annoJSON]);
+  // Deleting the last item is equivalent to clearing all items
+  if (annoJSON.features.length === 1) {
+    clearAnnotations();
+    disableAnnoButtons();
+  } else {
+    const id = parseInt(document.getElementById("anno-id").value);
+    const uuid = annoJSON.features[id - 1].properties.uuid;
+    deleteText(uuid, "anno");
+    deleteCrosshairs(uuid, "anno");
+    deleteFromGeoJSON(id);
+    selectNextAnno(id);
+    drawShape(polyCanvas, [annoJSON]);
+    // Disable the annotation buttons if there are no annotations left
+    if (annoJSON.features.length === 0) {
+      disableAnnoButtons();
+      document.getElementById("anno-id").value = "";
+      document.getElementById("anno-label").value = "";
+      document.getElementById("anno-notes").value = "";
+    }
+  }
 });
 
 // labels could be changed without affecting the underlying color of the shapes
@@ -2913,6 +2938,7 @@ viewer.addHandler("canvas-release", function (event) {
 document.getElementById("clearBtn").addEventListener("click", function () {
   console.log("Clear clicked");
   clearAnnotations();
+  disableAnnoButtons();
   // annotations = [];
 });
 

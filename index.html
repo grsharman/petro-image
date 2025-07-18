@@ -481,12 +481,12 @@
 
           <div class="button-container">
             <!-- Trash can button -->
-            <button class="custom-button" id="deleteButton" title="Delete">
+            <button class="custom-button" id="deleteButton" disabled title="Delete">
               <svg class="trash-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
                 <path d="M9 3h6v2H9V3zm1 0v2h4V3h-4zM5 6h14v2H5V6zm2 3h10v11H7V9zm2 2v7h2v-7H9zm4 0v7h2v-7h-2z" />
               </svg>
             </button>
-            <button class="custom-button" id="gearButton" title="Annotation Settings">
+            <button class="custom-button" id="gearButton" disabled title="Annotation Settings">
               <svg class="gear-icon" version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" 
               viewBox="0 0 64 64" enable-background="new 0 0 64 64" xml:space="preserve">
               <g>
@@ -580,9 +580,9 @@
             <input type="file" id="loadAnnotationsBtn" class="file-input" title="Import geoJSON" />
             <!-- <button id="loadAnnotationsBtn" class="file-label">Import</button> -->
             <button id="exportBtn" class="custom-button"
-            style="--button-width: 50px;" title="Export as geoJSON">Export</button>
+            style="--button-width: 50px;" disabled title="Export as geoJSON">Export</button>
             <button id="clearBtn" class="custom-button"
-            style="--button-width: 42px;" title="Clear Annotations" onclick="clearAnnotations()">Clear</button>
+            style="--button-width: 42px;" disabled title="Clear Annotations" onclick="clearAnnotations()">Clear</button>
           </div>
           <div id="loadAnnoFromJSON"></div>
         </details>
