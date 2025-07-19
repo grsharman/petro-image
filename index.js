@@ -3633,26 +3633,31 @@ const toggleCheckbox = (id) => {
 
 // Add keyboard event listener
 document.addEventListener("keydown", (event) => {
-  if (event.ctrlKey) {
-    switch (event.key) {
-      case "1":
+  if (event.ctrlKey || event.altKey) {
+    switch (event.code) {
+      case "Digit1":
         toggleCheckbox("image1");
         break;
-      case "2":
+      case "Digit2":
         toggleCheckbox("image2");
         break;
-      case "3":
+      case "Digit3":
         toggleCheckbox("image3");
         break;
-      case "4":
+      case "Digit4":
         toggleCheckbox("image4");
         break;
-      case "g":
+      case "KeyG":
         toggleCheckbox("show-grid");
         break;
-      default:
+      case "KeyD":
+        toggleCheckbox("enableDivideImages");
         break;
+      default:
+        return; // Exit early if no match
     }
+
+    event.preventDefault(); // Optional: block browser behavior
   }
 });
 
