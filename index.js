@@ -5367,7 +5367,44 @@ const rectFloater = document.getElementById("anno-rect-floater");
 const polygonFloater = document.getElementById("anno-polygon-floater");
 const ellipseFloater = document.getElementById("anno-ellipse-floater");
 
+// This keeps track of key presses and releases, in case the keyup event listener is missed
+const pressedKeys = new Set();
+const keyTimestamps = {};
+
+const KEY_TIMEOUT_MS = 500; // 0.5 seconds
+
+window.addEventListener("keydown", (event) => {
+  const code = event.code;
+  pressedKeys.add(code);
+  keyTimestamps[code] = Date.now();
+});
+
+window.addEventListener("keyup", (event) => {
+  const code = event.code;
+  pressedKeys.delete(code);
+  delete keyTimestamps[code];
+});
+
+setInterval(() => {
+  const now = Date.now();
+  for (const code of pressedKeys) {
+    if (now - keyTimestamps[code] > KEY_TIMEOUT_MS) {
+      console.log(`Expiring stuck key: ${code}`);
+      pressedKeys.delete(code);
+      delete keyTimestamps[code];
+    }
+  }
+}, 250); // check four times a second
+
 document.addEventListener("mousemove", (event) => {
+  if (!event.shiftKey) {
+    shiftKeyHeld = false; // Reset shift key state if not held
+  }
+  console.log(pressedKeys);
+  isCPressed = pressedKeys.has("KeyC");
+  isXPressed = pressedKeys.has("KeyX");
+  isQPressed = pressedKeys.has("KeyQ");
+  isZPressed = pressedKeys.has("KeyZ");
   if (isQPressed || isPointMode) {
     // crosshairFloater.style.display = "block";
     // document.body.style.cursor = "default"; // Hide system cursor when crosshair is active
