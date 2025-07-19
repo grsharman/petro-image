@@ -3704,7 +3704,7 @@ let gridApplied = false;
 
 const enableGridButtons = () => {
   document.getElementById("apply-grid-settings").disabled = false;
-  document.getElementById("restore-grid-settings").disabled = false;
+  // document.getElementById("restore-grid-settings").disabled = false;
 };
 
 // Empty arrays to store points and crosshairs
@@ -3866,7 +3866,7 @@ const applyGridSettings = () => {
   // visibility states.)
   document.getElementById("show-grid").checked = true;
   document.getElementById("apply-grid-settings").disabled = true;
-  document.getElementById("restore-grid-settings").disabled = true;
+  // document.getElementById("restore-grid-settings").disabled = true;
   document.getElementById("clear-grid").disabled = false;
   gridApplied = true;
 
@@ -3904,7 +3904,7 @@ const clearGrid = () => {
   document.getElementById("count-notes").value = "";
   disableCountButtons();
   document.getElementById("apply-grid-settings").disabled = false;
-  document.getElementById("restore-grid-settings").disabled = false;
+  // document.getElementById("restore-grid-settings").disabled = false;
   document.getElementById("clear-grid").disabled = true;
   enableGridOptions();
 };
@@ -3929,24 +3929,35 @@ const clearGridOverlayCrosshairs = () => {
   gridOverlayCrosshairs = [];
 };
 
-const restoreGridSettings = () => {
+// const restoreGridSettings = () => {
+//   document.getElementById("grid-left").value = grid.xMin;
+//   document.getElementById("grid-top").value = grid.yMin;
+//   document.getElementById("grid-right").value = grid.xMax;
+//   document.getElementById("grid-bottom").value = grid.yMax;
+//   document.getElementById("step-size").value = grid.step;
+//   document.getElementById("no-points").value = grid.noPoints;
+
+//   // Leave the Apply button enabled unless the grid has been generated at least
+//   // once.
+//   if (gridApplied) {
+//     document.getElementById("apply-grid-settings").disabled = true;
+//   }
+//   document.getElementById("restore-grid-settings").disabled = true;
+// };
+
+// // Initialize grid setting elements.
+// restoreGridSettings();
+
+const initializeGridSettings = () => {
   document.getElementById("grid-left").value = grid.xMin;
   document.getElementById("grid-top").value = grid.yMin;
   document.getElementById("grid-right").value = grid.xMax;
   document.getElementById("grid-bottom").value = grid.yMax;
   document.getElementById("step-size").value = grid.step;
   document.getElementById("no-points").value = grid.noPoints;
-
-  // Leave the Apply button enabled unless the grid has been generated at least
-  // once.
-  if (gridApplied) {
-    document.getElementById("apply-grid-settings").disabled = true;
-  }
-  document.getElementById("restore-grid-settings").disabled = true;
 };
 
-// Initialize grid setting elements.
-restoreGridSettings();
+initializeGridSettings();
 
 // Point counting function (Oct 14, 2024)
 function pointMatrix(
@@ -4397,7 +4408,7 @@ document
       alert("Please select a GeoJSON file to load counts.");
     }
     document.getElementById("apply-grid-settings").disabled = true;
-    document.getElementById("restore-grid-settings").disabled = true;
+    // document.getElementById("restore-grid-settings").disabled = true;
     document.getElementById("clear-grid").disabled = false;
     disableGridOptions();
     populateFilterDropdown();
@@ -4437,7 +4448,7 @@ document
 
     disableGridOptions();
     document.getElementById("apply-grid-settings").disabled = true;
-    document.getElementById("restore-grid-settings").disabled = true;
+    // document.getElementById("restore-grid-settings").disabled = true;
     document.getElementById("clear-grid").disabled = false;
     // TODO: Fix the issue where filter dropdown is not populated after loading a CSV
     populateFilterDropdown();
