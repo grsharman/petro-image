@@ -39,6 +39,10 @@ let measureJSONTemp = {
   type: "FeatureCollection",
   features: [],
 }; // For drawing temporary measurements
+let measureAreaJSONTemp = {
+  type: "FeatureCollection",
+  features: [],
+}; // For drawing temporary measurements of area
 
 // OG function
 // function loadSampleJSON(JSON) {
@@ -2523,14 +2527,14 @@ function updateViewerElementCoordinates(canvas, viewportPoint) {
 viewer.addHandler("viewport-change", () => {
   drawShape(polyCanvas, [annoJSONTemp, annoJSON]);
   drawShape(circleCanvas, [circleJSON]);
-  drawShape(measureCanvas, [measureJSONTemp, measureJSON]);
+  drawShape(measureCanvas, [measureJSONTemp, measureAreaJSONTemp, measureJSON]);
 });
 
 // TOOD: Is this necessary? Could be partially redundant with the above function
 viewerContainer.addEventListener("mousemove", () => {
   drawShape(polyCanvas, [annoJSONTemp, annoJSON]);
   drawShape(circleCanvas, [circleJSON]);
-  drawShape(measureCanvas, [measureJSONTemp, measureJSON]);
+  drawShape(measureCanvas, [measureJSONTemp, measureAreaJSONTemp, measureJSON]);
 });
 
 // Event listener for double-click to end collection
@@ -4833,6 +4837,12 @@ function applyOpacityToColor(color, opacity) {
 //// Measuring functionality ////
 /////////////////////////////////
 
+// Import, add, and export points with labels
+const toggleMeasurement = (checkbox) => {
+  if (!measureCanvas) return;
+  measureCanvas.style.display = checkbox.checked ? "block" : "none";
+};
+
 const measurementButton = document.getElementById("toggleMeasurementButton");
 const circleButton = document.getElementById("toggleCircleButton");
 
@@ -5069,6 +5079,8 @@ let areaConversion = 0; // 0 = 1, 1 = 1e6, 2 = 1e12
 let areaInM2;
 let ECDConversion = 0;
 let ECDInM;
+let polylineCoords = [];
+let polygonCoords = [];
 // let activeMeasurement = false;
 viewer.addHandler("canvas-click", function (event) {
   const isMeasuring = measurementButton.classList.contains("active");
@@ -5129,7 +5141,11 @@ viewer.addHandler("canvas-click", function (event) {
     measureImageCoordinates.push([imagePoint.x, imagePoint.y]);
     if (measureCoordinates.length > 1) {
       // Draw the polyline (polyline or polygon)
-      drawShape(measureCanvas, [measureJSON, measureJSONTemp]);
+      drawShape(measureCanvas, [
+        measureJSON,
+        measureAreaJSONTemp,
+        measureJSONTemp,
+      ]);
     }
 
     // Continually update the measureJSONTemp with the latest coordinates
@@ -5140,6 +5156,11 @@ viewer.addHandler("canvas-click", function (event) {
           type: "FeatureCollection",
           features: [],
         };
+        measureAreaJSONTemp = {
+          type: "FeatureCollection",
+          features: [],
+        };
+
         const rect = viewerContainer.getBoundingClientRect(); // Get container bounds
         const position = {
           x: subevent.clientX - rect.left,
@@ -5152,12 +5173,23 @@ viewer.addHandler("canvas-click", function (event) {
           subeventViewportPoint.x,
           subeventViewportPoint.y
         );
+
+        polylineCoords = [
+          ...measureImageCoordinates,
+          [subeventImagePoint.x, subeventImagePoint.y],
+        ];
+        polygonCoords = [
+          ...measureImageCoordinates,
+          [subeventImagePoint.x, subeventImagePoint.y],
+        ];
+
         addPolylineToGeoJSON(
           measureJSONTemp,
-          [
-            ...measureImageCoordinates,
-            [subeventImagePoint.x, subeventImagePoint.y],
-          ],
+          polylineCoords,
+          // [
+          //   ...measureImageCoordinates,
+          //   [subeventImagePoint.x, subeventImagePoint.y],
+          // ],
           {
             lineStyle: lineStyle,
             lineWeight: lineWeight,
@@ -5165,6 +5197,31 @@ viewer.addHandler("canvas-click", function (event) {
             lineOpacity: lineOpacity,
           }
         );
+
+        if (
+          polylineCoords.length > 2 &&
+          (polylineCoords[0][0] !==
+            polylineCoords[polylineCoords.length - 1][0] ||
+            polylineCoords[0][1] !==
+              polylineCoords[polylineCoords.length - 1][1])
+        ) {
+          polygonCoords.push(polygonCoords[0]);
+        }
+
+        addPolygonToGeoJSON(measureAreaJSONTemp, polygonCoords, {
+          lineStyle: "dashed",
+          lineWeight: lineWeight,
+          lineColor: lineColor,
+          lineOpacity: lineOpacity,
+          fillColor: fillColor,
+          fillOpacity: fillOpacity,
+        });
+
+        updateSelfIntersectionWarning(polygonCoords);
+
+        if (isSelfIntersecting(polygonCoords)) {
+          console.log("Self-intersecting polygon detected");
+        }
 
         const currentMeasureImageCoordinates = [
           ...measureImageCoordinates,
@@ -5207,7 +5264,11 @@ viewer.addHandler("canvas-click", function (event) {
           ECDElement.value = 0; // Reset
         }
 
-        drawShape(measureCanvas, [measureJSON, measureJSONTemp]);
+        drawShape(measureCanvas, [
+          measureJSON,
+          measureAreaJSONTemp,
+          measureJSONTemp,
+        ]);
       }
     });
 
@@ -5411,7 +5472,6 @@ document.addEventListener("mousemove", (event) => {
   if (!event.shiftKey) {
     shiftKeyHeld = false; // Reset shift key state if not held
   }
-  console.log(pressedKeys);
   isCPressed = pressedKeys.has("KeyC");
   isXPressed = pressedKeys.has("KeyX");
   isQPressed = pressedKeys.has("KeyQ");
@@ -5570,3 +5630,57 @@ document.addEventListener("keydown", function (event) {
   updateButtonLabels(currentIndex);
   updateImageLabels();
 });
+
+// Function to check if a polygon is self-intersecting
+function isSelfIntersecting(coords) {
+  // Ensure the polygon is closed
+  const points = coords.slice();
+  if (
+    points.length > 2 &&
+    (points[0][0] !== points[points.length - 1][0] ||
+      points[0][1] !== points[points.length - 1][1])
+  ) {
+    points.push(points[0]);
+  }
+
+  function segmentsIntersect(p1, p2, q1, q2) {
+    function ccw(a, b, c) {
+      return (c[1] - a[1]) * (b[0] - a[0]) > (b[1] - a[1]) * (c[0] - a[0]);
+    }
+
+    return (
+      ccw(p1, q1, q2) !== ccw(p2, q1, q2) && ccw(p1, p2, q1) !== ccw(p1, p2, q2)
+    );
+  }
+
+  const n = points.length - 1;
+  for (let i = 0; i < n; i++) {
+    const a1 = points[i];
+    const a2 = points[i + 1];
+
+    for (let j = i + 1; j < n; j++) {
+      // Skip adjacent edges and wrap-around neighbors
+      if (Math.abs(i - j) <= 1 || (i === 0 && j === n - 1)) continue;
+
+      const b1 = points[j];
+      const b2 = points[j + 1];
+
+      if (segmentsIntersect(a1, a2, b1, b2)) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+function updateSelfIntersectionWarning(coords) {
+  const isIntersecting = isSelfIntersecting(coords);
+  const banner = document.getElementById("selfIntersectWarning");
+
+  if (isIntersecting) {
+    banner.style.display = "block";
+  } else {
+    banner.style.display = "none";
+  }
+}

@@ -16,6 +16,22 @@
     <link rel="manifest" href="/site.webmanifest">
   </head>
   <body>
+    <div id="selfIntersectWarning" style="
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background-color: #ffc107;
+      color: black;
+      padding: 12px;
+      text-align: center;
+      font-weight: bold;
+      z-index: 1000;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    ">
+      ⚠️ Warning: The polygon is self-intersecting and area may be inaccurate.
+    </div>
     <!-- Modal pop-up for info button-->
     <div id="info-modal" class="modal">
       <div class="modal-content">
@@ -581,6 +597,15 @@
         </details>
         <details closed>
           <summary>Measure</summary>
+          <div>
+            <input
+            type="checkbox"
+            id="show-measure"
+            checked
+            onclick="toggleMeasurement(this)"
+            />
+          <label for="show-measure">Show measurement</label>
+          </div>
           <div class="dropdown-container">
             <button id="toggleMeasurementButton"
             class="custom-button"
