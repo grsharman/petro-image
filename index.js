@@ -2940,10 +2940,18 @@ viewer.addHandler("canvas-release", function (event) {
 
 // Clear annotations & grid
 document.getElementById("clearBtn").addEventListener("click", function () {
-  console.log("Clear clicked");
-  clearAnnotations();
-  disableAnnoButtons();
-  // annotations = [];
+  if (
+    confirm(
+      "Are you sure you want to apply clear the annotations? This action cannot be undone."
+    )
+  ) {
+    console.log("Clear confirmed");
+    clearAnnotations();
+    disableAnnoButtons();
+    // annotations = [];
+  } else {
+    console.log("Clear cancelled");
+  }
 });
 
 // Functions to add annotation test and crosshairs
@@ -3753,6 +3761,21 @@ function disableCountButtons() {
   document.getElementById("summarizeButton").disabled = true;
 }
 
+document
+  .getElementById("apply-grid-settings")
+  .addEventListener("click", function () {
+    let proceed = true;
+    if (countJSON.features.length > 0) {
+      proceed = confirm(
+        "Applying the grid will clear existing point counts. Do you want to proceed? This action cannot be undone."
+      );
+    }
+
+    if (proceed) {
+      applyGridSettings();
+    }
+  });
+
 // TODO: Currently adding more counts results in erasing the existing
 // counts. It would be better if there were a way of changing the point counts
 // without changing modifying the underlying count data. This way more points
@@ -3937,6 +3960,16 @@ const clearGridOverlayCrosshairs = () => {
   // Clear the overlayPoints array
   gridOverlayCrosshairs = [];
 };
+
+document.getElementById("clear-grid").addEventListener("click", function () {
+  if (
+    confirm(
+      "Are you sure you want to clear the grid? This will delete the existing grid along with any point counts. This action cannot be undone."
+    )
+  ) {
+    clearGrid();
+  }
+});
 
 // const restoreGridSettings = () => {
 //   document.getElementById("grid-left").value = grid.xMin;
