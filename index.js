@@ -3162,7 +3162,7 @@ function deleteCrosshairs(uuid, type = "anno") {
         (label) => label.id !== `annotate-crosshair-${uuid}`
       ); // Clean up the array
     }
-    console.log(`Crosshair with ID ${uuid} removed.`);
+    // console.log(`Crosshair with ID ${uuid} removed.`);
   } else {
     console.warn(`Crosshair with ID ${uuid} not found.`);
   }
@@ -4699,6 +4699,7 @@ function showResults() {
 
 // Attach event listener to the filterButton
 document.getElementById("filterButton").addEventListener("click", function () {
+  populateFilterDropdown();
   const includeDropdown = document.getElementById("includeDropdown");
 
   // Toggle visibility of the dropdown menu
