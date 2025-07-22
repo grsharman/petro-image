@@ -259,41 +259,53 @@
 
           <!-- Hidden Settings Menu for Grid-->
           <div id="gridSettingsMenu" class="hiddenSettingsMenu">
-            <h4>Label</h4>
+            <h4>Label font</h4>
             <div>
               <input type="number" id="gridLabelFontSize" placeholder="16" maxlength="3" value="16" min="1"/>
-              <label for="gridLabelFontSize">Font Size</label>
+              <input type="number" id="gridLabelFontSizeAfter" placeholder="16" maxlength="3" value="16" min="1"/>
+              <label for="gridLabelFontSize">Size</label>
             </div>
             <div>
               <input type="color" id="gridLabelFontColor" value="#FFFFFF"/>
-              <label for="gridLabelFontColor">Font Color</label>
+              <input type="color" id="gridLabelFontColorAfter" value="#FFFFFF"/>
+              <label for="gridLabelFontColor">Color</label>
             </div>
+            <h4>Label background</h4>
             <div>
               <input type="color" id="gridLabelBackgroundColor" value="#000000"/>
-              <label for="gridLabelBackgroundColor">Background Color</label>
+              <input type="color" id="gridLabelBackgroundColorAfter" value="#000000"/>
+              <label for="gridLabelBackgroundColor">Color</label>
             </div>
             <div>
-              <input type="number" id="gridLabelBackgroundOpacity" value="0.5" min="0" max="1"/>
-              <label for="gridLabelBackgroundOpacity">Background Opacity</label>
+              <input type="number" class="wide-number-input" id="gridLabelBackgroundOpacity" value="0.5" min="0" max="1"/>
+              <input type="number" class="wide-number-input" id="gridLabelBackgroundOpacityAfter" value="0.5" min="0" max="1"/>
+              <label for="gridLabelBackgroundOpacity">Opacity</label>
             </div>
+            (Before/after point count)
             <div>
               <button id="applyCurrentGridLabel">Apply to Current</button>
               <button id="applyAllGridLabel">Apply to All</button>
             </div>
             <hr />
-            <h4>Feature</h4>
+            <h4>Crosshairs</h4>
             <div>
               <input type="number" id="gridLineWeight" placeholder="2" maxlength="3" value="2" min="1" max="10"/>
-              <label for="gridLineWeight">Line Weight</label>
+              <input type="number" id="gridLineWeightAfter" placeholder="2" maxlength="3" value="2" min="1" max="10"/>
+              <label for="gridLineWeight">Weight</label>
             </div>
             <div>
-              <input type="number" id="gridLineOpacity" placeholder="1" maxlength="3" value="1" min="0" max="1"/>
-              <label for="gridLineOpacity">Line Opacity</label>
+              <input type="number" class="wide-number-input" id="gridLineOpacity" placeholder="1" maxlength="3" value="1" min="0" max="1"/>
+              <input type="number" class="wide-number-input" id="gridLineOpacityAfter" placeholder="1" maxlength="3" value="1" min="0" max="1"/>
+              <label for="gridLineOpacity">Opacity</label>
             </div>
             <div>
               <input type="color" id="gridLineColor" value="#ff0000"/>
-              <label for="gridLineColor">Line Color</label>
+              <input type="color" id="gridLineColorAfter" value="#008000"/>
+              <label for="gridLineColorAfter">Color</label>
             </div>
+            <div>
+            </div>
+            (Before/after point count)
             <div>
               <button id="applyCurrentGrid">Apply to Current</button>
               <button id="applyAllGrid">Apply to All</button>
@@ -531,7 +543,7 @@
               <label for="annoLabelBackgroundColor">Background Color</label>
             </div>
             <div>
-              <input type="number" id="annoLabelBackgroundOpacity" value="0.5" min="0" max="1"/>
+              <input type="number" class="wide-number-input" id="annoLabelBackgroundOpacity" value="0.5" min="0" max="1"/>
               <label for="annoLabelBackgroundOpacity">Background Opacity</label>
             </div>
             <div>
@@ -545,7 +557,7 @@
               <label for="lineWeight">Line Weight</label>
             </div>
             <div>
-              <input type="number" id="lineOpacity" placeholder="1" maxlength="3" value="1" min="0" max="1"/>
+              <input type="number" class="wide-number-input" id="lineOpacity" placeholder="1" maxlength="3" value="1" min="0" max="1"/>
               <label for="lineOpacity">Line Opacity</label>
             </div>
             <div>
@@ -571,7 +583,7 @@
               <label for="fillColor">Fill Color</label>
             </div>
             <div>
-              <input type="number" id="fillOpacity" placeholder="1" maxlength="3" value="0" min="0" max="1"/>
+              <input type="number" class="wide-number-input" id="fillOpacity" placeholder="1" maxlength="3" value="0" min="0" max="1"/>
               <label for="fillOpacity">Fill Opacity</label>
             </div>
 
@@ -665,7 +677,7 @@
               <label for="circleLineWeight">Line Weight</label>
             </div>
             <div>
-              <input type="number" id="circleLineOpacity" placeholder="1" maxlength="3" value="1" min="0" max="1"/>
+              <input type="number" class="wide-number-input" id="circleLineOpacity" placeholder="1" maxlength="3" value="1" min="0" max="1"/>
               <label for="circleLineOpacity">Line Opacity</label>
             </div>
             <div>
@@ -685,7 +697,7 @@
               <label for="circleFillColor">Fill Color</label>
             </div>
             <div>
-              <input type="number" id="circleFillOpacity" placeholder="1" maxlength="3" value="0" min="0" max="1"/>
+              <input type="number" class="wide-number-input" id="circleFillOpacity" placeholder="1" maxlength="3" value="0" min="0" max="1"/>
               <label for="circleFillOpacity">Fill Opacity</label>
             </div>
           </div>

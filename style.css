@@ -224,11 +224,6 @@ html {
   cursor: pointer;
 }
 
-/* Active state */
-#info-button.active {
-  background-color: darkred; /* Color when active */
-}
-
 #tooltip-desc {
   position: absolute;
   background-color: #333;
@@ -686,7 +681,7 @@ input[type="range"] {
   position: absolute;
   top: 50px;
   left: 50px;
-  width: 200px;
+  width: 220px;
   padding: 10px;
   border: 1px solid #000000;
   border-radius: 5px;
@@ -880,4 +875,11 @@ input[type="range"] {
   float: right;
   font-size: 20px;
   cursor: pointer;
+}
+
+.wide-number-input {
+  width: 35px;
+  min-width: 35px;
+  box-sizing: content-box;
+  flex-shrink: 0;
 }

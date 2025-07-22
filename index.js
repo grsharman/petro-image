@@ -1354,26 +1354,53 @@ function applyCurrentGrid(id, changeLabel = false) {
   const labelFontSize = Number(
     document.getElementById("gridLabelFontSize").value
   );
+  const labelFontSizeAfter = Number(
+    document.getElementById("gridLabelFontSizeAfter").value
+  );
   const labelFontColor = document.getElementById("gridLabelFontColor").value;
+  const labelFontColorAfter = document.getElementById(
+    "gridLabelFontColorAfter"
+  ).value;
   const labelBackgroundColor = document.getElementById(
     "gridLabelBackgroundColor"
+  ).value;
+  const labelBackgroundColorAfter = document.getElementById(
+    "gridLabelBackgroundColorAfter"
   ).value;
   const labelBackgroundOpacity = Number(
     document.getElementById("gridLabelBackgroundOpacity").value
   );
+  const labelBackgroundOpacityAfter = Number(
+    document.getElementById("gridLabelBackgroundOpacityAfter").value
+  );
   const lineWeight = Number(document.getElementById("gridLineWeight").value);
+  const lineWeightAfter = Number(
+    document.getElementById("gridLineWeightAfter").value
+  );
   const lineColor = document.getElementById("gridLineColor").value;
+  const lineColorAfter = document.getElementById("gridLineColorAfter").value;
   const lineOpacity = Number(document.getElementById("gridLineOpacity").value);
+  const lineOpacityAfter = Number(
+    document.getElementById("gridLineOpacityAfter").value
+  );
   const uuid = countJSON.features[id - 1].properties.uuid;
   const type = countJSON.features[id - 1].geometry.type;
   if (type === "Point") {
     if (changeLabel) {
       countJSON.features[id - 1].properties.labelFontSize = labelFontSize;
+      countJSON.features[id - 1].properties.labelFontSizeAfter =
+        labelFontSizeAfter;
       countJSON.features[id - 1].properties.labelFontColor = labelFontColor;
+      countJSON.features[id - 1].properties.labelFontColorAfter =
+        labelFontColorAfter;
       countJSON.features[id - 1].properties.labelBackgroundColor =
         labelBackgroundColor;
+      countJSON.features[id - 1].properties.labelBackgroundColorAfter =
+        labelBackgroundColorAfter;
       countJSON.features[id - 1].properties.labelBackgroundOpacity =
         labelBackgroundOpacity;
+      countJSON.features[id - 1].properties.labelBackgroundOpacityAfter =
+        labelBackgroundOpacityAfter;
       updateText(
         uuid,
         "grid",
@@ -1385,8 +1412,11 @@ function applyCurrentGrid(id, changeLabel = false) {
       );
     } else {
       countJSON.features[id - 1].properties.lineWeight = lineWeight;
+      countJSON.features[id - 1].properties.lineWeightAfter = lineWeightAfter;
       countJSON.features[id - 1].properties.lineColor = lineColor;
+      countJSON.features[id - 1].properties.lineColorAfter = lineColorAfter;
       countJSON.features[id - 1].properties.lineOpacity = lineOpacity;
+      countJSON.features[id - 1].properties.lineOpacityAfter = lineOpacityAfter;
       updateCrosshair(uuid, "grid", lineColor, lineWeight, lineOpacity);
     }
   } else {
@@ -1407,7 +1437,9 @@ document
   .getElementById("applyCurrentGridLabel")
   .addEventListener("click", function () {
     const id = parseInt(document.getElementById("count-id").value);
+    const uuid = countJSON.features[id - 1].properties.uuid;
     applyCurrentGrid(id, true);
+    applyFormattingAfterCount(countJSON, uuid, "text");
   });
 
 // Apply all annotations text label style
@@ -1434,6 +1466,8 @@ document
     );
     for (let i = 0; i < gridIds.length; i++) {
       applyCurrentGrid(gridIds[i], true);
+      const uuid = countJSON.features[gridIds[i] - 1].properties.uuid;
+      applyFormattingAfterCount(countJSON, uuid, "text");
     }
   });
 
@@ -1450,7 +1484,9 @@ document
   .getElementById("applyCurrentGrid")
   .addEventListener("click", function () {
     const id = parseInt(document.getElementById("count-id").value);
+    const uuid = countJSON.features[id - 1].properties.uuid;
     applyCurrentGrid(id, false);
+    applyFormattingAfterCount(countJSON, uuid, "point");
   });
 
 // Apply all annotations feature style
@@ -1473,6 +1509,8 @@ document.getElementById("applyAllGrid").addEventListener("click", function () {
   );
   for (let i = 0; i < gridIds.length; i++) {
     applyCurrentGrid(gridIds[i], false);
+    const uuid = countJSON.features[gridIds[i] - 1].properties.uuid;
+    applyFormattingAfterCount(countJSON, uuid, "point");
   }
 });
 
@@ -3219,6 +3257,7 @@ function loadCounts(geoJSONData) {
   enableCountButtons();
   populateDropdown(); // Repopulate dropdown for filtering
   populateFilterDropdown(); // Repopulate filter dropdown
+  applyFormattingAfterCountAll(countJSON, "both");
 }
 
 // Helper functions for specific geometry types
@@ -3776,10 +3815,6 @@ document
     }
   });
 
-// TODO: Currently adding more counts results in erasing the existing
-// counts. It would be better if there were a way of changing the point counts
-// without changing modifying the underlying count data. This way more points
-// count be added on the fly without having to mess with CSV file.
 const applyGridSettings = () => {
   clearGrid();
 
@@ -4185,6 +4220,91 @@ document
 //// Point counting functionality ////////
 //////////////////////////////////////////
 
+function applyFormattingAfterCountAll(countJSON, what = "both") {
+  // Loop through all features in the countJSON
+  countJSON.features.forEach((feature) => {
+    const props = feature.properties;
+    const uuid = props.uuid;
+    applyFormattingAfterCount(countJSON, uuid, what);
+  });
+}
+
+function applyFormattingAfterCount(countJSON, uuid, what = "both") {
+  const feature = countJSON.features.find((f) => f.properties.uuid === uuid);
+  if (!feature) {
+    console.warn(`No feature found with id: ${id}`);
+    return;
+  }
+
+  const props = feature.properties;
+
+  // Mapping of property names to corresponding HTML element IDs
+  const formattingMap = {
+    labelFontSizeAfter: "gridLabelFontSizeAfter",
+    labelFontColorAfter: "gridLabelFontColorAfter",
+    labelBackgroundColorAfter: "gridLabelBackgroundColorAfter",
+    labelBackgroundOpacityAfter: "gridLabelBackgroundOpacityAfter",
+    lineWeightAfter: "gridLineWeightAfter",
+    lineColorAfter: "gridLineColorAfter",
+    lineOpacityAfter: "gridLineOpacityAfter",
+  };
+
+  const useAfter = props.id && props.id.trim() !== "";
+
+  // If useAfter, assign After values if missing
+  if (useAfter) {
+    for (const [key, htmlId] of Object.entries(formattingMap)) {
+      if (!props.hasOwnProperty(key)) {
+        const htmlElement = document.getElementById(htmlId);
+        if (htmlElement) {
+          props[key] = htmlElement.value;
+        }
+      }
+    }
+  }
+
+  // Choose appropriate values to use — either After or original
+  const labelFontSize = useAfter
+    ? props.labelFontSizeAfter
+    : props.labelFontSize;
+  const labelFontColor = useAfter
+    ? props.labelFontColorAfter
+    : props.labelFontColor;
+  const labelBackgroundColor = useAfter
+    ? props.labelBackgroundColorAfter
+    : props.labelBackgroundColor;
+  const labelBackgroundOpacity = useAfter
+    ? props.labelBackgroundOpacityAfter
+    : props.labelBackgroundOpacity;
+  const lineColor = useAfter ? props.lineColorAfter : props.lineColor;
+  const lineWeight = useAfter ? props.lineWeightAfter : props.lineWeight;
+  const lineOpacity = useAfter ? props.lineOpacityAfter : props.lineOpacity;
+
+  console.log(
+    uuid,
+    labelFontColor,
+    labelFontSize,
+    labelBackgroundColor,
+    labelBackgroundOpacity
+  );
+
+  if (what === "both" || what === "text") {
+    updateText(
+      uuid,
+      "grid",
+      props.label,
+      labelFontColor,
+      labelFontSize,
+      labelBackgroundColor,
+      labelBackgroundOpacity
+    );
+  }
+
+  if (what === "both" || what === "point") {
+    updateCrosshair(uuid, "grid", lineColor, lineWeight, lineOpacity);
+  }
+}
+
 document.getElementById("count-first").addEventListener("click", function () {
   const input = document.getElementById("count-id");
   input.value = 1;
@@ -4276,6 +4396,7 @@ document.addEventListener("keydown", function (event) {
       imagePoint[1]
     );
     // const overlay = viewer.getOverlayById(`grid-label-${gridInput.value - 1}`);
+
     goToPoint(viewportPoint.x, viewportPoint.y);
     inputSampleLabelFromOverlay();
     console.log("Enter clicked");
@@ -4296,11 +4417,14 @@ document.addEventListener("keydown", function (event) {
 document.addEventListener("keydown", function (event) {
   // Check for Enter key in count-text field
   const textInput = document.getElementById("count-text");
+  const id = document.getElementById("count-id");
   // const gridInput = document.getElementById('count-id'); // Placeholder for changing color of crosshairs
   if (event.code === "Enter" && document.activeElement === textInput) {
     event.preventDefault(); // Prevent any default action for Enter key
     inputSampleLabel();
     // updateGridCrosshair(gridInput.value); // Placeholder for changing color of crosshairs
+    const uuid = countJSON.features[parseInt(id.value) - 1].properties["uuid"];
+    applyFormattingAfterCount(countJSON, uuid, "both");
   }
 });
 
@@ -4492,7 +4616,6 @@ document
     document.getElementById("apply-grid-settings").disabled = true;
     // document.getElementById("restore-grid-settings").disabled = true;
     document.getElementById("clear-grid").disabled = false;
-    // TODO: Fix the issue where filter dropdown is not populated after loading a CSV
     populateFilterDropdown();
     getSelectedLabels();
   });
@@ -4580,6 +4703,7 @@ function processCSVData(data) {
       properties.lineOpacity
     );
   });
+  applyFormattingAfterCountAll(countJSON, "both");
 }
 
 // Function to count labels dynamically
