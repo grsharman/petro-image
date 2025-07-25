@@ -883,3 +883,53 @@ input[type="range"] {
   box-sizing: content-box;
   flex-shrink: 0;
 }
+
+.setting-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0px 0px;
+}
+
+.setting-row input[type="number"],
+.setting-row input[type="color"] {
+  width: 35px;
+}
+
+.setting-row label {
+  margin-left: 4px;
+  white-space: nowrap;
+}
+
+.button-group {
+  margin-left: auto;
+  /* display: flex; */
+  gap: 4px;
+  transform: translateY(-8px); /* need to get box in right position */
+}
+
+.apply-current-btn {
+  /* border: 1px solid #ccc; */
+  border-radius: 4px;
+  padding: 0;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 20px;
+  width: 20px;
+  vertical-align: middle;
+  box-sizing: border-box;
+  /* transform: translateY(-8px); need to get box in right position */
+}
+
+.apply-current-btn:hover {
+  background-color: #f0f0f0;
+}
+
+.apply-current-btn svg {
+  width: 100%; /* 15px */
+  height: 100%; /* 15px */
+  display: block;
+  stroke: black;
+}

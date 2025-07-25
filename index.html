@@ -260,26 +260,99 @@
           <!-- Hidden Settings Menu for Grid-->
           <div id="gridSettingsMenu" class="hiddenSettingsMenu">
             <h4>Label font</h4>
-            <div>
+            <div class="setting-row">
               <input type="number" id="gridLabelFontSize" placeholder="16" maxlength="3" value="16" min="1"/>
               <input type="number" id="gridLabelFontSizeAfter" placeholder="16" maxlength="3" value="16" min="1"/>
               <label for="gridLabelFontSize">Size</label>
+              <div class="button-group">
+                <button class="apply-current-btn" onclick="applyCurrentGridLabel('gridLabelFontSize')">
+                   <svg width="10px" height="10px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M8 12L13.25 17L22 7"
+                      stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+                <button class="apply-current-btn" onclick="applyAllGridLabel('gridLabelFontSize')">
+                  <svg width="15px" height="15px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M2 12L7.25 17C7.25 17 8.66939 15.3778 9.875 14"
+                          stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M8 12L13.25 17L22 7"
+                          stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M16 7L12.5 11"
+                          stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+              </div>
             </div>
-            <div>
+
+            <div class="setting-row">
               <input type="color" id="gridLabelFontColor" value="#FFFFFF"/>
               <input type="color" id="gridLabelFontColorAfter" value="#FFFFFF"/>
               <label for="gridLabelFontColor">Color</label>
+              <div class="button-group">
+                <button class="apply-current-btn" onclick="applyCurrentGridLabel('gridLabelFontColor')">
+                   <svg width="15px" height="15px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M8 12L13.25 17L22 7"
+                      stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+                <button class="apply-current-btn" onclick="applyAllGridLabel('gridLabelFontColor')">
+                  <svg width="10px" height="10px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M2 12L7.25 17C7.25 17 8.66939 15.3778 9.875 14"
+                          stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M8 12L13.25 17L22 7"
+                          stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M16 7L12.5 11"
+                          stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+              </div>
             </div>
             <h4>Label background</h4>
-            <div>
+            <div class="setting-row">
               <input type="color" id="gridLabelBackgroundColor" value="#000000"/>
               <input type="color" id="gridLabelBackgroundColorAfter" value="#000000"/>
               <label for="gridLabelBackgroundColor">Color</label>
+              <div class="button-group">
+                <button class="apply-current-btn" onclick="applyCurrentGridLabel('gridLabelBackgroundColor')">
+                   <svg width="15px" height="15px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M8 12L13.25 17L22 7"
+                      stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+                <button class="apply-current-btn" onclick="applyAllGridLabel('gridLabelBackgroundColor')">
+                  <svg width="15px" height="15px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M2 12L7.25 17C7.25 17 8.66939 15.3778 9.875 14"
+                          stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M8 12L13.25 17L22 7"
+                          stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M16 7L12.5 11"
+                          stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+              </div>
             </div>
-            <div>
+            <div class="setting-row">
               <input type="number" class="wide-number-input" id="gridLabelBackgroundOpacity" value="0.5" min="0" max="1"/>
               <input type="number" class="wide-number-input" id="gridLabelBackgroundOpacityAfter" value="0.5" min="0" max="1"/>
               <label for="gridLabelBackgroundOpacity">Opacity</label>
+              <div class="button-group">
+                <button class="apply-current-btn" onclick="applyCurrentGridLabel('gridLabelBackgroundOpacity')">
+                   <svg width="15px" height="15px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M8 12L13.25 17L22 7"
+                      stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+                <button class="apply-current-btn" onclick="applyAllGridLabel('gridLabelBackgroundOpacity')">
+                  <svg width="15px" height="15px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M2 12L7.25 17C7.25 17 8.66939 15.3778 9.875 14"
+                          stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M8 12L13.25 17L22 7"
+                          stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M16 7L12.5 11"
+                          stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+              </div>
             </div>
             (Before/after point count)
             <div>
@@ -288,20 +361,74 @@
             </div>
             <hr />
             <h4>Crosshairs</h4>
-            <div>
+            <div class="setting-row">
               <input type="number" id="gridLineWeight" placeholder="2" maxlength="3" value="2" min="1" max="10"/>
               <input type="number" id="gridLineWeightAfter" placeholder="2" maxlength="3" value="2" min="1" max="10"/>
               <label for="gridLineWeight">Weight</label>
+              <div class="button-group">
+                <button class="apply-current-btn" onclick="applyCurrentGridCrosshair('gridLineWeight')">
+                   <svg width="15px" height="15px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M8 12L13.25 17L22 7"
+                      stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+                <button class="apply-current-btn" onclick="applyAllGridCrosshair('gridLineWeight')">
+                  <svg width="15px" height="15px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M2 12L7.25 17C7.25 17 8.66939 15.3778 9.875 14"
+                          stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M8 12L13.25 17L22 7"
+                          stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M16 7L12.5 11"
+                          stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+              </div>
             </div>
-            <div>
+            <div class="setting-row">
               <input type="number" class="wide-number-input" id="gridLineOpacity" placeholder="1" maxlength="3" value="1" min="0" max="1"/>
               <input type="number" class="wide-number-input" id="gridLineOpacityAfter" placeholder="1" maxlength="3" value="1" min="0" max="1"/>
               <label for="gridLineOpacity">Opacity</label>
+              <div class="button-group">
+                <button class="apply-current-btn" onclick="applyCurrentGridCrosshair('gridLineOpacity')">
+                   <svg width="15px" height="15px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M8 12L13.25 17L22 7"
+                      stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+                <button class="apply-current-btn" onclick="applyAllGridCrosshair('gridLineOpacity')">
+                  <svg width="15px" height="15px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M2 12L7.25 17C7.25 17 8.66939 15.3778 9.875 14"
+                          stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M8 12L13.25 17L22 7"
+                          stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M16 7L12.5 11"
+                          stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+              </div>
             </div>
-            <div>
+            <div class="setting-row">
               <input type="color" id="gridLineColor" value="#ff0000"/>
               <input type="color" id="gridLineColorAfter" value="#008000"/>
               <label for="gridLineColorAfter">Color</label>
+              <div class="button-group">
+                <button class="apply-current-btn" onclick="applyCurrentGridCrosshair('gridLineColor')">
+                   <svg width="15px" height="15px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M8 12L13.25 17L22 7"
+                      stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+                <button class="apply-current-btn" onclick="applyAllGridCrosshair('gridLineColor')">
+                  <svg width="15px" height="15px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M2 12L7.25 17C7.25 17 8.66939 15.3778 9.875 14"
+                          stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M8 12L13.25 17L22 7"
+                          stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M16 7L12.5 11"
+                          stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+              </div>
             </div>
             <div>
             </div>
@@ -530,21 +657,95 @@
           <!-- Hidden Settings Menu -->
           <div id="annoSettingsMenu" class="hiddenSettingsMenu">
             <h4>Label</h4>
-            <div>
+            <h4>Font</h4>
+            <div class="setting-row">
               <input type="number" id="annoLabelFontSize" placeholder="16" maxlength="3" value="16" min="1"/>
-              <label for="annoLabelFontSize">Font Size</label>
+              <label for="annoLabelFontSize">Size</label>
+              <div class="button-group">
+                <button class="apply-current-btn" onclick="applyCurrentAnnoLabel('annoLabelFontSize')">
+                   <svg width="15px" height="15px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M8 12L13.25 17L22 7"
+                      stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+                <button class="apply-current-btn" onclick="applyAllAnnoLabel('annoLabelFontSize')">
+                  <svg width="15px" height="15px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M2 12L7.25 17C7.25 17 8.66939 15.3778 9.875 14"
+                          stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M8 12L13.25 17L22 7"
+                          stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M16 7L12.5 11"
+                          stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+              </div>
             </div>
-            <div>
+            <div class="setting-row">
               <input type="color" id="annoLabelFontColor" value="#FFFFFF"/>
-              <label for="annoLabelFontColor">Font Color</label>
+              <label for="annoLabelFontColor">Color</label>
+              <div class="button-group">
+                <button class="apply-current-btn" onclick="applyCurrentAnnoLabel('annoLabelFontColor')">
+                   <svg width="15px" height="15px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M8 12L13.25 17L22 7"
+                      stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+                <button class="apply-current-btn" onclick="applyAllAnnoLabel('annoLabelFontColor')">
+                  <svg width="15px" height="15px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M2 12L7.25 17C7.25 17 8.66939 15.3778 9.875 14"
+                          stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M8 12L13.25 17L22 7"
+                          stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M16 7L12.5 11"
+                          stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+              </div>
             </div>
-            <div>
+            <h4>Label Background</h4>
+            <div class="setting-row">
               <input type="color" id="annoLabelBackgroundColor" value="#000000"/>
-              <label for="annoLabelBackgroundColor">Background Color</label>
+              <label for="annoLabelBackgroundColor">Color</label>
+              <div class="button-group">
+                <button class="apply-current-btn" onclick="applyCurrentAnnoLabel('annoLabelBackgroundColor')">
+                   <svg width="15px" height="15px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M8 12L13.25 17L22 7"
+                      stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+                <button class="apply-current-btn" onclick="applyAllAnnoLabel('annoLabelBackgroundColor')">
+                  <svg width="15px" height="15px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M2 12L7.25 17C7.25 17 8.66939 15.3778 9.875 14"
+                          stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M8 12L13.25 17L22 7"
+                          stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M16 7L12.5 11"
+                          stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+              </div>
             </div>
-            <div>
+            <div class="setting-row">
               <input type="number" class="wide-number-input" id="annoLabelBackgroundOpacity" value="0.5" min="0" max="1"/>
-              <label for="annoLabelBackgroundOpacity">Background Opacity</label>
+              <label for="annoLabelBackgroundOpacity">Opacity</label>
+              <div class="button-group">
+                <button class="apply-current-btn" onclick="applyCurrentAnnoLabel('annoLabelBackgroundOpacity')">
+                   <svg width="15px" height="15px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M8 12L13.25 17L22 7"
+                      stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+                <button class="apply-current-btn" onclick="applyAllAnnoLabel('annoLabelBackgroundOpacity')">
+                  <svg width="15px" height="15px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M2 12L7.25 17C7.25 17 8.66939 15.3778 9.875 14"
+                          stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M8 12L13.25 17L22 7"
+                          stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M16 7L12.5 11"
+                          stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+              </div>
             </div>
             <div>
               <button id="applyCurrentAnnoLabel">Apply to Current</button>
@@ -552,19 +753,74 @@
             </div>
             <hr />
             <h4>Feature</h4>
-            <div>
+            <h4>Line</h4>
+            <div class="setting-row">
               <input type="number" id="lineWeight" placeholder="2" maxlength="3" value="2" min="1" max="10"/>
-              <label for="lineWeight">Line Weight</label>
+              <label for="lineWeight">Weight</label>
+              <div class="button-group">
+                <button class="apply-current-btn" onclick="applyCurrentAnnoFeature('lineWeight')">
+                   <svg width="15px" height="15px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M8 12L13.25 17L22 7"
+                      stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+                <button class="apply-current-btn" onclick="applyAllAnnoFeature('lineWeight')">
+                  <svg width="15px" height="15px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M2 12L7.25 17C7.25 17 8.66939 15.3778 9.875 14"
+                          stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M8 12L13.25 17L22 7"
+                          stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M16 7L12.5 11"
+                          stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+              </div>
             </div>
-            <div>
+            <div class="setting-row">
               <input type="number" class="wide-number-input" id="lineOpacity" placeholder="1" maxlength="3" value="1" min="0" max="1"/>
-              <label for="lineOpacity">Line Opacity</label>
+              <label for="lineOpacity">Opacity</label>
+              <div class="button-group">
+                <button class="apply-current-btn" onclick="applyCurrentAnnoFeature('lineOpacity')">
+                   <svg width="15px" height="15px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M8 12L13.25 17L22 7"
+                      stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+                <button class="apply-current-btn" onclick="applyAllAnnoFeature('lineOpacity')">
+                  <svg width="15px" height="15px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M2 12L7.25 17C7.25 17 8.66939 15.3778 9.875 14"
+                          stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M8 12L13.25 17L22 7"
+                          stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M16 7L12.5 11"
+                          stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+              </div>
             </div>
-            <div>
+            <div class="setting-row">
               <input type="color" id="lineColor" value="#008000"/>
-              <label for="lineColor">Line Color</label>
+              <label for="lineColor">Color</label>
+              <div class="button-group">
+                <button class="apply-current-btn" onclick="applyCurrentAnnoFeature('lineColor')">
+                   <svg width="15px" height="15px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M8 12L13.25 17L22 7"
+                      stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+                <button class="apply-current-btn" onclick="applyAllAnnoFeature('lineColor')">
+                  <svg width="15px" height="15px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M2 12L7.25 17C7.25 17 8.66939 15.3778 9.875 14"
+                          stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M8 12L13.25 17L22 7"
+                          stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M16 7L12.5 11"
+                          stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+              </div>
             </div>
-            <div>
+            <div class="setting-row">
               <select id="lineStyle">
                 <option value="solid">Solid</option>
                 <option value="dashed">Dashed</option>
@@ -576,15 +832,70 @@
                 <option value="outset">Outset</option> -->
                 <!-- <option value="none">None</option> -->
               </select>
-              <label for="lineStyle">Line Style</label>
+              <label for="lineStyle">Style</label>
+              <div class="button-group">
+                <button class="apply-current-btn" onclick="applyCurrentAnnoFeature('lineStyle')">
+                   <svg width="15px" height="15px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M8 12L13.25 17L22 7"
+                      stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+                <button class="apply-current-btn" onclick="applyAllAnnoFeature('lineStyle')">
+                  <svg width="15px" height="15px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M2 12L7.25 17C7.25 17 8.66939 15.3778 9.875 14"
+                          stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M8 12L13.25 17L22 7"
+                          stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M16 7L12.5 11"
+                          stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+              </div>
             </div>
-            <div>
+            <h4>Fill</h4>
+            <div class="setting-row">
               <input type="color" id="fillColor" value="#FFFFFF"/>
-              <label for="fillColor">Fill Color</label>
+              <label for="fillColor">Color</label>
+              <div class="button-group">
+                <button class="apply-current-btn" onclick="applyCurrentAnnoFeature('fillColor')">
+                   <svg width="15px" height="15px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M8 12L13.25 17L22 7"
+                      stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+                <button class="apply-current-btn" onclick="applyAllAnnoFeature('fillColor')">
+                  <svg width="15px" height="15px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M2 12L7.25 17C7.25 17 8.66939 15.3778 9.875 14"
+                          stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M8 12L13.25 17L22 7"
+                          stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M16 7L12.5 11"
+                          stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+              </div>
             </div>
-            <div>
+            <div class="setting-row">
               <input type="number" class="wide-number-input" id="fillOpacity" placeholder="1" maxlength="3" value="0" min="0" max="1"/>
-              <label for="fillOpacity">Fill Opacity</label>
+              <label for="fillOpacity">Opacity</label>
+              <div class="button-group">
+                <button class="apply-current-btn" onclick="applyCurrentAnnoFeature('fillOpacity')">
+                   <svg width="15px" height="15px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M8 12L13.25 17L22 7"
+                      stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+                <button class="apply-current-btn" onclick="applyAllAnnoFeature('fillOpacity')">
+                  <svg width="15px" height="15px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M2 12L7.25 17C7.25 17 8.66939 15.3778 9.875 14"
+                          stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M8 12L13.25 17L22 7"
+                          stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M16 7L12.5 11"
+                          stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+              </div>
             </div>
 
             <div>

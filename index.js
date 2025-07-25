@@ -2639,7 +2639,10 @@ function drawPolygon(ctx, coordinates, image, feature) {
   });
 
   // Use "evenodd" fill rule to create the donut effect
-  if (feature.properties.fillColor && feature.properties.fillOpacity) {
+  if (
+    feature.properties.hasOwnProperty("fillColor") &&
+    feature.properties.hasOwnProperty("fillOpacity")
+  ) {
     const fillColorToPlot = applyOpacityToColor(
       feature.properties.fillColor,
       feature.properties.fillOpacity
@@ -4215,6 +4218,297 @@ function removeAoiRectangle() {
 document
   .getElementById("show-aoi")
   .addEventListener("change", updateAoiRectangle);
+
+// Functionality for applying specific formatting for annotations
+function applyAllAnnoLabel(idBase) {
+  // Loop through all features in the annoJSON
+  annoJSON.features.forEach((feature) => {
+    const props = feature.properties;
+    const uuid = props.uuid;
+    applyAnnoLabel(idBase, uuid);
+  });
+}
+
+// Functionality for applying specific formatting for annotations
+function applyAllAnnoFeature(idBase) {
+  // Loop through all features in the annoJSON
+  annoJSON.features.forEach((feature) => {
+    const props = feature.properties;
+    const uuid = props.uuid;
+    applyAnnoFeature(idBase, uuid);
+  });
+}
+
+function applyCurrentAnnoLabel(idBase) {
+  const id = document.getElementById("anno-id").value;
+  const uuid = annoJSON.features[id - 1].properties.uuid;
+  applyAnnoLabel(idBase, uuid);
+}
+
+function applyCurrentAnnoFeature(idBase) {
+  const id = document.getElementById("anno-id").value;
+  const uuid = annoJSON.features[id - 1].properties.uuid;
+  applyAnnoFeature(idBase, uuid);
+}
+
+function applyAnnoLabel(idBase, uuid) {
+  const formattingMap = {
+    annoLabelFontSize: "labelFontSize",
+    annoLabelFontColor: "labelFontColor",
+    annoLabelBackgroundColor: "labelBackgroundColor",
+    annoLabelBackgroundOpacity: "labelBackgroundOpacity",
+  };
+
+  const feature = annoJSON.features.find((f) => f.properties.uuid === uuid);
+  const props = feature.properties;
+  const input = document.getElementById(idBase);
+  console.log("input", input.value);
+  feature.properties[formattingMap[idBase]] = input.value;
+
+  // Apply visual formatting immediately
+  if (idBase === "annoLabelFontSize") {
+    updateText(uuid, "anno", undefined, undefined, input.value);
+  } else if (idBase === "annoLabelFontColor") {
+    updateText(uuid, "anno", undefined, input.value);
+  } else if (idBase === "annoLabelBackgroundColor") {
+    // Need both backgroundColor and backgroundOpacity to apply background
+    const bgColor = input.value;
+    const bgOpacity = props["labelBackgroundOpacity"];
+    if (!bgOpacity) {
+      console.warn(
+        "Background opacity is not set, cannot apply background color."
+      );
+      return;
+    }
+    updateText(
+      uuid,
+      "anno",
+      undefined,
+      undefined,
+      undefined,
+      bgColor,
+      bgOpacity
+    );
+  } else if (idBase === "annoLabelBackgroundOpacity") {
+    // Need both backgroundColor and backgroundOpacity to apply background
+    const bgOpacity = input.value;
+    const bgColor = props["labelBackgroundColor"];
+    if (!bgColor) {
+      console.warn(
+        "Background color is not set, cannot apply background opacity."
+      );
+      return;
+    }
+
+    updateText(
+      uuid,
+      "anno",
+      undefined,
+      undefined,
+      undefined,
+      bgColor,
+      bgOpacity
+    );
+  }
+}
+
+function applyAnnoFeature(idBase, uuid) {
+  const feature = annoJSON.features.find((f) => f.properties.uuid === uuid);
+  const props = feature.properties;
+  const input = document.getElementById(idBase);
+  props[idBase] = input.value;
+  drawShape(polyCanvas, [annoJSON, annoJSONTemp]);
+}
+
+// Functionality for applying specific formatting for grid attributes
+function applyAllGridLabel(idBase) {
+  // Loop through all features in the countJSON
+  countJSON.features.forEach((feature) => {
+    const props = feature.properties;
+    const id = props.label;
+    applyGridLabel(idBase, id);
+  });
+}
+
+function applyAllGridCrosshair(idBase) {
+  // Loop through all features in the countJSON
+  countJSON.features.forEach((feature) => {
+    const props = feature.properties;
+    const id = props.label;
+    applyGridCrosshair(idBase, id);
+  });
+
+  const formattingMap = {
+    lineColor: "lineColor",
+    gridLabelFontColor: "labelFontColorAfter",
+    gridLabelBackgroundColor: "labelBackgroundColorAfter",
+    gridLabelBackgroundOpacity: "labelBackgroundOpacityAfter",
+  };
+}
+
+function applyCurrentGridLabel(idBase) {
+  const id = document.getElementById("count-id").value;
+  applyGridLabel(idBase, id);
+}
+
+function applyCurrentGridCrosshair(idBase) {
+  const id = document.getElementById("count-id").value;
+  applyGridCrosshair(idBase, id);
+}
+
+// Functionality for applying specific formatting for grid attributes
+function applyGridLabel(idBase, id) {
+  if (isNaN(id) || id < 1 || id > countJSON.features.length) {
+    console.warn("Invalid ID selected.");
+    return;
+  }
+
+  const feature = countJSON.features[id - 1];
+  const uuid = feature.properties.uuid;
+  const props = feature.properties;
+
+  const useAfter = props.id && props.id.trim() !== "";
+
+  let formattingMap;
+  if (useAfter) {
+    formattingMap = {
+      gridLabelFontSize: "labelFontSizeAfter",
+      gridLabelFontColor: "labelFontColorAfter",
+      gridLabelBackgroundColor: "labelBackgroundColorAfter",
+      gridLabelBackgroundOpacity: "labelBackgroundOpacityAfter",
+    };
+  } else {
+    formattingMap = {
+      gridLabelFontSize: "labelFontSize",
+      gridLabelFontColor: "labelFontColor",
+      gridLabelBackgroundColor: "labelBackgroundColor",
+      gridLabelBackgroundOpacity: "labelBackgroundOpacity",
+    };
+  }
+
+  let input;
+  if (useAfter) {
+    input = document.getElementById(idBase + "After");
+    feature.properties[formattingMap[idBase + "After"]] = input.value;
+  } else {
+    input = document.getElementById(idBase);
+    feature.properties[formattingMap[idBase]] = input.value;
+  }
+
+  if (!input) {
+    console.warn(`The element was not found: ${input}`);
+    return;
+  }
+
+  // Apply visual formatting immediately
+  if (idBase === "gridLabelFontSize") {
+    updateText(uuid, "grid", undefined, undefined, input.value);
+  } else if (idBase === "gridLabelFontColor") {
+    updateText(uuid, "grid", undefined, input.value);
+  } else if (idBase === "gridLabelBackgroundColor") {
+    // Need both backgroundColor and backgroundOpacity to apply background
+    const bgColor = input.value;
+    let bgOpacity;
+    if (useAfter) {
+      bgOpacity = props["labelBackgroundOpacityAfter"];
+    } else {
+      bgOpacity = props["labelBackgroundOpacity"];
+    }
+    if (!bgOpacity) {
+      console.warn(
+        "Background opacity is not set, cannot apply background color."
+      );
+      return;
+    }
+
+    updateText(
+      uuid,
+      "grid",
+      undefined,
+      undefined,
+      undefined,
+      bgColor,
+      bgOpacity
+    );
+  } else if (idBase === "gridLabelBackgroundOpacity") {
+    // Need both backgroundColor and backgroundOpacity to apply background
+    const bgOpacity = input.value;
+    let bgColor;
+    if (useAfter) {
+      bgColor = props["labelBackgroundColorAfter"];
+    } else {
+      bgColor = props["labelBackgroundColor"];
+    }
+    if (!bgColor) {
+      console.warn(
+        "Background color is not set, cannot apply background opacity."
+      );
+      return;
+    }
+
+    updateText(
+      uuid,
+      "grid",
+      undefined,
+      undefined,
+      undefined,
+      bgColor,
+      bgOpacity
+    );
+  }
+}
+
+// Functionality for applying specific formatting for grid attributes
+function applyGridCrosshair(idBase, id) {
+  if (isNaN(id) || id < 1 || id > countJSON.features.length) {
+    console.warn("Invalid ID selected.");
+    return;
+  }
+
+  const feature = countJSON.features[id - 1];
+  const uuid = feature.properties.uuid;
+  const props = feature.properties;
+
+  const useAfter = props.id && props.id.trim() !== "";
+
+  let formattingMap;
+  if (useAfter) {
+    formattingMap = {
+      gridLineWeight: "lineWeightAfter",
+      gridLineColor: "lineColorAfter",
+      gridLineOpacity: "lineOpacityAfter",
+    };
+  } else {
+    formattingMap = {
+      gridLineWeight: "lineWeight",
+      gridLineColor: "lineColor",
+      gridLineOpacity: "lineOpacity",
+    };
+  }
+
+  let input;
+  if (useAfter) {
+    input = document.getElementById(idBase + "After");
+    feature.properties[formattingMap[idBase + "After"]] = input.value;
+  } else {
+    input = document.getElementById(idBase);
+    feature.properties[formattingMap[idBase]] = input.value;
+  }
+
+  if (!input) {
+    console.warn(`The element was not found: ${input}`);
+    return;
+  }
+
+  // Apply visual formatting immediately
+  if (idBase === "gridLineWeight") {
+    updateCrosshair(uuid, "grid", undefined, input.value, undefined);
+  } else if (idBase === "gridLineColor") {
+    updateCrosshair(uuid, "grid", input.value, undefined, undefined);
+  } else if (idBase === "gridLineOpacity") {
+    updateCrosshair(uuid, "grid", undefined, undefined, input.value);
+  }
+}
 
 //////////////////////////////////////////
 //// Point counting functionality ////////
