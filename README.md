@@ -18,11 +18,11 @@ By [Glenn R. Sharman](https://github.com/grsharman) and [Jonathan P. Sharman](ht
 
 petro-image is a web-hosted tool for viewing and analyzing digital microsopic images using the [OpenSeadragon](https://openseadragon.github.io/) JavaScript library and the [Deep Zoom](<https://learn.microsoft.com/en-us/previous-versions/windows/silverlight/dotnet-windows-silverlight/cc645077(v=vs.95)?redirectedfrom=MSDN>) file format. Vector drawings follow the [GeoJSON file standard](https://geojson.org/), where x, y coordinates are in image dimensions (pixels).
 
-For a given specimen, petro-image allows up to four images to be displayed simultaneously, with the boundary between the images dynamically following the user's curser (inspired by [this example](https://rooneyt.msu.domains/Demonstration_1.html)). Alternatively, images may be superimposed and opacity adjusted such multiple layers are visible simultaneously.
+For a given specimen, petro-image allows up to four images to be displayed simultaneously, with the boundary between the images dynamically following the user's curser (inspired by [this example](https://rooneyt.msu.domains/Demonstration_1.html)). Alternatively, images may be superimposed and opacity adjusted such that multiple layers are visible simultaneously.
 
 ![Divide Images demonstration](assets/divide_images.gif)
 
-petro-image include basic functions for [measuring](#measure), [annotating](#annotate), [gridding](#grid), and [point counting](#count).
+petro-image includes basic functions for [measuring](#measure), [annotating](#annotate), [gridding](#grid), and [point counting](#count).
 
 At present, petro-image mostly hosts petrographic thin sections of sediment and sedimentary rock. If you would like to contribute specimens to the petro-image library or have suggestions for improvements, please contact Dr. Glenn Sharman at gsharman@uark.edu.
 
@@ -200,8 +200,8 @@ To load your own images, you must format a JSON file as shown below.
     "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
     "tileSets": [
       "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0004 01 2.5x PPL00 final.dzi",
-    "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0004 01 2.5x XPL00 final.dzi",
-    "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0004 01 2.5x XPL30 final.dzi"
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0004 01 2.5x XPL00 final.dzi",
+      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0004 01 2.5x XPL30 final.dzi"
     ],
     "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/SD0004_medium_all_polygons_by_rect.geojson"
   }
