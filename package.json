@@ -1,0 +1,24 @@
+{
+  "name": "petro-image",
+  "version": "0.1.0",
+  "description": "Deep zoom petrographic images with OpenSeaDragon",
+  "type": "module",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/grsharman/petro-image.git"
+  },
+  "author": "Glenn R. Sharman and Jonathan P. Sharman",
+  "license": "GPL-3.0-only",
+  "bugs": {
+    "url": "https://github.com/grsharman/petro-image/issues"
+  },
+  "homepage": "https://github.com/grsharman/petro-image",
+  "devDependencies": {
+    "electron": "^37.2.4"
+  }
+}
