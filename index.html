@@ -119,6 +119,74 @@
           <label style="width: 130px;">Sample JSON File:</label>
           <label for="load-sample-JSON" class="file-label">Import</label>
           <input type="file" id="load-sample-JSON" class="file-input" />
+          <hr />
+          <h4>Scalebar Options</h4>
+          <div>
+            <select id="scalebarType">
+              <option value="None">None</option>
+              <option value="Map" selected>Map</option>
+              <option value="Microscopy">Microscopy</option>
+            </select>
+            <label for="scalebarType">Type</label>
+          </div>
+          <div>
+            <select id="scalebarUnitSystem" title="Scalebar Unit System">
+              <option value="Metric" selected>Metric</option>
+              <option value="Imperial">Imperial</option>
+            </select>
+            <label for="scalebarUnitSystem">Unit System</label>
+          </div>
+          <div>
+            <select id="scalebarLocation" title="Scalebar Location">
+              <option value="None">None</option>
+              <option value="Top left">Top left</option>
+              <option value="Top right">Top right</option>
+              <option value="Bottom right">Bottom right</option>
+              <option value="Bottom left" selected>Bottom left</option>
+            </select>
+            <label for="scalebarLocation">Location</label>
+          </div>
+          <div>
+            <input type="number" id="scalebarMinWidth" class="wide-number-input" placeholder="75" maxlength="3" value="75" min="1"/>
+            <label for="scalebarMinWidth">Minimum Width (px)</label>
+          </div>
+
+          <div>
+            <input type="number" id="scalebarXOffset" class="wide-number-input" placeholder="10" maxlength="3" value="10" min="0"/>
+            <label for="scalebarXOffset">xOffset (px)</label>
+          </div>
+          <div>
+            <input type="number" id="scalebarYOffset" class="wide-number-input" placeholder="10" maxlength="3" value="10" min="0"/>
+            <label for="scalebarYOffset">yOffset (px)</label>
+          </div>
+          <div>
+            <input type="color" id="scalebarColor" value="#000000"/>
+            <label for="scalebarColor">Color</label>
+          </div>
+          <div>
+            <input type="color" id="scalebarFontColor" value="#000000"/>
+            <label for="scalebarFontColor">Font Color</label>
+          </div>
+          <div>
+            <input type="color" id="scalebarBackgroundColor" value="#ffffff"/>
+            <label for="scalebarBackgroundColor">Background Color</label>
+          </div>
+          <div>
+            <input type="number" id="scalebarBackgroundOpacity" class="wide-number-input" placeholder="0.5" maxlength="3" value="0.5" min="0" max="1"/>
+            <label for="scalebarBackgroundOpacity">Background Opacity</label>
+          </div>
+          <div>
+            <select id="scalebarFontSize" title="Scalebar Font Size">
+              <option value="small">small</option>
+              <option value="medium" selected>medium</option>
+              <option value="large">large</option>
+            </select>
+            <label for="scalebarFontSize">Font Size</label>
+          </div>
+          <div>
+            <input type="number" id="scalebarLineWeight" class="wide-number-input" placeholder="2" maxlength="3" value="2" min="0"/>
+            <label for="scalebarLineWeight">Scalebar Line Weight</label>
+          </div>
         </div>
       </div>
       <div class="dropdown-container">

@@ -519,20 +519,91 @@ window.addEventListener("beforeunload", (event) => {
 // Initialize the scalebar, except for pixelsPerMeter, which depends on the grid
 // settings.
 function addScalebar(pixelsPerMeter) {
+  const locationMapper = {
+    "Top left": OpenSeadragon.ScalebarLocation.TOP_LEFT,
+    "Top right": OpenSeadragon.ScalebarLocation.TOP_RIGHT,
+    "Bottom left": OpenSeadragon.ScalebarLocation.BOTTOM_LEFT,
+    "Bottom right": OpenSeadragon.ScalebarLocation.BOTTOM_RIGHT,
+  };
+
+  const typeMapper = {
+    None: OpenSeadragon.ScalebarType.NONE,
+    Map: OpenSeadragon.ScalebarType.MAP,
+    Microscopy: OpenSeadragon.ScalebarType.MICROSCOPY,
+  };
+
+  const scalebarType = document.getElementById("scalebarType").value;
+  const scalebarUnitSystem =
+    document.getElementById("scalebarUnitSystem").value;
+  const scalebarMinWidth =
+    document.getElementById("scalebarMinWidth").value || 75;
+  const scalebarLocation = document.getElementById("scalebarLocation").value;
+  const scalebarXOffset =
+    document.getElementById("scalebarXOffset").value || 10;
+  const scalebarYOffset =
+    document.getElementById("scalebarYOffset").value || 10;
+  const scalebarColor =
+    document.getElementById("scalebarColor").value || "#000000";
+  const scalebarFontColor =
+    document.getElementById("scalebarFontColor").value || "#000000";
+  const scalebarBackgroundColor =
+    document.getElementById("scalebarBackgroundColor").value || "#ffffff";
+  const scalebarBackgroundOpacity =
+    document.getElementById("scalebarBackgroundOpacity").value || 0.5;
+  const scalebarFontSize =
+    document.getElementById("scalebarFontSize").value || "small";
+  const scalebarBarThickness =
+    document.getElementById("scalebarLineWeight").value || 2;
+
+  const scalebarBackgroundColorToPlot = applyOpacityToColor(
+    scalebarBackgroundColor,
+    scalebarBackgroundOpacity
+  );
+
+  console.log(
+    typeMapper[scalebarType],
+    scalebarUnitSystem,
+    scalebarMinWidth + "px",
+    locationMapper[scalebarLocation],
+    scalebarXOffset,
+    scalebarYOffset,
+    scalebarColor,
+    scalebarFontColor,
+    scalebarBackgroundColorToPlot,
+    scalebarFontSize,
+    scalebarBarThickness
+  );
+
   viewer.scalebar({
-    type: OpenSeadragon.ScalebarType.MAP,
-    minWidth: "75px",
-    location: OpenSeadragon.ScalebarLocation.BOTTOM_LEFT,
-    xOffset: 10,
-    yOffset: 10,
-    stayInsideImage: true,
-    color: "black",
-    fontColor: "black",
-    backgroundColor: "rgba(255, 255, 255, 0.5)",
-    fontSize: "small",
-    barThickness: 2,
+    type: typeMapper[scalebarType],
+    unitSystem: scalebarUnitSystem,
+    minWidth: scalebarMinWidth + "px",
+    location: locationMapper[scalebarLocation],
+    xOffset: parseInt(scalebarXOffset),
+    yOffset: parseInt(scalebarYOffset),
+    stayInsideImage: false,
+    color: scalebarColor,
+    fontColor: scalebarFontColor,
+    backgroundColor: scalebarBackgroundColorToPlot,
+    fontSize: scalebarFontSize,
+    barThickness: parseInt(scalebarBarThickness),
     pixelsPerMeter: pixelsPerMeter,
   });
+  // viewer.scalebar({
+  //   type: OpenSeadragon.ScalebarType.MAP,
+  //   unitSystem: "Metric",
+  //   minWidth: "75px",
+  //   location: OpenSeadragon.ScalebarLocation.BOTTOM_LEFT,
+  //   xOffset: 10,
+  //   yOffset: 4,
+  //   stayInsideImage: false,
+  //   color: "black",
+  //   fontColor: "black",
+  //   backgroundColor: "rgb(255, 255, 255 0.5)",
+  //   fontSize: "small",
+  //   barThickness: 2,
+  //   pixelsPerMeter: pixelsPerMeter,
+  // });
 }
 
 // Function to recursively add tile sources
