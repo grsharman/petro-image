@@ -49,11 +49,10 @@ Hovering your curser over the <img src="assets/0_description.png" alt="icon" hei
 5. Load the JSON file into petro-image by clicking on the <img src="assets/0_gear.png" alt="icon" height="20" style="vertical-align: middle;"/> icon followed by the <img src="assets/0_import.png" alt="icon" height="20" style="vertical-align: middle;"/> button on the pop-up menu.
 
 > [!NOTE]
-> If using more than one image, they should align as closely > as possible and have the same number of rows and columns.
+> If using more than one image, they should align as closely as possible and have the same number of rows and columns.
 
-<div style="background-color:##cff4fc; border-left:5px solid #055160; padding:12px; margin:10px 0;">
-  <strong>📝 Note:</strong> you must know pixel dimensions of your image(s).
-</div>
+> [!NOTE]
+> You must know pixel dimensions of your image(s).
 
 ## Tools
 
@@ -87,9 +86,8 @@ The measure tool allows simple calculation of length and area. In addition, a re
 
 Annotations are a useful way to record observations and share them with collaborators. petro-image annotations use the [GeoJSON file standard](https://geojson.org/), which includes point, linestrings, polygons, and multi-part versions of these. Tools for creating points, polylines, rectangles, polygons, and ellipses are available in petro-image. Each annotation type has a specific [keyboard shortcut](#keyboard-shortcuts) in addition to being enabled by toggling buttons in the Annotate menu.
 
-<div style="background-color:##cff4fc; border-left:5px solid #055160; padding:12px; margin:10px 0;">
-  <strong>📝 Note:</strong> it is possible to pre-load a specimen with annotations by specifying the annotation file in the JSON. If a file is available to load, a <img src="assets/3_load_from_json.png" alt="icon" height="20" style="vertical-align: middle;"/> button will become available at the bottom of the Annotate menu.
-</div>
+> [!TIP]
+> It is possible to pre-load a specimen with annotations by specifying the annotation file in the JSON. If a file is available to load, a <img src="assets/3_load_from_json.png" alt="icon" height="20" style="vertical-align: middle;"/> button will become available at the bottom of the Annotate menu.
 
 ![Annotate demonstration](assets/annotate_L.gif)
 
@@ -123,9 +121,8 @@ The grid tool allows one to create gridded crosshairs within a rectangular area 
 
 ![Grid demonstration](assets/grid_L.gif)
 
-<div style="background-color:##cff4fc; border-left:5px solid #055160; padding:12px; margin:10px 0;">
-  <strong>📝 Note:</strong> performance issues may occur if creating a very large number of grid points (i.e., >>1000).
-</div>
+> [!WARNING]
+> Performance issues may occur if creating a very large number of grid points (i.e., >>1000).
 
 | Tool                                                                                                                                                        | Description                                                                                                                                                                                                                                                                                                                                                              |
 | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -146,6 +143,9 @@ A common task in microscopy is to conduct a “point count”, which involves id
 <div style="background-color:##cff4fc; border-left:5px solid #055160; padding:12px; margin:10px 0;">
   <strong>📝 Note:</strong> custom grid crosshair locations (in image pixel coordinates) can be imported from a CSV file, allowing custom grid configurations.
 </div>
+
+> [!TIP]
+> Custom grid crosshair locations (in image pixel coordinates) can be imported from a CSV file, allowing custom grid configurations.
 
 | Tool                                                                                                                                                            | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -185,9 +185,7 @@ A common task in microscopy is to conduct a “point count”, which involves id
 
 To load your own images, you must format a JSON file as shown below.
 
-<div style="background-color:##cff4fc; border-left:5px solid #055160; padding:12px; margin:10px 0;">
-  <strong>📝 Note:</strong> <code>annotations</code> are optional.
-</div>
+> [!NOTE] > <code>annotations</code> are optional.
 
 <pre>
 {
@@ -213,9 +211,8 @@ To load your own images, you must format a JSON file as shown below.
 
 petro-image may display up to four images simultaneously. The image below shows how layers are vertically superimposed.
 
-<div style="background-color:##cff4fc; border-left:5px solid #055160; padding:12px; margin:10px 0;">
-  <strong>📝 Note:</strong> The first image should be the base layer over which the other images will be shown.
-</div>
+> [!NOTE]
+> The first image should be the base layer over which the other images will be shown.
 
 ![Layer explanation](assets/layer_explanation.png)
 
@@ -223,8 +220,7 @@ petro-image may display up to four images simultaneously. The image below shows 
 
 petro-image creates grid crosshairs by using a snake-like pattern from top left to bottom right. If the total number of points is greater than the space available (defined by the size of the area of interest and the specified step size), then an infill pattern is used wherein the step sized is halved in subsequent points. No two grid crosshairs will occupy the same location.
 
-<div style="background-color:##cff4fc; border-left:5px solid #055160; padding:12px; margin:10px 0;">
-  <strong>📝 Note:</strong> it is a good idea to select an appropriate step size such that you have enough space for the desired number of grid crosshairs. This will avoid the use of an infill pattern.
-</div>
+> [!TIP]
+> It is a good idea to select an appropriate step size such that you have enough space for the desired number of grid crosshairs. This will avoid the use of an infill pattern.
 
 ![Grid algorithm explanation](assets/grid_example1.png)
