@@ -47,9 +47,10 @@ Hovering your curser over the <img src="assets/0_description.png" alt="icon" hei
 3. Make the DZI files publicly available on the web. Uploading the files to a public GitHub repository is one way to do this. Determine the URL that points to the DZI file for each image.
 4. Create a JSON file that contains an entry for each specimen, which could have one or more associated images. See the [JSON File Structure](#json-file-structure) section for details.
 5. Load the JSON file into petro-image by clicking on the <img src="assets/0_gear.png" alt="icon" height="20" style="vertical-align: middle;"/> icon followed by the <img src="assets/0_import.png" alt="icon" height="20" style="vertical-align: middle;"/> button on the pop-up menu.
-<div style="background-color:##cff4fc; border-left:5px solid #055160; padding:12px; margin:10px 0;">
-  <strong>📝 Note:</strong> if using more than one image, they should align as closely as possible and have the same number of rows and columns.
-</div>
+
+[!NOTE]
+If using more than one image, they should align as closely as possible and have the same number of rows and columns.
+
 <div style="background-color:##cff4fc; border-left:5px solid #055160; padding:12px; margin:10px 0;">
   <strong>📝 Note:</strong> you must know pixel dimensions of your image(s).
 </div>
