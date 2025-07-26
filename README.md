@@ -140,10 +140,6 @@ The grid tool allows one to create gridded crosshairs within a rectangular area 
 
 A common task in microscopy is to conduct a “point count”, which involves identifying the features that fall beneath binocular crosshairs, typically using a regularly spaced grid. In petro-image, point counting functions become available if a [Grid](#grid) is created or a previously defined grid is imported. A count is recorded by inputting text or numbers into the <img src="assets/2_count_identifier_box.png" alt="icon" height="20" style="vertical-align: middle;"/> text box and pressing “Enter”. Pressing the spacebar will advance to the next grid crosshair and pressing shift+spacebar will advance to the previous grid crosshair. petro-image also includes some basic functions for visualizing the results of the point count, including a table of summary statistics.
 
-<div style="background-color:##cff4fc; border-left:5px solid #055160; padding:12px; margin:10px 0;">
-  <strong>📝 Note:</strong> custom grid crosshair locations (in image pixel coordinates) can be imported from a CSV file, allowing custom grid configurations.
-</div>
-
 > [!TIP]
 > Custom grid crosshair locations (in image pixel coordinates) can be imported from a CSV file, allowing custom grid configurations.
 
@@ -185,7 +181,8 @@ A common task in microscopy is to conduct a “point count”, which involves id
 
 To load your own images, you must format a JSON file as shown below.
 
-> [!NOTE] > <code>annotations</code> are optional.
+> [!NOTE]
+> "annotations" are optional.
 
 <pre>
 {
