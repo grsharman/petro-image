@@ -190,7 +190,7 @@ function processJSON(data) {
 
   // Example: initialize OpenSeadragon with the first tile source
   loadTileSet(0);
-  addScalebar(pixelsPerMeters[0]);
+  //addScalebar(pixelsPerMeters[0]);
   populateGroupDropdown();
   updateButtonLabels(0);
   divideImages();
@@ -518,7 +518,10 @@ window.addEventListener("beforeunload", (event) => {
 
 // Initialize the scalebar, except for pixelsPerMeter, which depends on the grid
 // settings.
-function addScalebar(pixelsPerMeter) {
+function addScalebar() {
+  const scalebarType = document.getElementById("scalebarType").value;
+
+  const pixelsPerMeter = pixelsPerMeters[currentIndex];
   const locationMapper = {
     "Top left": OpenSeadragon.ScalebarLocation.TOP_LEFT,
     "Top right": OpenSeadragon.ScalebarLocation.TOP_RIGHT,
@@ -527,12 +530,17 @@ function addScalebar(pixelsPerMeter) {
   };
 
   const typeMapper = {
-    None: OpenSeadragon.ScalebarType.NONE,
+    None: 0,
     Map: OpenSeadragon.ScalebarType.MAP,
     Microscopy: OpenSeadragon.ScalebarType.MICROSCOPY,
   };
 
-  const scalebarType = document.getElementById("scalebarType").value;
+  const systemMapper = {
+    Metric: OpenSeadragon.ScalebarSizeAndTextRenderer.METRIC_LENGTH,
+    Imperial: OpenSeadragon.ScalebarSizeAndTextRenderer.IMPERIAL_LENGTH,
+    Astronomical: OpenSeadragon.ScalebarSizeAndTextRenderer.ASTRONOMY,
+  };
+
   const scalebarUnitSystem =
     document.getElementById("scalebarUnitSystem").value;
   const scalebarMinWidth =
@@ -551,7 +559,7 @@ function addScalebar(pixelsPerMeter) {
   const scalebarBackgroundOpacity =
     document.getElementById("scalebarBackgroundOpacity").value || 0.5;
   const scalebarFontSize =
-    document.getElementById("scalebarFontSize").value || "small";
+    document.getElementById("scalebarFontSize").value || "medium";
   const scalebarBarThickness =
     document.getElementById("scalebarLineWeight").value || 2;
 
@@ -560,23 +568,15 @@ function addScalebar(pixelsPerMeter) {
     scalebarBackgroundOpacity
   );
 
-  console.log(
-    typeMapper[scalebarType],
-    scalebarUnitSystem,
-    scalebarMinWidth + "px",
-    locationMapper[scalebarLocation],
-    scalebarXOffset,
-    scalebarYOffset,
-    scalebarColor,
-    scalebarFontColor,
-    scalebarBackgroundColorToPlot,
-    scalebarFontSize,
-    scalebarBarThickness
-  );
+  // Remove previous scalebar DOM
+  // const existingScalebar = document.querySelector(".openseadragon-scalebar");
+  // if (existingScalebar) existingScalebar.remove();
+  // if (existingScalebar) viewer.scalebarInstance = null;
 
   viewer.scalebar({
     type: typeMapper[scalebarType],
-    unitSystem: scalebarUnitSystem,
+    unitSystem: systemMapper[scalebarUnitSystem],
+    sizeAndTextRenderer: systemMapper[scalebarUnitSystem],
     minWidth: scalebarMinWidth + "px",
     location: locationMapper[scalebarLocation],
     xOffset: parseInt(scalebarXOffset),
@@ -589,21 +589,43 @@ function addScalebar(pixelsPerMeter) {
     barThickness: parseInt(scalebarBarThickness),
     pixelsPerMeter: pixelsPerMeter,
   });
-  // viewer.scalebar({
-  //   type: OpenSeadragon.ScalebarType.MAP,
-  //   unitSystem: "Metric",
-  //   minWidth: "75px",
-  //   location: OpenSeadragon.ScalebarLocation.BOTTOM_LEFT,
-  //   xOffset: 10,
-  //   yOffset: 4,
-  //   stayInsideImage: false,
-  //   color: "black",
-  //   fontColor: "black",
-  //   backgroundColor: "rgb(255, 255, 255 0.5)",
-  //   fontSize: "small",
-  //   barThickness: 2,
-  //   pixelsPerMeter: pixelsPerMeter,
-  // });
+}
+
+function restoreScalebarDefaults() {
+  const scalebarBackgroundColorToPlot = applyOpacityToColor("#ffffff", 0.5);
+  const pixelsPerMeter = pixelsPerMeters[currentIndex];
+
+  // Reset scalebar settings to default values
+  document.getElementById("scalebarType").value = "Map";
+  document.getElementById("scalebarUnitSystem").value = "Metric";
+  document.getElementById("scalebarMinWidth").innerHTML = 75;
+  document.getElementById("scalebarLocation").value = "Bottom left";
+  document.getElementById("scalebarXOffset").innerHTML = 10;
+  document.getElementById("scalebarYOffset").innerHTML = 10;
+  document.getElementById("scalebarColor").value = "#000000";
+  document.getElementById("scalebarFontColor").value = "#000000";
+  document.getElementById("scalebarBackgroundColor").value = "#ffffff";
+  document.getElementById("scalebarBackgroundOpacity").innerHTML = 0.5;
+  document.getElementById("scalebarFontSize").value = "medium";
+  document.getElementById("scalebarLineWeight").innerHTML = 2;
+
+  viewer.scalebar({
+    type: OpenSeadragon.ScalebarType.MAP,
+    unitSystem: "Metric",
+    sizeAndTextRenderer:
+      OpenSeadragon.ScalebarSizeAndTextRenderer.METRIC_LENGTH,
+    minWidth: "75px",
+    location: OpenSeadragon.ScalebarLocation.BOTTOM_LEFT,
+    xOffset: 10,
+    yOffset: 10,
+    stayInsideImage: false,
+    color: "#000000",
+    fontColor: "#000000",
+    backgroundColor: scalebarBackgroundColorToPlot,
+    fontSize: "medium",
+    barThickness: 2,
+    pixelsPerMeter: pixelsPerMeter,
+  });
 }
 
 // Function to recursively add tile sources
