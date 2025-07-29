@@ -45,6 +45,15 @@
         <div id="info-modal-body">Loading content...</div>
       </div>
     </div>
+    <!--Custom prompt-->
+    <div id="customPrompt" class="modal-prompt modal-prompt-hidden">
+      <div class="modal-prompt-content">
+        <p id="promptMessage">Enter value:</p>
+        <input type="text" id="promptInput" />
+        <button onclick="submitPrompt()">OK</button>
+        <button onclick="cancelPrompt()">Cancel</button>
+      </div>
+    </div>
     <div id="viewer-container">
       <canvas
         id="annotation-overlay"
@@ -1473,7 +1482,6 @@
           <div>
             <input type="text" id="anno-notes" placeholder="Notes" disabled />
           </div>
-
           <div class="button-container">
             <!-- Trash can button -->
             <button

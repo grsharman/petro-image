@@ -236,7 +236,7 @@ html {
 }
 
 .hidden {
-  display: none;
+  display: none !important;
 }
 
 .tooltip-text {
@@ -932,4 +932,37 @@ input[type="range"] {
   height: 100%; /* 15px */
   display: block;
   stroke: black;
+}
+
+.modal-prompt {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(255, 255, 255, 0.25);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+.modal-prompt-content {
+  background-color: white;
+  padding: 20px;
+  border-radius: 8px;
+  width: 50vw; /* Set width to 50% of viewport */
+  max-width: 600px; /* Optional: prevent it from being too wide */
+  min-width: 300px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+  text-align: center;
+  transform: translateY(-100%);
+}
+
+.modal-prompt-hidden {
+  display: none;
+}
+
+.modal-prompt-visible {
+  display: flex;
 }
