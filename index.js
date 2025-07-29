@@ -2097,37 +2097,7 @@ viewer.addHandler("canvas-click", function (event) {
           );
         }
       });
-      // var constPointLabel = prompt("Enter a label for this point:");
     }
-    // const sampleIdx = samples.indexOf(sampleName);
-    // addPointToGeoJSON(imagePoint.x, imagePoint.y, {
-    //   uuid: uniqueID,
-    //   label: constPointLabel,
-    //   xLabel: imagePoint.x,
-    //   yLabel: imagePoint.y,
-    //   imageTitle: sampleName,
-    //   pixelsPerMeter: Number(pixelsPerMeters[sampleIdx]),
-    //   imageWidth: imageSize.x,
-    //   imageHeight: imageSize.y,
-    //   labelFontSize: labelFontSize,
-    //   labelFontColor: labelFontColor,
-    //   labelBackgroundColor: labelBackgroundColor,
-    //   labelBackgroundOpacity: labelBackgroundOpacity,
-    //   lineWeight: lineWeight,
-    //   lineColor: lineColor,
-    //   lineOpacity: lineOpacity,
-    // });
-    // Make text and crosshairs
-    // addText(
-    //   uniqueID,
-    //   constPointLabel,
-    //   viewportPoint,
-    //   "anno",
-    //   labelFontColor,
-    //   labelFontSize,
-    //   labelBackgroundColor,
-    //   labelBackgroundOpacity
-    // );
 
     addCrosshairs(
       uniqueID,
@@ -2242,14 +2212,12 @@ function getEllipsePoints(points, numPoints = 50) {
   return ellipsePoints;
 }
 
-// TODO: This function doesn't really work as intended
 function getLowestYPoint(points) {
   let minIndex = points.reduce(
     (minIndex, point, currentIndex, array) =>
       point[1] < array[minIndex][1] ? currentIndex : minIndex,
     0
   );
-
   return points[minIndex];
 }
 
@@ -2382,14 +2350,25 @@ viewer.addHandler("canvas-click", function (event) {
     });
 
     if (ellipseCoordinates.length === 3) {
-      const labelImagePoint = getLowestYPoint(ellipseImageCoordinates);
-      const labelViewportPoint = image.imageToViewportCoordinates(
-        labelImagePoint[0],
-        labelImagePoint[1]
-      );
       if (isRepeatMode) {
         const annoId = parseInt(document.getElementById("anno-id").value);
         var constEllipseLabel = annoJSON.features[annoId - 1].properties.label;
+        finalizeEllipseAnnotation(
+          constEllipseLabel,
+          image,
+          imageSize,
+          uniqueID,
+          labelFontSize,
+          labelFontColor,
+          labelBackgroundColor,
+          labelBackgroundOpacity,
+          lineStyle,
+          lineWeight,
+          lineColor,
+          lineOpacity,
+          fillColor,
+          fillOpacity
+        );
         drawPath(polyCanvas, [annoJSON]);
       } else {
         // var constEllipseLabel = prompt("Enter a label for this polyline:");
@@ -2400,9 +2379,9 @@ viewer.addHandler("canvas-click", function (event) {
             constEllipseLabel = value;
             finalizeEllipseAnnotation(
               constEllipseLabel,
+              image,
               imageSize,
               uniqueID,
-              labelViewportPoint,
               labelFontSize,
               labelFontColor,
               labelBackgroundColor,
@@ -2419,9 +2398,9 @@ viewer.addHandler("canvas-click", function (event) {
             constEllipseLabel = "";
             finalizeEllipseAnnotation(
               constEllipseLabel,
+              image,
               imageSize,
               uniqueID,
-              labelViewportPoint,
               labelFontSize,
               labelFontColor,
               labelBackgroundColor,
@@ -2435,85 +2414,17 @@ viewer.addHandler("canvas-click", function (event) {
             );
           }
         });
-
         drawPath(polyCanvas, [annoJSON]);
       }
-      // const ellipsePoints = getEllipsePoints(ellipseImageCoordinates);
-      // const labelImagePoint = getLowestYPoint(ellipseImageCoordinates);
-      // const labelViewportPoint = image.imageToViewportCoordinates(
-      //   labelImagePoint[0],
-      //   labelImagePoint[1]
-      // );
-      // // Clear to avoid duplicating lines
-      // annoJSONTemp = {
-      //   type: "FeatureCollection",
-      //   features: [],
-      // };
-      // const sampleIdx = samples.indexOf(sampleName);
-      // const areaPixels2 = calculatePolygonArea([ellipsePoints]);
-      // const areaM2 = areaPixels2 / pixelsPerMeters[currentIndex] ** 2;
-      // const perimeterPixels = calculatePolygonExteriorPerimeter([
-      //   ellipsePoints,
-      // ]);
-      // const perimeterM = perimeterPixels / pixelsPerMeters[currentIndex];
-      // addPolygonToGeoJSON(annoJSON, [...ellipsePoints], {
-      //   uuid: uniqueID,
-      //   label: constEllipseLabel,
-      //   xLabel: labelImagePoint[0],
-      //   yLabel: labelImagePoint[1],
-      //   imageTitle: sampleName,
-      //   pixelsPerMeter: Number(pixelsPerMeters[sampleIdx]),
-      //   imageWidth: imageSize.x,
-      //   imageHeight: imageSize.y,
-      //   labelFontSize: labelFontSize,
-      //   labelFontColor: labelFontColor,
-      //   labelBackgroundColor: labelBackgroundColor,
-      //   labelBackgroundOpacity: labelBackgroundOpacity,
-      //   lineStyle: lineStyle,
-      //   lineWeight: lineWeight,
-      //   lineColor: lineColor,
-      //   lineOpacity: lineOpacity,
-      //   fillColor: fillColor,
-      //   fillOpacity: fillOpacity,
-      //   area_m2: areaM2,
-      //   perimeter_m: perimeterM,
-      // });
-      // drawShape(polyCanvas, [annoJSON, annoJSONTemp]);
-
-      // // Make text
-      // addText(
-      //   uniqueID,
-      //   constEllipseLabel,
-      //   labelViewportPoint,
-      //   "anno",
-      //   labelFontColor,
-      //   labelFontSize,
-      //   labelBackgroundColor,
-      //   labelBackgroundOpacity
-      // );
-      // // Reset for the next one
-      // ellipseCoordinates = [];
-      // ellipseImageCoordinates = [];
-      // annoJSONTemp = {
-      //   type: "FeatureCollection",
-      //   features: [],
-      // };
-      // hasUnsavedAnnotations = true;
-      // if (!ellipseButton.classList.contains("active")) {
-      //   toggleEllipseFloaterOn(false);
-      // }
-      // activelyMakingEllipse = false;
-      // isCPressed = false;
-      // enableAnnoButtons();
     }
   }
 });
 
 function finalizeEllipseAnnotation(
   label,
+  image,
   imageSize,
   uniqueID,
-  labelViewportPoint,
   labelFontSize,
   labelFontColor,
   labelBackgroundColor,
@@ -2526,7 +2437,11 @@ function finalizeEllipseAnnotation(
   fillOpacity
 ) {
   const ellipsePoints = getEllipsePoints(ellipseImageCoordinates);
-  const labelImagePoint = getLowestYPoint(ellipseImageCoordinates);
+  const labelImagePoint = getLowestYPoint(ellipsePoints);
+  const labelViewportPoint = image.imageToViewportCoordinates(
+    labelImagePoint[0],
+    labelImagePoint[1]
+  );
   const sampleIdx = samples.indexOf(sampleName);
   const areaPixels2 = calculatePolygonArea([ellipsePoints]);
   const areaM2 = areaPixels2 / pixelsPerMeters[currentIndex] ** 2;
@@ -2586,7 +2501,7 @@ function finalizeEllipseAnnotation(
   enableAnnoButtons();
 }
 
-// Event listener to add polyline annotations
+// Event listener to add polyline and polygon annotations
 let clickCoordinates = []; // Array to store viewport coordinates
 let clickImageCoordinates = []; // Array to store image coordinates
 let clickCoordinatesArray = []; // Array to store arrays of coordinates
@@ -2709,15 +2624,8 @@ viewer.addHandler("canvas-click", function (event) {
       clearTimeout(clickTimeout);
       console.log("Double-click detected, ending collection of points.");
 
-      if (isRepeatMode) {
-        const annoId = parseInt(document.getElementById("anno-id").value);
-        var constPolylineLabel = annoJSON.features[annoId - 1].properties.label;
-        drawPath(polyCanvas, [annoJSON]);
-      } else {
-        var constPolylineLabel = prompt("Enter a label for this polyline:");
-        drawPath(polyCanvas, [annoJSON]);
-      }
-
+      // Calculate the stuff we need
+      const uuid = generateUniqueId(8);
       const image = viewer.world.getItemAt(0);
       const labelViewportPoint = new OpenSeadragon.Point(
         clickCoordinates[0].x,
@@ -2736,113 +2644,116 @@ viewer.addHandler("canvas-click", function (event) {
       ]);
       const rectPerimeterM =
         rectPerimeterPixels / pixelsPerMeters[currentIndex];
-
-      if (isPolygonMode || XWasPressed) {
-        // Close the polygon by adding the first point to the end
-        clickCoordinates = clickImageCoordinates.slice(
-          0,
-          clickImageCoordinates.length - 1
-        ); // To avoid getting a duplicated final point
-        clickImageCoordinates.push(clickImageCoordinates[0]);
-        addPolygonToGeoJSON(annoJSON, clickImageCoordinates, {
-          uuid: uniqueID,
-          label: constPolylineLabel,
-          xLabel: labelImagePoint.x,
-          yLabel: labelImagePoint.y,
-          imageTitle: sampleName,
-          pixelsPerMeter: Number(pixelsPerMeters[sampleIdx]),
-          imageWidth: imageSize.x,
-          imageHeight: imageSize.y,
-          labelFontSize: labelFontSize,
-          labelFontColor: labelFontColor,
-          labelBackgroundColor: labelBackgroundColor,
-          labelBackgroundOpacity: labelBackgroundOpacity,
-          lineStyle: lineStyle,
-          lineWeight: lineWeight,
-          lineColor: lineColor,
-          lineOpacity: lineOpacity,
-          fillColor: fillColor,
-          fillOpacity: fillOpacity,
-          area_m2: rectAreaM2,
-          perimeter_m: rectPerimeterM,
-        });
-
-        if (!polygonButton.classList.contains("active")) {
-          togglePolygonFloaterOn(false);
-        }
-      }
-
       const lineLengthPixels = calculateLineStringLength(
         clickImageCoordinates.slice(0, clickImageCoordinates.length - 1)
       );
       const lineLengthM = lineLengthPixels / pixelsPerMeters[currentIndex];
 
-      if (isPolylineMode || ZWasPressed) {
-        addPolylineToGeoJSON(
-          annoJSON,
-          clickImageCoordinates.slice(0, clickImageCoordinates.length - 1), // To avoid getting a duplicated final point
-          {
-            uuid: uniqueID,
-            label: constPolylineLabel,
-            xLabel: labelImagePoint.x,
-            yLabel: labelImagePoint.y,
-            imageTitle: sampleName,
-            pixelsPerMeter: Number(pixelsPerMeters[sampleIdx]),
-            imageWidth: imageSize.x,
-            imageHeight: imageSize.y,
-            labelFontSize: labelFontSize,
-            labelFontColor: labelFontColor,
-            labelBackgroundColor: labelBackgroundColor,
-            labelBackgroundOpacity: labelBackgroundOpacity,
-            lineStyle: lineStyle,
-            lineWeight: lineWeight,
-            lineColor: lineColor,
-            lineOpacity: lineOpacity,
-            length_m: lineLengthM,
-            // canvasDraw: true,
-          }
+      if (isRepeatMode) {
+        const annoId = parseInt(document.getElementById("anno-id").value);
+        var constPolylineLabel = annoJSON.features[annoId - 1].properties.label;
+        finalizePolyAnnotation(
+          constPolylineLabel,
+          labelImagePoint,
+          imageSize,
+          sampleIdx,
+          uuid,
+          labelViewportPoint,
+          labelFontSize,
+          labelFontColor,
+          labelBackgroundColor,
+          labelBackgroundOpacity,
+          lineStyle,
+          lineWeight,
+          lineColor,
+          lineOpacity,
+          fillColor,
+          fillOpacity,
+          rectAreaM2,
+          rectPerimeterM,
+          lineLengthM,
+          isPolygonMode,
+          XWasPressed,
+          isPolylineMode,
+          ZWasPressed,
+          clickImageCoordinates
         );
-      }
-      drawShape(polyCanvas, [annoJSON]);
+        drawPath(polyCanvas, [annoJSON]);
+        // Reset the coordinates array for the next set of clicks
+        clickCoordinatesArray.push(clickCoordinates);
+        clickCoordinates = [];
+        clickImageCoordinates = []; // Clear
 
-      // Reset the coordinates array for the next set of clicks
-      clickCoordinatesArray.push(clickCoordinates);
-      clickCoordinates = [];
-      clickImageCoordinates = []; // Clear
+        annoJSONTemp = {
+          type: "FeatureCollection",
+          features: [],
+        };
+        hasUnsavedAnnotations = true;
+        enableAnnoButtons();
+        isXPressed = false; // reset (because keyup not detected)
+        XWasPressed = false; // reset
+        isZPressed = false; // reset (because keyup not detected)
+        ZWasPressed = false; // reset
+        if (!polylineButton.classList.contains("active")) {
+          togglePolylineFloaterOn(false);
+        }
+        activelyMakingPoly = false;
+        console.log("Poly mode disabled");
+        enableAnnoButtons();
+      } else {
+        // var constPolylineLabel = prompt("Enter a label for this polyline:");
+        showPrompt("Enter the annotation label:", (value) => {
+          const constPolylineLabel = value || "";
+          finalizePolyAnnotation(
+            constPolylineLabel,
+            labelImagePoint,
+            imageSize,
+            sampleIdx,
+            uuid,
+            labelViewportPoint,
+            labelFontSize,
+            labelFontColor,
+            labelBackgroundColor,
+            labelBackgroundOpacity,
+            lineStyle,
+            lineWeight,
+            lineColor,
+            lineOpacity,
+            fillColor,
+            fillOpacity,
+            rectAreaM2,
+            rectPerimeterM,
+            lineLengthM,
+            isPolygonMode,
+            XWasPressed,
+            isPolylineMode,
+            ZWasPressed,
+            clickImageCoordinates
+          );
+          drawPath(polyCanvas, [annoJSON]);
+          // Reset the coordinates array for the next set of clicks
+          clickCoordinatesArray.push(clickCoordinates);
+          clickCoordinates = [];
+          clickImageCoordinates = []; // Clear
 
-      // Make text and crosshairs
-      addText(
-        uniqueID,
-        constPolylineLabel,
-        labelViewportPoint,
-        "anno",
-        labelFontColor,
-        labelFontSize,
-        labelBackgroundColor,
-        labelBackgroundOpacity
-      );
-      annoJSONTemp = {
-        type: "FeatureCollection",
-        features: [],
-      };
-      hasUnsavedAnnotations = true;
-      enableAnnoButtons();
-      isXPressed = false; // reset (because keyup not detected)
-      XWasPressed = false; // reset
-      isZPressed = false; // reset (because keyup not detected)
-      ZWasPressed = false; // reset
-      if (!polylineButton.classList.contains("active")) {
-        togglePolylineFloaterOn(false);
+          annoJSONTemp = {
+            type: "FeatureCollection",
+            features: [],
+          };
+          hasUnsavedAnnotations = true;
+          enableAnnoButtons();
+          isXPressed = false; // reset (because keyup not detected)
+          XWasPressed = false; // reset
+          isZPressed = false; // reset (because keyup not detected)
+          ZWasPressed = false; // reset
+          if (!polylineButton.classList.contains("active")) {
+            togglePolylineFloaterOn(false);
+          }
+          activelyMakingPoly = false;
+          console.log("Poly mode disabled");
+          enableAnnoButtons();
+        });
       }
-      // TODO: Could add code in below if wanting to deactivate button
-      // after each annotation
-      // polygonButton.classList.remove("active");
-      // polylineButton.classList.remove("active");
-      // isPolygonMode = false;
-      // isPolylineMode = false;
-      activelyMakingPoly = false;
-      console.log("Poly mode disabled");
-      enableAnnoButtons();
     } else {
       // It's a single click, so set a timeout to handle it
       clickTimeout = setTimeout(function () {
@@ -2854,6 +2765,107 @@ viewer.addHandler("canvas-click", function (event) {
     lastClickTime = currentTime;
   }
 });
+
+function finalizePolyAnnotation(
+  constPolylineLabel,
+  labelImagePoint,
+  imageSize,
+  sampleIdx,
+  uuid,
+  labelViewportPoint,
+  labelFontSize,
+  labelFontColor,
+  labelBackgroundColor,
+  labelBackgroundOpacity,
+  lineStyle,
+  lineWeight,
+  lineColor,
+  lineOpacity,
+  fillColor,
+  fillOpacity,
+  rectAreaM2,
+  rectPerimeterM,
+  lineLengthM,
+  isPolygonMode,
+  XWasPressed,
+  isPolylineMode,
+  ZWasPressed,
+  clickImageCoordinates
+) {
+  if (isPolygonMode || XWasPressed) {
+    // Close the polygon by adding the first point to the end
+    clickCoordinates = clickImageCoordinates.slice(
+      0,
+      clickImageCoordinates.length - 1
+    ); // To avoid getting a duplicated final point
+    clickImageCoordinates.push(clickImageCoordinates[0]);
+    addPolygonToGeoJSON(annoJSON, clickImageCoordinates, {
+      uuid: uuid,
+      label: constPolylineLabel,
+      xLabel: labelImagePoint.x,
+      yLabel: labelImagePoint.y,
+      imageTitle: sampleName,
+      pixelsPerMeter: Number(pixelsPerMeters[sampleIdx]),
+      imageWidth: imageSize.x,
+      imageHeight: imageSize.y,
+      labelFontSize: labelFontSize,
+      labelFontColor: labelFontColor,
+      labelBackgroundColor: labelBackgroundColor,
+      labelBackgroundOpacity: labelBackgroundOpacity,
+      lineStyle: lineStyle,
+      lineWeight: lineWeight,
+      lineColor: lineColor,
+      lineOpacity: lineOpacity,
+      fillColor: fillColor,
+      fillOpacity: fillOpacity,
+      area_m2: rectAreaM2,
+      perimeter_m: rectPerimeterM,
+    });
+
+    if (!polygonButton.classList.contains("active")) {
+      togglePolygonFloaterOn(false);
+    }
+  }
+  if (isPolylineMode || ZWasPressed) {
+    addPolylineToGeoJSON(
+      annoJSON,
+      clickImageCoordinates.slice(0, clickImageCoordinates.length - 1), // To avoid getting a duplicated final point
+      {
+        uuid: uuid,
+        label: constPolylineLabel,
+        xLabel: labelImagePoint.x,
+        yLabel: labelImagePoint.y,
+        imageTitle: sampleName,
+        pixelsPerMeter: Number(pixelsPerMeters[sampleIdx]),
+        imageWidth: imageSize.x,
+        imageHeight: imageSize.y,
+        labelFontSize: labelFontSize,
+        labelFontColor: labelFontColor,
+        labelBackgroundColor: labelBackgroundColor,
+        labelBackgroundOpacity: labelBackgroundOpacity,
+        lineStyle: lineStyle,
+        lineWeight: lineWeight,
+        lineColor: lineColor,
+        lineOpacity: lineOpacity,
+        length_m: lineLengthM,
+        // canvasDraw: true,
+      }
+    );
+  }
+  drawShape(polyCanvas, [annoJSON]);
+
+  // Make text and crosshairs
+  addText(
+    uuid,
+    constPolylineLabel,
+    labelViewportPoint,
+    "anno",
+    labelFontColor,
+    labelFontSize,
+    labelBackgroundColor,
+    labelBackgroundOpacity
+  );
+}
 
 // Function that updates x, y coordinates in viewer element space
 function updateViewerElementCoordinates(canvas, viewportPoint) {
@@ -3163,12 +3175,6 @@ viewer.addHandler("canvas-drag", function (event) {
 // Finalize the rectangle on mouseup
 viewer.addHandler("canvas-release", function (event) {
   if ((event.originalEvent.shiftKey || isRectangleMode) && startPoint) {
-    // Clear upon release
-    annoJSONTemp = {
-      type: "FeatureCollection",
-      features: [],
-    };
-
     // Capture the final rectangle's coordinates and size
     const image = viewer.world.getItemAt(0);
     const imageSize = image.getContentSize();
@@ -3216,75 +3222,182 @@ viewer.addHandler("canvas-release", function (event) {
     if (isRepeatMode) {
       const annoId = parseInt(document.getElementById("anno-id").value);
       var constRectLabel = annoJSON.features[annoId - 1].properties.label;
+      finalizeRectAnnotation(
+        x,
+        y,
+        finalWidth,
+        finalHeight,
+        sampleName,
+        currentRectUniqueId,
+        constRectLabel,
+        imageSize,
+        labelFontSize,
+        labelFontColor,
+        labelBackgroundColor,
+        labelBackgroundOpacity,
+        lineStyle,
+        lineWeight,
+        lineColor,
+        lineOpacity,
+        fillColor,
+        fillOpacity,
+        finalPoint
+      );
+      annoJSONTemp = {
+        type: "FeatureCollection",
+        features: [],
+      };
+      drawShape(polyCanvas, [annoJSON]);
     } else {
-      var constRectLabel = prompt("Enter a label for this point:");
+      var constRectLabel;
+      drawShape(polyCanvas, [annoJSON, annoJSONTemp]);
+      showPrompt("Enter the annotation label:", (value) => {
+        if (value) {
+          console.log("User entered:", value);
+          constRectLabel = value;
+          finalizeRectAnnotation(
+            x,
+            y,
+            finalWidth,
+            finalHeight,
+            sampleName,
+            currentRectUniqueId,
+            constRectLabel,
+            imageSize,
+            labelFontSize,
+            labelFontColor,
+            labelBackgroundColor,
+            labelBackgroundOpacity,
+            lineStyle,
+            lineWeight,
+            lineColor,
+            lineOpacity,
+            fillColor,
+            fillOpacity,
+            finalPoint
+          );
+          annoJSONTemp = {
+            type: "FeatureCollection",
+            features: [],
+          };
+          drawShape(polyCanvas, [annoJSON]);
+        } else {
+          constRectLabel = "";
+          finalizeRectAnnotation(
+            x,
+            y,
+            finalWidth,
+            finalHeight,
+            sampleName,
+            currentRectUniqueId,
+            constRectLabel,
+            imageSize,
+            labelFontSize,
+            labelFontColor,
+            labelBackgroundColor,
+            labelBackgroundOpacity,
+            lineStyle,
+            lineWeight,
+            lineColor,
+            lineOpacity,
+            fillColor,
+            fillOpacity,
+            finalPoint
+          );
+          annoJSONTemp = {
+            type: "FeatureCollection",
+            features: [],
+          };
+          drawShape(polyCanvas, [annoJSON]);
+        }
+      });
     }
-
-    // Calculate the four corners of the rectangle
-    const coordinates = [
-      [x, y], // Top-left corner
-      [x + finalWidth, y], // Top-right corner
-      [x + finalWidth, y + finalHeight], // Bottom-right corner
-      [x, y + finalHeight], // Bottom-left corner
-      [x, y], // Close the loop to the top-left corner
-    ];
-
-    const rectAreaPixels2 = calculatePolygonArea([coordinates]);
-    const rectAreaM2 = rectAreaPixels2 / pixelsPerMeters[currentIndex] ** 2;
-    const rectPerimeterPixels = calculatePolygonExteriorPerimeter([
-      coordinates,
-    ]);
-    const rectPerimeterM = rectPerimeterPixels / pixelsPerMeters[currentIndex];
-
-    // Add the rectangle to the geoJSON
-    const sampleIdx = samples.indexOf(sampleName);
-    addPolygonToGeoJSON(annoJSON, coordinates, {
-      uuid: currentRectUniqueId,
-      label: constRectLabel,
-      xLabel: x,
-      yLabel: y,
-      imageTitle: sampleName,
-      pixelsPerMeter: Number(pixelsPerMeters[sampleIdx]),
-      imageWidth: imageSize.x,
-      imageHeight: imageSize.y,
-      labelFontSize: labelFontSize,
-      labelFontColor: labelFontColor,
-      labelBackgroundColor: labelBackgroundColor,
-      labelBackgroundOpacity: labelBackgroundOpacity,
-      lineStyle: lineStyle,
-      lineWeight: Number(lineWeight),
-      lineColor: lineColor,
-      lineOpacity: Number(lineOpacity),
-      fillColor: fillColor,
-      fillOpacity: fillOpacity,
-      area_m2: rectAreaM2,
-      perimeter_m: rectPerimeterM,
-    });
-
-    // Mouse up - finalize and reset for the next rectangle
-    startPoint = null;
-    overlayElement = null;
-
-    // Add the label
-    addText(
-      currentRectUniqueId,
-      constRectLabel,
-      finalPoint,
-      "anno",
-      labelFontColor,
-      labelFontSize,
-      labelBackgroundColor,
-      labelBackgroundOpacity
-    );
-    enableAnnoButtons();
-    hasUnsavedAnnotations = true; // TODO: Turn off button between each annotation???
-    drawShape(polyCanvas, [annoJSON]);
-    if (!rectButton.classList.contains("active")) {
-      toggleRectFloaterOn(false);
-    }
-    shiftKeyHeld = false; // TODO: is this right?
   }
+  enableAnnoButtons();
+  hasUnsavedAnnotations = true; // TODO: Turn off button between each annotation???
+  if (!rectButton.classList.contains("active")) {
+    toggleRectFloaterOn(false);
+  }
+  shiftKeyHeld = false; // TODO: is this right?    // Clear upon release
 });
+
+function finalizeRectAnnotation(
+  x,
+  y,
+  finalWidth,
+  finalHeight,
+  sampleName,
+  currentRectUniqueId,
+  constRectLabel,
+  imageSize,
+  labelFontSize,
+  labelFontColor,
+  labelBackgroundColor,
+  labelBackgroundOpacity,
+  lineStyle,
+  lineWeight,
+  lineColor,
+  lineOpacity,
+  fillColor,
+  fillOpacity,
+  finalPoint
+) {
+  // Calculate the four corners of the rectangle
+  const coordinates = [
+    [x, y], // Top-left corner
+    [x + finalWidth, y], // Top-right corner
+    [x + finalWidth, y + finalHeight], // Bottom-right corner
+    [x, y + finalHeight], // Bottom-left corner
+    [x, y], // Close the loop to the top-left corner
+  ];
+
+  const rectAreaPixels2 = calculatePolygonArea([coordinates]);
+  const rectAreaM2 = rectAreaPixels2 / pixelsPerMeters[currentIndex] ** 2;
+  const rectPerimeterPixels = calculatePolygonExteriorPerimeter([coordinates]);
+  const rectPerimeterM = rectPerimeterPixels / pixelsPerMeters[currentIndex];
+
+  // Add the rectangle to the geoJSON
+  const sampleIdx = samples.indexOf(sampleName);
+  addPolygonToGeoJSON(annoJSON, coordinates, {
+    uuid: currentRectUniqueId,
+    label: constRectLabel,
+    xLabel: x,
+    yLabel: y,
+    imageTitle: sampleName,
+    pixelsPerMeter: Number(pixelsPerMeters[sampleIdx]),
+    imageWidth: imageSize.x,
+    imageHeight: imageSize.y,
+    labelFontSize: labelFontSize,
+    labelFontColor: labelFontColor,
+    labelBackgroundColor: labelBackgroundColor,
+    labelBackgroundOpacity: labelBackgroundOpacity,
+    lineStyle: lineStyle,
+    lineWeight: Number(lineWeight),
+    lineColor: lineColor,
+    lineOpacity: Number(lineOpacity),
+    fillColor: fillColor,
+    fillOpacity: fillOpacity,
+    area_m2: rectAreaM2,
+    perimeter_m: rectPerimeterM,
+  });
+  drawShape(polyCanvas, [annoJSON]);
+
+  // Mouse up - finalize and reset for the next rectangle
+  startPoint = null;
+  overlayElement = null;
+
+  // Add the label
+  addText(
+    currentRectUniqueId,
+    constRectLabel,
+    finalPoint,
+    "anno",
+    labelFontColor,
+    labelFontSize,
+    labelBackgroundColor,
+    labelBackgroundOpacity
+  );
+}
 
 // Clear annotations & grid
 document.getElementById("clearBtn").addEventListener("click", function () {
@@ -6470,7 +6583,14 @@ function showPrompt(message, callback) {
   promptBox.classList.add("modal-prompt-visible");
 
   promptInput.value = "";
-  promptInput.focus();
+  // promptInput.focus();
+
+  // Use setTimeout to defer focus until after rendering
+  setTimeout(() => {
+    promptInput.focus();
+    promptInput.select(); // Optional: highlights existing text if any
+  }, 50);
+
   promptInput.onkeydown = function (e) {
     if (e.key === "Enter") {
       e.preventDefault();
