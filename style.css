@@ -236,7 +236,7 @@ html {
 }
 
 .hidden {
-  display: none !important;
+  display: none;
 }
 
 .tooltip-text {

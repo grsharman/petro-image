@@ -501,14 +501,59 @@ window.onclick = function (event) {
 };
 
 // A message to discourage loss of data upon reload
-let hasUnsavedAnnotations = false;
-let hasUnsavedCounts = false;
+// let hasUnsavedAnnotations = false;
+// let hasUnsavedCounts = false;
+window.appState = {
+  hasUnsavedAnnotations: false,
+  hasUnsavedCounts: false,
+};
 
-window.addEventListener("beforeunload", (event) => {
+// TOOD: A new function for changing hasUnsavedAnnotations
+function unsavedAnnotations(value) {
+  if (value) {
+    window.appState.hasUnsavedAnnotations = true;
+  } else {
+    window.appState.hasUnsavedAnnotations = false;
+  }
+  if (window.electronAPI) {
+    const unsaved =
+      window.appState.hasUnsavedAnnotations || window.appState.hasUnsavedCounts;
+    console.log("Sending unsaved state to main process:", unsaved);
+    window.electronAPI.setUnsavedState(unsaved);
+  }
+}
+
+function unsavedCounts(value) {
+  if (value) {
+    window.appState.hasUnsavedCounts = true;
+  } else {
+    window.appState.hasUnsavedCounts = false;
+  }
+  if (window.electronAPI) {
+    const unsaved =
+      window.appState.hasUnsavedAnnotations || window.appState.hasUnsavedCounts;
+    console.log("Sending unsaved state to main process:", unsaved);
+    window.electronAPI.setUnsavedState(unsaved);
+  }
+}
+
+window.addEventListener("beforeunload", function (e) {
+  // Detect if running in Electron
+  const isElectron = navigator.userAgent.toLowerCase().includes("electron");
+
+  if (isElectron) {
+    // Let Electron handle the close — do NOT block
+    return;
+  }
+
   // Check if there's unsaved data or any other condition for triggering the warning
-  if (hasUnsavedAnnotations || hasUnsavedCounts) {
-    event.preventDefault();
-    event.returnValue = "";
+  if (
+    window.appState.hasUnsavedAnnotations ||
+    window.appState.hasUnsavedCounts
+  ) {
+    // Browser case: warn the user
+    e.preventDefault();
+    e.returnValue = ""; // Required for Chrome to show the confirmation dialog
   }
 });
 
@@ -2113,7 +2158,8 @@ viewer.addHandler("canvas-click", function (event) {
       toggleCrosshairFloaterOn(false);
     }
     enableAnnoButtons();
-    hasUnsavedAnnotations = true;
+    // window.appState.hasUnsavedAnnotations = true;
+    unsavedAnnotations(true);
   }
 });
 
@@ -2490,7 +2536,8 @@ function finalizeEllipseAnnotation(
     type: "FeatureCollection",
     features: [],
   };
-  hasUnsavedAnnotations = true;
+  // window.appState.hasUnsavedAnnotations = true;
+  unsavedAnnotations(true);
 
   if (!ellipseButton.classList.contains("active")) {
     toggleEllipseFloaterOn(false);
@@ -2688,7 +2735,8 @@ viewer.addHandler("canvas-click", function (event) {
           type: "FeatureCollection",
           features: [],
         };
-        hasUnsavedAnnotations = true;
+        // window.appState.hasUnsavedAnnotations = true;
+        unsavedAnnotations(true);
         enableAnnoButtons();
         isXPressed = false; // reset (because keyup not detected)
         XWasPressed = false; // reset
@@ -2740,7 +2788,8 @@ viewer.addHandler("canvas-click", function (event) {
             type: "FeatureCollection",
             features: [],
           };
-          hasUnsavedAnnotations = true;
+          // window.appState.hasUnsavedAnnotations = true;
+          unsavedAnnotations(true);
           enableAnnoButtons();
           isXPressed = false; // reset (because keyup not detected)
           XWasPressed = false; // reset
@@ -3314,7 +3363,7 @@ viewer.addHandler("canvas-release", function (event) {
     }
   }
   enableAnnoButtons();
-  hasUnsavedAnnotations = true; // TODO: Turn off button between each annotation???
+  window.appState.hasUnsavedAnnotations = true; // TODO: Turn off button between each annotation???
   if (!rectButton.classList.contains("active")) {
     toggleRectFloaterOn(false);
   }
@@ -3458,7 +3507,8 @@ function addText(
   });
   if (type === "anno") {
     annotateLabels.push(pointLabel);
-    hasUnsavedAnnotations = true;
+    // window.appState.hasUnsavedAnnotations = true;
+    unsavedAnnotations(true);
     updateRepeatButton();
   }
 }
@@ -3478,7 +3528,8 @@ function deleteText(uuid, type = "anno") {
       annotateLabels = annotateLabels.filter(
         (label) => label.id !== `annotate-label-${uuid}`
       ); // Clean up the array
-      hasUnsavedAnnotations = true;
+      // window.appState.hasUnsavedAnnotations = true;
+      unsavedAnnotations(true);
     }
   } else {
     console.warn(`Text overlay with ID-${uuid} not found.`);
@@ -3512,7 +3563,8 @@ function updateText(
 
     console.log(`Label updated for ID ${uuid}:`, newLabel);
     if (type === "anno") {
-      hasUnsavedAnnotations = true;
+      // window.appState.hasUnsavedAnnotations = true;
+      unsavedAnnotations(true);
     }
 
     // Update the CSS variables if new values are provided
@@ -3568,7 +3620,8 @@ function addCrosshairs(
   });
   if (type === "anno") {
     annotatePoints.push(crosshair);
-    hasUnsavedAnnotations = true;
+    // window.appState.hasUnsavedAnnotations = true;
+    unsavedAnnotations(true);
     updateRepeatButton();
   }
 }
@@ -4030,7 +4083,8 @@ document.getElementById("exportBtn").addEventListener("click", function () {
   // Trigger the download with 'saveAs'
   saveAs(geoJSONBlob, "annotations.geojson");
   // Reset the unsaved annotations flag (if necessary)
-  hasUnsavedAnnotations = false;
+  // window.appState.hasUnsavedAnnotations = false;
+  unsavedAnnotations(false);
 });
 
 // Attach export functionality to the button (GeoJSON version)
@@ -4043,6 +4097,7 @@ document.getElementById("save-counts").addEventListener("click", function () {
   });
   // Trigger the download with 'saveAs'
   saveAs(geoJSONBlob, "counts.geojson");
+  unsavedCounts(false);
 });
 
 const clearAnnotations = () => {
@@ -4081,7 +4136,8 @@ const clearAnnotations = () => {
   annoLabel.value = "";
   annoNotes.value = "";
   annoId.value = 1;
-  hasUnsavedAnnotations = false;
+  // window.appState.hasUnsavedAnnotations = false;
+  unsavedAnnotations(false);
 };
 
 viewerContainer.addEventListener("pointermove", (event) => {
@@ -5190,7 +5246,8 @@ function inputSampleLabel() {
 
   // Store the text in the geoJSON
   countJSON.features[id - 1].properties.id = textInput.value;
-  hasUnsavedCounts = true;
+  // window.appState.hasUnsavedCounts = true;
+  unsavedCounts(true);
 }
 
 function inputNotesText() {
@@ -5200,7 +5257,8 @@ function inputNotesText() {
 
   // Store the text in the object with sampleNumber as key
   countJSON.features[value - 1].properties.notes = textInput.value;
-  hasUnsavedCounts = true;
+  // window.appState.hasUnsavedCounts = true;
+  unsavedCounts(true);
 }
 
 // Function to update repeatButton state
@@ -5266,7 +5324,8 @@ document.getElementById("count-export").addEventListener("click", function () {
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
-  hasUnsavedCounts = false;
+  // window.appState.hasUnsavedCounts = false;
+  unsavedCounts(false);
 });
 
 // Import CSV of previously generated point-count data
@@ -5809,6 +5868,9 @@ function getCircleCoordinatesInImageSpace(centerX, centerY, diameter) {
 
 let circleConversion = 0;
 viewerContainer.addEventListener("mousemove", function (event) {
+  // For testing
+  console.log(window.appState.hasUnsavedAnnotations);
+
   if (!circleModeActive) return; // Only draw when mode is active
 
   circleJSON = {
