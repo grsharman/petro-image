@@ -14,6 +14,76 @@
       "https://raw.githubusercontent.com/uacsrg/image-storage1/main/images/MT-2 01 2.5x XPL60 final.dzi.dzi"
     ]
   },
+  "C-1": {
+    "groups": ["G. Dumond"],
+    "title": "C-1",
+    "description": "Medisedimentary Schist",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/uacsrg/image-storage1/main/images/C-1 01 2.5x PPL00 final.dzi.dzi",
+      "https://raw.githubusercontent.com/uacsrg/image-storage1/main/images/C-1 01 2.5x XPL00 final.dzi.dzi",
+      "https://raw.githubusercontent.com/uacsrg/image-storage1/main/images/C-1 01 2.5x XPL30 final.dzi.dzi"
+    ]
+  },
+  "GO-2": {
+    "groups": ["G. Dumond"],
+    "title": "GO-2",
+    "description": "Medisedimentary Schist",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/uacsrg/image-storage1/main/images/GO-2 01 2.5x PPL00 final.dzi.dzi",
+      "https://raw.githubusercontent.com/uacsrg/image-storage1/main/images/GO-2 01 2.5x XPL00 final.dzi.dzi",
+      "https://raw.githubusercontent.com/uacsrg/image-storage1/main/images/GO-2 01 2.5x XPL30 final.dzi.dzi"
+    ]
+  },
+  "PR-1": {
+    "groups": ["G. Dumond"],
+    "title": "PR-1",
+    "description": "Medisedimentary Schist",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/uacsrg/image-storage1/main/images/PR-1 01 2.5x PPL00 final.dzi.dzi",
+      "https://raw.githubusercontent.com/uacsrg/image-storage1/main/images/PR-1 01 2.5x XPL00 final.dzi.dzi",
+      "https://raw.githubusercontent.com/uacsrg/image-storage1/main/images/PR-1 01 2.5x XPL30 final.dzi.dzi"
+    ]
+  },
+  "TU-1": {
+    "groups": ["G. Dumond"],
+    "title": "TU-1",
+    "description": "Medisedimentary Schist",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/uacsrg/image-storage1/main/images/TU-1 01 2.5x PPL00 final.dzi.dzi",
+      "https://raw.githubusercontent.com/uacsrg/image-storage1/main/images/TU-1 01 2.5x XPL00 final.dzi.dzi",
+      "https://raw.githubusercontent.com/uacsrg/image-storage1/main/images/TU-1 01 2.5x XPL30 final.dzi.dzi"
+    ]
+  },
+  "W96-5FP": {
+    "groups": ["G. Dumond"],
+    "title": "W96-5FP",
+    "description": "Medisedimentary Schist",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/uacsrg/image-storage1/main/images/W96-5FP 01 2.5x PPL00 final.dzi.dzi",
+      "https://raw.githubusercontent.com/uacsrg/image-storage1/main/images/W96-5FP 01 2.5x XPL00 final.dzi.dzi",
+      "https://raw.githubusercontent.com/uacsrg/image-storage1/main/images/W96-5FP 01 2.5x XPL30 final.dzi.dzi"
+    ]
+  },
   "SD0004 (5x)": {
     "groups": ["Favorites", "SedGeo"],
     "title": "SD0004 (5x)",
