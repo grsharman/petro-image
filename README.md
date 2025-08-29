@@ -2,7 +2,7 @@
 
 An open-source, web-based platform for exploring and analyzing high-resolution digital microscopic images.
 
-**Try it out here**: [https://gsharman.github.io/petro-image/](https://gsharman.github.io/petro-image/)
+**Try it out here**: [https://grsharman.github.io/petro-image/](https://grsharman.github.io/petro-image/)
 
 By [Glenn R. Sharman](https://github.com/grsharman) and [Jonathan P. Sharman](https://github.com/jonathansharman)
 
