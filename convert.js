@@ -2,7 +2,7 @@ async function convert() {
   // Choose the input image via dialog.
   const inputPaths = await window.dialogAPI.openDialog({
     properties: ["openFile"],
-    filters: [{ name: "Image Files", extensions: ["png"] }],
+    filters: [{ name: "Image Files", extensions: ["png", "jpg", "jpeg"] }],
   });
   if (!inputPaths || !inputPaths.length) {
     // No input paths selected.

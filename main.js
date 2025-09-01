@@ -72,7 +72,7 @@ ipcMain.handle(
   "generate-dzi",
   async (_event, inputPath, outputDirectory, options) => {
     const outputPath = path.join(outputDirectory, "output.dz");
-    return await sharp(inputPath).png().tile(options).toFile(outputPath);
+    return await sharp(inputPath).jpeg().tile(options).toFile(outputPath);
   }
 );
 
