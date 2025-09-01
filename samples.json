@@ -2183,62 +2183,6 @@
       "https://raw.githubusercontent.com/uacsrg/image-storage2/main/images/Well-K-8128 01 2.5x XPL30 final.dzi.dzi"
     ]
   },
-  "Well-L-8001": {
-    "groups": ["Stevens Ss"],
-    "title": "Well-L-8001",
-    "description": "Stevens Sandstone",
-    "unit": "2",
-    "pixelsPerUnit": "0.398",
-    "pixelsPerMeter": "398000",
-    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
-    "tileSets": [
-      "https://raw.githubusercontent.com/uacsrg/image-storage2/main/images/Well-L-8001 01 2.5x PPL00 final.dzi.dzi",
-      "https://raw.githubusercontent.com/uacsrg/image-storage2/main/images/Well-L-8001 01 2.5x XPL00 final.dzi.dzi",
-      "https://raw.githubusercontent.com/uacsrg/image-storage2/main/images/Well-L-8001 01 2.5x XPL30 final.dzi.dzi"
-    ]
-  },
-  "Well-M-8325": {
-    "groups": ["Stevens Ss"],
-    "title": "Well-M-8325",
-    "description": "Stevens Sandstone",
-    "unit": "2",
-    "pixelsPerUnit": "0.398",
-    "pixelsPerMeter": "398000",
-    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
-    "tileSets": [
-      "https://raw.githubusercontent.com/uacsrg/image-storage2/main/images/Well-M-8325 01 2.5x PPL00 final.dzi.dzi",
-      "https://raw.githubusercontent.com/uacsrg/image-storage2/main/images/Well-M-8325 01 2.5x XPL00 final.dzi.dzi",
-      "https://raw.githubusercontent.com/uacsrg/image-storage2/main/images/Well-M-8325 01 2.5x XPL30 final.dzi.dzi"
-    ]
-  },
-  "Well-N-6667": {
-    "groups": ["Stevens Ss"],
-    "title": "Well-N-6667",
-    "description": "Stevens Sandstone",
-    "unit": "2",
-    "pixelsPerUnit": "0.398",
-    "pixelsPerMeter": "398000",
-    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
-    "tileSets": [
-      "https://raw.githubusercontent.com/uacsrg/image-storage2/main/images/Well-N-6667 01 2.5x PPL00 final.dzi.dzi",
-      "https://raw.githubusercontent.com/uacsrg/image-storage2/main/images/Well-N-6667 01 2.5x XPL00 final.dzi.dzi",
-      "https://raw.githubusercontent.com/uacsrg/image-storage2/main/images/Well-N-6667 01 2.5x XPL30 final.dzi.dzi"
-    ]
-  },
-  "Well-N-6688": {
-    "groups": ["Stevens Ss"],
-    "title": "Well-N-6688",
-    "description": "Stevens Sandstone",
-    "unit": "2",
-    "pixelsPerUnit": "0.398",
-    "pixelsPerMeter": "398000",
-    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
-    "tileSets": [
-      "https://raw.githubusercontent.com/uacsrg/image-storage2/main/images/Well-N-6688 01 2.5x PPL00 final.dzi.dzi",
-      "https://raw.githubusercontent.com/uacsrg/image-storage2/main/images/Well-N-6688 01 2.5x XPL00 final.dzi.dzi",
-      "https://raw.githubusercontent.com/uacsrg/image-storage2/main/images/Well-N-6688 01 2.5x XPL30 final.dzi.dzi"
-    ]
-  },
   "Well-T-11445": {
     "groups": ["Stevens Ss"],
     "title": "Well-T-11445",
