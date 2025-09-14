@@ -5,10 +5,24 @@
   "type": "module",
   "main": "main.js",
   "scripts": {
-    "start": "electron-forge start",
+    "start": "electron .",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "package": "electron-forge package",
-    "make": "electron-forge make"
+    "postinstall": "electron-builder install-app-deps",
+    "make": "electron-builder",
+    "clean": "rimraf dist node_modules"
+  },
+  "build": {
+    "asar": true,
+    "asarUnpack": [
+      "**/*.node"
+    ],
+    "directories": {
+      "output": "out"
+    },
+    "files": [
+      "**/*"
+    ],
+    "npmRebuild": true
   },
   "repository": {
     "type": "git",
@@ -21,18 +35,11 @@
   },
   "homepage": "https://github.com/grsharman/petro-image",
   "devDependencies": {
-    "@electron-forge/cli": "^7.8.1",
-    "@electron-forge/maker-deb": "^7.8.1",
-    "@electron-forge/maker-rpm": "^7.8.1",
-    "@electron-forge/maker-squirrel": "^7.8.1",
-    "@electron-forge/maker-zip": "^7.8.1",
-    "@electron-forge/plugin-auto-unpack-natives": "^7.8.1",
-    "@electron-forge/plugin-fuses": "^7.8.1",
-    "@electron/fuses": "^1.8.0",
-    "electron": "^37.2.4"
+    "electron": "^37.2.4",
+    "electron-builder": "^26.0.12",
+    "rimraf": "^6.0.1"
   },
   "dependencies": {
-    "electron-squirrel-startup": "^1.0.1",
     "sharp": "^0.34.3"
   }
 }
