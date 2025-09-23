@@ -3386,5 +3386,20 @@
       "https://raw.githubusercontent.com/grsharman/image-storage17/main/images/EWO-SWM-Kb 01 2.5x XPL00 final.dzi",
       "https://raw.githubusercontent.com/grsharman/image-storage17/main/images/EWO-SWM-Kb 01 2.5x XPL30 final.dzi"
     ]
+  },
+  "FWS-24-01 Tt": {
+    "groups": ["Titanite"],
+    "title": "FWS-24-01 Tt",
+    "description": "Farewell Spit titanite mount",
+    "unit": "2",
+    "pixelsPerUnit": "2.171",
+    "pixelsPerMeter": "2171000",
+    "tileLabels": ["BSE", "trans", "reflected", "CL"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/uacsrg/image-storage2/main/images/FWS-24-01 Tt BSE.dzi",
+      "https://raw.githubusercontent.com/uacsrg/image-storage2/refs/heads/main/images/FWS-24-01%20Tt%20trans_v2.dzi",
+      "https://raw.githubusercontent.com/uacsrg/image-storage2/refs/heads/main/images/FWS-24-01%20Tt%20reflected_v2.dzi",
+      "https://raw.githubusercontent.com/uacsrg/image-storage2/main/images/FWS-24-01 Tt CL.dzi"
+    ]
   }
 }
