@@ -495,7 +495,7 @@ document.querySelector(".close-btn").addEventListener("click", function () {
 
 // Close modal when clicking outside of content
 window.onclick = function (event) {
-  if (event.target == document.getElementById("info-modal")) {
+  if (event.target === document.getElementById("info-modal")) {
     document.getElementById("info-modal").style.display = "none";
   }
 };
@@ -695,44 +695,6 @@ function loadTileSet(index) {
   }
 }
 
-function setTileSetOpacity() {
-  const tileSet = tileSets[currentIndex];
-  let imageIndex = 0;
-
-  // One loop per quadrant
-  for (let i = 0; i < tileSet.length; ++i) {
-    let imagesInQuadrant = [];
-
-    if (Array.isArray(tileSet[i])) {
-      // If it's a nested list, add all images to the same quadrant
-      imagesInQuadrant = tileSet[i];
-    } else {
-      // If it's a single image, treat it as its own group
-      imagesInQuadrant = [tileSet[i]];
-    }
-
-    // Determine which image should be visible in this quadrant
-    const visibleImageIndex = scrollIndex % imagesInQuadrant.length;
-
-    const opacityValue =
-      Number(document.getElementById(`opacityImage${i + 1}`).value) / 100; // Convert percent
-    const checked = document.getElementById(`image${i + 1}`).checked;
-    for (let j = 0; j < imagesInQuadrant.length; ++j) {
-      ++imageIndex;
-      if (checked) {
-        const tiledImage = viewer.world.getItemAt(imageIndex - 1);
-        if (tiledImage) {
-          if (j === visibleImageIndex) {
-            tiledImage.setOpacity(opacityValue);
-          } else {
-            tiledImage.setOpacity(0);
-          }
-        }
-      }
-    }
-  }
-}
-
 const viewerContainer = document.getElementById("viewer-container");
 
 // Share the mouse position between event handlers.
@@ -742,10 +704,22 @@ let mousePos = new OpenSeadragon.Point(0, 0);
 // expose the images underneath. Note that all images are expected to have the
 // same position and size.
 const divideImages = () => {
-  const tileSet = tileSets[currentIndex];
   // Bail out if there are no images.
-  if (viewer.world.getItemCount() == 0) {
+  if (viewer.world.getItemCount() === 0) {
     return;
+  }
+
+  const tileSet = tileSets[currentIndex];
+  // Determine the number of checked images ahead of time so we know how big to
+  // make each section.
+  const isChecked = [];
+  let totalChecked = 0;
+  for (let i = 0; i < tileSet.length; ++i) {
+    const checkbox = document.getElementById(`image${i + 1}`);
+    isChecked.push(checkbox.checked);
+    if (checkbox.checked) {
+      ++totalChecked;
+    }
   }
 
   const radius = 4 * Math.max(window.innerWidth, window.innerHeight);
@@ -755,7 +729,7 @@ const divideImages = () => {
   let imageIndex = 0; // Because a given section may have multiple images
   // One loop per top level of image list
   for (let i = tileSet.length - 1; i >= 0; --i) {
-    const endAngle = (-2 * Math.PI * (i + 1)) / tileSet.length;
+    const endAngle = (-2 * Math.PI * (i + 1)) / totalChecked;
     const windowPolygon = [mousePos];
     // Define the section's arc using four points to ensure the polygon is
     // well-formed even if the tile set has fewer than three tiles.
@@ -770,8 +744,6 @@ const divideImages = () => {
     }
 
     let imagesInSection = [];
-    const checkbox = document.getElementById(`image${i + 1}`);
-
     if (Array.isArray(tileSet[i])) {
       // If it's a nested list, add all images to the same section
       imagesInSection = tileSet[i];
@@ -780,21 +752,24 @@ const divideImages = () => {
       imagesInSection = [tileSet[i]];
     }
 
+    const imageOpacity = document.getElementById(`opacityImage${i + 1}`).value;
+
     // One loop per second level of image list
     for (let j = 0; j < imagesInSection.length; ++j) {
       ++imageIndex;
-      if (!checkbox.checked) {
-        continue;
-      }
-      // Check to see if this is the image we should be showing
-      const visibleImageIndex = scrollIndex % imagesInSection.length;
-      if (j !== visibleImageIndex) {
-        continue;
-      }
 
       const image = viewer.world.getItemAt(imageIndex - 1);
       if (!image) {
         console.warn(`Image at index ${imageIndex - 1} is not loaded yet.`);
+        continue;
+      }
+
+      // Display this image if it's selected and checked.
+      const visibleImageIndex = scrollIndex % imagesInSection.length;
+      if (isChecked[i] && j === visibleImageIndex) {
+        image.setOpacity(imageOpacity / 100);
+      } else {
+        image.setOpacity(0);
         continue;
       }
 
@@ -807,49 +782,7 @@ const divideImages = () => {
       }
     }
   }
-  setTileSetOpacity();
   viewer.forceRedraw();
-};
-
-const toggleImage = (checkbox, idx) => {
-  const imageOpacity = document.getElementById(`opacityImage${idx + 1}`).value;
-  console.log(`image${idx + 1}Opacity`, imageOpacity);
-
-  const tileSet = tileSets[currentIndex];
-  const tile = tileSet[idx];
-
-  // Find the index of the first image belonging to the checked tile.
-  let firstImageIdx = 0;
-  for (let i = 0; i < idx; ++i) {
-    if (Array.isArray(tileSet[i])) {
-      firstImageIdx += tileSet[i].length;
-    } else {
-      ++firstImageIdx;
-    }
-  }
-
-  // Check if the tile is a nested list or a single image
-  if (Array.isArray(tile)) {
-    // If it's a nested array, loop through the images
-    tile.forEach((_, nestedIndex) => {
-      const imageIndex = firstImageIdx + nestedIndex; // Add nestedIndex to calculate the correct image index
-      const image = viewer.world.getItemAt(imageIndex);
-      if (image) {
-        image.setOpacity(checkbox.checked ? imageOpacity / 100 : 0);
-      }
-    });
-  } else {
-    // If it's a single image, handle it directly
-    const image = viewer.world.getItemAt(firstImageIdx);
-    if (image) {
-      image.setOpacity(checkbox.checked ? imageOpacity / 100 : 0);
-    }
-  }
-
-  // If divideImages is enabled, re-apply the division logic
-  if (enableDivideImages) {
-    divideImages();
-  }
 };
 
 const toggleGridCrosshairs = (event) => {
@@ -1894,11 +1827,10 @@ let enableDivideImages = true;
 const toggleDivideImages = (event) => {
   if (event.checked) {
     enableDivideImages = true;
-    divideImages();
   } else {
     enableDivideImages = false;
-    divideImages();
   }
+  divideImages();
 };
 
 // Import, add, and export points with labels
