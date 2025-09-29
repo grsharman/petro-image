@@ -723,13 +723,14 @@ const divideImages = () => {
   }
 
   const radius = 4 * Math.max(window.innerWidth, window.innerHeight);
-  const startAngle = 1.5 * Math.PI;
+  const startAngle = -Math.PI / 2;
 
   // Set the cropping polygon for each image.
   let imageIndex = 0; // Because a given section may have multiple images
+  let sectionsLeft = totalChecked;
   // One loop per top level of image list
   for (let i = tileSet.length - 1; i >= 0; --i) {
-    const endAngle = (-2 * Math.PI * (i + 1)) / totalChecked;
+    const endAngle = (-2 * Math.PI * sectionsLeft) / totalChecked;
     const windowPolygon = [mousePos];
     // Define the section's arc using four points to ensure the polygon is
     // well-formed even if the tile set has fewer than three tiles.
@@ -743,7 +744,7 @@ const divideImages = () => {
       );
     }
 
-    let imagesInSection = [];
+    let imagesInSection;
     if (Array.isArray(tileSet[i])) {
       // If it's a nested list, add all images to the same section
       imagesInSection = tileSet[i];
@@ -768,6 +769,7 @@ const divideImages = () => {
       const visibleImageIndex = scrollIndex % imagesInSection.length;
       if (isChecked[i] && j === visibleImageIndex) {
         image.setOpacity(imageOpacity / 100);
+        --sectionsLeft;
       } else {
         image.setOpacity(0);
         continue;
