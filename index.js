@@ -738,7 +738,7 @@ const viewerContainer = document.getElementById("viewer-container");
 // Share the mouse position between event handlers.
 let mousePos = new OpenSeadragon.Point(0, 0);
 
-// Divides the images at the current mouse position, clipping overlaid images to
+// Divides the images at the current mouse position, cropping overlaid images to
 // expose the images underneath. Note that all images are expected to have the
 // same position and size.
 const divideImages = () => {
@@ -748,61 +748,67 @@ const divideImages = () => {
     return;
   }
 
-  // Get the clip point and clamp it to within the image bounds.
-  const image = viewer.world.getItemAt(0);
-  const clipPos = image.viewerElementToImageCoordinates(mousePos);
-  const size = image.getContentSize();
-  clipPos.x = Math.max(0, Math.min(clipPos.x, size.x));
-  clipPos.y = Math.max(0, Math.min(clipPos.y, size.y));
+  const radius = 4 * Math.max(window.innerWidth, window.innerHeight);
+  const startAngle = 1.5 * Math.PI;
 
-  // Set the clip for each image.
-  let imageIndex = 0; // Because a given quadrant may have multiple images
-  let previousVisibleImages = 0;
+  // Set the cropping polygon for each image.
+  let imageIndex = 0; // Because a given section may have multiple images
   // One loop per top level of image list
-  for (let i = 0; i < tileSet.length; ++i) {
-    let imagesInQuadrant = [];
+  for (let i = tileSet.length - 1; i >= 0; --i) {
+    const endAngle = (-2 * Math.PI * (i + 1)) / tileSet.length;
+    const windowPolygon = [mousePos];
+    // Define the section's arc using four points to ensure the polygon is
+    // well-formed even if the tile set has fewer than three tiles.
+    for (let p = 0; p < 4; ++p) {
+      const angle = startAngle + (p * endAngle) / 3;
+      windowPolygon.push(
+        new OpenSeadragon.Point(
+          mousePos.x + radius * Math.cos(angle),
+          mousePos.y + radius * Math.sin(angle)
+        )
+      );
+    }
+
+    let imagesInSection = [];
     const checkbox = document.getElementById(`image${i + 1}`);
 
     if (Array.isArray(tileSet[i])) {
-      // If it's a nested list, add all images to the same quadrant
-      imagesInQuadrant = tileSet[i];
+      // If it's a nested list, add all images to the same section
+      imagesInSection = tileSet[i];
     } else {
       // If it's a single image, treat it as its own group
-      imagesInQuadrant = [tileSet[i]];
+      imagesInSection = [tileSet[i]];
     }
 
     // One loop per second level of image list
-    for (let j = 0; j < imagesInQuadrant.length; ++j) {
+    for (let j = 0; j < imagesInSection.length; ++j) {
       ++imageIndex;
       if (!checkbox.checked) {
         continue;
       }
       // Check to see if this is the image we should be showing
-      const visibleImageIndex = scrollIndex % imagesInQuadrant.length;
+      const visibleImageIndex = scrollIndex % imagesInSection.length;
       if (j !== visibleImageIndex) {
         continue;
       }
 
       const image = viewer.world.getItemAt(imageIndex - 1);
-      if (image) {
-      } else {
+      if (!image) {
         console.warn(`Image at index ${imageIndex - 1} is not loaded yet.`);
         continue;
       }
 
-      // Determine the quadrants to be clipped by how many visible images are
-      // underneath this one.
-      const xClip = previousVisibleImages & 1 ? clipPos.x : 0;
-      const yClip = previousVisibleImages & 2 ? clipPos.y : 0;
-      image.setClip(new OpenSeadragon.Rect(xClip, yClip, size.x, size.y));
-      ++previousVisibleImages;
-      // Don't use the clip if enableDivideImages is false
-      if (!enableDivideImages) {
-        image.setClip(null); // Clear the clip
+      if (enableDivideImages) {
+        image.setCroppingPolygons([
+          windowPolygon.map((p) => image.viewerElementToImageCoordinates(p)),
+        ]);
+      } else {
+        image.resetCroppingPolygons();
       }
     }
   }
   setTileSetOpacity();
+  viewer.forceRedraw();
 };
 
 const toggleImage = (checkbox, idx) => {
