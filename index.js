@@ -723,13 +723,14 @@ const divideImages = () => {
   }
 
   const radius = 4 * Math.max(window.innerWidth, window.innerHeight);
-  const startAngle = -Math.PI / 2;
+  // Place the first image in a segment with its most clockwise edge facing up.
+  const startAngle = -Math.PI / 2 - (2 * Math.PI) / totalChecked;
 
   // Set the cropping polygon for each image.
   let imageIndex = 0; // Because a given section may have multiple images
   let sectionsLeft = totalChecked;
   // One loop per top level of image list
-  for (let i = tileSet.length - 1; i >= 0; --i) {
+  for (let i = 0; i < tileSet.length; ++i) {
     const endAngle = (-2 * Math.PI * sectionsLeft) / totalChecked;
     const windowPolygon = [mousePos];
     // Define the section's arc using four points to ensure the polygon is
@@ -753,10 +754,7 @@ const divideImages = () => {
       imagesInSection = [tileSet[i]];
     }
 
-    // const imageOpacity = document.getElementById(`opacityImage${i + 1}`).value;
-    const imageOpacity = document.getElementById(
-      `opacityImage${tileSet.length - i}`
-    ).value;
+    const imageOpacity = document.getElementById(`opacityImage${i + 1}`).value;
 
     // One loop per second level of image list
     for (let j = 0; j < imagesInSection.length; ++j) {
@@ -770,8 +768,7 @@ const divideImages = () => {
 
       // Display this image if it's selected and checked.
       const visibleImageIndex = scrollIndex % imagesInSection.length;
-      // if (isChecked[i] && j === visibleImageIndex) {
-      if (isChecked[tileSet.length - 1 - i] && j === visibleImageIndex) {
+      if (isChecked[i] && j === visibleImageIndex) {
         image.setOpacity(imageOpacity / 100);
         --sectionsLeft;
       } else {
