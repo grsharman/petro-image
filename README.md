@@ -208,6 +208,9 @@ To load your own images, you must format a JSON file as shown below.
 
 petro-image may display up to four images simultaneously. The image below shows how layers are vertically superimposed.
 
+> [!WARNING]
+> An update is in progress that will allow any number of images to be displayed simultaneously by using polygonal dividers instead of fixed grids. The figure below is no longer up-to-date (updated: Sept 30, 2025).
+
 > [!NOTE]
 > The first image should be the base layer over which the other images will be shown.
 
