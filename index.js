@@ -753,7 +753,10 @@ const divideImages = () => {
       imagesInSection = [tileSet[i]];
     }
 
-    const imageOpacity = document.getElementById(`opacityImage${i + 1}`).value;
+    // const imageOpacity = document.getElementById(`opacityImage${i + 1}`).value;
+    const imageOpacity = document.getElementById(
+      `opacityImage${tileSet.length - i}`
+    ).value;
 
     // One loop per second level of image list
     for (let j = 0; j < imagesInSection.length; ++j) {
@@ -767,7 +770,8 @@ const divideImages = () => {
 
       // Display this image if it's selected and checked.
       const visibleImageIndex = scrollIndex % imagesInSection.length;
-      if (isChecked[i] && j === visibleImageIndex) {
+      // if (isChecked[i] && j === visibleImageIndex) {
+      if (isChecked[tileSet.length - 1 - i] && j === visibleImageIndex) {
         image.setOpacity(imageOpacity / 100);
         --sectionsLeft;
       } else {
