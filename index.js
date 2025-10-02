@@ -343,6 +343,7 @@ document
     enableDivideImages = true;
     divideImages();
     toggleOnImages();
+    resetRotation();
 
     const annoJSONButtonContainer = document.getElementById("loadAnnoFromJSON");
 
@@ -429,19 +430,29 @@ function deselectAllButFirstImage() {
 
 // Function to update the label dynamically
 function updateImageLabels() {
-  // One loop per quadrant
-  for (let i = 0; i < tileLabels[currentIndex].length; i++) {
-    // const currentLabel = tileLabels[currentIndex][i];
-    const tileLabelsForIndex = tileLabels[currentIndex][i]; // Get the labels for the current tile set
-    const visibleImageIndex = scrollIndex % tileLabelsForIndex.length;
+  const tileLabelsForCurrent = tileLabels[currentIndex];
+
+  for (let i = 0; i < 4; i++) {
+    const labelDiv = document.getElementById(
+      `labelForOpacityImage${i + 1}`
+    ).parentElement; // the <div> wrapping the label+input+span
     const labelElement = document.getElementById(
       `labelForOpacityImage${i + 1}`
     );
-    if (Array.isArray(tileLabelsForIndex)) {
-      // Determine the visible label index based on scrollIndex
-      labelElement.textContent = tileLabelsForIndex[visibleImageIndex]; // Set the label text based on the scrollIndex logic
+
+    if (i < tileLabelsForCurrent.length) {
+      // Show the div
+      labelDiv.style.display = "";
+      const tileLabelsForIndex = tileLabelsForCurrent[i];
+      const visibleImageIndex =
+        scrollIndex %
+        (Array.isArray(tileLabelsForIndex) ? tileLabelsForIndex.length : 1);
+      labelElement.textContent = Array.isArray(tileLabelsForIndex)
+        ? tileLabelsForIndex[visibleImageIndex]
+        : tileLabelsForIndex;
     } else {
-      labelElement.textContent = tileLabelsForIndex;
+      // Hide extra divs
+      labelDiv.style.display = "none";
     }
   }
 }
@@ -3091,6 +3102,7 @@ function drawPath(ctx, coordinates, image, shape, closePath) {
 }
 
 let startPoint = null;
+let startPixel;
 let startPointImage = null;
 let overlayElement = null;
 let currentRectUniqueId;
@@ -3098,12 +3110,9 @@ viewer.addHandler("canvas-drag", function (event) {
   if (event.originalEvent.shiftKey || isRectangleMode) {
     event.preventDefaultAction = true; // Prevent default behavior (like panning)
 
-    const image = viewer.world.getItemAt(0);
+    const canvasPoint = event.position;
     const viewportPoint = viewer.viewport.pointFromPixel(event.position);
-    const imagePoint = image.viewportToImageCoordinates(
-      viewportPoint.x,
-      viewportPoint.y
-    );
+
     const labelFontSize = Number(
       document.getElementById("annoLabelFontSize").value
     );
@@ -3124,10 +3133,11 @@ viewer.addHandler("canvas-drag", function (event) {
     if (!startPoint) {
       // Mouse down - initialize start point and overlay
       startPoint = viewportPoint;
-      startPointImage = image.viewportToImageCoordinates(
-        startPoint.x,
-        startPoint.y
-      );
+      startPixel = canvasPoint;
+      // startPointImage = image.viewportToImageCoordinates(
+      //   startPoint.x,
+      //   startPoint.y
+      // );
       currentRectUniqueId = generateUniqueId(8);
     } else {
       // Clear to avoid duplicating lines
@@ -3136,13 +3146,46 @@ viewer.addHandler("canvas-drag", function (event) {
         features: [],
       };
 
+      const left = Math.min(startPixel.x, canvasPoint.x);
+      const top = Math.min(startPixel.y, canvasPoint.y);
+      const right = Math.max(startPixel.x, canvasPoint.x);
+      const bottom = Math.max(startPixel.y, canvasPoint.y);
+
+      const topLeftVP = viewer.viewport.pointFromPixel(
+        new OpenSeadragon.Point(left, top)
+      );
+      const topRightVP = viewer.viewport.pointFromPixel(
+        new OpenSeadragon.Point(right, top)
+      );
+      const bottomRightVP = viewer.viewport.pointFromPixel(
+        new OpenSeadragon.Point(right, bottom)
+      );
+      const bottomLeftVP = viewer.viewport.pointFromPixel(
+        new OpenSeadragon.Point(left, bottom)
+      );
+
+      // 4. Convert to image coordinates if needed
+      const image = viewer.world.getItemAt(0);
+      const topLeft = image.viewportToImageCoordinates(topLeftVP);
+      const topRight = image.viewportToImageCoordinates(topRightVP);
+      const bottomRight = image.viewportToImageCoordinates(bottomRightVP);
+      const bottomLeft = image.viewportToImageCoordinates(bottomLeftVP);
+
       const rectCoordinates = [
-        [startPointImage.x, startPointImage.y],
-        [startPointImage.x, imagePoint.y],
-        [imagePoint.x, imagePoint.y],
-        [imagePoint.x, startPointImage.y],
-        [startPointImage.x, startPointImage.y],
+        [topLeft.x, topLeft.y],
+        [topRight.x, topRight.y],
+        [bottomRight.x, bottomRight.y],
+        [bottomLeft.x, bottomLeft.y],
+        [topLeft.x, topLeft.y], // close polygon
       ];
+
+      // const rectCoordinates = [
+      //   [startPointImage.x, startPointImage.y],
+      //   [startPointImage.x, imagePoint.y],
+      //   [imagePoint.x, imagePoint.y],
+      //   [imagePoint.x, startPointImage.y],
+      //   [startPointImage.x, startPointImage.y],
+      // ];
 
       addPolygonToGeoJSON(annoJSONTemp, rectCoordinates, {
         uuid: currentRectUniqueId,
@@ -3168,6 +3211,40 @@ viewer.addHandler("canvas-release", function (event) {
     // Capture the final rectangle's coordinates and size
     const image = viewer.world.getItemAt(0);
     const imageSize = image.getContentSize();
+
+    const left = Math.min(startPixel.x, event.position.x);
+    const top = Math.min(startPixel.y, event.position.y);
+    const right = Math.max(startPixel.x, event.position.x);
+    const bottom = Math.max(startPixel.y, event.position.y);
+
+    const topLeftVP = viewer.viewport.pointFromPixel(
+      new OpenSeadragon.Point(left, top)
+    );
+    const topRightVP = viewer.viewport.pointFromPixel(
+      new OpenSeadragon.Point(right, top)
+    );
+    const bottomRightVP = viewer.viewport.pointFromPixel(
+      new OpenSeadragon.Point(right, bottom)
+    );
+    const bottomLeftVP = viewer.viewport.pointFromPixel(
+      new OpenSeadragon.Point(left, bottom)
+    );
+
+    // 4. Convert to image coordinates if needed
+    const topLeft = image.viewportToImageCoordinates(topLeftVP);
+    const topRight = image.viewportToImageCoordinates(topRightVP);
+    const bottomRight = image.viewportToImageCoordinates(bottomRightVP);
+    const bottomLeft = image.viewportToImageCoordinates(bottomLeftVP);
+
+    const rectCoordinates = [
+      [topLeft.x, topLeft.y],
+      [topRight.x, topRight.y],
+      [bottomRight.x, bottomRight.y],
+      [bottomLeft.x, bottomLeft.y],
+      [topLeft.x, topLeft.y], // close polygon
+    ];
+
+    // Convert drag endpoints into image coords
     const endPoint = viewer.viewport.pointFromPixel(event.position);
     const imageStartPoint = image.viewportToImageCoordinates(
       startPoint.x,
@@ -3177,16 +3254,17 @@ viewer.addHandler("canvas-release", function (event) {
       endPoint.x,
       endPoint.y
     );
+
     const width = imageEndPoint.x - imageStartPoint.x;
     const height = imageEndPoint.y - imageStartPoint.y;
 
     // Normalize the coordinates so the top-left is always the starting point
     const x = Math.min(imageStartPoint.x, imageStartPoint.x + width);
     const y = Math.min(imageStartPoint.y, imageStartPoint.y + height);
-    const finalPoint = image.imageToViewportCoordinates(x, y);
+    // const finalPoint = image.imageToViewportCoordinates(x, y);
     // var finalPoint = viewer.viewport.imageToViewportCoordinates(x, y);
-    const finalWidth = Math.abs(width);
-    const finalHeight = Math.abs(height);
+    // const finalWidth = Math.abs(width);
+    // const finalHeight = Math.abs(height);
 
     // Get a uniqueID to store
     // const uniqueID = generateUniqueId(8);
@@ -3212,11 +3290,8 @@ viewer.addHandler("canvas-release", function (event) {
     if (isRepeatMode) {
       const annoId = parseInt(document.getElementById("anno-id").value);
       var constRectLabel = annoJSON.features[annoId - 1].properties.label;
-      finalizeRectAnnotation(
-        x,
-        y,
-        finalWidth,
-        finalHeight,
+      finalizeRectAnnotationWithCoords(
+        rectCoordinates,
         sampleName,
         currentRectUniqueId,
         constRectLabel,
@@ -3230,8 +3305,7 @@ viewer.addHandler("canvas-release", function (event) {
         lineColor,
         lineOpacity,
         fillColor,
-        fillOpacity,
-        finalPoint
+        fillOpacity
       );
       annoJSONTemp = {
         type: "FeatureCollection",
@@ -3245,11 +3319,8 @@ viewer.addHandler("canvas-release", function (event) {
         if (value) {
           console.log("User entered:", value);
           constRectLabel = value;
-          finalizeRectAnnotation(
-            x,
-            y,
-            finalWidth,
-            finalHeight,
+          finalizeRectAnnotationWithCoords(
+            rectCoordinates,
             sampleName,
             currentRectUniqueId,
             constRectLabel,
@@ -3263,8 +3334,7 @@ viewer.addHandler("canvas-release", function (event) {
             lineColor,
             lineOpacity,
             fillColor,
-            fillOpacity,
-            finalPoint
+            fillOpacity
           );
           annoJSONTemp = {
             type: "FeatureCollection",
@@ -3273,11 +3343,8 @@ viewer.addHandler("canvas-release", function (event) {
           drawShape(polyCanvas, [annoJSON]);
         } else {
           constRectLabel = "";
-          finalizeRectAnnotation(
-            x,
-            y,
-            finalWidth,
-            finalHeight,
+          finalizeRectAnnotationWithCoords(
+            rectCoordinates,
             sampleName,
             currentRectUniqueId,
             constRectLabel,
@@ -3291,8 +3358,7 @@ viewer.addHandler("canvas-release", function (event) {
             lineColor,
             lineOpacity,
             fillColor,
-            fillOpacity,
-            finalPoint
+            fillOpacity
           );
           annoJSONTemp = {
             type: "FeatureCollection",
@@ -3311,6 +3377,79 @@ viewer.addHandler("canvas-release", function (event) {
   shiftKeyHeld = false; // TODO: is this right?    // Clear upon release
 });
 
+function finalizeRectAnnotationWithCoords(
+  coordinates, // array of 5 [x,y] points, top-left first, closed loop
+  sampleName,
+  currentRectUniqueId,
+  constRectLabel,
+  imageSize,
+  labelFontSize,
+  labelFontColor,
+  labelBackgroundColor,
+  labelBackgroundOpacity,
+  lineStyle,
+  lineWeight,
+  lineColor,
+  lineOpacity,
+  fillColor,
+  fillOpacity
+) {
+  const image = viewer.world.getItemAt(0); // Get image to use for drawing
+
+  // Calculate area and perimeter
+  const rectAreaPixels2 = calculatePolygonArea([coordinates]);
+  const rectAreaM2 = rectAreaPixels2 / pixelsPerMeters[currentIndex] ** 2;
+  const rectPerimeterPixels = calculatePolygonExteriorPerimeter([coordinates]);
+  const rectPerimeterM = rectPerimeterPixels / pixelsPerMeters[currentIndex];
+
+  // Add the rectangle to geoJSON
+  const sampleIdx = samples.indexOf(sampleName);
+  addPolygonToGeoJSON(annoJSON, coordinates, {
+    uuid: currentRectUniqueId,
+    label: constRectLabel,
+    xLabel: coordinates[0][0], // top-left corner
+    yLabel: coordinates[0][1],
+    imageTitle: sampleName,
+    pixelsPerMeter: Number(pixelsPerMeters[sampleIdx]),
+    imageWidth: imageSize.x,
+    imageHeight: imageSize.y,
+    labelFontSize: labelFontSize,
+    labelFontColor: labelFontColor,
+    labelBackgroundColor: labelBackgroundColor,
+    labelBackgroundOpacity: labelBackgroundOpacity,
+    lineStyle: lineStyle,
+    lineWeight: Number(lineWeight),
+    lineColor: lineColor,
+    lineOpacity: Number(lineOpacity),
+    fillColor: fillColor,
+    fillOpacity: fillOpacity,
+    area_m2: rectAreaM2,
+    perimeter_m: rectPerimeterM,
+  });
+  drawShape(polyCanvas, [annoJSON]);
+
+  // Reset start point
+  startPoint = null;
+  overlayElement = null;
+
+  // Add label at top-left point
+  const finalPoint = image.imageToViewportCoordinates(
+    coordinates[0][0],
+    coordinates[0][1]
+  );
+  addText(
+    currentRectUniqueId,
+    constRectLabel,
+    finalPoint,
+    "anno",
+    labelFontColor,
+    labelFontSize,
+    labelBackgroundColor,
+    labelBackgroundOpacity
+  );
+}
+
+// OLD deprecated function. Does not support drawing on a rotated viewport.
 function finalizeRectAnnotation(
   x,
   y,
@@ -3405,7 +3544,7 @@ document.getElementById("clearBtn").addEventListener("click", function () {
   }
 });
 
-// Functions to add annotation test and crosshairs
+// New function to allow rotation of text labels to keep them upright
 function addText(
   i,
   label,
@@ -3423,45 +3562,114 @@ function addText(
     className = "grid-label";
   }
 
-  const pointLabel = document.createElement("div");
+  // Outer container — this is the element OSD will position (do NOT rotate this)
+  const container = document.createElement("div");
+  container.className = "annotation-overlay"; // optional helper class
 
+  // Inner element — put your actual text here and rotate this to cancel viewer rotation
+  const pointLabel = document.createElement("div");
   pointLabel.innerHTML = `${label}`;
   pointLabel.className = `${className}`;
-  // pointLabel.className = "annotate-label";
   pointLabel.id = `${className}-${i}`;
-  // pointLabel.id = `annotate-label-${i}`;
 
   const backgroundColorToPlot = applyOpacityToColor(
     backgroundColor,
     backgroundOpacity
   );
 
-  // Apply inline styles for customization
+  // CSS custom properties for styling; applied to the inner label
   pointLabel.style.setProperty("--color", color);
   pointLabel.style.setProperty("--font-size", `${fontSize}px`);
   pointLabel.style.setProperty("--background-color", backgroundColorToPlot);
 
-  const overlay = viewer.addOverlay({
-    element: pointLabel,
+  // Important: make the inner element inline-block so transform-origin behaves
+  pointLabel.style.display = "inline-block";
+  pointLabel.style.transformOrigin = "center center";
+  pointLabel.style.willChange = "transform"; // performance hint
+
+  // assemble and add overlay
+  container.appendChild(pointLabel);
+  viewer.addOverlay({
+    element: container,
     location: location,
     checkResize: false,
   });
+
+  // keep reference to the INNER label so we can rotate it later
   if (type === "anno") {
     annotateLabels.push(pointLabel);
-    // window.appState.hasUnsavedAnnotations = true;
     unsavedAnnotations(true);
     updateRepeatButton();
   }
+
+  // immediately sync it to current rotation (so newly added labels are upright)
+  const currentRotation = viewer.viewport.getRotation();
+  pointLabel.style.transform = `rotate(${-currentRotation}deg)`;
 }
+
+// // OG Functions to add annotation test and crosshairs
+// function addText(
+//   i,
+//   label,
+//   location,
+//   type = "anno", // Options: "grid", "anno"
+//   color = "#FFFFFF",
+//   fontSize = 16,
+//   backgroundColor = "#000000",
+//   backgroundOpacity = 0.5
+// ) {
+//   let className;
+//   if (type === "anno") {
+//     className = "annotate-label";
+//   } else if (type === "grid") {
+//     className = "grid-label";
+//   }
+
+//   const pointLabel = document.createElement("div");
+
+//   pointLabel.innerHTML = `${label}`;
+//   pointLabel.className = `${className}`;
+//   // pointLabel.className = "annotate-label";
+//   pointLabel.id = `${className}-${i}`;
+//   // pointLabel.id = `annotate-label-${i}`;
+
+//   const backgroundColorToPlot = applyOpacityToColor(
+//     backgroundColor,
+//     backgroundOpacity
+//   );
+
+//   // Apply inline styles for customization
+//   pointLabel.style.setProperty("--color", color);
+//   pointLabel.style.setProperty("--font-size", `${fontSize}px`);
+//   pointLabel.style.setProperty("--background-color", backgroundColorToPlot);
+
+//   const overlay = viewer.addOverlay({
+//     element: pointLabel,
+//     location: location,
+//     checkResize: false,
+//   });
+//   if (type === "anno") {
+//     annotateLabels.push(pointLabel);
+//     // window.appState.hasUnsavedAnnotations = true;
+//     unsavedAnnotations(true);
+//     updateRepeatButton();
+//   }
+// }
 
 // Function to delete the text of an existing annotation label
 function deleteText(uuid, type = "anno") {
-  let overlayElement;
+  // let overlayElement;
+  let overlayId;
   if (type === "anno") {
-    overlayElement = document.getElementById(`annotate-label-${uuid}`);
+    // overlayElement = document.getElementById(`annotate-label-${uuid}`);
+    overlayId = `annotate-label-${uuid}`;
   } else if (type === "grid") {
-    overlayElement = document.getElementById(`grid-label-${uuid}`);
+    // overlayElement = document.getElementById(`grid-label-${uuid}`);
+    overlayId = `grid-label-${uuid}`;
   }
+
+  const overlayElement = document.getElementById(overlayId);
+
   if (overlayElement) {
     viewer.removeOverlay(overlayElement); // Remove the overlay using the element
     if (type === "anno") {
@@ -3472,6 +3680,8 @@ function deleteText(uuid, type = "anno") {
       // window.appState.hasUnsavedAnnotations = true;
       unsavedAnnotations(true);
     }
+    // Finally remove the element from DOM
+    overlayElement.remove();
   } else {
     console.warn(`Text overlay with ID-${uuid} not found.`);
   }
@@ -6627,4 +6837,120 @@ function hidePrompt() {
   promptBox.classList.remove("modal-prompt-visible");
   promptBox.classList.add("modal-prompt-hidden");
   promptInput.onkeydown = null;
+}
+
+/////////////////////////////////
+//// Image rotation controls ////
+/////////////////////////////////
+
+const imageRotater = document.getElementById("imageRotation");
+// const rotationAngle = document.getElementById("imageRotationValue");
+
+// Update value in real time
+imageRotater.addEventListener("input", () => {
+  const rotationAngle = parseInt(
+    document.getElementById("imageRotation").value
+  );
+  viewer.viewport.setRotation(rotationAngle);
+  document.getElementById("imageRotationValue").innerHTML = rotationAngle + "°";
+});
+
+// Listen for R key press → rotate +90°
+document.addEventListener("keydown", (event) => {
+  if (event.key === "r" || event.key === "R") {
+    const currentRotation = viewer.viewport.getRotation();
+    const newRotation = currentRotation % 360;
+    viewer.viewport.setRotation(newRotation);
+
+    // Sync slider + text
+    imageRotater.value = newRotation;
+    document.getElementById("imageRotationValue").innerHTML = newRotation + "°";
+  }
+});
+
+//// Code for keeping annotation and grid labels upright when rotating ////
+
+// Keep labels roughly upright, snapping to 45° increments
+function updateAnnotationUpright() {
+  const angle = viewer.viewport.getRotation();
+
+  // Compute snapped rotation
+  // Round to nearest multiple of 45 degrees
+  const snappedAngle = Math.round(-angle / 22.5) * 22.5;
+
+  annotateLabels.forEach((labelEl) => {
+    labelEl.style.transform = `rotate(${snappedAngle}deg)`;
+    labelEl.style.transformOrigin = "top left";
+  });
+
+  for (let labelEl of document.getElementsByClassName("grid-label")) {
+    labelEl.style.transform = `rotate(${snappedAngle}deg)`;
+    labelEl.style.transformOrigin = "top left";
+  }
+}
+
+// Trigger only when rotation changes (avoids fighting animations)
+viewer.addHandler("rotate", updateAnnotationUpright);
+
+// Also update after animations finish
+viewer.addHandler("animation-finish", updateAnnotationUpright);
+
+// Call once at init
+updateAnnotationUpright();
+
+//// Code that controls zoom/rotation with mouse scroll ////
+
+const ROTATION_SENSITIVITY = 1; // degrees per scroll unit
+const ZOOM_SENSITIVITY = 1; // zoom factor per scroll unit
+
+// Disable OSD’s default scroll zoom
+viewer.gestureSettingsMouse.scrollToZoom = false;
+
+viewer.addHandler("canvas-scroll", function (event) {
+  const e = event.originalEvent;
+  e.preventDefault();
+  e.stopPropagation();
+
+  if (e.ctrlKey) {
+    // Ctrl held → rotate
+
+    const delta = e.deltaY;
+    const currentRotation = viewer.viewport.getRotation();
+    const newRotation = currentRotation + delta * ROTATION_SENSITIVITY;
+    viewer.viewport.setRotation(newRotation);
+
+    // update slider/value if you have them
+    const rotationSlider = document.getElementById("imageRotation");
+    const rotationValue = document.getElementById("imageRotationValue");
+    if (rotationSlider && rotationValue) {
+      const positiveRotation = ((newRotation % 360) + 360) % 360;
+      rotationSlider.value = positiveRotation;
+      rotationValue.textContent = Math.round(positiveRotation) + "°";
+    }
+  } else {
+    // No Ctrl → zoom normally
+    e.preventDefault();
+    e.stopPropagation();
+
+    const zoom = viewer.viewport.getZoom();
+    const factor = 1 - e.deltaY * ZOOM_SENSITIVITY * 0.01; // adjust sensitivity
+
+    // const factor = Math.pow(1.2, -e.deltaY / 100); // adjust sensitivity if needed
+
+    // Get the mouse position relative to the viewport
+    const webPoint = new OpenSeadragon.Point(e.clientX, e.clientY);
+    const viewportPoint = viewer.viewport.pointFromPixel(webPoint);
+
+    viewer.viewport.zoomTo(zoom * factor, viewportPoint);
+  }
+});
+
+function resetRotation() {
+  const rotationSlider = document.getElementById("imageRotation");
+  const rotationValue = document.getElementById("imageRotationValue");
+  if (rotationSlider && rotationValue) {
+    rotationSlider.value = 0;
+    rotationValue.textContent = "0°";
+  }
+  viewer.viewport.setRotation(0, true);
 }
