@@ -685,9 +685,92 @@ function restoreScalebarDefaults() {
 }
 
 // Function to recursively add tile sources
+// function addTiles(tileSource) {
+//   if (Array.isArray(tileSource)) {
+//     tileSource.forEach(addTiles); // Recursively handle nested lists
+//   } else {
+//     viewer.addTiledImage({
+//       tileSource: tileSource,
+//       success: function () {},
+//     });
+//   }
+// }
+
+// Recursive addTiles function
+// Recursive addTiles function
 function addTiles(tileSource) {
   if (Array.isArray(tileSource)) {
-    tileSource.forEach(addTiles); // Recursively handle nested lists
+    if (
+      tileSource.length === 2 &&
+      typeof tileSource[0] === "string" &&
+      typeof tileSource[1] === "string"
+    ) {
+      // Blend two images
+      let blendImages = [];
+
+      function tryInitBlend() {
+        if (blendImages.length === 2) {
+          // Initialize WebGL overlay
+          const glOverlay = new openSeadragonGL(viewer);
+
+          // Provide shader code as strings (no external .glsl files)
+          glOverlay.viaGL.vShader = `
+            attribute vec2 a_pos;
+            varying vec2 vTextureCoord;
+            void main(void) {
+              vTextureCoord = a_pos * 0.5 + 0.5;
+              gl_Position = vec4(a_pos, 0.0, 1.0);
+            }
+          `;
+
+          glOverlay.viaGL.fShader = `
+            precision mediump float;
+            uniform sampler2D uSampler0;
+            uniform sampler2D uSampler1;
+            uniform float blendFactor;
+            varying vec2 vTextureCoord;
+            void main(void) {
+              vec4 c0 = texture2D(uSampler0, vTextureCoord);
+              vec4 c1 = texture2D(uSampler1, vTextureCoord);
+              gl_FragColor = mix(c0, c1, blendFactor);
+            }
+          `;
+
+          // Set initial blend factor
+          glOverlay.viaGL.blendFactor = 0.0;
+
+          // Initialize WebGL overlay
+          glOverlay.viaGL.init().then(() => {
+            console.log("WebGL overlay ready");
+
+            // Slider to adjust blend factor
+            document
+              .getElementById("blendSlider")
+              .addEventListener("input", function () {
+                glOverlay.viaGL.blendFactor = parseFloat(this.value) / 100;
+
+                // Only redraw GL overlay, do not reset all OSD tiles
+                if (glOverlay.viaGL.gl) {
+                  glOverlay.viaGL["gl-drawing"](glOverlay.viaGL.source);
+                }
+              });
+          });
+        }
+      }
+
+      // Load both images
+      tileSource.forEach((url) => {
+        viewer.addTiledImage({
+          tileSource: url,
+          success: function (event) {
+            blendImages.push(event.item);
+            tryInitBlend();
+          },
+        });
+      });
+    } else {
+      tileSource.forEach(addTiles);
+    }
   } else {
     viewer.addTiledImage({
       tileSource: tileSource,
@@ -6954,3 +7037,168 @@ function resetRotation() {
   }
   viewer.viewport.setRotation(0, true);
 }
+
+/////////////////////////////////////////
+//// Shader code for blending images ////
+/////////////////////////////////////////
+
+// Initialize WebGL once with a source image or canvas
+// const glOverlay = new openSeadragonGL(viewer);
+
+// // Provide a valid source for init
+// glOverlay.viaGL.init(glOverlay.viaGL.source).then(() => {
+//   // Now the WebGL buffers are ready
+//   document.getElementById("blendSlider").addEventListener("input", function () {
+//     const value = parseFloat(this.value) / 100;
+
+//     // Update blend factor
+//     glOverlay.viaGL.blendFactor = value;
+
+//     // Redraw only the WebGL canvas
+//     if (glOverlay.viaGL.gl) {
+//       glOverlay.viaGL["gl-drawing"](glOverlay.viaGL.source);
+//     }
+//   });
+// });
+
+// Create WebGL overlay canvas
+const canvas = document.createElement("canvas");
+canvas.id = "glOverlay";
+viewerContainer.appendChild(canvas);
+
+const gl = canvas.getContext("webgl");
+if (!gl) alert("WebGL not supported");
+
+let textures = [];
+
+// Load XPL images as HTMLImageElements
+console.log("tileSets", tileSets);
+const xplImages = tileSets[currentIndex][1].map((url) => {
+  console.log("Loading image:", url);
+  const img = new Image();
+  img.crossOrigin = "anonymous";
+  img.src = url;
+  return img;
+});
+
+// Adjust canvas size on resize or viewer open
+function resizeCanvas() {
+  const rect = viewerContainer.getBoundingClientRect();
+  canvas.width = rect.width;
+  canvas.height = rect.height;
+  gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
+  draw(); // redraw on resize
+}
+window.addEventListener("resize", resizeCanvas);
+viewer.addHandler("open", resizeCanvas);
+
+// Simple vertex shader
+const vertexShaderSource = `
+      attribute vec2 a_pos;
+      varying vec2 vTexCoord;
+      void main() {
+        vTexCoord = a_pos * 0.5 + 0.5;
+        gl_Position = vec4(a_pos, 0.0, 1.0);
+      }
+    `;
+
+// Fragment shader to blend two textures
+const fragmentShaderSource = `
+      precision mediump float;
+      uniform sampler2D uTex0;
+      uniform sampler2D uTex1;
+      uniform float blendFactor;
+      varying vec2 vTexCoord;
+      void main() {
+        vec4 c0 = texture2D(uTex0, vTexCoord);
+        vec4 c1 = texture2D(uTex1, vTexCoord);
+        gl_FragColor = mix(c0, c1, blendFactor);
+      }
+    `;
+
+function createShader(gl, type, source) {
+  const shader = gl.createShader(type);
+  gl.shaderSource(shader, source);
+  gl.compileShader(shader);
+  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+    console.error(gl.getShaderInfoLog(shader));
+    gl.deleteShader(shader);
+    return null;
+  }
+  return shader;
+}
+
+function createProgram(gl, vsSource, fsSource) {
+  const vs = createShader(gl, gl.VERTEX_SHADER, vsSource);
+  const fs = createShader(gl, gl.FRAGMENT_SHADER, fsSource);
+  const program = gl.createProgram();
+  gl.attachShader(program, vs);
+  gl.attachShader(program, fs);
+  gl.linkProgram(program);
+  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+    console.error(gl.getProgramInfoLog(program));
+    return null;
+  }
+  return program;
+}
+
+const program = createProgram(gl, vertexShaderSource, fragmentShaderSource);
+gl.useProgram(program);
+
+// Setup a fullscreen quad
+const positionBuffer = gl.createBuffer();
+gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+gl.bufferData(
+  gl.ARRAY_BUFFER,
+  new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]),
+  gl.STATIC_DRAW
+);
+
+const a_pos = gl.getAttribLocation(program, "a_pos");
+gl.enableVertexAttribArray(a_pos);
+gl.vertexAttribPointer(a_pos, 2, gl.FLOAT, false, 0, 0);
+
+// Load images as textures
+xplImages.forEach((img, i) => {
+  const tex = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, tex);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  textures.push(tex);
+
+  img.onload = () => {
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
+    draw();
+  };
+});
+
+const uTex0 = gl.getUniformLocation(program, "uTex0");
+const uTex1 = gl.getUniformLocation(program, "uTex1");
+const uBlend = gl.getUniformLocation(program, "blendFactor");
+
+function draw() {
+  gl.clearColor(0, 0, 0, 0);
+  gl.clear(gl.COLOR_BUFFER_BIT);
+
+  // Bind textures
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_2D, textures[0]);
+  gl.uniform1i(uTex0, 0);
+
+  gl.activeTexture(gl.TEXTURE1);
+  gl.bindTexture(gl.TEXTURE_2D, textures[1]);
+  gl.uniform1i(uTex1, 1);
+
+  gl.uniform1f(
+    uBlend,
+    parseFloat(document.getElementById("blendSlider").value) / 100
+  );
+
+  gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+}
+
+// Slider
+document.getElementById("blendSlider").addEventListener("input", draw);

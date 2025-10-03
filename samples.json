@@ -14,6 +14,23 @@
       "https://raw.githubusercontent.com/uacsrg/image-storage1/main/images/MT-2 01 2.5x XPL60 final.dzi.dzi"
     ]
   },
+  "MT-02 (option 2)": {
+    "groups": ["Favorites", "Microtectonics"],
+    "title": "MT-02",
+    "description": "gneiss",
+    "unit": "2",
+    "pixelsPerUnit": "0.398",
+    "pixelsPerMeter": "398000",
+    "tileLabels": ["PPL(0°)", ["XPL(0°)", "XPL(30°)", "XPL(60°)"]],
+    "tileSets": [
+      "https://raw.githubusercontent.com/uacsrg/image-storage1/main/images/MT-2 01 2.5x PPL00 final.dzi.dzi",
+      [
+        "https://raw.githubusercontent.com/uacsrg/image-storage1/main/images/MT-2 01 2.5x XPL00 final.dzi.dzi",
+        "https://raw.githubusercontent.com/uacsrg/image-storage1/main/images/MT-2 01 2.5x XPL30 final.dzi.dzi",
+        "https://raw.githubusercontent.com/uacsrg/image-storage1/main/images/MT-2 01 2.5x XPL60 final.dzi.dzi"
+      ]
+    ]
+  },
   "C-1": {
     "groups": ["Microtectonics"],
     "title": "C-1",
