@@ -6933,9 +6933,16 @@ viewer.addHandler("canvas-scroll", function (event) {
     e.stopPropagation();
 
     const zoom = viewer.viewport.getZoom();
-    const factor = 1 - e.deltaY * ZOOM_SENSITIVITY * 0.01; // adjust sensitivity
+    //const factor = 1 - e.deltaY * ZOOM_SENSITIVITY * 0.01; // adjust sensitivity
 
-    // const factor = Math.pow(1.2, -e.deltaY / 100); // adjust sensitivity if needed
+    const factor = Math.pow(1.2, -e.deltaY / 100); // adjust sensitivity if needed
+
+    let newZoom = zoom * factor;
+
+    // Clamp to min/max
+    const minZoom = viewer.viewport.getMinZoom();
+    const maxZoom = viewer.viewport.getMaxZoom();
+    newZoom = Math.max(minZoom, Math.min(newZoom, maxZoom));
 
     // Get the mouse position relative to the viewport
     const webPoint = new OpenSeadragon.Point(e.clientX, e.clientY);
