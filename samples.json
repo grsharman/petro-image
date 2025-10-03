@@ -29,7 +29,10 @@
         "https://raw.githubusercontent.com/uacsrg/image-storage1/main/images/MT-2 01 2.5x XPL30 final.dzi.dzi",
         "https://raw.githubusercontent.com/uacsrg/image-storage1/main/images/MT-2 01 2.5x XPL60 final.dzi.dzi"
       ]
-    ]
+    ],
+    "tileSetRotation": [false, true],
+    "tileSetRotationAngles": [[0], [0, 30, 60]],
+    "tileSetRotationAngleRepeat": [180, 90]
   },
   "C-1": {
     "groups": ["Microtectonics"],
