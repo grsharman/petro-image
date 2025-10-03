@@ -401,6 +401,17 @@
       <div id="tooltip-desc" class="hidden"></div>
       <div>
         <input
+          type="range"
+          id="imageRotation"
+          class="opacity-slider"
+          min="0"
+          max="360"
+          value="0"
+        />
+        <span class="slider-value" id="imageRotationValue">0°</span>
+      </div>
+      <div>
+        <input
           type="checkbox"
           id="image1"
           checked
@@ -2471,7 +2482,6 @@
     <script src="js/openseadragon-scalebar.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@annotorious/openseadragon@latest/dist/annotorious-openseadragon.js"></script>
     <script src="index.js"></script>
   </body>
 </html>
