@@ -765,7 +765,11 @@ const divideImages = () => {
       imagesInSection = [tileSet[i]];
     }
 
-    const imageOpacity = document.getElementById(`opacityImage${i + 1}`).value;
+    const currentRotation = viewer.viewport.getRotation();
+    let imageOpacity = 100;
+    if (i === 0) {
+      imageOpacity = document.getElementById(`opacityImage${i + 1}`).value;
+    }
 
     // One loop per second level of image list
     for (let j = 0; j < imagesInSection.length; ++j) {
@@ -775,6 +779,20 @@ const divideImages = () => {
       if (!image) {
         console.warn(`Image at index ${imageIndex - 1} is not loaded yet.`);
         continue;
+      }
+
+      // Hard-coding in opacity changes for now (3 XPL images for MT-02)
+      if (j === 1) {
+        imageOpacity =
+          rotation_opacity_finder(currentRotation, 0, 30, 90) * 100;
+      }
+      if (j === 2) {
+        imageOpacity =
+          rotation_opacity_finder(currentRotation, 30, 30, 90) * 100;
+      }
+      if (j === 3) {
+        imageOpacity =
+          rotation_opacity_finder(currentRotation, 60, 30, 90) * 100;
       }
 
       // Display this image if it's selected and checked.
@@ -6926,6 +6944,21 @@ viewer.addHandler("canvas-scroll", function (event) {
       const positiveRotation = ((newRotation % 360) + 360) % 360;
       rotationSlider.value = positiveRotation;
       rotationValue.textContent = Math.round(positiveRotation) + "°";
+
+      console.log("currentRotation", currentRotation);
+      console.log("residualAngle", currentRotation % 90);
+      console.log(
+        "XPL00 opacity",
+        rotation_opacity_finder(currentRotation, 0, 30, 90)
+      );
+      console.log(
+        "XPL30 opacity",
+        rotation_opacity_finder(currentRotation, 30, 30, 90)
+      );
+      console.log(
+        "XPL60 opacity",
+        rotation_opacity_finder(currentRotation, 60, 30, 90)
+      );
     }
   } else {
     // No Ctrl → zoom normally
@@ -6960,4 +6993,42 @@ function resetRotation() {
     rotationValue.textContent = "0°";
   }
   viewer.viewport.setRotation(0, true);
+}
+
+function rotation_opacity_finder(
+  currentRotation,
+  imageAngle, // Angle of image e.g., 30 for XPL30
+  imageAngleSpacing, // Difference between adjacent image angles e.g., 30 for XPL00 and XPL30
+  imageAngleRepeat // 90 for XPL, 180 for PPL
+) {
+  // Normalize rotation to [0, imageAngleRepeat)
+  let normalizedRotation =
+    ((currentRotation % imageAngleRepeat) + imageAngleRepeat) %
+    imageAngleRepeat;
+
+  // Compute angle difference relative to this image
+  let delta =
+    (normalizedRotation - imageAngle + imageAngleRepeat) % imageAngleRepeat;
+
+  // For wrap-around cases (e.g., near repeat boundary)
+  if (delta > imageAngleRepeat - imageAngleSpacing) {
+    delta -= imageAngleRepeat;
+  }
+
+  let opacity = 0;
+
+  // If we're before or at the imageAngle (counterclockwise side): full opacity
+  if (delta <= 0) {
+    opacity = 1;
+  }
+  // If we're between imageAngle and imageAngle + spacing: fade out
+  else if (delta > 0 && delta < imageAngleSpacing) {
+    opacity = 1 - delta / imageAngleSpacing;
+  }
+  // Otherwise: 0
+  else {
+    opacity = 0;
+  }
+
+  return opacity;
 }
