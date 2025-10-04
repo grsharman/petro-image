@@ -12,7 +12,7 @@ let units = []; // 2 for microns
 let infos = [];
 let annotation_files = {}; // For loading predefined annotations
 let groupMapping = {}; // To map groups to sample indices ///
-let scrollIndex = 1e6;
+let scrollIndex = 0;
 
 // Global variables related to annotations
 let hasAnnotationInJSON = false; // for keeping track of whether the selected sample has annotations in the JSON
@@ -377,17 +377,16 @@ function updateButtonLabels(index) {
   const numButtons = tileSets[index].length;
   const tileLabelsForIndex = tileLabels[index]; // Get the labels for the current tile set
 
-  for (let i = 1; i <= 4; i++) {
-    const checkbox = document.getElementById(`image${i}`);
-    const label = document.getElementById(`label${i}`);
+  for (let i = 0; i < 4; i++) {
+    const checkbox = document.getElementById(`image${i + 1}`);
+    const label = document.getElementById(`label${i + 1}`);
+    const currentLabel = tileLabelsForIndex[i];
+    const visibleImageIndex = scrollIndex % currentLabel.length;
 
-    const visibleImageIndex = scrollIndex % tileLabelsForIndex.length;
-
-    if (i <= numButtons) {
+    if (i < numButtons) {
       // For regular labels, use the normal setup
       checkbox.style.display = "inline";
       label.style.display = "inline";
-      const currentLabel = tileLabelsForIndex[i - 1];
       if (Array.isArray(currentLabel)) {
         // Determine the visible label index based on scrollIndex
         label.textContent = currentLabel[visibleImageIndex]; // Set the label text based on the scrollIndex logic
