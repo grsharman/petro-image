@@ -733,6 +733,10 @@ const divideImages = () => {
     }
   }
 
+  const currentRotation = viewer.viewport.getRotation();
+
+  updateImageOrder(viewer, [1, 2, 3], [0, 30, 60], currentRotation, 30, 90);
+
   const radius = 4 * Math.max(window.innerWidth, window.innerHeight);
   // Place the first image in a segment with its most clockwise edge facing up.
   const startAngle = -Math.PI / 2 - (2 * Math.PI) / totalChecked;
@@ -765,7 +769,6 @@ const divideImages = () => {
       imagesInSection = [tileSet[i]];
     }
 
-    const currentRotation = viewer.viewport.getRotation();
     let imageOpacity = 100;
     if (i === 0) {
       imageOpacity = document.getElementById(`opacityImage${i + 1}`).value;
@@ -796,8 +799,15 @@ const divideImages = () => {
       }
 
       // Display this image if it's selected and checked.
-      const visibleImageIndex = scrollIndex % imagesInSection.length;
-      if (isChecked[i] && j === visibleImageIndex) {
+      // const visibleImageIndex = scrollIndex % imagesInSection.length;
+      // if (isChecked[i] && j === visibleImageIndex) {
+      //   image.setOpacity(imageOpacity / 100);
+      //   --sectionsLeft;
+      // } else {
+      //   image.setOpacity(0);
+      //   continue;
+      // }
+      if (isChecked[i]) {
         image.setOpacity(imageOpacity / 100);
         --sectionsLeft;
       } else {
@@ -6995,40 +7005,162 @@ function resetRotation() {
   viewer.viewport.setRotation(0, true);
 }
 
+// function rotation_opacity_finder(
+//   currentRotation,
+//   imageAngle, // Angle of image e.g., 30 for XPL30
+//   imageAngleSpacing, // Difference between adjacent image angles e.g., 30 for XPL00 and XPL30
+//   imageAngleRepeat // 90 for XPL, 180 for PPL
+// ) {
+//   // Normalize rotation to [0, imageAngleRepeat)
+//   let normalizedRotation =
+//     ((currentRotation % imageAngleRepeat) + imageAngleRepeat) %
+//     imageAngleRepeat;
+
+//   // Compute angle difference relative to this image
+//   let delta =
+//     (normalizedRotation - imageAngle + imageAngleRepeat) % imageAngleRepeat;
+
+//   // For wrap-around cases (e.g., near repeat boundary)
+//   if (delta > imageAngleRepeat - imageAngleSpacing) {
+//     delta -= imageAngleRepeat;
+//   }
+
+//   let opacity = 0;
+
+//   // If we're before or at the imageAngle (counterclockwise side): full opacity
+//   if (delta <= 0) {
+//     opacity = 1;
+//   }
+//   // If we're between imageAngle and imageAngle + spacing: fade out
+//   else if (delta > 0 && delta < imageAngleSpacing) {
+//     opacity = 1 - delta / imageAngleSpacing;
+//   }
+//   // Otherwise: 0
+//   else {
+//     opacity = 0;
+//   }
+
+//   return opacity;
+// }
+
+// function rotation_opacity_finder(
+//   currentRotation,
+//   imageAngle,
+//   imageAngleSpacing,
+//   imageAngleRepeat
+// ) {
+//   // Normalize rotation to [0, imageAngleRepeat)
+//   let normalizedRotation =
+//     ((currentRotation % imageAngleRepeat) + imageAngleRepeat) %
+//     imageAngleRepeat;
+
+//   // Compute angular distance (shortest way around the circle)
+//   let delta = normalizedRotation - imageAngle;
+
+//   // Wrap delta to [-imageAngleRepeat/2, +imageAngleRepeat/2)
+//   if (delta > imageAngleRepeat / 2) delta -= imageAngleRepeat;
+//   if (delta < -imageAngleRepeat / 2) delta += imageAngleRepeat;
+
+//   let opacity = 0;
+
+//   // Fully visible if before or at imageAngle
+//   if (delta <= 0 && delta >= -imageAngleSpacing) {
+//     opacity = 1;
+//   }
+//   // Fade out clockwise after imageAngle
+//   else if (delta > 0 && delta < imageAngleSpacing) {
+//     opacity = 1 - delta / imageAngleSpacing;
+//   }
+//   // Wraparound case (fade between last and first)
+//   else if (delta < -imageAngleRepeat + imageAngleSpacing) {
+//     opacity = 1 - (-imageAngleRepeat - delta) / imageAngleSpacing;
+//   }
+
+//   return opacity;
+// }
+
+// Compute opacity for a given image based on rotation
 function rotation_opacity_finder(
   currentRotation,
-  imageAngle, // Angle of image e.g., 30 for XPL30
-  imageAngleSpacing, // Difference between adjacent image angles e.g., 30 for XPL00 and XPL30
-  imageAngleRepeat // 90 for XPL, 180 for PPL
+  imageAngle,
+  imageAngleSpacing,
+  imageAngleRepeat
 ) {
-  // Normalize rotation to [0, imageAngleRepeat)
-  let normalizedRotation =
-    ((currentRotation % imageAngleRepeat) + imageAngleRepeat) %
-    imageAngleRepeat;
+  let residual = (currentRotation - imageAngle) % imageAngleRepeat;
+  if (residual < -imageAngleRepeat / 2) residual += imageAngleRepeat;
+  if (residual > imageAngleRepeat / 2) residual -= imageAngleRepeat;
 
-  // Compute angle difference relative to this image
-  let delta =
-    (normalizedRotation - imageAngle + imageAngleRepeat) % imageAngleRepeat;
-
-  // For wrap-around cases (e.g., near repeat boundary)
-  if (delta > imageAngleRepeat - imageAngleSpacing) {
-    delta -= imageAngleRepeat;
+  if (residual <= 0 && residual >= -imageAngleSpacing) {
+    return 1 + residual / imageAngleSpacing; // fading out
+  } else if (residual > 0 && residual <= imageAngleSpacing) {
+    return 1 - residual / imageAngleSpacing; // fading in
   }
+  return residual < 0 ? 0 : 0; // fully invisible outside range
+}
 
-  let opacity = 0;
+// Phase-based ordering for XPL images
+function updateImageOrder(
+  viewer,
+  xplIndices,
+  imageAngles,
+  currentRotation,
+  spacing,
+  repeat
+) {
+  const opacities = imageAngles.map((angle) =>
+    rotation_opacity_finder(currentRotation, angle, spacing, repeat)
+  );
 
-  // If we're before or at the imageAngle (counterclockwise side): full opacity
-  if (delta <= 0) {
-    opacity = 1;
-  }
-  // If we're between imageAngle and imageAngle + spacing: fade out
-  else if (delta > 0 && delta < imageAngleSpacing) {
-    opacity = 1 - delta / imageAngleSpacing;
-  }
-  // Otherwise: 0
-  else {
-    opacity = 0;
-  }
+  // Determine which image is fading out and which is fading in
+  const phase = Math.floor((currentRotation % repeat) / spacing); // 0, 1, 2...
+  const bottomIdx = xplIndices[phase % xplIndices.length];
+  const topIdx = xplIndices[(phase + 1) % xplIndices.length];
 
-  return opacity;
+  // Set bottom first, then top (PPL00 stays at index 0)
+  const bottomItem = viewer.world.getItemAt(bottomIdx);
+  const topItem = viewer.world.getItemAt(topIdx);
+  if (bottomItem) viewer.world.setItemIndex(bottomItem, 1); // above PPL
+  if (topItem) viewer.world.setItemIndex(topItem, 2); // topmost
+
+  // Apply opacity
+  xplIndices.forEach((idx, i) => {
+    const item = viewer.world.getItemAt(idx);
+    if (item) item.setOpacity(opacities[i]);
+  });
+}
+
+function updateImageOrder(
+  viewer,
+  xplIndices,
+  imageAngles,
+  currentRotation,
+  spacing,
+  repeat
+) {
+  // Compute opacities
+  const opacities = imageAngles.map((angle) =>
+    rotation_opacity_finder(currentRotation, angle, spacing, repeat)
+  );
+
+  // Pair indices with opacities and angles for tie-breaking
+  const paired = xplIndices.map((idx, i) => ({
+    idx,
+    opacity: opacities[i],
+    angle: imageAngles[i],
+  }));
+
+  // Sort by opacity ascending, break ties by angle ascending
+  paired.sort((a, b) => a.opacity - b.opacity || a.angle - b.angle);
+
+  // Reorder items in viewer.world
+  paired.forEach((entry, order) => {
+    const item = viewer.world.getItemAt(entry.idx);
+    if (item) viewer.world.setItemIndex(item, order + 1); // 0 = PPL00 bottom
+  });
+
+  // Apply opacity
+  xplIndices.forEach((idx, i) => {
+    const item = viewer.world.getItemAt(idx);
+    if (item) item.setOpacity(opacities[i]);
+  });
 }
