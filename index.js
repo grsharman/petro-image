@@ -733,9 +733,20 @@ const divideImages = () => {
     }
   }
 
+  const xplIndices = [1, 2, 3]; // XPL00, XPL30, XPL60 world indices
+  const xplAngles = [0, 30, 60]; // corresponding angles
+  const spacing = 30;
+  const repeat = 90;
   const currentRotation = viewer.viewport.getRotation();
-
-  updateImageOrder(viewer, [1, 2, 3], [0, 30, 60], currentRotation, 30, 90);
+  // Update stacking order and opacity
+  updateImageOrder(
+    viewer,
+    xplIndices,
+    xplAngles,
+    currentRotation,
+    spacing,
+    repeat
+  );
 
   const radius = 4 * Math.max(window.innerWidth, window.innerHeight);
   // Place the first image in a segment with its most clockwise edge facing up.
@@ -7129,6 +7140,56 @@ function updateImageOrder(
   });
 }
 
+// function updateImageOrder(
+//   viewer,
+//   xplIndices,
+//   imageAngles,
+//   currentRotation,
+//   spacing,
+//   repeat
+// ) {
+//   // Compute opacities
+//   const opacities = imageAngles.map((angle) =>
+//     rotation_opacity_finder(currentRotation, angle, spacing, repeat)
+//   );
+
+//   // Pair indices with opacities and angles for tie-breaking
+//   const paired = xplIndices.map((idx, i) => ({
+//     idx,
+//     opacity: opacities[i],
+//     angle: imageAngles[i],
+//   }));
+
+//   // Sort by opacity ascending, break ties by angle ascending
+//   paired.sort((a, b) => a.opacity - b.opacity || a.angle - b.angle);
+
+//   // Reorder items in viewer.world
+//   paired.forEach((entry, order) => {
+//     const item = viewer.world.getItemAt(entry.idx);
+//     if (item) viewer.world.setItemIndex(item, order + 1); // 0 = PPL00 bottom
+//   });
+
+//   // Apply opacity
+//   xplIndices.forEach((idx, i) => {
+//     const item = viewer.world.getItemAt(idx);
+//     if (item) item.setOpacity(opacities[i]);
+//   });
+// }
+
+// Keep track of current top XPL image globally
+let currentTopXplIndex = null;
+
+/**
+ * Updates the stacking order of XPL images based on current rotation.
+ * Only reorders when the top image should change.
+ *
+ * @param {OpenSeadragon.Viewer} viewer
+ * @param {number[]} xplIndices - world indices of XPL images
+ * @param {number[]} imageAngles - corresponding angles of XPL images
+ * @param {number} currentRotation - viewport rotation in degrees
+ * @param {number} spacing - imageAngleSpacing
+ * @param {number} repeat - imageAngleRepeat
+ */
 function updateImageOrder(
   viewer,
   xplIndices,
@@ -7137,28 +7198,51 @@ function updateImageOrder(
   spacing,
   repeat
 ) {
-  // Compute opacities
+  // Compute opacities for all XPL images
   const opacities = imageAngles.map((angle) =>
     rotation_opacity_finder(currentRotation, angle, spacing, repeat)
   );
 
-  // Pair indices with opacities and angles for tie-breaking
-  const paired = xplIndices.map((idx, i) => ({
-    idx,
-    opacity: opacities[i],
-    angle: imageAngles[i],
-  }));
+  // Determine thresholds for top image switching (midpoint of fading intervals)
+  const thresholds = [];
+  for (let i = 0; i < imageAngles.length; i++) {
+    const nextAngle = imageAngles[(i + 1) % imageAngles.length];
+    let midpoint = (imageAngles[i] + nextAngle) / 2;
+    // handle wrap-around
+    if (nextAngle < imageAngles[i]) midpoint += repeat / 2;
+    thresholds.push(midpoint % repeat);
+  }
 
-  // Sort by opacity ascending, break ties by angle ascending
-  paired.sort((a, b) => a.opacity - b.opacity || a.angle - b.angle);
+  // Normalize rotation
+  const rot = ((currentRotation % repeat) + repeat) % repeat;
 
-  // Reorder items in viewer.world
-  paired.forEach((entry, order) => {
-    const item = viewer.world.getItemAt(entry.idx);
-    if (item) viewer.world.setItemIndex(item, order + 1); // 0 = PPL00 bottom
-  });
+  // Determine which XPL image should be on top
+  let topIndex = xplIndices[0];
+  for (let i = 0; i < thresholds.length; i++) {
+    if (rot < thresholds[i]) {
+      topIndex = xplIndices[i];
+      break;
+    }
+  }
 
-  // Apply opacity
+  // Only reorder if top image changed
+  if (currentTopXplIndex !== topIndex) {
+    const bottomIndices = xplIndices.filter((idx) => idx !== topIndex);
+    const totalItems = viewer.world.getItemCount();
+
+    // Bottom XPL images (below top)
+    bottomIndices.forEach((idx, i) => {
+      const item = viewer.world.getItemAt(idx);
+      if (item) viewer.world.setItemIndex(item, i + 1); // PPL00 = 0
+    });
+
+    // Top XPL image
+    const topItem = viewer.world.getItemAt(topIndex);
+    if (topItem) viewer.world.setItemIndex(topItem, totalItems - 1); // always topmost
+    currentTopXplIndex = topIndex;
+  }
+
+  // Apply opacity to all XPL images
   xplIndices.forEach((idx, i) => {
     const item = viewer.world.getItemAt(idx);
     if (item) item.setOpacity(opacities[i]);
