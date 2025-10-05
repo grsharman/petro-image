@@ -736,7 +736,7 @@ const divideImages = () => {
   const xplAngles = [0, 30, 60]; // corresponding angles
   const spacing = 30;
   const repeat = 90;
-  const currentRotation = viewer.viewport.getRotation();
+  const currentRotation = viewer.viewport.getRotation(true);
   // Update stacking order and opacity
   updateImageOrder(
     viewer,
