@@ -6937,9 +6937,11 @@ viewer.addHandler("animation-finish", updateAnnotationUpright);
 // Call once at init
 updateAnnotationUpright();
 
-//// Code that controls zoom/rotation with mouse scroll ////
+//////////////////////////////////////////////////////
+//// Controls for zoom/rotation with mouse scroll ////
+//////////////////////////////////////////////////////
 
-const ROTATION_SENSITIVITY = 1; // degrees per scroll unit
+const ROTATION_SENSITIVITY = 0.15; // degrees per scroll unit
 const ZOOM_SENSITIVITY = 1; // zoom factor per scroll unit
 
 // Disable OSD’s default scroll zoom
@@ -6965,21 +6967,6 @@ viewer.addHandler("canvas-scroll", function (event) {
       const positiveRotation = ((newRotation % 360) + 360) % 360;
       rotationSlider.value = positiveRotation;
       rotationValue.textContent = Math.round(positiveRotation) + "°";
-
-      console.log("currentRotation", currentRotation);
-      console.log("residualAngle", currentRotation % 90);
-      console.log(
-        "XPL00 opacity",
-        rotation_opacity_finder(currentRotation, 0, 30, 90)
-      );
-      console.log(
-        "XPL30 opacity",
-        rotation_opacity_finder(currentRotation, 30, 30, 90)
-      );
-      console.log(
-        "XPL60 opacity",
-        rotation_opacity_finder(currentRotation, 60, 30, 90)
-      );
     }
   } else {
     // No Ctrl → zoom normally
@@ -6989,7 +6976,7 @@ viewer.addHandler("canvas-scroll", function (event) {
     const zoom = viewer.viewport.getZoom();
     //const factor = 1 - e.deltaY * ZOOM_SENSITIVITY * 0.01; // adjust sensitivity
 
-    const factor = Math.pow(1.2, -e.deltaY / 100); // adjust sensitivity if needed
+    const factor = Math.pow(1.2, -e.deltaY / 50); // adjust sensitivity if needed
 
     let newZoom = zoom * factor;
 
@@ -7016,80 +7003,6 @@ function resetRotation() {
   viewer.viewport.setRotation(0, true);
 }
 
-// function rotation_opacity_finder(
-//   currentRotation,
-//   imageAngle, // Angle of image e.g., 30 for XPL30
-//   imageAngleSpacing, // Difference between adjacent image angles e.g., 30 for XPL00 and XPL30
-//   imageAngleRepeat // 90 for XPL, 180 for PPL
-// ) {
-//   // Normalize rotation to [0, imageAngleRepeat)
-//   let normalizedRotation =
-//     ((currentRotation % imageAngleRepeat) + imageAngleRepeat) %
-//     imageAngleRepeat;
-
-//   // Compute angle difference relative to this image
-//   let delta =
-//     (normalizedRotation - imageAngle + imageAngleRepeat) % imageAngleRepeat;
-
-//   // For wrap-around cases (e.g., near repeat boundary)
-//   if (delta > imageAngleRepeat - imageAngleSpacing) {
-//     delta -= imageAngleRepeat;
-//   }
-
-//   let opacity = 0;
-
-//   // If we're before or at the imageAngle (counterclockwise side): full opacity
-//   if (delta <= 0) {
-//     opacity = 1;
-//   }
-//   // If we're between imageAngle and imageAngle + spacing: fade out
-//   else if (delta > 0 && delta < imageAngleSpacing) {
-//     opacity = 1 - delta / imageAngleSpacing;
-//   }
-//   // Otherwise: 0
-//   else {
-//     opacity = 0;
-//   }
-
-//   return opacity;
-// }
-
-// function rotation_opacity_finder(
-//   currentRotation,
-//   imageAngle,
-//   imageAngleSpacing,
-//   imageAngleRepeat
-// ) {
-//   // Normalize rotation to [0, imageAngleRepeat)
-//   let normalizedRotation =
-//     ((currentRotation % imageAngleRepeat) + imageAngleRepeat) %
-//     imageAngleRepeat;
-
-//   // Compute angular distance (shortest way around the circle)
-//   let delta = normalizedRotation - imageAngle;
-
-//   // Wrap delta to [-imageAngleRepeat/2, +imageAngleRepeat/2)
-//   if (delta > imageAngleRepeat / 2) delta -= imageAngleRepeat;
-//   if (delta < -imageAngleRepeat / 2) delta += imageAngleRepeat;
-
-//   let opacity = 0;
-
-//   // Fully visible if before or at imageAngle
-//   if (delta <= 0 && delta >= -imageAngleSpacing) {
-//     opacity = 1;
-//   }
-//   // Fade out clockwise after imageAngle
-//   else if (delta > 0 && delta < imageAngleSpacing) {
-//     opacity = 1 - delta / imageAngleSpacing;
-//   }
-//   // Wraparound case (fade between last and first)
-//   else if (delta < -imageAngleRepeat + imageAngleSpacing) {
-//     opacity = 1 - (-imageAngleRepeat - delta) / imageAngleSpacing;
-//   }
-
-//   return opacity;
-// }
-
 // Compute opacity for a given image based on rotation
 function rotation_opacity_finder(
   currentRotation,
@@ -7109,142 +7022,25 @@ function rotation_opacity_finder(
   return residual < 0 ? 0 : 0; // fully invisible outside range
 }
 
-// Phase-based ordering for XPL images
-function updateImageOrder(
-  viewer,
-  xplIndices,
-  imageAngles,
-  currentRotation,
-  spacing,
-  repeat
-) {
-  const opacities = imageAngles.map((angle) =>
-    rotation_opacity_finder(currentRotation, angle, spacing, repeat)
-  );
+// NOTE: Current hard-coded for 3 XPL images at 0°, 30°, 60° only
+function updateImageOrder(viewer, imageAngles, rotation, repeat = 90) {
+  const segmentSize = repeat / imageAngles.length; // 30 for 3 images
+  const segment = Math.floor((rotation % repeat) / segmentSize);
 
-  // Determine which image is fading out and which is fading in
-  const phase = Math.floor((currentRotation % repeat) / spacing); // 0, 1, 2...
-  const bottomIdx = xplIndices[phase % xplIndices.length];
-  const topIdx = xplIndices[(phase + 1) % xplIndices.length];
+  // Define deterministic order for each segment
+  const orderMap = [
+    [0, 1, 2], // 0–30°
+    [1, 2, 0], // 30–60°
+    [2, 0, 1], // 60–90°
+  ];
 
-  // Set bottom first, then top (PPL00 stays at index 0)
-  const bottomItem = viewer.world.getItemAt(bottomIdx);
-  const topItem = viewer.world.getItemAt(topIdx);
-  if (bottomItem) viewer.world.setItemIndex(bottomItem, 1); // above PPL
-  if (topItem) viewer.world.setItemIndex(topItem, 2); // topmost
+  const order = orderMap[segment];
 
-  // Apply opacity
-  xplIndices.forEach((idx, i) => {
+  if (!order) return;
+
+  // Reorder images in world
+  order.forEach((idx, layerIndex) => {
     const item = viewer.world.getItemAt(idx);
-    if (item) item.setOpacity(opacities[i]);
-  });
-}
-
-// function updateImageOrder(
-//   viewer,
-//   xplIndices,
-//   imageAngles,
-//   currentRotation,
-//   spacing,
-//   repeat
-// ) {
-//   // Compute opacities
-//   const opacities = imageAngles.map((angle) =>
-//     rotation_opacity_finder(currentRotation, angle, spacing, repeat)
-//   );
-
-//   // Pair indices with opacities and angles for tie-breaking
-//   const paired = xplIndices.map((idx, i) => ({
-//     idx,
-//     opacity: opacities[i],
-//     angle: imageAngles[i],
-//   }));
-
-//   // Sort by opacity ascending, break ties by angle ascending
-//   paired.sort((a, b) => a.opacity - b.opacity || a.angle - b.angle);
-
-//   // Reorder items in viewer.world
-//   paired.forEach((entry, order) => {
-//     const item = viewer.world.getItemAt(entry.idx);
-//     if (item) viewer.world.setItemIndex(item, order + 1); // 0 = PPL00 bottom
-//   });
-
-//   // Apply opacity
-//   xplIndices.forEach((idx, i) => {
-//     const item = viewer.world.getItemAt(idx);
-//     if (item) item.setOpacity(opacities[i]);
-//   });
-// }
-
-// Keep track of current top XPL image globally
-let currentTopXplIndex = null;
-
-/**
- * Updates the stacking order of XPL images based on current rotation.
- * Only reorders when the top image should change.
- *
- * @param {OpenSeadragon.Viewer} viewer
- * @param {number[]} xplIndices - world indices of XPL images
- * @param {number[]} imageAngles - corresponding angles of XPL images
- * @param {number} currentRotation - viewport rotation in degrees
- * @param {number} spacing - imageAngleSpacing
- * @param {number} repeat - imageAngleRepeat
- */
-function updateImageOrder(
-  viewer,
-  xplIndices,
-  imageAngles,
-  currentRotation,
-  spacing,
-  repeat
-) {
-  // Compute opacities for all XPL images
-  const opacities = imageAngles.map((angle) =>
-    rotation_opacity_finder(currentRotation, angle, spacing, repeat)
-  );
-
-  // Determine thresholds for top image switching (midpoint of fading intervals)
-  const thresholds = [];
-  for (let i = 0; i < imageAngles.length; i++) {
-    const nextAngle = imageAngles[(i + 1) % imageAngles.length];
-    let midpoint = (imageAngles[i] + nextAngle) / 2;
-    // handle wrap-around
-    if (nextAngle < imageAngles[i]) midpoint += repeat / 2;
-    thresholds.push(midpoint % repeat);
-  }
-
-  // Normalize rotation
-  const rot = ((currentRotation % repeat) + repeat) % repeat;
-
-  // Determine which XPL image should be on top
-  let topIndex = xplIndices[0];
-  for (let i = 0; i < thresholds.length; i++) {
-    if (rot < thresholds[i]) {
-      topIndex = xplIndices[i];
-      break;
-    }
-  }
-
-  // Only reorder if top image changed
-  if (currentTopXplIndex !== topIndex) {
-    const bottomIndices = xplIndices.filter((idx) => idx !== topIndex);
-    const totalItems = viewer.world.getItemCount();
-
-    // Bottom XPL images (below top)
-    bottomIndices.forEach((idx, i) => {
-      const item = viewer.world.getItemAt(idx);
-      if (item) viewer.world.setItemIndex(item, i + 1); // PPL00 = 0
-    });
-
-    // Top XPL image
-    const topItem = viewer.world.getItemAt(topIndex);
-    if (topItem) viewer.world.setItemIndex(topItem, totalItems - 1); // always topmost
-    currentTopXplIndex = topIndex;
-  }
-
-  // Apply opacity to all XPL images
-  xplIndices.forEach((idx, i) => {
-    const item = viewer.world.getItemAt(idx);
-    if (item) item.setOpacity(opacities[i]);
+    if (item) viewer.world.setItemIndex(item, layerIndex);
   });
 }
