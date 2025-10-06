@@ -779,6 +779,7 @@ const divideImages = () => {
     }
 
     let imageOpacity = 100;
+    /// Hard-coded for PPL00 for now
     if (i === 0) {
       imageOpacity = document.getElementById(`opacityImage${i + 1}`).value;
     }
@@ -793,19 +794,29 @@ const divideImages = () => {
         continue;
       }
 
+      // Hard-coded for XPL for now
+      const xplOpacity = document.getElementById(`opacityImage2`).value;
+
       // Hard-coding in opacity changes for now (3 XPL images for MT-02)
+      if (j === 0 && i !== 0) {
+        imageOpacity =
+          rotation_opacity_finder(currentRotation, 0, 30, 90) *
+          100 *
+          (xplOpacity / 100);
+      }
       if (j === 1) {
         imageOpacity =
-          rotation_opacity_finder(currentRotation, 0, 30, 90) * 100;
+          rotation_opacity_finder(currentRotation, 30, 30, 90) *
+          100 *
+          (xplOpacity / 100);
       }
       if (j === 2) {
         imageOpacity =
-          rotation_opacity_finder(currentRotation, 30, 30, 90) * 100;
+          rotation_opacity_finder(currentRotation, 60, 30, 90) *
+          100 *
+          (xplOpacity / 100);
       }
-      if (j === 3) {
-        imageOpacity =
-          rotation_opacity_finder(currentRotation, 60, 30, 90) * 100;
-      }
+      console.log("j", j, "imageOpacity", imageOpacity);
 
       // Display this image if it's selected and checked.
       // const visibleImageIndex = scrollIndex % imagesInSection.length;
