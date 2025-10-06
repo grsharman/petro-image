@@ -1,4 +1,42 @@
 {
+  "RT-MR-BT": {
+    "groups": ["Favorites", "Zeiss"],
+    "title": "RT-MR-BT",
+    "description": "rock",
+    "unit": "2",
+    "pixelsPerUnit": "1.449275",
+    "pixelsPerMeter": "1449275",
+    "tileLabels": ["BF", "CPL", "PPL (multi-pol)", "XPL (multi-pol)"],
+    "tileSets": [
+      "https://raw.githubusercontent.com/uacsrg/image-storage2/main/images/RT-MR-BT_10x_c01.dzi",
+      "https://raw.githubusercontent.com/uacsrg/image-storage2/main/images/RT-MR-BT_10x_c02.dzi",
+      [
+        "https://raw.githubusercontent.com/uacsrg/image-storage2/main/images/RT-MR-BT_10x_c09.dzi",
+        "https://raw.githubusercontent.com/uacsrg/image-storage2/main/images/RT-MR-BT_10x_c10.dzi",
+        "https://raw.githubusercontent.com/uacsrg/image-storage2/main/images/RT-MR-BT_10x_c11.dzi",
+        "https://raw.githubusercontent.com/uacsrg/image-storage2/main/images/RT-MR-BT_10x_c12.dzi",
+        "https://raw.githubusercontent.com/uacsrg/image-storage2/main/images/RT-MR-BT_10x_c13.dzi",
+        "https://raw.githubusercontent.com/uacsrg/image-storage2/main/images/RT-MR-BT_10x_c14.dzi"
+      ],
+      [
+        "https://raw.githubusercontent.com/uacsrg/image-storage2/main/images/RT-MR-BT_10x_c03.dzi",
+        "https://raw.githubusercontent.com/uacsrg/image-storage2/main/images/RT-MR-BT_10x_c04.dzi",
+        "https://raw.githubusercontent.com/uacsrg/image-storage2/main/images/RT-MR-BT_10x_c05.dzi",
+        "https://raw.githubusercontent.com/uacsrg/image-storage2/main/images/RT-MR-BT_10x_c06.dzi",
+        "https://raw.githubusercontent.com/uacsrg/image-storage2/main/images/RT-MR-BT_10x_c07.dzi",
+        "https://raw.githubusercontent.com/uacsrg/image-storage2/main/images/RT-MR-BT_10x_c08.dzi"
+      ]
+    ],
+    "tileSetRotation": [false, false, true, true],
+    "tileSetRotationAngles": [
+      [null],
+      [null],
+      [0, 30, 60, 90, 120, 150],
+      [0, 15, 30, 45, 60, 75]
+    ],
+    "tileSetRotationSpacing": [null, null, 30, 15],
+    "tileSetRotationAngleRepeat": [null, null, 180, 90]
+  },
   "MT-02": {
     "groups": ["Favorites", "Microtectonics"],
     "title": "MT-02",
@@ -14,7 +52,11 @@
         "https://raw.githubusercontent.com/uacsrg/image-storage1/main/images/MT-2 01 2.5x XPL30 final.dzi.dzi",
         "https://raw.githubusercontent.com/uacsrg/image-storage1/main/images/MT-2 01 2.5x XPL60 final.dzi.dzi"
       ]
-    ]
+    ],
+    "tileSetRotation": [false, true],
+    "tileSetRotationAngles": [[null], [0, 30, 60]],
+    "tileSetRotationSpacing": [null, 30],
+    "tileSetRotationAngleRepeat": [null, 90]
   },
   "C-1": {
     "groups": ["Microtectonics"],

@@ -4,6 +4,10 @@
 let currentIndex = 0;
 let tileSets = [];
 let tileLabels = [];
+let tileSetRotations = [];
+let tileSetRotationAngles = [];
+let tileSetRotationSpacing = [];
+let tileSetRotationAngleRepeat = [];
 let samples = [];
 let descriptions = [];
 let pixelsPerUnits = [];
@@ -44,87 +48,6 @@ let measureAreaJSONTemp = {
   features: [],
 }; // For drawing temporary measurements of area
 
-// OG function
-// function loadSampleJSON(JSON) {
-//   // Load necessary information from JSON
-//   fetch(JSON)
-//     // fetch("samples.json")
-//     .then((response) => response.json())
-//     .then((data) => {
-//       // Loop through each sample
-//       Object.keys(data).forEach((sampleKey, index) => {
-//         ///
-//         // Object.keys(data).forEach(sampleKey => {
-//         let sample = data[sampleKey];
-//         if (sample) {
-//           // Extract the relevant details
-//           tileSets.push(sample.tileSets);
-//           tileLabels.push(sample.tileLabels);
-//           samples.push(sample.title);
-//           descriptions.push(sample.description);
-//           pixelsPerUnits.push(sample.pixelsPerUnit);
-//           pixelsPerMeters.push(sample.pixelsPerMeter);
-//           units.push(sample.unit);
-//           annotation_files[sample.title] = sample.annotations; // || null;
-
-//           /// Map sample indices to their groups
-//           if (sample.groups) {
-//             sample.groups.forEach((group) => {
-//               if (!groupMapping[group]) {
-//                 groupMapping[group] = [];
-//               }
-//               groupMapping[group].push(index);
-//             });
-//           }
-//         } else {
-//           console.error(`Sample not found for key: ${sampleKey}`);
-//         }
-//       });
-
-//       // Add a default "All" group containing all sample indices
-//       groupMapping["All"] = Array.from({ length: samples.length }, (_, i) => i);
-
-//       // Example: initialize OpenSeadragon with the first tile source
-//       loadTileSet(0);
-//       addScalebar(pixelsPerMeters[0]);
-//       populateGroupDropdown();
-//       updateButtonLabels(0);
-//       divideImages();
-//       disableCountButtons();
-//       // deselectAllButFirstImage();
-
-//       const sampleParam = getQueryParameter("sample");
-//       if (sampleParam) {
-//         const sampleIndex = samples.indexOf(sampleParam);
-//         if (sampleIndex !== -1) {
-//           // Select the correct group and sample
-//           const groupForSample = Object.keys(groupMapping).find((group) =>
-//             groupMapping[group].includes(sampleIndex)
-//           );
-//           document.getElementById("groupDropdown").value =
-//             groupForSample || "All";
-//           populateSampleDropdown(groupForSample || "All");
-//           document.getElementById("sampleDropdown").value = sampleIndex;
-//           document
-//             .getElementById("sampleDropdown")
-//             .dispatchEvent(new Event("change"));
-//         } else {
-//           console.warn(`Sample "${sampleParam}" not found in JSON.`);
-//         }
-//       } else {
-//         // Default behavior if no sample is specified
-//         const firstGroup = Object.keys(groupMapping)[0];
-//         if (firstGroup) {
-//           document.getElementById("groupDropdown").value = firstGroup;
-//           populateSampleDropdown(firstGroup);
-//         }
-//       }
-//     })
-//     .catch((error) => {
-//       console.error("Error loading the JSON file:", error);
-//     });
-// }
-
 function loadSampleJSON(input) {
   if (typeof input === "string") {
     // Load necessary information from JSON
@@ -148,6 +71,10 @@ function processJSON(data) {
   currentIndex = 0;
   tileSets = [];
   tileLabels = [];
+  tileSetRotations = [];
+  tileSetRotationAngles = [];
+  tileSetRotationSpacing = [];
+  tileSetRotationAngleRepeat = [];
   samples = [];
   descriptions = [];
   pixelsPerUnits = [];
@@ -163,6 +90,12 @@ function processJSON(data) {
       // Extract the relevant details
       tileSets.push(sample.tileSets);
       tileLabels.push(sample.tileLabels);
+      tileSetRotations.push(sample.tileSetRotation || false);
+      tileSetRotationAngles.push(sample.tileSetRotationAngles || null);
+      tileSetRotationSpacing.push(sample.tileSetRotationSpacing || null);
+      tileSetRotationAngleRepeat.push(
+        sample.tileSetRotationAngleRepeat || null
+      );
       samples.push(sample.title);
       descriptions.push(sample.description);
       pixelsPerUnits.push(sample.pixelsPerUnit);
@@ -731,21 +664,6 @@ const divideImages = () => {
     }
   }
 
-  const xplIndices = [1, 2, 3]; // XPL00, XPL30, XPL60 world indices
-  const xplAngles = [0, 30, 60]; // corresponding angles
-  const spacing = 30;
-  const repeat = 90;
-  const currentRotation = viewer.viewport.getRotation(true);
-  // Update stacking order and opacity
-  updateImageOrder(
-    viewer,
-    xplIndices,
-    xplAngles,
-    currentRotation,
-    spacing,
-    repeat
-  );
-
   const radius = 4 * Math.max(window.innerWidth, window.innerHeight);
   // Place the first image in a segment with its most clockwise edge facing up.
   const startAngle = -Math.PI / 2 - (2 * Math.PI) / totalChecked;
@@ -778,11 +696,7 @@ const divideImages = () => {
       imagesInSection = [tileSet[i]];
     }
 
-    let imageOpacity = 100;
-    /// Hard-coded for PPL00 for now
-    if (i === 0) {
-      imageOpacity = document.getElementById(`opacityImage${i + 1}`).value;
-    }
+    const imageOpacity = document.getElementById(`opacityImage${i + 1}`).value;
 
     // One loop per second level of image list
     for (let j = 0; j < imagesInSection.length; ++j) {
@@ -794,30 +708,58 @@ const divideImages = () => {
         continue;
       }
 
-      // Hard-coded for XPL for now
-      const xplOpacity = document.getElementById(`opacityImage2`).value;
+      if (tileSetRotations[currentIndex][i]) {
+        // TODO: Verify this method works
+        const rotIndeces = getFlattenedIndices(tileSets[currentIndex], i);
+        const angles = tileSetRotationAngles[currentIndex][i];
+        const spacing = tileSetRotationSpacing[currentIndex][i];
+        const repeat = tileSetRotationAngleRepeat[currentIndex][i];
+        const currentRotation = viewer.viewport.getRotation(true);
+        // Update stacking order and opacity
+        // NOTE: Number of input arguments does not match what is expected of function!
+        updateImageOrder(
+          viewer,
+          rotIndeces,
+          angles,
+          currentRotation,
+          spacing,
+          repeat
+        );
 
-      // Hard-coding in opacity changes for now (3 XPL images for MT-02)
-      if (j === 0 && i !== 0) {
-        imageOpacity =
-          rotation_opacity_finder(currentRotation, 0, 30, 90) *
-          100 *
-          (xplOpacity / 100);
-      }
-      if (j === 1) {
-        imageOpacity =
-          rotation_opacity_finder(currentRotation, 30, 30, 90) *
-          100 *
-          (xplOpacity / 100);
-      }
-      if (j === 2) {
-        imageOpacity =
-          rotation_opacity_finder(currentRotation, 60, 30, 90) *
-          100 *
-          (xplOpacity / 100);
-      }
-      console.log("j", j, "imageOpacity", imageOpacity);
+        // Always make the first image fully opaque, which works
+        // because it's the "base" image in the stacking order.
+        let angleOpacity;
+        if (j === 0) {
+          angleOpacity = 100;
+        } else {
+          const currentImageAngle = tileSetRotationAngles[currentIndex][i][j];
+          angleOpacity =
+            rotation_opacity_finder(
+              currentRotation,
+              currentImageAngle,
+              tileSetRotationSpacing[currentIndex][i],
+              tileSetRotationAngleRepeat[currentIndex][i]
+            ) *
+            100 *
+            (imageOpacity / 100);
+        }
 
+        if (isChecked[i]) {
+          image.setOpacity(angleOpacity / 100);
+          --sectionsLeft;
+        } else {
+          image.setOpacity(0);
+          continue;
+        }
+      } else {
+        if (isChecked[i]) {
+          image.setOpacity(imageOpacity / 100);
+          --sectionsLeft;
+        } else {
+          image.setOpacity(0);
+          continue;
+        }
+      }
       // Display this image if it's selected and checked.
       // const visibleImageIndex = scrollIndex % imagesInSection.length;
       // if (isChecked[i] && j === visibleImageIndex) {
@@ -827,13 +769,6 @@ const divideImages = () => {
       //   image.setOpacity(0);
       //   continue;
       // }
-      if (isChecked[i]) {
-        image.setOpacity(imageOpacity / 100);
-        --sectionsLeft;
-      } else {
-        image.setOpacity(0);
-        continue;
-      }
 
       if (enableDivideImages) {
         image.setCroppingPolygons([
@@ -7032,6 +6967,7 @@ function rotation_opacity_finder(
 }
 
 // NOTE: Current hard-coded for 3 XPL images at 0°, 30°, 60° only
+// NOTE: CURRENTLY BROKEN???
 function updateImageOrder(viewer, imageAngles, rotation, repeat = 90) {
   const segmentSize = repeat / imageAngles.length; // 30 for 3 images
   const segment = Math.floor((rotation % repeat) / segmentSize);
@@ -7052,4 +6988,39 @@ function updateImageOrder(viewer, imageAngles, rotation, repeat = 90) {
     const item = viewer.world.getItemAt(idx);
     if (item) viewer.world.setItemIndex(item, layerIndex);
   });
+}
+
+// NOTE: Current hard-coded for 6 images
+// function updateImageOrder(viewer, imageAngles, rotation, repeat) {
+//   const segmentSize = repeat / imageAngles.length; // 30 for 3 images
+//   const segment = Math.floor((rotation % repeat) / segmentSize);
+
+//   // Define deterministic order for each segment
+//   const orderMap = [
+//     [0, 1, 2, 3, 4, 5], // 0–15°
+//     [1, 2, 3, 4, 5, 0], // 15–30°
+//     [2, 3, 4, 5, 0, 1], // 30–45°
+//     [3, 4, 5, 0, 1, 2], // 45–60°
+//     [4, 5, 0, 1, 2, 3], // 60–75°
+//     [5, 0, 1, 2, 3, 4], // 75–90°
+//   ];
+
+//   const order = orderMap[segment];
+
+//   if (!order) return;
+
+//   // Reorder images in world
+//   order.forEach((idx, layerIndex) => {
+//     const item = viewer.world.getItemAt(idx);
+//     if (item) viewer.world.setItemIndex(item, layerIndex);
+//   });
+// }
+
+function getFlattenedIndices(list, index) {
+  const offset = list
+    .slice(0, index)
+    .reduce((sum, item) => sum + (Array.isArray(item) ? item.length : 1), 0);
+
+  const sublist = Array.isArray(list[index]) ? list[index] : [list[index]];
+  return sublist.map((_, i) => offset + i);
 }
