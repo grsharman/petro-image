@@ -380,10 +380,9 @@ function updateButtonLabels(index) {
   for (let i = 0; i < 4; i++) {
     const checkbox = document.getElementById(`image${i + 1}`);
     const label = document.getElementById(`label${i + 1}`);
-    const currentLabel = tileLabelsForIndex[i];
-    const visibleImageIndex = scrollIndex % currentLabel.length;
-
     if (i < numButtons) {
+      const currentLabel = tileLabelsForIndex[i];
+      const visibleImageIndex = scrollIndex % currentLabel.length;
       // For regular labels, use the normal setup
       checkbox.style.display = "inline";
       label.style.display = "inline";
