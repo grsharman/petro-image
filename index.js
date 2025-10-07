@@ -664,6 +664,13 @@ const divideImages = () => {
     }
   }
 
+  // Make orderMaps head of time
+  let orderMaps = [];
+  for (let i = 0; i < tileSet.length; ++i) {
+    const angles = tileSetRotationAngles[currentIndex][i];
+    orderMaps.push(makeOrderMap(angles ? angles.length : 0));
+  }
+
   const radius = 4 * Math.max(window.innerWidth, window.innerHeight);
   // Place the first image in a segment with its most clockwise edge facing up.
   const startAngle = -Math.PI / 2 - (2 * Math.PI) / totalChecked;
@@ -671,8 +678,10 @@ const divideImages = () => {
   // Set the cropping polygon for each image.
   let imageIndex = 0; // Because a given section may have multiple images
   let sectionsLeft = totalChecked;
+
   // One loop per top level of image list
   for (let i = 0; i < tileSet.length; ++i) {
+    // console.log("image index", i);
     const endAngle = (-2 * Math.PI * sectionsLeft) / totalChecked;
     const windowPolygon = [mousePos];
     // Define the section's arc using four points to ensure the polygon is
@@ -698,6 +707,26 @@ const divideImages = () => {
 
     const imageOpacity = document.getElementById(`opacityImage${i + 1}`).value;
 
+    if (tileSetRotations[currentIndex][i]) {
+      // TODO: Verify this method works
+      const angles = tileSetRotationAngles[currentIndex][i];
+      const repeat = tileSetRotationAngleRepeat[currentIndex][i];
+      const currentRotation = viewer.viewport.getRotation(true);
+      const offset = getTileSetOffset(tileSets[currentIndex], i); // offset within global tileSets array
+      console.log("i", i);
+      console.log("orderMaps[i]", orderMaps[i]);
+      // console.log("angles", angles);
+      // console.log("repeat", repeat);
+      // console.log("currentRotation", currentRotation);
+      updateImageOrder(
+        viewer,
+        orderMaps[i],
+        angles,
+        currentRotation,
+        repeat,
+        offset
+      );
+    }
     // One loop per second level of image list
     for (let j = 0; j < imagesInSection.length; ++j) {
       ++imageIndex;
@@ -710,39 +739,22 @@ const divideImages = () => {
 
       if (tileSetRotations[currentIndex][i]) {
         // TODO: Verify this method works
-        const rotIndeces = getFlattenedIndices(tileSets[currentIndex], i);
-        const angles = tileSetRotationAngles[currentIndex][i];
-        const spacing = tileSetRotationSpacing[currentIndex][i];
-        const repeat = tileSetRotationAngleRepeat[currentIndex][i];
         const currentRotation = viewer.viewport.getRotation(true);
-        // Update stacking order and opacity
-        // NOTE: Number of input arguments does not match what is expected of function!
-        updateImageOrder(
-          viewer,
-          rotIndeces,
-          angles,
-          currentRotation,
-          spacing,
-          repeat
-        );
-
-        // Always make the first image fully opaque, which works
-        // because it's the "base" image in the stacking order.
         let angleOpacity;
-        if (j === 0) {
-          angleOpacity = 100;
-        } else {
-          const currentImageAngle = tileSetRotationAngles[currentIndex][i][j];
-          angleOpacity =
-            rotation_opacity_finder(
-              currentRotation,
-              currentImageAngle,
-              tileSetRotationSpacing[currentIndex][i],
-              tileSetRotationAngleRepeat[currentIndex][i]
-            ) *
-            100 *
-            (imageOpacity / 100);
-        }
+        const currentImageAngle = tileSetRotationAngles[currentIndex][i][j];
+
+        console.log("j", j);
+        angleOpacity =
+          rotation_opacity_finder(
+            currentRotation,
+            currentImageAngle,
+            tileSetRotationSpacing[currentIndex][i],
+            tileSetRotationAngleRepeat[currentIndex][i]
+          ) *
+          100 *
+          (imageOpacity / 100);
+        console.log("angleOpacity", angleOpacity);
+        // }
 
         if (isChecked[i]) {
           image.setOpacity(angleOpacity / 100);
@@ -6947,80 +6959,73 @@ function resetRotation() {
   viewer.viewport.setRotation(0, true);
 }
 
-// Compute opacity for a given image based on rotation
 function rotation_opacity_finder(
   currentRotation,
   imageAngle,
   imageAngleSpacing,
   imageAngleRepeat
 ) {
+  // Normalize angle difference into [-imageAngleRepeat/2, +imageAngleRepeat/2]
   let residual = (currentRotation - imageAngle) % imageAngleRepeat;
   if (residual < -imageAngleRepeat / 2) residual += imageAngleRepeat;
   if (residual > imageAngleRepeat / 2) residual -= imageAngleRepeat;
+  console.log("residual", residual);
 
-  if (residual <= 0 && residual >= -imageAngleSpacing) {
-    return 1 + residual / imageAngleSpacing; // fading out
-  } else if (residual > 0 && residual <= imageAngleSpacing) {
-    return 1 - residual / imageAngleSpacing; // fading in
+  // Fade in from (imageAngle - spacing) → imageAngle
+  // Fully visible between imageAngle → (imageAngle + spacing)
+  // Invisible outside
+  if (residual >= -imageAngleSpacing && residual < 0) {
+    return 1 + residual / imageAngleSpacing; // fade in (0→1)
+  } else if (residual >= 0 && residual < imageAngleSpacing) {
+    return 1; // fully visible
   }
-  return residual < 0 ? 0 : 0; // fully invisible outside range
+
+  return 0; // invisible
 }
 
-// NOTE: Current hard-coded for 3 XPL images at 0°, 30°, 60° only
-// NOTE: CURRENTLY BROKEN???
-function updateImageOrder(viewer, imageAngles, rotation, repeat = 90) {
-  const segmentSize = repeat / imageAngles.length; // 30 for 3 images
-  const segment = Math.floor((rotation % repeat) / segmentSize);
+function makeOrderMap(n) {
+  const base = Array.from({ length: n }, (_, i) => i);
+  return Array.from({ length: n }, (_, i) =>
+    base.slice(i).concat(base.slice(0, i))
+  );
+}
 
-  // Define deterministic order for each segment
-  const orderMap = [
-    [0, 1, 2], // 0–30°
-    [1, 2, 0], // 30–60°
-    [2, 0, 1], // 60–90°
-  ];
+function getTileSetOffset(tileSets, targetIndex) {
+  let count = 0;
+  for (let i = 0; i < targetIndex; i++) {
+    const item = tileSets[i];
+    count += Array.isArray(item) ? item.length : 1;
+  }
+  return count;
+}
 
+function updateImageOrder(
+  viewer,
+  orderMap,
+  imageAngles,
+  rotation,
+  repeat,
+  offset
+) {
+  const segmentSize = repeat / imageAngles.length;
+  const normRotation = ((rotation % repeat) + repeat) % repeat;
+  const segment = Math.floor(normRotation / segmentSize);
   const order = orderMap[segment];
-
   if (!order) return;
 
-  // Reorder images in world
+  // console.log("segmentSize", segmentSize);
+  // console.log("normRotation", normRotation);
+  // console.log("segment", segment);
+  console.log("order", order);
+  // console.log("offset", offset);
+
+  // Reorder images within this group only, using global indices
   order.forEach((idx, layerIndex) => {
-    const item = viewer.world.getItemAt(idx);
-    if (item) viewer.world.setItemIndex(item, layerIndex);
+    const globalIndex = offset + idx; // convert local to global index
+    console.log("layerIndex", layerIndex + offset);
+    console.log("globalIndex", globalIndex);
+    // console.log("idx", idx);
+    const item = viewer.world.getItemAt(globalIndex);
+    if (item) viewer.world.setItemIndex(item, layerIndex + offset);
   });
-}
-
-// NOTE: Current hard-coded for 6 images
-// function updateImageOrder(viewer, imageAngles, rotation, repeat) {
-//   const segmentSize = repeat / imageAngles.length; // 30 for 3 images
-//   const segment = Math.floor((rotation % repeat) / segmentSize);
-
-//   // Define deterministic order for each segment
-//   const orderMap = [
-//     [0, 1, 2, 3, 4, 5], // 0–15°
-//     [1, 2, 3, 4, 5, 0], // 15–30°
-//     [2, 3, 4, 5, 0, 1], // 30–45°
-//     [3, 4, 5, 0, 1, 2], // 45–60°
-//     [4, 5, 0, 1, 2, 3], // 60–75°
-//     [5, 0, 1, 2, 3, 4], // 75–90°
-//   ];
-
-//   const order = orderMap[segment];
-
-//   if (!order) return;
-
-//   // Reorder images in world
-//   order.forEach((idx, layerIndex) => {
-//     const item = viewer.world.getItemAt(idx);
-//     if (item) viewer.world.setItemIndex(item, layerIndex);
-//   });
-// }
-
-function getFlattenedIndices(list, index) {
-  const offset = list
-    .slice(0, index)
-    .reduce((sum, item) => sum + (Array.isArray(item) ? item.length : 1), 0);
-
-  const sublist = Array.isArray(list[index]) ? list[index] : [list[index]];
-  return sublist.map((_, i) => offset + i);
 }
