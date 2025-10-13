@@ -636,52 +636,7 @@ const displayImages = () => {
       );
     }
 
-    // If the tile set has a period, its tiles should be treated as different
-    // angles of the same image, and the displayed image should be interpolated
-    // between the tiles closest to the current angle.
-    const periodDegrees = tileSet.periodDegrees;
-    let rotation;
-    let supremumIndex = 0;
-    let supremum;
-    let infimumIndex;
-    let infimum;
-    if (periodDegrees) {
-      rotation =
-        ((viewer.viewport.getRotation(true) % periodDegrees) + periodDegrees) %
-        periodDegrees;
-      // Find the first tile whose angle is greater than the target.
-      for (let j = 0; j < tiles.length; ++j) {
-        const tile = tiles[j];
-        if (tile.angleDegrees > rotation) {
-          supremumIndex = j;
-          break;
-        }
-      }
-    }
-    supremum = tiles[supremumIndex].angleDegrees;
-    if (supremumIndex === 0) {
-      // Wrap around the tile list.
-      infimumIndex = tiles.length - 1;
-      supremum += periodDegrees;
-    } else {
-      infimumIndex = supremumIndex - 1;
-    }
-    infimum = tiles[infimumIndex].angleDegrees;
-
-    // TODO: Handle the case where the least available angle is not 0.
-
-    // Ensure the infimum image is underneath the supremum image.
-    const infimumWorldIndex = viewer.world.getIndexOfItem(
-      tiles[infimumIndex].image
-    );
-    const supremumWorldIndex = viewer.world.getIndexOfItem(
-      tiles[supremumIndex].image
-    );
-    const min = Math.min(infimumWorldIndex, supremumWorldIndex);
-    const max = Math.max(infimumWorldIndex, supremumWorldIndex);
-    viewer.world.setItemIndex(tiles[infimumIndex].image, min);
-    viewer.world.setItemIndex(tiles[supremumIndex].image, max);
-
+    const getTileOpacity = getTileOpacityGetter(tileSet);
     tiles.forEach((tile, j) => {
       const image = tile.image;
       if (!image) {
@@ -689,25 +644,10 @@ const displayImages = () => {
         return;
       }
 
-      let tileOpacity = 0;
       if (isChecked[i]) {
         --sectionsLeft;
-
-        if (periodDegrees) {
-          switch (j) {
-            case infimumIndex:
-              tileOpacity = 1;
-              break;
-            case supremumIndex:
-              tileOpacity = (rotation - infimum) / (supremum - infimum);
-              break;
-          }
-        } else if (j === scrollIndex % tileSet.tiles.length) {
-          // Display only the selected tile.
-          tileOpacity = 1;
-        }
       }
-
+      const tileOpacity = getTileOpacity(j);
       image.setOpacity(tileOpacity * tileSetOpacity);
 
       // Divide the tile sets into sectors, if image division is enabled.
@@ -721,6 +661,70 @@ const displayImages = () => {
     });
   });
   viewer.forceRedraw();
+};
+
+// Returns a function that can be used to set the opacity of each tile in the
+// given tile set, according to its index.
+const getTileOpacityGetter = (tileSet) => {
+  const tiles = tileSet.tiles;
+  const periodDegrees = tileSet.periodDegrees;
+  if (!periodDegrees) {
+    // If the tile set does not have a period, the tiles are just independent
+    // images that can be scrolled through. Only show the selected tile.
+    return (index) => (index === scrollIndex % tiles.length ? 1 : 0);
+  }
+
+  // If the tile set does have a period, its tiles should be treated as
+  // different angles of the same image, and the displayed image should be
+  // interpolated between the tiles closest to the current viewport angle.
+  const rotation =
+    ((viewer.viewport.getRotation(true) % periodDegrees) + periodDegrees) %
+    periodDegrees;
+  let supremumIndex = 0;
+  let supremum;
+  let infimumIndex;
+  let infimum;
+  // Find the first tile whose angle is greater than the target.
+  for (let j = 0; j < tiles.length; ++j) {
+    if (tiles[j].angleDegrees > rotation) {
+      supremumIndex = j;
+      break;
+    }
+  }
+  supremum = tiles[supremumIndex].angleDegrees;
+  if (supremumIndex === 0) {
+    // Wrap around the tile list.
+    infimumIndex = tiles.length - 1;
+    supremum += periodDegrees;
+  } else {
+    infimumIndex = supremumIndex - 1;
+  }
+  infimum = tiles[infimumIndex].angleDegrees;
+
+  // TODO: Handle the case where the smallest available angle is not 0.
+
+  // Ensure the infimum image is underneath the supremum image.
+  const infimumImage = tiles[infimumIndex].image;
+  const supremumImage = tiles[supremumIndex].image;
+  const infimumWorldIndex = viewer.world.getIndexOfItem(infimumImage);
+  const supremumWorldIndex = viewer.world.getIndexOfItem(supremumImage);
+  const minWorldIndex = Math.min(infimumWorldIndex, supremumWorldIndex);
+  const maxWorldIndex = Math.max(infimumWorldIndex, supremumWorldIndex);
+  viewer.world.setItemIndex(infimumImage, minWorldIndex);
+  viewer.world.setItemIndex(supremumImage, maxWorldIndex);
+
+  // Show the underlying tile at full opacity and the superimposed tile at the
+  // interpolated opacity, and hide all other tiles.
+  return (index) => {
+    switch (index) {
+      case infimumIndex:
+        return 1;
+      case supremumIndex:
+        return (rotation - infimum) / (supremum - infimum);
+      default:
+        return 0;
+    }
+  };
 };
 
 const toggleGridCrosshairs = (event) => {
