@@ -704,15 +704,17 @@ const getTileOpacityGetter = (tileSet, tileSetOpacity) => {
 
   // TODO: Handle the case where the smallest available angle is not 0.
 
-  // Ensure the infimum image is underneath the supremum image.
+  // Ensure infimum image is underneath supremum image, if both are loaded.
   const infimumImage = tiles[infimumIndex].image;
   const supremumImage = tiles[supremumIndex].image;
-  const infimumWorldIndex = viewer.world.getIndexOfItem(infimumImage);
-  const supremumWorldIndex = viewer.world.getIndexOfItem(supremumImage);
-  const minWorldIndex = Math.min(infimumWorldIndex, supremumWorldIndex);
-  const maxWorldIndex = Math.max(infimumWorldIndex, supremumWorldIndex);
-  viewer.world.setItemIndex(infimumImage, minWorldIndex);
-  viewer.world.setItemIndex(supremumImage, maxWorldIndex);
+  if (infimumImage && supremumImage) {
+    const infimumWorldIndex = viewer.world.getIndexOfItem(infimumImage);
+    const supremumWorldIndex = viewer.world.getIndexOfItem(supremumImage);
+    const minWorldIndex = Math.min(infimumWorldIndex, supremumWorldIndex);
+    const maxWorldIndex = Math.max(infimumWorldIndex, supremumWorldIndex);
+    viewer.world.setItemIndex(infimumImage, minWorldIndex);
+    viewer.world.setItemIndex(supremumImage, maxWorldIndex);
+  }
 
   // Show the underlying tile at full opacity and the superimposed tile at the
   // interpolated opacity, and hide all other tiles.
