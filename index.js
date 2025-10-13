@@ -636,6 +636,10 @@ const displayImages = () => {
       );
     }
 
+    if (isChecked[i]) {
+      --sectionsLeft;
+    }
+
     const getTileOpacity = getTileOpacityGetter(tileSet);
     tiles.forEach((tile, j) => {
       const image = tile.image;
@@ -643,11 +647,7 @@ const displayImages = () => {
         // Image is not loaded yet.
         return;
       }
-
-      if (isChecked[i]) {
-        --sectionsLeft;
-      }
-      const tileOpacity = getTileOpacity(j);
+      const tileOpacity = isChecked[i] ? getTileOpacity(j) : 0;
       image.setOpacity(tileOpacity * tileSetOpacity);
 
       // Divide the tile sets into sectors, if image division is enabled.
