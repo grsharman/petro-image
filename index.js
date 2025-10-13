@@ -53,10 +53,7 @@ function loadSampleJSON(input) {
       });
   } else if (typeof input === "object") {
     // Case 2: Input is already parsed JSON
-    console.log("Using already parsed JSON:", input);
     processJSON(input);
-  } else {
-    console.error("Invalid input to loadSampleJSON");
   }
 }
 
@@ -111,8 +108,6 @@ function processJSON(data) {
       document
         .getElementById("sampleDropdown")
         .dispatchEvent(new Event("change"));
-    } else {
-      console.warn(`Sample "${sampleParam}" not found in JSON.`);
     }
   } else {
     // Default behavior if no sample is specified
@@ -132,15 +127,11 @@ document.addEventListener("DOMContentLoaded", () => {
 document
   .getElementById("load-sample-JSON")
   .addEventListener("change", function (event) {
-    console.log("load sample JSON clicked");
     const fileInput = event.target;
     const file = fileInput.files[0];
     if (!file) {
-      console.log("not a file!");
       return;
     }
-
-    console.log("Selected file:", file.name); // Debugging
 
     const reader = new FileReader();
     reader.onload = function (event) {
@@ -148,7 +139,6 @@ document
 
       try {
         const parsedJSON = JSON.parse(sampleJSON);
-        console.log("Successfully loaded JSON:", parsedJSON); // Debugging
         loadSampleJSON(parsedJSON);
       } catch (error) {
         console.error("Error parsing JSON file:", error);
@@ -304,12 +294,9 @@ function toggleOnImages() {
 function deselectAllButFirstImage() {
   for (let i = 1; i <= 4; i++) {
     const checkbox = document.getElementById(`image${i}`);
-    console.log(checkbox);
     if (checkbox) {
       if (i > 1 && checkbox.checked === true) {
-        console.log(`deselecting image${i}`);
         toggleImage(checkbox, i);
-        // checkbox.click();
       }
     }
   }
@@ -345,8 +332,6 @@ function showTooltip() {
     tooltip.textContent = description;
     tooltip.style.display = "block";
     const buttonRect = infoButton.getBoundingClientRect();
-    console.log("buttonRect.top", buttonRect.top);
-    console.log("buttonRect.height", buttonRect.height);
     // Wait for the tooltip to be displayed before calculating its height
     const tooltipHeight = tooltip.offsetHeight;
     // Align tooltip vertically centered with the button
@@ -409,7 +394,6 @@ function unsavedAnnotations(value) {
   if (window.electronAPI) {
     const unsaved =
       window.appState.hasUnsavedAnnotations || window.appState.hasUnsavedCounts;
-    console.log("Sending unsaved state to main process:", unsaved);
     window.electronAPI.setUnsavedState(unsaved);
   }
 }
@@ -423,7 +407,6 @@ function unsavedCounts(value) {
   if (window.electronAPI) {
     const unsaved =
       window.appState.hasUnsavedAnnotations || window.appState.hasUnsavedCounts;
-    console.log("Sending unsaved state to main process:", unsaved);
     window.electronAPI.setUnsavedState(unsaved);
   }
 }
@@ -803,8 +786,6 @@ function updateOpacityImageSliderVisibility() {
 
         // Attach an event listener to dynamically update opacity
         sliderInput.addEventListener("input", () => {
-          console.log("slider input event listener");
-          // const opacity = sliderInput.value / 100;
           setTileSetOpacity();
           // Update the displayed slider value
           if (sliderValueSpan) {
@@ -898,11 +879,9 @@ pointButton.addEventListener("click", () => {
   // Remove any existing temporary points
 
   if (isPointMode === false) {
-    console.log("point mode activated");
     pointButton.classList.add("active");
     isPointMode = true;
   } else {
-    console.log("point mode deactivated");
     pointButton.classList.remove("active");
     isPointMode = false;
   }
@@ -921,11 +900,9 @@ polylineButton.addEventListener("click", () => {
   removeTemporaryPoints();
 
   if (isPolylineMode === false) {
-    console.log("polyline mode activated");
     polylineButton.classList.add("active");
     isPolylineMode = true;
   } else {
-    console.log("polyline mode deactivated");
     polylineButton.classList.remove("active");
     isPolylineMode = false;
     removeTemporaryPoints();
@@ -945,11 +922,9 @@ rectButton.addEventListener("click", () => {
   removeTemporaryPoints();
 
   if (isRectangleMode === false) {
-    console.log("rect mode activated");
     rectButton.classList.add("active");
     isRectangleMode = true;
   } else {
-    console.log("rect mode deactivated");
     rectButton.classList.remove("active");
     isRectangleMode = false;
   }
@@ -957,18 +932,15 @@ rectButton.addEventListener("click", () => {
 
 repeatButton.addEventListener("click", () => {
   if (isRepeatMode === false) {
-    console.log("repeat mode activated");
     repeatButton.classList.add("active");
     isRepeatMode = true;
   } else {
-    console.log("repeat mode deactivated");
     repeatButton.classList.remove("active");
     isRepeatMode = false;
   }
 });
 
 polygonButton.addEventListener("click", () => {
-  console.log("poly button clicked");
   // Deactivate point and rect buttons
   pointButton.classList.remove("active");
   isPointMode = false;
@@ -981,18 +953,15 @@ polygonButton.addEventListener("click", () => {
   removeTemporaryPoints();
 
   if (isPolygonMode === false) {
-    console.log("poly mode activated");
     polygonButton.classList.add("active");
     isPolygonMode = true;
   } else {
-    console.log("poly mode deactivated");
     polygonButton.classList.remove("active");
     isPolygonMode = false;
   }
 });
 
 ellipseButton.addEventListener("click", () => {
-  console.log("ellipse button clicked");
   // Deactivate point and rect buttons
   pointButton.classList.remove("active");
   isPointMode = false;
@@ -1005,11 +974,9 @@ ellipseButton.addEventListener("click", () => {
   removeTemporaryPoints();
 
   if (isEllipseMode === false) {
-    console.log("ellipse mode activated");
     ellipseButton.classList.add("active");
     isEllipseMode = true;
   } else {
-    console.log("ellipse mode deactivated");
     ellipseButton.classList.remove("active");
     isEllipseMode = false;
   }
@@ -1019,7 +986,6 @@ ellipseButton.addEventListener("click", () => {
 document
   .getElementById("imageSettingsButton")
   .addEventListener("click", function (event) {
-    console.log("image settings button clicked");
     event.stopPropagation(); // Prevent click from reaching the window listener
     const menu = document.getElementById("imageSettingsMenu");
     if (menu.style.display === "none" || menu.style.display === "") {
@@ -1147,7 +1113,6 @@ const disableAnnoButtons = () => {
 document
   .getElementById("anno-first-button")
   .addEventListener("click", function () {
-    console.log("first arrow clicked");
     const annoIdBox = document.getElementById("anno-id");
     const annoIds = Array.from(
       { length: annoJSON.features.length },
@@ -1167,7 +1132,6 @@ document
 document
   .getElementById("anno-last-button")
   .addEventListener("click", function () {
-    console.log("last arrow clicked");
     const annoIdBox = document.getElementById("anno-id");
     // const annoIds = Object.keys(annoDict).map(Number);
     const annoIds = Array.from(
@@ -1189,7 +1153,6 @@ document
 document
   .getElementById("anno-prev-button")
   .addEventListener("click", function () {
-    console.log("prev arrow clicked");
     // Current annotation id
     const annoIdBox = document.getElementById("anno-id");
     const currentId = parseInt(annoIdBox.value);
@@ -1199,8 +1162,6 @@ document
       { length: annoJSON.features.length },
       (_, i) => i + 1
     );
-
-    console.log("annoIds", annoIds);
 
     // Index of current annotation id
     const currentIdx = annoIds.indexOf(currentId); // Index of current annotation
@@ -1223,7 +1184,6 @@ document
 document
   .getElementById("anno-next-button")
   .addEventListener("click", function () {
-    console.log("next arrow clicked");
     // Current annotation id
     const annoIdBox = document.getElementById("anno-id");
     const currentId = parseInt(annoIdBox.value);
@@ -1442,8 +1402,6 @@ function applyCurrentGrid(id, changeLabel = false) {
       countJSON.features[id - 1].properties.lineOpacityAfter = lineOpacityAfter;
       updateCrosshair(uuid, "grid", lineColor, lineWeight, lineOpacity);
     }
-  } else {
-    console.warning("Feature type not supported");
   }
 }
 
@@ -1538,7 +1496,6 @@ document.getElementById("applyAllGrid").addEventListener("click", function () {
 });
 
 function selectNextAnno(id) {
-  console.log("selecting next id");
   const annoIdBox = document.getElementById("anno-id");
   const annoLabelBox = document.getElementById("anno-label");
   const annoNotesBox = document.getElementById("anno-notes");
@@ -1546,7 +1503,6 @@ function selectNextAnno(id) {
     { length: annoJSON.features.length },
     (_, i) => i + 1
   );
-  console.log("annoIds", annoIds);
 
   // Case where there are no annotations left
   if (annoIds.length === 0) {
@@ -1580,7 +1536,6 @@ function selectNextAnno(id) {
       -1
     );
     const nextId = annoIds[nextIdx];
-    console.log("nextIdx,nextId", nextIdx, nextId);
     annoIdBox.value = nextId;
     annoLabelToText();
   }
@@ -1597,8 +1552,6 @@ function annoLabelToText() {
     label = annoJSON.features[idInput - 1].properties.label ?? "";
     // Access the notes within the properties of the GeoJSON object
     notes = annoJSON.features[idInput - 1].properties.notes ?? "";
-  } else {
-    console.log("Annotation with this ID not found.");
   }
   const annoLabel = document.getElementById("anno-label");
   const annoNotes = document.getElementById("anno-notes");
@@ -1616,12 +1569,6 @@ function annoTextToLabel() {
     // Update the label within the properties of the GeoJSON object
     annoJSON.features[idInput - 1].properties.label = annoLabel.value;
     annoJSON.features[idInput - 1].properties.notes = annoNotes.value;
-    console.log(
-      `Updated label and/or notes for ID ${idInput}:`,
-      annoJSON.features[idInput - 1].properties.label
-    );
-  } else {
-    console.log("Annotation with this ID not found.");
   }
 }
 
@@ -1656,12 +1603,9 @@ document.addEventListener("keydown", function (event) {
   ) {
     const idInput = document.getElementById("anno-id");
 
-    console.log("idInput", idInput);
-
     event.preventDefault(); // Prevent any default action for Enter key
     annoLabelToText();
 
-    console.log(annoJSON);
     const image = viewer.world.getItemAt(0);
     const viewportPoint = image.imageToViewportCoordinates(
       annoJSON.features[parseInt(idInput.value) - 1].properties.xLabel,
@@ -1742,12 +1686,7 @@ function addPolygonToGeoJSON(JSON, coordinates, metadata) {
 // Function to delete an entry in the JSON
 function deleteFromGeoJSON(id) {
   if (annoJSON.features[id - 1]) {
-    const uuid = annoJSON.features[id - 1].properties.uuid;
     annoJSON.features.splice(id - 1, 1);
-    // delete annoJSON.features[id - 1];
-    console.log(`Entry with ID ${uuid} deleted.`);
-  } else {
-    console.warn(`Entry with ID ${uuid} not found.`);
   }
 }
 
@@ -1844,25 +1783,21 @@ let isXPressed = false;
 let isCPressed = false;
 document.addEventListener("keydown", function (event) {
   if (event.key === "q" || event.key === "Q") {
-    // console.log("Q pressed");
     isQPressed = true;
     toggleCrosshairFloaterOn(true);
     disableOtherAnnoModes("point");
   }
   if (event.key === "z" || event.key === "Z") {
-    // console.log("Z pressed");
     isZPressed = true;
     togglePolylineFloaterOn(true);
     disableOtherAnnoModes("polyline");
   }
   if (event.key === "x" || event.key === "X") {
-    // console.log("X pressed");
     isXPressed = true;
     togglePolygonFloaterOn(true);
     disableOtherAnnoModes("polygon");
   }
   if (event.key === "c" || event.key === "C") {
-    // console.log("C pressed");
     isCPressed = true;
     toggleEllipseFloaterOn(true);
     disableOtherAnnoModes("ellipse");
@@ -1870,7 +1805,6 @@ document.addEventListener("keydown", function (event) {
 });
 document.addEventListener("keyup", function (event) {
   if (event.key === "q" || event.key === "Q") {
-    console.log("Q released");
     isQPressed = false;
     if (!pointButton.classList.contains("active")) {
       // Only toggle off if the button is not also pressed
@@ -1878,7 +1812,6 @@ document.addEventListener("keyup", function (event) {
     }
   }
   if (event.key === "z" || event.key === "Z") {
-    console.log("Z released");
     isZPressed = false;
     if (!polylineButton.classList.contains("active")) {
       // Only toggle off if the button is not also pressed
@@ -1886,14 +1819,12 @@ document.addEventListener("keyup", function (event) {
     }
   }
   if (event.key === "x" || event.key === "X") {
-    console.log("X released");
     isXPressed = false;
     if (!polygonButton.classList.contains("active")) {
       togglePolygonFloaterOn(false);
     }
   }
   if (event.key === "c" || event.key === "C") {
-    console.log("C released");
     isCPressed = false;
     if (!ellipseButton.classList.contains("active")) {
       toggleEllipseFloaterOn(false);
@@ -1904,7 +1835,6 @@ document.addEventListener("keyup", function (event) {
 // Handler for adding point annotations
 viewer.addHandler("canvas-click", function (event) {
   if (isQPressed || isPointMode) {
-    console.log("canvs & Q clicked");
     const image = viewer.world.getItemAt(0);
     const imageSize = image.getContentSize();
     let viewportPoint = viewer.viewport.pointFromPixel(event.position); // Get viewport coordinates
@@ -1962,7 +1892,6 @@ viewer.addHandler("canvas-click", function (event) {
     } else {
       showPrompt("Enter the annotation label:", (value) => {
         if (value) {
-          console.log("User entered:", value);
           constPointLabel = value;
 
           addPointToGeoJSON(imagePoint.x, imagePoint.y, {
@@ -1993,7 +1922,6 @@ viewer.addHandler("canvas-click", function (event) {
             labelBackgroundOpacity
           );
         } else {
-          console.log("User cancelled. No label added.");
           addPointToGeoJSON(imagePoint.x, imagePoint.y, {
             uuid: uniqueID,
             label: "",
@@ -2156,7 +2084,6 @@ let activelyMakingEllipse = false;
 // Event listener to add ellipse annotations
 viewer.addHandler("canvas-click", function (event) {
   if (isEllipseMode || isCPressed) {
-    console.log("ellipse clicked");
     activelyMakingEllipse = true;
     const image = viewer.world.getItemAt(0);
     const imageSize = image.getContentSize();
@@ -2191,7 +2118,6 @@ viewer.addHandler("canvas-click", function (event) {
       // Check if the Escape key was pressed
       if (event.key === "Escape") {
         removeTemporaryPoints();
-        console.log("Escape key pressed");
       }
     });
 
@@ -2302,7 +2228,6 @@ viewer.addHandler("canvas-click", function (event) {
         var constEllipseLabel;
         showPrompt("Enter the annotation label:", (value) => {
           if (value) {
-            console.log("User entered:", value);
             constEllipseLabel = value;
             finalizeEllipseAnnotation(
               constEllipseLabel,
@@ -2321,7 +2246,6 @@ viewer.addHandler("canvas-click", function (event) {
               fillOpacity
             );
           } else {
-            console.log("User cancelled. No label added.");
             constEllipseLabel = "";
             finalizeEllipseAnnotation(
               constEllipseLabel,
@@ -2485,7 +2409,6 @@ viewer.addHandler("canvas-click", function (event) {
       // Check if the Escape key was pressed
       if (event.key === "Escape") {
         removeTemporaryPoints();
-        console.log("Escape key pressed");
       }
     });
 
@@ -2546,7 +2469,6 @@ viewer.addHandler("canvas-click", function (event) {
       // It's a double-click, so stop the timeout and end collection
       activelyMakingPoly = false;
       clearTimeout(clickTimeout);
-      console.log("Double-click detected, ending collection of points.");
 
       // Calculate the stuff we need
       const uuid = generateUniqueId(8);
@@ -2621,7 +2543,6 @@ viewer.addHandler("canvas-click", function (event) {
           togglePolylineFloaterOn(false);
         }
         activelyMakingPoly = false;
-        console.log("Poly mode disabled");
         enableAnnoButtons();
       } else {
         // var constPolylineLabel = prompt("Enter a label for this polyline:");
@@ -2674,14 +2595,13 @@ viewer.addHandler("canvas-click", function (event) {
             togglePolylineFloaterOn(false);
           }
           activelyMakingPoly = false;
-          console.log("Poly mode disabled");
           enableAnnoButtons();
         });
       }
     } else {
       // It's a single click, so set a timeout to handle it
       clickTimeout = setTimeout(function () {
-        console.log("Single click detected, continuing collection...");
+        // Single click detected, continuing collection...
       }, clickDelay);
     }
 
@@ -2822,9 +2742,6 @@ viewerContainer.addEventListener("mousemove", () => {
 viewer.addHandler("canvas-dblclick", function (event) {
   if (isPolylineMode) {
     // Double-click detected, stop collecting points
-    console.log("Double-click detected, ending collection of points.");
-    console.log("Collected Coordinates:", clickCoordinates);
-
     const viewportPoint = viewer.viewport.pointFromPixel(event.position);
     const x = viewportPoint.x;
     const y = viewportPoint.y;
@@ -3240,7 +3157,6 @@ viewer.addHandler("canvas-release", function (event) {
       drawShape(polyCanvas, [annoJSON, annoJSONTemp]);
       showPrompt("Enter the annotation label:", (value) => {
         if (value) {
-          console.log("User entered:", value);
           constRectLabel = value;
           finalizeRectAnnotationWithCoords(
             rectCoordinates,
@@ -3378,12 +3294,8 @@ document.getElementById("clearBtn").addEventListener("click", function () {
       "Are you sure you want to apply clear the annotations? This action cannot be undone."
     )
   ) {
-    console.log("Clear confirmed");
     clearAnnotations();
     disableAnnoButtons();
-    // annotations = [];
-  } else {
-    console.log("Clear cancelled");
   }
 });
 
@@ -3525,8 +3437,6 @@ function deleteText(uuid, type = "anno") {
     }
     // Finally remove the element from DOM
     overlayElement.remove();
-  } else {
-    console.warn(`Text overlay with ID-${uuid} not found.`);
   }
 }
 
@@ -3550,12 +3460,10 @@ function updateText(
 
   if (pointLabel) {
     if (newLabel !== undefined && newLabel !== null) {
-      console.log("updating label innerHTML");
       // Update the innerHTML with the new label
       pointLabel.innerHTML = newLabel;
     }
 
-    console.log(`Label updated for ID ${uuid}:`, newLabel);
     if (type === "anno") {
       // window.appState.hasUnsavedAnnotations = true;
       unsavedAnnotations(true);
@@ -3564,7 +3472,6 @@ function updateText(
     // Update the CSS variables if new values are provided
     if (color !== undefined) {
       const colorToPlot = applyOpacityToColor(color, 1.0);
-      console.log("colorToPlot", colorToPlot);
       pointLabel.style.setProperty("--color", colorToPlot);
     }
     if (fontSize !== undefined) {
@@ -3577,8 +3484,6 @@ function updateText(
       );
       pointLabel.style.setProperty("--background-color", backgroundColorToPlot);
     }
-  } else {
-    console.log(`No annotation found with ID ${uuid}.`);
   }
 }
 
@@ -3637,7 +3542,6 @@ function updateCrosshair(
   }
 
   if (!crosshairElement) {
-    console.error(`Crosshair with ID "${uuid}" not found.`);
     return;
   }
 
@@ -3670,9 +3574,6 @@ function deleteCrosshairs(uuid, type = "anno") {
         (label) => label.id !== `annotate-crosshair-${uuid}`
       ); // Clean up the array
     }
-    // console.log(`Crosshair with ID ${uuid} removed.`);
-  } else {
-    console.warn(`Crosshair with ID ${uuid} not found.`);
   }
   if (type === "anno") {
     updateRepeatButton();
@@ -3681,7 +3582,6 @@ function deleteCrosshairs(uuid, type = "anno") {
 
 function loadAnnotationsFromJSON(file) {
   // Use fetch to get the GeoJSON file from the URL
-  console.log("Beginning loading annotations from JSON", file);
   fetch(file)
     .then((response) => {
       if (!response.ok) {
@@ -3691,7 +3591,6 @@ function loadAnnotationsFromJSON(file) {
       return response.json(); // Use text() first to inspect the content
     })
     .then((data) => {
-      console.log("GeoJSON data loaded:", data);
       loadAnnotations(data);
       // You can now use the geoJsonData for mapping or other purposes
     })
@@ -3702,7 +3601,6 @@ function loadAnnotationsFromJSON(file) {
 }
 
 function loadCounts(geoJSONData) {
-  console.log("Starting counts load");
   const geoJSON = parseJSON(geoJSONData);
 
   const features = geoJSON.features || Object.values(geoJSON); // Supports both formats
@@ -3711,14 +3609,14 @@ function loadCounts(geoJSONData) {
     const properties = feature.properties;
 
     if (!geometry || !properties) {
-      console.warn("Invalid feature, skipping:", feature);
+      // Invalid feature, skipping
       return;
     }
 
     const { type, coordinates } = geometry;
 
     if (type !== "Point") {
-      console.warn("Skipping non-point feature", feature);
+      // Skipping non-point feature
       return;
     }
 
@@ -3734,7 +3632,6 @@ function loadCounts(geoJSONData) {
 function handleCount(coords, properties) {
   const [x, y] = coords;
   if (isNaN(x) || isNaN(y)) {
-    console.log("Invalid point geometry, skipping");
     return;
   }
   const image = viewer.world.getItemAt(0);
@@ -3800,21 +3697,18 @@ function parseJSON(geoJSONData) {
   if (typeof geoJSONData === "string") {
     try {
       geoJSON = JSON.parse(geoJSONData);
-      console.log("Parsed GeoJSON:", geoJSON);
     } catch (error) {
       console.error("Error parsing GeoJSON:", error);
       return; // Exit if parsing fails
     }
   } else {
     geoJSON = geoJSONData;
-    console.log("GeoJSON is already parsed:", geoJSON);
   }
   return geoJSON;
 }
 
 // New loadAnnotations() for testing
 function loadAnnotations(geoJSONData) {
-  console.log("Starting annotation load");
   const geoJSON = parseJSON(geoJSONData);
 
   const features = geoJSON.features || Object.values(geoJSON); // Supports both formats
@@ -3822,14 +3716,14 @@ function loadAnnotations(geoJSONData) {
     const geometry = feature.geometry;
     const properties = feature.properties;
     if (!geometry || !properties) {
-      console.warn("Invalid feature, skipping:", feature);
+      // Invalid feature, skipping
       return;
     }
 
     // Skip duplicate UUIDs
     const uuids = annoJSON.features.map((f) => f.properties.uuid);
     if (uuids.includes(properties.uuid)) {
-      console.log("Warning: annotation already exists, skipping");
+      // Annotation already exists, skipping
       return;
     }
 
@@ -3861,7 +3755,7 @@ function loadAnnotations(geoJSONData) {
 function handlePoint(coords, properties) {
   const [x, y] = coords;
   if (isNaN(x) || isNaN(y)) {
-    console.log("Invalid point geometry, skipping");
+    // Invalid point geometry, skipping
     return;
   }
   const image = viewer.world.getItemAt(0);
@@ -3892,7 +3786,7 @@ function handlePoint(coords, properties) {
 // Helper functions for specific geometry types
 function handleMultiPoint(coords, properties) {
   if (!Array.isArray(coords) || coords.length === 0) {
-    console.log("Invalid MultiPoint geometry, skipping");
+    // Invalid MultiPoint geometry, skipping
     return;
   }
 
@@ -3912,7 +3806,7 @@ function handleMultiPoint(coords, properties) {
     c = c + 1;
 
     if (isNaN(x) || isNaN(y)) {
-      console.log("Invalid point geometry, skipping");
+      // Invalid point geometry, skipping
       return;
     }
 
@@ -4004,7 +3898,6 @@ function handlePolygon(coords, properties) {
 }
 
 function handleMultiPolygon(coords, properties) {
-  console.log("loading MultiPolygon");
   const image = viewer.world.getItemAt(0);
   const viewportPoint = image.imageToViewportCoordinates(
     new OpenSeadragon.Point(properties.xLabel, properties.yLabel)
@@ -4049,7 +3942,6 @@ document
     const fileInput = event.target;
     const file = fileInput.files[0];
     if (!file) {
-      console.log("not a file!");
       return;
     }
 
@@ -4069,7 +3961,6 @@ document
 // Attach export functionality to the button (GeoJSON version)
 document.getElementById("exportBtn").addEventListener("click", function () {
   const geoJSON = annoJSON;
-  console.log(geoJSON);
   // Create a Blob from the GeoJSON object
   const geoJSONBlob = new Blob([JSON.stringify(geoJSON, null, 2)], {
     type: "application/geo+json",
@@ -4084,7 +3975,6 @@ document.getElementById("exportBtn").addEventListener("click", function () {
 // Attach export functionality to the button (GeoJSON version)
 document.getElementById("save-counts").addEventListener("click", function () {
   const geoJSON = countJSON;
-  console.log(geoJSON);
   // Create a Blob from the GeoJSON object
   const geoJSONBlob = new Blob([JSON.stringify(geoJSON, null, 2)], {
     type: "application/geo+json",
@@ -4123,7 +4013,6 @@ const clearAnnotations = () => {
     features: [],
   };
   drawShape(polyCanvas, [annoJSON, annoJSONTemp]);
-  console.log("Cleared", geoJSON);
   const annoLabel = document.getElementById("anno-label");
   const annoNotes = document.getElementById("anno-notes");
   const annoId = document.getElementById("anno-id");
@@ -4306,8 +4195,6 @@ const applyGridSettings = () => {
   });
 
   const imageSize = image.getContentSize();
-  console.log("image size:", imageSize);
-  console.log("pixels per unit:", grid.pixelsPerUnit);
   const x_min_um = ((grid.xMin / 100) * imageSize.x) / grid.pixelsPerUnit;
   const x_max_um = ((grid.xMax / 100) * imageSize.x) / grid.pixelsPerUnit;
   const y_min_um = ((grid.yMin / 100) * imageSize.y) / grid.pixelsPerUnit;
@@ -4435,7 +4322,6 @@ const clearGrid = () => {
     features: [],
   };
 
-  console.log("Cleared grid");
   document.getElementById("count-id").innerHTML = 1;
   document.getElementById("count-text").value = "";
   document.getElementById("count-notes").value = "";
@@ -4729,7 +4615,6 @@ function applyAnnoLabel(idBase, uuid) {
   const feature = annoJSON.features.find((f) => f.properties.uuid === uuid);
   const props = feature.properties;
   const input = document.getElementById(idBase);
-  console.log("input", input.value);
   feature.properties[formattingMap[idBase]] = input.value;
 
   // Apply visual formatting immediately
@@ -4742,9 +4627,7 @@ function applyAnnoLabel(idBase, uuid) {
     const bgColor = input.value;
     const bgOpacity = props["labelBackgroundOpacity"];
     if (!bgOpacity) {
-      console.warn(
-        "Background opacity is not set, cannot apply background color."
-      );
+      // Background opacity is not set, cannot apply background color.
       return;
     }
     updateText(
@@ -4761,9 +4644,7 @@ function applyAnnoLabel(idBase, uuid) {
     const bgOpacity = input.value;
     const bgColor = props["labelBackgroundColor"];
     if (!bgColor) {
-      console.warn(
-        "Background color is not set, cannot apply background opacity."
-      );
+      // Background color is not set, cannot apply background opacity.
       return;
     }
 
@@ -4834,7 +4715,7 @@ function applyCurrentGridCrosshair(idBase) {
 // Functionality for applying specific formatting for grid attributes
 function applyGridLabel(idBase, id) {
   if (isNaN(id) || id < 1 || id > countJSON.features.length) {
-    console.warn("Invalid ID selected.");
+    // Invalid ID selected.
     return;
   }
 
@@ -4871,7 +4752,6 @@ function applyGridLabel(idBase, id) {
   }
 
   if (!input) {
-    console.warn(`The element was not found: ${input}`);
     return;
   }
 
@@ -4890,9 +4770,7 @@ function applyGridLabel(idBase, id) {
       bgOpacity = props["labelBackgroundOpacity"];
     }
     if (!bgOpacity) {
-      console.warn(
-        "Background opacity is not set, cannot apply background color."
-      );
+      // Background opacity is not set, cannot apply background color.
       return;
     }
 
@@ -4915,9 +4793,7 @@ function applyGridLabel(idBase, id) {
       bgColor = props["labelBackgroundColor"];
     }
     if (!bgColor) {
-      console.warn(
-        "Background color is not set, cannot apply background opacity."
-      );
+      // Background color is not set, cannot apply background opacity.
       return;
     }
 
@@ -4936,7 +4812,6 @@ function applyGridLabel(idBase, id) {
 // Functionality for applying specific formatting for grid attributes
 function applyGridCrosshair(idBase, id) {
   if (isNaN(id) || id < 1 || id > countJSON.features.length) {
-    console.warn("Invalid ID selected.");
     return;
   }
 
@@ -4971,7 +4846,6 @@ function applyGridCrosshair(idBase, id) {
   }
 
   if (!input) {
-    console.warn(`The element was not found: ${input}`);
     return;
   }
 
@@ -5001,7 +4875,6 @@ function applyFormattingAfterCountAll(countJSON, what = "both") {
 function applyFormattingAfterCount(countJSON, uuid, what = "both") {
   const feature = countJSON.features.find((f) => f.properties.uuid === uuid);
   if (!feature) {
-    console.warn(`No feature found with id: ${id}`);
     return;
   }
 
@@ -5049,14 +4922,6 @@ function applyFormattingAfterCount(countJSON, uuid, what = "both") {
   const lineWeight = useAfter ? props.lineWeightAfter : props.lineWeight;
   const lineOpacity = useAfter ? props.lineOpacityAfter : props.lineOpacity;
 
-  console.log(
-    uuid,
-    labelFontColor,
-    labelFontSize,
-    labelBackgroundColor,
-    labelBackgroundOpacity
-  );
-
   if (what === "both" || what === "text") {
     updateText(
       uuid,
@@ -5089,7 +4954,6 @@ document.getElementById("count-first").addEventListener("click", function () {
 });
 
 document.getElementById("count-prev").addEventListener("click", function () {
-  console.log("prev button clicked");
   const input = document.getElementById("count-id");
   let value = parseInt(input.value, 10) || 0; // Parse current value or default to 0
   const min = parseInt(input.min, 10);
@@ -5168,7 +5032,6 @@ document.addEventListener("keydown", function (event) {
 
     goToPoint(viewportPoint.x, viewportPoint.y);
     inputSampleLabelFromOverlay();
-    console.log("Enter clicked");
   }
 });
 
@@ -5325,11 +5188,9 @@ document.getElementById("count-export").addEventListener("click", function () {
 document
   .getElementById("count-geojson-input")
   .addEventListener("change", function (event) {
-    console.log("load count geoJSON clicked");
     const fileInput = event.target;
     const file = fileInput.files[0];
     if (!file) {
-      console.log("not a file!");
       return;
     }
 
@@ -5360,8 +5221,6 @@ document
     const fileInput = event.target;
     const file = fileInput.files[0];
     if (!file) return;
-
-    console.log("Loading CSV");
 
     // Clear existing grid
     clearGrid();
@@ -5501,7 +5360,6 @@ const checkboxStates = {};
 function populateFilterDropdown() {
   const filterDropdown = document.getElementById("includeDropdown");
   const uniqueLabels = getUniqueLabels();
-  console.log("unique labels", uniqueLabels);
 
   // Clear existing options
   filterDropdown.innerHTML = "";
@@ -5516,8 +5374,6 @@ function populateFilterDropdown() {
     checkbox.value = label;
     checkbox.id = `checkbox-${label}`;
     checkbox.checked = isChecked; // Default to checked
-
-    console.log(checkbox.id, checkbox.checked);
 
     checkbox.addEventListener("change", () => {
       checkboxStates[label] = checkbox.checked;
@@ -5793,13 +5649,11 @@ function toggleMeasurementMode() {
     // Disable measurement mode
     measurementButton.textContent = "Start Measuring";
     measurementModeActive = false;
-    console.log("Measurement mode disabled");
     resetMeasurements();
   } else {
     // Enable measurement mode
     measurementButton.textContent = "Stop Measuring";
     measurementModeActive = true;
-    console.log("Measurement mode enabled");
   }
 }
 
@@ -5822,7 +5676,6 @@ function toggleCircleMode() {
     // Disable measurement mode
     circleButton.textContent = "Draw Circle";
     circleModeActive = false;
-    console.log("Circle mode disabled");
     circleJSON = {
       type: "FeatureCollection",
       features: [],
@@ -5832,7 +5685,6 @@ function toggleCircleMode() {
     // Enable measurement mode
     circleButton.textContent = "Stop";
     circleModeActive = true;
-    console.log("Circle mode enabled");
   }
 }
 
@@ -6155,10 +6007,6 @@ viewer.addHandler("canvas-click", function (event) {
 
         updateSelfIntersectionWarning(polygonCoords);
 
-        if (isSelfIntersecting(polygonCoords)) {
-          console.log("Self-intersecting polygon detected");
-        }
-
         const currentMeasureImageCoordinates = [
           ...measureImageCoordinates,
           [subeventImagePoint.x, subeventImagePoint.y],
@@ -6208,7 +6056,6 @@ viewer.addHandler("canvas-click", function (event) {
     if (measureCurrentTime - measureLastClickTime < clickDelay) {
       // It's a double-click, so stop the timeout and end collection
       clearTimeout(measureTimeout);
-      console.log("Double-click detected, ending measurement.");
 
       const measurePerimeterPixels = calculatePolygonExteriorPerimeter([
         measureImageCoordinates,
@@ -6255,11 +6102,10 @@ viewer.addHandler("canvas-click", function (event) {
       resetMeasurements();
       // Disable the active measurement mode
       toggleMeasurementMode();
-      console.log("Measurement mode disabled");
     } else {
       // It's a single click, so set a timeout to handle it
       measureTimeout = setTimeout(function () {
-        console.log("Single click detected, continuing collection...");
+        // Single click detected, continuing collection...
       }, clickDelay);
     }
 
@@ -6288,7 +6134,6 @@ function resetMeasurements(hardReset = false) {
 
 // Update measurement values upon change of units
 document.getElementById("areaUnits").addEventListener("change", function () {
-  console.log("Area units changed");
   const areaInput = document.getElementById("area");
   const newUnit = parseInt(this.value, 10);
 
@@ -6309,7 +6154,6 @@ document.getElementById("areaUnits").addEventListener("change", function () {
 document
   .getElementById("distanceUnits")
   .addEventListener("change", function () {
-    console.log("Distance units changed");
     const distanceInput = document.getElementById("distance");
     const newUnit = parseInt(this.value, 10);
 
@@ -6328,7 +6172,6 @@ document
 
 // Update measurement values upon change of units
 document.getElementById("ECDUnits").addEventListener("change", function () {
-  console.log("ECD units changed");
   const distanceInput = document.getElementById("ECD");
   const newUnit = parseInt(this.value, 10);
 
