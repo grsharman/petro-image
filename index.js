@@ -47,10 +47,8 @@ function loadSampleJSON(input) {
   if (typeof input === "string") {
     // Load necessary information from JSON
     fetch(input)
-      // fetch("samples.json")
       .then((response) => response.json())
       .then((data) => {
-        console.log("Fetched JSON from file:", input, data);
         processJSON(data); // Process JSON data
       });
   } else if (typeof input === "object") {
@@ -94,12 +92,10 @@ function processJSON(data) {
 
   // Example: initialize OpenSeadragon with the first tile source
   loadTileSet();
-  //addScalebar(pixelsPerMeters[0]);
   populateGroupDropdown();
   updateButtonLabels();
   displayImages();
   disableCountButtons();
-  // deselectAllButFirstImage();
 
   const sampleParam = getQueryParameter("sample");
   if (sampleParam) {
@@ -130,7 +126,6 @@ function processJSON(data) {
 
 // Automatically load the default JSON file when the page loads
 document.addEventListener("DOMContentLoaded", () => {
-  console.log("uploading samples.json");
   loadSampleJSON("samples.json");
 });
 
@@ -173,7 +168,6 @@ function getQueryParameter(param) {
   return urlParams.get(param);
 }
 
-///
 function populateGroupDropdown() {
   const groupDropdown = document.getElementById("groupDropdown");
   groupDropdown.innerHTML = ""; // Clear existing
@@ -257,8 +251,6 @@ document
     let file = annotationFiles[title()];
     if (file) {
       hasAnnotationInJSON = true;
-      console.log("anno JSON detected, creating button");
-      console.log("file to load:", file);
       const button = document.createElement("button");
       button.textContent = "Load from JSON";
       button.id = "loadAnnoFromJSONButton";
@@ -268,7 +260,6 @@ document
       annoJSONButtonContainer.appendChild(button);
     } else {
       hasAnnotationInJSON = false;
-      console.log("No annotations detected for the selected sample.");
     }
   });
 
@@ -2441,7 +2432,6 @@ const circleCanvas = document.getElementById("circle-overlay"); // Includes circ
 const measureCanvas = document.getElementById("measurement-overlay"); // Includes polyline and polygon
 let activelyMakingPoly = false; // Either polyline or polygon
 viewer.addHandler("canvas-click", function (event) {
-  console.log("canvas clicked");
   if (isPolylineMode || isPolygonMode || isZPressed || isXPressed) {
     activelyMakingPoly = true;
     const image = viewer.world.getItemAt(0);
@@ -2526,7 +2516,6 @@ viewer.addHandler("canvas-click", function (event) {
             lineWeight: lineWeight,
             lineColor: lineColor,
             lineOpacity: lineOpacity,
-            // canvasDraw: true,
           }
         );
         drawShape(polyCanvas, [annoJSON, annoJSONTemp]);
@@ -3362,84 +3351,6 @@ function finalizeRectAnnotationWithCoords(
     coordinates[0][0],
     coordinates[0][1]
   );
-  addText(
-    currentRectUniqueId,
-    constRectLabel,
-    finalPoint,
-    "anno",
-    labelFontColor,
-    labelFontSize,
-    labelBackgroundColor,
-    labelBackgroundOpacity
-  );
-}
-
-// OLD deprecated function. Does not support drawing on a rotated viewport.
-function finalizeRectAnnotation(
-  x,
-  y,
-  finalWidth,
-  finalHeight,
-  sampleName,
-  currentRectUniqueId,
-  constRectLabel,
-  imageSize,
-  labelFontSize,
-  labelFontColor,
-  labelBackgroundColor,
-  labelBackgroundOpacity,
-  lineStyle,
-  lineWeight,
-  lineColor,
-  lineOpacity,
-  fillColor,
-  fillOpacity,
-  finalPoint
-) {
-  // Calculate the four corners of the rectangle
-  const coordinates = [
-    [x, y], // Top-left corner
-    [x + finalWidth, y], // Top-right corner
-    [x + finalWidth, y + finalHeight], // Bottom-right corner
-    [x, y + finalHeight], // Bottom-left corner
-    [x, y], // Close the loop to the top-left corner
-  ];
-
-  const rectAreaPixels2 = calculatePolygonArea([coordinates]);
-  const rectAreaM2 = rectAreaPixels2 / pixelsPerMeter() ** 2;
-  const rectPerimeterPixels = calculatePolygonExteriorPerimeter([coordinates]);
-  const rectPerimeterM = rectPerimeterPixels / pixelsPerMeter();
-
-  // Add the rectangle to the geoJSON
-  addPolygonToGeoJSON(annoJSON, coordinates, {
-    uuid: currentRectUniqueId,
-    label: constRectLabel,
-    xLabel: x,
-    yLabel: y,
-    imageTitle: sampleName,
-    pixelsPerMeter: pixelsPerMeter(),
-    imageWidth: imageSize.x,
-    imageHeight: imageSize.y,
-    labelFontSize: labelFontSize,
-    labelFontColor: labelFontColor,
-    labelBackgroundColor: labelBackgroundColor,
-    labelBackgroundOpacity: labelBackgroundOpacity,
-    lineStyle: lineStyle,
-    lineWeight: Number(lineWeight),
-    lineColor: lineColor,
-    lineOpacity: Number(lineOpacity),
-    fillColor: fillColor,
-    fillOpacity: fillOpacity,
-    area_m2: rectAreaM2,
-    perimeter_m: rectPerimeterM,
-  });
-  drawShape(polyCanvas, [annoJSON]);
-
-  // Mouse up - finalize and reset for the next rectangle
-  startPoint = null;
-  overlayElement = null;
-
-  // Add the label
   addText(
     currentRectUniqueId,
     constRectLabel,
@@ -4296,7 +4207,6 @@ const Grid = class {
   }
 
   get pixelsPerMeter() {
-    q;
     return this.pixelsPerUnit / this.metersPerUnit;
   }
 };
@@ -5941,9 +5851,6 @@ function getCircleCoordinatesInImageSpace(centerX, centerY, diameter) {
 
 let circleConversion = 0;
 viewerContainer.addEventListener("mousemove", function (event) {
-  // For testing
-  console.log(window.appState.hasUnsavedAnnotations);
-
   if (!circleModeActive) return; // Only draw when mode is active
 
   circleJSON = {
@@ -6269,8 +6176,6 @@ viewer.addHandler("canvas-click", function (event) {
           ]);
           areaInM2 = measureAreaPixels / pixelsPerMeter() ** 2;
           const measureArea = areaInM2 * areaConversion;
-          // measureAreaPixels /
-          // (pixelsPerMeters[currentIndex] / areaConversion) ** 2;
           areaElement.value = measureArea.toFixed(2);
 
           ECDInM =
@@ -6475,7 +6380,6 @@ setInterval(() => {
   const now = Date.now();
   for (const code of pressedKeys) {
     if (now - keyTimestamps[code] > KEY_TIMEOUT_MS) {
-      console.log(`Expiring stuck key: ${code}`);
       pressedKeys.delete(code);
       delete keyTimestamps[code];
     }
