@@ -619,8 +619,6 @@ const displayImages = () => {
 
   tileSets().forEach((tileSet, i) => {
     const tiles = tileSet.tiles;
-    const tileSetOpacity =
-      document.getElementById(`opacityImage${i + 1}`).value / 100;
 
     const endAngle = (-2 * Math.PI * sectionsLeft) / totalChecked;
     const windowPolygon = [mousePos];
@@ -640,7 +638,9 @@ const displayImages = () => {
       --sectionsLeft;
     }
 
-    const getTileOpacity = getTileOpacityGetter(tileSet);
+    const tileSetOpacity =
+      document.getElementById(`opacityImage${i + 1}`).value / 100;
+    const getTileOpacity = getTileOpacityGetter(tileSet, tileSetOpacity);
     tiles.forEach((tile, j) => {
       const image = tile.image;
       if (!image) {
@@ -648,7 +648,7 @@ const displayImages = () => {
         return;
       }
       const tileOpacity = isChecked[i] ? getTileOpacity(j) : 0;
-      image.setOpacity(tileOpacity * tileSetOpacity);
+      image.setOpacity(tileOpacity);
 
       // Divide the tile sets into sectors, if image division is enabled.
       if (enableDivideImages) {
@@ -665,13 +665,14 @@ const displayImages = () => {
 
 // Returns a function that can be used to set the opacity of each tile in the
 // given tile set, according to its index.
-const getTileOpacityGetter = (tileSet) => {
+const getTileOpacityGetter = (tileSet, tileSetOpacity) => {
   const tiles = tileSet.tiles;
   const periodDegrees = tileSet.periodDegrees;
   if (!periodDegrees) {
     // If the tile set does not have a period, the tiles are just independent
     // images that can be scrolled through. Only show the selected tile.
-    return (index) => (index === scrollIndex % tiles.length ? 1 : 0);
+    return (index) =>
+      index === scrollIndex % tiles.length ? tileSetOpacity : 0;
   }
 
   // If the tile set does have a period, its tiles should be treated as
@@ -715,12 +716,13 @@ const getTileOpacityGetter = (tileSet) => {
 
   // Show the underlying tile at full opacity and the superimposed tile at the
   // interpolated opacity, and hide all other tiles.
+  const t = (rotation - infimum) / (supremum - infimum);
   return (index) => {
     switch (index) {
       case infimumIndex:
-        return 1;
+        return (tileSetOpacity * (1 - t)) / (1 - tileSetOpacity * t);
       case supremumIndex:
-        return (rotation - infimum) / (supremum - infimum);
+        return tileSetOpacity * t;
       default:
         return 0;
     }
