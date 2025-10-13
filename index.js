@@ -1,22 +1,17 @@
 "use strict";
 
-// Keep track of the current step in the sequence
+// Index of the currently selected sample
 let currentIndex = 0;
-let tileSets = [];
-let tileLabels = [];
-let tileSetRotations = [];
-let tileSetRotationAngles = [];
-let tileSetRotationSpacing = [];
-let tileSetRotationAngleRepeat = [];
 let samples = [];
-let descriptions = [];
-let pixelsPerUnits = [];
-let pixelsPerMeters = [];
-let units = []; // 2 for microns
-let infos = [];
-let annotation_files = {}; // For loading predefined annotations
-let groupMapping = {}; // To map groups to sample indices ///
+let annotationFiles = {}; // For loading predefined annotations
+let groupMapping = {}; // To map groups to sample indices
 let scrollIndex = 0;
+
+// Accessors for attributes of the current sample
+const title = () => samples[currentIndex].title;
+const tileSets = () => samples[currentIndex].tileSets;
+const pixelsPerUnit = () => samples[currentIndex].pixelsPerUnit;
+const pixelsPerMeter = () => samples[currentIndex].pixelsPerMeter;
 
 // Global variables related to annotations
 let hasAnnotationInJSON = false; // for keeping track of whether the selected sample has annotations in the JSON
@@ -69,52 +64,28 @@ function loadSampleJSON(input) {
 
 function processJSON(data) {
   currentIndex = 0;
-  tileSets = [];
-  tileLabels = [];
-  tileSetRotations = [];
-  tileSetRotationAngles = [];
-  tileSetRotationSpacing = [];
-  tileSetRotationAngleRepeat = [];
-  samples = [];
-  descriptions = [];
-  pixelsPerUnits = [];
-  pixelsPerMeters = [];
-  units = []; // 2 for microns
-  infos = [];
-  annotation_files = {}; // For loading predefined annotations
-  groupMapping = {}; // To map groups to sample indices ///
-  // Loop through each sample
-  Object.keys(data).forEach((sampleKey, index) => {
-    let sample = data[sampleKey];
-    if (sample) {
-      // Extract the relevant details
-      tileSets.push(sample.tileSets);
-      tileLabels.push(sample.tileLabels);
-      tileSetRotations.push(sample.tileSetRotation || false);
-      tileSetRotationAngles.push(sample.tileSetRotationAngles || null);
-      tileSetRotationSpacing.push(sample.tileSetRotationSpacing || null);
-      tileSetRotationAngleRepeat.push(
-        sample.tileSetRotationAngleRepeat || null
-      );
-      samples.push(sample.title);
-      descriptions.push(sample.description);
-      pixelsPerUnits.push(sample.pixelsPerUnit);
-      pixelsPerMeters.push(sample.pixelsPerMeter);
-      units.push(sample.unit);
-      infos.push(sample.info);
-      annotation_files[sample.title] = sample.annotations; // || null;
+  samples = data.samples;
+  annotationFiles = {}; // For loading predefined annotations
+  groupMapping = {}; // To map groups to sample indices
 
-      /// Map sample indices to their groups
-      if (sample.groups) {
-        sample.groups.forEach((group) => {
-          if (!groupMapping[group]) {
-            groupMapping[group] = [];
-          }
-          groupMapping[group].push(index);
-        });
+  samples.forEach((sample, index) => {
+    annotationFiles[sample.title] = sample.annotations;
+
+    // Ensure each tile set with angles is sorted ascending by angle.
+    for (let tileSet of sample.tileSets) {
+      if (tileSet.periodDegrees) {
+        tileSet.tiles.sort((a, b) => a.angleDegrees - b.angleDegrees);
       }
-    } else {
-      console.error(`Sample not found for key: ${sampleKey}`);
+    }
+
+    // Map sample indices to their groups.
+    if (sample.groups) {
+      sample.groups.forEach((group) => {
+        if (!groupMapping[group]) {
+          groupMapping[group] = [];
+        }
+        groupMapping[group].push(index);
+      });
     }
   });
 
@@ -122,11 +93,11 @@ function processJSON(data) {
   groupMapping["All"] = Array.from({ length: samples.length }, (_, i) => i);
 
   // Example: initialize OpenSeadragon with the first tile source
-  loadTileSet(0);
+  loadTileSet();
   //addScalebar(pixelsPerMeters[0]);
   populateGroupDropdown();
-  updateButtonLabels(0);
-  divideImages();
+  updateButtonLabels();
+  displayImages();
   disableCountButtons();
   // deselectAllButFirstImage();
 
@@ -231,7 +202,7 @@ function populateSampleDropdown(selectedGroup) {
     groupMapping[selectedGroup].forEach((index) => {
       const option = document.createElement("option");
       option.value = index; // Store index as value
-      option.textContent = samples[index]; // Sample title
+      option.textContent = samples[index].title;
       sampleDropdown.appendChild(option);
     });
     // Automatically select the first sample in the group
@@ -242,8 +213,6 @@ function populateSampleDropdown(selectedGroup) {
   }
 }
 
-let sampleName = "";
-
 // Initialize the OpenSeadragon viewer
 const viewer = OpenSeadragon({
   maxZoomPixelRatio: 100,
@@ -251,7 +220,6 @@ const viewer = OpenSeadragon({
   prefixUrl: "js/images/",
   zoomPerClick: 1, // Disable zoom on click (or shift+click)
   sequenceMode: false,
-  tileSources: tileSets[0], // Load first tile set upon load
   showNavigationControl: false, // Disable the default navigation controls
 });
 
@@ -260,11 +228,10 @@ document
   .getElementById("sampleDropdown")
   .addEventListener("change", function () {
     currentIndex = Number(this.value);
-    sampleName = samples[currentIndex];
-    loadTileSet(currentIndex);
+    loadTileSet();
     clearAnnotations();
-    updateButtonLabels(currentIndex);
-    addScalebar(pixelsPerMeters[currentIndex]);
+    updateButtonLabels();
+    addScalebar(pixelsPerMeter());
     clearGrid();
     enableGridButtons();
     disableCountButtons();
@@ -274,7 +241,7 @@ document
     resetMeasurements(true);
     document.getElementById("enableDivideImages").checked = true;
     enableDivideImages = true;
-    divideImages();
+    displayImages();
     toggleOnImages();
     resetRotation();
 
@@ -287,7 +254,7 @@ document
     }
 
     // Check if the selected sample has annotations
-    let file = annotation_files[sampleName];
+    let file = annotationFiles[title()];
     if (file) {
       hasAnnotationInJSON = true;
       console.log("anno JSON detected, creating button");
@@ -306,15 +273,13 @@ document
   });
 
 // Function to update the button labels based on tileLabels array
-function updateButtonLabels(index) {
-  const numButtons = tileSets[index].length;
-  const tileLabelsForIndex = tileLabels[index]; // Get the labels for the current tile set
-
+function updateButtonLabels() {
+  const numButtons = tileSets().length;
   for (let i = 0; i < 4; i++) {
     const checkbox = document.getElementById(`image${i + 1}`);
     const label = document.getElementById(`label${i + 1}`);
     if (i < numButtons) {
-      const currentLabel = tileLabelsForIndex[i];
+      const currentLabel = tileSets()[i].label;
       const visibleImageIndex = scrollIndex % currentLabel.length;
       // For regular labels, use the normal setup
       checkbox.style.display = "inline";
@@ -334,7 +299,7 @@ function updateButtonLabels(index) {
 }
 
 function toggleOnImages() {
-  const numButtons = tileSets[currentIndex].length;
+  const numButtons = tileSets().length;
   for (let i = 1; i <= 4; i++) {
     const checkbox = document.getElementById(`image${i}`);
     if (i <= numButtons) {
@@ -361,8 +326,6 @@ function deselectAllButFirstImage() {
 
 // Function to update the label dynamically
 function updateImageLabels() {
-  const tileLabelsForCurrent = tileLabels[currentIndex];
-
   for (let i = 0; i < 4; i++) {
     const labelDiv = document.getElementById(
       `labelForOpacityImage${i + 1}`
@@ -371,16 +334,10 @@ function updateImageLabels() {
       `labelForOpacityImage${i + 1}`
     );
 
-    if (i < tileLabelsForCurrent.length) {
+    if (i < tileSets().length) {
       // Show the div
       labelDiv.style.display = "";
-      const tileLabelsForIndex = tileLabelsForCurrent[i];
-      const visibleImageIndex =
-        scrollIndex %
-        (Array.isArray(tileLabelsForIndex) ? tileLabelsForIndex.length : 1);
-      labelElement.textContent = Array.isArray(tileLabelsForIndex)
-        ? tileLabelsForIndex[visibleImageIndex]
-        : tileLabelsForIndex;
+      labelElement.textContent = tileSets()[i].label;
     } else {
       // Hide extra divs
       labelDiv.style.display = "none";
@@ -392,9 +349,9 @@ const tooltip = document.getElementById("tooltip-desc");
 const infoButton = document.getElementById("info-button-desc");
 // Show tooltip with sample info on hover
 function showTooltip() {
-  const dropdown = document.getElementById("sampleDropdown");
-  if (descriptions[dropdown.value]) {
-    tooltip.textContent = `${descriptions[dropdown.value]}`;
+  const description = samples[currentIndex].description;
+  if (description) {
+    tooltip.textContent = description;
     tooltip.style.display = "block";
     const buttonRect = infoButton.getBoundingClientRect();
     console.log("buttonRect.top", buttonRect.top);
@@ -419,8 +376,9 @@ infoButton.addEventListener("mouseleave", hideTooltip);
 
 // TODO: Testing HTML pop-up when button is clicked
 infoButton.addEventListener("click", function () {
-  if (infos[currentIndex]) {
-    fetch(infos[currentIndex])
+  const info = samples[currentIndex].info;
+  if (info) {
+    fetch(info)
       .then((response) => response.text())
       .then((data) => {
         document.getElementById("info-modal-body").innerHTML = data;
@@ -508,7 +466,6 @@ window.addEventListener("beforeunload", function (e) {
 function addScalebar() {
   const scalebarType = document.getElementById("scalebarType").value;
 
-  const pixelsPerMeter = pixelsPerMeters[currentIndex];
   const locationMapper = {
     "Top left": OpenSeadragon.ScalebarLocation.TOP_LEFT,
     "Top right": OpenSeadragon.ScalebarLocation.TOP_RIGHT,
@@ -574,13 +531,13 @@ function addScalebar() {
     backgroundColor: scalebarBackgroundColorToPlot,
     fontSize: scalebarFontSize,
     barThickness: parseInt(scalebarBarThickness),
-    pixelsPerMeter: pixelsPerMeter,
+    pixelsPerMeter: pixelsPerMeter(),
   });
 }
 
 function restoreScalebarDefaults() {
   const scalebarBackgroundColorToPlot = applyOpacityToColor("#ffffff", 0.5);
-  const pixelsPerMeter = pixelsPerMeters[currentIndex];
+  const pixelsPerMeter = pixelsPerMeter();
 
   // Reset scalebar settings to default values
   document.getElementById("scalebarType").value = "Map";
@@ -615,25 +572,20 @@ function restoreScalebarDefaults() {
   });
 }
 
-// Function to recursively add tile sources
-function addTiles(tileSource) {
-  if (Array.isArray(tileSource)) {
-    tileSource.forEach(addTiles); // Recursively handle nested lists
-  } else {
-    viewer.addTiledImage({
-      tileSource: tileSource,
-      success: function () {},
-    });
-  }
-}
+// Load the images for the tile set at the given index within the currently
+// selected sample's tile sets.
+function loadTileSet() {
+  // Remove any previously loaded images from the viewer.
+  viewer.world.removeAll();
 
-// Function to load a set of images based on the current index
-function loadTileSet(index) {
-  viewer.world.removeAll(); // Remove previous images
-  const tileSources = tileSets[index]; // Get the tile set
-
-  if (tileSources) {
-    addTiles(tileSources); // Process all tiles (handling nested lists)
+  // Load and store tiled images.
+  for (let tileSet of tileSets()) {
+    for (let tile of tileSet.tiles) {
+      viewer.addTiledImage({
+        tileSource: tile.uri,
+        success: (event) => (tile.image = event.item),
+      });
+    }
   }
 }
 
@@ -642,21 +594,22 @@ const viewerContainer = document.getElementById("viewer-container");
 // Share the mouse position between event handlers.
 let mousePos = new OpenSeadragon.Point(0, 0);
 
-// Divides the images at the current mouse position, cropping overlaid images to
-// expose the images underneath. Note that all images are expected to have the
-// same position and size.
-const divideImages = () => {
+// Update the appearance of the images for the currently selected sample. Note
+// that all images in the sample must have the same position and size. For
+// samples with multiple tile sets, the viewer will be divided into equal
+// sectors (one for each tile set) centered at the current mouse position. This
+// function also applies image opacity and blending.
+const displayImages = () => {
   // Bail out if there are no images.
   if (viewer.world.getItemCount() === 0) {
     return;
   }
 
-  const tileSet = tileSets[currentIndex];
-  // Determine the number of checked images ahead of time so we know how big to
-  // make each section.
+  // Determine the number of enabled tile sets ahead of time so we know how big
+  // to make each sector.
   const isChecked = [];
   let totalChecked = 0;
-  for (let i = 0; i < tileSet.length; ++i) {
+  for (let i = 0; i < tileSets().length; ++i) {
     const checkbox = document.getElementById(`image${i + 1}`);
     isChecked.push(checkbox.checked);
     if (checkbox.checked) {
@@ -664,27 +617,23 @@ const divideImages = () => {
     }
   }
 
-  // Make orderMaps head of time
-  let orderMaps = [];
-  for (let i = 0; i < tileSet.length; ++i) {
-    const angles = tileSetRotationAngles[currentIndex][i];
-    orderMaps.push(makeOrderMap(angles ? angles.length : 0));
-  }
-
+  // Set the radius of each sector's polygon to an arbitrary value large enough
+  // that the sector's arc is outside the viewport.
   const radius = 4 * Math.max(window.innerWidth, window.innerHeight);
-  // Place the first image in a segment with its most clockwise edge facing up.
+  // Place the first image in a sector with its most clockwise radius facing up.
   const startAngle = -Math.PI / 2 - (2 * Math.PI) / totalChecked;
 
   // Set the cropping polygon for each image.
-  let imageIndex = 0; // Because a given section may have multiple images
   let sectionsLeft = totalChecked;
 
-  // One loop per top level of image list
-  for (let i = 0; i < tileSet.length; ++i) {
-    // console.log("image index", i);
+  tileSets().forEach((tileSet, i) => {
+    const tiles = tileSet.tiles;
+    const tileSetOpacity =
+      document.getElementById(`opacityImage${i + 1}`).value / 100;
+
     const endAngle = (-2 * Math.PI * sectionsLeft) / totalChecked;
     const windowPolygon = [mousePos];
-    // Define the section's arc using four points to ensure the polygon is
+    // Define the sector's arc using four points to ensure the polygon is
     // well-formed even if the tile set has fewer than three tiles.
     for (let p = 0; p < 4; ++p) {
       const angle = startAngle + (p * endAngle) / 3;
@@ -696,92 +645,81 @@ const divideImages = () => {
       );
     }
 
-    let imagesInSection;
-    if (Array.isArray(tileSet[i])) {
-      // If it's a nested list, add all images to the same section
-      imagesInSection = tileSet[i];
+    // If the tile set has a period, its tiles should be treated as different
+    // angles of the same image, and the displayed image should be interpolated
+    // between the tiles closest to the current angle.
+    const periodDegrees = tileSet.periodDegrees;
+    let rotation;
+    let supremumIndex = 0;
+    let supremum;
+    let infimumIndex;
+    let infimum;
+    if (periodDegrees) {
+      rotation =
+        ((viewer.viewport.getRotation(true) % periodDegrees) + periodDegrees) %
+        periodDegrees;
+      // Find the first tile whose angle is greater than the target.
+      for (let j = 0; j < tiles.length; ++j) {
+        const tile = tiles[j];
+        if (tile.angleDegrees > rotation) {
+          supremumIndex = j;
+          break;
+        }
+      }
+    }
+    supremum = tiles[supremumIndex].angleDegrees;
+    if (supremumIndex === 0) {
+      // Wrap around the tile list.
+      infimumIndex = tiles.length - 1;
+      supremum += periodDegrees;
     } else {
-      // If it's a single image, treat it as its own group
-      imagesInSection = [tileSet[i]];
+      infimumIndex = supremumIndex - 1;
     }
+    infimum = tiles[infimumIndex].angleDegrees;
 
-    const imageOpacity = document.getElementById(`opacityImage${i + 1}`).value;
+    // TODO: Handle the case where the least available angle is not 0.
 
-    if (tileSetRotations[currentIndex][i]) {
-      // TODO: Verify this method works
-      const angles = tileSetRotationAngles[currentIndex][i];
-      const repeat = tileSetRotationAngleRepeat[currentIndex][i];
-      const currentRotation = viewer.viewport.getRotation(true);
-      const offset = getTileSetOffset(tileSets[currentIndex], i); // offset within global tileSets array
-      console.log("i", i);
-      console.log("orderMaps[i]", orderMaps[i]);
-      // console.log("angles", angles);
-      // console.log("repeat", repeat);
-      // console.log("currentRotation", currentRotation);
-      updateImageOrder(
-        viewer,
-        orderMaps[i],
-        angles,
-        currentRotation,
-        repeat,
-        offset
-      );
-    }
-    // One loop per second level of image list
-    for (let j = 0; j < imagesInSection.length; ++j) {
-      ++imageIndex;
+    // Ensure the infimum image is underneath the supremum image.
+    const infimumWorldIndex = viewer.world.getIndexOfItem(
+      tiles[infimumIndex].image
+    );
+    const supremumWorldIndex = viewer.world.getIndexOfItem(
+      tiles[supremumIndex].image
+    );
+    const min = Math.min(infimumWorldIndex, supremumWorldIndex);
+    const max = Math.max(infimumWorldIndex, supremumWorldIndex);
+    viewer.world.setItemIndex(tiles[infimumIndex].image, min);
+    viewer.world.setItemIndex(tiles[supremumIndex].image, max);
 
-      const image = viewer.world.getItemAt(imageIndex - 1);
+    tiles.forEach((tile, j) => {
+      const image = tile.image;
       if (!image) {
-        console.warn(`Image at index ${imageIndex - 1} is not loaded yet.`);
-        continue;
+        // Image is not loaded yet.
+        return;
       }
 
-      if (tileSetRotations[currentIndex][i]) {
-        // TODO: Verify this method works
-        const currentRotation = viewer.viewport.getRotation(true);
-        let angleOpacity;
-        const currentImageAngle = tileSetRotationAngles[currentIndex][i][j];
+      let tileOpacity = 0;
+      if (isChecked[i]) {
+        --sectionsLeft;
 
-        console.log("j", j);
-        angleOpacity =
-          rotation_opacity_finder(
-            currentRotation,
-            currentImageAngle,
-            tileSetRotationSpacing[currentIndex][i],
-            tileSetRotationAngleRepeat[currentIndex][i]
-          ) *
-          100 *
-          (imageOpacity / 100);
-        console.log("angleOpacity", angleOpacity);
-        // }
-
-        if (isChecked[i]) {
-          image.setOpacity(angleOpacity / 100);
-          --sectionsLeft;
-        } else {
-          image.setOpacity(0);
-          continue;
-        }
-      } else {
-        if (isChecked[i]) {
-          image.setOpacity(imageOpacity / 100);
-          --sectionsLeft;
-        } else {
-          image.setOpacity(0);
-          continue;
+        if (periodDegrees) {
+          switch (j) {
+            case infimumIndex:
+              tileOpacity = 1;
+              break;
+            case supremumIndex:
+              tileOpacity = (rotation - infimum) / (supremum - infimum);
+              break;
+          }
+        } else if (j === scrollIndex % tileSet.tiles.length) {
+          // Display only the selected tile.
+          tileOpacity = 1;
         }
       }
-      // Display this image if it's selected and checked.
-      // const visibleImageIndex = scrollIndex % imagesInSection.length;
-      // if (isChecked[i] && j === visibleImageIndex) {
-      //   image.setOpacity(imageOpacity / 100);
-      //   --sectionsLeft;
-      // } else {
-      //   image.setOpacity(0);
-      //   continue;
-      // }
 
+      image.setOpacity(tileOpacity * tileSetOpacity);
+
+      // Divide the tile sets into sectors, if image division is enabled.
       if (enableDivideImages) {
         image.setCroppingPolygons([
           windowPolygon.map((p) => image.viewerElementToImageCoordinates(p)),
@@ -789,8 +727,8 @@ const divideImages = () => {
       } else {
         image.resetCroppingPolygons();
       }
-    }
-  }
+    });
+  });
   viewer.forceRedraw();
 };
 
@@ -806,7 +744,7 @@ const toggleGridLabels = (event) => {
   }
 };
 
-viewer.addHandler("animation", divideImages);
+viewer.addHandler("animation", displayImages);
 
 // Update grid slider values as slider moves
 const slider_1 = document.getElementById("grid-left");
@@ -856,7 +794,7 @@ function updateOpacityImageSliderVisibility() {
 
   // Loop through all sliders and adjust visibility
   sliders.forEach((slider, index) => {
-    if (index < tileSets[currentIndex].length) {
+    if (index < tileSets().length) {
       slider.style.display = "block"; // Show the slider
       // Reset the slider value to 100
       const sliderInput = slider.querySelector("input[type='range']");
@@ -1839,7 +1777,7 @@ const toggleDivideImages = (event) => {
   } else {
     enableDivideImages = false;
   }
-  divideImages();
+  displayImages();
 };
 
 // Import, add, and export points with labels
@@ -1995,14 +1933,13 @@ viewer.addHandler("canvas-click", function (event) {
       const annoId = parseInt(document.getElementById("anno-id").value);
       constPointLabel = annoJSON.features[annoId - 1].properties.label;
 
-      const sampleIdx = samples.indexOf(sampleName);
       addPointToGeoJSON(imagePoint.x, imagePoint.y, {
         uuid: uniqueID,
         label: constPointLabel,
         xLabel: imagePoint.x,
         yLabel: imagePoint.y,
-        imageTitle: sampleName,
-        pixelsPerMeter: Number(pixelsPerMeters[sampleIdx]),
+        imageTitle: title(),
+        pixelsPerMeter: pixelsPerMeter(),
         imageWidth: imageSize.x,
         imageHeight: imageSize.y,
         labelFontSize: labelFontSize,
@@ -2029,14 +1966,13 @@ viewer.addHandler("canvas-click", function (event) {
           console.log("User entered:", value);
           constPointLabel = value;
 
-          const sampleIdx = samples.indexOf(sampleName);
           addPointToGeoJSON(imagePoint.x, imagePoint.y, {
             uuid: uniqueID,
             label: constPointLabel,
             xLabel: imagePoint.x,
             yLabel: imagePoint.y,
-            imageTitle: sampleName,
-            pixelsPerMeter: Number(pixelsPerMeters[sampleIdx]),
+            imageTitle: title(),
+            pixelsPerMeter: pixelsPerMeter(),
             imageWidth: imageSize.x,
             imageHeight: imageSize.y,
             labelFontSize: labelFontSize,
@@ -2059,14 +1995,13 @@ viewer.addHandler("canvas-click", function (event) {
           );
         } else {
           console.log("User cancelled. No label added.");
-          const sampleIdx = samples.indexOf(sampleName);
           addPointToGeoJSON(imagePoint.x, imagePoint.y, {
             uuid: uniqueID,
             label: "",
             xLabel: imagePoint.x,
             yLabel: imagePoint.y,
-            imageTitle: sampleName,
-            pixelsPerMeter: Number(pixelsPerMeters[sampleIdx]),
+            imageTitle: title(),
+            pixelsPerMeter: pixelsPerMeter(),
             imageWidth: imageSize.x,
             imageHeight: imageSize.y,
             labelFontSize: labelFontSize,
@@ -2435,19 +2370,18 @@ function finalizeEllipseAnnotation(
     labelImagePoint[0],
     labelImagePoint[1]
   );
-  const sampleIdx = samples.indexOf(sampleName);
   const areaPixels2 = calculatePolygonArea([ellipsePoints]);
-  const areaM2 = areaPixels2 / pixelsPerMeters[currentIndex] ** 2;
+  const areaM2 = areaPixels2 / pixelsPerMeter() ** 2;
   const perimeterPixels = calculatePolygonExteriorPerimeter([ellipsePoints]);
-  const perimeterM = perimeterPixels / pixelsPerMeters[currentIndex];
+  const perimeterM = perimeterPixels / pixelsPerMeter();
 
   addPolygonToGeoJSON(annoJSON, [...ellipsePoints], {
     uuid: uniqueID,
     label: label,
     xLabel: labelImagePoint[0],
     yLabel: labelImagePoint[1],
-    imageTitle: sampleName,
-    pixelsPerMeter: Number(pixelsPerMeters[sampleIdx]),
+    imageTitle: title(),
+    pixelsPerMeter: pixelsPerMeter(),
     imageWidth: imageSize.x,
     imageHeight: imageSize.y,
     labelFontSize: labelFontSize,
@@ -2577,7 +2511,6 @@ viewer.addHandler("canvas-click", function (event) {
           subeventViewportPoint.x,
           subeventViewportPoint.y
         );
-        const sampleIdx = samples.indexOf(sampleName);
         addPolylineToGeoJSON(
           annoJSONTemp,
           [
@@ -2629,19 +2562,17 @@ viewer.addHandler("canvas-click", function (event) {
         labelViewportPoint.x,
         labelViewportPoint.y
       );
-      const sampleIdx = samples.indexOf(sampleName);
 
       const rectAreaPixels2 = calculatePolygonArea([clickImageCoordinates]);
-      const rectAreaM2 = rectAreaPixels2 / pixelsPerMeters[currentIndex] ** 2;
+      const rectAreaM2 = rectAreaPixels2 / pixelsPerMeter() ** 2;
       const rectPerimeterPixels = calculatePolygonExteriorPerimeter([
         clickImageCoordinates,
       ]);
-      const rectPerimeterM =
-        rectPerimeterPixels / pixelsPerMeters[currentIndex];
+      const rectPerimeterM = rectPerimeterPixels / pixelsPerMeter();
       const lineLengthPixels = calculateLineStringLength(
         clickImageCoordinates.slice(0, clickImageCoordinates.length - 1)
       );
-      const lineLengthM = lineLengthPixels / pixelsPerMeters[currentIndex];
+      const lineLengthM = lineLengthPixels / pixelsPerMeter();
 
       if (isRepeatMode) {
         const annoId = parseInt(document.getElementById("anno-id").value);
@@ -2800,8 +2731,8 @@ function finalizePolyAnnotation(
       label: constPolylineLabel,
       xLabel: labelImagePoint.x,
       yLabel: labelImagePoint.y,
-      imageTitle: sampleName,
-      pixelsPerMeter: Number(pixelsPerMeters[sampleIdx]),
+      imageTitle: title(),
+      pixelsPerMeter: pixelsPerMeter(),
       imageWidth: imageSize.x,
       imageHeight: imageSize.y,
       labelFontSize: labelFontSize,
@@ -2831,8 +2762,8 @@ function finalizePolyAnnotation(
         label: constPolylineLabel,
         xLabel: labelImagePoint.x,
         yLabel: labelImagePoint.y,
-        imageTitle: sampleName,
-        pixelsPerMeter: Number(pixelsPerMeters[sampleIdx]),
+        imageTitle: title(),
+        pixelsPerMeter: pixelsPerMeter(),
         imageWidth: imageSize.x,
         imageHeight: imageSize.y,
         labelFontSize: labelFontSize,
@@ -3287,7 +3218,7 @@ viewer.addHandler("canvas-release", function (event) {
       var constRectLabel = annoJSON.features[annoId - 1].properties.label;
       finalizeRectAnnotationWithCoords(
         rectCoordinates,
-        sampleName,
+        title(),
         currentRectUniqueId,
         constRectLabel,
         imageSize,
@@ -3316,7 +3247,7 @@ viewer.addHandler("canvas-release", function (event) {
           constRectLabel = value;
           finalizeRectAnnotationWithCoords(
             rectCoordinates,
-            sampleName,
+            title(),
             currentRectUniqueId,
             constRectLabel,
             imageSize,
@@ -3340,7 +3271,7 @@ viewer.addHandler("canvas-release", function (event) {
           constRectLabel = "";
           finalizeRectAnnotationWithCoords(
             rectCoordinates,
-            sampleName,
+            title(),
             currentRectUniqueId,
             constRectLabel,
             imageSize,
@@ -3393,19 +3324,18 @@ function finalizeRectAnnotationWithCoords(
 
   // Calculate area and perimeter
   const rectAreaPixels2 = calculatePolygonArea([coordinates]);
-  const rectAreaM2 = rectAreaPixels2 / pixelsPerMeters[currentIndex] ** 2;
+  const rectAreaM2 = rectAreaPixels2 / pixelsPerMeter() ** 2;
   const rectPerimeterPixels = calculatePolygonExteriorPerimeter([coordinates]);
-  const rectPerimeterM = rectPerimeterPixels / pixelsPerMeters[currentIndex];
+  const rectPerimeterM = rectPerimeterPixels / pixelsPerMeter();
 
   // Add the rectangle to geoJSON
-  const sampleIdx = samples.indexOf(sampleName);
   addPolygonToGeoJSON(annoJSON, coordinates, {
     uuid: currentRectUniqueId,
     label: constRectLabel,
     xLabel: coordinates[0][0], // top-left corner
     yLabel: coordinates[0][1],
     imageTitle: sampleName,
-    pixelsPerMeter: Number(pixelsPerMeters[sampleIdx]),
+    pixelsPerMeter: pixelsPerMeter(),
     imageWidth: imageSize.x,
     imageHeight: imageSize.y,
     labelFontSize: labelFontSize,
@@ -3476,19 +3406,18 @@ function finalizeRectAnnotation(
   ];
 
   const rectAreaPixels2 = calculatePolygonArea([coordinates]);
-  const rectAreaM2 = rectAreaPixels2 / pixelsPerMeters[currentIndex] ** 2;
+  const rectAreaM2 = rectAreaPixels2 / pixelsPerMeter() ** 2;
   const rectPerimeterPixels = calculatePolygonExteriorPerimeter([coordinates]);
-  const rectPerimeterM = rectPerimeterPixels / pixelsPerMeters[currentIndex];
+  const rectPerimeterM = rectPerimeterPixels / pixelsPerMeter();
 
   // Add the rectangle to the geoJSON
-  const sampleIdx = samples.indexOf(sampleName);
   addPolygonToGeoJSON(annoJSON, coordinates, {
     uuid: currentRectUniqueId,
     label: constRectLabel,
     xLabel: x,
     yLabel: y,
     imageTitle: sampleName,
-    pixelsPerMeter: Number(pixelsPerMeters[sampleIdx]),
+    pixelsPerMeter: pixelsPerMeter(),
     imageWidth: imageSize.x,
     imageHeight: imageSize.y,
     labelFontSize: labelFontSize,
@@ -4289,7 +4218,7 @@ const clearAnnotations = () => {
 viewerContainer.addEventListener("pointermove", (event) => {
   mousePos = new OpenSeadragon.Point(event.clientX, event.clientY);
   if (enableDivideImages) {
-    divideImages();
+    displayImages();
   }
 });
 
@@ -4448,8 +4377,8 @@ const applyGridSettings = () => {
 
   const image = viewer.world.getItemAt(0);
   grid = new Grid({
-    unit: units[currentIndex],
-    pixelsPerUnit: pixelsPerUnits[currentIndex],
+    unit: samples[currentIndex].units,
+    pixelsPerUnit: pixelsPerUnit(),
     xMin: parseFloat(document.getElementById("grid-left").value),
     yMin: parseFloat(document.getElementById("grid-top").value),
     xMax: parseFloat(document.getElementById("grid-right").value),
@@ -4482,8 +4411,8 @@ const applyGridSettings = () => {
     const yUnits = Y[i];
 
     // Convert to coordinates in pixels.
-    const xPixels = xUnits * pixelsPerUnits[currentIndex];
-    const yPixels = yUnits * pixelsPerUnits[currentIndex];
+    const xPixels = xUnits * pixelsPerUnit();
+    const yPixels = yUnits * pixelsPerUnit();
 
     // Convert to view-space coordinates, measuring from the top-left of the
     // first image.
@@ -4501,8 +4430,6 @@ const applyGridSettings = () => {
     const lineColor = document.getElementById("gridLineColor").value;
     const lineOpacity = document.getElementById("gridLineOpacity").value;
 
-    const sampleIdx = samples.indexOf(sampleName);
-
     const coords = [xPixels, yPixels];
     const properties = {
       uuid: generateUniqueId(16),
@@ -4511,8 +4438,8 @@ const applyGridSettings = () => {
       notes: "",
       xLabel: xPixels,
       yLabel: yPixels,
-      imageTitle: sampleName,
-      pixelsPerMeter: Number(pixelsPerMeters[sampleIdx]),
+      imageTitle: title(),
+      pixelsPerMeter: pixelsPerMeter(),
       imageWidth: imageSize.x,
       imageHeight: imageSize.y,
       xMin: parseFloat(document.getElementById("grid-left").value),
@@ -5458,7 +5385,7 @@ document.getElementById("count-export").addEventListener("click", function () {
     const notes = countJSON.features[i].properties.notes || "";
 
     // Append the row as a CSV line
-    csvContent += `${sampleName},${pointNumber},${x_px},${y_px},"${label}","${notes}"\n`;
+    csvContent += `${title()},${pointNumber},${x_px},${y_px},"${label}","${notes}"\n`;
   }
 
   // Create a blob and trigger a download
@@ -5593,8 +5520,8 @@ function processCSVData(data) {
       notes: row["Notes"],
       xLabel: row["X_px"],
       yLabel: row["Y_px"],
-      imageTitle: sampleName,
-      pixelsPerMeter: pixelsPerMeters[currentIndex],
+      imageTitle: title(),
+      pixelsPerMeter: pixelsPerMeter(),
       imageWidth: imageSize.x,
       imageHeight: imageSize.y,
       labelFontSize: parseFloat(
@@ -6044,7 +5971,7 @@ viewerContainer.addEventListener("mousemove", function (event) {
   const coordinates = getCircleCoordinatesInImageSpace(
     imagePoint.x,
     imagePoint.y,
-    circleDiameter * (pixelsPerMeters[currentIndex] / circleConversion) // Convert microns to meters
+    circleDiameter * (pixelsPerMeter() / circleConversion) // Convert microns to meters
   );
 
   const lineColor = document.getElementById("circleLineColor").value;
@@ -6325,7 +6252,7 @@ viewer.addHandler("canvas-click", function (event) {
         const measurePerimeterPixels = calculatePolygonExteriorPerimeter([
           currentMeasureImageCoordinates,
         ]);
-        distanceInM = measurePerimeterPixels / pixelsPerMeters[currentIndex];
+        distanceInM = measurePerimeterPixels / pixelsPerMeter();
         const measurePerimeter = distanceInM * distanceConversion;
         distanceElement.value = measurePerimeter.toFixed(2);
 
@@ -6340,17 +6267,14 @@ viewer.addHandler("canvas-click", function (event) {
           const measureAreaPixels = calculatePolygonArea([
             currentMeasureImageCoordinatesPolygon,
           ]);
-          areaInM2 = measureAreaPixels / pixelsPerMeters[currentIndex] ** 2;
+          areaInM2 = measureAreaPixels / pixelsPerMeter() ** 2;
           const measureArea = areaInM2 * areaConversion;
           // measureAreaPixels /
           // (pixelsPerMeters[currentIndex] / areaConversion) ** 2;
           areaElement.value = measureArea.toFixed(2);
 
           ECDInM =
-            2 *
-            Math.sqrt(
-              measureAreaPixels / pixelsPerMeters[currentIndex] ** 2 / Math.PI
-            );
+            2 * Math.sqrt(measureAreaPixels / pixelsPerMeter() ** 2 / Math.PI);
           const ECD = ECDInM * ECDConversion;
           ECDElement.value = ECD.toFixed(2);
         } else {
@@ -6377,8 +6301,7 @@ viewer.addHandler("canvas-click", function (event) {
         measureImageCoordinates,
       ]);
       const measurePerimeter =
-        (measurePerimeterPixels / pixelsPerMeters[currentIndex]) *
-        distanceConversion;
+        (measurePerimeterPixels / pixelsPerMeter()) * distanceConversion;
 
       // Close the polygon by adding the first point to the end
       const finalMeasureImageCoordinatesPolygon = [
@@ -6389,20 +6312,17 @@ viewer.addHandler("canvas-click", function (event) {
       const measureAreaPixels = calculatePolygonArea([
         finalMeasureImageCoordinatesPolygon,
       ]);
-      areaInM2 = measureAreaPixels / pixelsPerMeters[currentIndex] ** 2;
+      areaInM2 = measureAreaPixels / pixelsPerMeter() ** 2;
       const measureArea = areaInM2 * areaConversion;
 
       ECDInM =
-        2 *
-        Math.sqrt(
-          measureAreaPixels / pixelsPerMeters[currentIndex] ** 2 / Math.PI
-        );
+        2 * Math.sqrt(measureAreaPixels / pixelsPerMeter() ** 2 / Math.PI);
       const ECD = ECDInM * ECDConversion;
       ECDElement.value = ECD.toFixed(2);
 
       addPolylineToGeoJSON(measureJSON, measureImageCoordinates, {
         label: "measurement",
-        pixelsPerMeter: Number(pixelsPerMeters[currentIndex]),
+        pixelsPerMeter: pixelsPerMeter(),
         imageWidth: imageSize.x,
         imageHeight: imageSize.y,
         lineStyle: lineStyle,
@@ -6720,8 +6640,8 @@ document.addEventListener("keydown", function (event) {
   } else if (event.shiftKey && event.key === ">") {
     scrollIndex++; // Move forward
   }
-  divideImages();
-  updateButtonLabels(currentIndex);
+  displayImages();
+  updateButtonLabels();
   updateImageLabels();
 });
 
@@ -6957,75 +6877,4 @@ function resetRotation() {
     rotationValue.textContent = "0°";
   }
   viewer.viewport.setRotation(0, true);
-}
-
-function rotation_opacity_finder(
-  currentRotation,
-  imageAngle,
-  imageAngleSpacing,
-  imageAngleRepeat
-) {
-  // Normalize angle difference into [-imageAngleRepeat/2, +imageAngleRepeat/2]
-  let residual = (currentRotation - imageAngle) % imageAngleRepeat;
-  if (residual < -imageAngleRepeat / 2) residual += imageAngleRepeat;
-  if (residual > imageAngleRepeat / 2) residual -= imageAngleRepeat;
-  console.log("residual", residual);
-
-  // Fade in from (imageAngle - spacing) → imageAngle
-  // Fully visible between imageAngle → (imageAngle + spacing)
-  // Invisible outside
-  if (residual >= -imageAngleSpacing && residual < 0) {
-    return 1 + residual / imageAngleSpacing; // fade in (0→1)
-  } else if (residual >= 0 && residual < imageAngleSpacing) {
-    return 1; // fully visible
-  }
-
-  return 0; // invisible
-}
-
-function makeOrderMap(n) {
-  const base = Array.from({ length: n }, (_, i) => i);
-  return Array.from({ length: n }, (_, i) =>
-    base.slice(i).concat(base.slice(0, i))
-  );
-}
-
-function getTileSetOffset(tileSets, targetIndex) {
-  let count = 0;
-  for (let i = 0; i < targetIndex; i++) {
-    const item = tileSets[i];
-    count += Array.isArray(item) ? item.length : 1;
-  }
-  return count;
-}
-
-function updateImageOrder(
-  viewer,
-  orderMap,
-  imageAngles,
-  rotation,
-  repeat,
-  offset
-) {
-  const segmentSize = repeat / imageAngles.length;
-  const normRotation = ((rotation % repeat) + repeat) % repeat;
-  const segment = Math.floor(normRotation / segmentSize);
-  const order = orderMap[segment];
-  if (!order) return;
-
-  // console.log("segmentSize", segmentSize);
-  // console.log("normRotation", normRotation);
-  // console.log("segment", segment);
-  console.log("order", order);
-  // console.log("offset", offset);
-
-  // Reorder images within this group only, using global indices
-  order.forEach((idx, layerIndex) => {
-    const globalIndex = offset + idx; // convert local to global index
-    console.log("layerIndex", layerIndex + offset);
-    console.log("globalIndex", globalIndex);
-    // console.log("idx", idx);
-    const item = viewer.world.getItemAt(globalIndex);
-    if (item) viewer.world.setItemIndex(item, layerIndex + offset);
-  });
 }
