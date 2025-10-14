@@ -1,38 +1,33 @@
 use std::{
-	env,
 	fs::File,
 	io::{BufReader, BufWriter},
-	process::Command,
 };
 
+use clap::Parser;
 use serde_json::{Map, Value, from_reader, json};
 
+#[derive(Parser)]
+struct Args {
+	in_path: String,
+	out_path: String,
+}
+
 fn main() {
-	// Read input and output paths.
-	let args: Vec<String> = env::args().collect();
-	let in_path = &args[1];
-	let out_path = &args[2];
+	// Parse input and output paths.
+	let Args { in_path, out_path } = Args::parse();
 
 	// Read the existing samples file.
-	let in_file = File::open(in_path).expect("input file must be opened");
+	let in_file = File::open(in_path).unwrap();
 	let reader = BufReader::new(in_file);
-	let samples: Value =
-		from_reader(reader).expect("input must be deserialized from JSON");
+	let samples: Value = from_reader(reader).unwrap();
 
 	// Reformat the samples.
 	let value = reformat_samples(samples);
 
 	// Write the new file.
-	let out_file = File::create(out_path).expect("output file must be created");
+	let out_file = File::create(out_path).unwrap();
 	let writer = BufWriter::new(out_file);
-	serde_json::to_writer_pretty(writer, &value)
-		.expect("output must be serialized to JSON");
-
-	// Format with Prettier.
-	Command::new("prettier.cmd")
-		.args(vec!["-w", out_path])
-		.output()
-		.expect("output must be formatted with Prettier");
+	serde_json::to_writer_pretty(writer, &value).unwrap();
 }
 
 fn reformat_samples(samples: Value) -> Value {
