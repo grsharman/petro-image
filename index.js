@@ -10,8 +10,11 @@ let scrollIndex = 0;
 // Accessors for attributes of the current sample
 const title = () => samples[currentIndex].title;
 const tileSets = () => samples[currentIndex].tileSets;
-const pixelsPerUnit = () => samples[currentIndex].pixelsPerUnit;
 const pixelsPerMeter = () => samples[currentIndex].pixelsPerMeter;
+const pixelsPerMicron = () => {
+  const micronsPerMeter = 10 ** 6;
+  return pixelsPerMeter() / micronsPerMeter;
+};
 
 // Global variables related to annotations
 let hasAnnotationInJSON = false; // for keeping track of whether the selected sample has annotations in the JSON
@@ -4075,36 +4078,14 @@ document.addEventListener("keydown", (event) => {
 ////////////////////////
 
 const Grid = class {
-  constructor({ unit, pixelsPerUnit, xMin, yMin, xMax, yMax, step, noPoints }) {
-    this.unit = unit;
-    this.pixelsPerUnit = pixelsPerUnit;
+  // All units are in microns.
+  constructor({ xMin, yMin, xMax, yMax, step, noPoints }) {
     this.xMin = xMin;
     this.yMin = yMin;
     this.xMax = xMax;
     this.yMax = yMax;
     this.step = step;
     this.noPoints = noPoints;
-  }
-
-  get metersPerUnit() {
-    return 10 ** (-3 * this.unit);
-  }
-
-  get unitName() {
-    switch (this.unit) {
-      case 0:
-        return "m";
-      case 1:
-        return "mm";
-      case 2:
-        return "μm";
-      case 3:
-        return "nm";
-    }
-  }
-
-  get pixelsPerMeter() {
-    return this.pixelsPerUnit / this.metersPerUnit;
   }
 };
 
@@ -4184,8 +4165,6 @@ const applyGridSettings = () => {
 
   const image = viewer.world.getItemAt(0);
   grid = new Grid({
-    unit: samples[currentIndex].units,
-    pixelsPerUnit: pixelsPerUnit(),
     xMin: parseFloat(document.getElementById("grid-left").value),
     yMin: parseFloat(document.getElementById("grid-top").value),
     xMax: parseFloat(document.getElementById("grid-right").value),
@@ -4195,10 +4174,10 @@ const applyGridSettings = () => {
   });
 
   const imageSize = image.getContentSize();
-  const x_min_um = ((grid.xMin / 100) * imageSize.x) / grid.pixelsPerUnit;
-  const x_max_um = ((grid.xMax / 100) * imageSize.x) / grid.pixelsPerUnit;
-  const y_min_um = ((grid.yMin / 100) * imageSize.y) / grid.pixelsPerUnit;
-  const y_max_um = ((grid.yMax / 100) * imageSize.y) / grid.pixelsPerUnit;
+  const x_min_um = ((grid.xMin / 100) * imageSize.x) / pixelsPerMicron();
+  const x_max_um = ((grid.xMax / 100) * imageSize.x) / pixelsPerMicron();
+  const y_min_um = ((grid.yMin / 100) * imageSize.y) / pixelsPerMicron();
+  const y_max_um = ((grid.yMax / 100) * imageSize.y) / pixelsPerMicron();
 
   // Get the coordinates and labels for point counts
   let [X, Y, A] = makePoints(
@@ -4211,13 +4190,13 @@ const applyGridSettings = () => {
   );
 
   for (let i = 0; i < X.length; i++) {
-    // Get the coordinates in the specified unit.
-    const xUnits = X[i];
-    const yUnits = Y[i];
+    // Get the coordinates in microns.
+    const xMicrons = X[i];
+    const yMicrons = Y[i];
 
     // Convert to coordinates in pixels.
-    const xPixels = xUnits * pixelsPerUnit();
-    const yPixels = yUnits * pixelsPerUnit();
+    const xPixels = xMicrons * pixelsPerMicron();
+    const yPixels = yMicrons * pixelsPerMicron();
 
     // Convert to view-space coordinates, measuring from the top-left of the
     // first image.

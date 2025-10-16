@@ -39,9 +39,11 @@ fn reformat_samples(samples: Value) -> Value {
 	// to fields within the sample objects themselves.
 	let samples: Value = samples.into_values().map(reformat_sample).collect();
 
-	// Tuck the existing outer object under "samples" to leave space for
-	// metadata in the future.
-	json!({"samples": samples})
+	// Tuck the existing outer object under "samples", and version the format.
+	json!({
+		"format": "v1",
+		"samples": samples,
+	})
 }
 
 fn reformat_sample(sample: Value) -> Value {
@@ -115,6 +117,8 @@ fn reformat_sample(sample: Value) -> Value {
 	sample.shift_remove("tileSetRotationSpacing");
 	sample.shift_remove("tileSetRotationAngleRepeat");
 	sample.shift_remove("tileSetRotation");
+	sample.shift_remove("unit");
+	sample.shift_remove("pixelsPerUnit");
 
 	Value::Object(sample)
 }

@@ -1,12 +1,11 @@
 {
+  "format": "v1",
   "samples": [
     {
       "groups": ["Favorites"],
       "title": "Test",
       "description": "Test",
-      "unit": "2",
-      "pixelsPerUnit": "1",
-      "pixelsPerMeter": "1000",
+      "pixelsPerMeter": "1000000",
       "tileSets": [
         {
           "label": "CPL",
@@ -52,8 +51,6 @@
       "groups": ["Favorites", "Zeiss"],
       "title": "RT-MR-BT",
       "description": "rock",
-      "unit": "2",
-      "pixelsPerUnit": "1.449275",
       "pixelsPerMeter": "1449275",
       "tileSets": [
         {
@@ -108,8 +105,6 @@
       "groups": ["Favorites", "Zeiss"],
       "title": "RT-MR-BT",
       "description": "rock",
-      "unit": "2",
-      "pixelsPerUnit": "1.449275",
       "pixelsPerMeter": "1449275",
       "tileSets": [
         {
@@ -194,8 +189,6 @@
       "groups": ["Favorites", "Microtectonics"],
       "title": "MT-02",
       "description": "gneiss",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -230,8 +223,6 @@
       "groups": ["Microtectonics"],
       "title": "C-1",
       "description": "Medisedimentary Schist",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -264,8 +255,6 @@
       "groups": ["Microtectonics"],
       "title": "GO-2",
       "description": "Medisedimentary Schist",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -298,8 +287,6 @@
       "groups": ["Microtectonics"],
       "title": "PR-1",
       "description": "Medisedimentary Schist",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -332,8 +319,6 @@
       "groups": ["Microtectonics"],
       "title": "TU-1",
       "description": "Medisedimentary Schist",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -366,8 +351,6 @@
       "groups": ["Microtectonics"],
       "title": "W96-5FP",
       "description": "Medisedimentary Schist",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -400,8 +383,6 @@
       "groups": ["Favorites", "SedGeo"],
       "title": "SD0004 (5x)",
       "description": "Budhir, Iceland",
-      "unit": "2",
-      "pixelsPerUnit": "0.913242",
       "pixelsPerMeter": "913242",
       "info": "https://raw.githubusercontent.com/grsharman/petro-image/main/info/SD0004.html",
       "tileSets": [
@@ -443,8 +424,6 @@
       "groups": ["Favorites", "SedGeo"],
       "title": "SD0004",
       "description": "Budhir, Iceland",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "info": "https://raw.githubusercontent.com/grsharman/petro-image/main/info/SD0004.html",
       "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/SD0004_medium_all_polygons_by_rect.geojson",
@@ -474,8 +453,6 @@
       "groups": ["Favorites", "SedGeo"],
       "title": "ARCS-44",
       "description": "Fountain Formation",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/ARCS-44_SedGeoLab3.geojson",
       "tileSets": [
@@ -509,8 +486,6 @@
       "groups": ["Favorites", "SedGeo"],
       "title": "ARCS-46",
       "description": "Unknown",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -543,8 +518,6 @@
       "groups": ["SedGeo"],
       "title": "ARCS-49",
       "description": "Unknown",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -577,8 +550,6 @@
       "groups": ["Favorites", "SedGeo"],
       "title": "ARCS-51",
       "description": "Rensselaer grit",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/ARCS-51_SedGeoLab3.geojson",
       "tileSets": [
@@ -612,8 +583,6 @@
       "groups": ["SedGeo"],
       "title": "ARCS-52",
       "description": "",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -646,8 +615,6 @@
       "groups": ["Favorites", "SedGeo"],
       "title": "ARCS-59",
       "description": "Unknown",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -680,8 +647,6 @@
       "groups": ["SedGeo"],
       "title": "ARCS-60",
       "description": "Unknown",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -714,8 +679,6 @@
       "groups": ["SedGeo"],
       "title": "ARCS-69",
       "description": "",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -748,8 +711,6 @@
       "groups": ["SedGeo"],
       "title": "ARC-45",
       "description": "Berea Sandstone",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/ARC-45_SedGeoLab3.geojson",
       "tileSets": [
@@ -783,8 +744,6 @@
       "groups": ["Favorites", "SedGeo"],
       "title": "ARC-50",
       "description": "Sugarloaf Arkose",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/ARC-50_SedGeoLab3.geojson",
       "tileSets": [
@@ -818,8 +777,6 @@
       "groups": ["SedGeo"],
       "title": "ARC-54",
       "description": "",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -852,8 +809,6 @@
       "groups": ["Favorites", "SedGeo"],
       "title": "ARC-62",
       "description": "Unknown",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -886,8 +841,6 @@
       "groups": ["Favorites", "SedGeo"],
       "title": "ARC-63",
       "description": "Unknown",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -920,8 +873,6 @@
       "groups": ["SedGeo"],
       "title": "ARC-64",
       "description": "",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -956,8 +907,6 @@
       "description": "Upper Boone Fm.",
       "latitude": "36.413033",
       "longitude": "-94.213964",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -992,8 +941,6 @@
       "description": "Lower Boone Fm.",
       "latitude": "36.413033",
       "longitude": "-94.213964",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -1028,8 +975,6 @@
       "description": "Lower Boone Fm.",
       "latitude": "36.414119",
       "longitude": "-94.222675",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -1064,8 +1009,6 @@
       "description": "Lower Boone Fm.",
       "latitude": "36.414119",
       "longitude": "-94.222675",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -1100,8 +1043,6 @@
       "description": "Lower Boone Fm.",
       "latitude": "36.416114",
       "longitude": "-94.219719",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -1136,8 +1077,6 @@
       "description": "Saint Joe Fm., Pearson Mbr.",
       "latitude": "36.422019",
       "longitude": "-94.224187",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -1172,8 +1111,6 @@
       "description": "Saint Joe Fm., Pearson Mbr.",
       "latitude": "36.422019",
       "longitude": "-94.224187",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -1208,8 +1145,6 @@
       "description": "Saint Joe Fm., Compton Mbr.",
       "latitude": "36.45622",
       "longitude": "-94.24327",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -1244,8 +1179,6 @@
       "description": "Saint Joe Fm., Compton Mbr.",
       "latitude": "36.546253",
       "longitude": "-94.327989",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -1280,8 +1213,6 @@
       "description": "Cotter Fm.",
       "latitude": "36.5303889",
       "longitude": "-94.2965167",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -1316,8 +1247,6 @@
       "description": "Cotter Fm.",
       "latitude": "36.5303889",
       "longitude": "-94.2965167",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -1352,8 +1281,6 @@
       "description": "Hale Fm. (Prairie Grove Mbr.)",
       "latitude": "36.011683",
       "longitude": "-94.193633",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -1388,8 +1315,6 @@
       "description": "Pitkin Limestone",
       "latitude": "35.934781",
       "longitude": "-94.196878",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -1424,8 +1349,6 @@
       "description": "Hale Fm., Cane Hill Mbr.",
       "latitude": "35.934781",
       "longitude": "-94.196878",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -1460,8 +1383,6 @@
       "description": "Brentwood (basal)",
       "latitude": "35.921387",
       "longitude": "-94.199834",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -1494,8 +1415,6 @@
       "groups": ["Favorites", "NWA"],
       "title": "NWA-19",
       "description": "Kessler Limestone",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -1528,8 +1447,6 @@
       "groups": ["Favorites", "NWA"],
       "title": "NWA-20",
       "description": "Lower Atoka Ss (basal)",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -1562,8 +1479,6 @@
       "groups": ["NWA"],
       "title": "CH-041918",
       "description": "Hale Fm., Cane Hill Mbr.",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -1596,8 +1511,6 @@
       "groups": ["NWA"],
       "title": "PG-001",
       "description": "Unknown",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -1630,8 +1543,6 @@
       "groups": ["NWA"],
       "title": "OD5A-103118",
       "description": "Hartshorne Ss",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -1664,8 +1575,6 @@
       "groups": ["SedGeo"],
       "title": "PBS02",
       "description": "Unspecified",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -1700,8 +1609,6 @@
       "description": "Paturau beach",
       "latitude": "-40.64192",
       "longitude": "172.4301",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -1736,8 +1643,6 @@
       "description": "Whanganui River",
       "latitude": "-39.86246",
       "longitude": "175.11026",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -1772,8 +1677,6 @@
       "description": "Manganui River",
       "latitude": "-39.12303",
       "longitude": "174.28534",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -1808,8 +1711,6 @@
       "description": "Waiwhakaiho River",
       "latitude": "-39.06926",
       "longitude": "174.1098",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -1844,8 +1745,6 @@
       "description": "Waitara River",
       "latitude": "-39.02223",
       "longitude": "174.25191",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -1880,8 +1779,6 @@
       "description": "Waikato River",
       "latitude": "-37.80671",
       "longitude": "175.30579",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/NZ23-056_Lecture3.geojson",
       "tileSets": [
@@ -1917,8 +1814,6 @@
       "description": "Waikato River",
       "latitude": "-37.29593",
       "longitude": "174.94531",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/NZ23-057_polygons.geojson",
       "tileSets": [
@@ -1954,8 +1849,6 @@
       "description": "Waitotara River",
       "latitude": "-39.80465",
       "longitude": "174.73801",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -1990,8 +1883,6 @@
       "description": "Buller River",
       "latitude": "-41.86382",
       "longitude": "171.77689",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -2026,8 +1917,6 @@
       "description": "Rangiteki River",
       "latitude": "-40.18712",
       "longitude": "175.39231",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -2057,8 +1946,6 @@
       "description": "Kohaiahi beach",
       "latitude": "-41.10877",
       "longitude": "172.10107",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -2093,8 +1980,6 @@
       "description": "Punakaiki Beach",
       "latitude": "-42.10546",
       "longitude": "171.33545",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -2129,8 +2014,6 @@
       "description": "Grey River",
       "latitude": "-42.44711",
       "longitude": "171.22139",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -2165,8 +2048,6 @@
       "description": "Hokitika beach",
       "latitude": "-42.71815",
       "longitude": "170.95815",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -2201,8 +2082,6 @@
       "description": "Fox River",
       "latitude": "-43.47892",
       "longitude": "170.00911",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -2237,8 +2116,6 @@
       "description": "Tauperikaka Point beach",
       "latitude": "-43.75764",
       "longitude": "169.14714",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -2273,8 +2150,6 @@
       "description": "Haast River",
       "latitude": "-43.93711",
       "longitude": "169.29107",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -2309,8 +2184,6 @@
       "description": "Waiho River",
       "latitude": "-43.4066",
       "longitude": "170.17784",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -2345,8 +2218,6 @@
       "description": "Whataroa River",
       "latitude": "-43.29354",
       "longitude": "170.41385",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -2381,8 +2252,6 @@
       "description": "Manawatu River",
       "latitude": "-40.37549",
       "longitude": "175.64103",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -2417,8 +2286,6 @@
       "description": "Ohau River",
       "latitude": "-40.67121",
       "longitude": "175.24117",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -2453,8 +2320,6 @@
       "description": "Farewell Split beach",
       "latitude": "-40.51873",
       "longitude": "172.93429",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -2487,8 +2352,6 @@
       "groups": ["New Zealand"],
       "title": "FWS-24-02",
       "description": "Farewell Split dune",
-      "unit": "2",
-      "pixelsPerUnit": "0.913242",
       "pixelsPerMeter": "913242",
       "tileSets": [
         {
@@ -2521,8 +2384,6 @@
       "groups": ["New Zealand"],
       "title": "FWS-24-02 (2.5x)",
       "description": "Farewell Split dune",
-      "unit": "2",
-      "pixelsPerUnit": "0.456621",
       "pixelsPerMeter": "456621",
       "tileSets": [
         {
@@ -2563,8 +2424,6 @@
       "groups": ["New Zealand"],
       "title": "Taimana-1 210-220",
       "description": "Taimana-1",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -2597,8 +2456,6 @@
       "groups": ["New Zealand"],
       "title": "TANN2205 004/RD/003",
       "description": "TANN2205 rock dredge",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -2631,8 +2488,6 @@
       "groups": ["New Zealand"],
       "title": "TANN2205 004/RD/004",
       "description": "TANN2205 rock dredge",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -2665,8 +2520,6 @@
       "groups": ["New Zealand"],
       "title": "TANN2205 002/0.7-1.5",
       "description": "TANN2205 piston core",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -2699,8 +2552,6 @@
       "groups": ["New Zealand"],
       "title": "TANN2205 006/2-3 90-100",
       "description": "TANN2205 piston core",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -2733,8 +2584,6 @@
       "groups": ["New Zealand"],
       "title": "TANN2205 042/1-2 75-90",
       "description": "TANN2205 piston core",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -2767,8 +2616,6 @@
       "groups": ["New Zealand"],
       "title": "TANN2205 056/MC 25-36",
       "description": "TANN2205 multicore",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -2801,8 +2648,6 @@
       "groups": ["New Zealand"],
       "title": "TANN2205 069/MC 25-43",
       "description": "TANN2205 multicore",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -2835,8 +2680,6 @@
       "groups": ["New Zealand"],
       "title": "AK24-KIB1",
       "description": "Upper Okehu Siltstone, Kai-iwi Beach",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -2869,8 +2712,6 @@
       "groups": ["New Zealand"],
       "title": "AK24-KIB2",
       "description": "Kalmatira Pumaceous Sand, Kai-iwi Beach",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -2903,8 +2744,6 @@
       "groups": ["New Zealand"],
       "title": "AK24-MGW",
       "description": "Mangaweka Mudstone",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -2937,8 +2776,6 @@
       "groups": ["New Zealand"],
       "title": "AK24-MKU",
       "description": "Moukuku Sandstone",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -2971,8 +2808,6 @@
       "groups": ["New Zealand"],
       "title": "AK24-OKR",
       "description": "Nukumaru Group, Okura Beach",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -3005,8 +2840,6 @@
       "groups": ["New Zealand"],
       "title": "AK24-OTK",
       "description": "Ototoka Beach",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -3039,8 +2872,6 @@
       "groups": ["New Zealand"],
       "title": "AK24-PRU",
       "description": "Nukumaru Group, Whanganui Road",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -3073,8 +2904,6 @@
       "groups": ["New Zealand"],
       "title": "AK24-RPU",
       "description": "Tangahoe Mudstone, Koriniti Sandstone Mbr.",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -3107,8 +2936,6 @@
       "groups": ["New Zealand"],
       "title": "P91852",
       "description": "Old Man Group - Maori Point Conglomerate",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -3141,8 +2968,6 @@
       "groups": ["SedGeo"],
       "title": "131-011s",
       "description": "Wahiba, Empty Quarter, Oman",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/131-011s_SedGeoLab4.geojson",
       "tileSets": [
@@ -3176,8 +3001,6 @@
       "groups": ["SedGeo"],
       "title": "133-003s",
       "description": "Hanna Beach, Maui, HI",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/133-003s_SedGeoLab4.geojson",
       "tileSets": [
@@ -3211,8 +3034,6 @@
       "groups": ["SedGeo"],
       "title": "133-004s",
       "description": "Arrow Canyon, Nevada",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/133-004s_SedPetLab4.geojson",
       "tileSets": [
@@ -3246,8 +3067,6 @@
       "groups": ["Favorites", "SedGeo"],
       "title": "133-007s",
       "description": "Pt. Bonita, Golden Gate NRA, California",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/133-007s_SedGeoLab3.geojson",
       "tileSets": [
@@ -3281,8 +3100,6 @@
       "groups": ["SedGeo"],
       "title": "133-008s",
       "description": "Mihi Beach, Kaikoura, New Zealand",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/133-008s_SedPetLab4.geojson",
       "tileSets": [
@@ -3316,8 +3133,6 @@
       "groups": ["SedGeo"],
       "title": "133-009s",
       "description": "",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -3350,8 +3165,6 @@
       "groups": ["SedGeo"],
       "title": "133-010s",
       "description": "Lake Champlain, Burlington, VT",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/133-010s_SedPetLab4.geojson",
       "tileSets": [
@@ -3385,8 +3198,6 @@
       "groups": ["SedGeo"],
       "title": "131-311s",
       "description": "Merced River, Mariposa, CA",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -3419,8 +3230,6 @@
       "groups": ["SedGeo"],
       "title": "133-312s",
       "description": "Bass Lake, Oakhurst, California",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/133-312s_Lecture3.geojson",
       "tileSets": [
@@ -3454,8 +3263,6 @@
       "groups": ["SedGeo"],
       "title": "137-002s",
       "description": "Ka-Lae, Hawaii",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/137-002s_SedPetLab4.geojson",
       "tileSets": [
@@ -3489,8 +3296,6 @@
       "groups": ["SedGeo"],
       "title": "M-25",
       "description": "Unknown",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -3523,8 +3328,6 @@
       "groups": ["SedGeo"],
       "title": "SD0001",
       "description": "Coral Sand Dunes",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -3557,8 +3360,6 @@
       "groups": ["SedGeo"],
       "title": "SD0003",
       "description": "Pfeiffer Beach, CA",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/SD0003_Lecture3.geojson",
       "tileSets": [
@@ -3592,8 +3393,6 @@
       "groups": ["SedGeo"],
       "title": "SD0017",
       "description": "",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -3626,8 +3425,6 @@
       "groups": ["SedGeo"],
       "title": "SD0018",
       "description": "Harbour Island, Bahamas",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -3660,8 +3457,6 @@
       "groups": ["SedGeo"],
       "title": "SD0020",
       "description": "Anak Krakatau",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/SD0020_SedPetLab4.geojson",
       "tileSets": [
@@ -3695,8 +3490,6 @@
       "groups": ["SedGeo"],
       "title": "SD0031",
       "description": "Arroyo del Padre Juan",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -3729,8 +3522,6 @@
       "groups": ["SedGeo"],
       "title": "WS-208",
       "description": "Unknown",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/WS-208_SedGeoLab3.geojson",
       "tileSets": [
@@ -3764,8 +3555,6 @@
       "groups": ["SedGeo"],
       "title": "WS-266",
       "description": "Unknown",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/WS-208_SedGeoLab3.geojson",
       "tileSets": [
@@ -3799,8 +3588,6 @@
       "groups": ["SedGeo"],
       "title": "WS-846",
       "description": "Unknown",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/WS-846_SedGeoLab3.geojson",
       "tileSets": [
@@ -3834,8 +3621,6 @@
       "groups": ["IODP"],
       "title": "IODP-001",
       "description": "Unknown",
-      "unit": "2",
-      "pixelsPerUnit": "0.913242",
       "pixelsPerMeter": "913242",
       "tileSets": [
         {
@@ -3868,8 +3653,6 @@
       "groups": ["IODP"],
       "title": "IODP-002",
       "description": "Unknown",
-      "unit": "2",
-      "pixelsPerUnit": "0.913242",
       "pixelsPerMeter": "913242",
       "tileSets": [
         {
@@ -3902,8 +3685,6 @@
       "groups": ["IODP"],
       "title": "IODP-011",
       "description": "Unknown",
-      "unit": "2",
-      "pixelsPerUnit": "0.913242",
       "pixelsPerMeter": "913242",
       "tileSets": [
         {
@@ -3944,8 +3725,6 @@
       "groups": ["IODP"],
       "title": "IODP-021",
       "description": "Unknown",
-      "unit": "2",
-      "pixelsPerUnit": "0.913242",
       "pixelsPerMeter": "913242",
       "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/IODP-021_SedPetLab4.geojson",
       "tileSets": [
@@ -3979,8 +3758,6 @@
       "groups": ["IODP"],
       "title": "IODP-041",
       "description": "Unknown",
-      "unit": "2",
-      "pixelsPerUnit": "0.913242",
       "pixelsPerMeter": "913242",
       "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/IODP-041_SedPetLab4.geojson",
       "tileSets": [
@@ -4014,8 +3791,6 @@
       "groups": ["IODP"],
       "title": "IODP-045",
       "description": "Unknown",
-      "unit": "2",
-      "pixelsPerUnit": "0.913242",
       "pixelsPerMeter": "913242",
       "tileSets": [
         {
@@ -4048,8 +3823,6 @@
       "groups": ["IODP"],
       "title": "IODP-046",
       "description": "Unknown",
-      "unit": "2",
-      "pixelsPerUnit": "0.913242",
       "pixelsPerMeter": "913242",
       "tileSets": [
         {
@@ -4074,8 +3847,6 @@
       "groups": ["IODP"],
       "title": "IODP-047",
       "description": "Unknown",
-      "unit": "2",
-      "pixelsPerUnit": "0.913242",
       "pixelsPerMeter": "913242",
       "tileSets": [
         {
@@ -4100,8 +3871,6 @@
       "groups": ["IODP"],
       "title": "IODP-053",
       "description": "Unknown",
-      "unit": "2",
-      "pixelsPerUnit": "0.913242",
       "pixelsPerMeter": "913242",
       "tileSets": [
         {
@@ -4126,8 +3895,6 @@
       "groups": ["IODP"],
       "title": "IODP-058",
       "description": "Unknown",
-      "unit": "2",
-      "pixelsPerUnit": "0.913242",
       "pixelsPerMeter": "913242",
       "tileSets": [
         {
@@ -4152,8 +3919,6 @@
       "groups": ["IODP"],
       "title": "IODP-059",
       "description": "Unknown",
-      "unit": "2",
-      "pixelsPerUnit": "0.913242",
       "pixelsPerMeter": "913242",
       "tileSets": [
         {
@@ -4178,8 +3943,6 @@
       "groups": ["IODP"],
       "title": "IODP-065",
       "description": "Unknown",
-      "unit": "2",
-      "pixelsPerUnit": "0.913242",
       "pixelsPerMeter": "913242",
       "tileSets": [
         {
@@ -4204,8 +3967,6 @@
       "groups": ["IODP"],
       "title": "IODP-074",
       "description": "Unknown",
-      "unit": "2",
-      "pixelsPerUnit": "0.913242",
       "pixelsPerMeter": "913242",
       "tileSets": [
         {
@@ -4230,8 +3991,6 @@
       "groups": ["IODP"],
       "title": "IODP-075",
       "description": "Unknown",
-      "unit": "2",
-      "pixelsPerUnit": "0.913242",
       "pixelsPerMeter": "913242",
       "tileSets": [
         {
@@ -4256,8 +4015,6 @@
       "groups": ["IODP"],
       "title": "IODP-079",
       "description": "Unknown",
-      "unit": "2",
-      "pixelsPerUnit": "0.913242",
       "pixelsPerMeter": "913242",
       "tileSets": [
         {
@@ -4282,8 +4039,6 @@
       "groups": ["IODP"],
       "title": "IODP-094",
       "description": "Unknown",
-      "unit": "2",
-      "pixelsPerUnit": "0.913242",
       "pixelsPerMeter": "913242",
       "tileSets": [
         {
@@ -4308,8 +4063,6 @@
       "groups": ["SedGeo"],
       "title": "TMC1",
       "description": "Pierre Shale",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -4342,8 +4095,6 @@
       "groups": ["SedGeo"],
       "title": "TMC2",
       "description": "Pierre Shale",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -4376,8 +4127,6 @@
       "groups": ["SedGeo"],
       "title": "TMC3",
       "description": "Pierre Shale",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -4410,8 +4159,6 @@
       "groups": ["SedGeo"],
       "title": "UA-25-2812",
       "description": "Unspecified",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -4444,8 +4191,6 @@
       "groups": ["Green Mtn, CO"],
       "title": "GM-Kfh-01",
       "description": "Fox Hills Fm.",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -4478,8 +4223,6 @@
       "groups": ["Green Mtn, CO"],
       "title": "GM-Kl-01",
       "description": "Laramie Fm.",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -4512,8 +4255,6 @@
       "groups": ["Green Mtn, CO"],
       "title": "GM-Kl-02",
       "description": "Laramie Fm.",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -4546,8 +4287,6 @@
       "groups": ["Green Mtn, CO"],
       "title": "GM-Ka-01",
       "description": "Arapahoe Conglomerate",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -4580,8 +4319,6 @@
       "groups": ["Green Mtn, CO"],
       "title": "GM-Td-01",
       "description": "D1 Sequence basal unit",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -4614,8 +4351,6 @@
       "groups": ["Green Mtn, CO"],
       "title": "GM-Tgml-01",
       "description": "Tgml (D1 Sequence lower unit)",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/GM-Tgml-01_polygons_by_rect.geojson",
       "tileSets": [
@@ -4649,8 +4384,6 @@
       "groups": ["Green Mtn, CO"],
       "title": "GM-Tgml-02",
       "description": "Tgml (D1 Sequence lower unit)",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -4683,8 +4416,6 @@
       "groups": ["Green Mtn, CO"],
       "title": "GM-Tgmu-01",
       "description": "Tgmu (D1 Sequence upper unit)",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -4717,8 +4448,6 @@
       "groups": ["Green Mtn, CO"],
       "title": "GM-Tgmu-02",
       "description": "Tgmu (D1 Sequence upper unit)",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -4751,8 +4480,6 @@
       "groups": ["Green Mtn, CO"],
       "title": "GM-Tgmu-03",
       "description": "Tgmu (D1 Sequence upper unit)",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -4785,8 +4512,6 @@
       "groups": ["Green Mtn, CO"],
       "title": "GM-Tgmu-04",
       "description": "Tgmu (D1 Sequence upper unit)",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -4819,8 +4544,6 @@
       "groups": ["Green Mtn, CO"],
       "title": "GM-Tgmu-05",
       "description": "Tgmu (D1 Sequence upper unit)",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -4853,8 +4576,6 @@
       "groups": ["Stevens Ss"],
       "title": "CC-01",
       "description": "Unknown",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/CC-01_medium_all_polygons_by_rect.geojson",
       "tileSets": [
@@ -4888,8 +4609,6 @@
       "groups": ["Stevens Ss"],
       "title": "Well-A-5200-5300",
       "description": "Stevens Sandstone",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -4922,8 +4641,6 @@
       "groups": ["Stevens Ss"],
       "title": "Well-B-8100-8850",
       "description": "Stevens Sandstone",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -4956,8 +4673,6 @@
       "groups": ["Stevens Ss"],
       "title": "Well-C-10600-11700",
       "description": "Stevens Sandstone",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -4990,8 +4705,6 @@
       "groups": ["Stevens Ss"],
       "title": "Well-D-10215",
       "description": "Stevens Sandstone",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -5024,8 +4737,6 @@
       "groups": ["Stevens Ss"],
       "title": "Well-E-5870",
       "description": "Stevens Sandstone",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -5058,8 +4769,6 @@
       "groups": ["Stevens Ss"],
       "title": "Well-F-8847-9191",
       "description": "Stevens Sandstone",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -5092,8 +4801,6 @@
       "groups": ["Stevens Ss"],
       "title": "Well-G-7290",
       "description": "Stevens Sandstone",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -5126,8 +4833,6 @@
       "groups": ["Stevens Ss"],
       "title": "Well-H-8906",
       "description": "Stevens Sandstone",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -5160,8 +4865,6 @@
       "groups": ["Stevens Ss"],
       "title": "Well-H-8932",
       "description": "Stevens Sandstone",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -5194,8 +4897,6 @@
       "groups": ["Stevens Ss"],
       "title": "Well-I-8740",
       "description": "Stevens Sandstone",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -5228,8 +4929,6 @@
       "groups": ["Stevens Ss"],
       "title": "Well-J-8125",
       "description": "Stevens Sandstone",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -5262,8 +4961,6 @@
       "groups": ["Stevens Ss"],
       "title": "Well-K-8128",
       "description": "Stevens Sandstone",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -5296,8 +4993,6 @@
       "groups": ["Stevens Ss"],
       "title": "Well-T-11445",
       "description": "Stevens Sandstone",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -5330,8 +5025,6 @@
       "groups": ["Stevens Ss"],
       "title": "Well-S-4463",
       "description": "Stevens Sandstone",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -5364,8 +5057,6 @@
       "groups": ["Grove"],
       "title": "Grove-1",
       "description": "Unspecified",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -5398,8 +5089,6 @@
       "groups": ["Grove"],
       "title": "Grove-5",
       "description": "Unspecified",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -5432,8 +5121,6 @@
       "groups": ["Grove"],
       "title": "Grove-6",
       "description": "Unspecified",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -5466,8 +5153,6 @@
       "groups": ["Grove"],
       "title": "Grove-9",
       "description": "Unspecified",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -5500,8 +5185,6 @@
       "groups": ["Grove"],
       "title": "Grove-15",
       "description": "Unspecified",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -5534,8 +5217,6 @@
       "groups": ["YSU"],
       "title": "YSU1-1",
       "description": "Yellow Steer Unit 1",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -5568,8 +5249,6 @@
       "groups": ["YSU"],
       "title": "YSU1-2",
       "description": "Yellow Steer Unit 1",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -5602,8 +5281,6 @@
       "groups": ["YSU"],
       "title": "YSU1-8",
       "description": "Yellow Steer Unit 1",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -5636,8 +5313,6 @@
       "groups": ["YSU"],
       "title": "YSU1-16",
       "description": "Yellow Steer Unit 1",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -5670,8 +5345,6 @@
       "groups": ["YSU"],
       "title": "YSU1-22",
       "description": "Yellow Steer Unit 1",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -5704,8 +5377,6 @@
       "groups": ["YSU"],
       "title": "YSU1-28",
       "description": "Yellow Steer Unit 1",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -5738,8 +5409,6 @@
       "groups": ["YSU"],
       "title": "YSU1-35",
       "description": "Yellow Steer Unit 1",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -5772,8 +5441,6 @@
       "groups": ["Pacific Northwest"],
       "title": "PNW-01",
       "description": "????",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/PNW-01_SedPetLab5.geojson",
       "tileSets": [
@@ -5807,8 +5474,6 @@
       "groups": ["Pacific Northwest"],
       "title": "PNW-02",
       "description": "????",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/PNW-02_SedPetLab5.geojson",
       "tileSets": [
@@ -5842,8 +5507,6 @@
       "groups": ["Pacific Northwest"],
       "title": "PNW-03",
       "description": "????",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/PNW-03_SedPetLab5.geojson",
       "tileSets": [
@@ -5877,8 +5540,6 @@
       "groups": ["Pacific Northwest"],
       "title": "PNW-04",
       "description": "????",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/PNW-04_SedPetLab5.geojson",
       "tileSets": [
@@ -5912,8 +5573,6 @@
       "groups": ["Pacific Northwest"],
       "title": "PNW-05",
       "description": "????",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/PNW-05_SedPetLab5.geojson",
       "tileSets": [
@@ -5947,8 +5606,6 @@
       "groups": ["Pacific Northwest"],
       "title": "PNW-06",
       "description": "????",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/PNW-06_SedPetLab5.geojson",
       "tileSets": [
@@ -5982,8 +5639,6 @@
       "groups": ["Pacific Northwest"],
       "title": "PNW-07",
       "description": "????",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/PNW-07_SedPetLab5.geojson",
       "tileSets": [
@@ -6017,8 +5672,6 @@
       "groups": ["Pacific Northwest"],
       "title": "PNW-08",
       "description": "????",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/PNW-08_SedPetLab5.geojson",
       "tileSets": [
@@ -6052,8 +5705,6 @@
       "groups": ["Pacific Northwest"],
       "title": "PNW-09",
       "description": "????",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/PNW-09_SedPetLab5.geojson",
       "tileSets": [
@@ -6087,8 +5738,6 @@
       "groups": ["Pacific Northwest"],
       "title": "PNW-10",
       "description": "????",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/PNW-10_SedPetLab5.geojson",
       "tileSets": [
@@ -6122,8 +5771,6 @@
       "groups": ["Pacific Northwest"],
       "title": "PNW-11",
       "description": "????",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/PNW-11_SedPetLab5.geojson",
       "tileSets": [
@@ -6157,8 +5804,6 @@
       "groups": ["Pacific Northwest"],
       "title": "PNW-12",
       "description": "????",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/PNW-12_SedPetLab5.geojson",
       "tileSets": [
@@ -6192,8 +5837,6 @@
       "groups": ["Pacific Northwest"],
       "title": "PNW-13",
       "description": "????",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/PNW-13_polygons_by_rect.geojson",
       "tileSets": [
@@ -6227,8 +5870,6 @@
       "groups": ["Pacific Northwest"],
       "title": "JUN-03",
       "description": "????",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -6256,8 +5897,6 @@
       "groups": ["S. California"],
       "title": "VR-01",
       "description": "Ventura River",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -6290,8 +5929,6 @@
       "groups": ["S. California"],
       "title": "VR-02",
       "description": "Ventura River",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -6324,8 +5961,6 @@
       "groups": ["S. California"],
       "title": "SCD-01",
       "description": "",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -6358,8 +5993,6 @@
       "groups": ["S. California"],
       "title": "PBSD-01",
       "description": "",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -6392,8 +6025,6 @@
       "groups": ["S. California"],
       "title": "SYR-01",
       "description": "Santa Ynez River",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -6426,8 +6057,6 @@
       "groups": ["S. California"],
       "title": "MCK-01",
       "description": "Malibu Creek",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -6460,8 +6089,6 @@
       "groups": ["S. California"],
       "title": "GCK-01",
       "description": "Gaviota Creek",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -6494,8 +6121,6 @@
       "groups": ["S. California"],
       "title": "SMRR-01",
       "description": "Santa Maria River",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -6528,8 +6153,6 @@
       "groups": ["S. California"],
       "title": "CCK-01",
       "description": "Calleguas Creek",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -6562,8 +6185,6 @@
       "groups": ["S. California"],
       "title": "DPC-01",
       "description": "",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -6596,8 +6217,6 @@
       "groups": ["S. California"],
       "title": "SCR-01",
       "description": "",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -6630,8 +6249,6 @@
       "groups": ["S. California"],
       "title": "SYR-02",
       "description": "",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -6664,8 +6281,6 @@
       "groups": ["S. California"],
       "title": "PMB-01",
       "description": "",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -6698,8 +6313,6 @@
       "groups": ["S. California"],
       "title": "SMB-01",
       "description": "",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -6732,8 +6345,6 @@
       "groups": ["S. California"],
       "title": "SCR-02",
       "description": "",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -6766,8 +6377,6 @@
       "groups": ["S. California"],
       "title": "DBB-01",
       "description": "",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -6800,8 +6409,6 @@
       "groups": ["S. California"],
       "title": "DSB-01",
       "description": "",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -6834,8 +6441,6 @@
       "groups": ["S. California"],
       "title": "ECC-01",
       "description": "",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -6868,8 +6473,6 @@
       "groups": ["S. California"],
       "title": "ECK-01",
       "description": "",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -6902,8 +6505,6 @@
       "groups": ["Misc"],
       "title": "24CM01",
       "description": "????",
-      "unit": "2",
-      "pixelsPerUnit": "0.913242",
       "pixelsPerMeter": "913242",
       "tileSets": [
         {
@@ -6936,8 +6537,6 @@
       "groups": ["Zircon"],
       "title": "CL-zircon_L",
       "description": "Large mount (E. Oleson study)",
-      "unit": "2",
-      "pixelsPerUnit": "5.6",
       "pixelsPerMeter": "5600000",
       "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/CL-zircon_L_spots.geojson",
       "tileSets": [
@@ -6955,8 +6554,6 @@
       "groups": ["Zircon"],
       "title": "CL-zircon_M",
       "description": "Medium mount (E. Oleson study)",
-      "unit": "2",
-      "pixelsPerUnit": "6.456",
       "pixelsPerMeter": "6456000",
       "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/CL-zircon_M_spots.geojson",
       "tileSets": [
@@ -6974,8 +6571,6 @@
       "groups": ["Zircon"],
       "title": "CL-zircon_S",
       "description": "Small mount (E. Oleson study)",
-      "unit": "2",
-      "pixelsPerUnit": "7.116",
       "pixelsPerMeter": "7116000",
       "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/CL-zircon_S_spots.geojson",
       "tileSets": [
@@ -6993,8 +6588,6 @@
       "groups": ["Zircon"],
       "title": "Taimana-1-210-240",
       "description": "Zircon polished mount (A. Kulkarni)",
-      "unit": "2",
-      "pixelsPerUnit": "2.047",
       "pixelsPerMeter": "2047000",
       "tileSets": [
         {
@@ -7011,8 +6604,6 @@
       "groups": ["Zircon"],
       "title": "Taimana-1-630-660",
       "description": "Zircon polished mount (A. Kulkarni)",
-      "unit": "2",
-      "pixelsPerUnit": "2.047",
       "pixelsPerMeter": "2047000",
       "tileSets": [
         {
@@ -7029,8 +6620,6 @@
       "groups": ["Zircon"],
       "title": "Taimana-1-1800-1805",
       "description": "Zircon polished mount (A. Kulkarni)",
-      "unit": "2",
-      "pixelsPerUnit": "2.047",
       "pixelsPerMeter": "2047000",
       "tileSets": [
         {
@@ -7047,8 +6636,6 @@
       "groups": ["Zircon"],
       "title": "JP-02",
       "description": "Zircon sticky tape mount (J. Fekete)",
-      "unit": "2",
-      "pixelsPerUnit": "2.047",
       "pixelsPerMeter": "2047000",
       "tileSets": [
         {
@@ -7065,8 +6652,6 @@
       "groups": ["Zircon"],
       "title": "JP-03",
       "description": "Zircon sticky tape mount (J. Fekete)",
-      "unit": "2",
-      "pixelsPerUnit": "2.047",
       "pixelsPerMeter": "2047000",
       "tileSets": [
         {
@@ -7083,8 +6668,6 @@
       "groups": ["Zircon"],
       "title": "YA-09",
       "description": "Zircon sticky tape mount (J. Fekete)",
-      "unit": "2",
-      "pixelsPerUnit": "2.047",
       "pixelsPerMeter": "2047000",
       "tileSets": [
         {
@@ -7101,8 +6684,6 @@
       "groups": ["Zircon"],
       "title": "YA-11",
       "description": "Zircon sticky tape mount (J. Fekete)",
-      "unit": "2",
-      "pixelsPerUnit": "2.047",
       "pixelsPerMeter": "2047000",
       "tileSets": [
         {
@@ -7119,8 +6700,6 @@
       "groups": ["Zircon"],
       "title": "YA-12",
       "description": "Zircon sticky tape mount (J. Fekete)",
-      "unit": "2",
-      "pixelsPerUnit": "2.047",
       "pixelsPerMeter": "2047000",
       "tileSets": [
         {
@@ -7137,8 +6716,6 @@
       "groups": ["Zircon"],
       "title": "FWS24-01 Zr polished",
       "description": "FWS24-01 Zr polished mount",
-      "unit": "2",
-      "pixelsPerUnit": "1.0235",
       "pixelsPerMeter": "1023500",
       "tileSets": [
         {
@@ -7155,8 +6732,6 @@
       "groups": ["Zircon"],
       "title": "FWS24-01 Zr sticky",
       "description": "FWS24-01 Zr sticky tape",
-      "unit": "2",
-      "pixelsPerUnit": "2.047",
       "pixelsPerMeter": "2047000",
       "tileSets": [
         {
@@ -7173,8 +6748,6 @@
       "groups": ["Zircon"],
       "title": "NZ23-049 Zr polished",
       "description": "NZ23-049 Zr polished mount",
-      "unit": "2",
-      "pixelsPerUnit": "2.047",
       "pixelsPerMeter": "2047000",
       "tileSets": [
         {
@@ -7191,8 +6764,6 @@
       "groups": ["Zircon"],
       "title": "NZ23-057 Zr polished row 1",
       "description": "NZ23-057 Zr polished mount",
-      "unit": "2",
-      "pixelsPerUnit": "2.047",
       "pixelsPerMeter": "2047000",
       "tileSets": [
         {
@@ -7209,8 +6780,6 @@
       "groups": ["Zircon"],
       "title": "NZ23-057 Zr polished row 2",
       "description": "NZ23-057 Zr polished mount",
-      "unit": "2",
-      "pixelsPerUnit": "2.047",
       "pixelsPerMeter": "2047000",
       "tileSets": [
         {
@@ -7227,8 +6796,6 @@
       "groups": ["Zircon"],
       "title": "NZ23-060 Zr polished",
       "description": "NZ23-060 Zr polished mount",
-      "unit": "2",
-      "pixelsPerUnit": "2.047",
       "pixelsPerMeter": "2047000",
       "tileSets": [
         {
@@ -7245,8 +6812,6 @@
       "groups": ["Zircon"],
       "title": "NZ23-069 Zr polished",
       "description": "NZ23-069 Zr polished mount",
-      "unit": "2",
-      "pixelsPerUnit": "2.047",
       "pixelsPerMeter": "2047000",
       "tileSets": [
         {
@@ -7263,8 +6828,6 @@
       "groups": ["New Zealand"],
       "title": "TANN2205 002 Ap polished",
       "description": "TANN2205 002 Ap polished mount",
-      "unit": "2",
-      "pixelsPerUnit": "1.0235",
       "pixelsPerMeter": "1023500",
       "tileSets": [
         {
@@ -7281,8 +6844,6 @@
       "groups": ["Zircon"],
       "title": "TANN2205 002 Zr polished",
       "description": "TANN2205 002 Zr polished mount",
-      "unit": "2",
-      "pixelsPerUnit": "2.047",
       "pixelsPerMeter": "2047000",
       "tileSets": [
         {
@@ -7299,8 +6860,6 @@
       "groups": ["Zircon"],
       "title": "TANN2205 002 sticky tape",
       "description": "TANN2205 002 Zr sticky tape mount",
-      "unit": "2",
-      "pixelsPerUnit": "2.047",
       "pixelsPerMeter": "2047000",
       "tileSets": [
         {
@@ -7317,8 +6876,6 @@
       "groups": ["Zircon"],
       "title": "TANN2205 006 Zr polished",
       "description": "TANN2205 006 Zr polished mount",
-      "unit": "2",
-      "pixelsPerUnit": "2.047",
       "pixelsPerMeter": "2047000",
       "tileSets": [
         {
@@ -7335,8 +6892,6 @@
       "groups": ["Zircon"],
       "title": "TANN2205 042 Zr polished",
       "description": "TANN2205 042 Zr polished mount",
-      "unit": "2",
-      "pixelsPerUnit": "2.047",
       "pixelsPerMeter": "2047000",
       "tileSets": [
         {
@@ -7353,8 +6908,6 @@
       "groups": ["SedPet2025"],
       "title": "M81",
       "description": "Upper Boone Fm. (NWA Mall)",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -7387,8 +6940,6 @@
       "groups": ["SedPet2025"],
       "title": "M105",
       "description": "Upper Boone Fm. (NWA Mall)",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -7421,8 +6972,6 @@
       "groups": ["SedPet2025"],
       "title": "BV85",
       "description": "Lower Boone Fm. (Bella Visa, AR)",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -7455,8 +7004,6 @@
       "groups": ["SedPet2025"],
       "title": "BV98",
       "description": "Lower Boone Fm. (Bella Visa, AR)",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -7489,8 +7036,6 @@
       "groups": ["SedPet2025"],
       "title": "P20",
       "description": "Upper Boone Fm. (Pineville, MO)",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -7523,8 +7068,6 @@
       "groups": ["SedPet2025"],
       "title": "P50",
       "description": "Upper Boone Fm. (Pineville, MO)",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -7557,8 +7100,6 @@
       "groups": ["SedPet2025"],
       "title": "P140",
       "description": "Upper Boone Fm. (Pineville, MO)",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -7591,8 +7132,6 @@
       "groups": ["SedPet2025"],
       "title": "P170",
       "description": "Upper Boone Fm. (Pineville, MO)",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -7625,8 +7164,6 @@
       "groups": ["SW Montana"],
       "title": "EWO-SWM-Pp",
       "description": "Phosphoria Formation",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -7659,8 +7196,6 @@
       "groups": ["SW Montana"],
       "title": "EWO-SWM-Trd",
       "description": "Dinwoody Formation",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -7693,8 +7228,6 @@
       "groups": ["SW Montana"],
       "title": "EWO-SWM-Jm",
       "description": "Morrison Formation",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -7727,8 +7260,6 @@
       "groups": ["SW Montana"],
       "title": "EWO-SWM-K1",
       "description": "Kootenai Formation (K1)",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -7761,8 +7292,6 @@
       "groups": ["SW Montana"],
       "title": "EWO-SWM-K2",
       "description": "Kootenai Formation (K2)",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -7795,8 +7324,6 @@
       "groups": ["SW Montana"],
       "title": "EWO-SWM-K3",
       "description": "Kootenai Formation (K3)",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -7829,8 +7356,6 @@
       "groups": ["SW Montana"],
       "title": "EWO-SWM-K4",
       "description": "Kootenai Formation (K4)",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -7863,8 +7388,6 @@
       "groups": ["SW Montana"],
       "title": "EWO-SWM-K5",
       "description": "Kootenai Formation (K5)",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -7897,8 +7420,6 @@
       "groups": ["SW Montana"],
       "title": "EWO-SWM-Kb",
       "description": "Blackleaf Formation",
-      "unit": "2",
-      "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -7931,8 +7452,6 @@
       "groups": ["Titanite"],
       "title": "FWS-24-01 Tt",
       "description": "Farewell Spit titanite mount",
-      "unit": "2",
-      "pixelsPerUnit": "2.171",
       "pixelsPerMeter": "2171000",
       "tileSets": [
         {
