@@ -2,192 +2,8 @@
   "format": "v1",
   "samples": [
     {
-      "groups": ["Favorites"],
-      "title": "Test",
-      "description": "Test",
-      "pixelsPerMeter": "1000000",
-      "tileSets": [
-        {
-          "label": "CPL",
-          "tiles": [
-            {
-              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage2/main/images/CPL.dzi"
-            }
-          ]
-        },
-        {
-          "label": "XPL (multi-pol)",
-          "periodDegrees": 90,
-          "tiles": [
-            {
-              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage2/main/images/XPL00.dzi",
-              "angleDegrees": 0
-            },
-            {
-              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage2/main/images/XPL15.dzi",
-              "angleDegrees": 15
-            },
-            {
-              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage2/main/images/XPL30.dzi",
-              "angleDegrees": 30
-            },
-            {
-              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage2/main/images/XPL45.dzi",
-              "angleDegrees": 45
-            },
-            {
-              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage2/main/images/XPL60.dzi",
-              "angleDegrees": 60
-            },
-            {
-              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage2/main/images/XPL75.dzi",
-              "angleDegrees": 75
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "groups": ["Favorites", "Zeiss"],
-      "title": "RT-MR-BT",
-      "description": "rock",
-      "pixelsPerMeter": "1449275",
-      "tileSets": [
-        {
-          "label": "BF",
-          "tiles": [
-            {
-              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage2/main/images/RT-MR-BT_10x_c01.dzi"
-            }
-          ]
-        },
-        {
-          "label": "CPL",
-          "tiles": [
-            {
-              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage2/main/images/RT-MR-BT_10x_c02.dzi"
-            }
-          ]
-        },
-        {
-          "label": "XPL (multi-pol)",
-          "periodDegrees": 90,
-          "tiles": [
-            {
-              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage2/main/images/RT-MR-BT_10x_c03.dzi",
-              "angleDegrees": 0
-            },
-            {
-              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage2/main/images/RT-MR-BT_10x_c04.dzi",
-              "angleDegrees": 15
-            },
-            {
-              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage2/main/images/RT-MR-BT_10x_c05.dzi",
-              "angleDegrees": 30
-            },
-            {
-              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage2/main/images/RT-MR-BT_10x_c06.dzi",
-              "angleDegrees": 45
-            },
-            {
-              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage2/main/images/RT-MR-BT_10x_c07.dzi",
-              "angleDegrees": 60
-            },
-            {
-              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage2/main/images/RT-MR-BT_10x_c08.dzi",
-              "angleDegrees": 75
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "groups": ["Favorites", "Zeiss"],
-      "title": "RT-MR-BT",
-      "description": "rock",
-      "pixelsPerMeter": "1449275",
-      "tileSets": [
-        {
-          "label": "BF",
-          "tiles": [
-            {
-              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage2/main/images/RT-MR-BT_10x_c01.dzi"
-            }
-          ]
-        },
-        {
-          "label": "CPL",
-          "tiles": [
-            {
-              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage2/main/images/RT-MR-BT_10x_c02.dzi"
-            }
-          ]
-        },
-        {
-          "label": "XPL (multi-pol)",
-          "periodDegrees": 90,
-          "tiles": [
-            {
-              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage2/main/images/RT-MR-BT_10x_c03.dzi",
-              "angleDegrees": 0
-            },
-            {
-              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage2/main/images/RT-MR-BT_10x_c04.dzi",
-              "angleDegrees": 15
-            },
-            {
-              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage2/main/images/RT-MR-BT_10x_c05.dzi",
-              "angleDegrees": 30
-            },
-            {
-              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage2/main/images/RT-MR-BT_10x_c06.dzi",
-              "angleDegrees": 45
-            },
-            {
-              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage2/main/images/RT-MR-BT_10x_c07.dzi",
-              "angleDegrees": 60
-            },
-            {
-              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage2/main/images/RT-MR-BT_10x_c08.dzi",
-              "angleDegrees": 75
-            }
-          ]
-        },
-        {
-          "label": "PPL (multi-pol)",
-          "periodDegrees": 180,
-          "tiles": [
-            {
-              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage2/main/images/RT-MR-BT_10x_c09.dzi",
-              "angleDegrees": 0
-            },
-            {
-              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage2/main/images/RT-MR-BT_10x_c10.dzi",
-              "angleDegrees": 30
-            },
-            {
-              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage2/main/images/RT-MR-BT_10x_c11.dzi",
-              "angleDegrees": 60
-            },
-            {
-              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage2/main/images/RT-MR-BT_10x_c12.dzi",
-              "angleDegrees": 90
-            },
-            {
-              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage2/main/images/RT-MR-BT_10x_c13.dzi",
-              "angleDegrees": 120
-            },
-            {
-              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage2/main/images/RT-MR-BT_10x_c14.dzi",
-              "angleDegrees": 150
-            }
-          ]
-        }
-      ]
-    },
-    {
       "groups": ["Favorites", "Microtectonics"],
-      "title": "MT-02",
+      "title": "MT-2 01 (multi-pol)",
       "description": "gneiss",
       "pixelsPerMeter": "398000",
       "tileSets": [
@@ -214,6 +30,178 @@
             {
               "uri": "https://raw.githubusercontent.com/uacsrg/image-storage1/main/images/MT-2 01 2.5x XPL60 final.dzi.dzi",
               "angleDegrees": 60
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "groups": ["Favorites", "Microtectonics"],
+      "title": "MT-2 01",
+      "description": "gneiss",
+      "pixelsPerMeter": "398000",
+      "tileSets": [
+        {
+          "label": "PPL(0°)",
+          "tiles": [
+            {
+              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage1/main/images/MT-2 01 2.5x PPL00 final.dzi.dzi"
+            }
+          ]
+        },
+        {
+          "label": "XPL(0°)",
+          "tiles": [
+            {
+              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage1/main/images/MT-2 01 2.5x XPL00 final.dzi.dzi"
+            }
+          ]
+        },
+        {
+          "label": "XPL(30°)",
+          "tiles": [
+            {
+              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage1/main/images/MT-2 01 2.5x XPL30 final.dzi.dzi"
+            }
+          ]
+        },
+        {
+          "label": "XPL(60°)",
+          "tiles": [
+            {
+              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage1/main/images/MT-2 01 2.5x XPL60 final.dzi.dzi"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "groups": ["Favorites"],
+      "title": "MT-2 02 (multi-pol)",
+      "description": "MT-2",
+      "unit": "2",
+      "pixelsPerUnit": "0.398",
+      "pixelsPerMeter": "398000",
+      "tileSets": [
+        {
+          "label": "PPL (mult-pol)",
+          "periodDegrees": 180,
+          "tiles": [
+            {
+              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage3/main/images/MT-2 02 2.5x PPL00_v2_final.dzi",
+              "angleDegrees": 0
+            },
+            {
+              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage3/main/images/MT-2 02 2.5x PPL30_final.dzi",
+              "angleDegrees": 30
+            },
+            {
+              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage3/main/images/MT-2 02 2.5x PPL60 final.dzi",
+              "angleDegrees": 60
+            },
+            {
+              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage3/main/images/MT-2 02 2.5x PPL90 final.dzi",
+              "angleDegrees": 90
+            },
+            {
+              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage3/main/images/MT-2 02 2.5x PPL120 final.dzi",
+              "angleDegrees": 120
+            },
+            {
+              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage3/main/images/MT-2 02 2.5x PPL150 final.dzi",
+              "angleDegrees": 150
+            }
+          ]
+        },
+        {
+          "label": "XPL (mult-pol)",
+          "periodDegrees": 90,
+          "tiles": [
+            {
+              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage3/main/images/MT-2 02 2.5x XPL00 final.dzi",
+              "angleDegrees": 0
+            },
+            {
+              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage3/main/images/MT-2 02 2.5x XPL15 final.dzi",
+              "angleDegrees": 15
+            },
+            {
+              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage3/main/images/MT-2 02 2.5x XPL30 final.dzi",
+              "angleDegrees": 30
+            },
+            {
+              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage3/main/images/MT-2 02 2.5x XPL45 final.dzi",
+              "angleDegrees": 45
+            },
+            {
+              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage3/main/images/MT-2 02 2.5x XPL60 final.dzi",
+              "angleDegrees": 60
+            },
+            {
+              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage3/main/images/MT-2 02 2.5x XPL75 final.dzi",
+              "angleDegrees": 75
+            }
+          ]
+        },
+        {
+          "label": "Reflected",
+          "tiles": [
+            {
+              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage3/main/images/MT-2 02 2.5x REF final.dzi"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "groups": ["Favorites"],
+      "title": "MT-2 02 (XPL flip)",
+      "description": "MT-2",
+      "unit": "2",
+      "pixelsPerUnit": "0.398",
+      "pixelsPerMeter": "398000",
+      "tileSets": [
+        {
+          "label": "PPL (0°)",
+          "tiles": [
+            {
+              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage3/main/images/MT-2 02 2.5x PPL00_v2_final.dzi"
+            }
+          ]
+        },
+        {
+          "tiles": [
+            {
+              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage3/main/images/MT-2 02 2.5x XPL00 final.dzi",
+              "label": "XPL (0°)"
+            },
+            {
+              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage3/main/images/MT-2 02 2.5x XPL15 final.dzi",
+              "label": "XPL (15°)"
+            },
+            {
+              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage3/main/images/MT-2 02 2.5x XPL30 final.dzi",
+              "label": "XPL (30°)"
+            },
+            {
+              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage3/main/images/MT-2 02 2.5x XPL45 final.dzi",
+              "label": "XPL (45°)"
+            },
+            {
+              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage3/main/images/MT-2 02 2.5x XPL60 final.dzi",
+              "label": "XPL (60°)"
+            },
+            {
+              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage3/main/images/MT-2 02 2.5x XPL75 final.dzi",
+              "label": "XPL (75°)"
+            }
+          ]
+        },
+        {
+          "label": "Reflected",
+          "tiles": [
+            {
+              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage3/main/images/MT-2 02 2.5x REF final.dzi"
             }
           ]
         }
@@ -7452,7 +7440,7 @@
       ]
     },
     {
-      "groups": ["Titanite"],
+      "groups": ["Favorites", "Titanite"],
       "title": "FWS-24-01 Tt",
       "description": "Farewell Spit titanite mount",
       "pixelsPerMeter": "2171000",

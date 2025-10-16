@@ -2501,7 +2501,6 @@ viewer.addHandler("canvas-click", function (event) {
           constPolylineLabel,
           labelImagePoint,
           imageSize,
-          sampleIdx,
           uuid,
           labelViewportPoint,
           labelFontSize,
@@ -2553,7 +2552,6 @@ viewer.addHandler("canvas-click", function (event) {
             constPolylineLabel,
             labelImagePoint,
             imageSize,
-            sampleIdx,
             uuid,
             labelViewportPoint,
             labelFontSize,
@@ -2615,7 +2613,6 @@ function finalizePolyAnnotation(
   constPolylineLabel,
   labelImagePoint,
   imageSize,
-  sampleIdx,
   uuid,
   labelViewportPoint,
   labelFontSize,
@@ -4596,9 +4593,25 @@ function applyAnnoLabel(idBase, uuid) {
 
   // Apply visual formatting immediately
   if (idBase === "annoLabelFontSize") {
-    updateText(uuid, "anno", undefined, undefined, input.value);
+    updateText(
+      uuid,
+      "anno",
+      undefined,
+      undefined,
+      input.value,
+      undefined,
+      undefined
+    );
   } else if (idBase === "annoLabelFontColor") {
-    updateText(uuid, "anno", undefined, input.value);
+    updateText(
+      uuid,
+      "anno",
+      undefined,
+      input.value,
+      undefined,
+      undefined,
+      undefined
+    );
   } else if (idBase === "annoLabelBackgroundColor") {
     // Need both backgroundColor and backgroundOpacity to apply background
     const bgColor = input.value;
@@ -6499,7 +6512,8 @@ imageRotater.addEventListener("input", () => {
     document.getElementById("imageRotation").value
   );
   viewer.viewport.setRotation(rotationAngle);
-  document.getElementById("imageRotationValue").innerHTML = rotationAngle + "°";
+  document.getElementById("imageRotationValue").innerHTML =
+    Math.round(rotationAngle) + "°";
 });
 
 // Listen for R key press → rotate +90°
@@ -6511,7 +6525,8 @@ document.addEventListener("keydown", (event) => {
 
     // Sync slider + text
     imageRotater.value = newRotation;
-    document.getElementById("imageRotationValue").innerHTML = newRotation + "°";
+    document.getElementById("imageRotationValue").innerHTML =
+      Math.round(newRotation) + "°";
   }
 });
 
