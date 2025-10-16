@@ -1,18 +1,20 @@
 "use strict";
 
-// Keep track of the current step in the sequence
+// Index of the currently selected sample
 let currentIndex = 0;
-let tileSets = [];
-let tileLabels = [];
 let samples = [];
-let descriptions = [];
-let pixelsPerUnits = [];
-let pixelsPerMeters = [];
-let units = []; // 2 for microns
-let infos = [];
-let annotation_files = {}; // For loading predefined annotations
-let groupMapping = {}; // To map groups to sample indices ///
+let annotationFiles = {}; // For loading predefined annotations
+let groupMapping = {}; // To map groups to sample indices
 let scrollIndex = 0;
+
+// Accessors for attributes of the current sample
+const title = () => samples[currentIndex].title;
+const tileSets = () => samples[currentIndex].tileSets;
+const pixelsPerMeter = () => samples[currentIndex].pixelsPerMeter;
+const pixelsPerMicron = () => {
+  const micronsPerMeter = 10 ** 6;
+  return pixelsPerMeter() / micronsPerMeter;
+};
 
 // Global variables related to annotations
 let hasAnnotationInJSON = false; // for keeping track of whether the selected sample has annotations in the JSON
@@ -44,144 +46,44 @@ let measureAreaJSONTemp = {
   features: [],
 }; // For drawing temporary measurements of area
 
-// OG function
-// function loadSampleJSON(JSON) {
-//   // Load necessary information from JSON
-//   fetch(JSON)
-//     // fetch("samples.json")
-//     .then((response) => response.json())
-//     .then((data) => {
-//       // Loop through each sample
-//       Object.keys(data).forEach((sampleKey, index) => {
-//         ///
-//         // Object.keys(data).forEach(sampleKey => {
-//         let sample = data[sampleKey];
-//         if (sample) {
-//           // Extract the relevant details
-//           tileSets.push(sample.tileSets);
-//           tileLabels.push(sample.tileLabels);
-//           samples.push(sample.title);
-//           descriptions.push(sample.description);
-//           pixelsPerUnits.push(sample.pixelsPerUnit);
-//           pixelsPerMeters.push(sample.pixelsPerMeter);
-//           units.push(sample.unit);
-//           annotation_files[sample.title] = sample.annotations; // || null;
-
-//           /// Map sample indices to their groups
-//           if (sample.groups) {
-//             sample.groups.forEach((group) => {
-//               if (!groupMapping[group]) {
-//                 groupMapping[group] = [];
-//               }
-//               groupMapping[group].push(index);
-//             });
-//           }
-//         } else {
-//           console.error(`Sample not found for key: ${sampleKey}`);
-//         }
-//       });
-
-//       // Add a default "All" group containing all sample indices
-//       groupMapping["All"] = Array.from({ length: samples.length }, (_, i) => i);
-
-//       // Example: initialize OpenSeadragon with the first tile source
-//       loadTileSet(0);
-//       addScalebar(pixelsPerMeters[0]);
-//       populateGroupDropdown();
-//       updateButtonLabels(0);
-//       divideImages();
-//       disableCountButtons();
-//       // deselectAllButFirstImage();
-
-//       const sampleParam = getQueryParameter("sample");
-//       if (sampleParam) {
-//         const sampleIndex = samples.indexOf(sampleParam);
-//         if (sampleIndex !== -1) {
-//           // Select the correct group and sample
-//           const groupForSample = Object.keys(groupMapping).find((group) =>
-//             groupMapping[group].includes(sampleIndex)
-//           );
-//           document.getElementById("groupDropdown").value =
-//             groupForSample || "All";
-//           populateSampleDropdown(groupForSample || "All");
-//           document.getElementById("sampleDropdown").value = sampleIndex;
-//           document
-//             .getElementById("sampleDropdown")
-//             .dispatchEvent(new Event("change"));
-//         } else {
-//           console.warn(`Sample "${sampleParam}" not found in JSON.`);
-//         }
-//       } else {
-//         // Default behavior if no sample is specified
-//         const firstGroup = Object.keys(groupMapping)[0];
-//         if (firstGroup) {
-//           document.getElementById("groupDropdown").value = firstGroup;
-//           populateSampleDropdown(firstGroup);
-//         }
-//       }
-//     })
-//     .catch((error) => {
-//       console.error("Error loading the JSON file:", error);
-//     });
-// }
-
 function loadSampleJSON(input) {
   if (typeof input === "string") {
     // Load necessary information from JSON
     fetch(input)
-      // fetch("samples.json")
       .then((response) => response.json())
       .then((data) => {
-        console.log("Fetched JSON from file:", input, data);
         processJSON(data); // Process JSON data
       });
   } else if (typeof input === "object") {
     // Case 2: Input is already parsed JSON
-    console.log("Using already parsed JSON:", input);
     processJSON(input);
-  } else {
-    console.error("Invalid input to loadSampleJSON");
   }
 }
 
 function processJSON(data) {
   currentIndex = 0;
-  tileSets = [];
-  tileLabels = [];
-  samples = [];
-  descriptions = [];
-  pixelsPerUnits = [];
-  pixelsPerMeters = [];
-  units = []; // 2 for microns
-  infos = [];
-  annotation_files = {}; // For loading predefined annotations
-  groupMapping = {}; // To map groups to sample indices ///
-  // Loop through each sample
-  Object.keys(data).forEach((sampleKey, index) => {
-    let sample = data[sampleKey];
-    if (sample) {
-      // Extract the relevant details
-      tileSets.push(sample.tileSets);
-      tileLabels.push(sample.tileLabels);
-      samples.push(sample.title);
-      descriptions.push(sample.description);
-      pixelsPerUnits.push(sample.pixelsPerUnit);
-      pixelsPerMeters.push(sample.pixelsPerMeter);
-      units.push(sample.unit);
-      infos.push(sample.info);
-      annotation_files[sample.title] = sample.annotations; // || null;
+  samples = data.samples;
+  annotationFiles = {}; // For loading predefined annotations
+  groupMapping = {}; // To map groups to sample indices
 
-      /// Map sample indices to their groups
-      if (sample.groups) {
-        sample.groups.forEach((group) => {
-          if (!groupMapping[group]) {
-            groupMapping[group] = [];
-          }
-          groupMapping[group].push(index);
-        });
+  samples.forEach((sample, index) => {
+    annotationFiles[sample.title] = sample.annotations;
+
+    // Ensure each tile set with angles is sorted ascending by angle.
+    for (let tileSet of sample.tileSets) {
+      if (tileSet.periodDegrees) {
+        tileSet.tiles.sort((a, b) => a.angleDegrees - b.angleDegrees);
       }
-    } else {
-      console.error(`Sample not found for key: ${sampleKey}`);
+    }
+
+    // Map sample indices to their groups.
+    if (sample.groups) {
+      sample.groups.forEach((group) => {
+        if (!groupMapping[group]) {
+          groupMapping[group] = [];
+        }
+        groupMapping[group].push(index);
+      });
     }
   });
 
@@ -189,13 +91,11 @@ function processJSON(data) {
   groupMapping["All"] = Array.from({ length: samples.length }, (_, i) => i);
 
   // Example: initialize OpenSeadragon with the first tile source
-  loadTileSet(0);
-  //addScalebar(pixelsPerMeters[0]);
+  loadTileSet();
   populateGroupDropdown();
-  updateButtonLabels(0);
-  divideImages();
+  updateButtonLabels();
+  displayImages();
   disableCountButtons();
-  // deselectAllButFirstImage();
 
   const sampleParam = getQueryParameter("sample");
   if (sampleParam) {
@@ -211,8 +111,6 @@ function processJSON(data) {
       document
         .getElementById("sampleDropdown")
         .dispatchEvent(new Event("change"));
-    } else {
-      console.warn(`Sample "${sampleParam}" not found in JSON.`);
     }
   } else {
     // Default behavior if no sample is specified
@@ -226,22 +124,17 @@ function processJSON(data) {
 
 // Automatically load the default JSON file when the page loads
 document.addEventListener("DOMContentLoaded", () => {
-  console.log("uploading samples.json");
   loadSampleJSON("samples.json");
 });
 
 document
   .getElementById("load-sample-JSON")
   .addEventListener("change", function (event) {
-    console.log("load sample JSON clicked");
     const fileInput = event.target;
     const file = fileInput.files[0];
     if (!file) {
-      console.log("not a file!");
       return;
     }
-
-    console.log("Selected file:", file.name); // Debugging
 
     const reader = new FileReader();
     reader.onload = function (event) {
@@ -249,7 +142,6 @@ document
 
       try {
         const parsedJSON = JSON.parse(sampleJSON);
-        console.log("Successfully loaded JSON:", parsedJSON); // Debugging
         loadSampleJSON(parsedJSON);
       } catch (error) {
         console.error("Error parsing JSON file:", error);
@@ -269,7 +161,6 @@ function getQueryParameter(param) {
   return urlParams.get(param);
 }
 
-///
 function populateGroupDropdown() {
   const groupDropdown = document.getElementById("groupDropdown");
   groupDropdown.innerHTML = ""; // Clear existing
@@ -298,7 +189,7 @@ function populateSampleDropdown(selectedGroup) {
     groupMapping[selectedGroup].forEach((index) => {
       const option = document.createElement("option");
       option.value = index; // Store index as value
-      option.textContent = samples[index]; // Sample title
+      option.textContent = samples[index].title;
       sampleDropdown.appendChild(option);
     });
     // Automatically select the first sample in the group
@@ -309,8 +200,6 @@ function populateSampleDropdown(selectedGroup) {
   }
 }
 
-let sampleName = "";
-
 // Initialize the OpenSeadragon viewer
 const viewer = OpenSeadragon({
   maxZoomPixelRatio: 100,
@@ -318,7 +207,6 @@ const viewer = OpenSeadragon({
   prefixUrl: "js/images/",
   zoomPerClick: 1, // Disable zoom on click (or shift+click)
   sequenceMode: false,
-  tileSources: tileSets[0], // Load first tile set upon load
   showNavigationControl: false, // Disable the default navigation controls
 });
 
@@ -327,11 +215,10 @@ document
   .getElementById("sampleDropdown")
   .addEventListener("change", function () {
     currentIndex = Number(this.value);
-    sampleName = samples[currentIndex];
-    loadTileSet(currentIndex);
+    loadTileSet();
     clearAnnotations();
-    updateButtonLabels(currentIndex);
-    addScalebar(pixelsPerMeters[currentIndex]);
+    updateButtonLabels();
+    addScalebar(pixelsPerMeter());
     clearGrid();
     enableGridButtons();
     disableCountButtons();
@@ -341,7 +228,7 @@ document
     resetMeasurements(true);
     document.getElementById("enableDivideImages").checked = true;
     enableDivideImages = true;
-    divideImages();
+    displayImages();
     toggleOnImages();
     resetRotation();
 
@@ -354,11 +241,9 @@ document
     }
 
     // Check if the selected sample has annotations
-    let file = annotation_files[sampleName];
+    let file = annotationFiles[title()];
     if (file) {
       hasAnnotationInJSON = true;
-      console.log("anno JSON detected, creating button");
-      console.log("file to load:", file);
       const button = document.createElement("button");
       button.textContent = "Load from JSON";
       button.id = "loadAnnoFromJSONButton";
@@ -368,31 +253,25 @@ document
       annoJSONButtonContainer.appendChild(button);
     } else {
       hasAnnotationInJSON = false;
-      console.log("No annotations detected for the selected sample.");
     }
   });
 
 // Function to update the button labels based on tileLabels array
-function updateButtonLabels(index) {
-  const numButtons = tileSets[index].length;
-  const tileLabelsForIndex = tileLabels[index]; // Get the labels for the current tile set
-
+function updateButtonLabels() {
+  const numButtons = tileSets().length;
   for (let i = 0; i < 4; i++) {
     const checkbox = document.getElementById(`image${i + 1}`);
     const label = document.getElementById(`label${i + 1}`);
-    const currentLabel = tileLabelsForIndex[i];
-    const visibleImageIndex = scrollIndex % currentLabel.length;
-
     if (i < numButtons) {
       // For regular labels, use the normal setup
       checkbox.style.display = "inline";
       label.style.display = "inline";
-      if (Array.isArray(currentLabel)) {
-        // Determine the visible label index based on scrollIndex
-        label.textContent = currentLabel[visibleImageIndex]; // Set the label text based on the scrollIndex logic
-      } else {
-        label.textContent = currentLabel;
-      }
+      // If the currently visible tile is labeled individually, use that label.
+      // Otherwise, fall back to the overall tile set label.
+      const tileSet = tileSets()[i];
+      const visibleTileIndex = scrollIndex % tileSet.tiles.length;
+      const tileLabel = tileSet.tiles[visibleTileIndex].label;
+      label.textContent = tileLabel || tileSet.label;
     } else {
       checkbox.style.display = "none";
       label.style.display = "none";
@@ -402,7 +281,7 @@ function updateButtonLabels(index) {
 }
 
 function toggleOnImages() {
-  const numButtons = tileSets[currentIndex].length;
+  const numButtons = tileSets().length;
   for (let i = 1; i <= 4; i++) {
     const checkbox = document.getElementById(`image${i}`);
     if (i <= numButtons) {
@@ -416,12 +295,9 @@ function toggleOnImages() {
 function deselectAllButFirstImage() {
   for (let i = 1; i <= 4; i++) {
     const checkbox = document.getElementById(`image${i}`);
-    console.log(checkbox);
     if (checkbox) {
       if (i > 1 && checkbox.checked === true) {
-        console.log(`deselecting image${i}`);
         toggleImage(checkbox, i);
-        // checkbox.click();
       }
     }
   }
@@ -429,8 +305,6 @@ function deselectAllButFirstImage() {
 
 // Function to update the label dynamically
 function updateImageLabels() {
-  const tileLabelsForCurrent = tileLabels[currentIndex];
-
   for (let i = 0; i < 4; i++) {
     const labelDiv = document.getElementById(
       `labelForOpacityImage${i + 1}`
@@ -439,16 +313,10 @@ function updateImageLabels() {
       `labelForOpacityImage${i + 1}`
     );
 
-    if (i < tileLabelsForCurrent.length) {
+    if (i < tileSets().length) {
       // Show the div
       labelDiv.style.display = "";
-      const tileLabelsForIndex = tileLabelsForCurrent[i];
-      const visibleImageIndex =
-        scrollIndex %
-        (Array.isArray(tileLabelsForIndex) ? tileLabelsForIndex.length : 1);
-      labelElement.textContent = Array.isArray(tileLabelsForIndex)
-        ? tileLabelsForIndex[visibleImageIndex]
-        : tileLabelsForIndex;
+      labelElement.textContent = tileSets()[i].label;
     } else {
       // Hide extra divs
       labelDiv.style.display = "none";
@@ -460,13 +328,11 @@ const tooltip = document.getElementById("tooltip-desc");
 const infoButton = document.getElementById("info-button-desc");
 // Show tooltip with sample info on hover
 function showTooltip() {
-  const dropdown = document.getElementById("sampleDropdown");
-  if (descriptions[dropdown.value]) {
-    tooltip.textContent = `${descriptions[dropdown.value]}`;
+  const description = samples[currentIndex].description;
+  if (description) {
+    tooltip.textContent = description;
     tooltip.style.display = "block";
     const buttonRect = infoButton.getBoundingClientRect();
-    console.log("buttonRect.top", buttonRect.top);
-    console.log("buttonRect.height", buttonRect.height);
     // Wait for the tooltip to be displayed before calculating its height
     const tooltipHeight = tooltip.offsetHeight;
     // Align tooltip vertically centered with the button
@@ -487,8 +353,9 @@ infoButton.addEventListener("mouseleave", hideTooltip);
 
 // TODO: Testing HTML pop-up when button is clicked
 infoButton.addEventListener("click", function () {
-  if (infos[currentIndex]) {
-    fetch(infos[currentIndex])
+  const info = samples[currentIndex].info;
+  if (info) {
+    fetch(info)
       .then((response) => response.text())
       .then((data) => {
         document.getElementById("info-modal-body").innerHTML = data;
@@ -528,7 +395,6 @@ function unsavedAnnotations(value) {
   if (window.electronAPI) {
     const unsaved =
       window.appState.hasUnsavedAnnotations || window.appState.hasUnsavedCounts;
-    console.log("Sending unsaved state to main process:", unsaved);
     window.electronAPI.setUnsavedState(unsaved);
   }
 }
@@ -542,7 +408,6 @@ function unsavedCounts(value) {
   if (window.electronAPI) {
     const unsaved =
       window.appState.hasUnsavedAnnotations || window.appState.hasUnsavedCounts;
-    console.log("Sending unsaved state to main process:", unsaved);
     window.electronAPI.setUnsavedState(unsaved);
   }
 }
@@ -576,7 +441,6 @@ window.addEventListener("beforeunload", function (e) {
 function addScalebar() {
   const scalebarType = document.getElementById("scalebarType").value;
 
-  const pixelsPerMeter = pixelsPerMeters[currentIndex];
   const locationMapper = {
     "Top left": OpenSeadragon.ScalebarLocation.TOP_LEFT,
     "Top right": OpenSeadragon.ScalebarLocation.TOP_RIGHT,
@@ -642,13 +506,13 @@ function addScalebar() {
     backgroundColor: scalebarBackgroundColorToPlot,
     fontSize: scalebarFontSize,
     barThickness: parseInt(scalebarBarThickness),
-    pixelsPerMeter: pixelsPerMeter,
+    pixelsPerMeter: pixelsPerMeter(),
   });
 }
 
 function restoreScalebarDefaults() {
   const scalebarBackgroundColorToPlot = applyOpacityToColor("#ffffff", 0.5);
-  const pixelsPerMeter = pixelsPerMeters[currentIndex];
+  const pixelsPerMeter = pixelsPerMeter();
 
   // Reset scalebar settings to default values
   document.getElementById("scalebarType").value = "Map";
@@ -683,25 +547,20 @@ function restoreScalebarDefaults() {
   });
 }
 
-// Function to recursively add tile sources
-function addTiles(tileSource) {
-  if (Array.isArray(tileSource)) {
-    tileSource.forEach(addTiles); // Recursively handle nested lists
-  } else {
-    viewer.addTiledImage({
-      tileSource: tileSource,
-      success: function () {},
-    });
-  }
-}
+// Load the images for the tile set at the given index within the currently
+// selected sample's tile sets.
+function loadTileSet() {
+  // Remove any previously loaded images from the viewer.
+  viewer.world.removeAll();
 
-// Function to load a set of images based on the current index
-function loadTileSet(index) {
-  viewer.world.removeAll(); // Remove previous images
-  const tileSources = tileSets[index]; // Get the tile set
-
-  if (tileSources) {
-    addTiles(tileSources); // Process all tiles (handling nested lists)
+  // Load and store tiled images.
+  for (let tileSet of tileSets()) {
+    for (let tile of tileSet.tiles) {
+      viewer.addTiledImage({
+        tileSource: tile.uri,
+        success: (event) => (tile.image = event.item),
+      });
+    }
   }
 }
 
@@ -710,21 +569,22 @@ const viewerContainer = document.getElementById("viewer-container");
 // Share the mouse position between event handlers.
 let mousePos = new OpenSeadragon.Point(0, 0);
 
-// Divides the images at the current mouse position, cropping overlaid images to
-// expose the images underneath. Note that all images are expected to have the
-// same position and size.
-const divideImages = () => {
+// Update the appearance of the images for the currently selected sample. Note
+// that all images in the sample must have the same position and size. For
+// samples with multiple tile sets, the viewer will be divided into equal
+// sectors (one for each tile set) centered at the current mouse position. This
+// function also applies image opacity and blending.
+const displayImages = () => {
   // Bail out if there are no images.
   if (viewer.world.getItemCount() === 0) {
     return;
   }
 
-  const tileSet = tileSets[currentIndex];
-  // Determine the number of checked images ahead of time so we know how big to
-  // make each section.
+  // Determine the number of enabled tile sets ahead of time so we know how big
+  // to make each sector.
   const isChecked = [];
   let totalChecked = 0;
-  for (let i = 0; i < tileSet.length; ++i) {
+  for (let i = 0; i < tileSets().length; ++i) {
     const checkbox = document.getElementById(`image${i + 1}`);
     isChecked.push(checkbox.checked);
     if (checkbox.checked) {
@@ -732,18 +592,21 @@ const divideImages = () => {
     }
   }
 
+  // Set the radius of each sector's polygon to an arbitrary value large enough
+  // that the sector's arc is outside the viewport.
   const radius = 4 * Math.max(window.innerWidth, window.innerHeight);
-  // Place the first image in a segment with its most clockwise edge facing up.
+  // Place the first image in a sector with its most clockwise radius facing up.
   const startAngle = -Math.PI / 2 - (2 * Math.PI) / totalChecked;
 
   // Set the cropping polygon for each image.
-  let imageIndex = 0; // Because a given section may have multiple images
   let sectionsLeft = totalChecked;
-  // One loop per top level of image list
-  for (let i = 0; i < tileSet.length; ++i) {
+
+  tileSets().forEach((tileSet, i) => {
+    const tiles = tileSet.tiles;
+
     const endAngle = (-2 * Math.PI * sectionsLeft) / totalChecked;
     const windowPolygon = [mousePos];
-    // Define the section's arc using four points to ensure the polygon is
+    // Define the sector's arc using four points to ensure the polygon is
     // well-formed even if the tile set has fewer than three tiles.
     for (let p = 0; p < 4; ++p) {
       const angle = startAngle + (p * endAngle) / 3;
@@ -755,37 +618,23 @@ const divideImages = () => {
       );
     }
 
-    let imagesInSection;
-    if (Array.isArray(tileSet[i])) {
-      // If it's a nested list, add all images to the same section
-      imagesInSection = tileSet[i];
-    } else {
-      // If it's a single image, treat it as its own group
-      imagesInSection = [tileSet[i]];
+    if (isChecked[i]) {
+      --sectionsLeft;
     }
 
-    const imageOpacity = document.getElementById(`opacityImage${i + 1}`).value;
-
-    // One loop per second level of image list
-    for (let j = 0; j < imagesInSection.length; ++j) {
-      ++imageIndex;
-
-      const image = viewer.world.getItemAt(imageIndex - 1);
+    const tileSetOpacity =
+      document.getElementById(`opacityImage${i + 1}`).value / 100;
+    const getTileOpacity = getTileOpacityGetter(tileSet, tileSetOpacity);
+    tiles.forEach((tile, j) => {
+      const image = tile.image;
       if (!image) {
-        console.warn(`Image at index ${imageIndex - 1} is not loaded yet.`);
-        continue;
+        // Image is not loaded yet.
+        return;
       }
+      const tileOpacity = isChecked[i] ? getTileOpacity(j) : 0;
+      image.setOpacity(tileOpacity);
 
-      // Display this image if it's selected and checked.
-      const visibleImageIndex = scrollIndex % imagesInSection.length;
-      if (isChecked[i] && j === visibleImageIndex) {
-        image.setOpacity(imageOpacity / 100);
-        --sectionsLeft;
-      } else {
-        image.setOpacity(0);
-        continue;
-      }
-
+      // Divide the tile sets into sectors, if image division is enabled.
       if (enableDivideImages) {
         image.setCroppingPolygons([
           windowPolygon.map((p) => image.viewerElementToImageCoordinates(p)),
@@ -793,9 +642,77 @@ const divideImages = () => {
       } else {
         image.resetCroppingPolygons();
       }
+    });
+  });
+  viewer.forceRedraw();
+};
+
+// Returns a function that can be used to set the opacity of each tile in the
+// given tile set, according to its index.
+const getTileOpacityGetter = (tileSet, tileSetOpacity) => {
+  const tiles = tileSet.tiles;
+  const periodDegrees = tileSet.periodDegrees;
+  if (!periodDegrees) {
+    // If the tile set does not have a period, the tiles are just independent
+    // images that can be scrolled through. Only show the selected tile.
+    return (index) =>
+      index === scrollIndex % tiles.length ? tileSetOpacity : 0;
+  }
+
+  // If the tile set does have a period, its tiles should be treated as
+  // different angles of the same image, and the displayed image should be
+  // interpolated between the tiles closest to the current viewport angle.
+  const rotation =
+    ((viewer.viewport.getRotation(true) % periodDegrees) + periodDegrees) %
+    periodDegrees;
+  let supremumIndex = 0;
+  let supremum;
+  let infimumIndex;
+  let infimum;
+  // Find the first tile whose angle is greater than the target.
+  for (let j = 0; j < tiles.length; ++j) {
+    if (tiles[j].angleDegrees > rotation) {
+      supremumIndex = j;
+      break;
     }
   }
-  viewer.forceRedraw();
+  supremum = tiles[supremumIndex].angleDegrees;
+  if (supremumIndex === 0) {
+    // Wrap around the tile list.
+    infimumIndex = tiles.length - 1;
+    supremum += periodDegrees;
+  } else {
+    infimumIndex = supremumIndex - 1;
+  }
+  infimum = tiles[infimumIndex].angleDegrees;
+
+  // TODO: Handle the case where the smallest available angle is not 0.
+
+  // Ensure infimum image is underneath supremum image, if both are loaded.
+  const infimumImage = tiles[infimumIndex].image;
+  const supremumImage = tiles[supremumIndex].image;
+  if (infimumImage && supremumImage) {
+    const infimumWorldIndex = viewer.world.getIndexOfItem(infimumImage);
+    const supremumWorldIndex = viewer.world.getIndexOfItem(supremumImage);
+    const minWorldIndex = Math.min(infimumWorldIndex, supremumWorldIndex);
+    const maxWorldIndex = Math.max(infimumWorldIndex, supremumWorldIndex);
+    viewer.world.setItemIndex(infimumImage, minWorldIndex);
+    viewer.world.setItemIndex(supremumImage, maxWorldIndex);
+  }
+
+  // Show the underlying tile at full opacity and the superimposed tile at the
+  // interpolated opacity, and hide all other tiles.
+  const t = (rotation - infimum) / (supremum - infimum);
+  return (index) => {
+    switch (index) {
+      case infimumIndex:
+        return (tileSetOpacity * (1 - t)) / (1 - tileSetOpacity * t);
+      case supremumIndex:
+        return tileSetOpacity * t;
+      default:
+        return 0;
+    }
+  };
 };
 
 const toggleGridCrosshairs = (event) => {
@@ -810,7 +727,7 @@ const toggleGridLabels = (event) => {
   }
 };
 
-viewer.addHandler("animation", divideImages);
+viewer.addHandler("animation", displayImages);
 
 // Update grid slider values as slider moves
 const slider_1 = document.getElementById("grid-left");
@@ -860,7 +777,7 @@ function updateOpacityImageSliderVisibility() {
 
   // Loop through all sliders and adjust visibility
   sliders.forEach((slider, index) => {
-    if (index < tileSets[currentIndex].length) {
+    if (index < tileSets().length) {
       slider.style.display = "block"; // Show the slider
       // Reset the slider value to 100
       const sliderInput = slider.querySelector("input[type='range']");
@@ -870,8 +787,6 @@ function updateOpacityImageSliderVisibility() {
 
         // Attach an event listener to dynamically update opacity
         sliderInput.addEventListener("input", () => {
-          console.log("slider input event listener");
-          // const opacity = sliderInput.value / 100;
           setTileSetOpacity();
           // Update the displayed slider value
           if (sliderValueSpan) {
@@ -965,11 +880,9 @@ pointButton.addEventListener("click", () => {
   // Remove any existing temporary points
 
   if (isPointMode === false) {
-    console.log("point mode activated");
     pointButton.classList.add("active");
     isPointMode = true;
   } else {
-    console.log("point mode deactivated");
     pointButton.classList.remove("active");
     isPointMode = false;
   }
@@ -988,11 +901,9 @@ polylineButton.addEventListener("click", () => {
   removeTemporaryPoints();
 
   if (isPolylineMode === false) {
-    console.log("polyline mode activated");
     polylineButton.classList.add("active");
     isPolylineMode = true;
   } else {
-    console.log("polyline mode deactivated");
     polylineButton.classList.remove("active");
     isPolylineMode = false;
     removeTemporaryPoints();
@@ -1012,11 +923,9 @@ rectButton.addEventListener("click", () => {
   removeTemporaryPoints();
 
   if (isRectangleMode === false) {
-    console.log("rect mode activated");
     rectButton.classList.add("active");
     isRectangleMode = true;
   } else {
-    console.log("rect mode deactivated");
     rectButton.classList.remove("active");
     isRectangleMode = false;
   }
@@ -1024,18 +933,15 @@ rectButton.addEventListener("click", () => {
 
 repeatButton.addEventListener("click", () => {
   if (isRepeatMode === false) {
-    console.log("repeat mode activated");
     repeatButton.classList.add("active");
     isRepeatMode = true;
   } else {
-    console.log("repeat mode deactivated");
     repeatButton.classList.remove("active");
     isRepeatMode = false;
   }
 });
 
 polygonButton.addEventListener("click", () => {
-  console.log("poly button clicked");
   // Deactivate point and rect buttons
   pointButton.classList.remove("active");
   isPointMode = false;
@@ -1048,18 +954,15 @@ polygonButton.addEventListener("click", () => {
   removeTemporaryPoints();
 
   if (isPolygonMode === false) {
-    console.log("poly mode activated");
     polygonButton.classList.add("active");
     isPolygonMode = true;
   } else {
-    console.log("poly mode deactivated");
     polygonButton.classList.remove("active");
     isPolygonMode = false;
   }
 });
 
 ellipseButton.addEventListener("click", () => {
-  console.log("ellipse button clicked");
   // Deactivate point and rect buttons
   pointButton.classList.remove("active");
   isPointMode = false;
@@ -1072,11 +975,9 @@ ellipseButton.addEventListener("click", () => {
   removeTemporaryPoints();
 
   if (isEllipseMode === false) {
-    console.log("ellipse mode activated");
     ellipseButton.classList.add("active");
     isEllipseMode = true;
   } else {
-    console.log("ellipse mode deactivated");
     ellipseButton.classList.remove("active");
     isEllipseMode = false;
   }
@@ -1086,7 +987,6 @@ ellipseButton.addEventListener("click", () => {
 document
   .getElementById("imageSettingsButton")
   .addEventListener("click", function (event) {
-    console.log("image settings button clicked");
     event.stopPropagation(); // Prevent click from reaching the window listener
     const menu = document.getElementById("imageSettingsMenu");
     if (menu.style.display === "none" || menu.style.display === "") {
@@ -1214,7 +1114,6 @@ const disableAnnoButtons = () => {
 document
   .getElementById("anno-first-button")
   .addEventListener("click", function () {
-    console.log("first arrow clicked");
     const annoIdBox = document.getElementById("anno-id");
     const annoIds = Array.from(
       { length: annoJSON.features.length },
@@ -1234,7 +1133,6 @@ document
 document
   .getElementById("anno-last-button")
   .addEventListener("click", function () {
-    console.log("last arrow clicked");
     const annoIdBox = document.getElementById("anno-id");
     // const annoIds = Object.keys(annoDict).map(Number);
     const annoIds = Array.from(
@@ -1256,7 +1154,6 @@ document
 document
   .getElementById("anno-prev-button")
   .addEventListener("click", function () {
-    console.log("prev arrow clicked");
     // Current annotation id
     const annoIdBox = document.getElementById("anno-id");
     const currentId = parseInt(annoIdBox.value);
@@ -1266,8 +1163,6 @@ document
       { length: annoJSON.features.length },
       (_, i) => i + 1
     );
-
-    console.log("annoIds", annoIds);
 
     // Index of current annotation id
     const currentIdx = annoIds.indexOf(currentId); // Index of current annotation
@@ -1290,7 +1185,6 @@ document
 document
   .getElementById("anno-next-button")
   .addEventListener("click", function () {
-    console.log("next arrow clicked");
     // Current annotation id
     const annoIdBox = document.getElementById("anno-id");
     const currentId = parseInt(annoIdBox.value);
@@ -1509,8 +1403,6 @@ function applyCurrentGrid(id, changeLabel = false) {
       countJSON.features[id - 1].properties.lineOpacityAfter = lineOpacityAfter;
       updateCrosshair(uuid, "grid", lineColor, lineWeight, lineOpacity);
     }
-  } else {
-    console.warning("Feature type not supported");
   }
 }
 
@@ -1605,7 +1497,6 @@ document.getElementById("applyAllGrid").addEventListener("click", function () {
 });
 
 function selectNextAnno(id) {
-  console.log("selecting next id");
   const annoIdBox = document.getElementById("anno-id");
   const annoLabelBox = document.getElementById("anno-label");
   const annoNotesBox = document.getElementById("anno-notes");
@@ -1613,7 +1504,6 @@ function selectNextAnno(id) {
     { length: annoJSON.features.length },
     (_, i) => i + 1
   );
-  console.log("annoIds", annoIds);
 
   // Case where there are no annotations left
   if (annoIds.length === 0) {
@@ -1647,7 +1537,6 @@ function selectNextAnno(id) {
       -1
     );
     const nextId = annoIds[nextIdx];
-    console.log("nextIdx,nextId", nextIdx, nextId);
     annoIdBox.value = nextId;
     annoLabelToText();
   }
@@ -1664,8 +1553,6 @@ function annoLabelToText() {
     label = annoJSON.features[idInput - 1].properties.label ?? "";
     // Access the notes within the properties of the GeoJSON object
     notes = annoJSON.features[idInput - 1].properties.notes ?? "";
-  } else {
-    console.log("Annotation with this ID not found.");
   }
   const annoLabel = document.getElementById("anno-label");
   const annoNotes = document.getElementById("anno-notes");
@@ -1683,12 +1570,6 @@ function annoTextToLabel() {
     // Update the label within the properties of the GeoJSON object
     annoJSON.features[idInput - 1].properties.label = annoLabel.value;
     annoJSON.features[idInput - 1].properties.notes = annoNotes.value;
-    console.log(
-      `Updated label and/or notes for ID ${idInput}:`,
-      annoJSON.features[idInput - 1].properties.label
-    );
-  } else {
-    console.log("Annotation with this ID not found.");
   }
 }
 
@@ -1723,12 +1604,9 @@ document.addEventListener("keydown", function (event) {
   ) {
     const idInput = document.getElementById("anno-id");
 
-    console.log("idInput", idInput);
-
     event.preventDefault(); // Prevent any default action for Enter key
     annoLabelToText();
 
-    console.log(annoJSON);
     const image = viewer.world.getItemAt(0);
     const viewportPoint = image.imageToViewportCoordinates(
       annoJSON.features[parseInt(idInput.value) - 1].properties.xLabel,
@@ -1809,12 +1687,7 @@ function addPolygonToGeoJSON(JSON, coordinates, metadata) {
 // Function to delete an entry in the JSON
 function deleteFromGeoJSON(id) {
   if (annoJSON.features[id - 1]) {
-    const uuid = annoJSON.features[id - 1].properties.uuid;
     annoJSON.features.splice(id - 1, 1);
-    // delete annoJSON.features[id - 1];
-    console.log(`Entry with ID ${uuid} deleted.`);
-  } else {
-    console.warn(`Entry with ID ${uuid} not found.`);
   }
 }
 
@@ -1843,7 +1716,7 @@ const toggleDivideImages = (event) => {
   } else {
     enableDivideImages = false;
   }
-  divideImages();
+  displayImages();
 };
 
 // Import, add, and export points with labels
@@ -1911,25 +1784,21 @@ let isXPressed = false;
 let isCPressed = false;
 document.addEventListener("keydown", function (event) {
   if (event.key === "q" || event.key === "Q") {
-    // console.log("Q pressed");
     isQPressed = true;
     toggleCrosshairFloaterOn(true);
     disableOtherAnnoModes("point");
   }
   if (event.key === "z" || event.key === "Z") {
-    // console.log("Z pressed");
     isZPressed = true;
     togglePolylineFloaterOn(true);
     disableOtherAnnoModes("polyline");
   }
   if (event.key === "x" || event.key === "X") {
-    // console.log("X pressed");
     isXPressed = true;
     togglePolygonFloaterOn(true);
     disableOtherAnnoModes("polygon");
   }
   if (event.key === "c" || event.key === "C") {
-    // console.log("C pressed");
     isCPressed = true;
     toggleEllipseFloaterOn(true);
     disableOtherAnnoModes("ellipse");
@@ -1937,7 +1806,6 @@ document.addEventListener("keydown", function (event) {
 });
 document.addEventListener("keyup", function (event) {
   if (event.key === "q" || event.key === "Q") {
-    console.log("Q released");
     isQPressed = false;
     if (!pointButton.classList.contains("active")) {
       // Only toggle off if the button is not also pressed
@@ -1945,7 +1813,6 @@ document.addEventListener("keyup", function (event) {
     }
   }
   if (event.key === "z" || event.key === "Z") {
-    console.log("Z released");
     isZPressed = false;
     if (!polylineButton.classList.contains("active")) {
       // Only toggle off if the button is not also pressed
@@ -1953,14 +1820,12 @@ document.addEventListener("keyup", function (event) {
     }
   }
   if (event.key === "x" || event.key === "X") {
-    console.log("X released");
     isXPressed = false;
     if (!polygonButton.classList.contains("active")) {
       togglePolygonFloaterOn(false);
     }
   }
   if (event.key === "c" || event.key === "C") {
-    console.log("C released");
     isCPressed = false;
     if (!ellipseButton.classList.contains("active")) {
       toggleEllipseFloaterOn(false);
@@ -1971,7 +1836,6 @@ document.addEventListener("keyup", function (event) {
 // Handler for adding point annotations
 viewer.addHandler("canvas-click", function (event) {
   if (isQPressed || isPointMode) {
-    console.log("canvs & Q clicked");
     const image = viewer.world.getItemAt(0);
     const imageSize = image.getContentSize();
     let viewportPoint = viewer.viewport.pointFromPixel(event.position); // Get viewport coordinates
@@ -1999,14 +1863,13 @@ viewer.addHandler("canvas-click", function (event) {
       const annoId = parseInt(document.getElementById("anno-id").value);
       constPointLabel = annoJSON.features[annoId - 1].properties.label;
 
-      const sampleIdx = samples.indexOf(sampleName);
       addPointToGeoJSON(imagePoint.x, imagePoint.y, {
         uuid: uniqueID,
         label: constPointLabel,
         xLabel: imagePoint.x,
         yLabel: imagePoint.y,
-        imageTitle: sampleName,
-        pixelsPerMeter: Number(pixelsPerMeters[sampleIdx]),
+        imageTitle: title(),
+        pixelsPerMeter: pixelsPerMeter(),
         imageWidth: imageSize.x,
         imageHeight: imageSize.y,
         labelFontSize: labelFontSize,
@@ -2030,17 +1893,15 @@ viewer.addHandler("canvas-click", function (event) {
     } else {
       showPrompt("Enter the annotation label:", (value) => {
         if (value) {
-          console.log("User entered:", value);
           constPointLabel = value;
 
-          const sampleIdx = samples.indexOf(sampleName);
           addPointToGeoJSON(imagePoint.x, imagePoint.y, {
             uuid: uniqueID,
             label: constPointLabel,
             xLabel: imagePoint.x,
             yLabel: imagePoint.y,
-            imageTitle: sampleName,
-            pixelsPerMeter: Number(pixelsPerMeters[sampleIdx]),
+            imageTitle: title(),
+            pixelsPerMeter: pixelsPerMeter(),
             imageWidth: imageSize.x,
             imageHeight: imageSize.y,
             labelFontSize: labelFontSize,
@@ -2062,15 +1923,13 @@ viewer.addHandler("canvas-click", function (event) {
             labelBackgroundOpacity
           );
         } else {
-          console.log("User cancelled. No label added.");
-          const sampleIdx = samples.indexOf(sampleName);
           addPointToGeoJSON(imagePoint.x, imagePoint.y, {
             uuid: uniqueID,
             label: "",
             xLabel: imagePoint.x,
             yLabel: imagePoint.y,
-            imageTitle: sampleName,
-            pixelsPerMeter: Number(pixelsPerMeters[sampleIdx]),
+            imageTitle: title(),
+            pixelsPerMeter: pixelsPerMeter(),
             imageWidth: imageSize.x,
             imageHeight: imageSize.y,
             labelFontSize: labelFontSize,
@@ -2226,7 +2085,6 @@ let activelyMakingEllipse = false;
 // Event listener to add ellipse annotations
 viewer.addHandler("canvas-click", function (event) {
   if (isEllipseMode || isCPressed) {
-    console.log("ellipse clicked");
     activelyMakingEllipse = true;
     const image = viewer.world.getItemAt(0);
     const imageSize = image.getContentSize();
@@ -2261,7 +2119,6 @@ viewer.addHandler("canvas-click", function (event) {
       // Check if the Escape key was pressed
       if (event.key === "Escape") {
         removeTemporaryPoints();
-        console.log("Escape key pressed");
       }
     });
 
@@ -2372,7 +2229,6 @@ viewer.addHandler("canvas-click", function (event) {
         var constEllipseLabel;
         showPrompt("Enter the annotation label:", (value) => {
           if (value) {
-            console.log("User entered:", value);
             constEllipseLabel = value;
             finalizeEllipseAnnotation(
               constEllipseLabel,
@@ -2391,7 +2247,6 @@ viewer.addHandler("canvas-click", function (event) {
               fillOpacity
             );
           } else {
-            console.log("User cancelled. No label added.");
             constEllipseLabel = "";
             finalizeEllipseAnnotation(
               constEllipseLabel,
@@ -2439,19 +2294,18 @@ function finalizeEllipseAnnotation(
     labelImagePoint[0],
     labelImagePoint[1]
   );
-  const sampleIdx = samples.indexOf(sampleName);
   const areaPixels2 = calculatePolygonArea([ellipsePoints]);
-  const areaM2 = areaPixels2 / pixelsPerMeters[currentIndex] ** 2;
+  const areaM2 = areaPixels2 / pixelsPerMeter() ** 2;
   const perimeterPixels = calculatePolygonExteriorPerimeter([ellipsePoints]);
-  const perimeterM = perimeterPixels / pixelsPerMeters[currentIndex];
+  const perimeterM = perimeterPixels / pixelsPerMeter();
 
   addPolygonToGeoJSON(annoJSON, [...ellipsePoints], {
     uuid: uniqueID,
     label: label,
     xLabel: labelImagePoint[0],
     yLabel: labelImagePoint[1],
-    imageTitle: sampleName,
-    pixelsPerMeter: Number(pixelsPerMeters[sampleIdx]),
+    imageTitle: title(),
+    pixelsPerMeter: pixelsPerMeter(),
     imageWidth: imageSize.x,
     imageHeight: imageSize.y,
     labelFontSize: labelFontSize,
@@ -2511,7 +2365,6 @@ const circleCanvas = document.getElementById("circle-overlay"); // Includes circ
 const measureCanvas = document.getElementById("measurement-overlay"); // Includes polyline and polygon
 let activelyMakingPoly = false; // Either polyline or polygon
 viewer.addHandler("canvas-click", function (event) {
-  console.log("canvas clicked");
   if (isPolylineMode || isPolygonMode || isZPressed || isXPressed) {
     activelyMakingPoly = true;
     const image = viewer.world.getItemAt(0);
@@ -2557,7 +2410,6 @@ viewer.addHandler("canvas-click", function (event) {
       // Check if the Escape key was pressed
       if (event.key === "Escape") {
         removeTemporaryPoints();
-        console.log("Escape key pressed");
       }
     });
 
@@ -2581,7 +2433,6 @@ viewer.addHandler("canvas-click", function (event) {
           subeventViewportPoint.x,
           subeventViewportPoint.y
         );
-        const sampleIdx = samples.indexOf(sampleName);
         addPolylineToGeoJSON(
           annoJSONTemp,
           [
@@ -2597,7 +2448,6 @@ viewer.addHandler("canvas-click", function (event) {
             lineWeight: lineWeight,
             lineColor: lineColor,
             lineOpacity: lineOpacity,
-            // canvasDraw: true,
           }
         );
         drawShape(polyCanvas, [annoJSON, annoJSONTemp]);
@@ -2620,7 +2470,6 @@ viewer.addHandler("canvas-click", function (event) {
       // It's a double-click, so stop the timeout and end collection
       activelyMakingPoly = false;
       clearTimeout(clickTimeout);
-      console.log("Double-click detected, ending collection of points.");
 
       // Calculate the stuff we need
       const uuid = generateUniqueId(8);
@@ -2633,19 +2482,17 @@ viewer.addHandler("canvas-click", function (event) {
         labelViewportPoint.x,
         labelViewportPoint.y
       );
-      const sampleIdx = samples.indexOf(sampleName);
 
       const rectAreaPixels2 = calculatePolygonArea([clickImageCoordinates]);
-      const rectAreaM2 = rectAreaPixels2 / pixelsPerMeters[currentIndex] ** 2;
+      const rectAreaM2 = rectAreaPixels2 / pixelsPerMeter() ** 2;
       const rectPerimeterPixels = calculatePolygonExteriorPerimeter([
         clickImageCoordinates,
       ]);
-      const rectPerimeterM =
-        rectPerimeterPixels / pixelsPerMeters[currentIndex];
+      const rectPerimeterM = rectPerimeterPixels / pixelsPerMeter();
       const lineLengthPixels = calculateLineStringLength(
         clickImageCoordinates.slice(0, clickImageCoordinates.length - 1)
       );
-      const lineLengthM = lineLengthPixels / pixelsPerMeters[currentIndex];
+      const lineLengthM = lineLengthPixels / pixelsPerMeter();
 
       if (isRepeatMode) {
         const annoId = parseInt(document.getElementById("anno-id").value);
@@ -2654,7 +2501,6 @@ viewer.addHandler("canvas-click", function (event) {
           constPolylineLabel,
           labelImagePoint,
           imageSize,
-          sampleIdx,
           uuid,
           labelViewportPoint,
           labelFontSize,
@@ -2697,7 +2543,6 @@ viewer.addHandler("canvas-click", function (event) {
           togglePolylineFloaterOn(false);
         }
         activelyMakingPoly = false;
-        console.log("Poly mode disabled");
         enableAnnoButtons();
       } else {
         // var constPolylineLabel = prompt("Enter a label for this polyline:");
@@ -2707,7 +2552,6 @@ viewer.addHandler("canvas-click", function (event) {
             constPolylineLabel,
             labelImagePoint,
             imageSize,
-            sampleIdx,
             uuid,
             labelViewportPoint,
             labelFontSize,
@@ -2750,14 +2594,13 @@ viewer.addHandler("canvas-click", function (event) {
             togglePolylineFloaterOn(false);
           }
           activelyMakingPoly = false;
-          console.log("Poly mode disabled");
           enableAnnoButtons();
         });
       }
     } else {
       // It's a single click, so set a timeout to handle it
       clickTimeout = setTimeout(function () {
-        console.log("Single click detected, continuing collection...");
+        // Single click detected, continuing collection...
       }, clickDelay);
     }
 
@@ -2770,7 +2613,6 @@ function finalizePolyAnnotation(
   constPolylineLabel,
   labelImagePoint,
   imageSize,
-  sampleIdx,
   uuid,
   labelViewportPoint,
   labelFontSize,
@@ -2804,8 +2646,8 @@ function finalizePolyAnnotation(
       label: constPolylineLabel,
       xLabel: labelImagePoint.x,
       yLabel: labelImagePoint.y,
-      imageTitle: sampleName,
-      pixelsPerMeter: Number(pixelsPerMeters[sampleIdx]),
+      imageTitle: title(),
+      pixelsPerMeter: pixelsPerMeter(),
       imageWidth: imageSize.x,
       imageHeight: imageSize.y,
       labelFontSize: labelFontSize,
@@ -2835,8 +2677,8 @@ function finalizePolyAnnotation(
         label: constPolylineLabel,
         xLabel: labelImagePoint.x,
         yLabel: labelImagePoint.y,
-        imageTitle: sampleName,
-        pixelsPerMeter: Number(pixelsPerMeters[sampleIdx]),
+        imageTitle: title(),
+        pixelsPerMeter: pixelsPerMeter(),
         imageWidth: imageSize.x,
         imageHeight: imageSize.y,
         labelFontSize: labelFontSize,
@@ -2898,9 +2740,6 @@ viewerContainer.addEventListener("mousemove", () => {
 viewer.addHandler("canvas-dblclick", function (event) {
   if (isPolylineMode) {
     // Double-click detected, stop collecting points
-    console.log("Double-click detected, ending collection of points.");
-    console.log("Collected Coordinates:", clickCoordinates);
-
     const viewportPoint = viewer.viewport.pointFromPixel(event.position);
     const x = viewportPoint.x;
     const y = viewportPoint.y;
@@ -3291,7 +3130,7 @@ viewer.addHandler("canvas-release", function (event) {
       var constRectLabel = annoJSON.features[annoId - 1].properties.label;
       finalizeRectAnnotationWithCoords(
         rectCoordinates,
-        sampleName,
+        title(),
         currentRectUniqueId,
         constRectLabel,
         imageSize,
@@ -3316,11 +3155,10 @@ viewer.addHandler("canvas-release", function (event) {
       drawShape(polyCanvas, [annoJSON, annoJSONTemp]);
       showPrompt("Enter the annotation label:", (value) => {
         if (value) {
-          console.log("User entered:", value);
           constRectLabel = value;
           finalizeRectAnnotationWithCoords(
             rectCoordinates,
-            sampleName,
+            title(),
             currentRectUniqueId,
             constRectLabel,
             imageSize,
@@ -3344,7 +3182,7 @@ viewer.addHandler("canvas-release", function (event) {
           constRectLabel = "";
           finalizeRectAnnotationWithCoords(
             rectCoordinates,
-            sampleName,
+            title(),
             currentRectUniqueId,
             constRectLabel,
             imageSize,
@@ -3397,19 +3235,18 @@ function finalizeRectAnnotationWithCoords(
 
   // Calculate area and perimeter
   const rectAreaPixels2 = calculatePolygonArea([coordinates]);
-  const rectAreaM2 = rectAreaPixels2 / pixelsPerMeters[currentIndex] ** 2;
+  const rectAreaM2 = rectAreaPixels2 / pixelsPerMeter() ** 2;
   const rectPerimeterPixels = calculatePolygonExteriorPerimeter([coordinates]);
-  const rectPerimeterM = rectPerimeterPixels / pixelsPerMeters[currentIndex];
+  const rectPerimeterM = rectPerimeterPixels / pixelsPerMeter();
 
   // Add the rectangle to geoJSON
-  const sampleIdx = samples.indexOf(sampleName);
   addPolygonToGeoJSON(annoJSON, coordinates, {
     uuid: currentRectUniqueId,
     label: constRectLabel,
     xLabel: coordinates[0][0], // top-left corner
     yLabel: coordinates[0][1],
     imageTitle: sampleName,
-    pixelsPerMeter: Number(pixelsPerMeters[sampleIdx]),
+    pixelsPerMeter: pixelsPerMeter(),
     imageWidth: imageSize.x,
     imageHeight: imageSize.y,
     labelFontSize: labelFontSize,
@@ -3448,85 +3285,6 @@ function finalizeRectAnnotationWithCoords(
   );
 }
 
-// OLD deprecated function. Does not support drawing on a rotated viewport.
-function finalizeRectAnnotation(
-  x,
-  y,
-  finalWidth,
-  finalHeight,
-  sampleName,
-  currentRectUniqueId,
-  constRectLabel,
-  imageSize,
-  labelFontSize,
-  labelFontColor,
-  labelBackgroundColor,
-  labelBackgroundOpacity,
-  lineStyle,
-  lineWeight,
-  lineColor,
-  lineOpacity,
-  fillColor,
-  fillOpacity,
-  finalPoint
-) {
-  // Calculate the four corners of the rectangle
-  const coordinates = [
-    [x, y], // Top-left corner
-    [x + finalWidth, y], // Top-right corner
-    [x + finalWidth, y + finalHeight], // Bottom-right corner
-    [x, y + finalHeight], // Bottom-left corner
-    [x, y], // Close the loop to the top-left corner
-  ];
-
-  const rectAreaPixels2 = calculatePolygonArea([coordinates]);
-  const rectAreaM2 = rectAreaPixels2 / pixelsPerMeters[currentIndex] ** 2;
-  const rectPerimeterPixels = calculatePolygonExteriorPerimeter([coordinates]);
-  const rectPerimeterM = rectPerimeterPixels / pixelsPerMeters[currentIndex];
-
-  // Add the rectangle to the geoJSON
-  const sampleIdx = samples.indexOf(sampleName);
-  addPolygonToGeoJSON(annoJSON, coordinates, {
-    uuid: currentRectUniqueId,
-    label: constRectLabel,
-    xLabel: x,
-    yLabel: y,
-    imageTitle: sampleName,
-    pixelsPerMeter: Number(pixelsPerMeters[sampleIdx]),
-    imageWidth: imageSize.x,
-    imageHeight: imageSize.y,
-    labelFontSize: labelFontSize,
-    labelFontColor: labelFontColor,
-    labelBackgroundColor: labelBackgroundColor,
-    labelBackgroundOpacity: labelBackgroundOpacity,
-    lineStyle: lineStyle,
-    lineWeight: Number(lineWeight),
-    lineColor: lineColor,
-    lineOpacity: Number(lineOpacity),
-    fillColor: fillColor,
-    fillOpacity: fillOpacity,
-    area_m2: rectAreaM2,
-    perimeter_m: rectPerimeterM,
-  });
-  drawShape(polyCanvas, [annoJSON]);
-
-  // Mouse up - finalize and reset for the next rectangle
-  startPoint = null;
-  overlayElement = null;
-
-  // Add the label
-  addText(
-    currentRectUniqueId,
-    constRectLabel,
-    finalPoint,
-    "anno",
-    labelFontColor,
-    labelFontSize,
-    labelBackgroundColor,
-    labelBackgroundOpacity
-  );
-}
-
 // Clear annotations & grid
 document.getElementById("clearBtn").addEventListener("click", function () {
   if (
@@ -3534,12 +3292,8 @@ document.getElementById("clearBtn").addEventListener("click", function () {
       "Are you sure you want to apply clear the annotations? This action cannot be undone."
     )
   ) {
-    console.log("Clear confirmed");
     clearAnnotations();
     disableAnnoButtons();
-    // annotations = [];
-  } else {
-    console.log("Clear cancelled");
   }
 });
 
@@ -3681,8 +3435,6 @@ function deleteText(uuid, type = "anno") {
     }
     // Finally remove the element from DOM
     overlayElement.remove();
-  } else {
-    console.warn(`Text overlay with ID-${uuid} not found.`);
   }
 }
 
@@ -3706,12 +3458,10 @@ function updateText(
 
   if (pointLabel) {
     if (newLabel !== undefined && newLabel !== null) {
-      console.log("updating label innerHTML");
       // Update the innerHTML with the new label
       pointLabel.innerHTML = newLabel;
     }
 
-    console.log(`Label updated for ID ${uuid}:`, newLabel);
     if (type === "anno") {
       // window.appState.hasUnsavedAnnotations = true;
       unsavedAnnotations(true);
@@ -3720,7 +3470,6 @@ function updateText(
     // Update the CSS variables if new values are provided
     if (color !== undefined) {
       const colorToPlot = applyOpacityToColor(color, 1.0);
-      console.log("colorToPlot", colorToPlot);
       pointLabel.style.setProperty("--color", colorToPlot);
     }
     if (fontSize !== undefined) {
@@ -3733,8 +3482,6 @@ function updateText(
       );
       pointLabel.style.setProperty("--background-color", backgroundColorToPlot);
     }
-  } else {
-    console.log(`No annotation found with ID ${uuid}.`);
   }
 }
 
@@ -3793,7 +3540,6 @@ function updateCrosshair(
   }
 
   if (!crosshairElement) {
-    console.error(`Crosshair with ID "${uuid}" not found.`);
     return;
   }
 
@@ -3826,9 +3572,6 @@ function deleteCrosshairs(uuid, type = "anno") {
         (label) => label.id !== `annotate-crosshair-${uuid}`
       ); // Clean up the array
     }
-    // console.log(`Crosshair with ID ${uuid} removed.`);
-  } else {
-    console.warn(`Crosshair with ID ${uuid} not found.`);
   }
   if (type === "anno") {
     updateRepeatButton();
@@ -3837,7 +3580,6 @@ function deleteCrosshairs(uuid, type = "anno") {
 
 function loadAnnotationsFromJSON(file) {
   // Use fetch to get the GeoJSON file from the URL
-  console.log("Beginning loading annotations from JSON", file);
   fetch(file)
     .then((response) => {
       if (!response.ok) {
@@ -3847,7 +3589,6 @@ function loadAnnotationsFromJSON(file) {
       return response.json(); // Use text() first to inspect the content
     })
     .then((data) => {
-      console.log("GeoJSON data loaded:", data);
       loadAnnotations(data);
       // You can now use the geoJsonData for mapping or other purposes
     })
@@ -3858,7 +3599,6 @@ function loadAnnotationsFromJSON(file) {
 }
 
 function loadCounts(geoJSONData) {
-  console.log("Starting counts load");
   const geoJSON = parseJSON(geoJSONData);
 
   const features = geoJSON.features || Object.values(geoJSON); // Supports both formats
@@ -3867,14 +3607,14 @@ function loadCounts(geoJSONData) {
     const properties = feature.properties;
 
     if (!geometry || !properties) {
-      console.warn("Invalid feature, skipping:", feature);
+      // Invalid feature, skipping
       return;
     }
 
     const { type, coordinates } = geometry;
 
     if (type !== "Point") {
-      console.warn("Skipping non-point feature", feature);
+      // Skipping non-point feature
       return;
     }
 
@@ -3890,7 +3630,6 @@ function loadCounts(geoJSONData) {
 function handleCount(coords, properties) {
   const [x, y] = coords;
   if (isNaN(x) || isNaN(y)) {
-    console.log("Invalid point geometry, skipping");
     return;
   }
   const image = viewer.world.getItemAt(0);
@@ -3956,21 +3695,18 @@ function parseJSON(geoJSONData) {
   if (typeof geoJSONData === "string") {
     try {
       geoJSON = JSON.parse(geoJSONData);
-      console.log("Parsed GeoJSON:", geoJSON);
     } catch (error) {
       console.error("Error parsing GeoJSON:", error);
       return; // Exit if parsing fails
     }
   } else {
     geoJSON = geoJSONData;
-    console.log("GeoJSON is already parsed:", geoJSON);
   }
   return geoJSON;
 }
 
 // New loadAnnotations() for testing
 function loadAnnotations(geoJSONData) {
-  console.log("Starting annotation load");
   const geoJSON = parseJSON(geoJSONData);
 
   const features = geoJSON.features || Object.values(geoJSON); // Supports both formats
@@ -3978,14 +3714,14 @@ function loadAnnotations(geoJSONData) {
     const geometry = feature.geometry;
     const properties = feature.properties;
     if (!geometry || !properties) {
-      console.warn("Invalid feature, skipping:", feature);
+      // Invalid feature, skipping
       return;
     }
 
     // Skip duplicate UUIDs
     const uuids = annoJSON.features.map((f) => f.properties.uuid);
     if (uuids.includes(properties.uuid)) {
-      console.log("Warning: annotation already exists, skipping");
+      // Annotation already exists, skipping
       return;
     }
 
@@ -4017,7 +3753,7 @@ function loadAnnotations(geoJSONData) {
 function handlePoint(coords, properties) {
   const [x, y] = coords;
   if (isNaN(x) || isNaN(y)) {
-    console.log("Invalid point geometry, skipping");
+    // Invalid point geometry, skipping
     return;
   }
   const image = viewer.world.getItemAt(0);
@@ -4048,7 +3784,7 @@ function handlePoint(coords, properties) {
 // Helper functions for specific geometry types
 function handleMultiPoint(coords, properties) {
   if (!Array.isArray(coords) || coords.length === 0) {
-    console.log("Invalid MultiPoint geometry, skipping");
+    // Invalid MultiPoint geometry, skipping
     return;
   }
 
@@ -4068,7 +3804,7 @@ function handleMultiPoint(coords, properties) {
     c = c + 1;
 
     if (isNaN(x) || isNaN(y)) {
-      console.log("Invalid point geometry, skipping");
+      // Invalid point geometry, skipping
       return;
     }
 
@@ -4160,7 +3896,6 @@ function handlePolygon(coords, properties) {
 }
 
 function handleMultiPolygon(coords, properties) {
-  console.log("loading MultiPolygon");
   const image = viewer.world.getItemAt(0);
   const viewportPoint = image.imageToViewportCoordinates(
     new OpenSeadragon.Point(properties.xLabel, properties.yLabel)
@@ -4205,7 +3940,6 @@ document
     const fileInput = event.target;
     const file = fileInput.files[0];
     if (!file) {
-      console.log("not a file!");
       return;
     }
 
@@ -4225,7 +3959,6 @@ document
 // Attach export functionality to the button (GeoJSON version)
 document.getElementById("exportBtn").addEventListener("click", function () {
   const geoJSON = annoJSON;
-  console.log(geoJSON);
   // Create a Blob from the GeoJSON object
   const geoJSONBlob = new Blob([JSON.stringify(geoJSON, null, 2)], {
     type: "application/geo+json",
@@ -4240,7 +3973,6 @@ document.getElementById("exportBtn").addEventListener("click", function () {
 // Attach export functionality to the button (GeoJSON version)
 document.getElementById("save-counts").addEventListener("click", function () {
   const geoJSON = countJSON;
-  console.log(geoJSON);
   // Create a Blob from the GeoJSON object
   const geoJSONBlob = new Blob([JSON.stringify(geoJSON, null, 2)], {
     type: "application/geo+json",
@@ -4279,7 +4011,6 @@ const clearAnnotations = () => {
     features: [],
   };
   drawShape(polyCanvas, [annoJSON, annoJSONTemp]);
-  console.log("Cleared", geoJSON);
   const annoLabel = document.getElementById("anno-label");
   const annoNotes = document.getElementById("anno-notes");
   const annoId = document.getElementById("anno-id");
@@ -4293,7 +4024,7 @@ const clearAnnotations = () => {
 viewerContainer.addEventListener("pointermove", (event) => {
   mousePos = new OpenSeadragon.Point(event.clientX, event.clientY);
   if (enableDivideImages) {
-    divideImages();
+    displayImages();
   }
 });
 
@@ -4342,37 +4073,14 @@ document.addEventListener("keydown", (event) => {
 ////////////////////////
 
 const Grid = class {
-  constructor({ unit, pixelsPerUnit, xMin, yMin, xMax, yMax, step, noPoints }) {
-    this.unit = unit;
-    this.pixelsPerUnit = pixelsPerUnit;
+  // All units are in microns.
+  constructor({ xMin, yMin, xMax, yMax, step, noPoints }) {
     this.xMin = xMin;
     this.yMin = yMin;
     this.xMax = xMax;
     this.yMax = yMax;
     this.step = step;
     this.noPoints = noPoints;
-  }
-
-  get metersPerUnit() {
-    return 10 ** (-3 * this.unit);
-  }
-
-  get unitName() {
-    switch (this.unit) {
-      case 0:
-        return "m";
-      case 1:
-        return "mm";
-      case 2:
-        return "μm";
-      case 3:
-        return "nm";
-    }
-  }
-
-  get pixelsPerMeter() {
-    q;
-    return this.pixelsPerUnit / this.metersPerUnit;
   }
 };
 
@@ -4452,8 +4160,6 @@ const applyGridSettings = () => {
 
   const image = viewer.world.getItemAt(0);
   grid = new Grid({
-    unit: units[currentIndex],
-    pixelsPerUnit: pixelsPerUnits[currentIndex],
     xMin: parseFloat(document.getElementById("grid-left").value),
     yMin: parseFloat(document.getElementById("grid-top").value),
     xMax: parseFloat(document.getElementById("grid-right").value),
@@ -4463,12 +4169,10 @@ const applyGridSettings = () => {
   });
 
   const imageSize = image.getContentSize();
-  console.log("image size:", imageSize);
-  console.log("pixels per unit:", grid.pixelsPerUnit);
-  const x_min_um = ((grid.xMin / 100) * imageSize.x) / grid.pixelsPerUnit;
-  const x_max_um = ((grid.xMax / 100) * imageSize.x) / grid.pixelsPerUnit;
-  const y_min_um = ((grid.yMin / 100) * imageSize.y) / grid.pixelsPerUnit;
-  const y_max_um = ((grid.yMax / 100) * imageSize.y) / grid.pixelsPerUnit;
+  const x_min_um = ((grid.xMin / 100) * imageSize.x) / pixelsPerMicron();
+  const x_max_um = ((grid.xMax / 100) * imageSize.x) / pixelsPerMicron();
+  const y_min_um = ((grid.yMin / 100) * imageSize.y) / pixelsPerMicron();
+  const y_max_um = ((grid.yMax / 100) * imageSize.y) / pixelsPerMicron();
 
   // Get the coordinates and labels for point counts
   let [X, Y, A] = makePoints(
@@ -4481,13 +4185,13 @@ const applyGridSettings = () => {
   );
 
   for (let i = 0; i < X.length; i++) {
-    // Get the coordinates in the specified unit.
-    const xUnits = X[i];
-    const yUnits = Y[i];
+    // Get the coordinates in microns.
+    const xMicrons = X[i];
+    const yMicrons = Y[i];
 
     // Convert to coordinates in pixels.
-    const xPixels = xUnits * pixelsPerUnits[currentIndex];
-    const yPixels = yUnits * pixelsPerUnits[currentIndex];
+    const xPixels = xMicrons * pixelsPerMicron();
+    const yPixels = yMicrons * pixelsPerMicron();
 
     // Convert to view-space coordinates, measuring from the top-left of the
     // first image.
@@ -4505,8 +4209,6 @@ const applyGridSettings = () => {
     const lineColor = document.getElementById("gridLineColor").value;
     const lineOpacity = document.getElementById("gridLineOpacity").value;
 
-    const sampleIdx = samples.indexOf(sampleName);
-
     const coords = [xPixels, yPixels];
     const properties = {
       uuid: generateUniqueId(16),
@@ -4515,8 +4217,8 @@ const applyGridSettings = () => {
       notes: "",
       xLabel: xPixels,
       yLabel: yPixels,
-      imageTitle: sampleName,
-      pixelsPerMeter: Number(pixelsPerMeters[sampleIdx]),
+      imageTitle: title(),
+      pixelsPerMeter: pixelsPerMeter(),
       imageWidth: imageSize.x,
       imageHeight: imageSize.y,
       xMin: parseFloat(document.getElementById("grid-left").value),
@@ -4594,7 +4296,6 @@ const clearGrid = () => {
     features: [],
   };
 
-  console.log("Cleared grid");
   document.getElementById("count-id").innerHTML = 1;
   document.getElementById("count-text").value = "";
   document.getElementById("count-notes").value = "";
@@ -4888,22 +4589,35 @@ function applyAnnoLabel(idBase, uuid) {
   const feature = annoJSON.features.find((f) => f.properties.uuid === uuid);
   const props = feature.properties;
   const input = document.getElementById(idBase);
-  console.log("input", input.value);
   feature.properties[formattingMap[idBase]] = input.value;
 
   // Apply visual formatting immediately
   if (idBase === "annoLabelFontSize") {
-    updateText(uuid, "anno", undefined, undefined, input.value);
+    updateText(
+      uuid,
+      "anno",
+      undefined,
+      undefined,
+      input.value,
+      undefined,
+      undefined
+    );
   } else if (idBase === "annoLabelFontColor") {
-    updateText(uuid, "anno", undefined, input.value);
+    updateText(
+      uuid,
+      "anno",
+      undefined,
+      input.value,
+      undefined,
+      undefined,
+      undefined
+    );
   } else if (idBase === "annoLabelBackgroundColor") {
     // Need both backgroundColor and backgroundOpacity to apply background
     const bgColor = input.value;
     const bgOpacity = props["labelBackgroundOpacity"];
     if (!bgOpacity) {
-      console.warn(
-        "Background opacity is not set, cannot apply background color."
-      );
+      // Background opacity is not set, cannot apply background color.
       return;
     }
     updateText(
@@ -4920,9 +4634,7 @@ function applyAnnoLabel(idBase, uuid) {
     const bgOpacity = input.value;
     const bgColor = props["labelBackgroundColor"];
     if (!bgColor) {
-      console.warn(
-        "Background color is not set, cannot apply background opacity."
-      );
+      // Background color is not set, cannot apply background opacity.
       return;
     }
 
@@ -4993,7 +4705,7 @@ function applyCurrentGridCrosshair(idBase) {
 // Functionality for applying specific formatting for grid attributes
 function applyGridLabel(idBase, id) {
   if (isNaN(id) || id < 1 || id > countJSON.features.length) {
-    console.warn("Invalid ID selected.");
+    // Invalid ID selected.
     return;
   }
 
@@ -5030,7 +4742,6 @@ function applyGridLabel(idBase, id) {
   }
 
   if (!input) {
-    console.warn(`The element was not found: ${input}`);
     return;
   }
 
@@ -5049,9 +4760,7 @@ function applyGridLabel(idBase, id) {
       bgOpacity = props["labelBackgroundOpacity"];
     }
     if (!bgOpacity) {
-      console.warn(
-        "Background opacity is not set, cannot apply background color."
-      );
+      // Background opacity is not set, cannot apply background color.
       return;
     }
 
@@ -5074,9 +4783,7 @@ function applyGridLabel(idBase, id) {
       bgColor = props["labelBackgroundColor"];
     }
     if (!bgColor) {
-      console.warn(
-        "Background color is not set, cannot apply background opacity."
-      );
+      // Background color is not set, cannot apply background opacity.
       return;
     }
 
@@ -5095,7 +4802,6 @@ function applyGridLabel(idBase, id) {
 // Functionality for applying specific formatting for grid attributes
 function applyGridCrosshair(idBase, id) {
   if (isNaN(id) || id < 1 || id > countJSON.features.length) {
-    console.warn("Invalid ID selected.");
     return;
   }
 
@@ -5130,7 +4836,6 @@ function applyGridCrosshair(idBase, id) {
   }
 
   if (!input) {
-    console.warn(`The element was not found: ${input}`);
     return;
   }
 
@@ -5160,7 +4865,6 @@ function applyFormattingAfterCountAll(countJSON, what = "both") {
 function applyFormattingAfterCount(countJSON, uuid, what = "both") {
   const feature = countJSON.features.find((f) => f.properties.uuid === uuid);
   if (!feature) {
-    console.warn(`No feature found with id: ${id}`);
     return;
   }
 
@@ -5208,14 +4912,6 @@ function applyFormattingAfterCount(countJSON, uuid, what = "both") {
   const lineWeight = useAfter ? props.lineWeightAfter : props.lineWeight;
   const lineOpacity = useAfter ? props.lineOpacityAfter : props.lineOpacity;
 
-  console.log(
-    uuid,
-    labelFontColor,
-    labelFontSize,
-    labelBackgroundColor,
-    labelBackgroundOpacity
-  );
-
   if (what === "both" || what === "text") {
     updateText(
       uuid,
@@ -5248,7 +4944,6 @@ document.getElementById("count-first").addEventListener("click", function () {
 });
 
 document.getElementById("count-prev").addEventListener("click", function () {
-  console.log("prev button clicked");
   const input = document.getElementById("count-id");
   let value = parseInt(input.value, 10) || 0; // Parse current value or default to 0
   const min = parseInt(input.min, 10);
@@ -5327,7 +5022,6 @@ document.addEventListener("keydown", function (event) {
 
     goToPoint(viewportPoint.x, viewportPoint.y);
     inputSampleLabelFromOverlay();
-    console.log("Enter clicked");
   }
 });
 
@@ -5462,7 +5156,7 @@ document.getElementById("count-export").addEventListener("click", function () {
     const notes = countJSON.features[i].properties.notes || "";
 
     // Append the row as a CSV line
-    csvContent += `${sampleName},${pointNumber},${x_px},${y_px},"${label}","${notes}"\n`;
+    csvContent += `${title()},${pointNumber},${x_px},${y_px},"${label}","${notes}"\n`;
   }
 
   // Create a blob and trigger a download
@@ -5484,11 +5178,9 @@ document.getElementById("count-export").addEventListener("click", function () {
 document
   .getElementById("count-geojson-input")
   .addEventListener("change", function (event) {
-    console.log("load count geoJSON clicked");
     const fileInput = event.target;
     const file = fileInput.files[0];
     if (!file) {
-      console.log("not a file!");
       return;
     }
 
@@ -5519,8 +5211,6 @@ document
     const fileInput = event.target;
     const file = fileInput.files[0];
     if (!file) return;
-
-    console.log("Loading CSV");
 
     // Clear existing grid
     clearGrid();
@@ -5597,8 +5287,8 @@ function processCSVData(data) {
       notes: row["Notes"],
       xLabel: row["X_px"],
       yLabel: row["Y_px"],
-      imageTitle: sampleName,
-      pixelsPerMeter: pixelsPerMeters[currentIndex],
+      imageTitle: title(),
+      pixelsPerMeter: pixelsPerMeter(),
       imageWidth: imageSize.x,
       imageHeight: imageSize.y,
       labelFontSize: parseFloat(
@@ -5660,7 +5350,6 @@ const checkboxStates = {};
 function populateFilterDropdown() {
   const filterDropdown = document.getElementById("includeDropdown");
   const uniqueLabels = getUniqueLabels();
-  console.log("unique labels", uniqueLabels);
 
   // Clear existing options
   filterDropdown.innerHTML = "";
@@ -5675,8 +5364,6 @@ function populateFilterDropdown() {
     checkbox.value = label;
     checkbox.id = `checkbox-${label}`;
     checkbox.checked = isChecked; // Default to checked
-
-    console.log(checkbox.id, checkbox.checked);
 
     checkbox.addEventListener("change", () => {
       checkboxStates[label] = checkbox.checked;
@@ -5952,13 +5639,11 @@ function toggleMeasurementMode() {
     // Disable measurement mode
     measurementButton.textContent = "Start Measuring";
     measurementModeActive = false;
-    console.log("Measurement mode disabled");
     resetMeasurements();
   } else {
     // Enable measurement mode
     measurementButton.textContent = "Stop Measuring";
     measurementModeActive = true;
-    console.log("Measurement mode enabled");
   }
 }
 
@@ -5981,7 +5666,6 @@ function toggleCircleMode() {
     // Disable measurement mode
     circleButton.textContent = "Draw Circle";
     circleModeActive = false;
-    console.log("Circle mode disabled");
     circleJSON = {
       type: "FeatureCollection",
       features: [],
@@ -5991,7 +5675,6 @@ function toggleCircleMode() {
     // Enable measurement mode
     circleButton.textContent = "Stop";
     circleModeActive = true;
-    console.log("Circle mode enabled");
   }
 }
 
@@ -6018,9 +5701,6 @@ function getCircleCoordinatesInImageSpace(centerX, centerY, diameter) {
 
 let circleConversion = 0;
 viewerContainer.addEventListener("mousemove", function (event) {
-  // For testing
-  console.log(window.appState.hasUnsavedAnnotations);
-
   if (!circleModeActive) return; // Only draw when mode is active
 
   circleJSON = {
@@ -6048,7 +5728,7 @@ viewerContainer.addEventListener("mousemove", function (event) {
   const coordinates = getCircleCoordinatesInImageSpace(
     imagePoint.x,
     imagePoint.y,
-    circleDiameter * (pixelsPerMeters[currentIndex] / circleConversion) // Convert microns to meters
+    circleDiameter * (pixelsPerMeter() / circleConversion) // Convert microns to meters
   );
 
   const lineColor = document.getElementById("circleLineColor").value;
@@ -6317,10 +5997,6 @@ viewer.addHandler("canvas-click", function (event) {
 
         updateSelfIntersectionWarning(polygonCoords);
 
-        if (isSelfIntersecting(polygonCoords)) {
-          console.log("Self-intersecting polygon detected");
-        }
-
         const currentMeasureImageCoordinates = [
           ...measureImageCoordinates,
           [subeventImagePoint.x, subeventImagePoint.y],
@@ -6329,7 +6005,7 @@ viewer.addHandler("canvas-click", function (event) {
         const measurePerimeterPixels = calculatePolygonExteriorPerimeter([
           currentMeasureImageCoordinates,
         ]);
-        distanceInM = measurePerimeterPixels / pixelsPerMeters[currentIndex];
+        distanceInM = measurePerimeterPixels / pixelsPerMeter();
         const measurePerimeter = distanceInM * distanceConversion;
         distanceElement.value = measurePerimeter.toFixed(2);
 
@@ -6344,17 +6020,12 @@ viewer.addHandler("canvas-click", function (event) {
           const measureAreaPixels = calculatePolygonArea([
             currentMeasureImageCoordinatesPolygon,
           ]);
-          areaInM2 = measureAreaPixels / pixelsPerMeters[currentIndex] ** 2;
+          areaInM2 = measureAreaPixels / pixelsPerMeter() ** 2;
           const measureArea = areaInM2 * areaConversion;
-          // measureAreaPixels /
-          // (pixelsPerMeters[currentIndex] / areaConversion) ** 2;
           areaElement.value = measureArea.toFixed(2);
 
           ECDInM =
-            2 *
-            Math.sqrt(
-              measureAreaPixels / pixelsPerMeters[currentIndex] ** 2 / Math.PI
-            );
+            2 * Math.sqrt(measureAreaPixels / pixelsPerMeter() ** 2 / Math.PI);
           const ECD = ECDInM * ECDConversion;
           ECDElement.value = ECD.toFixed(2);
         } else {
@@ -6375,14 +6046,12 @@ viewer.addHandler("canvas-click", function (event) {
     if (measureCurrentTime - measureLastClickTime < clickDelay) {
       // It's a double-click, so stop the timeout and end collection
       clearTimeout(measureTimeout);
-      console.log("Double-click detected, ending measurement.");
 
       const measurePerimeterPixels = calculatePolygonExteriorPerimeter([
         measureImageCoordinates,
       ]);
       const measurePerimeter =
-        (measurePerimeterPixels / pixelsPerMeters[currentIndex]) *
-        distanceConversion;
+        (measurePerimeterPixels / pixelsPerMeter()) * distanceConversion;
 
       // Close the polygon by adding the first point to the end
       const finalMeasureImageCoordinatesPolygon = [
@@ -6393,20 +6062,17 @@ viewer.addHandler("canvas-click", function (event) {
       const measureAreaPixels = calculatePolygonArea([
         finalMeasureImageCoordinatesPolygon,
       ]);
-      areaInM2 = measureAreaPixels / pixelsPerMeters[currentIndex] ** 2;
+      areaInM2 = measureAreaPixels / pixelsPerMeter() ** 2;
       const measureArea = areaInM2 * areaConversion;
 
       ECDInM =
-        2 *
-        Math.sqrt(
-          measureAreaPixels / pixelsPerMeters[currentIndex] ** 2 / Math.PI
-        );
+        2 * Math.sqrt(measureAreaPixels / pixelsPerMeter() ** 2 / Math.PI);
       const ECD = ECDInM * ECDConversion;
       ECDElement.value = ECD.toFixed(2);
 
       addPolylineToGeoJSON(measureJSON, measureImageCoordinates, {
         label: "measurement",
-        pixelsPerMeter: Number(pixelsPerMeters[currentIndex]),
+        pixelsPerMeter: pixelsPerMeter(),
         imageWidth: imageSize.x,
         imageHeight: imageSize.y,
         lineStyle: lineStyle,
@@ -6426,11 +6092,10 @@ viewer.addHandler("canvas-click", function (event) {
       resetMeasurements();
       // Disable the active measurement mode
       toggleMeasurementMode();
-      console.log("Measurement mode disabled");
     } else {
       // It's a single click, so set a timeout to handle it
       measureTimeout = setTimeout(function () {
-        console.log("Single click detected, continuing collection...");
+        // Single click detected, continuing collection...
       }, clickDelay);
     }
 
@@ -6459,7 +6124,6 @@ function resetMeasurements(hardReset = false) {
 
 // Update measurement values upon change of units
 document.getElementById("areaUnits").addEventListener("change", function () {
-  console.log("Area units changed");
   const areaInput = document.getElementById("area");
   const newUnit = parseInt(this.value, 10);
 
@@ -6480,7 +6144,6 @@ document.getElementById("areaUnits").addEventListener("change", function () {
 document
   .getElementById("distanceUnits")
   .addEventListener("change", function () {
-    console.log("Distance units changed");
     const distanceInput = document.getElementById("distance");
     const newUnit = parseInt(this.value, 10);
 
@@ -6499,7 +6162,6 @@ document
 
 // Update measurement values upon change of units
 document.getElementById("ECDUnits").addEventListener("change", function () {
-  console.log("ECD units changed");
   const distanceInput = document.getElementById("ECD");
   const newUnit = parseInt(this.value, 10);
 
@@ -6559,7 +6221,6 @@ setInterval(() => {
   const now = Date.now();
   for (const code of pressedKeys) {
     if (now - keyTimestamps[code] > KEY_TIMEOUT_MS) {
-      console.log(`Expiring stuck key: ${code}`);
       pressedKeys.delete(code);
       delete keyTimestamps[code];
     }
@@ -6724,8 +6385,8 @@ document.addEventListener("keydown", function (event) {
   } else if (event.shiftKey && event.key === ">") {
     scrollIndex++; // Move forward
   }
-  divideImages();
-  updateButtonLabels(currentIndex);
+  displayImages();
+  updateButtonLabels();
   updateImageLabels();
 });
 
@@ -6851,7 +6512,8 @@ imageRotater.addEventListener("input", () => {
     document.getElementById("imageRotation").value
   );
   viewer.viewport.setRotation(rotationAngle);
-  document.getElementById("imageRotationValue").innerHTML = rotationAngle + "°";
+  document.getElementById("imageRotationValue").innerHTML =
+    Math.round(rotationAngle) + "°";
 });
 
 // Listen for R key press → rotate +90°
@@ -6863,7 +6525,8 @@ document.addEventListener("keydown", (event) => {
 
     // Sync slider + text
     imageRotater.value = newRotation;
-    document.getElementById("imageRotationValue").innerHTML = newRotation + "°";
+    document.getElementById("imageRotationValue").innerHTML =
+      Math.round(newRotation) + "°";
   }
 });
 
@@ -6897,9 +6560,11 @@ viewer.addHandler("animation-finish", updateAnnotationUpright);
 // Call once at init
 updateAnnotationUpright();
 
-//// Code that controls zoom/rotation with mouse scroll ////
+//////////////////////////////////////////////////////
+//// Controls for zoom/rotation with mouse scroll ////
+//////////////////////////////////////////////////////
 
-const ROTATION_SENSITIVITY = 1; // degrees per scroll unit
+const ROTATION_SENSITIVITY = 0.15; // degrees per scroll unit
 const ZOOM_SENSITIVITY = 1; // zoom factor per scroll unit
 
 // Disable OSD’s default scroll zoom
@@ -6934,7 +6599,7 @@ viewer.addHandler("canvas-scroll", function (event) {
     const zoom = viewer.viewport.getZoom();
     //const factor = 1 - e.deltaY * ZOOM_SENSITIVITY * 0.01; // adjust sensitivity
 
-    const factor = Math.pow(1.2, -e.deltaY / 100); // adjust sensitivity if needed
+    const factor = Math.pow(1.2, -e.deltaY / 50); // adjust sensitivity if needed
 
     let newZoom = zoom * factor;
 

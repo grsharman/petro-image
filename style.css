@@ -49,9 +49,7 @@ html {
   padding: 0px 5px;
   border-radius: 9999px 9999px 9999px 0px;
   color: var(--color, white);
-  color: white;
   background-color: var(--background-color, rgba(0, 0, 0, 0.5));
-  background-color: rgba(0, 0, 0, 0.5);
   white-space: nowrap;
   font-size: var(--font-size, 16px);
   z-index: 1002;
