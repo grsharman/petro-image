@@ -437,12 +437,13 @@
           ]
         },
         {
-          "label": ["XPL(0°)", "XPL(30°)"],
           "tiles": [
             {
+              "label": "XPL(0°)",
               "uri": "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0004 01 2.5x XPL00 final.dzi"
             },
             {
+              "label": "XPL(30°)",
               "uri": "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0004 01 2.5x XPL30 final.dzi"
             }
           ]
@@ -1928,12 +1929,13 @@
           ]
         },
         {
-          "label": ["XPL(0°)", "XPL(45°)"],
           "tiles": [
             {
+              "label": "XPL(0°)",
               "uri": "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NZ23-069 test1 2.5x XPL00 final.dzi"
             },
             {
+              "label": "XPL(45°)",
               "uri": "https://raw.githubusercontent.com/grsharman/image-storage1/main/images/NZ23-069 test1 2.5x XPL45 final.dzi"
             }
           ]
@@ -5881,12 +5883,13 @@
           ]
         },
         {
-          "label": ["XPL(0°)", "XPL(30°)"],
           "tiles": [
             {
+              "label": "XPL(0°)",
               "uri": "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/JUN-03 01 2.5x XPL00 final.dzi"
             },
             {
+              "label": "XPL(30°)",
               "uri": "https://raw.githubusercontent.com/grsharman/image-storage10/main/images/JUN-03 01 2.5x XPL30 final.dzi"
             }
           ]

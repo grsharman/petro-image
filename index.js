@@ -263,17 +263,15 @@ function updateButtonLabels() {
     const checkbox = document.getElementById(`image${i + 1}`);
     const label = document.getElementById(`label${i + 1}`);
     if (i < numButtons) {
-      const currentLabel = tileSets()[i].label;
-      const visibleImageIndex = scrollIndex % currentLabel.length;
       // For regular labels, use the normal setup
       checkbox.style.display = "inline";
       label.style.display = "inline";
-      if (Array.isArray(currentLabel)) {
-        // Determine the visible label index based on scrollIndex
-        label.textContent = currentLabel[visibleImageIndex]; // Set the label text based on the scrollIndex logic
-      } else {
-        label.textContent = currentLabel;
-      }
+      // If the currently visible tile is labeled individually, use that label.
+      // Otherwise, fall back to the overall tile set label.
+      const tileSet = tileSets()[i];
+      const visibleTileIndex = scrollIndex % tileSet.tiles.length;
+      const tileLabel = tileSet.tiles[visibleTileIndex].label;
+      label.textContent = tileLabel || tileSet.label;
     } else {
       checkbox.style.display = "none";
       label.style.display = "none";

@@ -79,8 +79,8 @@ fn reformat_sample(sample: Value) -> Value {
 		.map(|(i, tile_set)| {
 			// Tile sets are currently allowed to be either a URI or an array of
 			// URIs. Convert them uniformly to an array of objects, each of
-			// which has explicit an URI and (optionally) angle.
-			let mut images: Vec<Map<String, Value>> = match tile_set {
+			// which has an explicit URI and (optionally) a label and/or angle.
+			let mut tiles: Vec<Map<String, Value>> = match tile_set {
 				uri @ Value::String(..) => {
 					vec![Map::from_iter([("uri".into(), uri)])]
 				}
@@ -91,22 +91,37 @@ fn reformat_sample(sample: Value) -> Value {
 				_ => panic!("unexpected tile set type at index {i}"),
 			};
 			if let Some(angles) = angle_sets.get(i) {
-				for (j, image) in images.iter_mut().enumerate() {
+				for (j, tile) in tiles.iter_mut().enumerate() {
 					if let Some(angle) = angles.get(j)
 						&& angle.is_number()
 					{
-						image.insert("angleDegrees".into(), angle.clone());
+						tile.insert("angleDegrees".into(), angle.clone());
 					}
 				}
 			}
 
-			let mut tile_set =
-				Map::from_iter([("label".into(), labels[i].clone())]);
-			if let Some(period @ Value::Number(..)) = periods.get(i) {
-				tile_set.insert("periodDegrees".into(), period.clone());
+			let mut new_tile_set = Map::new();
+
+			// Labels can currently be either a single string applied to the
+			// whole tile set or an array of strings, corresponding to each
+			// tile. Only keep the label on the tile set if it's a string.
+			match labels[i].clone() {
+				label @ Value::String(..) => {
+					new_tile_set.insert("label".into(), label);
+				}
+				Value::Array(labels) => {
+					for (j, label) in labels.into_iter().enumerate() {
+						tiles[j].shift_insert(0, "label".into(), label);
+					}
+				}
+				_ => panic!("unexpected label type at index {i}"),
 			}
-			tile_set.insert("tiles".into(), images.into());
-			tile_set
+
+			if let Some(period @ Value::Number(..)) = periods.get(i) {
+				new_tile_set.insert("periodDegrees".into(), period.clone());
+			}
+			new_tile_set.insert("tiles".into(), tiles.into());
+			new_tile_set
 		})
 		.collect();
 	sample.insert("tileSets".into(), tile_sets);
