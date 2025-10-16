@@ -5,7 +5,7 @@ let currentIndex = 0;
 let samples = [];
 let annotationFiles = {}; // For loading predefined annotations
 let groupMapping = {}; // To map groups to sample indices
-let scrollIndex = 0;
+let scrollIndex = 1e6; // Prevents indexing error if starting at 0, due to negative numbers
 
 // Accessors for attributes of the current sample
 const title = () => samples[currentIndex].title;
@@ -6385,6 +6385,7 @@ document.addEventListener("keydown", function (event) {
   } else if (event.shiftKey && event.key === ">") {
     scrollIndex++; // Move forward
   }
+
   displayImages();
   updateButtonLabels();
   updateImageLabels();

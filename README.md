@@ -6,6 +6,9 @@ An open-source, web-based platform for exploring and analyzing high-resolution d
 
 By [Glenn R. Sharman](https://github.com/grsharman) and [Jonathan P. Sharman](https://github.com/jonathansharman)
 
+> [!NOTE]
+> petro-image is still under development. Check back for updates!
+
 ## Table of Contents
 
 - [Overview](#overview)
@@ -18,9 +21,9 @@ By [Glenn R. Sharman](https://github.com/grsharman) and [Jonathan P. Sharman](ht
 
 petro-image is a web-hosted tool for viewing and analyzing digital microsopic images using the [OpenSeadragon](https://openseadragon.github.io/) JavaScript library and the [Deep Zoom](<https://learn.microsoft.com/en-us/previous-versions/windows/silverlight/dotnet-windows-silverlight/cc645077(v=vs.95)?redirectedfrom=MSDN>) file format. Vector drawings follow the [GeoJSON file standard](https://geojson.org/), where x, y coordinates are in image dimensions (pixels).
 
-For a given specimen, petro-image allows up to four images to be displayed simultaneously, with the boundary between the images dynamically following the user's curser (inspired by [this example](https://rooneyt.msu.domains/Demonstration_1.html)). Alternatively, images may be superimposed and opacity adjusted such that multiple layers are visible simultaneously.
+For a given specimen, petro-image allows up to four images to be displayed simultaneously, with the boundary between the images dynamically following the user's curser (inspired by [this example](https://rooneyt.msu.domains/Demonstration_1.html)). If multiple angles of plain- or cross-polarized light are available, then adjacent images can be blended to mimic the effects of rotating the stage on a petrographic microscope. Alternatively, images may be superimposed and opacity adjusted such that multiple layers are visible simultaneously.
 
-![Divide Images demonstration](assets/divide_images.gif)
+![Divide Images demonstration](assets/divide_images3_M.gif)
 
 petro-image includes basic functions for [measuring](#measure), [annotating](#annotate), [gridding](#grid), and [point counting](#count).
 
@@ -28,9 +31,11 @@ At present, petro-image mostly hosts petrographic thin sections of sediment and 
 
 ## Image Selection
 
-<b><i>petro-image</i></b> has two drop-down menus. The top menu is used to select a group of specimens, and the bottom menu is used to select the specimen or sample of interest. Setting the top menu to "All" will return all availble specimens.
+<b><i>petro-image</i></b> has two drop-down menus. The top menu is used to select a group of specimens, and the bottom menu is used to select the specimen or sample of interest. Setting the top menu to "All" will return all available specimens.
 
 <img src="assets/0_selection.png" alt="Group and specimen selection demonstration" width="150"/>
+
+The angle of image rotation can be controlled using the slider below the drop-down menus. Pressing "r" or "R" keys rotates the image in 90 degree increments. Ctrl+scrolling will also control image rotation.
 
 Individual specimens can have between 1 and 4 images that can be displayed simultaneously. Individual images may be toggled on/off using the checkboxes.
 
@@ -165,6 +170,7 @@ A common task in microscopy is to conduct a “point count”, which involves id
 
 | Tool           | Description                                      |
 | -------------- | ------------------------------------------------ |
+| ctrl+scroll    | Change image rotation angle                      |
 | ctrl+1         | Toggle base image on/off                         |
 | ctrl+2         | Toggle 2nd image on/off (if available)           |
 | ctrl+3         | Toggle 3rd image on/off (if available)           |
@@ -179,42 +185,90 @@ A common task in microscopy is to conduct a “point count”, which involves id
 
 ### JSON File Structure
 
-To load your own images, you must format a JSON file as shown below.
+To load your own images, you must format a JSON file as shown below. There are three ways of displaying images, which differ in the way that `tileSets` is defined. Option 1: A single image in a tileset (shown as PPL (0°) below). Option 2: Multiple images in a tileset that are linked with image rotation angle (shown as XPL (multi-pol) below) `periodDegrees` indicates the frequency of image repetition during rotation. Option 3: Multiple images in a tileset that can be toggled in sequence, each with their own label (e.g., shown as Reflected and Reflected-pol below).
 
 > [!NOTE]
 > "annotations" are optional.
 
+> [!NOTE]
+> The JSON file structure was updated Oct 16, 2025. A Rust program is available for converting the old format to the new one.
+
 <pre>
 {
-  "SD0004": {
-    "groups": ["Favorites", "SedGeo"],
-    "title": "SD0004",
-    "description": "Budhir, Iceland",
-    "unit": "2",
-    "pixelsPerUnit": "0.398",
-    "pixelsPerMeter": "398000",
-    "tileLabels": ["PPL(0°)", "XPL(0°)", "XPL(30°)"],
-    "tileSets": [
-      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0004 01 2.5x PPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0004 01 2.5x XPL00 final.dzi",
-      "https://raw.githubusercontent.com/grsharman/image-storage4/main/images/SD0004 01 2.5x XPL30 final.dzi"
-    ],
-    "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/SD0004_medium_all_polygons_by_rect.geojson"
-  }
+  "format": "v1",
+  "samples": [
+    {
+      "groups": ["Favorites"],
+      "title": "MT-2 02 (test for GitHub)",
+      "description": "MT-2",
+      "unit": "2",
+      "pixelsPerUnit": "0.398",
+      "pixelsPerMeter": "398000",
+      "tileSets": [
+        {
+          "label": "PPL (0°)",
+          "tiles": [
+            {
+              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage3/main/images/MT-2 02 2.5x PPL00_v2_final.dzi"
+            }
+          ]
+        },
+        {
+          "label": "XPL (mult-pol)",
+          "periodDegrees": 90,
+          "tiles": [
+            {
+              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage3/main/images/MT-2 02 2.5x XPL00 final.dzi",
+              "angleDegrees": 0
+            },
+            {
+              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage3/main/images/MT-2 02 2.5x XPL15 final.dzi",
+              "angleDegrees": 15
+            },
+            {
+              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage3/main/images/MT-2 02 2.5x XPL30 final.dzi",
+              "angleDegrees": 30
+            },
+            {
+              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage3/main/images/MT-2 02 2.5x XPL45 final.dzi",
+              "angleDegrees": 45
+            },
+            {
+              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage3/main/images/MT-2 02 2.5x XPL60 final.dzi",
+              "angleDegrees": 60
+            },
+            {
+              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage3/main/images/MT-2 02 2.5x XPL75 final.dzi",
+              "angleDegrees": 75
+            }
+          ]
+        },
+        {
+          "tiles": [
+            {
+              "label": "Reflected",
+              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage3/main/images/MT-2 02 2.5x REF final.dzi"
+            },
+            {
+              "label": "Reflected-pol",
+              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage3/main/images/MT-2 02 2.5x REF final.dzi"
+            }
+          ]
+        }
+      ]
+    }
+  ]
 }
 </pre>
 
 ### Layer Explanation
 
-petro-image may display up to four images simultaneously. The image below shows how layers are vertically superimposed.
-
-> [!WARNING]
-> An update is in progress that will allow any number of images to be displayed simultaneously by using polygonal dividers instead of fixed grids. The figure below is no longer up-to-date (updated: Sept 30, 2025).
+petro-image may display up to four images simultaneously (with support for 5+ images planned in the future). The image below shows how layers are vertically superimposed.
 
 > [!NOTE]
 > The first image should be the base layer over which the other images will be shown.
 
-![Layer explanation](assets/layer_explanation.png)
+![Layer explanation](assets/layer_explanation_v2.png)
 
 ### Gridding Algorithm
 

@@ -37,7 +37,7 @@
     },
     {
       "groups": ["Favorites", "Microtectonics"],
-      "title": "MT-2 01",
+      "title": "MT-2 01 (separate)",
       "description": "gneiss",
       "pixelsPerMeter": "398000",
       "tileSets": [
@@ -69,6 +69,38 @@
           "label": "XPL(60°)",
           "tiles": [
             {
+              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage1/main/images/MT-2 01 2.5x XPL60 final.dzi.dzi"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "groups": ["Favorites", "Microtectonics"],
+      "title": "MT-2 01 (XPL flip)",
+      "description": "gneiss",
+      "pixelsPerMeter": "398000",
+      "tileSets": [
+        {
+          "label": "PPL(0°)",
+          "tiles": [
+            {
+              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage1/main/images/MT-2 01 2.5x PPL00 final.dzi.dzi"
+            }
+          ]
+        },
+        {
+          "tiles": [
+            {
+              "label": "XPL(0°)",
+              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage1/main/images/MT-2 01 2.5x XPL00 final.dzi.dzi"
+            },
+            {
+              "label": "XPL(30°)",
+              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage1/main/images/MT-2 01 2.5x XPL30 final.dzi.dzi"
+            },
+            {
+              "label": "XPL(60°)",
               "uri": "https://raw.githubusercontent.com/uacsrg/image-storage1/main/images/MT-2 01 2.5x XPL60 final.dzi.dzi"
             }
           ]
