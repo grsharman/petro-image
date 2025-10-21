@@ -7476,6 +7476,7 @@
       "title": "FWS-24-01 Tt",
       "description": "Farewell Spit titanite mount",
       "pixelsPerMeter": "2171000",
+      "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/FWS-24-01 Tt spot locations_wAges.geojson",
       "tileSets": [
         {
           "label": "BSE",
