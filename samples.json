@@ -4,8 +4,9 @@
     {
       "groups": ["Favorites", "Microtectonics"],
       "title": "MT-2 01 (multi-pol)",
-      "description": "gneiss",
+      "description": "Mooretown schist",
       "pixelsPerMeter": "398000",
+      "annotations": "https://raw.githubusercontent.com/grsharman/petro-image/refs/heads/main/annotations/MT-2_GSA2025.geojson",
       "tileSets": [
         {
           "label": "PPL(0°)",
@@ -38,7 +39,7 @@
     {
       "groups": ["Favorites", "Microtectonics"],
       "title": "MT-2 01 (separate)",
-      "description": "gneiss",
+      "description": "Mooretown schist",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -78,7 +79,7 @@
     {
       "groups": ["Favorites", "Microtectonics"],
       "title": "MT-2 01 (XPL flip)",
-      "description": "gneiss",
+      "description": "Mooretown schist",
       "pixelsPerMeter": "398000",
       "tileSets": [
         {
@@ -110,7 +111,7 @@
     {
       "groups": ["Favorites"],
       "title": "MT-2 02 (multi-pol)",
-      "description": "MT-2",
+      "description": "Mooretown schist",
       "unit": "2",
       "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
@@ -188,7 +189,7 @@
     {
       "groups": ["Favorites"],
       "title": "MT-2 02 (XPL flip)",
-      "description": "MT-2",
+      "description": "Mooretown schist",
       "unit": "2",
       "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
