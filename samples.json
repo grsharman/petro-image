@@ -7528,6 +7528,22 @@
           ]
         }
       ]
+    },
+    {
+      "groups": ["Misc"],
+      "title": "NAMTD cliffs",
+      "description": "North Awakino MTD cliffs",
+      "pixelsPerMeter": "19.2",
+      "tileSets": [
+        {
+          "label": "Cliffs",
+          "tiles": [
+            {
+              "uri": "https://raw.githubusercontent.com/grsharman/image-storage18/main/images/AwakinoNorthPhotomosaic.dzi"
+            }
+          ]
+        }
+      ]
     }
   ]
 }
