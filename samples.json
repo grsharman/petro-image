@@ -7512,6 +7512,22 @@
           ]
         }
       ]
+    },
+    {
+      "groups": ["Misc"],
+      "title": "NAMTD WCP",
+      "description": "North Awakino MTD Wave-Cut Platforms",
+      "pixelsPerMeter": "4.9",
+      "tileSets": [
+        {
+          "label": "Aerial",
+          "tiles": [
+            {
+              "uri": "https://raw.githubusercontent.com/grsharman/image-storage18/main/images/WCP_all_orthophoto.dzi"
+            }
+          ]
+        }
+      ]
     }
   ]
 }
