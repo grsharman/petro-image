@@ -399,17 +399,41 @@
         </button>
       </div>
       <div id="tooltip-desc" class="hidden"></div>
-      <div>
+      <div class="slider-container">
+        <label>Image</label>
+          <input
+            type="range"
+            id="imageRotation"
+            min="0"
+            max="360"
+            value="0"
+          />
+        <span class="slider-value" id="imageRotationValue">0°</span>
+      </div>
+      <div class="slider-container">
+        <label id="stageRotationLabel" style="display: none;">Stage</label>
         <input
           type="range"
-          id="imageRotation"
-          class="opacity-slider"
+          id="stageRotation"
+          style="display: none;"
           min="0"
           max="360"
           value="0"
         />
-        <span class="slider-value" id="imageRotationValue">0°</span>
+        <span class="slider-value" id="stageRotationValue" style="display: none;">0°</span>
       </div>
+      <div class="lock-stage-container">
+        <input
+          type="checkbox"
+          id="rotateWithStage"
+          checked
+          title="Lock stage"
+          style="display: none;"
+          onclick="toggleImageRotationWithStage(this)"
+        />
+        <label id="rotateWithStageLabel" style="display: none;">Lock stage</label>
+      </div>
+      <hr />
       <div>
         <input
           type="checkbox"

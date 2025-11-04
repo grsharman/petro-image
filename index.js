@@ -6,6 +6,7 @@ let samples = [];
 let annotationFiles = {}; // For loading predefined annotations
 let groupMapping = {}; // To map groups to sample indices
 let scrollIndex = 1e6; // Prevents indexing error if starting at 0, due to negative numbers
+let enableStageRotation = false;
 
 // Accessors for attributes of the current sample
 const title = () => samples[currentIndex].title;
@@ -96,6 +97,7 @@ function processJSON(data) {
   updateButtonLabels();
   displayImages();
   disableCountButtons();
+  updateStageRotationCheck();
 
   const sampleParam = getQueryParameter("sample");
   if (sampleParam) {
@@ -223,6 +225,8 @@ document
     enableGridButtons();
     disableCountButtons();
     removeAoiRectangle();
+    resetOpacitySliders();
+    resetLockStage();
     updateOpacityImageSliderVisibility();
     updateImageLabels();
     resetMeasurements(true);
@@ -231,6 +235,7 @@ document
     displayImages();
     toggleOnImages();
     resetRotation();
+    updateStageRotationCheck();
 
     const annoJSONButtonContainer = document.getElementById("loadAnnoFromJSON");
 
@@ -662,9 +667,18 @@ const getTileOpacityGetter = (tileSet, tileSetOpacity) => {
   // If the tile set does have a period, its tiles should be treated as
   // different angles of the same image, and the displayed image should be
   // interpolated between the tiles closest to the current viewport angle.
-  const rotation =
-    ((viewer.viewport.getRotation(true) % periodDegrees) + periodDegrees) %
-    periodDegrees;
+  let rotation;
+  if (rotateWithStage.checked) {
+    rotation =
+      ((viewer.viewport.getRotation(true) % periodDegrees) + periodDegrees) %
+      periodDegrees;
+  } else {
+    rotation =
+      ((parseFloat(document.getElementById("stageRotation").value) %
+        periodDegrees) +
+        periodDegrees) %
+      periodDegrees;
+  }
   let supremumIndex = 0;
   let supremum;
   let infimumIndex;
@@ -770,6 +784,30 @@ const image4sliderValue = document.getElementById("opacityImage4Value");
 image4slider.oninput = function () {
   image4sliderValue.textContent = `${this.value}%`;
 };
+
+function resetOpacitySliders() {
+  // Find all range sliders inside the image settings menu
+  const sliders = document.querySelectorAll(
+    "#imageSettingsMenu input[type='range']"
+  );
+
+  sliders.forEach((sliderInput) => {
+    sliderInput.value = 100; // Reset slider to 100%
+
+    // If your slider is connected to an image opacity function:
+    const imageIndex = sliderInput.dataset.imageIndex; // assuming you store index or ID
+    if (imageIndex !== undefined) {
+      updateImageOpacity(imageIndex, 1); // set actual image opacity to 1 (100%)
+    }
+
+    // Update the displayed slider value, if there’s a span next to it
+    const sliderValueSpan =
+      sliderInput.parentElement.querySelector(".slider-value");
+    if (sliderValueSpan) {
+      sliderValueSpan.textContent = `${sliderInput.value}%`;
+    }
+  });
+}
 
 function updateOpacityImageSliderVisibility() {
   // Get all slider container divs
@@ -6515,6 +6553,14 @@ imageRotater.addEventListener("input", () => {
   viewer.viewport.setRotation(rotationAngle);
   document.getElementById("imageRotationValue").innerHTML =
     Math.round(rotationAngle) + "°";
+
+  // If checkbox is checked, sync stage rotation
+  if (rotateWithStage.checked) {
+    stageRotater.value = rotationAngle;
+    document.getElementById(
+      "stageRotationValue"
+    ).textContent = `${rotationAngle}°`;
+  }
 });
 
 // Listen for R key press → rotate +90°
@@ -6561,8 +6607,153 @@ viewer.addHandler("animation-finish", updateAnnotationUpright);
 // Call once at init
 updateAnnotationUpright();
 
+// //////////////////////////////////////////////////////
+// //// Controls for zoom/rotation with mouse scroll ////
+// //////////////////////////////////////////////////////
+
+// const ROTATION_SENSITIVITY = 0.15; // degrees per scroll unit
+// const ZOOM_SENSITIVITY = 1; // zoom factor per scroll unit
+
+// // Disable OSD’s default scroll zoom
+// viewer.gestureSettingsMouse.scrollToZoom = false;
+
+// viewer.addHandler("canvas-scroll", function (event) {
+//   const e = event.originalEvent;
+//   e.preventDefault();
+//   e.stopPropagation();
+
+//   if (e.ctrlKey) {
+//     // Ctrl held → rotate
+
+//     const delta = e.deltaY;
+//     const currentRotation = viewer.viewport.getRotation();
+//     const newRotation = currentRotation + delta * ROTATION_SENSITIVITY;
+//     viewer.viewport.setRotation(newRotation);
+
+//     // update slider/value if you have them
+//     const rotationSlider = document.getElementById("imageRotation");
+//     const rotationValue = document.getElementById("imageRotationValue");
+//     if (rotationSlider && rotationValue) {
+//       const positiveRotation = ((newRotation % 360) + 360) % 360;
+//       rotationSlider.value = positiveRotation;
+//       rotationValue.textContent = Math.round(positiveRotation) + "°";
+//     }
+//   } else {
+//     // No Ctrl → zoom normally
+//     e.preventDefault();
+//     e.stopPropagation();
+
+//     const zoom = viewer.viewport.getZoom();
+//     //const factor = 1 - e.deltaY * ZOOM_SENSITIVITY * 0.01; // adjust sensitivity
+
+//     const factor = Math.pow(1.2, -e.deltaY / 50); // adjust sensitivity if needed
+
+//     let newZoom = zoom * factor;
+
+//     // Clamp to min/max
+//     const minZoom = viewer.viewport.getMinZoom();
+//     const maxZoom = viewer.viewport.getMaxZoom();
+//     newZoom = Math.max(minZoom, Math.min(newZoom, maxZoom));
+
+//     // Get the mouse position relative to the viewport
+//     const webPoint = new OpenSeadragon.Point(e.clientX, e.clientY);
+//     const viewportPoint = viewer.viewport.pointFromPixel(webPoint);
+
+//     viewer.viewport.zoomTo(zoom * factor, viewportPoint);
+//   }
+// });
+
+function resetRotation() {
+  const rotationSlider = document.getElementById("imageRotation");
+  const rotationValue = document.getElementById("imageRotationValue");
+  if (rotationSlider && rotationValue) {
+    rotationSlider.value = 0;
+    rotationValue.textContent = "0°";
+  }
+  viewer.viewport.setRotation(0, true);
+  const stageRotationSlider = document.getElementById("stageRotation");
+  const stageRotationValue = document.getElementById("stageRotationValue");
+  if (stageRotationSlider && stageRotationValue) {
+    stageRotationSlider.value = 0;
+    stageRotationValue.textContent = "0°";
+  }
+}
+
+const toggleImageRotationWithStage = () => {
+  if (rotateWithStage.checked) {
+    // Sync stage to image
+    const imageAngle = parseInt(document.getElementById("imageRotation").value);
+    stageRotater.value = imageAngle;
+    document.getElementById(
+      "stageRotationValue"
+    ).textContent = `${imageAngle}°`;
+    displayImages();
+  }
+};
+
+/////////////////////////////////
+//// Stage rotation controls ////
+/////////////////////////////////
+
+const stageRotater = document.getElementById("stageRotation");
+const rotateWithStage = document.getElementById("rotateWithStage");
+
+stageRotater.addEventListener("input", () => {
+  const stageValue = document.getElementById("stageRotationValue");
+  const val = stageRotater.value;
+  stageValue.textContent = `${val}°`;
+  stageValue.classList.add("updating");
+  setTimeout(() => stageValue.classList.remove("updating"), 150);
+});
+
+// Update value in real time
+stageRotater.addEventListener("input", () => {
+  const stageAngle = parseInt(document.getElementById("stageRotation").value);
+  document.getElementById("stageRotationValue").innerHTML =
+    Math.round(stageAngle) + "°";
+
+  // If checkbox is checked, sync image rotation
+  if (rotateWithStage.checked) {
+    imageRotater.value = stageAngle;
+    document.getElementById(
+      "imageRotationValue"
+    ).textContent = `${stageAngle}°`;
+    viewer.viewport.setRotation(stageAngle);
+  }
+  displayImages();
+});
+
+function updateStageRotationCheck() {
+  enableStageRotation = samples[currentIndex].tileSets.some(
+    (tileSet) => "periodDegrees" in tileSet
+  );
+
+  const stageSliderValue = document.getElementById("stageRotationValue");
+  const stageLabel = document.getElementById("stageRotationLabel");
+  const lockCheckbox = document.getElementById("rotateWithStage");
+  const lockCheckboxLabel = document.getElementById("rotateWithStageLabel");
+
+  if (enableStageRotation) {
+    stageRotater.style.display = "block"; // Show the slider
+    stageSliderValue.style.display = "block"; // Show the value
+    stageLabel.style.display = "block"; // Show the label
+    lockCheckbox.style.display = "block"; // Show the checkbox
+    lockCheckboxLabel.style.display = "block"; // Show the checkbox label
+  } else {
+    stageRotater.style.display = "none"; // Hide it
+    stageSliderValue.style.display = "none"; // Hide it
+    stageLabel.style.display = "none"; // Hide the label
+    lockCheckbox.style.display = "none"; // Hide the checkbox
+    lockCheckboxLabel.style.display = "none"; // Hide the checkbox label
+  }
+}
+
+function resetLockStage() {
+  rotateWithStage.checked = true;
+}
+
 //////////////////////////////////////////////////////
-//// Controls for zoom/rotation with mouse scroll ////
+//// Controls for stage rotation with mouse scroll ////
 //////////////////////////////////////////////////////
 
 const ROTATION_SENSITIVITY = 0.15; // degrees per scroll unit
@@ -6580,18 +6771,25 @@ viewer.addHandler("canvas-scroll", function (event) {
     // Ctrl held → rotate
 
     const delta = e.deltaY;
-    const currentRotation = viewer.viewport.getRotation();
+    const currentRotation = parseInt(
+      document.getElementById("stageRotation").value
+    );
     const newRotation = currentRotation + delta * ROTATION_SENSITIVITY;
-    viewer.viewport.setRotation(newRotation);
+    const positiveRotation = ((newRotation % 360) + 360) % 360;
+    stageRotater.value = positiveRotation;
 
-    // update slider/value if you have them
-    const rotationSlider = document.getElementById("imageRotation");
-    const rotationValue = document.getElementById("imageRotationValue");
-    if (rotationSlider && rotationValue) {
-      const positiveRotation = ((newRotation % 360) + 360) % 360;
-      rotationSlider.value = positiveRotation;
-      rotationValue.textContent = Math.round(positiveRotation) + "°";
+    document.getElementById("stageRotationValue").innerHTML =
+      Math.round(positiveRotation) + "°";
+
+    // If checkbox is checked, sync image rotation
+    if (rotateWithStage.checked) {
+      imageRotater.value = positiveRotation;
+      document.getElementById("imageRotationValue").textContent = `${Math.round(
+        positiveRotation
+      )}°`;
+      viewer.viewport.setRotation(positiveRotation);
     }
+    displayImages();
   } else {
     // No Ctrl → zoom normally
     e.preventDefault();
@@ -6616,13 +6814,3 @@ viewer.addHandler("canvas-scroll", function (event) {
     viewer.viewport.zoomTo(zoom * factor, viewportPoint);
   }
 });
-
-function resetRotation() {
-  const rotationSlider = document.getElementById("imageRotation");
-  const rotationValue = document.getElementById("imageRotationValue");
-  if (rotationSlider && rotationValue) {
-    rotationSlider.value = 0;
-    rotationValue.textContent = "0°";
-  }
-  viewer.viewport.setRotation(0, true);
-}
