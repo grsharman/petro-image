@@ -6738,6 +6738,22 @@
     },
     {
       "groups": ["Zircon"],
+      "title": "GRCR-01",
+      "description": "Zircon sticky tape mount (J. Fekete)",
+      "pixelsPerMeter": "2047000",
+      "tileSets": [
+        {
+          "label": "reflected",
+          "tiles": [
+            {
+              "uri": "https://raw.githubusercontent.com/uacsrg/images-storage03/main/images/GRCR-01 5x.dzi"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "groups": ["Zircon"],
       "title": "FWS24-01 Zr polished",
       "description": "FWS24-01 Zr polished mount",
       "pixelsPerMeter": "1023500",
