@@ -7057,6 +7057,70 @@
       ]
     },
     {
+      "groups": ["Zircon"],
+      "title": "NZ23-052 Zr",
+      "description": "NZ23-052 Zr polished mount",
+      "pixelsPerMeter": "4094000",
+      "tileSets": [
+        {
+          "label": "trans",
+          "tiles": [
+            {
+              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage3/main/images/NZ23-052 zircon trans10x.dzi"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "groups": ["Zircon"],
+      "title": "TANN2205 002 2.4-3.4 Zr",
+      "description": "TANN2205 002 2.4-3.4 polished mount",
+      "pixelsPerMeter": "4094000",
+      "tileSets": [
+        {
+          "label": "trans",
+          "tiles": [
+            {
+              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage3/main/images/TANN2205 002 2.4-3.4 trans10x.dzi"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "groups": ["Zircon"],
+      "title": "TANN2205 006 1-2 Zr",
+      "description": "TANN2205 006 1-2 Zr polished mount",
+      "pixelsPerMeter": "4094000",
+      "tileSets": [
+        {
+          "label": "trans",
+          "tiles": [
+            {
+              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage3/main/images/TANN2205 006 1-2 trans10x.dzi"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "groups": ["Zircon"],
+      "title": "TANN2205 042 1-2 Zr",
+      "description": "TANN2205 042 0-1 Zr polished mount",
+      "pixelsPerMeter": "4094000",
+      "tileSets": [
+        {
+          "label": "trans",
+          "tiles": [
+            {
+              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage3/main/images/TANN2205 042 0-1 trans10x.dzi"
+            }
+          ]
+        }
+      ]
+    },
+    {
       "groups": ["SedPet2025"],
       "title": "M81",
       "description": "Upper Boone Fm. (NWA Mall)",
