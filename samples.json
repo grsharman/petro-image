@@ -6772,7 +6772,7 @@
       "groups": ["Zircon"],
       "title": "Awatea-570-610",
       "description": "Awatea-570-610 mount (A. Kulkarni)",
-      "pixelsPerMeter": "1000",
+      "pixelsPerMeter": "1209449",
       "tileSets": [
         {
           "label": "BSE",
@@ -6820,7 +6820,7 @@
       "groups": ["Zircon"],
       "title": "Taim-630-660",
       "description": "Taimana-630-660 mount 2 (A. Kulkarni)",
-      "pixelsPerMeter": "1000",
+      "pixelsPerMeter": "1209449",
       "tileSets": [
         {
           "label": "BSE",
@@ -6836,7 +6836,7 @@
       "groups": ["Zircon"],
       "title": "Tangaroa-1-1550-1570",
       "description": "Tangaroa-1-1550-1570 (A. Kulkarni)",
-      "pixelsPerMeter": "1000",
+      "pixelsPerMeter": "1209449",
       "tileSets": [
         {
           "label": "BSE",
