@@ -6866,6 +6866,38 @@
     },
     {
       "groups": ["Zircon"],
+      "title": "Tane-1-510-520",
+      "description": "Tane-1-510-520 Zr polished mount (A. Kulkarni)",
+      "pixelsPerMeter": "2047000",
+      "tileSets": [
+        {
+          "label": "trans",
+          "tiles": [
+            {
+              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage3/main/images/Tane-1-510-520 5x mosaic.dzi"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "groups": ["Zircon"],
+      "title": "AK24-OKR",
+      "description": "AK24-OKR Zr polished mount (A. Kulkarni)",
+      "pixelsPerMeter": "2047000",
+      "tileSets": [
+        {
+          "label": "trans",
+          "tiles": [
+            {
+              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage3/main/images/AK24-OKR 5x mosaic.dzi"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "groups": ["Zircon"],
       "title": "FWS24-01 Zr polished",
       "description": "FWS24-01 Zr polished mount",
       "pixelsPerMeter": "1023500",
