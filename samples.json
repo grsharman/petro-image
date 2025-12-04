@@ -6756,7 +6756,7 @@
       "groups": ["Zircon"],
       "title": "Awatea-1-2345",
       "description": "Awatea-1-2345 mount (A. Kulkarni)",
-      "pixelsPerMeter": "1000",
+      "pixelsPerMeter": "1209449",
       "tileSets": [
         {
           "label": "BSE",
