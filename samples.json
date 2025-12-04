@@ -6754,6 +6754,118 @@
     },
     {
       "groups": ["Zircon"],
+      "title": "Awatea-1-2345",
+      "description": "Awatea-1-2345 mount (A. Kulkarni)",
+      "pixelsPerMeter": "1000",
+      "tileSets": [
+        {
+          "label": "BSE",
+          "tiles": [
+            {
+              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage3/main/images/Awatea-1-2345-Mangaa (stitched).dzi"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "groups": ["Zircon"],
+      "title": "Awatea-570-610",
+      "description": "Awatea-570-610 mount (A. Kulkarni)",
+      "pixelsPerMeter": "1000",
+      "tileSets": [
+        {
+          "label": "BSE",
+          "tiles": [
+            {
+              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage3/main/images/Awatea-570-610 (stitched).dzi"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "groups": ["Zircon"],
+      "title": "Kawahai-1-585-598",
+      "description": "Kawahai-1-585-598 mount (A. Kulkarni)",
+      "pixelsPerMeter": "2047000",
+      "tileSets": [
+        {
+          "label": "trans",
+          "tiles": [
+            {
+              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage3/main/images/Kawahai-1-585-595 5x mosaic.dzi"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "groups": ["Zircon"],
+      "title": "Kiwa-1-530-560",
+      "description": "Kiwa-1-530-560 mount (A. Kulkarni)",
+      "pixelsPerMeter": "2047000",
+      "tileSets": [
+        {
+          "label": "trans",
+          "tiles": [
+            {
+              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage3/main/images/Kiwa-1-530-560 5x mosaic.dzi"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "groups": ["Zircon"],
+      "title": "Taim-630-660",
+      "description": "Taimana-630-660 mount 2 (A. Kulkarni)",
+      "pixelsPerMeter": "1000",
+      "tileSets": [
+        {
+          "label": "BSE",
+          "tiles": [
+            {
+              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage3/main/images/Taim-630-660 (stitched).dzi"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "groups": ["Zircon"],
+      "title": "Tangaroa-1-1550-1570",
+      "description": "Tangaroa-1-1550-1570 (A. Kulkarni)",
+      "pixelsPerMeter": "1000",
+      "tileSets": [
+        {
+          "label": "BSE",
+          "tiles": [
+            {
+              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage3/main/images/Tangaroa-1-1550-1570 (stitched).dzi"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "groups": ["Zircon"],
+      "title": "Tangaroa-1-250-270",
+      "description": "Tangaroa-1-250-270 (A. Kulkarni)",
+      "pixelsPerMeter": "2047000",
+      "tileSets": [
+        {
+          "label": "trans",
+          "tiles": [
+            {
+              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage3/main/images/Tangaroa-1-250-270 5x mosaic.dzi"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "groups": ["Zircon"],
       "title": "FWS24-01 Zr polished",
       "description": "FWS24-01 Zr polished mount",
       "pixelsPerMeter": "1023500",
