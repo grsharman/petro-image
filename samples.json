@@ -7738,6 +7738,86 @@
       ]
     },
     {
+      "groups": ["Titanite"],
+      "title": "TANN2205 002 0.7-1.5 Tt",
+      "description": "TANN2205 002 0.7-1.5 50-63cm polished titanite mount",
+      "pixelsPerMeter": "8534149",
+      "tileSets": [
+        {
+          "label": "BSE",
+          "tiles": [
+            {
+              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage3/main/images/TANN2205 002 Tt BSE _stitched_.dzi"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "groups": ["Titanite", "Rutile"],
+      "title": "NZ23-083 Tt Rt",
+      "description": "NZ23-083 polished titanite and rutile mount",
+      "pixelsPerMeter": "2015758",
+      "tileSets": [
+        {
+          "label": "BSE",
+          "tiles": [
+            {
+              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage3/main/images/NZ23-083 Tt Rt BSE _stitched_.dzi"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "groups": ["Rutile"],
+      "title": "TANN2205 002 0.7-1.5 Rt",
+      "description": "TANN2205 002 0.7-1.5 50-63cm polished rutile mount",
+      "pixelsPerMeter": "8062994.56",
+      "tileSets": [
+        {
+          "label": "BSE",
+          "tiles": [
+            {
+              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage3/main/images/TANN2205 002 Rt BSE _stitched_.dzi"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "groups": ["Rutile"],
+      "title": "OD10A Rt",
+      "description": "OD10A polished rutile mount",
+      "pixelsPerMeter": "5644095.74",
+      "tileSets": [
+        {
+          "label": "BSE",
+          "tiles": [
+            {
+              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage3/main/images/OD10A Rt BSE _stitched_.dzi"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "groups": ["Rutile"],
+      "title": "20AR-02 Rt",
+      "description": "20AR-02 polished rutile mount",
+      "pixelsPerMeter": "5644095.74",
+      "tileSets": [
+        {
+          "label": "BSE",
+          "tiles": [
+            {
+              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage3/main/images/20AR-02 Rt _stitched_.dzi"
+            }
+          ]
+        }
+      ]
+    },
+    {
       "groups": ["Misc"],
       "title": "NAMTD WCP",
       "description": "North Awakino MTD Wave-Cut Platforms",
