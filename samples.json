@@ -7771,6 +7771,22 @@
     },
     {
       "groups": ["Rutile"],
+      "title": "FWS-24-01 Rt",
+      "description": "FWS-24-01 polished rutile mount",
+      "pixelsPerMeter": "2015748",
+      "tileSets": [
+        {
+          "label": "BSE",
+          "tiles": [
+            {
+              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage3/main/images/FWS--24-01 Rt BSE (stitched).dzi"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "groups": ["Rutile"],
       "title": "TANN2205 002 0.7-1.5 Rt",
       "description": "TANN2205 002 0.7-1.5 50-63cm polished rutile mount",
       "pixelsPerMeter": "8062994.56",
