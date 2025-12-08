@@ -6930,6 +6930,22 @@
     },
     {
       "groups": ["Zircon"],
+      "title": "WHS-24-02 Zr polished",
+      "description": "WHS-24-02 Zr polished mount",
+      "pixelsPerMeter": "2047000",
+      "tileSets": [
+        {
+          "label": "trans",
+          "tiles": [
+            {
+              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage3/main/images/WHS-24-02 5x trans.dzi"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "groups": ["Zircon"],
       "title": "NZ23-049 Zr polished",
       "description": "NZ23-049 Zr polished mount",
       "pixelsPerMeter": "2047000",
@@ -7003,6 +7019,22 @@
           "tiles": [
             {
               "uri": "https://raw.githubusercontent.com/grsharman/images-mounts01/main/images/NZ23-069 5x Zr trans.dzi"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "groups": ["Zircon"],
+      "title": "NZ23-083 Zr polished",
+      "description": "NZ23-083 Zr polished mount",
+      "pixelsPerMeter": "4094000",
+      "tileSets": [
+        {
+          "label": "trans",
+          "tiles": [
+            {
+              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage3/main/images/NZ23-083 Zr trans 10x.dzi"
             }
           ]
         }
