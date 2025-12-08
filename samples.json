@@ -6898,6 +6898,54 @@
     },
     {
       "groups": ["Zircon"],
+      "title": "Wainui-1-560-580 Zr polished",
+      "description": "Wainui-1-560-580 Zr polished mount",
+      "pixelsPerMeter": "2047000",
+      "tileSets": [
+        {
+          "label": "trans",
+          "tiles": [
+            {
+              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage3/main/images/Wainiu-1-560-580 trans 5x.dzi"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "groups": ["Zircon"],
+      "title": "Wainui-1-1620-1640 Zr polished",
+      "description": "Wainui-1-1620-1640 Zr polished mount",
+      "pixelsPerMeter": "2047000",
+      "tileSets": [
+        {
+          "label": "trans",
+          "tiles": [
+            {
+              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage3/main/images/Wainui-1-1620-1640 trans 5x.dzi"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "groups": ["Zircon"],
+      "title": "P91852 Zr polished",
+      "description": "P91852 Zr polished mount",
+      "pixelsPerMeter": "2047000",
+      "tileSets": [
+        {
+          "label": "trans",
+          "tiles": [
+            {
+              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage3/main/images/P91852 trans 5x.dzi"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "groups": ["Zircon"],
       "title": "FWS24-01 Zr polished",
       "description": "FWS24-01 Zr polished mount",
       "pixelsPerMeter": "1023500",
