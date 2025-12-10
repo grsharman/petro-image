@@ -7862,6 +7862,14 @@
               "uri": "https://raw.githubusercontent.com/uacsrg/image-storage3/main/images/FWS--24-01 Rt BSE (stitched).dzi"
             }
           ]
+        },
+        {
+          "label": "reflected",
+          "tiles": [
+            {
+              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage3/main/images/FWS-24-01 rutile reflected 5x final.dzi"
+            }
+          ]
         }
       ]
     },
