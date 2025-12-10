@@ -7846,6 +7846,14 @@
               "uri": "https://raw.githubusercontent.com/uacsrg/image-storage3/main/images/NZ23-083 Tt Rt BSE _stitched_.dzi"
             }
           ]
+        },
+        {
+          "label": "reflected",
+          "tiles": [
+            {
+              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage3/main/images/NZ23-083 titanite reflected 5x final.dzi"
+            }
+          ]
         }
       ]
     },
@@ -7902,6 +7910,14 @@
               "uri": "https://raw.githubusercontent.com/uacsrg/image-storage3/main/images/OD10A Rt BSE _stitched_.dzi"
             }
           ]
+        },
+        {
+          "label": "reflected",
+          "tiles": [
+            {
+              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage3/main/images/OD10A Rt trans 5x final.dzi"
+            }
+          ]
         }
       ]
     },
@@ -7916,6 +7932,14 @@
           "tiles": [
             {
               "uri": "https://raw.githubusercontent.com/uacsrg/image-storage3/main/images/20AR-02 Rt _stitched_.dzi"
+            }
+          ]
+        },
+        {
+          "label": "reflected",
+          "tiles": [
+            {
+              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage3/main/images/20AR-02 Rt trans 5x final.dzi"
             }
           ]
         }
