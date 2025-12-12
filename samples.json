@@ -7076,7 +7076,7 @@
       "groups": ["Zircon"],
       "title": "NZ23-083 Zr polished",
       "description": "NZ23-083 Zr polished mount",
-      "pixelsPerMeter": "4094000",
+      "pixelsPerMeter": "4290000",
       "tileSets": [
         {
           "label": "trans",
@@ -7172,7 +7172,7 @@
       "groups": ["Zircon"],
       "title": "NZ23-052 Zr",
       "description": "NZ23-052 Zr polished mount",
-      "pixelsPerMeter": "4094000",
+      "pixelsPerMeter": "4290000",
       "tileSets": [
         {
           "label": "trans",
@@ -7188,7 +7188,7 @@
       "groups": ["Zircon"],
       "title": "TANN2205 002 2.4-3.4 Zr",
       "description": "TANN2205 002 2.4-3.4 polished mount",
-      "pixelsPerMeter": "4094000",
+      "pixelsPerMeter": "4290000",
       "tileSets": [
         {
           "label": "trans",
@@ -7204,7 +7204,7 @@
       "groups": ["Zircon"],
       "title": "TANN2205 006 1-2 Zr",
       "description": "TANN2205 006 1-2 Zr polished mount",
-      "pixelsPerMeter": "4094000",
+      "pixelsPerMeter": "4290000",
       "tileSets": [
         {
           "label": "trans",
@@ -7220,13 +7220,93 @@
       "groups": ["Zircon"],
       "title": "TANN2205 042 1-2 Zr",
       "description": "TANN2205 042 0-1 Zr polished mount",
-      "pixelsPerMeter": "4094000",
+      "pixelsPerMeter": "4290000",
       "tileSets": [
         {
           "label": "trans",
           "tiles": [
             {
               "uri": "https://raw.githubusercontent.com/uacsrg/image-storage3/main/images/TANN2205 042 0-1 trans10x.dzi"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "groups": ["Zircon"],
+      "title": "NZ23-056 mt2 Zr",
+      "description": "NZ23-056 Zr polished mount #2",
+      "pixelsPerMeter": "4290000",
+      "tileSets": [
+        {
+          "label": "trans",
+          "tiles": [
+            {
+              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage3/main/images/NZ23-056 mount 2 trans 10x.dzi"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "groups": ["Zircon"],
+      "title": "TANN2205 042 0-1 mt2 Zr",
+      "description": "TANN2205 042 0-1 Zr polished mount #2",
+      "pixelsPerMeter": "4290000",
+      "tileSets": [
+        {
+          "label": "trans",
+          "tiles": [
+            {
+              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage3/main/images/TANN2205 042 0-1 mount 2 trans 10x.dzi"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "groups": ["Zircon"],
+      "title": "TANN2205 002 0.7-1.5 mt2 Zr",
+      "description": "TANN2205 002 0.7-1.5 Zr polished mount #2",
+      "pixelsPerMeter": "4290000",
+      "tileSets": [
+        {
+          "label": "trans",
+          "tiles": [
+            {
+              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage3/main/images/TANN2205 002 0.7-1.5 mount 2 trans 10x.dzi"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "groups": ["Zircon"],
+      "title": "TANN2205 006 2-3 mt2 Zr",
+      "description": "TANN2205 006 2-3 Zr polished mount #2",
+      "pixelsPerMeter": "4290000",
+      "tileSets": [
+        {
+          "label": "trans",
+          "tiles": [
+            {
+              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage3/main/images/TANN2205 006 2-3 trans 10x.dzi"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "groups": ["Zircon"],
+      "title": "TANN2205 042 1-2 mt2 Zr",
+      "description": "TANN2205 042 1-2 Zr polished mount #2",
+      "pixelsPerMeter": "4290000",
+      "tileSets": [
+        {
+          "label": "trans",
+          "tiles": [
+            {
+              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage3/main/images/TANN2205 042 1-2 mount 2 trans 10x.dzi"
             }
           ]
         }
