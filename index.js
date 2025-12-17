@@ -2444,53 +2444,53 @@ viewer.addHandler("canvas-click", function (event) {
       drawShape(polyCanvas, [annoJSON, annoJSONTemp]);
     }
 
-    document.addEventListener("keydown", function (event) {
-      // Check if the Escape key was pressed
-      if (event.key === "Escape") {
-        removeTemporaryPoints();
-      }
-    });
+    // document.addEventListener("keydown", function (event) {
+    //   // Check if the Escape key was pressed
+    //   if (event.key === "Escape") {
+    //     removeTemporaryPoints();
+    //   }
+    // });
 
     // Continually update the annoJSONTemp with the latest coordinates
-    viewerContainer.addEventListener("mousemove", function (subevent) {
-      if (activelyMakingPoly) {
-        // Clear to avoid duplicating lines
-        annoJSONTemp = {
-          type: "FeatureCollection",
-          features: [],
-        };
-        const rect = viewerContainer.getBoundingClientRect(); // Get container bounds
-        const position = {
-          x: subevent.clientX - rect.left,
-          y: subevent.clientY - rect.top,
-        };
-        const positionPoint = new OpenSeadragon.Point(position.x, position.y);
-        const subeventViewportPoint =
-          viewer.viewport.pointFromPixel(positionPoint);
-        const subeventImagePoint = image.viewportToImageCoordinates(
-          subeventViewportPoint.x,
-          subeventViewportPoint.y
-        );
-        addPolylineToGeoJSON(
-          annoJSONTemp,
-          [
-            ...clickImageCoordinates,
-            [subeventImagePoint.x, subeventImagePoint.y],
-          ],
-          {
-            labelFontSize: labelFontSize,
-            labelFontColor: labelFontColor,
-            labelBackgroundColor: labelBackgroundColor,
-            labelBackgroundOpacity: labelBackgroundOpacity,
-            lineStyle: lineStyle,
-            lineWeight: lineWeight,
-            lineColor: lineColor,
-            lineOpacity: lineOpacity,
-          }
-        );
-        drawShape(polyCanvas, [annoJSON, annoJSONTemp]);
-      }
-    });
+    // viewerContainer.addEventListener("mousemove", function (subevent) {
+    //   if (activelyMakingPoly) {
+    //     // Clear to avoid duplicating lines
+    //     annoJSONTemp = {
+    //       type: "FeatureCollection",
+    //       features: [],
+    //     };
+    //     const rect = viewerContainer.getBoundingClientRect(); // Get container bounds
+    //     const position = {
+    //       x: subevent.clientX - rect.left,
+    //       y: subevent.clientY - rect.top,
+    //     };
+    //     const positionPoint = new OpenSeadragon.Point(position.x, position.y);
+    //     const subeventViewportPoint =
+    //       viewer.viewport.pointFromPixel(positionPoint);
+    //     const subeventImagePoint = image.viewportToImageCoordinates(
+    //       subeventViewportPoint.x,
+    //       subeventViewportPoint.y
+    //     );
+    //     addPolylineToGeoJSON(
+    //       annoJSONTemp,
+    //       [
+    //         ...clickImageCoordinates,
+    //         [subeventImagePoint.x, subeventImagePoint.y],
+    //       ],
+    //       {
+    //         labelFontSize: labelFontSize,
+    //         labelFontColor: labelFontColor,
+    //         labelBackgroundColor: labelBackgroundColor,
+    //         labelBackgroundOpacity: labelBackgroundOpacity,
+    //         lineStyle: lineStyle,
+    //         lineWeight: lineWeight,
+    //         lineColor: lineColor,
+    //         lineOpacity: lineOpacity,
+    //       }
+    //     );
+    //     drawShape(polyCanvas, [annoJSON, annoJSONTemp]);
+    //   }
+    // });
 
     // If the time between this click and the last click is shorter than clickDelay, it's a double-click
     const currentTime = new Date().getTime();
@@ -6813,4 +6813,64 @@ viewer.addHandler("canvas-scroll", function (event) {
 
     viewer.viewport.zoomTo(zoom * factor, viewportPoint);
   }
+});
+
+// Attempt to improve performance when adding annotations
+// Only once during initialization:
+document.addEventListener("keydown", function (event) {
+  if (event.key === "Escape") {
+    removeTemporaryPoints();
+  }
+});
+
+viewerContainer.addEventListener("mousemove", function (subevent) {
+  if (!activelyMakingPoly) return;
+
+  // Clear temporary JSON
+  annoJSONTemp = { type: "FeatureCollection", features: [] };
+
+  const rect = viewerContainer.getBoundingClientRect();
+  const position = {
+    x: subevent.clientX - rect.left,
+    y: subevent.clientY - rect.top,
+  };
+  const positionPoint = new OpenSeadragon.Point(position.x, position.y);
+  const viewportPoint = viewer.viewport.pointFromPixel(positionPoint);
+  const image = viewer.world.getItemAt(0);
+  const imagePoint = image.viewportToImageCoordinates(
+    viewportPoint.x,
+    viewportPoint.y
+  );
+
+  const labelFontSize = Number(
+    document.getElementById("annoLabelFontSize").value
+  );
+  const labelFontColor = document.getElementById("annoLabelFontColor").value;
+  const labelBackgroundColor = document.getElementById(
+    "annoLabelBackgroundColor"
+  ).value;
+  const labelBackgroundOpacity = Number(
+    document.getElementById("annoLabelBackgroundOpacity").value
+  );
+  const lineWeight = Number(document.getElementById("lineWeight").value);
+  const lineColor = document.getElementById("lineColor").value;
+  const lineStyle = document.getElementById("lineStyle").value;
+  const lineOpacity = Number(document.getElementById("lineOpacity").value);
+
+  addPolylineToGeoJSON(
+    annoJSONTemp,
+    [...clickImageCoordinates, [imagePoint.x, imagePoint.y]],
+    {
+      labelFontSize,
+      labelFontColor,
+      labelBackgroundColor,
+      labelBackgroundOpacity,
+      lineStyle,
+      lineWeight,
+      lineColor,
+      lineOpacity,
+    }
+  );
+
+  drawShape(polyCanvas, [annoJSON, annoJSONTemp]);
 });
