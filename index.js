@@ -101,7 +101,10 @@ function processJSON(data) {
 
   const sampleParam = getQueryParameter("sample");
   if (sampleParam) {
-    const sampleIndex = samples.indexOf(sampleParam);
+    // const sampleIndex = samples.indexOf(sampleParam);
+    const sampleIndex = samples.findIndex(
+      (sample) => sample.title === sampleParam
+    );
     if (sampleIndex !== -1) {
       // Select the correct group and sample
       const groupForSample = Object.keys(groupMapping).find((group) =>
