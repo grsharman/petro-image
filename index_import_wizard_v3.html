@@ -1,0 +1,67 @@
+<head>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="import-wizard-container">
+    <h3 style="text-align: center">Sample Import Wizard</h3>
+    <div>
+      <input type="text" id="TitleText" placeholder="Title" />
+    </div>
+    <div>
+      <input
+        type="number"
+        id="pixelsPerMeterValue"
+        placeholder="# of pixels per meter"
+      />
+    </div>
+    <div>
+      <input
+        type="text"
+        id="DescriptionText"
+        placeholder="Description (optional)"
+      />
+    </div>
+    <div id="groupContainer">
+      <div class="group-row">
+        <input
+          type="text"
+          class="group-input"
+          placeholder="Group 1"
+          oninput="validateGroupUniqueness()"
+        />
+        <button
+          type="button"
+          class="group-btn"
+          onclick="addGroup(this)"
+          title="Add group"
+        >
+          +
+        </button>
+      </div>
+    </div>
+    <hr />
+    <div id="tileSetContainer">
+      <!-- Tile set rows will be added dynamically here in JS -->
+    </div>
+    <hr />
+    <div>
+      <select
+        id="saveTypeDropdown"
+        onchange="updateSaveType()"
+        title="Specify whether to save as a new or existing JSON file"
+      >
+        <option value="createNewJSON" selected>Create new JSON</option>
+        <option value="modifyExistingJSON">Add to existing JSON</option>
+      </select>
+    </div>
+    <button id="loadExistingJSONBtn" hidden>Select file</button>
+    <button id="exportJSONBtn">Export JSON</button>
+    <input
+      type="file"
+      id="selectExistingJSON"
+      class="file-input"
+      style="display: none"
+    />
+  </div>
+  <script src="index_import_wizard.js"></script>
+</body>

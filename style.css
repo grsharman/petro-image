@@ -393,7 +393,7 @@ html {
 .file-label {
   /* flex-shrink: 0; */
   display: inline-block;
-  width: 50px;
+  width: var(--file-label-width, 50px);
   height: 14px;
   padding: 2px;
   border: 1px solid #444;
@@ -1013,4 +1013,97 @@ input[type="range"] {
   flex: 0 0 25px;
   font-size: 16px;
   white-space: nowrap; /* prevent wrapping */
+}
+
+.group-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0px 0;
+}
+
+.group-input {
+  width: 148px;
+  padding: 0px;
+  font-size: 14px;
+}
+
+.group-btn {
+  width: 20px;
+  height: 20px;
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.group-input.duplicate {
+  border: 2px solid #c00;
+  background-color: #ffecec;
+}
+
+.uri-input {
+  width: 146px;
+  padding: 0px;
+  font-size: 14px;
+}
+
+.tile-set-row {
+  align-items: center;
+  gap: 8px;
+  margin: 6px 0;
+}
+
+.image-label {
+  width: 120px;
+  padding: 0px;
+  width: 145px;
+}
+
+.tile-set-label {
+  width: 120px;
+  padding: 0px;
+  width: 145px;
+}
+
+.jpg-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.img-btn {
+  width: 18px;
+  height: 18px;
+  font-size: 12px;
+  padding: 1px;
+  cursor: pointer;
+}
+
+.tile-row-header {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.tile-row-label {
+  display: flex;
+  gap: 0px;
+}
+
+.import-wizard-container {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 300px;
+  border: 1px solid black;
+  border-radius: 4px;
+  padding: 5px;
+  background-color: rgba(255, 255, 255, 0.75);
+  z-index: 3000;
+}
+
+.tile-set-label-container {
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
