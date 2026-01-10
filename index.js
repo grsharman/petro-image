@@ -94,7 +94,7 @@ function processJSON(data) {
   // Example: initialize OpenSeadragon with the first tile source
   loadTileSet();
   populateGroupDropdown();
-  updateButtonLabels();
+  updateImageCheckboxLabels;
   displayImages();
   disableCountButtons();
   updateStageRotationCheck();
@@ -221,8 +221,10 @@ document
   .addEventListener("change", function () {
     currentIndex = Number(this.value);
     loadTileSet();
+    buildImageCheckboxes();
+    buildOpacitySliders();
     clearAnnotations();
-    updateButtonLabels();
+    updateImageCheckboxLabels();
     addScalebar(pixelsPerMeter());
     clearGrid();
     enableGridButtons();
@@ -231,7 +233,7 @@ document
     resetOpacitySliders();
     resetLockStage();
     updateOpacityImageSliderVisibility();
-    updateImageLabels();
+    updateOpacitySliderLabels();
     resetMeasurements(true);
     document.getElementById("enableDivideImages").checked = true;
     enableDivideImages = true;
@@ -264,38 +266,36 @@ document
     }
   });
 
-// Function to update the button labels based on tileLabels array
-function updateButtonLabels() {
-  const numButtons = tileSets().length;
-  for (let i = 0; i < 4; i++) {
-    const checkbox = document.getElementById(`image${i + 1}`);
-    const label = document.getElementById(`label${i + 1}`);
-    if (i < numButtons) {
-      // For regular labels, use the normal setup
-      checkbox.style.display = "inline";
-      label.style.display = "inline";
-      // If the currently visible tile is labeled individually, use that label.
-      // Otherwise, fall back to the overall tile set label.
-      const tileSet = tileSets()[i];
-      const visibleTileIndex = scrollIndex % tileSet.tiles.length;
-      const tileLabel = tileSet.tiles[visibleTileIndex].label;
-      label.textContent = tileLabel || tileSet.label;
-    } else {
-      checkbox.style.display = "none";
-      label.style.display = "none";
-      label.textContent = "";
-    }
-  }
+// Function to update the image checkbox labels based on tileLabels array
+function updateImageCheckboxLabels() {
+  const checkboxes = document.querySelectorAll(".image-checkbox");
+
+  checkboxes.forEach((checkbox, i) => {
+    const label = checkbox.nextElementSibling;
+    const tileSet = tileSets()[i];
+    if (!tileSet || !label) return;
+
+    const tiles = tileSet.tiles;
+    if (!tiles || tiles.length === 0) return;
+
+    const visibleTileIndex = scrollIndex % tiles.length;
+    const tileLabel = tiles[visibleTileIndex]?.label;
+
+    label.textContent = tileLabel || tileSet.label || `Img ${i + 1}`;
+  });
 }
 
 function toggleOnImages() {
-  const numButtons = tileSets().length;
-  for (let i = 1; i <= 4; i++) {
-    const checkbox = document.getElementById(`image${i}`);
-    if (i <= numButtons) {
+  const checkboxes = document.querySelectorAll(".image-checkbox");
+  const count = tileSets().length;
+
+  checkboxes.forEach((checkbox, i) => {
+    if (i < count) {
       checkbox.checked = true;
     }
-  }
+  });
+
+  displayImages();
 }
 
 // TODO: Only select the first image upon first load (not currently working
@@ -311,25 +311,24 @@ function deselectAllButFirstImage() {
   }
 }
 
-// Function to update the label dynamically
-function updateImageLabels() {
-  for (let i = 0; i < 4; i++) {
-    const labelDiv = document.getElementById(
-      `labelForOpacityImage${i + 1}`
-    ).parentElement; // the <div> wrapping the label+input+span
-    const labelElement = document.getElementById(
-      `labelForOpacityImage${i + 1}`
-    );
+// Function to update the label dynamically for opacity sliders
+function updateOpacitySliderLabels() {
+  const sliderRows = document.querySelectorAll(
+    "#checkboxOpacityContainer > div"
+  );
 
-    if (i < tileSets().length) {
-      // Show the div
-      labelDiv.style.display = "";
-      labelElement.textContent = tileSets()[i].label;
-    } else {
-      // Hide extra divs
-      labelDiv.style.display = "none";
+  sliderRows.forEach((row, i) => {
+    const label = row.querySelector("label");
+    const tileSet = tileSets()[i];
+
+    if (!tileSet) {
+      row.style.display = "none";
+      return;
     }
-  }
+
+    row.style.display = "";
+    label.textContent = tileSet.label || `Img ${i + 1}`;
+  });
 }
 
 const tooltip = document.getElementById("tooltip-desc");
@@ -588,16 +587,33 @@ const displayImages = () => {
     return;
   }
 
+  const checkboxes = document.querySelectorAll(".image-checkbox");
+  const sliders = document.querySelectorAll(".opacity-slider");
+
   // Determine the number of enabled tile sets ahead of time so we know how big
   // to make each sector.
   const isChecked = [];
   let totalChecked = 0;
   for (let i = 0; i < tileSets().length; ++i) {
-    const checkbox = document.getElementById(`image${i + 1}`);
-    isChecked.push(checkbox.checked);
-    if (checkbox.checked) {
+    const checked = checkboxes[i]?.checked ?? false;
+    isChecked.push(checked);
+    if (checked) {
       ++totalChecked;
     }
+  }
+
+  // Guard against divide-by-zero if everything is unchecked
+  if (totalChecked === 0) {
+    tileSets().forEach((tileSet) => {
+      tileSet.tiles.forEach((tile) => {
+        if (tile.image) {
+          tile.image.setOpacity(0);
+          tile.image.resetCroppingPolygons();
+        }
+      });
+    });
+    viewer.forceRedraw();
+    return;
   }
 
   // Set the radius of each sector's polygon to an arbitrary value large enough
@@ -630,9 +646,12 @@ const displayImages = () => {
       --sectionsLeft;
     }
 
-    const tileSetOpacity =
-      document.getElementById(`opacityImage${i + 1}`).value / 100;
+    const sliderValue = sliders[i]?.value ?? 100;
+    const tileSetOpacity = sliderValue / 100;
+    // Disable slider if the corresponding checkbox is unchecked
+    sliders[i].disabled = !isChecked[i];
     const getTileOpacity = getTileOpacityGetter(tileSet, tileSetOpacity);
+
     tiles.forEach((tile, j) => {
       const image = tile.image;
       if (!image) {
@@ -767,26 +786,65 @@ const sliderValue_4 = document.getElementById("grid-bottom-value");
 slider_4.oninput = function () {
   sliderValue_4.textContent = this.value;
 };
-const image1slider = document.getElementById("opacityImage1");
-const image1sliderValue = document.getElementById("opacityImage1Value");
-image1slider.oninput = function () {
-  image1sliderValue.textContent = `${this.value}%`;
-};
-const image2slider = document.getElementById("opacityImage2");
-const image2sliderValue = document.getElementById("opacityImage2Value");
-image2slider.oninput = function () {
-  image2sliderValue.textContent = `${this.value}%`;
-};
-const image3slider = document.getElementById("opacityImage3");
-const image3sliderValue = document.getElementById("opacityImage3Value");
-image3slider.oninput = function () {
-  image3sliderValue.textContent = `${this.value}%`;
-};
-const image4slider = document.getElementById("opacityImage4");
-const image4sliderValue = document.getElementById("opacityImage4Value");
-image4slider.oninput = function () {
-  image4sliderValue.textContent = `${this.value}%`;
-};
+
+function buildImageCheckboxes() {
+  const numTileSets = tileSets().length;
+  const container = document.getElementById("imageCheckboxContainer");
+  container.innerHTML = "";
+
+  for (let i = 0; i < numTileSets; i++) {
+    const div = document.createElement("div");
+
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.checked = true;
+    checkbox.className = "image-checkbox";
+    checkbox.dataset.index = i;
+    checkbox.addEventListener("change", displayImages);
+
+    const label = document.createElement("label");
+    label.textContent = `Img ${i + 1}`;
+
+    div.appendChild(checkbox);
+    div.appendChild(label);
+    container.appendChild(div);
+  }
+}
+
+function buildOpacitySliders() {
+  const numTileSets = tileSets().length;
+  const container = document.getElementById("checkboxOpacityContainer");
+  container.innerHTML = "";
+
+  for (let i = 0; i < numTileSets; i++) {
+    const div = document.createElement("div");
+
+    const label = document.createElement("label");
+    label.textContent = `Img ${i + 1}`;
+
+    const slider = document.createElement("input");
+    slider.type = "range";
+    slider.min = 0;
+    slider.max = 100;
+    slider.value = 100;
+    slider.className = "opacity-slider";
+    slider.dataset.index = i;
+
+    const valueSpan = document.createElement("span");
+    valueSpan.className = "slider-value";
+    valueSpan.textContent = "100%";
+
+    slider.addEventListener("input", () => {
+      valueSpan.textContent = slider.value + "%";
+      displayImages();
+    });
+
+    div.appendChild(label);
+    div.appendChild(slider);
+    div.appendChild(valueSpan);
+    container.appendChild(div);
+  }
+}
 
 function resetOpacitySliders() {
   // Find all range sliders inside the image settings menu
@@ -812,36 +870,63 @@ function resetOpacitySliders() {
   });
 }
 
+// function updateOpacityImageSliderVisibility() {
+//   // Get all slider container divs
+//   const sliders = document.querySelectorAll("#imageSettingsMenu > div > div");
+
+//   // Loop through all sliders and adjust visibility
+//   sliders.forEach((slider, index) => {
+//     if (index < tileSets().length) {
+//       slider.style.display = "block"; // Show the slider
+//       // Reset the slider value to 100
+//       const sliderInput = slider.querySelector("input[type='range']");
+//       const sliderValueSpan = slider.querySelector(".slider-value");
+//       if (sliderInput) {
+//         sliderInput.value = 100; // Reset slider to 100
+
+//         // Attach an event listener to dynamically update opacity
+//         sliderInput.addEventListener("input", () => {
+//           setTileSetOpacity();
+//           // Update the displayed slider value
+//           if (sliderValueSpan) {
+//             sliderValueSpan.textContent = `${sliderInput.value}%`;
+//           }
+//         });
+//       }
+//       if (sliderValueSpan) {
+//         sliderValueSpan.textContent = "100%"; // Update displayed value
+//       }
+//     } else {
+//       slider.style.display = "none"; // Hide the slider
+//     }
+//   });
+// }
+
 function updateOpacityImageSliderVisibility() {
-  // Get all slider container divs
-  const sliders = document.querySelectorAll("#imageSettingsMenu > div > div");
+  const sliderContainers = document.querySelectorAll(
+    "#checkboxOpacityContainer > div"
+  );
 
-  // Loop through all sliders and adjust visibility
-  sliders.forEach((slider, index) => {
+  sliderContainers.forEach((container, index) => {
+    const sliderInput = container.querySelector("input.opacity-slider");
+    const sliderValueSpan = container.querySelector(".slider-value");
+
     if (index < tileSets().length) {
-      slider.style.display = "block"; // Show the slider
-      // Reset the slider value to 100
-      const sliderInput = slider.querySelector("input[type='range']");
-      const sliderValueSpan = slider.querySelector(".slider-value");
-      if (sliderInput) {
-        sliderInput.value = 100; // Reset slider to 100
+      container.style.display = "block";
 
-        // Attach an event listener to dynamically update opacity
-        sliderInput.addEventListener("input", () => {
-          setTileSetOpacity();
-          // Update the displayed slider value
-          if (sliderValueSpan) {
-            sliderValueSpan.textContent = `${sliderInput.value}%`;
-          }
-        });
+      if (sliderInput) {
+        sliderInput.value = 100;
       }
       if (sliderValueSpan) {
-        sliderValueSpan.textContent = "100%"; // Update displayed value
+        sliderValueSpan.textContent = "100%";
       }
     } else {
-      slider.style.display = "none"; // Hide the slider
+      container.style.display = "none";
     }
   });
+
+  // Let displayImages handle actual opacity updates
+  displayImages();
 }
 
 // Constrain values of sliders and update the value display for slider1
@@ -866,7 +951,6 @@ slider_3.addEventListener("input", function () {
   }
   sliderValue_3.textContent = slider_3.value;
 });
-
 // Update the value display for slider2 and ensure slider3 stays within bounds
 slider_4.addEventListener("input", function () {
   if (parseInt(slider_3.value) > parseInt(slider_4.value)) {
@@ -4079,33 +4163,59 @@ const toggleCheckbox = (id) => {
   checkbox.click(); // Trigger the onclick handler for each checkbox
 };
 
-// Add keyboard event listener
 document.addEventListener("keydown", (event) => {
-  if (event.ctrlKey || event.altKey) {
-    switch (event.code) {
-      case "Digit1":
-        toggleCheckbox("image1");
-        break;
-      case "Digit2":
-        toggleCheckbox("image2");
-        break;
-      case "Digit3":
-        toggleCheckbox("image3");
-        break;
-      case "Digit4":
-        toggleCheckbox("image4");
-        break;
-      case "KeyG":
-        toggleCheckbox("show-grid");
-        break;
-      case "KeyD":
-        toggleCheckbox("enableDivideImages");
-        break;
-      default:
-        return; // Exit early if no match
-    }
+  if (!event.ctrlKey && !event.altKey) return;
+  // Disable shortcuts when typing in input fields
+  const tag = event.target.tagName;
+  if (tag === "INPUT" || tag === "TEXTAREA") return;
 
-    event.preventDefault(); // Optional: block browser behavior
+  const checkboxes = document.querySelectorAll(".image-checkbox");
+
+  // Handle number keys 1–9
+  if (event.code.startsWith("Digit")) {
+    const digit = Number(event.code.replace("Digit", ""));
+    const index = digit - 1;
+
+    if (digit >= 1 && digit <= 9 && index < checkboxes.length) {
+      // If Shift is held, select only that checkbox
+      if (event.shiftKey) {
+        checkboxes.forEach((cb, i) => {
+          cb.checked = i === index;
+        });
+      }
+      // If Alt or Ctrl is held, deselect only that checkbox
+      else {
+        checkboxes[index].checked = !checkboxes[index].checked;
+      }
+
+      displayImages();
+      event.preventDefault();
+      return;
+    }
+  }
+
+  // Handle non-numeric shortcuts
+  switch (event.code) {
+    case "KeyG":
+      toggleCheckbox("show-grid");
+      event.preventDefault();
+      break;
+
+    case "KeyD":
+      toggleCheckbox("enableDivideImages");
+      event.preventDefault();
+      break;
+
+    case "Digit0": // Ctrl+0 to deselect all
+      if (event.altKey) {
+        checkboxes.forEach((cb) => (cb.checked = false));
+        displayImages();
+        event.preventDefault();
+      }
+      break;
+
+    default:
+      break;
   }
 });
 
@@ -6428,8 +6538,8 @@ document.addEventListener("keydown", function (event) {
   }
 
   displayImages();
-  updateButtonLabels();
-  updateImageLabels();
+  updateImageCheckboxLabels();
+  updateOpacitySliderLabels();
 });
 
 // Function to check if a polygon is self-intersecting

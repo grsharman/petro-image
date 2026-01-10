@@ -175,62 +175,7 @@
           <label for="enableDivideImages">Divide Images</label>
           <hr />
           <h4>Opacity</h4>
-          <div>
-            <label for="opacityImage1" id="labelForOpacityImage1">Img1</label>
-            <input
-              type="range"
-              id="opacityImage1"
-              name="opacityImage1"
-              class="opacity-slider"
-              min="0"
-              max="100"
-              value="100"
-              onchange="displayImages()"
-            />
-            <span class="slider-value" id="opacityImage1Value">100%</span>
-          </div>
-          <div>
-            <label for="opacityImage2" id="labelForOpacityImage2">Img2</label>
-            <input
-              type="range"
-              id="opacityImage2"
-              name="opacityImage2"
-              class="opacity-slider"
-              min="0"
-              max="100"
-              value="100"
-              onchange="displayImages()"
-            />
-            <span class="slider-value" id="opacityImage2Value">100%</span>
-          </div>
-          <div>
-            <label for="opacityImage3" id="labelForOpacityImage3">Img3</label>
-            <input
-              type="range"
-              id="opacityImage3"
-              name="opacityImage3"
-              class="opacity-slider"
-              min="0"
-              max="100"
-              value="100"
-              onchange="displayImages()"
-            />
-            <span class="slider-value" id="opacityImage3Value">100%</span>
-          </div>
-          <div>
-            <label for="opacityImage4" id="labelForOpacityImage4">Img4</label>
-            <input
-              type="range"
-              id="opacityImage4"
-              name="opacityImage4"
-              class="opacity-slider"
-              min="0"
-              max="100"
-              value="100"
-              onchange="displayImages()"
-            />
-            <span class="slider-value" id="opacityImage4Value">100%</span>
-          </div>
+          <div id="checkboxOpacityContainer"></div>
           <hr />
           <!-- <h4>Sample JSON File</h4> -->
           <label style="width: 130px">Sample JSON File:</label>
@@ -434,42 +379,7 @@
         <label id="rotateWithStageLabel" style="display: none;">Lock stage</label>
       </div>
       <hr />
-      <div>
-        <input
-          type="checkbox"
-          id="image1"
-          checked
-          onclick="displayImages()"
-        />
-        <label for="image1" id="label1">IMG1</label>
-      </div>
-      <div>
-        <input
-          type="checkbox"
-          id="image2"
-          checked
-          onclick="displayImages()"
-        />
-        <label for="image2" id="label2">IMG2</label>
-      </div>
-      <div>
-        <input
-          type="checkbox"
-          id="image3"
-          checked
-          onclick="displayImages()"
-        />
-        <label for="image3" id="label3">IMG3</label>
-      </div>
-      <div>
-        <input
-          type="checkbox"
-          id="image4"
-          checked
-          onclick="displayImages()"
-        />
-        <label for="image4" id="label4">IMG4</label>
-      </div>
+      <div id="imageCheckboxContainer"></div>
       <hr />
       <details closed>
         <summary>Tools</summary>
