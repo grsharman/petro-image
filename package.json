@@ -1,6 +1,6 @@
 {
   "name": "petro-image",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Deep zoom petrographic images with OpenSeaDragon",
   "type": "module",
   "main": "main.js",
@@ -8,7 +8,8 @@
     "start": "electron-forge start",
     "test": "echo \"Error: no test specified\" && exit 1",
     "package": "electron-forge package",
-    "make": "electron-forge make"
+    "make": "electron-forge make",
+    "dist": "electron-builder"
   },
   "repository": {
     "type": "git",
@@ -30,9 +31,38 @@
     "@electron-forge/plugin-auto-unpack-natives": "^7.8.1",
     "@electron-forge/plugin-fuses": "^7.8.1",
     "@electron/fuses": "^1.8.0",
-    "electron": "^37.2.4"
+    "electron": "^37.2.4",
+    "electron-builder": "^26.4.0"
   },
   "dependencies": {
     "electron-squirrel-startup": "^1.0.1"
+  },
+  "build": {
+    "appId": "com.sharman.petro-image",
+    "productName": "petro-image",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "**/*"
+    ],
+    "win": {
+      "icon": "assets/icon.ico",
+      "target": [
+      {
+        "target": "nsis",
+        "arch": ["x64"]
+      }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "petro-image"
+    },
+    "publish": null
   }
 }
