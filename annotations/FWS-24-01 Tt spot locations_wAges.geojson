@@ -1,0 +1,4355 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          20826.007059833373,
+          2522.0037533073523
+        ]
+      },
+      "properties": {
+        "uuid": "mfzje0rm",
+        "label": "240.1",
+        "xLabel": 20826.007059833373,
+        "yLabel": 2522.0037533073523,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "1"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          20902.85506592441,
+          2095.5769099606377
+        ]
+      },
+      "properties": {
+        "uuid": "mfzjegdg",
+        "label": "266.9",
+        "xLabel": 20902.85506592441,
+        "yLabel": 2095.5769099606377,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "2"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19141.212638483787,
+          2316.615880489654
+        ]
+      },
+      "properties": {
+        "uuid": "mfzjhgq8",
+        "label": "181.3",
+        "xLabel": 19141.212638483787,
+        "yLabel": 2316.615880489654,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "3"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19306.017363142673,
+          2029.7075764397841
+        ]
+      },
+      "properties": {
+        "uuid": "mfzji693",
+        "label": "254.4",
+        "xLabel": 19306.017363142673,
+        "yLabel": 2029.7075764397841,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "4"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18560.307655129876,
+          2089.193459337785
+        ]
+      },
+      "properties": {
+        "uuid": "mfzjimss",
+        "label": "249.5",
+        "xLabel": 18560.307655129876,
+        "yLabel": 2089.193459337785,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "5"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18445.22557952835,
+          2259.0061136835593
+        ]
+      },
+      "properties": {
+        "uuid": "mfzjji1i",
+        "label": "124.6",
+        "xLabel": 18445.22557952835,
+        "yLabel": 2259.0061136835593,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "6"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18381.188721951978,
+          2531.830544259392
+        ]
+      },
+      "properties": {
+        "uuid": "mfzjjqgi",
+        "label": "241.5",
+        "xLabel": 18381.188721951978,
+        "yLabel": 2531.830544259392,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "7"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18331.563191707584,
+          2889.8324964497997
+        ]
+      },
+      "properties": {
+        "uuid": "mfzjkesw",
+        "label": "113.2",
+        "xLabel": 18331.563191707584,
+        "yLabel": 2889.8324964497997,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "8"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18755.643680571473,
+          3046.3387267482717
+        ]
+      },
+      "properties": {
+        "uuid": "mfzjl8ww",
+        "label": "242.0",
+        "xLabel": 18755.643680571473,
+        "yLabel": 3046.3387267482717,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "9"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19220.7243553001,
+          3512.593320027674
+        ]
+      },
+      "properties": {
+        "uuid": "mfzjm55n",
+        "label": "255.9",
+        "xLabel": 19220.7243553001,
+        "yLabel": 3512.593320027674,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "10"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19292.31641039525,
+          3731.2854782837285
+        ]
+      },
+      "properties": {
+        "uuid": "mfzjn1ii",
+        "label": "276.1",
+        "xLabel": 19292.31641039525,
+        "yLabel": 3731.2854782837285,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "11"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18913.081379666142,
+          3806.9989554889135
+        ]
+      },
+      "properties": {
+        "uuid": "mfzjn7r0",
+        "label": "235.8",
+        "xLabel": 18913.081379666142,
+        "yLabel": 3806.9989554889135,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "12"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18593.639067835542,
+          3896.668774854866
+        ]
+      },
+      "properties": {
+        "uuid": "mfzjnlqq",
+        "label": "251.8",
+        "xLabel": 18593.639067835542,
+        "yLabel": 3896.668774854866,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "13"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          17895.838725827445,
+          4059.8668995624225
+        ]
+      },
+      "properties": {
+        "uuid": "mfzjojgo",
+        "label": "270.2",
+        "xLabel": 17895.838725827445,
+        "yLabel": 4059.8668995624225,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "14"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          17901.365788606938,
+          3688.9945973905706
+        ]
+      },
+      "properties": {
+        "uuid": "mfzjoqap",
+        "label": "110.4",
+        "xLabel": 17901.365788606938,
+        "yLabel": 3688.9945973905706,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "15"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          17943.90500300516,
+          3412.9928901534063
+        ]
+      },
+      "properties": {
+        "uuid": "mfzjp3o2",
+        "label": "267.5",
+        "xLabel": 17943.90500300516,
+        "yLabel": 3412.9928901534063,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "16"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          17875.934910153315,
+          2993.734827406177
+        ]
+      },
+      "properties": {
+        "uuid": "mfzjpdko",
+        "label": "263.2",
+        "xLabel": 17875.934910153315,
+        "yLabel": 2993.734827406177,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "17"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          17670.5070854589,
+          3244.2257853403107
+        ]
+      },
+      "properties": {
+        "uuid": "mfzjpr67",
+        "label": "252.7",
+        "xLabel": 17670.5070854589,
+        "yLabel": 3244.2257853403107,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "18"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          17169.05628231373,
+          3410.1532027817148
+        ]
+      },
+      "properties": {
+        "uuid": "mfzjsuao",
+        "label": "262.6",
+        "xLabel": 17169.05628231373,
+        "yLabel": 3410.1532027817148,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "19"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          16887.138807496587,
+          3689.5414340340594
+        ]
+      },
+      "properties": {
+        "uuid": "mfzjt6a7",
+        "label": "246.3",
+        "xLabel": 16887.138807496587,
+        "yLabel": 3689.5414340340594,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "20"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          16661.636775982643,
+          3455.8260168386423
+        ]
+      },
+      "properties": {
+        "uuid": "mfzjtevz",
+        "label": "244.6",
+        "xLabel": 16661.636775982643,
+        "yLabel": 3455.8260168386423,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "21"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          16565.538832328628,
+          4108.290985706682
+        ]
+      },
+      "properties": {
+        "uuid": "mfzju2p0",
+        "label": "128.0",
+        "xLabel": 16565.538832328628,
+        "yLabel": 4108.290985706682,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "22"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          17172.956642126836,
+          2542.0502523024284
+        ]
+      },
+      "properties": {
+        "uuid": "mfzjul8x",
+        "label": "267.6",
+        "xLabel": 17172.956642126836,
+        "yLabel": 2542.0502523024284,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "23"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          16901.28925965124,
+          2310.2783591094326
+        ]
+      },
+      "properties": {
+        "uuid": "mfzjutev",
+        "label": "267.6",
+        "xLabel": 16901.28925965124,
+        "yLabel": 2310.2783591094326,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "24"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          17123.78282250391,
+          2048.528273769483
+        ]
+      },
+      "properties": {
+        "uuid": "mfzjv3tf",
+        "label": "254.2016",
+        "xLabel": 17123.78282250391,
+        "yLabel": 2048.528273769483,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "25"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          16888.243687580194,
+          1721.8564996636824
+        ]
+      },
+      "properties": {
+        "uuid": "mfzjvds3",
+        "label": "251.8",
+        "xLabel": 16888.243687580194,
+        "yLabel": 1721.8564996636824,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "26"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          15714.767856172326,
+          1670.286554558308
+        ]
+      },
+      "properties": {
+        "uuid": "mfzjvs3a",
+        "label": "246.8",
+        "xLabel": 15714.767856172326,
+        "yLabel": 1670.286554558308,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "27"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          15558.008002387887,
+          1040.025681827532
+        ]
+      },
+      "properties": {
+        "uuid": "mfzjw58z",
+        "label": "267.1",
+        "xLabel": 15558.008002387887,
+        "yLabel": 1040.025681827532,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "28"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          16006.802305248644,
+          953.9781533915134
+        ]
+      },
+      "properties": {
+        "uuid": "mfzjwe0z",
+        "label": "258.1",
+        "xLabel": 16006.802305248644,
+        "yLabel": 953.9781533915134,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "29"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          15399.604879831226,
+          3073.5619129055467
+        ]
+      },
+      "properties": {
+        "uuid": "mfzjy9jv",
+        "label": "245.5",
+        "xLabel": 15399.604879831226,
+        "yLabel": 3073.5619129055467,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "30"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          15274.362950679666,
+          3291.4780625873645
+        ]
+      },
+      "properties": {
+        "uuid": "mfzjyuqg",
+        "label": "248.8",
+        "xLabel": 15274.362950679666,
+        "yLabel": 3291.4780625873645,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "31"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          15361.90657845238,
+          2572.5294861204748
+        ]
+      },
+      "properties": {
+        "uuid": "mfzjz77g",
+        "label": "381.7",
+        "xLabel": 15361.90657845238,
+        "yLabel": 2572.5294861204748,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "32"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          14638.234158924033,
+          2368.3041614367003
+        ]
+      },
+      "properties": {
+        "uuid": "mfzjzqec",
+        "label": "244.7",
+        "xLabel": 14638.234158924033,
+        "yLabel": 2368.3041614367003,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "33"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          14535.178576832112,
+          2572.1689579807557
+        ]
+      },
+      "properties": {
+        "uuid": "mfzjzyut",
+        "label": "269.7",
+        "xLabel": 14535.178576832112,
+        "yLabel": 2572.1689579807557,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "34"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          14375.288969022473,
+          2940.4992964154976
+        ]
+      },
+      "properties": {
+        "uuid": "mfzk0kdk",
+        "label": "254.2",
+        "xLabel": 14375.288969022473,
+        "yLabel": 2940.4992964154976,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "35"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          14669.396732231522,
+          2922.5838211648575
+        ]
+      },
+      "properties": {
+        "uuid": "mfzk0twh",
+        "label": "254.2",
+        "xLabel": 14669.396732231522,
+        "yLabel": 2922.5838211648575,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "36"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          14541.542894500795,
+          3101.5425055268506
+        ]
+      },
+      "properties": {
+        "uuid": "mfzk1hu6",
+        "label": "249.2",
+        "xLabel": 14541.542894500795,
+        "yLabel": 3101.5425055268506,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "37"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          14686.57504522952,
+          3475.1117800472703
+        ]
+      },
+      "properties": {
+        "uuid": "mfzk1uyi",
+        "label": "244.6",
+        "xLabel": 14686.57504522952,
+        "yLabel": 3475.1117800472703,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "38"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          14715.861023348209,
+          3682.1769571546733
+        ]
+      },
+      "properties": {
+        "uuid": "mfzk2j6w",
+        "label": "257.8",
+        "xLabel": 14715.861023348209,
+        "yLabel": 3682.1769571546733,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "39"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          13622.681821492954,
+          3841.522804588984
+        ]
+      },
+      "properties": {
+        "uuid": "mfzk39tm",
+        "label": "258.3",
+        "xLabel": 13622.681821492954,
+        "yLabel": 3841.522804588984,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "40"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          13279.545063065787,
+          3862.4977802376484
+        ]
+      },
+      "properties": {
+        "uuid": "mfzk3kib",
+        "label": "249.4",
+        "xLabel": 13279.545063065787,
+        "yLabel": 3862.4977802376484,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "41"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          13173.050597179625,
+          4302.708185421039
+        ]
+      },
+      "properties": {
+        "uuid": "mfzk3z38",
+        "label": "226.1",
+        "xLabel": 13173.050597179625,
+        "yLabel": 4302.708185421039,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "42"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          13564.321207615729,
+          3000.62984038391
+        ]
+      },
+      "properties": {
+        "uuid": "mfzk4n00",
+        "label": "321.2",
+        "xLabel": 13564.321207615729,
+        "yLabel": 3000.62984038391,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "43"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          13830.846257058463,
+          2692.0174959982155
+        ]
+      },
+      "properties": {
+        "uuid": "mfzk552b",
+        "label": "235.1",
+        "xLabel": 13830.846257058463,
+        "yLabel": 2692.0174959982155,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "44"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          13597.401718726313,
+          2696.1517574294635
+        ]
+      },
+      "properties": {
+        "uuid": "mfzk5e8w",
+        "label": "243.3",
+        "xLabel": 13597.401718726313,
+        "yLabel": 2696.1517574294635,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "45"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          13641.344295584842,
+          2429.883494411022
+        ]
+      },
+      "properties": {
+        "uuid": "mfzk5k9g",
+        "label": "243.3",
+        "xLabel": 13641.344295584842,
+        "yLabel": 2429.883494411022,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "46"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          13934.427480960934,
+          2363.581239656471
+        ]
+      },
+      "properties": {
+        "uuid": "mfzk5vaq",
+        "label": "247.4",
+        "xLabel": 13934.427480960934,
+        "yLabel": 2363.581239656471,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "47"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          13659.685052265428,
+          1896.2680622846706
+        ]
+      },
+      "properties": {
+        "uuid": "mfzk6w0j",
+        "label": "233.9",
+        "xLabel": 13659.685052265428,
+        "yLabel": 1896.2680622846706,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "48"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          13510.509601223339,
+          1460.5559389676193
+        ]
+      },
+      "properties": {
+        "uuid": "mfzk7nei",
+        "label": "257.2",
+        "xLabel": 13510.509601223339,
+        "yLabel": 1460.5559389676193,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "49"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          13248.026626885525,
+          1676.429095857692
+        ]
+      },
+      "properties": {
+        "uuid": "mfzk83kk",
+        "label": "113.4",
+        "xLabel": 13248.026626885525,
+        "yLabel": 1676.429095857692,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "50"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          13223.150185244931,
+          1227.784181067137
+        ]
+      },
+      "properties": {
+        "uuid": "mfzk8ioo",
+        "label": "115.5",
+        "xLabel": 13223.150185244931,
+        "yLabel": 1227.784181067137,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "51"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          12912.411906052444,
+          1355.743937733478
+        ]
+      },
+      "properties": {
+        "uuid": "mfzk8tyr",
+        "label": "268.8",
+        "xLabel": 12912.411906052444,
+        "yLabel": 1355.743937733478,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "52"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          12904.471042667346,
+          1735.0195407176304
+        ]
+      },
+      "properties": {
+        "uuid": "mfzka1r0",
+        "label": "241.9",
+        "xLabel": 12904.471042667346,
+        "yLabel": 1735.0195407176304,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "53"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          12659.339640592409,
+          1948.738773080666
+        ]
+      },
+      "properties": {
+        "uuid": "mfzkacnx",
+        "label": "229.9",
+        "xLabel": 12659.339640592409,
+        "yLabel": 1948.738773080666,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "54"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          13291.789196460615,
+          2272.8165934427466
+        ]
+      },
+      "properties": {
+        "uuid": "mfzkap79",
+        "label": "236.9",
+        "xLabel": 13291.789196460615,
+        "yLabel": 2272.8165934427466,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "55"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          13156.776030291563,
+          2558.3086585436445
+        ]
+      },
+      "properties": {
+        "uuid": "mfzkayjr",
+        "label": "263.7",
+        "xLabel": 13156.776030291563,
+        "yLabel": 2558.3086585436445,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "56"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          12835.822787140378,
+          2976.789385644399
+        ]
+      },
+      "properties": {
+        "uuid": "mfzkb9za",
+        "label": "258.6",
+        "xLabel": 12835.822787140378,
+        "yLabel": 2976.789385644399,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "57"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          12722.163980016214,
+          3355.972545515803
+        ]
+      },
+      "properties": {
+        "uuid": "mfzkbfqr",
+        "label": "253.3",
+        "xLabel": 12722.163980016214,
+        "yLabel": 3355.972545515803,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "58"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          12518.567268499128,
+          3595.677536872415
+        ]
+      },
+      "properties": {
+        "uuid": "mfzkboyq",
+        "label": "discard",
+        "xLabel": 12518.567268499128,
+        "yLabel": 3595.677536872415,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "59"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          12468.167283428696,
+          3969.2216668661663
+        ]
+      },
+      "properties": {
+        "uuid": "mfzkc10m",
+        "label": "237.1",
+        "xLabel": 12468.167283428696,
+        "yLabel": 3969.2216668661663,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "60"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          12160.886376653001,
+          3841.7980802537663
+        ]
+      },
+      "properties": {
+        "uuid": "mfzkc8jq",
+        "label": "229.3",
+        "xLabel": 12160.886376653001,
+        "yLabel": 3841.7980802537663,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "61"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          12086.201585863575,
+          3175.0151523108025
+        ]
+      },
+      "properties": {
+        "uuid": "mfzkcurb",
+        "label": "297.9",
+        "xLabel": 12086.201585863575,
+        "yLabel": 3175.0151523108025,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "62"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          12448.606320771145,
+          3146.588895140668
+        ]
+      },
+      "properties": {
+        "uuid": "mfzkd321",
+        "label": "260.2",
+        "xLabel": 12448.606320771145,
+        "yLabel": 3146.588895140668,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "63"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          11827.444068969518,
+          3071.7839283046596
+        ]
+      },
+      "properties": {
+        "uuid": "mfzkdfi0",
+        "label": "244.8",
+        "xLabel": 11827.444068969518,
+        "yLabel": 3071.7839283046596,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "64"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          11709.690031950595,
+          2482.7549024943783
+        ]
+      },
+      "properties": {
+        "uuid": "mfzkdpgt",
+        "label": "288.4",
+        "xLabel": 11709.690031950595,
+        "yLabel": 2482.7549024943783,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "65"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          12243.04981526378,
+          1955.8938700073968
+        ]
+      },
+      "properties": {
+        "uuid": "mfzke3mb",
+        "label": "265.4",
+        "xLabel": 12243.04981526378,
+        "yLabel": 1955.8938700073968,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "notes": "66",
+        "fillOpacity": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          11940.270888078927,
+          1213.3445668558415
+        ]
+      },
+      "properties": {
+        "uuid": "mfzkeypu",
+        "label": "230.3",
+        "xLabel": 11940.270888078927,
+        "yLabel": 1213.3445668558415,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "67"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10450.614836317318,
+          941.7651902235792
+        ]
+      },
+      "properties": {
+        "uuid": "mfzkgght",
+        "label": "131.2",
+        "xLabel": 10450.614836317318,
+        "yLabel": 941.7651902235792,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "68"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          9918.308904489453,
+          791.1476266226052
+        ]
+      },
+      "properties": {
+        "uuid": "mfzkh56p",
+        "label": "267.9",
+        "xLabel": 9918.308904489453,
+        "yLabel": 791.1476266226052,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "69"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          9885.95381502752,
+          1218.179341652583
+        ]
+      },
+      "properties": {
+        "uuid": "mfzkhnv6",
+        "label": "250.3",
+        "xLabel": 9885.95381502752,
+        "yLabel": 1218.179341652583,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "70"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10068.0944800757,
+          1509.6894533934008
+        ]
+      },
+      "properties": {
+        "uuid": "mfzkhun2",
+        "label": "248.4",
+        "xLabel": 10068.0944800757,
+        "yLabel": 1509.6894533934008,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "71"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          9730.963692193547,
+          1523.4727215041878
+        ]
+      },
+      "properties": {
+        "uuid": "mfzkhzxj",
+        "label": "245.1",
+        "xLabel": 9730.963692193547,
+        "yLabel": 1523.4727215041878,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "72"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          9441.348664264071,
+          1236.5662767782408
+        ]
+      },
+      "properties": {
+        "uuid": "mfzki5m7",
+        "label": "261.9",
+        "xLabel": 9441.348664264071,
+        "yLabel": 1236.5662767782408,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "73"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          9434.48014098686,
+          1957.650289149619
+        ]
+      },
+      "properties": {
+        "uuid": "mfzkioqp",
+        "label": "120.8",
+        "xLabel": 9434.48014098686,
+        "yLabel": 1957.650289149619,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "74"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10337.852727386817,
+          2165.7212473237278
+        ]
+      },
+      "properties": {
+        "uuid": "mfzkj555",
+        "label": "139.9",
+        "xLabel": 10337.852727386817,
+        "yLabel": 2165.7212473237278,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "75"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10520.150545726668,
+          2555.137859776382
+        ]
+      },
+      "properties": {
+        "uuid": "mfzkjftn",
+        "label": "385.8",
+        "xLabel": 10520.150545726668,
+        "yLabel": 2555.137859776382,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "76"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          11361.318161558222,
+          2558.9280273990667
+        ]
+      },
+      "properties": {
+        "uuid": "mfzkl3tp",
+        "label": "239.2",
+        "xLabel": 11361.318161558222,
+        "yLabel": 2558.9280273990667,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "77"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          11413.104889711763,
+          3115.3893843195306
+        ]
+      },
+      "properties": {
+        "uuid": "mfzkltu8",
+        "label": "251.4",
+        "xLabel": 11413.104889711763,
+        "yLabel": 3115.3893843195306,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "78"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10648.942386799632,
+          3414.979024114559
+        ]
+      },
+      "properties": {
+        "uuid": "mfzkmc3d",
+        "label": "258.4",
+        "xLabel": 10648.942386799632,
+        "yLabel": 3414.979024114559,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "79"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10493.73964480634,
+          4010.5068007510513
+        ]
+      },
+      "properties": {
+        "uuid": "mfzkmro8",
+        "label": "249.7",
+        "xLabel": 10493.73964480634,
+        "yLabel": 4010.5068007510513,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "80"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          9576.537568739215,
+          3472.959344430357
+        ]
+      },
+      "properties": {
+        "uuid": "mfzkn638",
+        "label": "269.4",
+        "xLabel": 9576.537568739215,
+        "yLabel": 3472.959344430357,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "81"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          9060.788198404593,
+          3526.05866839304
+        ]
+      },
+      "properties": {
+        "uuid": "mfzknkwr",
+        "label": "360.8",
+        "xLabel": 9060.788198404593,
+        "yLabel": 3526.05866839304,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "82"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          8873.988400473894,
+          4233.8863383963
+        ]
+      },
+      "properties": {
+        "uuid": "mfzknvko",
+        "label": "247.6",
+        "xLabel": 8873.988400473894,
+        "yLabel": 4233.8863383963,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "83"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          8364.257076779193,
+          4004.9417253635993
+        ]
+      },
+      "properties": {
+        "uuid": "mfzko6pi",
+        "label": "249.7",
+        "xLabel": 8364.257076779193,
+        "yLabel": 4004.9417253635993,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "84"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7940.571802430712,
+          4058.3738445321783
+        ]
+      },
+      "properties": {
+        "uuid": "mfzkoyyw",
+        "label": "256.6",
+        "xLabel": 7940.571802430712,
+        "yLabel": 4058.3738445321783,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "85"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          8122.065365689654,
+          3504.343781208443
+        ]
+      },
+      "properties": {
+        "uuid": "mfzkp8tp",
+        "label": "265.5",
+        "xLabel": 8122.065365689654,
+        "yLabel": 3504.343781208443,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "86"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7810.143814653989,
+          3581.043831855794
+        ]
+      },
+      "properties": {
+        "uuid": "mfzkpo7v",
+        "label": "232.2",
+        "xLabel": 7810.143814653989,
+        "yLabel": 3581.043831855794,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "87"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7444.4419382767355,
+          2962.911498430121
+        ]
+      },
+      "properties": {
+        "uuid": "mfzkt6la",
+        "label": "126.0",
+        "xLabel": 7444.4419382767355,
+        "yLabel": 2962.911498430121,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "88"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7018.292236511384,
+          3447.876495170468
+        ]
+      },
+      "properties": {
+        "uuid": "mfzktq7o",
+        "label": "256.9",
+        "xLabel": 7018.292236511384,
+        "yLabel": 3447.876495170468,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "89"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          6734.427708366479,
+          3513.5108396847227
+        ]
+      },
+      "properties": {
+        "uuid": "mfzkue5a",
+        "label": "229.1",
+        "xLabel": 6734.427708366479,
+        "yLabel": 3513.5108396847227,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "90"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          6372.0908221104055,
+          3158.876761586798
+        ]
+      },
+      "properties": {
+        "uuid": "mfzkupuf",
+        "label": "267.2",
+        "xLabel": 6372.0908221104055,
+        "yLabel": 3158.876761586798,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "91"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          6871.577812374079,
+          2462.0213597874704
+        ]
+      },
+      "properties": {
+        "uuid": "mfzkvb0i",
+        "label": "232.9",
+        "xLabel": 6871.577812374079,
+        "yLabel": 2462.0213597874704,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "92"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7131.459326368229,
+          2182.361281095559
+        ]
+      },
+      "properties": {
+        "uuid": "mfzkvi5b",
+        "label": "231.2",
+        "xLabel": 7131.459326368229,
+        "yLabel": 2182.361281095559,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "93"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7448.999568929553,
+          2088.6357580795434
+        ]
+      },
+      "properties": {
+        "uuid": "mfzkvno4",
+        "label": "258.0",
+        "xLabel": 7448.999568929553,
+        "yLabel": 2088.6357580795434,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "94"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7142.716659541029,
+          1835.5182724992658
+        ]
+      },
+      "properties": {
+        "uuid": "mfzkvtmc",
+        "label": "115.4",
+        "xLabel": 7142.716659541029,
+        "yLabel": 1835.5182724992658,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "95"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7888.420063864039,
+          838.558362168925
+        ]
+      },
+      "properties": {
+        "uuid": "mfzkw9sj",
+        "label": "245.8",
+        "xLabel": 7888.420063864039,
+        "yLabel": 838.558362168925,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "96"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          8245.363647116328,
+          775.8593759718824
+        ]
+      },
+      "properties": {
+        "uuid": "mfzkwg6f",
+        "label": "233.7",
+        "xLabel": 8245.363647116328,
+        "yLabel": 775.8593759718824,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "97"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7959.537310018645,
+          568.1376413875471
+        ]
+      },
+      "properties": {
+        "uuid": "mfzkwkvr",
+        "label": "233.8",
+        "xLabel": 7959.537310018645,
+        "yLabel": 568.1376413875471,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "98"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          7193.442221553249,
+          683.4056186778113
+        ]
+      },
+      "properties": {
+        "uuid": "mfzkx9yi",
+        "label": "269.4",
+        "xLabel": 7193.442221553249,
+        "yLabel": 683.4056186778113,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "99"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          6070.22970173479,
+          555.8746638163218
+        ]
+      },
+      "properties": {
+        "uuid": "mfzkxkrn",
+        "label": "250.9",
+        "xLabel": 6070.22970173479,
+        "yLabel": 555.8746638163218,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "100"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          6009.725341867106,
+          3100.7971599710895
+        ]
+      },
+      "properties": {
+        "uuid": "mfzkykjf",
+        "label": "247.7",
+        "xLabel": 6009.725341867106,
+        "yLabel": 3100.7971599710895,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "101"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          5904.687924120502,
+          2740.4790513531293
+        ]
+      },
+      "properties": {
+        "uuid": "mfzkywo8",
+        "label": "223.7",
+        "xLabel": 5904.687924120502,
+        "yLabel": 2740.4790513531293,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "102"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          5348.188920224602,
+          3574.5294902076453
+        ]
+      },
+      "properties": {
+        "uuid": "mfzkzbv0",
+        "label": "244.9",
+        "xLabel": 5348.188920224602,
+        "yLabel": 3574.5294902076453,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "103"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          6287.757050512214,
+          4300.893085305823
+        ]
+      },
+      "properties": {
+        "uuid": "mfzl153f",
+        "label": "240.0",
+        "xLabel": 6287.757050512214,
+        "yLabel": 4300.893085305823,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "104"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          5931.635902505978,
+          4474.2619894093705
+        ]
+      },
+      "properties": {
+        "uuid": "mfzl1c9w",
+        "label": "257.0",
+        "xLabel": 5931.635902505978,
+        "yLabel": 4474.2619894093705,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "105"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          5692.360737627962,
+          4274.99417593148
+        ]
+      },
+      "properties": {
+        "uuid": "mfzl1fyo",
+        "label": "250.7",
+        "xLabel": 5692.360737627962,
+        "yLabel": 4274.99417593148,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "106"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          6384.721943139648,
+          3689.2820937900447
+        ]
+      },
+      "properties": {
+        "uuid": "mfzl2011",
+        "label": "120.6",
+        "xLabel": 6384.721943139648,
+        "yLabel": 3689.2820937900447,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "107"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          6061.6876548289465,
+          3600.6028462227764
+        ]
+      },
+      "properties": {
+        "uuid": "mfzl2k16",
+        "label": "111.2",
+        "xLabel": 6061.6876548289465,
+        "yLabel": 3600.6028462227764,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "108"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4900.759177948853,
+          3392.281751432519
+        ]
+      },
+      "properties": {
+        "uuid": "mfzl3oum",
+        "label": "113.2",
+        "xLabel": 4900.759177948853,
+        "yLabel": 3392.281751432519,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "109"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4164.049433366318,
+          2638.3199305387125
+        ]
+      },
+      "properties": {
+        "uuid": "mfzl4hvf",
+        "label": "271.9",
+        "xLabel": 4164.049433366318,
+        "yLabel": 2638.3199305387125,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "110"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4060.1677637373073,
+          2373.679844843807
+        ]
+      },
+      "properties": {
+        "uuid": "mfzl4t5s",
+        "label": "262.5",
+        "xLabel": 4060.1677637373073,
+        "yLabel": 2373.679844843807,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "111"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          3502.7626471953877,
+          2441.598545973058
+        ]
+      },
+      "properties": {
+        "uuid": "mfzl5555",
+        "label": "251.0",
+        "xLabel": 3502.7626471953877,
+        "yLabel": 2441.598545973058,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "112"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4610.267714734938,
+          1885.9490768353971
+        ]
+      },
+      "properties": {
+        "uuid": "mfzl5mw2",
+        "label": "113.1",
+        "xLabel": 4610.267714734938,
+        "yLabel": 1885.9490768353971,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "113"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4940.902731165119,
+          1632.3421419867343
+        ]
+      },
+      "properties": {
+        "uuid": "mfzl5zcu",
+        "label": "290.8",
+        "xLabel": 4940.902731165119,
+        "yLabel": 1632.3421419867343,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "114"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          5378.735161129584,
+          1931.2512173155276
+        ]
+      },
+      "properties": {
+        "uuid": "mfzl6aaf",
+        "label": "260.6",
+        "xLabel": 5378.735161129584,
+        "yLabel": 1931.2512173155276,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "115"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          5000.398900428343,
+          1398.160726461913
+        ]
+      },
+      "properties": {
+        "uuid": "mfzl6nb9",
+        "label": "263.7",
+        "xLabel": 5000.398900428343,
+        "yLabel": 1398.160726461913,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "116"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          5049.592563780043,
+          1134.3475708037004
+        ]
+      },
+      "properties": {
+        "uuid": "mfzl70hc",
+        "label": "255.5",
+        "xLabel": 5049.592563780043,
+        "yLabel": 1134.3475708037004,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "117"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4743.941926561167,
+          1123.5508013686917
+        ]
+      },
+      "properties": {
+        "uuid": "mfzl7f7s",
+        "label": "270.6",
+        "xLabel": 4743.941926561167,
+        "yLabel": 1123.5508013686917,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "118"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4434.934148786693,
+          1488.6157655141155
+        ]
+      },
+      "properties": {
+        "uuid": "mfzl7r5a",
+        "label": "248.8",
+        "xLabel": 4434.934148786693,
+        "yLabel": 1488.6157655141155,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "119"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4149.872475873883,
+          999.8340738385726
+        ]
+      },
+      "properties": {
+        "uuid": "mfzl8328",
+        "label": "117.5",
+        "xLabel": 4149.872475873883,
+        "yLabel": 999.8340738385726,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "120"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          3909.111578380639,
+          505.4389607177755
+        ]
+      },
+      "properties": {
+        "uuid": "mfzl8jyh",
+        "label": "234.3",
+        "xLabel": 3909.111578380639,
+        "yLabel": 505.4389607177755,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "121"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          9232.697233049206,
+          613.3566984689213
+        ]
+      },
+      "properties": {
+        "uuid": "mfzlakbb",
+        "label": "129.4",
+        "xLabel": 9232.697233049206,
+        "yLabel": 613.3566984689213,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "122"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          9014.146099078633,
+          1043.1092036258256
+        ]
+      },
+      "properties": {
+        "uuid": "mfzlasfv",
+        "label": "235.8",
+        "xLabel": 9014.146099078633,
+        "yLabel": 1043.1092036258256,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "123"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          9019.265257000405,
+          1330.3035915474297
+        ]
+      },
+      "properties": {
+        "uuid": "mfzlb1lu",
+        "label": "117.0",
+        "xLabel": 9019.265257000405,
+        "yLabel": 1330.3035915474297,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "124"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          8579.539220030396,
+          1585.1542089632942
+        ]
+      },
+      "properties": {
+        "uuid": "mfzlb9mj",
+        "label": "258.9",
+        "xLabel": 8579.539220030396,
+        "yLabel": 1585.1542089632942,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "125"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10894.839099023826,
+          2224.3379087902763
+        ]
+      },
+      "properties": {
+        "uuid": "mfzlca8u",
+        "label": "260.3",
+        "xLabel": 10894.839099023826,
+        "yLabel": 2224.3379087902763,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "126"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          5413.775790503271,
+          2810.4872037170244
+        ]
+      },
+      "properties": {
+        "uuid": "mfzlf7ty",
+        "label": "237.2",
+        "xLabel": 5413.775790503271,
+        "yLabel": 2810.4872037170244,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "127"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          3556.0580173699095,
+          2947.393218087788
+        ]
+      },
+      "properties": {
+        "uuid": "mfzlhrar",
+        "label": "476.5",
+        "xLabel": 3556.0580173699095,
+        "yLabel": 2947.393218087788,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "128"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          3443.8591277051596,
+          3247.755930997818
+        ]
+      },
+      "properties": {
+        "uuid": "mfzli6sy",
+        "label": "266.9",
+        "xLabel": 3443.8591277051596,
+        "yLabel": 3247.755930997818,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "129"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          3000.5799030135868,
+          2738.722005414515
+        ]
+      },
+      "properties": {
+        "uuid": "mfzlip0b",
+        "label": "116.3",
+        "xLabel": 3000.5799030135868,
+        "yLabel": 2738.722005414515,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "130"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          2632.8176187197273,
+          2623.4807739859107
+        ]
+      },
+      "properties": {
+        "uuid": "mfzliyc7",
+        "label": "278.1",
+        "xLabel": 2632.8176187197273,
+        "yLabel": 2623.4807739859107,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "131"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          2520.8527553445037,
+          3030.6330260399027
+        ]
+      },
+      "properties": {
+        "uuid": "mfzlja4h",
+        "label": "268.2",
+        "xLabel": 2520.8527553445037,
+        "yLabel": 3030.6330260399027,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "132"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          1999.0729273780603,
+          3993.9712515505767
+        ]
+      },
+      "properties": {
+        "uuid": "mfzljs64",
+        "label": "243.2",
+        "xLabel": 1999.0729273780603,
+        "yLabel": 3993.9712515505767,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "133"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          1275.7712175690756,
+          4108.759140624037
+        ]
+      },
+      "properties": {
+        "uuid": "mfzlk4l7",
+        "label": "274.2",
+        "xLabel": 1275.7712175690756,
+        "yLabel": 4108.759140624037,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "135"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          1791.8754116822674,
+          2443.564468243007
+        ]
+      },
+      "properties": {
+        "uuid": "mfzll47z",
+        "label": "371.4",
+        "xLabel": 1791.8754116822674,
+        "yLabel": 2443.564468243007,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "135"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          2107.7146174419986,
+          2588.87473464315
+        ]
+      },
+      "properties": {
+        "uuid": "mfzllpg7",
+        "label": "117.8",
+        "xLabel": 2107.7146174419986,
+        "yLabel": 2588.87473464315,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "136"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          3876.6717799785174,
+          1210.0589551670469
+        ]
+      },
+      "properties": {
+        "uuid": "mfzln5np",
+        "label": "231.6",
+        "xLabel": 3876.6717799785174,
+        "yLabel": 1210.0589551670469,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "137"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4036.498870853941,
+          1963.369313104061
+        ]
+      },
+      "properties": {
+        "uuid": "mfzlo9r5",
+        "label": "239.1",
+        "xLabel": 4036.498870853941,
+        "yLabel": 1963.369313104061,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "138"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          3618.866785685943,
+          2076.990663234026
+        ]
+      },
+      "properties": {
+        "uuid": "mfzloi2g",
+        "label": "236.8",
+        "xLabel": 3618.866785685943,
+        "yLabel": 2076.990663234026,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "139"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          3642.3930104748974,
+          1869.0148429639182
+        ]
+      },
+      "properties": {
+        "uuid": "mfzlouy2",
+        "label": "301.1",
+        "xLabel": 3642.3930104748974,
+        "yLabel": 1869.0148429639182,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "140"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          3288.20186952209,
+          1939.8597263807287
+        ]
+      },
+      "properties": {
+        "uuid": "mfzlpbp0",
+        "label": "258.9",
+        "xLabel": 3288.20186952209,
+        "yLabel": 1939.8597263807287,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "141"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          2473.2934841549104,
+          1101.9690307656642
+        ]
+      },
+      "properties": {
+        "uuid": "mfzlq6q2",
+        "label": "113.4",
+        "xLabel": 2473.2934841549104,
+        "yLabel": 1101.9690307656642,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "142"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          11695.383790093167,
+          4253.891804470624
+        ]
+      },
+      "properties": {
+        "uuid": "mfzlruc9",
+        "label": "108.9",
+        "xLabel": 11695.383790093167,
+        "yLabel": 4253.891804470624,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "143"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          11287.35083103734,
+          4183.248174238919
+        ]
+      },
+      "properties": {
+        "uuid": "mfzls9rf",
+        "label": "131.4",
+        "xLabel": 11287.35083103734,
+        "yLabel": 4183.248174238919,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "144"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          11284.65195280484,
+          3919.841598715178
+        ]
+      },
+      "properties": {
+        "uuid": "mfzlscw2",
+        "label": "409.0",
+        "xLabel": 11284.65195280484,
+        "yLabel": 3919.841598715178,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "145"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          11059.906315465629,
+          3713.7517109101077
+        ]
+      },
+      "properties": {
+        "uuid": "mfzlsis0",
+        "label": "249.5",
+        "xLabel": 11059.906315465629,
+        "yLabel": 3713.7517109101077,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "146"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10623.81297277212,
+          2937.905861409833
+        ]
+      },
+      "properties": {
+        "uuid": "mfzltaiw",
+        "label": "244.9",
+        "xLabel": 10623.81297277212,
+        "yLabel": 2937.905861409833,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "147"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          9977.71718528539,
+          3415.8216556019956
+        ]
+      },
+      "properties": {
+        "uuid": "mfzlu09z",
+        "label": "256.2",
+        "xLabel": 9977.71718528539,
+        "yLabel": 3415.8216556019956,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "148"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          9438.024212301487,
+          2687.8605703888584
+        ]
+      },
+      "properties": {
+        "uuid": "mfzluq2l",
+        "label": "236.5",
+        "xLabel": 9438.024212301487,
+        "yLabel": 2687.8605703888584,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "149"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          14014.435647526694,
+          2922.0090298642126
+        ]
+      },
+      "properties": {
+        "uuid": "mfzlw570",
+        "label": "110.4",
+        "xLabel": 14014.435647526694,
+        "yLabel": 2922.0090298642126,
+        "imageTitle": "FWS-24-01 Tt",
+        "pixelsPerMeter": 2171000,
+        "imageWidth": 21421,
+        "imageHeight": 5049,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillOpacity": 0,
+        "notes": "150"
+      }
+    }
+  ]
+}

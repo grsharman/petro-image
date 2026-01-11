@@ -1,28 +1,14 @@
 {
   "name": "petro-image",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Deep zoom petrographic images with OpenSeaDragon",
   "type": "module",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "test": "echo \"Error: no test specified\" && exit 1",
     "postinstall": "electron-builder install-app-deps",
-    "make": "electron-builder",
+    "dist": "electron-builder",
     "clean": "rimraf dist node_modules"
-  },
-  "build": {
-    "asar": true,
-    "asarUnpack": [
-      "**/*.node"
-    ],
-    "directories": {
-      "output": "out"
-    },
-    "files": [
-      "**/*"
-    ],
-    "npmRebuild": true
   },
   "repository": {
     "type": "git",
@@ -36,10 +22,45 @@
   "homepage": "https://github.com/grsharman/petro-image",
   "devDependencies": {
     "electron": "^37.2.4",
-    "electron-builder": "^26.0.12",
+    "electron-builder": "^26.4.0",
     "rimraf": "^6.0.1"
   },
   "dependencies": {
     "sharp": "^0.34.3"
+  },
+  "build": {
+    "appId": "com.sharman.petro-image",
+    "asar": true,
+    "asarUnpack": [
+      "**/*.node"
+    ],
+    "productName": "petro-image",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "**/*"
+    ],
+    "npmRebuild": true,
+    "win": {
+      "icon": "assets/icon.ico",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "petro-image"
+    },
+    "publish": null
   }
 }

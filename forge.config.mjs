@@ -1,28 +1,45 @@
 import { FusesPlugin } from "@electron-forge/plugin-fuses";
 import { FuseV1Options, FuseVersion } from "@electron/fuses";
 
+const version = process.env.npm_package_version;
+
 export default {
   packagerConfig: {
     asar: true,
+    icon: "assets/icon", // base name; electron-packager will use .icns/.ico/.png depending on platform
+    overwrite: true, // overwrite existing packaged apps
   },
   rebuildConfig: {},
   makers: [
-    {
-      name: "@electron-forge/maker-squirrel",
-      config: {},
-    },
-    {
-      name: "@electron-forge/maker-zip",
-      platforms: ["darwin"],
-    },
-    {
-      name: "@electron-forge/maker-deb",
-      config: {},
-    },
-    {
-      name: "@electron-forge/maker-rpm",
-      config: {},
-    },
+    // {
+    //   name: "@electron-forge/maker-zip",
+    //   platforms: ["darwin"],
+    //   config: {
+    //     name: `petro-image-${version}`,
+    //   },
+    // },
+    // {
+    //   name: "@electron-forge/maker-deb",
+    //   platforms: ["linux"],
+    //   config: {
+    //     options: {
+    //       icon: "assets/icon.png",
+    //       categories: ["Utility", "Education"],
+    //       packageName: `petro-image-${version}`,
+    //     },
+    //   },
+    // },
+    // {
+    //   name: "@electron-forge/maker-rpm",
+    //   platforms: ["linux"],
+    //   config: {
+    //     options: {
+    //       icon: "assets/icon.png",
+    //       categories: ["Utility", "Education"],
+    //       packageName: `petro-image-${version}`,
+    //     },
+    //   },
+    // },
   ],
   plugins: [
     {

@@ -1,0 +1,651 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              7175.760378800918,
+              7220.036481545415
+            ],
+            [
+              7624.7647729012515,
+              7146.774030710671
+            ],
+            [
+              7828.8890272092785,
+              7225.142571981942
+            ],
+            [
+              8118.39772367409,
+              7584.306299544522
+            ],
+            [
+              8121.116551049384,
+              7806.520702827673
+            ],
+            [
+              7603.067204189152,
+              8164.530586577323
+            ],
+            [
+              7313.531982579216,
+              8175.949661553556
+            ],
+            [
+              6884.938687652429,
+              7844.332297203098
+            ],
+            [
+              6843.493148394903,
+              7635.23457818417
+            ],
+            [
+              6943.439895225212,
+              7361.906220245496
+            ],
+            [
+              6943.439895225212,
+              7361.906220245496
+            ],
+            [
+              7175.760378800918,
+              7220.036481545415
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "uuid": "mh0jth5h",
+        "label": "garnet with rolled quartz inclusions",
+        "xLabel": 7175.760378800918,
+        "yLabel": 7220.036481545415,
+        "imageTitle": "MT-2 01 (multi-pol)",
+        "pixelsPerMeter": "398000",
+        "imageWidth": 21284,
+        "imageHeight": 11981,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineStyle": "solid",
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillColor": "#ffffff",
+        "fillOpacity": 0,
+        "area_m2": 0.000014544269208994835,
+        "perimeter_m": 0.00834854748768166
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              8707.983692681135,
+              5547.253236498491
+            ],
+            [
+              8891.226604083475,
+              5564.392602679719
+            ],
+            [
+              9026.858466165255,
+              5700.146779595979
+            ],
+            [
+              9057.895855414044,
+              5843.744395273139
+            ],
+            [
+              9054.51690811159,
+              5947.207455887209
+            ],
+            [
+              8967.428745963261,
+              6149.256273090538
+            ],
+            [
+              8853.03379701772,
+              6219.617881624002
+            ],
+            [
+              8706.42417854154,
+              6248.744101584074
+            ],
+            [
+              8482.802082407155,
+              6178.565965302328
+            ],
+            [
+              8365.838521937578,
+              6046.542390837646
+            ],
+            [
+              8336.651144560266,
+              5856.235797744203
+            ],
+            [
+              8342.231758883325,
+              5684.933872057778
+            ],
+            [
+              8424.182697983579,
+              5523.447711838212
+            ],
+            [
+              8621.614130185364,
+              5493.174790304909
+            ],
+            [
+              8621.614130185364,
+              5493.174790304909
+            ],
+            [
+              8707.983692681135,
+              5547.253236498491
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "uuid": "mh0ju4kw",
+        "label": "garnet partially replaced by chlorite",
+        "xLabel": 8707.983692681135,
+        "yLabel": 5547.253236498491,
+        "imageTitle": "MT-2 01 (multi-pol)",
+        "pixelsPerMeter": "398000",
+        "imageWidth": 21284,
+        "imageHeight": 11981,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineStyle": "solid",
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillColor": "#ffffff",
+        "fillOpacity": 0,
+        "area_m2": 0.0000027365482988908924,
+        "perimeter_m": 0.005742914231973635
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              8928.403162879464,
+              3654.2405990767847
+            ],
+            [
+              9005.102651023199,
+              3767.1669716523556
+            ],
+            [
+              8928.712238229353,
+              4023.5693750715636
+            ],
+            [
+              8784.585522438578,
+              4171.160988205841
+            ],
+            [
+              8655.424560431948,
+              4230.763729363561
+            ],
+            [
+              8525.856920333357,
+              4131.387870812112
+            ],
+            [
+              8583.88175049427,
+              3987.0822166608746
+            ],
+            [
+              8724.624904559934,
+              3797.3750203231757
+            ],
+            [
+              8823.268742545853,
+              3697.2834083298767
+            ],
+            [
+              8823.268742545853,
+              3697.2834083298767
+            ],
+            [
+              8928.403162879464,
+              3654.2405990767847
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "uuid": "mh0juw73",
+        "label": "biotite",
+        "xLabel": 8928.403162879464,
+        "yLabel": 3654.2405990767847,
+        "imageTitle": "MT-2 01 (multi-pol)",
+        "pixelsPerMeter": "398000",
+        "imageWidth": 21284,
+        "imageHeight": 11981,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineStyle": "solid",
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillColor": "#ffffff",
+        "fillOpacity": 0,
+        "area_m2": 0.0000033625158711071226,
+        "perimeter_m": 0.003638594773274696
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              10938.287628966276,
+              2167.5881661062585
+            ],
+            [
+              11222.148937154652,
+              2186.653235057363
+            ],
+            [
+              11401.607845574948,
+              2298.961456933154
+            ],
+            [
+              11443.642093159977,
+              2426.0402271089474
+            ],
+            [
+              11442.324456142025,
+              2561.8707098237287
+            ],
+            [
+              10970.350129736435,
+              2888.319347802201
+            ],
+            [
+              10709.051322090023,
+              3030.184933401675
+            ],
+            [
+              10583.875805384605,
+              2980.8630144087147
+            ],
+            [
+              10515.049605101223,
+              2866.4075322073727
+            ],
+            [
+              10467.679740949672,
+              2681.417801736415
+            ],
+            [
+              10597.898065995401,
+              2466.8707075417733
+            ],
+            [
+              10787.898070559311,
+              2290.356148507271
+            ],
+            [
+              10884.91519617739,
+              2188.458885785667
+            ],
+            [
+              10884.91519617739,
+              2188.458885785667
+            ],
+            [
+              10938.287628966276,
+              2167.5881661062585
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "uuid": "mh0jv8b6",
+        "label": "chlorite",
+        "xLabel": 10938.287628966276,
+        "yLabel": 2167.5881661062585,
+        "imageTitle": "MT-2 01 (multi-pol)",
+        "pixelsPerMeter": "398000",
+        "imageWidth": 21284,
+        "imageHeight": 11981,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineStyle": "solid",
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1,
+        "fillColor": "#ffffff",
+        "fillOpacity": 0,
+        "area_m2": 0.000004438636111654833,
+        "perimeter_m": 0.006902399151034278
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          11609.924631400761,
+          3582.89299462325
+        ]
+      },
+      "properties": {
+        "uuid": "mh0jvfs4",
+        "label": "opaque",
+        "xLabel": 11609.924631400761,
+        "yLabel": 3582.89299462325,
+        "imageTitle": "MT-2 01 (multi-pol)",
+        "pixelsPerMeter": "398000",
+        "imageWidth": 21284,
+        "imageHeight": 11981,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineWeight": 2,
+        "lineColor": "#008000",
+        "lineOpacity": 1
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            11191.763705859314,
+            5077.945889310071
+          ],
+          [
+            11485.926784764248,
+            6597.238572024995
+          ],
+          [
+            11890.444430755417,
+            8312.929390655785
+          ],
+          [
+            12340.255781831811,
+            9823.944757297626
+          ]
+        ]
+      },
+      "properties": {
+        "uuid": "mh0jvuxg",
+        "label": "foliation",
+        "xLabel": 11191.763705859314,
+        "yLabel": 5077.945889310071,
+        "imageTitle": "MT-2 01 (multi-pol)",
+        "pixelsPerMeter": "398000",
+        "imageWidth": 21284,
+        "imageHeight": 11981,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineStyle": "solid",
+        "lineWeight": 2,
+        "lineColor": "#ff0000",
+        "lineOpacity": 1,
+        "length_m": 0.01227836189994679
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            12791.369507814808,
+            4761.324078682368
+          ],
+          [
+            13122.92521737157,
+            5994.0942819444335
+          ],
+          [
+            13484.811791419907,
+            7765.410979919508
+          ],
+          [
+            13963.188565447814,
+            9793.35341782473
+          ],
+          [
+            13983.216197344922,
+            9839.717964499829
+          ],
+          [
+            13983.216197344922,
+            9839.717964499829
+          ]
+        ]
+      },
+      "properties": {
+        "uuid": "mh0jw3uq",
+        "label": "foliation",
+        "xLabel": 12791.369507814808,
+        "yLabel": 4761.324078682368,
+        "imageTitle": "MT-2 01 (multi-pol)",
+        "pixelsPerMeter": "398000",
+        "imageWidth": 21284,
+        "imageHeight": 11981,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineStyle": "solid",
+        "lineWeight": 2,
+        "lineColor": "#ff0000",
+        "lineOpacity": 1,
+        "length_m": 0.013112037387632612
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            12055.088922887022,
+            7701.403302083344
+          ],
+          [
+            12277.590854849745,
+            7487.24781723813
+          ],
+          [
+            12419.585442603558,
+            7287.790478260222
+          ],
+          [
+            12647.424201339529,
+            7112.5150887925765
+          ],
+          [
+            12781.824747061897,
+            7035.244836233015
+          ],
+          [
+            12942.227012735244,
+            6960.634248163729
+          ],
+          [
+            13038.11491672673,
+            6960.634248163729
+          ],
+          [
+            13132.742979643872,
+            7025.901014931655
+          ]
+        ]
+      },
+      "properties": {
+        "uuid": "mh0jwlbe",
+        "label": "foliation",
+        "xLabel": 12055.088922887022,
+        "yLabel": 7701.403302083344,
+        "imageTitle": "MT-2 01 (multi-pol)",
+        "pixelsPerMeter": "398000",
+        "imageWidth": 21284,
+        "imageHeight": 11981,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineStyle": "solid",
+        "lineWeight": 2,
+        "lineColor": "#ff0000",
+        "lineOpacity": 1,
+        "length_m": 0.0034771157610457037
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            11704.555641744433,
+            5699.113385723937
+          ],
+          [
+            11960.530851140678,
+            5447.162668648503
+          ],
+          [
+            12182.700325042115,
+            5142.718573475539
+          ],
+          [
+            12343.120088508162,
+            4973.917367306589
+          ],
+          [
+            12463.417413314995,
+            4861.931494031863
+          ],
+          [
+            12563.154831700298,
+            4738.869517978557
+          ],
+          [
+            12648.421575523384,
+            4730.3830885194575
+          ]
+        ]
+      },
+      "properties": {
+        "uuid": "mh0jwtma",
+        "label": "foliation",
+        "xLabel": 11704.555641744433,
+        "yLabel": 5699.113385723937,
+        "imageTitle": "MT-2 01 (multi-pol)",
+        "pixelsPerMeter": "398000",
+        "imageWidth": 21284,
+        "imageHeight": 11981,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineStyle": "solid",
+        "lineWeight": 2,
+        "lineColor": "#ff0000",
+        "lineOpacity": 1,
+        "length_m": 0.003460739314580297
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            12471.272035878927,
+            9392.326554294565
+          ],
+          [
+            12560.98803959853,
+            9438.807289785656
+          ],
+          [
+            12652.679545130137,
+            9407.650804064851
+          ],
+          [
+            12755.391528627304,
+            9284.266605177749
+          ],
+          [
+            12864.763775376381,
+            9073.085461474138
+          ],
+          [
+            12959.362090717086,
+            8939.851974981457
+          ],
+          [
+            13025.527290692111,
+            8877.087460268529
+          ],
+          [
+            13110.276318427235,
+            8839.327154204728
+          ],
+          [
+            13248.758995448967,
+            8799.97233596409
+          ],
+          [
+            13349.791802405929,
+            8825.893741883076
+          ]
+        ]
+      },
+      "properties": {
+        "uuid": "mh0jxy2s",
+        "label": "foliation",
+        "xLabel": 12471.272035878927,
+        "yLabel": 9392.326554294565,
+        "imageTitle": "MT-2 01 (multi-pol)",
+        "pixelsPerMeter": "398000",
+        "imageWidth": 21284,
+        "imageHeight": 11981,
+        "labelFontSize": 16,
+        "labelFontColor": "#ffffff",
+        "labelBackgroundColor": "#000000",
+        "labelBackgroundOpacity": 0.5,
+        "lineStyle": "solid",
+        "lineWeight": 2,
+        "lineColor": "#ff0000",
+        "lineOpacity": 1,
+        "length_m": 0.0029947185258620296
+      }
+    }
+  ]
+}
