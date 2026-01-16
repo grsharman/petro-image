@@ -7154,8 +7154,8 @@
     },
     {
       "groups": ["Zircon"],
-      "title": "TANN2205 042 Zr polished",
-      "description": "TANN2205 042 Zr polished mount",
+      "title": "TANN2205 042 1-2 Zr polished",
+      "description": "TANN2205 042 1-2 Zr polished mount",
       "pixelsPerMeter": "2047000",
       "tileSets": [
         {
@@ -7218,8 +7218,8 @@
     },
     {
       "groups": ["Zircon"],
-      "title": "TANN2205 042 1-2 Zr",
-      "description": "TANN2205 042 0-1 Zr polished mount",
+      "title": "TANN2205 042 0-1 mt1",
+      "description": "TANN2205 042 0-1 Zr polished mount 1",
       "pixelsPerMeter": "4290000",
       "tileSets": [
         {
