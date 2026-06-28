@@ -35,7 +35,8 @@
     "electron-builder": "^26.4.0"
   },
   "dependencies": {
-    "electron-squirrel-startup": "^1.0.1"
+    "electron-squirrel-startup": "^1.0.1",
+    "sharp": "^0.35.2"
   },
   "build": {
     "appId": "com.sharman.petro-image",
@@ -43,6 +44,10 @@
     "directories": {
       "output": "dist"
     },
+    "asarUnpack": [
+      "node_modules/sharp/**/*",
+      "node_modules/@img/**/*"
+    ],
     "files": [
       "**/*"
     ],

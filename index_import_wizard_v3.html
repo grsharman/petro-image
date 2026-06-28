@@ -1,18 +1,23 @@
 <head>
   <link rel="stylesheet" href="style.css" />
 </head>
-<body>
+<body class="import-wizard-page">
   <div class="import-wizard-container">
     <h3 style="text-align: center">Sample Import Wizard</h3>
     <div>
-      <input type="text" id="TitleText" placeholder="Title" />
+      <input type="text" id="TitleText" placeholder="Title" required />
+      <span class="required-field-label">required</span>
     </div>
     <div>
       <input
         type="number"
         id="pixelsPerMeterValue"
         placeholder="# of pixels per meter"
+        min="0"
+        step="any"
+        required
       />
+      <span class="required-field-label">required</span>
     </div>
     <div>
       <input
@@ -48,13 +53,19 @@
       <select
         id="saveTypeDropdown"
         onchange="updateSaveType()"
-        title="Specify whether to save as a new or existing JSON file"
+        title="Specify whether to save as a new or existing library JSON file"
       >
-        <option value="createNewJSON" selected>Create new JSON</option>
-        <option value="modifyExistingJSON">Add to existing JSON</option>
+        <option value="createNewJSON" selected>Create new library JSON</option>
+        <option value="modifyExistingJSON">Add to existing library JSON</option>
       </select>
     </div>
     <button id="loadExistingJSONBtn" hidden>Select file</button>
+    <div id="importProgressContainer" class="import-progress" hidden>
+      <div class="import-progress-track">
+        <div id="importProgressBar" class="import-progress-bar"></div>
+      </div>
+      <div id="importProgressText" class="import-progress-text"></div>
+    </div>
     <button id="exportJSONBtn">Export JSON</button>
     <input
       type="file"

@@ -11,13 +11,13 @@ export default {
   },
   rebuildConfig: {},
   makers: [
-    // {
-    //   name: "@electron-forge/maker-zip",
-    //   platforms: ["darwin"],
-    //   config: {
-    //     name: `petro-image-${version}`,
-    //   },
-    // },
+    {
+      name: "@electron-forge/maker-zip",
+      platforms: ["darwin"],
+      config: {
+        name: `petro-image-${version}`,
+      },
+    },
     // {
     //   name: "@electron-forge/maker-deb",
     //   platforms: ["linux"],

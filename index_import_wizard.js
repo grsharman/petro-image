@@ -1,5 +1,37 @@
 "use strict";
 
+function resizeImportWizardWindow() {
+  if (!window.electronAPI?.resizeImportWizardToContent) return;
+
+  const container = document.querySelector(".import-wizard-container");
+  if (!container) return;
+
+  window.electronAPI.resizeImportWizardToContent({
+    width: container.offsetLeft + container.scrollWidth + 8,
+    height: container.offsetTop + container.scrollHeight + 8,
+  });
+}
+
+function initializeImportWizardAutoResize() {
+  const container = document.querySelector(".import-wizard-container");
+  if (!container || !window.ResizeObserver) {
+    resizeImportWizardWindow();
+    return;
+  }
+
+  let resizeFrame = null;
+  const scheduleResize = () => {
+    if (resizeFrame) cancelAnimationFrame(resizeFrame);
+    resizeFrame = requestAnimationFrame(resizeImportWizardWindow);
+  };
+  const observer = new ResizeObserver(scheduleResize);
+
+  observer.observe(container);
+  scheduleResize();
+}
+
+document.addEventListener("DOMContentLoaded", initializeImportWizardAutoResize);
+
 function addGroup(btn) {
   const container = document.getElementById("groupContainer");
   const rows = container.querySelectorAll(".group-row");
@@ -25,6 +57,7 @@ function addGroup(btn) {
 function removeGroup(btn) {
   const row = btn.closest(".group-row");
   row.remove();
+  validateGroupUniqueness();
 }
 
 function validateGroupUniqueness() {
@@ -74,6 +107,79 @@ function toggleURI(checkbox) {
   }
 }
 
+function hasElectronJpgPicker() {
+  return Boolean(window.electronAPI?.selectJpgFile);
+}
+
+function hasElectronDziConverter() {
+  return Boolean(window.electronAPI?.convertJpgToDzi);
+}
+
+function updateJpgLabel(row, text) {
+  const labelText = row.querySelector(".jpg-label-text");
+  if (labelText) {
+    labelText.textContent = text;
+  }
+}
+
+function setJpgRowConversionState(row, state, message) {
+  row.dataset.dziState = state;
+  row.title = message || "";
+  updateJpgLabel(row, message || "Select JPG file");
+}
+
+function displaySelectedJpgFallback(fileInput) {
+  const row = fileInput.closest(".image-row");
+  const file = fileInput.files?.[0];
+
+  if (!row || !file || hasElectronJpgPicker()) return;
+
+  const filePath = file.path || file.name || "";
+  row.dataset.sourceJpgPath = filePath;
+  updateJpgLabel(row, file.name);
+}
+
+document.addEventListener("click", async (event) => {
+  const label = event.target.closest(".jpg-label");
+
+  if (!label || !hasElectronJpgPicker()) return;
+
+  event.preventDefault();
+  event.stopPropagation();
+
+  const row = label.closest(".image-row");
+  if (!row) return;
+
+  try {
+    setJpgRowConversionState(row, "selecting", "Selecting JPG...");
+    const result = await window.electronAPI.selectJpgFile();
+
+    if (result?.canceled) {
+      const priorPath = row.dataset.sourceJpgPath;
+      setJpgRowConversionState(
+        row,
+        priorPath ? "selected" : "idle",
+        priorPath ? "JPG selected" : "Select JPG file",
+      );
+      return;
+    }
+
+    row.dataset.sourceJpgPath = result.sourcePath || "";
+    setJpgRowConversionState(row, "selected", "JPG selected");
+  } catch (error) {
+    console.error(error);
+    row.dataset.sourceJpgPath = "";
+    setJpgRowConversionState(row, "error", "Selection failed");
+    alert(error.message || "Could not select the JPG file.");
+  }
+});
+
+document.addEventListener("change", (event) => {
+  if (event.target.matches(".jpg-file")) {
+    displaySelectedJpgFallback(event.target);
+  }
+});
+
 /////////////////////////////////////////////////////
 //// Functions for adding/removing tile set rows ////
 /////////////////////////////////////////////////////
@@ -106,7 +212,7 @@ function addTileRow() {
 	<!-- Angle periodicity input (shown only for rotation mode) -->
 	<div class="angle-periodicity-container" style="display:none;">
 		<label>Angle periodicity:
-			<input type="number" class="tile-angle-periodicity" min="0" max="360" value="0"/>
+			<input type="number" class="tile-angle-periodicity" min="1" max="360" value="90"/>
 		</label>
 	</div>
 
@@ -147,8 +253,9 @@ function addTileRow() {
 
             <!-- JPG / URI inputs -->
             <div class="jpg-row">
-                <label class="file-label jpg-label" style="--file-label-width: 141px">Select JPG file
-                	<input type="file" class="file-input jpg-file"/>
+                <label class="file-label jpg-label" style="--file-label-width: 141px">
+                  <span class="jpg-label-text">Select JPG file</span>
+                  <input type="file" class="file-input jpg-file" accept=".jpg,.jpeg,image/jpeg"/>
 				</label>
                 <!--URI input-->
                 <input type="text" class="uri-input" placeholder="Enter image URI" style="display: none" />
@@ -205,8 +312,9 @@ function addImageRowMultiple(btn) {
     </button>
 
     <div class="jpg-row">
-      <label class="file-label jpg-label" style="--file-label-width: 141px">Select JPG file
-	    <input type="file" class="file-input jpg-file" />
+      <label class="file-label jpg-label" style="--file-label-width: 141px">
+        <span class="jpg-label-text">Select JPG file</span>
+	    <input type="file" class="file-input jpg-file" accept=".jpg,.jpeg,image/jpeg" />
 	  </label>
       
       <input type="text" class="uri-input" placeholder="Enter image URI" style="display: none" />
@@ -247,8 +355,9 @@ function addImageRowRotation(btn) {
     </button>
 
     <div class="jpg-row">
-      <label class="file-label jpg-label" style="--file-label-width: 141px">Select JPG file
-      	<input type="file" class="file-input jpg-file" />
+      <label class="file-label jpg-label" style="--file-label-width: 141px">
+        <span class="jpg-label-text">Select JPG file</span>
+        <input type="file" class="file-input jpg-file" accept=".jpg,.jpeg,image/jpeg" />
 	  </label>
       
       <input type="text" class="uri-input" placeholder="Enter image URI" style="display: none" />
@@ -300,11 +409,11 @@ function updateTileSetType(selectElement) {
   if (!imagesContainer) return;
 
   const anglePeriodicityContainer = tileRow.querySelector(
-    ".angle-periodicity-container"
+    ".angle-periodicity-container",
   );
 
   const tileSetLabelContainer = tileRow.querySelector(
-    ".tile-set-label-container"
+    ".tile-set-label-container",
   );
 
   // Default: hide rotation-specific elements
@@ -482,8 +591,9 @@ function addImageRowTemplate(btn, mode = "label") {
       <button type="button" class="img-btn add-btn" onclick="addImageRowTemplate(this,'label')">+</button>
       <button type="button" class="img-btn remove-btn" onclick="removeImageRow(this)">&minus;</button>
       <div class="jpg-row">
-        <label class="file-label jpg-label" style="--file-label-width:141px">Select JPG file
-			<input type="file" class="file-input jpg-file" />
+        <label class="file-label jpg-label" style="--file-label-width:141px">
+          <span class="jpg-label-text">Select JPG file</span>
+			<input type="file" class="file-input jpg-file" accept=".jpg,.jpeg,image/jpeg" />
 		</label>
         <input type="text" class="uri-input" placeholder="Enter image URI" style="display:none;" />
         <input type="checkbox" onclick="toggleURI(this)" />
@@ -500,8 +610,9 @@ function addImageRowTemplate(btn, mode = "label") {
 	  <button type="button" class="img-btn add-btn" onclick="addImageRowTemplate(this,'angle')">+</button>
       <button type="button" class="img-btn remove-btn" onclick="removeImageRow(this)">&minus;</button>
       <div class="jpg-row">
-        <label class="file-label jpg-label" style="--file-label-width:141px">Select JPG file
-			<input type="file" class="file-input jpg-file" />
+        <label class="file-label jpg-label" style="--file-label-width:141px">
+          <span class="jpg-label-text">Select JPG file</span>
+			<input type="file" class="file-input jpg-file" accept=".jpg,.jpeg,image/jpeg" />
 		</label>
         <input type="text" class="uri-input" placeholder="Enter image URI" style="display:none;" />
         <input type="checkbox" onclick="toggleURI(this)" />
@@ -547,7 +658,7 @@ function createJSON() {
       const labelContainer = tileRow.querySelector(".tile-set-label-container");
       const tileSetLabel = labelContainer?.querySelector("input")?.value || "";
       const periodInput = tileRow.querySelector(".tile-angle-periodicity");
-      const periodDegrees = periodInput ? parseFloat(periodInput.value) : 0;
+      const periodDegrees = periodInput ? parseFloat(periodInput.value) : 90;
 
       const tileSet = {};
       const imageRows = tileRow.querySelectorAll(".image-row");
@@ -557,7 +668,13 @@ function createJSON() {
         const uriInput = imgRow.querySelector(".uri-input");
         const useURI = uriInput && uriInput.style.display !== "none";
         const fileInput = imgRow.querySelector(".jpg-file");
-        let uri = useURI ? uriInput.value : fileInput?.files[0]?.name || "";
+        const selectedFile = fileInput?.files[0];
+        let uri = useURI
+          ? uriInput.value
+          : selectedFile?.path ||
+            imgRow.dataset.sourceJpgPath ||
+            selectedFile?.name ||
+            "";
         uri = uri.replace(/^["']+|["']+$/g, ""); // remove leading/trailing quotes
 
         if (type === "Individual") {
@@ -570,7 +687,7 @@ function createJSON() {
         } else if (type === "Multiple (rotation enabled)") {
           // Rotation: images have angleDegrees
           const angle = parseFloat(
-            imgRow.querySelector(".image-angle")?.value || 0
+            imgRow.querySelector(".image-angle")?.value || 0,
           );
           tiles.push({ uri, angleDegrees: angle });
         }
@@ -599,6 +716,38 @@ const saveDropdown = document.getElementById("saveTypeDropdown");
 const loadBtn = document.getElementById("loadExistingJSONBtn");
 const exportBtn = document.getElementById("exportJSONBtn");
 const existingFileInput = document.getElementById("selectExistingJSON");
+const titleInput = document.getElementById("TitleText");
+const pixelsPerMeterInput = document.getElementById("pixelsPerMeterValue");
+const importProgressContainer = document.getElementById(
+  "importProgressContainer",
+);
+const importProgressBar = document.getElementById("importProgressBar");
+const importProgressText = document.getElementById("importProgressText");
+let selectedExistingJSONPath = "";
+let selectedExistingJSONData = null;
+let selectedExistingJSONName = "";
+let activeConversionProgress = null;
+
+function hasRequiredSampleFields() {
+  const title = titleInput.value.trim();
+  const pixelsPerMeter = parseFloat(pixelsPerMeterInput.value);
+  return Boolean(title && Number.isFinite(pixelsPerMeter) && pixelsPerMeter > 0);
+}
+
+function updateExportButtonState() {
+  const needsExistingJSON = saveDropdown.value === "modifyExistingJSON";
+  const hasExistingJSON =
+    Boolean(selectedExistingJSONPath) || existingFileInput.files.length > 0;
+  exportBtn.disabled =
+    !hasRequiredSampleFields() || (needsExistingJSON && !hasExistingJSON);
+}
+
+function updateExportButtonLabel() {
+  exportBtn.textContent =
+    saveDropdown.value === "modifyExistingJSON"
+      ? "Update Library"
+      : "Export Library";
+}
 
 // Called whenever the dropdown changes
 function updateSaveType() {
@@ -608,32 +757,201 @@ function updateSaveType() {
   // Show/hide the "Select file" button
   loadBtn.hidden = isNew;
 
-  // Export button is enabled immediately for new JSON
-  exportBtn.disabled = !isNew;
-
   // Clear the file input when switching
   existingFileInput.value = "";
+  selectedExistingJSONPath = "";
+  selectedExistingJSONData = null;
+  selectedExistingJSONName = "";
+  loadBtn.textContent = "Select file";
+  updateExportButtonLabel();
+  updateExportButtonState();
 }
 
 // Open file picker when user clicks "Select file"
-loadBtn.addEventListener("click", () => {
-  existingFileInput.click();
+loadBtn.addEventListener("click", async () => {
+  if (!window.electronAPI?.selectExistingJsonFile) {
+    existingFileInput.click();
+    return;
+  }
+
+  try {
+    const result = await window.electronAPI.selectExistingJsonFile();
+    if (result?.canceled) return;
+
+    selectedExistingJSONPath = result.filePath || "";
+    selectedExistingJSONData = result.jsonData || null;
+    selectedExistingJSONName = result.fileName || "";
+    loadBtn.textContent = selectedExistingJSONName || "Library selected";
+    updateExportButtonState();
+  } catch (error) {
+    console.error(error);
+    alert(error.message || "Invalid library JSON file.");
+    selectedExistingJSONPath = "";
+    selectedExistingJSONData = null;
+    selectedExistingJSONName = "";
+    loadBtn.textContent = "Select file";
+    updateExportButtonState();
+  }
 });
 
-// Enable Export JSON only when a file is selected
-existingFileInput.addEventListener("change", () => {
-  exportBtn.disabled = existingFileInput.files.length === 0;
-});
+titleInput.addEventListener("input", updateExportButtonState);
+pixelsPerMeterInput.addEventListener("input", updateExportButtonState);
+existingFileInput.addEventListener("change", updateExportButtonState);
 
 // Initialize state on page load
 updateSaveType();
 
-document.getElementById("exportJSONBtn").addEventListener("click", () => {
+function isLocalJpgPath(uri) {
+  return (
+    typeof uri === "string" &&
+    !/^[a-z][a-z0-9+.-]*:\/\//i.test(uri) &&
+    /\.(jpe?g)$/i.test(uri)
+  );
+}
+
+function getLocalJpgUris(sample) {
+  const uris = [];
+  const seen = new Set();
+
+  for (const tileSet of sample.tileSets || []) {
+    for (const tile of tileSet.tiles || []) {
+      if (!isLocalJpgPath(tile.uri) || seen.has(tile.uri)) continue;
+
+      seen.add(tile.uri);
+      uris.push(tile.uri);
+    }
+  }
+
+  return uris;
+}
+
+function showImportProgress(message, percent = 0) {
+  if (!importProgressContainer || !importProgressBar || !importProgressText) {
+    return;
+  }
+
+  importProgressContainer.hidden = false;
+  importProgressBar.style.width = `${Math.max(0, Math.min(100, percent))}%`;
+  importProgressText.textContent = message;
+}
+
+function hideImportProgress() {
+  if (!importProgressContainer || !importProgressBar || !importProgressText) {
+    return;
+  }
+
+  importProgressContainer.hidden = true;
+  importProgressBar.style.width = "0%";
+  importProgressText.textContent = "";
+  activeConversionProgress = null;
+}
+
+function getPathFileName(filePath) {
+  return String(filePath || "").split(/[\\/]/).pop();
+}
+
+function handleDziConversionProgress(progress) {
+  if (
+    !activeConversionProgress ||
+    progress.sourcePath !== activeConversionProgress.sourcePath
+  ) {
+    return;
+  }
+
+  const filePercent = progress.percent || 0;
+  const overallPercent =
+    ((activeConversionProgress.fileIndex - 1 + filePercent / 100) /
+      activeConversionProgress.totalFiles) *
+    100;
+  const fileName = getPathFileName(progress.sourcePath);
+
+  showImportProgress(
+    `Converting ${activeConversionProgress.fileIndex}/${activeConversionProgress.totalFiles}: ${fileName}`,
+    overallPercent,
+  );
+}
+
+if (window.electronAPI?.onDziConversionProgress) {
+  window.electronAPI.onDziConversionProgress(handleDziConversionProgress);
+}
+
+async function convertLocalJpgUrisToDzi(sample) {
+  if (!hasElectronDziConverter()) return;
+
+  const localJpgUris = getLocalJpgUris(sample);
+  const conversionResults = new Map();
+
+  if (!localJpgUris.length) {
+    return;
+  }
+
+  for (let i = 0; i < localJpgUris.length; i += 1) {
+    const uri = localJpgUris[i];
+
+    activeConversionProgress = {
+      sourcePath: uri,
+      fileIndex: i + 1,
+      totalFiles: localJpgUris.length,
+    };
+    showImportProgress(
+      `Preparing ${i + 1}/${localJpgUris.length}: ${getPathFileName(uri)}`,
+      (i / localJpgUris.length) * 100,
+    );
+
+    const result = await window.electronAPI.convertJpgToDzi(uri);
+    conversionResults.set(uri, result.relativeDziPath || result.dziPath);
+  }
+
+  for (const tileSet of sample.tileSets || []) {
+    for (const tile of tileSet.tiles || []) {
+      if (conversionResults.has(tile.uri)) {
+        tile.uri = conversionResults.get(tile.uri);
+      }
+    }
+  }
+
+  showImportProgress("Finishing import...", 100);
+}
+
+function setExportInProgress(inProgress) {
+  exportBtn.disabled = inProgress;
+  exportBtn.textContent = inProgress ? "Converting..." : "";
+  if (!inProgress) {
+    updateExportButtonLabel();
+  }
+}
+
+async function completeSampleImport(jsonData, selectedTitle) {
+  if (!window.electronAPI?.completeSampleImport) return;
+
+  await window.electronAPI.completeSampleImport(jsonData, selectedTitle);
+}
+
+function getDefaultJSONFileName() {
+  return "my_library.json";
+}
+
+document.getElementById("exportJSONBtn").addEventListener("click", async () => {
+  if (exportBtn.disabled) return;
+
   // Gather the new sample
   const newSample = createJSON();
   newSample.pixelsPerMeter = newSample.pixelsPerMeter.toString(); // ensure string
 
   const mode = document.getElementById("saveTypeDropdown").value;
+
+  setExportInProgress(true);
+
+  try {
+    await convertLocalJpgUrisToDzi(newSample);
+  } catch (error) {
+    console.error(error);
+    alert(error.message || "Could not convert JPG file(s) to DZI.");
+    setExportInProgress(false);
+    hideImportProgress();
+    updateExportButtonState();
+    return;
+  }
 
   if (mode === "createNewJSON") {
     // Create a new JSON object
@@ -641,19 +959,67 @@ document.getElementById("exportJSONBtn").addEventListener("click", () => {
       format: "v1",
       samples: [newSample],
     };
-    saveJSONFile(jsonOutput, newSample.title || "sample.json");
-  } else if (mode === "modifyExistingJSON") {
-    // Read an existing JSON file
-    const fileInput = document.getElementById("selectExistingJSON");
-    const file = fileInput.files[0];
+    try {
+      if (window.electronAPI?.saveJsonFileAs) {
+        const result = await window.electronAPI.saveJsonFileAs(
+          getDefaultJSONFileName(),
+          jsonOutput,
+        );
 
-    if (!file) {
-      alert("Please select a JSON file to modify.");
+        if (result?.canceled) {
+          setExportInProgress(false);
+          hideImportProgress();
+          updateExportButtonState();
+          return;
+        }
+      } else {
+        saveJSONFile(jsonOutput, getDefaultJSONFileName());
+      }
+
+      await completeSampleImport(jsonOutput, newSample.title);
+      setExportInProgress(false);
+      updateExportButtonState();
+    } catch (err) {
+      alert("Could not load the exported JSON in the main window.");
+      console.error(err);
+      setExportInProgress(false);
+      hideImportProgress();
+      updateExportButtonState();
+    }
+  } else if (mode === "modifyExistingJSON") {
+    if (!selectedExistingJSONData && existingFileInput.files.length === 0) {
+      alert("Please select a library JSON file to modify.");
+      setExportInProgress(false);
+      updateExportButtonState();
       return;
     }
 
+    if (selectedExistingJSONData && selectedExistingJSONPath) {
+      try {
+        const existingJSON = JSON.parse(JSON.stringify(selectedExistingJSONData));
+
+        if (!existingJSON.samples) existingJSON.samples = [];
+        existingJSON.samples.push(newSample);
+
+        await window.electronAPI.writeJsonFile(
+          selectedExistingJSONPath,
+          existingJSON,
+        );
+        await completeSampleImport(existingJSON, newSample.title);
+      } catch (err) {
+        alert("Could not update the selected library JSON file.");
+        console.error(err);
+        setExportInProgress(false);
+        hideImportProgress();
+        updateExportButtonState();
+      }
+      return;
+    }
+
+    // Browser fallback: download an updated copy when direct filesystem writes are unavailable.
+    const file = existingFileInput.files[0];
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       try {
         const existingJSON = JSON.parse(e.target.result);
 
@@ -661,10 +1027,21 @@ document.getElementById("exportJSONBtn").addEventListener("click", () => {
         existingJSON.samples.push(newSample);
 
         saveJSONFile(existingJSON, file.name);
+        await completeSampleImport(existingJSON, newSample.title);
       } catch (err) {
-        alert("Invalid JSON file.");
+        alert("Invalid library JSON file.");
         console.error(err);
+      } finally {
+        setExportInProgress(false);
+        hideImportProgress();
+        updateExportButtonState();
       }
+    };
+    reader.onerror = () => {
+      alert("Could not read the selected library JSON file.");
+      setExportInProgress(false);
+      hideImportProgress();
+      updateExportButtonState();
     };
     reader.readAsText(file);
   }

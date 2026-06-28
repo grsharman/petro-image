@@ -86,6 +86,45 @@
           pointer-events: none;
         "
       ></canvas>
+      <div class="viewer-corner-actions">
+        <button
+          id="loadLibraryButton"
+          class="viewer-corner-button"
+          type="button"
+          title="Load Library JSON"
+          aria-label="Load Library JSON"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 3h11l5 5v13H4z" />
+            <path d="M14 3v6h6" />
+            <path d="M8 14h8" />
+            <path d="M8 18h5" />
+          </svg>
+        </button>
+        <button
+          id="changeProjectButton"
+          class="electron-only viewer-corner-button"
+          type="button"
+          title="Open Project"
+          aria-label="Open Project"
+          hidden
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M3 6h7l2 2h9v10a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3z" />
+            <path d="M3 10h18" />
+          </svg>
+        </button>
+        <button
+          id="openImportWizardButton"
+          class="electron-only viewer-corner-button"
+          type="button"
+          title="Open Sample Import Wizard"
+          hidden
+        >
+          <img src="assets/sample-import-wizard.svg" alt="" />
+        </button>
+      </div>
+      <input type="file" id="load-sample-JSON" class="file-input" />
     </div>
     <!-- Div elements for floating symbols when annotating-->
     <div id="anno-point-floater" class="crosshair-floater"></div>
@@ -165,177 +204,174 @@
       <div>
         <!-- Hidden settings menu for images-->
         <div id="imageSettingsMenu" class="dropdown-container">
-          <div>
+          <div class="settings-checkbox-row">
             <input
               type="checkbox"
               id="enableDivideImages"
               checked
               onclick="toggleDivideImages(this)"
             />
+            <label for="enableDivideImages">Divide Images</label>
           </div>
-          <label for="enableDivideImages">Divide Images</label>
           <hr />
-          <h4>Opacity</h4>
+          <h4>Opacity (%)</h4>
           <div id="checkboxOpacityContainer"></div>
           <hr />
-          <!-- <h4>Sample JSON File</h4> -->
-          <label style="width: 130px">Sample JSON File:</label>
-          <label for="load-sample-JSON" class="file-label">Import</label>
-          <input type="file" id="load-sample-JSON" class="file-input" />
-          <hr />
-          <h4>Scalebar Options</h4>
-          <div>
-            <select
-              id="scalebarType"
-              onchange="addScalebar()"
-              title="Scalebar Type"
-            >
-              <option value="None">None</option>
-              <option value="Map" selected>Map</option>
-              <option value="Microscopy">Microscopy</option>
-            </select>
-            <label for="scalebarType">Type</label>
-          </div>
-          <div>
-            <select
-              id="scalebarUnitSystem"
-              title="Scalebar Unit System"
-              onchange="addScalebar()"
-            >
-              <option value="Metric" selected>Metric</option>
-              <option value="Imperial">Imperial</option>
-              <option value="Astronomical">Astronomical</option>
-            </select>
-            <label for="scalebarUnitSystem">Unit System</label>
-          </div>
-          <div>
-            <select
-              id="scalebarLocation"
-              title="Scalebar Location"
-              onchange="addScalebar()"
-            >
-              <option value="None">None</option>
-              <option value="Top left">Top left</option>
-              <option value="Top right">Top right</option>
-              <option value="Bottom right">Bottom right</option>
-              <option value="Bottom left" selected>Bottom left</option>
-            </select>
-            <label for="scalebarLocation">Location</label>
-          </div>
-          <div>
-            <input
-              type="number"
-              id="scalebarMinWidth"
-              class="wide-number-input"
-              placeholder="75"
-              maxlength="3"
-              value="75"
-              min="1"
-              onchange="addScalebar()"
-            />
-            <label for="scalebarMinWidth">Minimum Width (px)</label>
-          </div>
+          <details class="settings-disclosure">
+            <summary>Scalebar Options</summary>
+            <div>
+              <select
+                id="scalebarType"
+                onchange="addScalebar()"
+                title="Scalebar Type"
+              >
+                <option value="None">None</option>
+                <option value="Map" selected>Map</option>
+                <option value="Microscopy">Microscopy</option>
+              </select>
+              <label for="scalebarType">Type</label>
+            </div>
+            <div>
+              <select
+                id="scalebarUnitSystem"
+                title="Scalebar Unit System"
+                onchange="addScalebar()"
+              >
+                <option value="Metric" selected>Metric</option>
+                <option value="Imperial">Imperial</option>
+                <option value="Astronomical">Astronomical</option>
+              </select>
+              <label for="scalebarUnitSystem">Unit System</label>
+            </div>
+            <div>
+              <select
+                id="scalebarLocation"
+                title="Scalebar Location"
+                onchange="addScalebar()"
+              >
+                <option value="None">None</option>
+                <option value="Top left">Top left</option>
+                <option value="Top right">Top right</option>
+                <option value="Bottom right">Bottom right</option>
+                <option value="Bottom left" selected>Bottom left</option>
+              </select>
+              <label for="scalebarLocation">Location</label>
+            </div>
+            <div>
+              <input
+                type="number"
+                id="scalebarMinWidth"
+                class="wide-number-input"
+                placeholder="75"
+                maxlength="3"
+                value="75"
+                min="1"
+                onchange="addScalebar()"
+              />
+              <label for="scalebarMinWidth">Minimum Width (px)</label>
+            </div>
 
-          <div>
-            <input
-              type="number"
-              id="scalebarXOffset"
-              class="wide-number-input"
-              placeholder="10"
-              maxlength="3"
-              value="10"
-              min="0"
-              onchange="addScalebar()"
-            />
-            <label for="scalebarXOffset">xOffset (px)</label>
-          </div>
-          <div>
-            <input
-              type="number"
-              id="scalebarYOffset"
-              class="wide-number-input"
-              placeholder="10"
-              maxlength="3"
-              value="10"
-              min="0"
-              onchange="addScalebar()"
-            />
-            <label for="scalebarYOffset">yOffset (px)</label>
-          </div>
-          <div>
-            <input
-              type="color"
-              id="scalebarColor"
-              value="#000000"
-              onchange="addScalebar()"
-            />
-            <label for="scalebarColor">Color</label>
-          </div>
-          <div>
-            <input
-              type="color"
-              id="scalebarFontColor"
-              value="#000000"
-              onchange="addScalebar()"
-            />
-            <label for="scalebarFontColor">Font Color</label>
-          </div>
-          <div>
-            <input
-              type="color"
-              id="scalebarBackgroundColor"
-              value="#ffffff"
-              onchange="addScalebar()"
-            />
-            <label for="scalebarBackgroundColor">Background Color</label>
-          </div>
-          <div>
-            <input
-              type="number"
-              id="scalebarBackgroundOpacity"
-              class="wide-number-input"
-              placeholder="0.5"
-              maxlength="3"
-              value="0.5"
-              min="0"
-              max="1"
-              onchange="addScalebar()"
-            />
-            <label for="scalebarBackgroundOpacity">Background Opacity</label>
-          </div>
-          <div>
-            <select
-              id="scalebarFontSize"
-              title="Scalebar Font Size"
-              onchange="addScalebar()"
-            >
-              <option value="x-small">x-small</topion>
-              <option value="small">small</option>
-              <option value="medium" selected>medium</option>
-              <option value="large">large</option>
-              <option value="x-large">x-large</option>
-              <option value="xx-large">xx-large</option>
-            </select>
-            <label for="scalebarFontSize">Font Size</label>
-          </div>
-          <div>
-            <input
-              type="number"
-              id="scalebarLineWeight"
-              class="wide-number-input"
-              placeholder="2"
-              maxlength="3"
-              value="2"
-              min="0"
-              onchange="addScalebar()"
-            />
-            <label for="scalebarLineWeight">Scalebar Line Weight</label>
-          </div>
-          <div>
-            <buton id="restoreScalebarDedfaults" class="custom-button" style="--button-width: 110px" onclick="restoreScalebarDefaults()">
-              Restore Defaults
-            </buton>
-          </div>
+            <div>
+              <input
+                type="number"
+                id="scalebarXOffset"
+                class="wide-number-input"
+                placeholder="10"
+                maxlength="3"
+                value="10"
+                min="0"
+                onchange="addScalebar()"
+              />
+              <label for="scalebarXOffset">xOffset (px)</label>
+            </div>
+            <div>
+              <input
+                type="number"
+                id="scalebarYOffset"
+                class="wide-number-input"
+                placeholder="10"
+                maxlength="3"
+                value="10"
+                min="0"
+                onchange="addScalebar()"
+              />
+              <label for="scalebarYOffset">yOffset (px)</label>
+            </div>
+            <div>
+              <input
+                type="color"
+                id="scalebarColor"
+                value="#000000"
+                onchange="addScalebar()"
+              />
+              <label for="scalebarColor">Color</label>
+            </div>
+            <div>
+              <input
+                type="color"
+                id="scalebarFontColor"
+                value="#000000"
+                onchange="addScalebar()"
+              />
+              <label for="scalebarFontColor">Font Color</label>
+            </div>
+            <div>
+              <input
+                type="color"
+                id="scalebarBackgroundColor"
+                value="#ffffff"
+                onchange="addScalebar()"
+              />
+              <label for="scalebarBackgroundColor">Background Color</label>
+            </div>
+            <div>
+              <input
+                type="number"
+                id="scalebarBackgroundOpacity"
+                class="wide-number-input"
+                placeholder="0.5"
+                maxlength="3"
+                value="0.5"
+                min="0"
+                max="1"
+                onchange="addScalebar()"
+              />
+              <label for="scalebarBackgroundOpacity">Background Opacity</label>
+            </div>
+            <div>
+              <select
+                id="scalebarFontSize"
+                title="Scalebar Font Size"
+                onchange="addScalebar()"
+              >
+                <option value="x-small">x-small</topion>
+                <option value="small">small</option>
+                <option value="medium" selected>medium</option>
+                <option value="large">large</option>
+                <option value="x-large">x-large</option>
+                <option value="xx-large">xx-large</option>
+              </select>
+              <label for="scalebarFontSize">Font Size</label>
+            </div>
+            <div>
+              <input
+                type="number"
+                id="scalebarLineWeight"
+                class="wide-number-input"
+                placeholder="2"
+                maxlength="3"
+                value="2"
+                min="0"
+                onchange="addScalebar()"
+              />
+              <label for="scalebarLineWeight">Scalebar Line Weight</label>
+            </div>
+            <div>
+              <buton id="restoreScalebarDedfaults" class="custom-button" style="--button-width: 110px" onclick="restoreScalebarDefaults()">
+                Restore Defaults
+              </buton>
+            </div>
+          </details>
         </div>
       </div>
       <div class="dropdown-container">
@@ -354,7 +390,17 @@
             max="360"
             value="0"
           />
-        <span class="slider-value" id="imageRotationValue">0°</span>
+        <input
+          type="number"
+          id="imageRotationValue"
+          class="slider-value rotation-value-input"
+          min="0"
+          max="360"
+          step="1"
+          value="0"
+          title="Image rotation angle"
+        />
+        <span class="rotation-unit">°</span>
       </div>
       <div class="slider-container">
         <label id="stageRotationLabel" style="display: none;">Stage</label>
@@ -366,7 +412,18 @@
           max="360"
           value="0"
         />
-        <span class="slider-value" id="stageRotationValue" style="display: none;">0°</span>
+        <input
+          type="number"
+          id="stageRotationValue"
+          class="slider-value rotation-value-input"
+          style="display: none;"
+          min="0"
+          max="360"
+          step="1"
+          value="0"
+          title="Stage rotation angle"
+        />
+        <span id="stageRotationUnit" class="rotation-unit" style="display: none;">°</span>
       </div>
       <div class="lock-stage-container">
         <input
@@ -383,7 +440,35 @@
       <div id="imageCheckboxContainer"></div>
       <hr />
       <details closed>
-        <summary>Tools</summary>
+        <summary class="tools-summary">
+          <span>Tools</span>
+          <span class="history-controls">
+            <button
+              class="custom-button history-button"
+              id="undoButton"
+              disabled
+              title="Undo"
+              aria-label="Undo"
+            >
+              <svg class="history-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M8 7 4 11l4 4" />
+                <path d="M4 11h9a5 5 0 1 1-3.5 8.5" />
+              </svg>
+            </button>
+            <button
+              class="custom-button history-button"
+              id="redoButton"
+              disabled
+              title="Redo"
+              aria-label="Redo"
+            >
+              <svg class="history-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="m16 7 4 4-4 4" />
+                <path d="M20 11h-9a5 5 0 1 0 3.5 8.5" />
+              </svg>
+            </button>
+          </span>
+        </summary>
         <details id="detailsMenu" closed>
           <summary>Grid</summary>
           <div>
@@ -411,7 +496,7 @@
             />
             <label for="show-aoi">AOI</label>
           </div>
-          <div>
+          <div class="grid-slider-row">
             <label for="x_min">x<sub>min</sub></label>
             <input
               type="range"
@@ -423,9 +508,18 @@
               title="Left boundary of AOI"
               onchange="enableGridButtons()"
             />
-            <span class="slider-value" id="grid-left-value">20</span>
+            <input
+              type="number"
+              class="slider-value grid-value-input"
+              id="grid-left-value"
+              min="0"
+              max="100"
+              step="1"
+              value="20"
+              title="Left boundary value"
+            />
           </div>
-          <div>
+          <div class="grid-slider-row">
             <label for="x_max">x<sub>max</sub></label>
             <input
               type="range"
@@ -437,23 +531,41 @@
               max="100"
               onchange="enableGridButtons()"
             />
-            <span class="slider-value" id="grid-right-value">80</span>
+            <input
+              type="number"
+              class="slider-value grid-value-input"
+              id="grid-right-value"
+              min="0"
+              max="100"
+              step="1"
+              value="80"
+              title="Right boundary value"
+            />
           </div>
-          <div>
+          <div class="grid-slider-row">
             <label for="y_min">y<sub>min</sub></label>
             <input
               type="range"
               id="grid-top"
               name="y_min"
               min="0"
-              value="0"
+              value="10"
               max="100"
               title="Top boundary of AOI"
               onchange="enableGridButtons()"
             />
-            <span class="slider-value" id="grid-top-value">10</span>
+            <input
+              type="number"
+              class="slider-value grid-value-input"
+              id="grid-top-value"
+              min="0"
+              max="100"
+              step="1"
+              value="10"
+              title="Top boundary value"
+            />
           </div>
-          <div>
+          <div class="grid-slider-row">
             <label for="y_max">y<sub>max</sub></label>
             <input
               type="range"
@@ -465,7 +577,16 @@
               max="100"
               onchange="enableGridButtons()"
             />
-            <span class="slider-value" id="grid-bottom-value">90</span>
+            <input
+              type="number"
+              class="slider-value grid-value-input"
+              id="grid-bottom-value"
+              min="0"
+              max="100"
+              step="1"
+              value="90"
+              title="Bottom boundary value"
+            />
           </div>
           <div>
             <label for="step-size">Step Size (µm):</label>
@@ -1131,6 +1252,20 @@
               >
                 Summarize
               </button>
+              <button
+                id="countFilterButton"
+                class="custom-button"
+                style="--button-width: 50px"
+              >
+                Filter
+              </button>
+              <div
+                id="countFilterDropdown"
+                class="dropdown-content"
+                style="display: none"
+              >
+                <!-- Filter checkboxes will be added dynamically -->
+              </div>
             </div>
           </div>
           <!-- Modal for displaying results -->
@@ -1139,14 +1274,6 @@
               <span class="closeButton" onclick="closeModal()">&times;</span>
               <div id="resultsContent"></div>
             </div>
-          </div>
-          <!-- Filtering menu -->
-          <div>
-            <label for="filterDropdown">Filter:</label>
-            <select id="filterDropdown" onchange="filterOverlays()">
-              <option value="all">All</option>
-              <!-- Default option -->
-            </select>
           </div>
           <div class="dropdown-container">
             <label style="width: 40px">JSON</label>
@@ -1205,41 +1332,13 @@
               id="crosshairButton"
               title="Point Mode"
             >
-              <svg
-                viewBox="0 0 1024 1024"
-                class="crosshairs-button"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  fill="#000000"
-                  d="M480 480V128a32 32 0 0164 0v352h352a32 32 0 110 64H544v352a32 32 0 11-64 0V544H128a32 32 0 010-64h352z"
-                />
-              </svg>
-              <svg
-                class="crosshairs-button"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <!-- Circle for center -->
-                <circle cx="12" cy="12" r="2" fill="#444" />
-                <!-- Horizontal line -->
-                <line
-                  x1="2"
-                  y1="12"
-                  x2="22"
-                  y2="12"
-                  stroke="#444"
-                  stroke-width="2"
-                />
-                <!-- Vertical line -->
-                <line
-                  x1="12"
-                  y1="2"
-                  x2="12"
-                  y2="22"
-                  stroke="#444"
-                  stroke-width="2"
-                />
+              <svg class="annotation-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="12" r="4" />
+                <line x1="12" y1="5" x2="12" y2="8" />
+                <line x1="12" y1="16" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="8" y2="12" />
+                <line x1="16" y1="12" x2="19" y2="12" />
+                <circle class="annotation-icon-fill" cx="12" cy="12" r="1.2" />
               </svg>
             </button>
             <button
@@ -1247,16 +1346,10 @@
               id="polylineButton"
               title="Polyline Mode"
             >
-              <svg
-                class="polyline-button"
-                viewBox="0 0 15 15"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M1.5 0C0.671573 0 0 0.671573 0 1.5C0 2.32843 0.671573 3 1.5 3C1.73157 3 1.95089 2.94752 2.14671 2.85381L12.1462 12.8533C12.0525 13.0491 12 13.2684 12 13.5C12 14.3284 12.6716 15 13.5 15C14.3284 15 15 14.3284 15 13.5C15 12.6716 14.3284 12 13.5 12C13.2684 12 13.0491 12.0525 12.8533 12.1462L2.85381 2.14671C2.94752 1.95089 3 1.73157 3 1.5C3 0.671573 2.32843 0 1.5 0Z"
-                  fill="#000000"
-                />
+              <svg class="annotation-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <line x1="5" y1="18" x2="19" y2="6" />
+                <circle cx="5" cy="18" r="2" />
+                <circle cx="19" cy="6" r="2" />
               </svg>
             </button>
             <button
@@ -1264,117 +1357,31 @@
               id="rectangleButton"
               title="Rectangle Mode"
             >
-              <svg
-                class="rectangle-button"
-                viewBox="0 0 100 100"
-                xmlns="http://www.w3.org/2000/svg"
-                xmlns:xlink="http://www.w3.org/1999/xlink"
-                aria-hidden="true"
-                role="img"
-                class="iconify iconify--gis"
-                preserveAspectRatio="xMidYMid meet"
-              >
-                <path
-                  d="M12.55 15C5.662 15 0 20.661 0 27.55c0 6.017 4.317 11.096 10 12.286v20.428c-5.683 1.19-10 6.27-10 12.287C0 79.44 5.661 85.1 12.55 85.1c6.047 0 11.09-4.374 12.241-10.1h50.455c1.152 5.732 6.253 10.1 12.305 10.1c6.65 0 12.105-5.288 12.478-11.852a3.5 3.5 0 0 0 .07-.697a3.5 3.5 0 0 0-.07-.697C99.703 66.117 95.495 61.356 90 60.246V39.854c5.495-1.11 9.703-5.87 10.03-11.606a3.5 3.5 0 0 0 .07-.697a3.5 3.5 0 0 0-.07-.697C99.655 20.29 94.201 15 87.55 15c-6.016 0-11.096 4.317-12.286 10H24.77c-1.19-5.676-6.209-10-12.22-10zm0 7c3.107 0 5.55 2.444 5.55 5.55c0 3.107-2.443 5.55-5.55 5.55C9.445 33.1 7 30.657 7 27.55C7 24.445 9.444 22 12.55 22zm75 0c3.107 0 5.55 2.444 5.55 5.55c0 3.107-2.443 5.55-5.55 5.55c-3.106 0-5.55-2.443-5.55-5.55c0-3.106 2.444-5.55 5.55-5.55zM24.218 32h51.62A12.678 12.678 0 0 0 83 39.225v21.65A12.684 12.684 0 0 0 75.875 68h-51.7A12.64 12.64 0 0 0 17 60.838V39.262A12.638 12.638 0 0 0 24.217 32zM12.55 67c3.106 0 5.549 2.444 5.549 5.55c0 3.107-2.443 5.55-5.55 5.55C9.445 78.1 7 75.657 7 72.55C7 69.445 9.444 67 12.55 67zm75 0c3.106 0 5.549 2.444 5.549 5.55c0 3.107-2.443 5.55-5.55 5.55c-3.106 0-5.55-2.443-5.55-5.55c0-3.106 2.444-5.55 5.55-5.55z"
-                  fill="#000000"
-                ></path>
+              <svg class="annotation-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <rect x="5" y="7" width="14" height="10" rx="1" />
               </svg>
-              <!-- <div class="square"></div> -->
             </button>
             <button
               class="custom-button"
               id="polygonButton"
               title="Polygon Mode"
             >
-              <svg
-                class="polygon-button"
-                viewBox="0 0 48 48"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  fill-rule="evenodd"
-                  clip-rule="evenodd"
-                  d="M14 40C15.1046 40 16 39.1046 16 38C16 36.8954 15.1046 36 14 36C12.8954 36 12 36.8954 12 38C12 39.1046 12.8954 40 14 40ZM14 42C16.2091 42 18 40.2091 18 38C18 35.7909 16.2091 34 14 34C11.7909 34 10 35.7909 10 38C10 40.2091 11.7909 42 14 42Z"
-                  fill="#333333"
-                />
-                <path
-                  fill-rule="evenodd"
-                  clip-rule="evenodd"
-                  d="M10 22C11.1046 22 12 21.1046 12 20C12 18.8954 11.1046 18 10 18C8.89543 18 8 18.8954 8 20C8 21.1046 8.89543 22 10 22ZM10 24C12.2091 24 14 22.2091 14 20C14 17.7909 12.2091 16 10 16C7.79086 16 6 17.7909 6 20C6 22.2091 7.79086 24 10 24Z"
-                  fill="#333333"
-                />
-                <path
-                  fill-rule="evenodd"
-                  clip-rule="evenodd"
-                  d="M38 22C39.1046 22 40 21.1046 40 20C40 18.8954 39.1046 18 38 18C36.8954 18 36 18.8954 36 20C36 21.1046 36.8954 22 38 22ZM38 24C40.2091 24 42 22.2091 42 20C42 17.7909 40.2091 16 38 16C35.7909 16 34 17.7909 34 20C34 22.2091 35.7909 24 38 24Z"
-                  fill="#333333"
-                />
-                <path
-                  fill-rule="evenodd"
-                  clip-rule="evenodd"
-                  d="M34 40C35.1046 40 36 39.1046 36 38C36 36.8954 35.1046 36 34 36C32.8954 36 32 36.8954 32 38C32 39.1046 32.8954 40 34 40ZM34 42C36.2091 42 38 40.2091 38 38C38 35.7909 36.2091 34 34 34C31.7909 34 30 35.7909 30 38C30 40.2091 31.7909 42 34 42Z"
-                  fill="#333333"
-                />
-                <path
-                  fill-rule="evenodd"
-                  clip-rule="evenodd"
-                  d="M24 12C25.1046 12 26 11.1046 26 10C26 8.89543 25.1046 8 24 8C22.8954 8 22 8.89543 22 10C22 11.1046 22.8954 12 24 12ZM24 14C26.2091 14 28 12.2091 28 10C28 7.79086 26.2091 6 24 6C21.7909 6 20 7.79086 20 10C20 12.2091 21.7909 14 24 14Z"
-                  fill="#333333"
-                />
-                <path
-                  fill-rule="evenodd"
-                  clip-rule="evenodd"
-                  d="M34.9188 19.028L25.9188 12.5995L27.0812 10.972L36.0812 17.4006L34.9188 19.028ZM21.7844 12.8115L13.0812 19.028L11.9188 17.4006L20.622 11.184L21.7844 12.8115ZM11.6429 22.7831L14.3095 34.7831L12.3572 35.2169L9.69049 23.2169L11.6429 22.7831ZM33.6905 34.7831L36.246 23.2831L38.1984 23.7169L35.6429 35.2169L33.6905 34.7831ZM17 37H31V39H17V37Z"
-                  fill="#333333"
-                />
+              <svg class="annotation-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <polygon points="12 4 19 9 16.5 18 7.5 18 5 9" />
+                <circle class="annotation-icon-fill" cx="12" cy="4" r="1.2" />
+                <circle class="annotation-icon-fill" cx="19" cy="9" r="1.2" />
+                <circle class="annotation-icon-fill" cx="16.5" cy="18" r="1.2" />
+                <circle class="annotation-icon-fill" cx="7.5" cy="18" r="1.2" />
+                <circle class="annotation-icon-fill" cx="5" cy="9" r="1.2" />
               </svg>
-              <!-- <svg class="polygon" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                <polygon points="50,10 90,35 73,85 27,85 10,35" fill="#444" />
-              </svg> -->
             </button>
             <button
               class="custom-button"
               id="ellipseButton"
               title="Ellipse Mode"
             >
-              <?xml version="1.0" encoding="iso-8859-1"?>
-              <!-- Generator: Adobe Illustrator 19.0.0, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
-              <!-- License: CC0. Made by SVG Repo: https://www.svgrepo.com/svg/253277/vector-ellipse -->
-              <svg
-                version="1.1"
-                id="Layer_1"
-                xmlns="http://www.w3.org/2000/svg"
-                xmlns:xlink="http://www.w3.org/1999/xlink"
-                x="0px"
-                y="0px"
-                viewBox="0 0 512 512"
-                style="enable-background: new 0 0 512 512"
-                xml:space="preserve"
-              >
-                <g>
-                  <g>
-                    <path
-                      d="M503.47,231.292h-19.628c-22.657-62.638-105.58-108.515-210.691-116.371V94.806c0-4.709-3.822-8.53-8.53-8.53h-51.182
-                    c-4.709,0-8.53,3.822-8.53,8.53v21.138C87.138,128.714,0,193.264,0,269.678c0,86.046,111.014,156.046,247.465,156.046
-                    c127.776,0,221.943-50.389,237.766-126.189h18.238c4.709,0,8.53-3.822,8.53-8.53v-51.182
-                    C512,235.113,508.187,231.292,503.47,231.292z M221.968,103.337h34.121v34.121h-34.121V103.337z M247.465,408.663
-                    c-127.051,0-230.405-62.348-230.405-138.985c0-67.236,79.742-124.355,187.847-136.571v12.881c0,4.709,3.822,8.53,8.53,8.53h51.182
-                    c4.709,0,8.53-3.822,8.53-8.53v-13.964c94.508,7.328,169.336,46.072,192.556,99.268h-13.41c-4.709,0-8.53,3.822-8.53,8.53v51.182
-                    c0,4.709,3.822,8.53,8.53,8.53h15.235C451.025,364.246,362.821,408.663,247.465,408.663z M494.939,282.474h-34.121v-34.121h34.121
-                    V282.474z"
-                    />
-                  </g>
-                </g>
-                <g>
-                  <g>
-                    <path
-                      d="M256.09,256.883h-8.53v-8.53c0-4.709-3.813-8.53-8.53-8.53c-4.709,0-8.53,3.822-8.53,8.53v8.53h-8.53
-                    c-4.709,0-8.53,3.822-8.53,8.53c0,4.709,3.822,8.53,8.53,8.53h8.53v8.53c0,4.709,3.822,8.53,8.53,8.53s8.53-3.822,8.53-8.53v-8.53
-                    h8.53c4.709,0,8.53-3.822,8.53-8.53C264.62,260.704,260.798,256.883,256.09,256.883z"
-                    />
-                  </g>
-                </g>
+              <svg class="annotation-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <ellipse cx="12" cy="12" rx="8" ry="5" />
               </svg>
             </button>
           </div>
@@ -1449,7 +1456,6 @@
             <button
               class="custom-button"
               id="gearButton"
-              disabled
               title="Annotation Settings"
             >
               <svg
@@ -1587,6 +1593,10 @@
             <div class="setting-row">
               <input type="color" id="annoLabelFontColor" value="#FFFFFF" />
               <label for="annoLabelFontColor">Color</label>
+              <input type="checkbox" id="annoLabelFontColorRandom" />
+              <label class="random-label" for="annoLabelFontColorRandom"
+                >random</label
+              >
               <div class="button-group">
                 <button
                   class="apply-current-btn"
@@ -1652,6 +1662,12 @@
                 value="#000000"
               />
               <label for="annoLabelBackgroundColor">Color</label>
+              <input type="checkbox" id="annoLabelBackgroundColorRandom" />
+              <label
+                class="random-label"
+                for="annoLabelBackgroundColorRandom"
+                >random</label
+              >
               <div class="button-group">
                 <button
                   class="apply-current-btn"
@@ -1923,6 +1939,8 @@
             <div class="setting-row">
               <input type="color" id="lineColor" value="#008000" />
               <label for="lineColor">Color</label>
+              <input type="checkbox" id="lineColorRandom" />
+              <label class="random-label" for="lineColorRandom">random</label>
               <div class="button-group">
                 <button
                   class="apply-current-btn"
@@ -2054,6 +2072,8 @@
             <div class="setting-row">
               <input type="color" id="fillColor" value="#FFFFFF" />
               <label for="fillColor">Color</label>
+              <input type="checkbox" id="fillColorRandom" />
+              <label class="random-label" for="fillColorRandom">random</label>
               <div class="button-group">
                 <button
                   class="apply-current-btn"
@@ -2417,6 +2437,7 @@
     <script src="js/openseadragon-scalebar.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
-    <script src="index.js"></script>
+    <script src="index.js?v=undo-grid-count"></script>
+    <script src="electron-import-wizard-launcher.js"></script>
   </body>
 </html>

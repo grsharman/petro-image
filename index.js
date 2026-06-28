@@ -3,15 +3,19 @@
 // Index of the currently selected sample
 let currentIndex = 0;
 let samples = [];
+let currentLibraryPath = "";
 let annotationFiles = {}; // For loading predefined annotations
 let groupMapping = {}; // To map groups to sample indices
 let scrollIndex = 1e6; // Prevents indexing error if starting at 0, due to negative numbers
 let enableStageRotation = false;
+let tileLoadGeneration = 0;
 
 // Accessors for attributes of the current sample
 const title = () => samples[currentIndex].title;
 const tileSets = () => samples[currentIndex].tileSets;
-const pixelsPerMeter = () => samples[currentIndex].pixelsPerMeter;
+const pixelsPerMeter = () => {
+  return samples[currentIndex].pixelsPerMeter;
+};
 const pixelsPerMicron = () => {
   const micronsPerMeter = 10 ** 6;
   return pixelsPerMeter() / micronsPerMeter;
@@ -50,18 +54,20 @@ let measureAreaJSONTemp = {
 function loadSampleJSON(input) {
   if (typeof input === "string") {
     // Load necessary information from JSON
-    fetch(input)
+    return fetch(input)
       .then((response) => response.json())
       .then((data) => {
-        processJSON(data); // Process JSON data
+        return processJSON(data); // Process JSON data
       });
   } else if (typeof input === "object") {
     // Case 2: Input is already parsed JSON
-    processJSON(input);
+    return processJSON(input);
   }
+
+  return Promise.resolve();
 }
 
-function processJSON(data) {
+async function processJSON(data) {
   currentIndex = 0;
   samples = data.samples;
   annotationFiles = {}; // For loading predefined annotations
@@ -91,11 +97,7 @@ function processJSON(data) {
   // Add a default "All" group containing all sample indices
   groupMapping["All"] = Array.from({ length: samples.length }, (_, i) => i);
 
-  // Example: initialize OpenSeadragon with the first tile source
-  loadTileSet();
   populateGroupDropdown();
-  updateImageCheckboxLabels;
-  displayImages();
   disableCountButtons();
   updateStageRotationCheck();
 
@@ -128,37 +130,108 @@ function processJSON(data) {
 }
 
 // Automatically load the default JSON file when the page loads
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
+  if (window.electronAPI?.initializeProjectLibrary) {
+    try {
+      const result = await window.electronAPI.initializeProjectLibrary();
+      currentLibraryPath = result?.filePath || "";
+      await loadSampleJSON(result.jsonData);
+      return;
+    } catch (error) {
+      console.error("Could not initialize project library:", error);
+    }
+  }
+
   loadSampleJSON("samples.json");
 });
 
-document
-  .getElementById("load-sample-JSON")
-  .addEventListener("change", function (event) {
-    const fileInput = event.target;
-    const file = fileInput.files[0];
-    if (!file) {
+async function loadLibraryWithElectronDialog() {
+  try {
+    const result = await window.electronAPI.selectExistingJsonFile();
+    if (result?.canceled) return;
+
+    currentLibraryPath = result.filePath || "";
+    await loadSampleJSON(result.jsonData);
+  } catch (error) {
+    console.error("Error loading library JSON:", error);
+    alert(error.message || "Invalid library JSON file.");
+  }
+
+  const menu = document.getElementById("imageSettingsMenu");
+  menu.style.display = "none";
+}
+
+async function changeProjectWithElectronDialog() {
+  try {
+    const result = await window.electronAPI.changeProjectLibrary();
+    if (!result?.jsonData) return;
+
+    currentLibraryPath = result.filePath || "";
+    await loadSampleJSON(result.jsonData);
+  } catch (error) {
+    console.error("Error opening project:", error);
+    alert(error.message || "Could not open the selected project.");
+  }
+
+  const menu = document.getElementById("imageSettingsMenu");
+  menu.style.display = "none";
+}
+
+const loadLibraryInput = document.getElementById("load-sample-JSON");
+const loadLibraryButton = document.getElementById("loadLibraryButton");
+const changeProjectButton = document.getElementById("changeProjectButton");
+
+if (loadLibraryButton) {
+  loadLibraryButton.addEventListener("click", function (event) {
+    event.preventDefault();
+
+    if (window.electronAPI?.selectExistingJsonFile) {
+      loadLibraryWithElectronDialog();
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = function (event) {
-      const sampleJSON = event.target.result;
-
-      try {
-        const parsedJSON = JSON.parse(sampleJSON);
-        loadSampleJSON(parsedJSON);
-      } catch (error) {
-        console.error("Error parsing JSON file:", error);
-      }
-      // Reset file input
-      fileInput.value = "";
-    };
-    reader.readAsText(file);
-    // Close the menu
-    const menu = document.getElementById("imageSettingsMenu");
-    menu.style.display = "none";
+    loadLibraryInput.click();
   });
+}
+
+if (changeProjectButton && window.electronAPI?.changeProjectLibrary) {
+  changeProjectButton.hidden = false;
+  changeProjectButton.addEventListener("click", function (event) {
+    event.preventDefault();
+    changeProjectWithElectronDialog();
+  });
+}
+
+loadLibraryInput.addEventListener("change", function (event) {
+  if (window.electronAPI?.selectExistingJsonFile) {
+    event.target.value = "";
+    return;
+  }
+
+  const fileInput = event.target;
+  const file = fileInput.files[0];
+  if (!file) {
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = function (event) {
+    const sampleJSON = event.target.result;
+
+    try {
+      const parsedJSON = JSON.parse(sampleJSON);
+      loadSampleJSON(parsedJSON);
+    } catch (error) {
+      console.error("Error parsing JSON file:", error);
+    }
+    // Reset file input
+    fileInput.value = "";
+  };
+  reader.readAsText(file);
+  // Close the menu
+  const menu = document.getElementById("imageSettingsMenu");
+  menu.style.display = "none";
+});
 
 // Parse URL for query parameters
 function getQueryParameter(param) {
@@ -218,12 +291,12 @@ const viewer = OpenSeadragon({
 /// Event listener for sample selection change (only add once)
 document
   .getElementById("sampleDropdown")
-  .addEventListener("change", function () {
+  .addEventListener("change", async function () {
     currentIndex = Number(this.value);
-    loadTileSet();
     buildImageCheckboxes();
     buildOpacitySliders();
     clearAnnotations();
+    annotationHistory.reset();
     updateImageCheckboxLabels();
     addScalebar(pixelsPerMeter());
     clearGrid();
@@ -237,34 +310,98 @@ document
     resetMeasurements(true);
     document.getElementById("enableDivideImages").checked = true;
     enableDivideImages = true;
+    await loadTileSet();
     displayImages();
     toggleOnImages();
     resetRotation();
     updateStageRotationCheck();
 
     const annoJSONButtonContainer = document.getElementById("loadAnnoFromJSON");
-
-    // Remove any existing button
-    const existingButton = document.getElementById("loadAnnoFromJSONButton");
-    if (existingButton) {
-      existingButton.remove();
-    }
+    annoJSONButtonContainer.innerHTML = "";
 
     // Check if the selected sample has annotations
-    let file = annotationFiles[title()];
-    if (file) {
+    const annotationFileOptions = normalizeAnnotationFileOptions(
+      annotationFiles[title()]
+    );
+    if (annotationFileOptions.length > 0) {
       hasAnnotationInJSON = true;
       const button = document.createElement("button");
       button.textContent = "Load from JSON";
       button.id = "loadAnnoFromJSONButton";
       button.className = "custom-button";
       button.style.setProperty("--button-width", "110px"); // button.style.display = "block"; // Make sure the button is visible
-      button.onclick = () => loadAnnotationsFromJSON(file);
       annoJSONButtonContainer.appendChild(button);
+
+      if (annotationFileOptions.length === 1) {
+        button.onclick = () => loadAnnotationsFromJSON(annotationFileOptions[0]);
+      } else {
+        const dropdown = document.createElement("div");
+        dropdown.id = "loadAnnoFromJSONDropdown";
+        dropdown.className = "annotation-json-dropdown";
+        dropdown.style.display = "none";
+
+        annotationFileOptions.forEach((file, index) => {
+          const optionButton = document.createElement("button");
+          optionButton.type = "button";
+          optionButton.textContent = getAnnotationFileLabel(
+            file,
+            index,
+            annotationFileOptions.length
+          );
+          optionButton.title = file;
+          optionButton.addEventListener("click", () => {
+            dropdown.style.display = "none";
+            loadAnnotationsFromJSON(file);
+          });
+          dropdown.appendChild(optionButton);
+        });
+
+        button.onclick = (event) => {
+          event.stopPropagation();
+          dropdown.style.display =
+            dropdown.style.display === "block" ? "none" : "block";
+        };
+
+        annoJSONButtonContainer.appendChild(dropdown);
+      }
     } else {
       hasAnnotationInJSON = false;
     }
   });
+
+function normalizeAnnotationFileOptions(annotationEntry) {
+  if (Array.isArray(annotationEntry)) {
+    return annotationEntry.filter((file) => typeof file === "string" && file);
+  }
+
+  if (typeof annotationEntry === "string" && annotationEntry) {
+    return [annotationEntry];
+  }
+
+  return [];
+}
+
+function getAnnotationFileLabel(file, index) {
+  const pathWithoutQuery = file.split(/[?#]/)[0];
+  const fileName = pathWithoutQuery.split(/[\\/]/).filter(Boolean).pop();
+
+  if (!fileName) {
+    return `Annotations ${index + 1}`;
+  }
+
+  return decodeURIComponent(fileName).replace(/\.(geo)?json$/i, "");
+}
+
+document.addEventListener("click", function (event) {
+  const dropdown = document.getElementById("loadAnnoFromJSONDropdown");
+  const button = document.getElementById("loadAnnoFromJSONButton");
+
+  if (!dropdown || !button) return;
+
+  if (!dropdown.contains(event.target) && event.target !== button) {
+    dropdown.style.display = "none";
+  }
+});
 
 // Function to update the image checkbox labels based on tileLabels array
 function updateImageCheckboxLabels() {
@@ -392,8 +529,661 @@ window.appState = {
   hasUnsavedCounts: false,
 };
 
+let suppressUnsavedAnnotationTracking = false;
+let suppressUnsavedCountTracking = false;
+let annotationHistoryPaused = false;
+let activeAnnotationDraft = null;
+let polyDraftRedoStack = [];
+let ellipseDraftRedoStack = [];
+let gridControlHistoryCommittedThisEvent = false;
+let lastCommittedGridControlState = null;
+const GRID_CONTROL_IDS = [
+  "show-aoi",
+  "grid-left",
+  "grid-left-value",
+  "grid-right",
+  "grid-right-value",
+  "grid-top",
+  "grid-top-value",
+  "grid-bottom",
+  "grid-bottom-value",
+  "step-size",
+  "no-points",
+  "gridLabelFontSize",
+  "gridLabelFontSizeAfter",
+  "gridLabelFontColor",
+  "gridLabelFontColorAfter",
+  "gridLabelBackgroundColor",
+  "gridLabelBackgroundColorAfter",
+  "gridLabelBackgroundOpacity",
+  "gridLabelBackgroundOpacityAfter",
+  "gridLineWeight",
+  "gridLineWeightAfter",
+  "gridLineOpacity",
+  "gridLineOpacityAfter",
+  "gridLineColor",
+  "gridLineColorAfter",
+];
+const GRID_CONTROL_HISTORY_LABELS = {
+  "show-aoi": "Change AOI visibility",
+  "grid-left": "Change AOI",
+  "grid-left-value": "Change AOI",
+  "grid-right": "Change AOI",
+  "grid-right-value": "Change AOI",
+  "grid-top": "Change AOI",
+  "grid-top-value": "Change AOI",
+  "grid-bottom": "Change AOI",
+  "grid-bottom-value": "Change AOI",
+  "step-size": "Change grid step size",
+  "no-points": "Change grid point count",
+  gridLabelFontSize: "Change grid label style",
+  gridLabelFontSizeAfter: "Change counted label style",
+  gridLabelFontColor: "Change grid label style",
+  gridLabelFontColorAfter: "Change counted label style",
+  gridLabelBackgroundColor: "Change grid label style",
+  gridLabelBackgroundColorAfter: "Change counted label style",
+  gridLabelBackgroundOpacity: "Change grid label style",
+  gridLabelBackgroundOpacityAfter: "Change counted label style",
+  gridLineWeight: "Change grid point style",
+  gridLineWeightAfter: "Change counted point style",
+  gridLineOpacity: "Change grid point style",
+  gridLineOpacityAfter: "Change counted point style",
+  gridLineColor: "Change grid point style",
+  gridLineColorAfter: "Change counted point style",
+};
+
+const annotationHistory = {
+  limit: 100,
+  undoStack: [],
+  redoStack: [],
+
+  push(label, state = cloneAnnotationState()) {
+    if (annotationHistoryPaused || suppressUnsavedAnnotationTracking) return;
+
+    this.undoStack.push({
+      label,
+      state,
+    });
+
+    if (this.undoStack.length > this.limit) {
+      this.undoStack.shift();
+    }
+
+    this.redoStack = [];
+    updateAnnotationHistoryControls();
+  },
+
+  reset() {
+    this.undoStack = [];
+    this.redoStack = [];
+    updateAnnotationHistoryControls();
+  },
+
+  undo() {
+    if (this.undoStack.length === 0) return;
+
+    const previous = this.undoStack.pop();
+    this.redoStack.push({
+      label: previous.label,
+      state: cloneAnnotationState(),
+    });
+    restoreAnnotationState(previous.state);
+    unsavedAnnotations(true);
+    unsavedCounts(true);
+    updateAnnotationHistoryControls();
+  },
+
+  redo() {
+    if (this.redoStack.length === 0) return;
+
+    const next = this.redoStack.pop();
+    this.undoStack.push({
+      label: next.label,
+      state: cloneAnnotationState(),
+    });
+    restoreAnnotationState(next.state);
+    unsavedAnnotations(true);
+    unsavedCounts(true);
+    updateAnnotationHistoryControls();
+  },
+};
+
+function cloneData(value) {
+  if (typeof structuredClone === "function") {
+    return structuredClone(value);
+  }
+  return JSON.parse(JSON.stringify(value));
+}
+
+function cloneAnnotationState() {
+  return {
+    annoJSON: cloneData(annoJSON),
+    annoJSONTemp: {
+      type: "FeatureCollection",
+      features: [],
+    },
+    countJSON: cloneData(countJSON),
+    grid: cloneData(grid),
+    gridApplied,
+    gridControls: cloneGridControlState(),
+    selectedAnnoId: document.getElementById("anno-id")?.value || "1",
+    selectedCountId: document.getElementById("count-id")?.value || "1",
+  };
+}
+
+function cloneGridControlState() {
+  return Object.fromEntries(
+    GRID_CONTROL_IDS.map((id) => {
+      const element = document.getElementById(id);
+      if (!element) return [id, undefined];
+      if (element.type === "checkbox") return [id, element.checked];
+      return [id, element.value];
+    })
+  );
+}
+
+function restoreGridControlState(values = {}) {
+  Object.entries(values).forEach(([id, value]) => {
+    const element = document.getElementById(id);
+    if (!element || value === undefined) return;
+    if (element.type === "checkbox") {
+      element.checked = Boolean(value);
+    } else {
+      element.value = value;
+    }
+  });
+
+  constrainGridSliders();
+  updateAoiRectangle();
+  lastCommittedGridControlState = cloneGridControlState();
+}
+
+function hasDraftUndo() {
+  return (
+    (activeAnnotationDraft === "poly" && clickImageCoordinates.length > 0) ||
+    (activeAnnotationDraft === "ellipse" && ellipseImageCoordinates.length > 0)
+  );
+}
+
+function hasDraftRedo() {
+  return (
+    (activeAnnotationDraft === "poly" && polyDraftRedoStack.length > 0) ||
+    (activeAnnotationDraft === "ellipse" && ellipseDraftRedoStack.length > 0)
+  );
+}
+
+function resetAnnotationDraftRedo() {
+  polyDraftRedoStack = [];
+  ellipseDraftRedoStack = [];
+  updateAnnotationHistoryControls();
+}
+
+function clearAnnotationDraftState() {
+  activeAnnotationDraft = null;
+  resetAnnotationDraftRedo();
+}
+
+function clearTransientAnnotationShortcutState() {
+  ["KeyQ", "KeyZ", "KeyX", "KeyC"].forEach((code) => {
+    pressedKeys?.delete(code);
+    if (typeof keyTimestamps !== "undefined") {
+      delete keyTimestamps[code];
+    }
+  });
+
+  isQPressed = false;
+  isZPressed = false;
+  isXPressed = false;
+  isCPressed = false;
+
+  if (!pointButton?.classList.contains("active")) {
+    toggleCrosshairFloaterOn(false);
+  }
+  if (!polylineButton?.classList.contains("active")) {
+    togglePolylineFloaterOn(false);
+  }
+  if (!polygonButton?.classList.contains("active")) {
+    togglePolygonFloaterOn(false);
+  }
+  if (!ellipseButton?.classList.contains("active")) {
+    toggleEllipseFloaterOn(false);
+  }
+}
+
+function getDraftCursorImagePoint() {
+  const image = viewer.world.getItemAt(0);
+  if (!image || !mousePos) return null;
+
+  const rect = viewerContainer.getBoundingClientRect();
+  const positionPoint = new OpenSeadragon.Point(
+    mousePos.x - rect.left,
+    mousePos.y - rect.top
+  );
+  const viewportPoint = viewer.viewport.pointFromPixel(positionPoint);
+  const imagePoint = image.viewportToImageCoordinates(
+    viewportPoint.x,
+    viewportPoint.y
+  );
+
+  return [imagePoint.x, imagePoint.y];
+}
+
+function redrawAnnotationDraft() {
+  annoJSONTemp = {
+    type: "FeatureCollection",
+    features: [],
+  };
+
+  const cursorImagePoint = getDraftCursorImagePoint();
+
+  if (activeAnnotationDraft === "poly" && clickImageCoordinates.length > 0) {
+    currentPolyStyleColors = getCurrentAnnotationStyleColors(
+      currentPolyStyleColors
+    );
+    const draftCoordinates = cursorImagePoint
+      ? [...clickImageCoordinates, cursorImagePoint]
+      : clickImageCoordinates;
+    addPolylineToGeoJSON(annoJSONTemp, draftCoordinates, {
+      labelFontSize: Number(document.getElementById("annoLabelFontSize").value),
+      labelFontColor: currentPolyStyleColors.labelFontColor,
+      labelBackgroundColor: currentPolyStyleColors.labelBackgroundColor,
+      labelBackgroundOpacity: Number(
+        document.getElementById("annoLabelBackgroundOpacity").value
+      ),
+      lineStyle: document.getElementById("lineStyle").value,
+      lineWeight: Number(document.getElementById("lineWeight").value),
+      lineColor: currentPolyStyleColors.lineColor,
+      lineOpacity: Number(document.getElementById("lineOpacity").value),
+    });
+  }
+
+  if (
+    activeAnnotationDraft === "ellipse" &&
+    ellipseImageCoordinates.length > 0 &&
+    cursorImagePoint
+  ) {
+    currentEllipseStyleColors = getCurrentAnnotationStyleColors(
+      currentEllipseStyleColors
+    );
+    const commonStyle = {
+      labelFontSize: Number(document.getElementById("annoLabelFontSize").value),
+      labelFontColor: currentEllipseStyleColors.labelFontColor,
+      labelBackgroundColor: currentEllipseStyleColors.labelBackgroundColor,
+      labelBackgroundOpacity: Number(
+        document.getElementById("annoLabelBackgroundOpacity").value
+      ),
+      lineStyle: document.getElementById("lineStyle").value,
+      lineWeight: Number(document.getElementById("lineWeight").value),
+      lineColor: currentEllipseStyleColors.lineColor,
+      lineOpacity: Number(document.getElementById("lineOpacity").value),
+    };
+
+    if (ellipseImageCoordinates.length === 1) {
+      const longAxisImagePoints = getLongAxisLine([
+        ellipseImageCoordinates[0],
+        cursorImagePoint,
+      ]);
+      addPolylineToGeoJSON(annoJSONTemp, [...longAxisImagePoints], commonStyle);
+    }
+
+    if (ellipseImageCoordinates.length === 2) {
+      const ellipseTempPoints = getEllipsePoints([
+        ellipseImageCoordinates[0],
+        ellipseImageCoordinates[1],
+        cursorImagePoint,
+      ]);
+      addPolygonToGeoJSON(annoJSONTemp, [...ellipseTempPoints], {
+        ...commonStyle,
+        fillColor: currentEllipseStyleColors.fillColor,
+        fillOpacity: Number(document.getElementById("fillOpacity").value),
+      });
+    }
+  }
+
+  drawShape(polyCanvas, [annoJSON, annoJSONTemp]);
+}
+
+function undoAnnotationDraftPoint() {
+  if (activeAnnotationDraft === "poly" && clickImageCoordinates.length > 0) {
+    polyDraftRedoStack.push({
+      viewport: clickCoordinates.pop(),
+      image: clickImageCoordinates.pop(),
+    });
+    if (clickImageCoordinates.length === 0) {
+      activelyMakingPoly = false;
+      currentPolyStyleColors = null;
+    }
+    redrawAnnotationDraft();
+    updateAnnotationHistoryControls();
+    return true;
+  }
+
+  if (
+    activeAnnotationDraft === "ellipse" &&
+    ellipseImageCoordinates.length > 0
+  ) {
+    ellipseDraftRedoStack.push({
+      viewport: ellipseCoordinates.pop(),
+      image: ellipseImageCoordinates.pop(),
+    });
+    if (ellipseImageCoordinates.length === 0) {
+      activelyMakingEllipse = false;
+      currentEllipseStyleColors = null;
+    }
+    redrawAnnotationDraft();
+    updateAnnotationHistoryControls();
+    return true;
+  }
+
+  return false;
+}
+
+function redoAnnotationDraftPoint() {
+  if (activeAnnotationDraft === "poly" && polyDraftRedoStack.length > 0) {
+    const point = polyDraftRedoStack.pop();
+    clickCoordinates.push(point.viewport);
+    clickImageCoordinates.push(point.image);
+    activelyMakingPoly = true;
+    redrawAnnotationDraft();
+    updateAnnotationHistoryControls();
+    return true;
+  }
+
+  if (
+    activeAnnotationDraft === "ellipse" &&
+    ellipseDraftRedoStack.length > 0
+  ) {
+    const point = ellipseDraftRedoStack.pop();
+    ellipseCoordinates.push(point.viewport);
+    ellipseImageCoordinates.push(point.image);
+    activelyMakingEllipse = true;
+    redrawAnnotationDraft();
+    updateAnnotationHistoryControls();
+    return true;
+  }
+
+  return false;
+}
+
+function removeAnnotationOverlays() {
+  [...document.getElementsByClassName("annotate-label")].forEach((label) => {
+    const container = label.closest(".annotation-overlay");
+    viewer.removeOverlay(container || label);
+    container?.remove();
+    label.remove();
+  });
+
+  [...document.getElementsByClassName("annotate-crosshairs")].forEach(
+    (crosshair) => {
+      viewer.removeOverlay(crosshair);
+      crosshair.remove();
+    }
+  );
+
+  annotateLabels = [];
+  annotatePoints = [];
+}
+
+function applyAnnotationVisibilityState() {
+  const showAnnotations = document.getElementById("show-annotations").checked;
+  const showLabels = document.getElementById("show-annotation-labels").checked;
+
+  for (let el of document.getElementsByClassName("annotate-crosshairs")) {
+    el.style.visibility = showAnnotations ? "visible" : "hidden";
+  }
+
+  for (let el of document.getElementsByClassName("annotate-label")) {
+    el.style.visibility =
+      showAnnotations && showLabels ? "visible" : "hidden";
+  }
+
+  polyCanvas.style.display = showAnnotations ? "block" : "none";
+}
+
+function renderAnnotationOverlaysFromJSON() {
+  const image = viewer.world.getItemAt(0);
+  if (!image) return;
+
+  annoJSON.features.forEach((feature) => {
+    if (!feature.geometry || !feature.properties) return;
+
+    const props = feature.properties;
+    const viewportPoint = image.imageToViewportCoordinates(
+      new OpenSeadragon.Point(props.xLabel, props.yLabel)
+    );
+
+    addText(
+      props.uuid,
+      props.label || "",
+      viewportPoint,
+      "anno",
+      props.labelFontColor,
+      Number(props.labelFontSize),
+      props.labelBackgroundColor,
+      Number(props.labelBackgroundOpacity)
+    );
+
+    if (feature.geometry.type === "Point") {
+      addCrosshairs(
+        props.uuid,
+        viewportPoint,
+        "anno",
+        props.lineColor,
+        Number(props.lineWeight),
+        Number(props.lineOpacity)
+      );
+    }
+  });
+
+  drawShape(polyCanvas, [annoJSON, annoJSONTemp]);
+  applyAnnotationVisibilityState();
+}
+
+function removeCountOverlays() {
+  [...document.getElementsByClassName("grid-label")].forEach((label) => {
+    const container = label.closest(".annotation-overlay");
+    viewer.removeOverlay(container || label);
+    container?.remove();
+    label.remove();
+  });
+
+  [...document.getElementsByClassName("grid-crosshairs")].forEach(
+    (crosshair) => {
+      viewer.removeOverlay(crosshair);
+      crosshair.remove();
+    }
+  );
+}
+
+function applyGridVisibilityState() {
+  const showGrid = document.getElementById("show-grid").checked;
+  const showLabels = document.getElementById("show-grid-labels").checked;
+
+  for (let el of document.getElementsByClassName("grid-crosshairs")) {
+    el.style.visibility = showGrid ? "visible" : "hidden";
+  }
+
+  for (let el of document.getElementsByClassName("grid-label")) {
+    el.style.visibility = showGrid && showLabels ? "visible" : "hidden";
+  }
+}
+
+function renderCountOverlaysFromJSON() {
+  const image = viewer.world.getItemAt(0);
+  if (!image) return;
+
+  countJSON.features.forEach((feature) => {
+    if (!feature.geometry || !feature.properties) return;
+
+    const props = feature.properties;
+    const [x, y] = feature.geometry.coordinates;
+    const viewportPoint = image.imageToViewportCoordinates(
+      new OpenSeadragon.Point(x, y)
+    );
+
+    addText(
+      props.uuid,
+      props.label,
+      viewportPoint,
+      "grid",
+      props.labelFontColor,
+      props.labelFontSize,
+      props.labelBackgroundColor,
+      props.labelBackgroundOpacity
+    );
+    addCrosshairs(
+      props.uuid,
+      viewportPoint,
+      "grid",
+      props.lineColor,
+      props.lineWeight,
+      props.lineOpacity
+    );
+  });
+
+  applyFormattingAfterCountAll(countJSON, "both");
+  applyGridVisibilityState();
+}
+
+function restoreCountGridState(state) {
+  suppressUnsavedCountTracking = true;
+  try {
+    removeCountOverlays();
+    countJSON = cloneData(state.countJSON || { type: "FeatureCollection", features: [] });
+    grid = new Grid(state.grid || {
+      xMin: 20,
+      yMin: 10,
+      xMax: 80,
+      yMax: 90,
+      step: 1000,
+      noPoints: 600,
+    });
+    gridApplied = Boolean(state.gridApplied);
+    restoreGridControlState(state.gridControls);
+    renderCountOverlaysFromJSON();
+
+    const selectedId = Math.min(
+      Number(state.selectedCountId) || 1,
+      countJSON.features.length || 1
+    );
+    document.getElementById("count-id").value = selectedId;
+
+    if (countJSON.features.length > 0) {
+      enableCountButtons();
+      disableGridOptions();
+      document.getElementById("apply-grid-settings").disabled = true;
+      document.getElementById("clear-grid").disabled = false;
+      inputSampleLabelFromOverlay();
+    } else {
+      disableCountButtons();
+      enableGridOptions();
+      document.getElementById("apply-grid-settings").disabled = false;
+      document.getElementById("clear-grid").disabled = true;
+      document.getElementById("count-text").value = "";
+      document.getElementById("count-notes").value = "";
+    }
+
+    populateDropdown();
+    populateFilterDropdown();
+    filterOverlays();
+  } finally {
+    suppressUnsavedCountTracking = false;
+  }
+}
+
+function restoreAnnotationState(state) {
+  suppressUnsavedAnnotationTracking = true;
+  try {
+    removeAnnotationOverlays();
+    annoJSON = cloneData(state.annoJSON);
+    annoJSONTemp = cloneData(state.annoJSONTemp);
+    renderAnnotationOverlaysFromJSON();
+
+    const selectedId = Math.min(
+      Number(state.selectedAnnoId) || 1,
+      annoJSON.features.length || 1
+    );
+    document.getElementById("anno-id").value = selectedId;
+
+    if (annoJSON.features.length > 0) {
+      enableAnnoButtons();
+      annoLabelToText();
+    } else {
+      disableAnnoButtons();
+      document.getElementById("anno-label").value = "";
+      document.getElementById("anno-notes").value = "";
+    }
+
+    restoreCountGridState(state);
+  } finally {
+    suppressUnsavedAnnotationTracking = false;
+  }
+}
+
+function updateAnnotationHistoryControls() {
+  const undoButton = document.getElementById("undoButton");
+  const redoButton = document.getElementById("redoButton");
+
+  if (undoButton) {
+    const canUndoDraft = hasDraftUndo();
+    const canUndo = canUndoDraft || annotationHistory.undoStack.length > 0;
+    undoButton.disabled = !canUndo;
+    undoButton.title = canUndoDraft
+      ? "Undo drawing point"
+      : canUndo
+      ? `Undo ${
+          annotationHistory.undoStack[annotationHistory.undoStack.length - 1]
+            .label
+        }`
+      : "Undo";
+  }
+
+  if (redoButton) {
+    const canRedoDraft = hasDraftRedo();
+    const canRedo = canRedoDraft || annotationHistory.redoStack.length > 0;
+    redoButton.disabled = !canRedo;
+    redoButton.title = canRedoDraft
+      ? "Redo drawing point"
+      : canRedo
+      ? `Redo ${
+          annotationHistory.redoStack[annotationHistory.redoStack.length - 1]
+            .label
+        }`
+      : "Redo";
+  }
+}
+
+function setupAnnotationHistoryControls() {
+  const undoButton = document.getElementById("undoButton");
+  const redoButton = document.getElementById("redoButton");
+
+  undoButton?.addEventListener("click", function (event) {
+    event.preventDefault();
+    event.stopPropagation();
+    clearTransientAnnotationShortcutState();
+    if (!undoAnnotationDraftPoint()) {
+      annotationHistory.undo();
+    }
+  });
+
+  redoButton?.addEventListener("click", function (event) {
+    event.preventDefault();
+    event.stopPropagation();
+    clearTransientAnnotationShortcutState();
+    if (!redoAnnotationDraftPoint()) {
+      annotationHistory.redo();
+    }
+  });
+
+  updateAnnotationHistoryControls();
+}
+
+setupAnnotationHistoryControls();
+
 // TOOD: A new function for changing hasUnsavedAnnotations
 function unsavedAnnotations(value) {
+  if (suppressUnsavedAnnotationTracking) return;
+
   if (value) {
     window.appState.hasUnsavedAnnotations = true;
   } else {
@@ -407,6 +1197,8 @@ function unsavedAnnotations(value) {
 }
 
 function unsavedCounts(value) {
+  if (suppressUnsavedCountTracking) return;
+
   if (value) {
     window.appState.hasUnsavedCounts = true;
   } else {
@@ -556,19 +1348,54 @@ function restoreScalebarDefaults() {
 
 // Load the images for the tile set at the given index within the currently
 // selected sample's tile sets.
-function loadTileSet() {
+async function loadTileSet() {
+  const loadGeneration = ++tileLoadGeneration;
+  const sampleIndex = currentIndex;
+
   // Remove any previously loaded images from the viewer.
   viewer.world.removeAll();
 
   // Load and store tiled images.
   for (let tileSet of tileSets()) {
     for (let tile of tileSet.tiles) {
+      tile.image = null;
+      const tileSource = await getTileSource(tile.uri);
+      if (loadGeneration !== tileLoadGeneration || sampleIndex !== currentIndex) {
+        return;
+      }
+
       viewer.addTiledImage({
-        tileSource: tile.uri,
-        success: (event) => (tile.image = event.item),
+        tileSource,
+        success: (event) => {
+          if (loadGeneration !== tileLoadGeneration || sampleIndex !== currentIndex) {
+            return;
+          }
+
+          tile.image = event.item;
+          displayImages();
+        },
       });
     }
   }
+}
+
+async function getTileSource(uri) {
+  if (
+    typeof uri === "string" &&
+    window.electronAPI?.getLocalDziTileSource &&
+    isLocalTileSourcePath(uri)
+  ) {
+    return window.electronAPI.getLocalDziTileSource(uri);
+  }
+
+  return uri;
+}
+
+function isLocalTileSourcePath(uri) {
+  return (
+    !/^[a-z][a-z0-9+.-]*:\/\//i.test(uri) &&
+    (/\.dzi$/i.test(uri) || /^\/|^[A-Za-z]:[\\/]/.test(uri))
+  );
 }
 
 const viewerContainer = document.getElementById("viewer-container");
@@ -649,7 +1476,9 @@ const displayImages = () => {
     const sliderValue = sliders[i]?.value ?? 100;
     const tileSetOpacity = sliderValue / 100;
     // Disable slider if the corresponding checkbox is unchecked
-    sliders[i].disabled = !isChecked[i];
+    if (sliders[i]) {
+      sliders[i].disabled = !isChecked[i];
+    }
     const getTileOpacity = getTileOpacityGetter(tileSet, tileSetOpacity);
 
     tiles.forEach((tile, j) => {
@@ -768,24 +1597,175 @@ viewer.addHandler("animation", displayImages);
 // Update grid slider values as slider moves
 const slider_1 = document.getElementById("grid-left");
 const sliderValue_1 = document.getElementById("grid-left-value");
-slider_1.oninput = function () {
-  sliderValue_1.textContent = this.value;
-};
 const slider_2 = document.getElementById("grid-right");
 const sliderValue_2 = document.getElementById("grid-right-value");
-slider_2.oninput = function () {
-  sliderValue_2.textContent = this.value;
-};
 const slider_3 = document.getElementById("grid-top");
 const sliderValue_3 = document.getElementById("grid-top-value");
-slider_3.oninput = function () {
-  sliderValue_3.textContent = this.value;
-};
 const slider_4 = document.getElementById("grid-bottom");
 const sliderValue_4 = document.getElementById("grid-bottom-value");
-slider_4.oninput = function () {
-  sliderValue_4.textContent = this.value;
-};
+
+function normalizeGridValue(value) {
+  const numericValue = Number(value);
+
+  if (!Number.isFinite(numericValue)) {
+    return 0;
+  }
+
+  return Math.max(0, Math.min(100, Math.round(numericValue)));
+}
+
+function syncGridValueDisplay(slider, valueInput) {
+  valueInput.value = slider.value;
+}
+
+function setGridSliderValue(slider, valueInput, value) {
+  const previousSliderValue = slider.value;
+  const nextValue = String(normalizeGridValue(value));
+  if (previousSliderValue !== nextValue) {
+    const undoState = cloneAnnotationState();
+    undoState.gridControls[slider.id] = previousSliderValue;
+    undoState.gridControls[valueInput.id] = previousSliderValue;
+    annotationHistory.push("Change AOI", undoState);
+  }
+
+  slider.value = nextValue;
+  syncGridValueDisplay(slider, valueInput);
+  slider.dispatchEvent(new Event("input"));
+  enableGridButtons();
+  lastCommittedGridControlState = cloneGridControlState();
+}
+
+function setupUndoableGridControl(id, label) {
+  const element = document.getElementById(id);
+  if (!element) return;
+  element.committedGridControls = cloneGridControlState();
+
+  const capture = () => {
+    element.undoState = cloneAnnotationState();
+    element.undoValue =
+      element.type === "checkbox" ? element.checked : element.value;
+  };
+
+  const commit = () => {
+    const currentValue =
+      element.type === "checkbox" ? element.checked : element.value;
+    const previousValue =
+      element.undoValue !== undefined
+        ? element.undoValue
+        : element.committedGridControls?.[id];
+
+    if (currentValue !== previousValue) {
+      const undoState = element.undoState || cloneAnnotationState();
+      if (!element.undoState && element.committedGridControls) {
+        undoState.gridControls = cloneData(element.committedGridControls);
+      }
+      annotationHistory.push(label, undoState);
+      gridControlHistoryCommittedThisEvent = true;
+    }
+    element.committedGridControls = cloneGridControlState();
+    element.undoState = null;
+    element.undoValue = undefined;
+  };
+
+  element.addEventListener("pointerdown", capture);
+  element.addEventListener("focusin", capture);
+  element.addEventListener("beforeinput", function () {
+    if (!element.undoState) {
+      capture();
+    }
+  });
+  element.addEventListener("keydown", function (event) {
+    if (!element.undoState && ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "PageUp", "PageDown", "Home", "End"].includes(event.key)) {
+      capture();
+    }
+    if (event.key === "Enter") {
+      element.dispatchEvent(new Event("change", { bubbles: true }));
+      element.blur();
+    }
+  });
+  element.addEventListener("change", commit);
+}
+
+[
+  ["show-aoi", "Change AOI visibility"],
+  ["grid-left", "Change AOI"],
+  ["grid-left-value", "Change AOI"],
+  ["grid-right", "Change AOI"],
+  ["grid-right-value", "Change AOI"],
+  ["grid-top", "Change AOI"],
+  ["grid-top-value", "Change AOI"],
+  ["grid-bottom", "Change AOI"],
+  ["grid-bottom-value", "Change AOI"],
+  ["step-size", "Change grid step size"],
+  ["no-points", "Change grid point count"],
+  ["gridLabelFontSize", "Change grid label style"],
+  ["gridLabelFontSizeAfter", "Change counted label style"],
+  ["gridLabelFontColor", "Change grid label style"],
+  ["gridLabelFontColorAfter", "Change counted label style"],
+  ["gridLabelBackgroundColor", "Change grid label style"],
+  ["gridLabelBackgroundColorAfter", "Change counted label style"],
+  ["gridLabelBackgroundOpacity", "Change grid label style"],
+  ["gridLabelBackgroundOpacityAfter", "Change counted label style"],
+  ["gridLineWeight", "Change grid point style"],
+  ["gridLineWeightAfter", "Change counted point style"],
+  ["gridLineOpacity", "Change grid point style"],
+  ["gridLineOpacityAfter", "Change counted point style"],
+  ["gridLineColor", "Change grid point style"],
+  ["gridLineColorAfter", "Change counted point style"],
+].forEach(([id, label]) => setupUndoableGridControl(id, label));
+
+lastCommittedGridControlState = cloneGridControlState();
+document.addEventListener("change", function (event) {
+  const id = event.target?.id;
+  if (!GRID_CONTROL_IDS.includes(id)) return;
+
+  if (gridControlHistoryCommittedThisEvent) {
+    gridControlHistoryCommittedThisEvent = false;
+    lastCommittedGridControlState = cloneGridControlState();
+    return;
+  }
+
+  const currentState = cloneGridControlState();
+  if (
+    JSON.stringify(currentState) !== JSON.stringify(lastCommittedGridControlState)
+  ) {
+    const undoState = cloneAnnotationState();
+    undoState.gridControls = cloneData(lastCommittedGridControlState);
+    annotationHistory.push(
+      GRID_CONTROL_HISTORY_LABELS[id] || "Change grid setting",
+      undoState
+    );
+    lastCommittedGridControlState = currentState;
+  }
+});
+
+function constrainGridSliders() {
+  if (parseInt(slider_1.value) > parseInt(slider_2.value)) {
+    slider_1.value = slider_2.value;
+  }
+
+  if (parseInt(slider_3.value) > parseInt(slider_4.value)) {
+    slider_3.value = slider_4.value;
+  }
+
+  syncGridValueDisplay(slider_1, sliderValue_1);
+  syncGridValueDisplay(slider_2, sliderValue_2);
+  syncGridValueDisplay(slider_3, sliderValue_3);
+  syncGridValueDisplay(slider_4, sliderValue_4);
+}
+
+sliderValue_1.addEventListener("change", () => {
+  setGridSliderValue(slider_1, sliderValue_1, sliderValue_1.value);
+});
+sliderValue_2.addEventListener("change", () => {
+  setGridSliderValue(slider_2, sliderValue_2, sliderValue_2.value);
+});
+sliderValue_3.addEventListener("change", () => {
+  setGridSliderValue(slider_3, sliderValue_3, sliderValue_3.value);
+});
+sliderValue_4.addEventListener("change", () => {
+  setGridSliderValue(slider_4, sliderValue_4, sliderValue_4.value);
+});
 
 function buildImageCheckboxes() {
   const numTileSets = tileSets().length;
@@ -818,8 +1798,10 @@ function buildOpacitySliders() {
 
   for (let i = 0; i < numTileSets; i++) {
     const div = document.createElement("div");
+    div.className = "opacity-slider-row";
 
     const label = document.createElement("label");
+    label.className = "opacity-slider-label";
     label.textContent = `Img ${i + 1}`;
 
     const slider = document.createElement("input");
@@ -830,18 +1812,34 @@ function buildOpacitySliders() {
     slider.className = "opacity-slider";
     slider.dataset.index = i;
 
-    const valueSpan = document.createElement("span");
-    valueSpan.className = "slider-value";
-    valueSpan.textContent = "100%";
+    const valueInput = document.createElement("input");
+    valueInput.type = "number";
+    valueInput.min = 0;
+    valueInput.max = 100;
+    valueInput.step = 1;
+    valueInput.value = 100;
+    valueInput.className = "slider-value opacity-slider-value";
+    valueInput.title = "Opacity percentage";
+
+    const setOpacityValue = (value) => {
+      const opacityValue = Math.max(0, Math.min(100, Number(value) || 0));
+      slider.value = opacityValue;
+      valueInput.value = opacityValue;
+      displayImages();
+    };
 
     slider.addEventListener("input", () => {
-      valueSpan.textContent = slider.value + "%";
+      valueInput.value = slider.value;
       displayImages();
+    });
+
+    valueInput.addEventListener("change", () => {
+      setOpacityValue(valueInput.value);
     });
 
     div.appendChild(label);
     div.appendChild(slider);
-    div.appendChild(valueSpan);
+    div.appendChild(valueInput);
     container.appendChild(div);
   }
 }
@@ -861,11 +1859,11 @@ function resetOpacitySliders() {
       updateImageOpacity(imageIndex, 1); // set actual image opacity to 1 (100%)
     }
 
-    // Update the displayed slider value, if there’s a span next to it
-    const sliderValueSpan =
+    // Update the displayed slider value, if there’s an input next to it
+    const sliderValueInput =
       sliderInput.parentElement.querySelector(".slider-value");
-    if (sliderValueSpan) {
-      sliderValueSpan.textContent = `${sliderInput.value}%`;
+    if (sliderValueInput) {
+      sliderValueInput.value = sliderInput.value;
     }
   });
 }
@@ -909,7 +1907,7 @@ function updateOpacityImageSliderVisibility() {
 
   sliderContainers.forEach((container, index) => {
     const sliderInput = container.querySelector("input.opacity-slider");
-    const sliderValueSpan = container.querySelector(".slider-value");
+    const sliderValueInput = container.querySelector(".slider-value");
 
     if (index < tileSets().length) {
       container.style.display = "block";
@@ -917,8 +1915,8 @@ function updateOpacityImageSliderVisibility() {
       if (sliderInput) {
         sliderInput.value = 100;
       }
-      if (sliderValueSpan) {
-        sliderValueSpan.textContent = "100%";
+      if (sliderValueInput) {
+        sliderValueInput.value = 100;
       }
     } else {
       container.style.display = "none";
@@ -931,33 +1929,19 @@ function updateOpacityImageSliderVisibility() {
 
 // Constrain values of sliders and update the value display for slider1
 slider_1.addEventListener("input", function () {
-  if (parseInt(slider_1.value) > parseInt(slider_2.value)) {
-    slider_1.value = slider_2.value;
-  }
-  sliderValue_1.textContent = slider_1.value;
+  constrainGridSliders();
 });
 // Update the value display for slider2 and ensure slider1 stays within bounds
 slider_2.addEventListener("input", function () {
-  if (parseInt(slider_1.value) > parseInt(slider_2.value)) {
-    slider_1.value = slider_2.value;
-    sliderValue_1.textContent = slider_1.value; // Update display for slider1
-  }
-  sliderValue_2.textContent = slider_2.value;
+  constrainGridSliders();
 });
 // Update the value display for slider3
 slider_3.addEventListener("input", function () {
-  if (parseInt(slider_3.value) > parseInt(slider_4.value)) {
-    slider_3.value = slider_4.value;
-  }
-  sliderValue_3.textContent = slider_3.value;
+  constrainGridSliders();
 });
 // Update the value display for slider2 and ensure slider3 stays within bounds
 slider_4.addEventListener("input", function () {
-  if (parseInt(slider_3.value) > parseInt(slider_4.value)) {
-    slider_3.value = slider_4.value;
-    sliderValue_3.textContent = slider_4.value; // Update display for slider1
-  }
-  sliderValue_4.textContent = slider_4.value;
+  constrainGridSliders();
 });
 
 ///////////////////////////////////
@@ -985,10 +1969,15 @@ function removeTemporaryPoints() {
   clickCoordinatesArray = [];
   ellipseCoordinates = [];
   ellipseImageCoordinates = [];
+  currentEllipseStyleColors = null;
+  currentPolyStyleColors = null;
+  currentRectStyleColors = null;
   annoJSONTemp = {
     type: "FeatureCollection",
     features: [],
   };
+  clearAnnotationDraftState();
+  drawShape(polyCanvas, [annoJSON, annoJSONTemp]);
 }
 
 pointButton.addEventListener("click", () => {
@@ -1182,6 +2171,80 @@ window.addEventListener("click", function (event) {
   }
 });
 
+const randomAnnotationColorInputs = [
+  "annoLabelFontColor",
+  "annoLabelBackgroundColor",
+  "lineColor",
+  "fillColor",
+];
+randomAnnotationColorInputs.forEach((inputId) => {
+  const input = document.getElementById(inputId);
+  const randomCheckbox = document.getElementById(`${inputId}Random`);
+  if (input && randomCheckbox) {
+    randomCheckbox.addEventListener("change", () => {
+      input.disabled = randomCheckbox.checked;
+    });
+  }
+});
+
+function getAnnotationColor(inputId) {
+  const colorInput = document.getElementById(inputId);
+  const randomCheckbox = document.getElementById(`${inputId}Random`);
+  if (randomCheckbox?.checked) {
+    return getRandomAnnotationColor();
+  }
+  return colorInput?.value || "#FFFFFF";
+}
+
+function getCurrentAnnotationStyleColors(existingColors = {}) {
+  existingColors = existingColors || {};
+  return {
+    labelFontColor:
+      existingColors.labelFontColor || getAnnotationColor("annoLabelFontColor"),
+    labelBackgroundColor:
+      existingColors.labelBackgroundColor ||
+      getAnnotationColor("annoLabelBackgroundColor"),
+    lineColor: existingColors.lineColor || getAnnotationColor("lineColor"),
+    fillColor: existingColors.fillColor || getAnnotationColor("fillColor"),
+  };
+}
+
+function getRandomAnnotationColor() {
+  const hue = Math.floor(Math.random() * 360);
+  const saturation = 65 + Math.floor(Math.random() * 16);
+  const lightness = 45 + Math.floor(Math.random() * 11);
+  return hslToHex(hue, saturation, lightness);
+}
+
+function hslToHex(h, s, l) {
+  l /= 100;
+  const a = (s * Math.min(l, 1 - l)) / 100;
+  const f = (n) => {
+    const k = (n + h / 30) % 12;
+    const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+    return Math.round(255 * color)
+      .toString(16)
+      .padStart(2, "0");
+  };
+  return `#${f(0)}${f(8)}${f(4)}`;
+}
+
+function getAnnotationFillColor() {
+  return getAnnotationColor("fillColor");
+}
+
+function getAnnotationLineColor() {
+  return getAnnotationColor("lineColor");
+}
+
+function getAnnotationLabelFontColor() {
+  return getAnnotationColor("annoLabelFontColor");
+}
+
+function getAnnotationLabelBackgroundColor() {
+  return getAnnotationColor("annoLabelBackgroundColor");
+}
+
 // Close the menu if clicked outside (circle menu)
 window.addEventListener("click", function (event) {
   const menu = document.getElementById("circleSettingsMenu");
@@ -1228,7 +2291,7 @@ const disableAnnoButtons = () => {
   document.getElementById("anno-label").disabled = true;
   document.getElementById("anno-notes").disabled = true;
   document.getElementById("deleteButton").disabled = true;
-  document.getElementById("gearButton").disabled = true;
+  document.getElementById("gearButton").disabled = false;
   document.getElementById("repeatButton").disabled = true;
   document.getElementById("exportBtn").disabled = true;
   document.getElementById("clearBtn").disabled = true;
@@ -1341,9 +2404,12 @@ document
 document.getElementById("deleteButton").addEventListener("click", function () {
   // Deleting the last item is equivalent to clearing all items
   if (annoJSON.features.length === 1) {
+    annotationHistory.push("Delete annotation");
     clearAnnotations();
+    unsavedAnnotations(true);
     disableAnnoButtons();
   } else {
+    annotationHistory.push("Delete annotation");
     const id = parseInt(document.getElementById("anno-id").value);
     const uuid = annoJSON.features[id - 1].properties.uuid;
     deleteText(uuid, "anno");
@@ -1366,18 +2432,16 @@ function applyCurrentAnno(id, changeLabel = false) {
   const labelFontSize = Number(
     document.getElementById("annoLabelFontSize").value
   );
-  const labelFontColor = document.getElementById("annoLabelFontColor").value;
-  const labelBackgroundColor = document.getElementById(
-    "annoLabelBackgroundColor"
-  ).value;
+  const labelFontColor = getAnnotationLabelFontColor();
+  const labelBackgroundColor = getAnnotationLabelBackgroundColor();
   const labelBackgroundOpacity = Number(
     document.getElementById("annoLabelBackgroundOpacity").value
   );
   const lineWeight = Number(document.getElementById("lineWeight").value);
-  const lineColor = document.getElementById("lineColor").value;
+  const lineColor = getAnnotationLineColor();
   const lineOpacity = Number(document.getElementById("lineOpacity").value);
   const lineStyle = document.getElementById("lineStyle").value;
-  const fillColor = document.getElementById("fillColor").value;
+  const fillColor = getAnnotationFillColor();
   const fillOpacity = Number(document.getElementById("fillOpacity").value);
   const uuid = annoJSON.features[id - 1].properties.uuid;
   const type = annoJSON.features[id - 1].geometry.type;
@@ -1536,6 +2600,9 @@ document
   .getElementById("applyCurrentAnnoLabel")
   .addEventListener("click", function () {
     const id = parseInt(document.getElementById("anno-id").value);
+    if (annoJSON.features[id - 1]) {
+      annotationHistory.push("Style annotation label");
+    }
     applyCurrentAnno(id, true);
   });
 
@@ -1544,6 +2611,9 @@ document
   .getElementById("applyCurrentGridLabel")
   .addEventListener("click", function () {
     const id = parseInt(document.getElementById("count-id").value);
+    if (countJSON.features[id - 1]) {
+      annotationHistory.push("Style count label");
+    }
     const uuid = countJSON.features[id - 1].properties.uuid;
     applyCurrentGrid(id, true);
     applyFormattingAfterCount(countJSON, uuid, "text");
@@ -1553,6 +2623,9 @@ document
 document
   .getElementById("applyAllAnnoLabel")
   .addEventListener("click", function () {
+    if (annoJSON.features.length > 0) {
+      annotationHistory.push("Style annotation labels");
+    }
     const annoIds = Array.from(
       { length: annoJSON.features.length },
       (_, i) => i + 1
@@ -1567,6 +2640,9 @@ document
 document
   .getElementById("applyAllGridLabel")
   .addEventListener("click", function () {
+    if (countJSON.features.length > 0) {
+      annotationHistory.push("Style count labels");
+    }
     const gridIds = Array.from(
       { length: countJSON.features.length },
       (_, i) => i + 1
@@ -1583,6 +2659,9 @@ document
   .getElementById("applyCurrentAnno")
   .addEventListener("click", function () {
     const id = parseInt(document.getElementById("anno-id").value);
+    if (annoJSON.features[id - 1]) {
+      annotationHistory.push("Style annotation");
+    }
     applyCurrentAnno(id, false);
   });
 
@@ -1591,6 +2670,9 @@ document
   .getElementById("applyCurrentGrid")
   .addEventListener("click", function () {
     const id = parseInt(document.getElementById("count-id").value);
+    if (countJSON.features[id - 1]) {
+      annotationHistory.push("Style count point");
+    }
     const uuid = countJSON.features[id - 1].properties.uuid;
     applyCurrentGrid(id, false);
     applyFormattingAfterCount(countJSON, uuid, "point");
@@ -1598,6 +2680,9 @@ document
 
 // Apply all annotations feature style
 document.getElementById("applyAllAnno").addEventListener("click", function () {
+  if (annoJSON.features.length > 0) {
+    annotationHistory.push("Style annotations");
+  }
   const annoIds = Array.from(
     { length: annoJSON.features.length },
     (_, i) => i + 1
@@ -1610,6 +2695,9 @@ document.getElementById("applyAllAnno").addEventListener("click", function () {
 
 // Apply all grid feature style
 document.getElementById("applyAllGrid").addEventListener("click", function () {
+  if (countJSON.features.length > 0) {
+    annotationHistory.push("Style count points");
+  }
   const gridIds = Array.from(
     { length: countJSON.features.length },
     (_, i) => i + 1
@@ -1704,8 +2792,16 @@ document.addEventListener("keydown", function (event) {
   // Check for Enter key in anno-label field
   if (event.code === "Enter" && document.activeElement === textInput) {
     event.preventDefault(); // Prevent any default action for Enter key
-    annoTextToLabel();
     const idInput = parseInt(document.getElementById("anno-id").value);
+    const feature = annoJSON.features[idInput - 1];
+    if (!feature) return;
+    if (
+      feature.properties.label !== textInput.value ||
+      feature.properties.notes !== document.getElementById("anno-notes").value
+    ) {
+      annotationHistory.push("Edit annotation label");
+    }
+    annoTextToLabel();
     const uuid = annoJSON.features[idInput - 1].properties.uuid;
     updateText(uuid, "anno", textInput.value);
   }
@@ -1717,6 +2813,15 @@ document.addEventListener("keydown", function (event) {
   // Check for Enter key in anno-notes field
   if (event.code === "Enter" && document.activeElement === textInput) {
     event.preventDefault(); // Prevent any default action for Enter key
+    const idInput = parseInt(document.getElementById("anno-id").value);
+    const feature = annoJSON.features[idInput - 1];
+    if (!feature) return;
+    if (
+      feature.properties.label !== document.getElementById("anno-label").value ||
+      feature.properties.notes !== textInput.value
+    ) {
+      annotationHistory.push("Edit annotation notes");
+    }
     annoTextToLabel();
   }
 });
@@ -1759,6 +2864,8 @@ function goToPoint(x, y) {
 
 // Function to add a point to the annoJSON
 function addPointToGeoJSON(x, y, metadata) {
+  annotationHistory.push("Add annotation");
+
   // Create a GeoJSON point feature
   // x, y = coordinates in image (pixel) coordinates
   // metadata = dictionary with feature labels and values, e.g., { uuid: 'abc', label: 'Hello World'}
@@ -1777,6 +2884,10 @@ function addPointToGeoJSON(x, y, metadata) {
 
 // Function to add a point to the annoJSON
 function addPolylineToGeoJSON(JSON, coordinates, metadata) {
+  if (JSON === annoJSON) {
+    annotationHistory.push("Add annotation");
+  }
+
   // Create a GeoJSON point feature
   // coordinates = array of x,y values in image (pixel) coordinates
   // metadata = dictionary with feature labels and values, e.g., { uuid: 'abc', label: 'Hello World'}
@@ -1794,6 +2905,10 @@ function addPolylineToGeoJSON(JSON, coordinates, metadata) {
 
 // Function to add a point to the annoJSON
 function addPolygonToGeoJSON(JSON, coordinates, metadata) {
+  if (JSON === annoJSON) {
+    annotationHistory.push("Add annotation");
+  }
+
   // Create a GeoJSON polygon feature
   // coordinates = array of x,y values in image (pixel) coordinates
   // metadata = dictionary with feature labels and values, e.g., { uuid: 'abc', label: 'Hello World'}
@@ -1908,6 +3023,8 @@ let isZPressed = false;
 let isXPressed = false;
 let isCPressed = false;
 document.addEventListener("keydown", function (event) {
+  if (event.ctrlKey || event.metaKey || event.altKey) return;
+
   if (event.key === "q" || event.key === "Q") {
     isQPressed = true;
     toggleCrosshairFloaterOn(true);
@@ -1930,6 +3047,8 @@ document.addEventListener("keydown", function (event) {
   }
 });
 document.addEventListener("keyup", function (event) {
+  if (event.ctrlKey || event.metaKey || event.altKey) return;
+
   if (event.key === "q" || event.key === "Q") {
     isQPressed = false;
     if (!pointButton.classList.contains("active")) {
@@ -1972,15 +3091,13 @@ viewer.addHandler("canvas-click", function (event) {
     const labelFontSize = Number(
       document.getElementById("annoLabelFontSize").value
     );
-    const labelFontColor = document.getElementById("annoLabelFontColor").value;
-    const labelBackgroundColor = document.getElementById(
-      "annoLabelBackgroundColor"
-    ).value;
+    const labelFontColor = getAnnotationLabelFontColor();
+    const labelBackgroundColor = getAnnotationLabelBackgroundColor();
     const labelBackgroundOpacity = Number(
       document.getElementById("annoLabelBackgroundOpacity").value
     );
     const lineWeight = Number(document.getElementById("lineWeight").value);
-    const lineColor = document.getElementById("lineColor").value;
+    const lineColor = getAnnotationLineColor();
     const lineOpacity = Number(document.getElementById("lineOpacity").value);
 
     let constPointLabel;
@@ -2207,6 +3324,7 @@ function getLowestYPoint(points) {
 let ellipseCoordinates = []; // Array to store ellipse viewport coordinates
 let ellipseImageCoordinates = []; // Array to store ellipse image coordinates
 let activelyMakingEllipse = false;
+let currentEllipseStyleColors = null;
 // Event listener to add ellipse annotations
 viewer.addHandler("canvas-click", function (event) {
   if (isEllipseMode || isCPressed) {
@@ -2224,21 +3342,24 @@ viewer.addHandler("canvas-click", function (event) {
     const labelFontSize = Number(
       document.getElementById("annoLabelFontSize").value
     );
-    const labelFontColor = document.getElementById("annoLabelFontColor").value;
-    const labelBackgroundColor = document.getElementById(
-      "annoLabelBackgroundColor"
-    ).value;
+    currentEllipseStyleColors = getCurrentAnnotationStyleColors(
+      currentEllipseStyleColors
+    );
+    const labelFontColor = currentEllipseStyleColors.labelFontColor;
+    const labelBackgroundColor = currentEllipseStyleColors.labelBackgroundColor;
     const labelBackgroundOpacity = Number(
       document.getElementById("annoLabelBackgroundOpacity").value
     );
     const lineWeight = Number(document.getElementById("lineWeight").value);
-    const lineColor = document.getElementById("lineColor").value;
+    const lineColor = currentEllipseStyleColors.lineColor;
     const lineStyle = document.getElementById("lineStyle").value;
     const lineOpacity = Number(document.getElementById("lineOpacity").value);
-    const fillColor = document.getElementById("fillColor").value;
+    const fillColor = currentEllipseStyleColors.fillColor;
     const fillOpacity = Number(document.getElementById("fillOpacity").value);
     ellipseCoordinates.push({ x, y });
     ellipseImageCoordinates.push([imagePoint.x, imagePoint.y]);
+    activeAnnotationDraft = "ellipse";
+    resetAnnotationDraftRedo();
 
     document.addEventListener("keydown", function (event) {
       // Check if the Escape key was pressed
@@ -2322,6 +3443,8 @@ viewer.addHandler("canvas-click", function (event) {
             lineWeight: lineWeight,
             lineColor: lineColor,
             lineOpacity: lineOpacity,
+            fillColor: fillColor,
+            fillOpacity: fillOpacity,
           });
           drawShape(polyCanvas, [annoJSON, annoJSONTemp]);
         }
@@ -2462,6 +3585,8 @@ function finalizeEllipseAnnotation(
 
   ellipseCoordinates = [];
   ellipseImageCoordinates = [];
+  currentEllipseStyleColors = null;
+  clearAnnotationDraftState();
   annoJSONTemp = {
     type: "FeatureCollection",
     features: [],
@@ -2485,6 +3610,7 @@ let clickCoordinatesArray = []; // Array to store arrays of coordinates
 let clickTimeout; // Timeout reference to detect double-click
 const clickDelay = 300; // Maximum delay between clicks for detecting double-click
 let lastClickTime = 0; // Timestamp of the last click
+let currentPolyStyleColors = null;
 const polyCanvas = document.getElementById("annotation-overlay"); // Includes polyline and polygon
 const circleCanvas = document.getElementById("circle-overlay"); // Includes circles
 const measureCanvas = document.getElementById("measurement-overlay"); // Includes polyline and polygon
@@ -2505,21 +3631,24 @@ viewer.addHandler("canvas-click", function (event) {
     const labelFontSize = Number(
       document.getElementById("annoLabelFontSize").value
     );
-    const labelFontColor = document.getElementById("annoLabelFontColor").value;
-    const labelBackgroundColor = document.getElementById(
-      "annoLabelBackgroundColor"
-    ).value;
+    currentPolyStyleColors = getCurrentAnnotationStyleColors(
+      currentPolyStyleColors
+    );
+    const labelFontColor = currentPolyStyleColors.labelFontColor;
+    const labelBackgroundColor = currentPolyStyleColors.labelBackgroundColor;
     const labelBackgroundOpacity = Number(
       document.getElementById("annoLabelBackgroundOpacity").value
     );
     const lineWeight = Number(document.getElementById("lineWeight").value);
-    const lineColor = document.getElementById("lineColor").value;
+    const lineColor = currentPolyStyleColors.lineColor;
     const lineStyle = document.getElementById("lineStyle").value;
     const lineOpacity = Number(document.getElementById("lineOpacity").value);
-    const fillColor = document.getElementById("fillColor").value;
+    const fillColor = currentPolyStyleColors.fillColor;
     const fillOpacity = Number(document.getElementById("fillOpacity").value);
     clickCoordinates.push({ x, y });
     clickImageCoordinates.push([imagePoint.x, imagePoint.y]);
+    activeAnnotationDraft = "poly";
+    resetAnnotationDraftRedo();
     if (clickCoordinates.length > 1) {
       for (let i = 0; i < clickCoordinates.length; i++) {
         const viewportPoint = new OpenSeadragon.Point(
@@ -2652,6 +3781,8 @@ viewer.addHandler("canvas-click", function (event) {
         clickCoordinatesArray.push(clickCoordinates);
         clickCoordinates = [];
         clickImageCoordinates = []; // Clear
+        currentPolyStyleColors = null;
+        clearAnnotationDraftState();
 
         annoJSONTemp = {
           type: "FeatureCollection",
@@ -2703,6 +3834,8 @@ viewer.addHandler("canvas-click", function (event) {
           clickCoordinatesArray.push(clickCoordinates);
           clickCoordinates = [];
           clickImageCoordinates = []; // Clear
+          currentPolyStyleColors = null;
+          clearAnnotationDraftState();
 
           annoJSONTemp = {
             type: "FeatureCollection",
@@ -3069,6 +4202,7 @@ let startPixel;
 let startPointImage = null;
 let overlayElement = null;
 let currentRectUniqueId;
+let currentRectStyleColors = null;
 viewer.addHandler("canvas-drag", function (event) {
   if (event.originalEvent.shiftKey || isRectangleMode) {
     event.preventDefaultAction = true; // Prevent default behavior (like panning)
@@ -3079,18 +4213,19 @@ viewer.addHandler("canvas-drag", function (event) {
     const labelFontSize = Number(
       document.getElementById("annoLabelFontSize").value
     );
-    const labelFontColor = document.getElementById("annoLabelFontColor").value;
-    const labelBackgroundColor = document.getElementById(
-      "annoLabelBackgroundColor"
-    ).value;
+    currentRectStyleColors = getCurrentAnnotationStyleColors(
+      currentRectStyleColors
+    );
+    const labelFontColor = currentRectStyleColors.labelFontColor;
+    const labelBackgroundColor = currentRectStyleColors.labelBackgroundColor;
     const labelBackgroundOpacity = Number(
       document.getElementById("annoLabelBackgroundOpacity").value
     );
     const lineWeight = Number(document.getElementById("lineWeight").value);
-    const lineColor = document.getElementById("lineColor").value;
+    const lineColor = currentRectStyleColors.lineColor;
     const lineStyle = document.getElementById("lineStyle").value;
     const lineOpacity = Number(document.getElementById("lineOpacity").value);
-    const fillColor = document.getElementById("fillColor").value;
+    const fillColor = currentRectStyleColors.fillColor;
     const fillOpacity = Number(document.getElementById("fillOpacity").value);
 
     if (!startPoint) {
@@ -3236,18 +4371,19 @@ viewer.addHandler("canvas-release", function (event) {
     const labelFontSize = Number(
       document.getElementById("annoLabelFontSize").value
     );
-    const labelFontColor = document.getElementById("annoLabelFontColor").value;
-    const labelBackgroundColor = document.getElementById(
-      "annoLabelBackgroundColor"
-    ).value;
+    currentRectStyleColors = getCurrentAnnotationStyleColors(
+      currentRectStyleColors
+    );
+    const labelFontColor = currentRectStyleColors.labelFontColor;
+    const labelBackgroundColor = currentRectStyleColors.labelBackgroundColor;
     const labelBackgroundOpacity = Number(
       document.getElementById("annoLabelBackgroundOpacity").value
     );
     const lineWeight = Number(document.getElementById("lineWeight").value);
-    const lineColor = document.getElementById("lineColor").value;
+    const lineColor = currentRectStyleColors.lineColor;
     const lineStyle = document.getElementById("lineStyle").value;
     const lineOpacity = Number(document.getElementById("lineOpacity").value);
-    const fillColor = document.getElementById("fillColor").value;
+    const fillColor = currentRectStyleColors.fillColor;
     const fillOpacity = Number(document.getElementById("fillOpacity").value);
 
     if (isRepeatMode) {
@@ -3392,6 +4528,7 @@ function finalizeRectAnnotationWithCoords(
   // Reset start point
   startPoint = null;
   overlayElement = null;
+  currentRectStyleColors = null;
 
   // Add label at top-left point
   const finalPoint = image.imageToViewportCoordinates(
@@ -3412,14 +4549,10 @@ function finalizeRectAnnotationWithCoords(
 
 // Clear annotations & grid
 document.getElementById("clearBtn").addEventListener("click", function () {
-  if (
-    confirm(
-      "Are you sure you want to apply clear the annotations? This action cannot be undone."
-    )
-  ) {
-    clearAnnotations();
-    disableAnnoButtons();
-  }
+  annotationHistory.push("Clear annotations");
+  clearAnnotations();
+  unsavedAnnotations(true);
+  disableAnnoButtons();
 });
 
 // New function to allow rotation of text labels to keep them upright
@@ -3549,7 +4682,8 @@ function deleteText(uuid, type = "anno") {
   const overlayElement = document.getElementById(overlayId);
 
   if (overlayElement) {
-    viewer.removeOverlay(overlayElement); // Remove the overlay using the element
+    const overlayContainer = overlayElement.closest(".annotation-overlay");
+    viewer.removeOverlay(overlayContainer || overlayElement); // Remove the overlay using the element
     if (type === "anno") {
       // TODO: Is this code necessary?
       annotateLabels = annotateLabels.filter(
@@ -3559,6 +4693,7 @@ function deleteText(uuid, type = "anno") {
       unsavedAnnotations(true);
     }
     // Finally remove the element from DOM
+    overlayContainer?.remove();
     overlayElement.remove();
   }
 }
@@ -3703,24 +4838,33 @@ function deleteCrosshairs(uuid, type = "anno") {
   }
 }
 
-function loadAnnotationsFromJSON(file) {
-  // Use fetch to get the GeoJSON file from the URL
-  fetch(file)
-    .then((response) => {
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      // Log the raw response as text for debugging
-      return response.json(); // Use text() first to inspect the content
-    })
-    .then((data) => {
-      loadAnnotations(data);
-      // You can now use the geoJsonData for mapping or other purposes
-    })
-    .catch((error) => {
-      console.error("Error loading GeoJSON:", error);
-    });
-  updateRepeatButton();
+async function loadAnnotationsFromJSON(file) {
+  try {
+    const data =
+      window.electronAPI?.readLocalJsonFile && isLocalAnnotationJSONPath(file)
+        ? await window.electronAPI.readLocalJsonFile(file)
+        : await fetchAnnotationJSON(file);
+
+    loadAnnotations(data);
+    updateRepeatButton();
+  } catch (error) {
+    console.error("Error loading GeoJSON:", error);
+    alert(error.message || "Could not load annotation GeoJSON.");
+  }
+}
+
+async function fetchAnnotationJSON(file) {
+  const response = await fetch(file);
+
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+
+  return response.json();
+}
+
+function isLocalAnnotationJSONPath(file) {
+  return typeof file === "string" && !/^[a-z][a-z0-9+.-]*:\/\//i.test(file);
 }
 
 function loadCounts(geoJSONData) {
@@ -3835,43 +4979,50 @@ function loadAnnotations(geoJSONData) {
   const geoJSON = parseJSON(geoJSONData);
 
   const features = geoJSON.features || Object.values(geoJSON); // Supports both formats
-  features.forEach((feature) => {
-    const geometry = feature.geometry;
-    const properties = feature.properties;
-    if (!geometry || !properties) {
-      // Invalid feature, skipping
-      return;
-    }
+  annotationHistory.push("Import annotations");
+  annotationHistoryPaused = true;
+  try {
+    features.forEach((feature) => {
+      const geometry = feature.geometry;
+      const properties = feature.properties;
+      if (!geometry || !properties) {
+        // Invalid feature, skipping
+        return;
+      }
 
-    // Skip duplicate UUIDs
-    const uuids = annoJSON.features.map((f) => f.properties.uuid);
-    if (uuids.includes(properties.uuid)) {
-      // Annotation already exists, skipping
-      return;
-    }
+      // Skip duplicate UUIDs
+      const uuids = annoJSON.features.map((f) => f.properties.uuid);
+      if (uuids.includes(properties.uuid)) {
+        // Annotation already exists, skipping
+        return;
+      }
 
-    const { type, coordinates } = geometry;
+      const { type, coordinates } = geometry;
 
-    // Handle different geometry types
-    if (type === "Point") {
-      handlePoint(coordinates, properties);
-    } else if (type === "MultiPoint") {
-      handleMultiPoint(coordinates, properties);
-    } else if (type === "LineString") {
-      handleLineString(coordinates, properties);
-    } else if (type === "MultiLineString") {
-      handleMultiLineString(coordinates, properties);
-    } else if (type === "Polygon") {
-      handlePolygon(coordinates, properties);
-    } else if (type === "MultiPolygon") {
-      handleMultiPolygon(coordinates, properties);
-    }
+      // Handle different geometry types
+      if (type === "Point") {
+        handlePoint(coordinates, properties);
+      } else if (type === "MultiPoint") {
+        handleMultiPoint(coordinates, properties);
+      } else if (type === "LineString") {
+        handleLineString(coordinates, properties);
+      } else if (type === "MultiLineString") {
+        handleMultiLineString(coordinates, properties);
+      } else if (type === "Polygon") {
+        handlePolygon(coordinates, properties);
+      } else if (type === "MultiPolygon") {
+        handleMultiPolygon(coordinates, properties);
+      }
 
-    // Redraw the shapes and enable annotation features
-    drawShape(polyCanvas, [annoJSON]);
-    enableAnnoButtons();
-    annoLabelToText();
-  });
+      // Redraw the shapes and enable annotation features
+      drawShape(polyCanvas, [annoJSON]);
+      enableAnnoButtons();
+      annoLabelToText();
+    });
+  } finally {
+    annotationHistoryPaused = false;
+    updateAnnotationHistoryControls();
+  }
 }
 
 // Helper functions for specific geometry types
@@ -4040,6 +5191,8 @@ function handleMultiPolygon(coords, properties) {
 
 // Save the annotation as GeoJSON
 function saveAnnotationToJSON(type, coordinates, properties) {
+  annotationHistory.push("Add annotation");
+
   const geoJSONFeature = {
     type: "Feature",
     geometry: { type, coordinates },
@@ -4157,6 +5310,32 @@ viewerContainer.addEventListener("pointermove", (event) => {
 // Keyboard Shortcuts //
 ////////////////////////
 
+document.addEventListener("keydown", (event) => {
+  const isUndoKey = event.code === "KeyZ" && (event.ctrlKey || event.metaKey);
+  const isRedoKey =
+    (event.code === "KeyZ" &&
+      event.shiftKey &&
+      (event.ctrlKey || event.metaKey)) ||
+    (event.code === "KeyY" && event.ctrlKey);
+
+  if (!isUndoKey && !isRedoKey) return;
+
+  const tag = event.target.tagName;
+  if (tag === "INPUT" || tag === "TEXTAREA") return;
+
+  event.preventDefault();
+  clearTransientAnnotationShortcutState();
+  if (isRedoKey) {
+    if (!redoAnnotationDraftPoint()) {
+      annotationHistory.redo();
+    }
+  } else {
+    if (!undoAnnotationDraftPoint()) {
+      annotationHistory.undo();
+    }
+  }
+});
+
 // Keyboard shortcut handler to toggle checkboxes
 const toggleCheckbox = (id) => {
   const checkbox = document.getElementById(id);
@@ -4267,8 +5446,8 @@ function enableCountButtons() {
   document.getElementById("count-notes").disabled = false;
   document.getElementById("count-export").disabled = false;
   document.getElementById("save-counts").disabled = false;
-  document.getElementById("filterDropdown").disabled = false;
   document.getElementById("filterButton").disabled = false;
+  document.getElementById("countFilterButton").disabled = false;
   document.getElementById("summarizeButton").disabled = false;
 }
 
@@ -4283,24 +5462,16 @@ function disableCountButtons() {
   document.getElementById("count-notes").disabled = true;
   document.getElementById("count-export").disabled = true;
   document.getElementById("save-counts").disabled = true;
-  document.getElementById("filterDropdown").disabled = true;
   document.getElementById("filterButton").disabled = true;
+  document.getElementById("countFilterButton").disabled = true;
   document.getElementById("summarizeButton").disabled = true;
 }
 
 document
   .getElementById("apply-grid-settings")
   .addEventListener("click", function () {
-    let proceed = true;
-    if (countJSON.features.length > 0) {
-      proceed = confirm(
-        "Applying the grid will clear existing point counts. Do you want to proceed? This action cannot be undone."
-      );
-    }
-
-    if (proceed) {
-      applyGridSettings();
-    }
+    annotationHistory.push("Apply grid");
+    applyGridSettings();
   });
 
 const applyGridSettings = () => {
@@ -4478,13 +5649,9 @@ const clearGridOverlayCrosshairs = () => {
 };
 
 document.getElementById("clear-grid").addEventListener("click", function () {
-  if (
-    confirm(
-      "Are you sure you want to clear the grid? This will delete the existing grid along with any point counts. This action cannot be undone."
-    )
-  ) {
-    clearGrid();
-  }
+  annotationHistory.push("Clear grid");
+  clearGrid();
+  unsavedCounts(true);
 });
 
 // const restoreGridSettings = () => {
@@ -4513,6 +5680,7 @@ const initializeGridSettings = () => {
   document.getElementById("grid-bottom").value = grid.yMax;
   document.getElementById("step-size").value = grid.step;
   document.getElementById("no-points").value = grid.noPoints;
+  constrainGridSliders();
 };
 
 initializeGridSettings();
@@ -4699,6 +5867,10 @@ document
 
 // Functionality for applying specific formatting for annotations
 function applyAllAnnoLabel(idBase) {
+  if (annoJSON.features.length > 0) {
+    annotationHistory.push("Style annotation labels");
+  }
+
   // Loop through all features in the annoJSON
   annoJSON.features.forEach((feature) => {
     const props = feature.properties;
@@ -4709,6 +5881,10 @@ function applyAllAnnoLabel(idBase) {
 
 // Functionality for applying specific formatting for annotations
 function applyAllAnnoFeature(idBase) {
+  if (annoJSON.features.length > 0) {
+    annotationHistory.push("Style annotations");
+  }
+
   // Loop through all features in the annoJSON
   annoJSON.features.forEach((feature) => {
     const props = feature.properties;
@@ -4718,12 +5894,20 @@ function applyAllAnnoFeature(idBase) {
 }
 
 function applyCurrentAnnoLabel(idBase) {
+  if (annoJSON.features.length === 0) {
+    return;
+  }
+  annotationHistory.push("Style annotation label");
   const id = document.getElementById("anno-id").value;
   const uuid = annoJSON.features[id - 1].properties.uuid;
   applyAnnoLabel(idBase, uuid);
 }
 
 function applyCurrentAnnoFeature(idBase) {
+  if (annoJSON.features.length === 0) {
+    return;
+  }
+  annotationHistory.push("Style annotation");
   const id = document.getElementById("anno-id").value;
   const uuid = annoJSON.features[id - 1].properties.uuid;
   applyAnnoFeature(idBase, uuid);
@@ -4740,7 +5924,12 @@ function applyAnnoLabel(idBase, uuid) {
   const feature = annoJSON.features.find((f) => f.properties.uuid === uuid);
   const props = feature.properties;
   const input = document.getElementById(idBase);
-  feature.properties[formattingMap[idBase]] = input.value;
+  const value =
+    idBase === "annoLabelFontColor" ||
+    idBase === "annoLabelBackgroundColor"
+      ? getAnnotationColor(idBase)
+      : input.value;
+  feature.properties[formattingMap[idBase]] = value;
 
   // Apply visual formatting immediately
   if (idBase === "annoLabelFontSize") {
@@ -4758,14 +5947,14 @@ function applyAnnoLabel(idBase, uuid) {
       uuid,
       "anno",
       undefined,
-      input.value,
+      value,
       undefined,
       undefined,
       undefined
     );
   } else if (idBase === "annoLabelBackgroundColor") {
     // Need both backgroundColor and backgroundOpacity to apply background
-    const bgColor = input.value;
+    const bgColor = value;
     const bgOpacity = props["labelBackgroundOpacity"];
     if (!bgOpacity) {
       // Background opacity is not set, cannot apply background color.
@@ -4805,7 +5994,10 @@ function applyAnnoFeature(idBase, uuid) {
   const feature = annoJSON.features.find((f) => f.properties.uuid === uuid);
   const props = feature.properties;
   const input = document.getElementById(idBase);
-  props[idBase] = input.value;
+  props[idBase] =
+    idBase === "fillColor" || idBase === "lineColor"
+      ? getAnnotationColor(idBase)
+      : input.value;
   if (feature.geometry.type === "Point") {
     // Update crosshair if the feature is a Point
     const lineWeight = props.lineWeight;
@@ -4819,6 +6011,10 @@ function applyAnnoFeature(idBase, uuid) {
 
 // Functionality for applying specific formatting for grid attributes
 function applyAllGridLabel(idBase) {
+  if (countJSON.features.length > 0) {
+    annotationHistory.push("Style count labels");
+  }
+
   // Loop through all features in the countJSON
   countJSON.features.forEach((feature) => {
     const props = feature.properties;
@@ -4828,6 +6024,10 @@ function applyAllGridLabel(idBase) {
 }
 
 function applyAllGridCrosshair(idBase) {
+  if (countJSON.features.length > 0) {
+    annotationHistory.push("Style count points");
+  }
+
   // Loop through all features in the countJSON
   countJSON.features.forEach((feature) => {
     const props = feature.properties;
@@ -4845,11 +6045,17 @@ function applyAllGridCrosshair(idBase) {
 
 function applyCurrentGridLabel(idBase) {
   const id = document.getElementById("count-id").value;
+  if (countJSON.features[id - 1]) {
+    annotationHistory.push("Style count label");
+  }
   applyGridLabel(idBase, id);
 }
 
 function applyCurrentGridCrosshair(idBase) {
   const id = document.getElementById("count-id").value;
+  if (countJSON.features[id - 1]) {
+    annotationHistory.push("Style count point");
+  }
   applyGridCrosshair(idBase, id);
 }
 
@@ -5238,9 +6444,15 @@ function inputSampleLabel() {
   const input = document.getElementById("count-id");
   let id = parseInt(input.value, 10);
   const textInput = document.getElementById("count-text");
+  const feature = countJSON.features[id - 1];
+  if (!feature) return;
+
+  if (feature.properties.id !== textInput.value) {
+    annotationHistory.push("Edit count identifier");
+  }
 
   // Store the text in the geoJSON
-  countJSON.features[id - 1].properties.id = textInput.value;
+  feature.properties.id = textInput.value;
   // window.appState.hasUnsavedCounts = true;
   unsavedCounts(true);
 }
@@ -5249,9 +6461,15 @@ function inputNotesText() {
   const input = document.getElementById("count-id");
   let value = parseInt(input.value, 10);
   const textInput = document.getElementById("count-notes");
+  const feature = countJSON.features[value - 1];
+  if (!feature) return;
+
+  if (feature.properties.notes !== textInput.value) {
+    annotationHistory.push("Edit count notes");
+  }
 
   // Store the text in the object with sampleNumber as key
-  countJSON.features[value - 1].properties.notes = textInput.value;
+  feature.properties.notes = textInput.value;
   // window.appState.hasUnsavedCounts = true;
   unsavedCounts(true);
 }
@@ -5335,6 +6553,7 @@ document
       return;
     }
 
+    annotationHistory.push("Import count JSON");
     clearGrid();
 
     if (file) {
@@ -5363,6 +6582,7 @@ document
     const file = fileInput.files[0];
     if (!file) return;
 
+    annotationHistory.push("Import count CSV");
     // Clear existing grid
     clearGrid();
 
@@ -5496,6 +6716,8 @@ function getLabelCounts(noPoints) {
 
 // For keeping track of which unique labels are checked
 const checkboxStates = {};
+const countFilterStates = {};
+const NULL_COUNT_FILTER_KEY = "__petro_image_null_count__";
 
 // Function to populate the dropdown with unique labels and checkboxes
 function populateFilterDropdown() {
@@ -5535,9 +6757,59 @@ function populateFilterDropdown() {
   });
 }
 
+function populateCountFilterDropdown() {
+  const filterDropdown = document.getElementById("countFilterDropdown");
+  const uniqueLabels = getUniqueFilterLabels();
+
+  filterDropdown.innerHTML = "";
+
+  uniqueLabels.forEach(({ label, value, stateKey }) => {
+    const isChecked =
+      countFilterStates[stateKey] !== undefined
+        ? countFilterStates[stateKey]
+        : true;
+
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.value = value;
+    checkbox.id = `filter-checkbox-${stateKey}`;
+    checkbox.checked = isChecked;
+
+    checkbox.addEventListener("change", () => {
+      countFilterStates[stateKey] = checkbox.checked;
+      filterOverlays();
+    });
+
+    const labelElement = document.createElement("label");
+    labelElement.textContent = label;
+    labelElement.htmlFor = `filter-checkbox-${stateKey}`;
+
+    const wrapper = document.createElement("div");
+    wrapper.appendChild(checkbox);
+    wrapper.appendChild(labelElement);
+
+    filterDropdown.appendChild(wrapper);
+    countFilterStates[stateKey] = isChecked;
+  });
+}
+
 // Function to get selected labels from the dropdown
 function getSelectedLabels() {
   const filterDropdown = document.getElementById("includeDropdown");
+  const checkboxes = filterDropdown.querySelectorAll("input[type='checkbox']");
+  const selectedLabels = [];
+
+  checkboxes.forEach((checkbox) => {
+    if (checkbox.checked) {
+      selectedLabels.push(checkbox.value);
+    }
+  });
+
+  return selectedLabels;
+}
+
+function getSelectedFilterLabels() {
+  const filterDropdown = document.getElementById("countFilterDropdown");
   const checkboxes = filterDropdown.querySelectorAll("input[type='checkbox']");
   const selectedLabels = [];
 
@@ -5604,10 +6876,25 @@ document.getElementById("filterButton").addEventListener("click", function () {
   }
 });
 
+document
+  .getElementById("countFilterButton")
+  .addEventListener("click", function () {
+    populateCountFilterDropdown();
+    const countFilterDropdown = document.getElementById("countFilterDropdown");
+
+    if (countFilterDropdown.style.display === "block") {
+      countFilterDropdown.style.display = "none";
+    } else {
+      countFilterDropdown.style.display = "block";
+    }
+  });
+
 // Optional: Close the dropdown when clicking outside
 document.addEventListener("click", function (event) {
   const includeDropdown = document.getElementById("includeDropdown");
   const filterButton = document.getElementById("filterButton");
+  const countFilterDropdown = document.getElementById("countFilterDropdown");
+  const countFilterButton = document.getElementById("countFilterButton");
 
   // Check if the click is outside the dropdown and button
   if (
@@ -5615,6 +6902,13 @@ document.addEventListener("click", function (event) {
     event.target !== filterButton
   ) {
     includeDropdown.style.display = "none";
+  }
+
+  if (
+    !countFilterDropdown.contains(event.target) &&
+    event.target !== countFilterButton
+  ) {
+    countFilterDropdown.style.display = "none";
   }
 });
 
@@ -5642,64 +6936,64 @@ function getUniqueLabels() {
   return Array.from(labels); // Convert Set to Array
 }
 
-// Function to populate the dropdown with unique labels from overlays
-function populateDropdown() {
-  const filterDropdown = document.getElementById("filterDropdown");
+function getUniqueFilterLabels() {
+  const noPoints = parseInt(countJSON.features.length);
+  if (noPoints === 0) {
+    return [];
+  }
 
-  // Clear existing dropdown options
-  filterDropdown.innerHTML = `<option value="all">All</option>`; // Default option
+  const filterLabels = new Map();
 
-  // Get unique labels
-  const uniqueLabels = getUniqueLabels();
+  for (let value = 1; value <= noPoints; value++) {
+    const label = countJSON.features[value - 1].properties.id;
+    const stateKey = label === "" ? NULL_COUNT_FILTER_KEY : label;
+    const displayLabel = label === "" ? "null" : label;
+    filterLabels.set(stateKey, {
+      label: displayLabel,
+      value: label,
+      stateKey,
+    });
+  }
 
-  // Add each unique label as an option
-  uniqueLabels.forEach((label) => {
-    const option = document.createElement("option");
-    option.value = label;
-    option.textContent = label;
-    filterDropdown.appendChild(option);
-  });
+  return Array.from(filterLabels.values());
 }
 
-// TODO: Enable checkbox-style filtering, such that any combination of
-// unique counts could be shown or ommitted
-// Function to filter overlays based on selected label
+// Function to populate the dropdown with unique labels from overlays
+function populateDropdown() {
+  populateCountFilterDropdown();
+}
+
 function filterOverlays() {
-  const filterDropdown = document.getElementById("filterDropdown");
-  const selectedLabel = filterDropdown.value;
-  const noPoints = parseInt(document.getElementById("no-points").value);
+  const filterDropdown = document.getElementById("countFilterDropdown");
+  const hasFilterOptions =
+    filterDropdown.querySelectorAll("input[type='checkbox']").length > 0;
+  const selectedLabels = getSelectedFilterLabels();
+  const showGrid = document.getElementById("show-grid").checked;
+  const showGridLabels = document.getElementById("show-grid-labels").checked;
+  const noPoints = countJSON.features.length;
 
   for (let value = 1; value <= noPoints; value++) {
     const label = countJSON.features[value - 1].properties.id;
     const uuid = countJSON.features[value - 1].properties.uuid;
-    const textOverlay = viewer.getOverlayById(`grid-label-${uuid}`);
-    const crosshairOverlay = viewer.getOverlayById(`grid-crosshair-${uuid}`);
+    const textOverlay = document.getElementById(`grid-label-${uuid}`);
+    const crosshairOverlay = document.getElementById(`grid-crosshair-${uuid}`);
+    const matchesFilter = !hasFilterOptions || selectedLabels.includes(label);
 
-    // Manage visibility by changing the opacity of the overlay element
-    if (selectedLabel === "all" || label === selectedLabel) {
-      textOverlay.element.style.visibility = "visible"; // Make overlay visible
-      crosshairOverlay.element.style.visibility = "visible"; // Make overlay visible
-    } else {
-      textOverlay.element.style.visibility = "hidden"; // Hide overlay
-      crosshairOverlay.element.style.visibility = "hidden"; // Hide overlay
+    if (textOverlay) {
+      textOverlay.style.visibility =
+        matchesFilter && showGrid && showGridLabels ? "visible" : "hidden";
+    }
+
+    if (crosshairOverlay) {
+      crosshairOverlay.style.visibility =
+        matchesFilter && showGrid ? "visible" : "hidden";
     }
   }
 }
 
 // Ensure overlays respect the filter on each viewport update (for panning, zooming, etc.)
 function enforceOverlayVisibility() {
-  // const noPoints = parseInt(document.getElementById("no-points").value);
-  const noPoints = parseInt(countJSON.features.length);
-
-  for (let value = 1; value <= noPoints; value++) {
-    const overlayId = `grid-label-${value - 1}`;
-    const overlay = viewer.getOverlayById(overlayId);
-
-    if (overlay) {
-      const isVisible = overlay.element.style.visibility !== "hidden";
-      overlay.element.style.visibility = isVisible ? "visible" : "hidden";
-    }
-  }
+  filterOverlays();
 }
 
 // Attach the enforceOverlayVisibility function to OpenSeadragon's update-viewport event
@@ -5780,6 +7074,12 @@ const measurementButton = document.getElementById("toggleMeasurementButton");
 const circleButton = document.getElementById("toggleCircleButton");
 
 let measurementModeActive = false;
+function stopMeasurementMode() {
+  measurementButton.classList.remove("active");
+  measurementButton.textContent = "Start Measuring";
+  measurementModeActive = false;
+}
+
 function toggleMeasurementMode() {
   const isMeasuring = measurementButton.classList.contains("active");
 
@@ -5788,8 +7088,7 @@ function toggleMeasurementMode() {
 
   if (isMeasuring) {
     // Disable measurement mode
-    measurementButton.textContent = "Start Measuring";
-    measurementModeActive = false;
+    stopMeasurementMode();
     resetMeasurements();
   } else {
     // Enable measurement mode
@@ -6256,9 +7555,19 @@ viewer.addHandler("canvas-click", function (event) {
 });
 
 function resetMeasurements(hardReset = false) {
+  if (hardReset) {
+    stopMeasurementMode();
+    clearTimeout(measureTimeout);
+    measureLastClickTime = 0;
+  }
+
   measureCoordinates = [];
   measureImageCoordinates = []; // Clear
   measureJSONTemp = {
+    type: "FeatureCollection",
+    features: [],
+  };
+  measureAreaJSONTemp = {
     type: "FeatureCollection",
     features: [],
   };
@@ -6270,6 +7579,7 @@ function resetMeasurements(hardReset = false) {
     distanceElement.value = 0;
     areaElement.value = 0;
     ECDElement.value = 0;
+    drawShape(measureCanvas, [measureJSON, measureAreaJSONTemp, measureJSONTemp]);
   }
 }
 
@@ -6358,6 +7668,15 @@ const KEY_TIMEOUT_MS = 500; // 0.5 seconds
 
 window.addEventListener("keydown", (event) => {
   const code = event.code;
+  if (
+    (event.ctrlKey || event.metaKey || event.altKey) &&
+    ["KeyQ", "KeyZ", "KeyX", "KeyC"].includes(code)
+  ) {
+    pressedKeys.delete(code);
+    delete keyTimestamps[code];
+    return;
+  }
+
   pressedKeys.add(code);
   keyTimestamps[code] = Date.now();
 });
@@ -6657,23 +7976,65 @@ function hidePrompt() {
 
 const imageRotater = document.getElementById("imageRotation");
 // const rotationAngle = document.getElementById("imageRotationValue");
+const imageRotationValue = document.getElementById("imageRotationValue");
+
+function normalizeAngleDegrees(value) {
+  const numericValue = Number(value);
+
+  if (!Number.isFinite(numericValue)) {
+    return 0;
+  }
+
+  return Math.max(0, Math.min(360, Math.round(numericValue)));
+}
+
+function setRotationValueDisplay(element, angle) {
+  const normalizedAngle = normalizeAngleDegrees(angle);
+
+  if ("value" in element) {
+    element.value = normalizedAngle;
+  } else {
+    element.textContent = `${normalizedAngle}°`;
+  }
+}
+
+function setImageRotationAngle(angle, syncStage = true) {
+  const normalizedAngle = normalizeAngleDegrees(angle);
+
+  imageRotater.value = normalizedAngle;
+  setRotationValueDisplay(imageRotationValue, normalizedAngle);
+  viewer.viewport.setRotation(normalizedAngle);
+
+  if (syncStage && rotateWithStage.checked) {
+    stageRotater.value = normalizedAngle;
+    setRotationValueDisplay(stageRotationValue, normalizedAngle);
+  }
+
+  displayImages();
+}
+
+function setStageRotationAngle(angle, syncImage = true) {
+  const normalizedAngle = normalizeAngleDegrees(angle);
+
+  stageRotater.value = normalizedAngle;
+  setRotationValueDisplay(stageRotationValue, normalizedAngle);
+
+  if (syncImage && rotateWithStage.checked) {
+    imageRotater.value = normalizedAngle;
+    setRotationValueDisplay(imageRotationValue, normalizedAngle);
+    viewer.viewport.setRotation(normalizedAngle);
+  }
+
+  displayImages();
+}
 
 // Update value in real time
 imageRotater.addEventListener("input", () => {
-  const rotationAngle = parseInt(
-    document.getElementById("imageRotation").value
-  );
-  viewer.viewport.setRotation(rotationAngle);
-  document.getElementById("imageRotationValue").innerHTML =
-    Math.round(rotationAngle) + "°";
+  setImageRotationAngle(imageRotater.value);
+});
 
-  // If checkbox is checked, sync stage rotation
-  if (rotateWithStage.checked) {
-    stageRotater.value = rotationAngle;
-    document.getElementById(
-      "stageRotationValue"
-    ).textContent = `${rotationAngle}°`;
-  }
+imageRotationValue.addEventListener("change", () => {
+  setImageRotationAngle(imageRotationValue.value);
 });
 
 // Listen for R key press → rotate +90°
@@ -6684,9 +8045,7 @@ document.addEventListener("keydown", (event) => {
     viewer.viewport.setRotation(newRotation);
 
     // Sync slider + text
-    imageRotater.value = newRotation;
-    document.getElementById("imageRotationValue").innerHTML =
-      Math.round(newRotation) + "°";
+    setImageRotationAngle(newRotation);
   }
 });
 
@@ -6781,14 +8140,14 @@ function resetRotation() {
   const rotationValue = document.getElementById("imageRotationValue");
   if (rotationSlider && rotationValue) {
     rotationSlider.value = 0;
-    rotationValue.textContent = "0°";
+    setRotationValueDisplay(rotationValue, 0);
   }
   viewer.viewport.setRotation(0, true);
   const stageRotationSlider = document.getElementById("stageRotation");
   const stageRotationValue = document.getElementById("stageRotationValue");
   if (stageRotationSlider && stageRotationValue) {
     stageRotationSlider.value = 0;
-    stageRotationValue.textContent = "0°";
+    setRotationValueDisplay(stageRotationValue, 0);
   }
 }
 
@@ -6797,9 +8156,7 @@ const toggleImageRotationWithStage = () => {
     // Sync stage to image
     const imageAngle = parseInt(document.getElementById("imageRotation").value);
     stageRotater.value = imageAngle;
-    document.getElementById(
-      "stageRotationValue"
-    ).textContent = `${imageAngle}°`;
+    setRotationValueDisplay(stageRotationValue, imageAngle);
     displayImages();
   }
 };
@@ -6810,30 +8167,21 @@ const toggleImageRotationWithStage = () => {
 
 const stageRotater = document.getElementById("stageRotation");
 const rotateWithStage = document.getElementById("rotateWithStage");
+const stageRotationValue = document.getElementById("stageRotationValue");
 
 stageRotater.addEventListener("input", () => {
-  const stageValue = document.getElementById("stageRotationValue");
-  const val = stageRotater.value;
-  stageValue.textContent = `${val}°`;
-  stageValue.classList.add("updating");
-  setTimeout(() => stageValue.classList.remove("updating"), 150);
+  setRotationValueDisplay(stageRotationValue, stageRotater.value);
+  stageRotationValue.classList.add("updating");
+  setTimeout(() => stageRotationValue.classList.remove("updating"), 150);
 });
 
 // Update value in real time
 stageRotater.addEventListener("input", () => {
-  const stageAngle = parseInt(document.getElementById("stageRotation").value);
-  document.getElementById("stageRotationValue").innerHTML =
-    Math.round(stageAngle) + "°";
+  setStageRotationAngle(stageRotater.value);
+});
 
-  // If checkbox is checked, sync image rotation
-  if (rotateWithStage.checked) {
-    imageRotater.value = stageAngle;
-    document.getElementById(
-      "imageRotationValue"
-    ).textContent = `${stageAngle}°`;
-    viewer.viewport.setRotation(stageAngle);
-  }
-  displayImages();
+stageRotationValue.addEventListener("change", () => {
+  setStageRotationAngle(stageRotationValue.value);
 });
 
 function updateStageRotationCheck() {
@@ -6842,6 +8190,7 @@ function updateStageRotationCheck() {
   );
 
   const stageSliderValue = document.getElementById("stageRotationValue");
+  const stageSliderUnit = document.getElementById("stageRotationUnit");
   const stageLabel = document.getElementById("stageRotationLabel");
   const lockCheckbox = document.getElementById("rotateWithStage");
   const lockCheckboxLabel = document.getElementById("rotateWithStageLabel");
@@ -6849,12 +8198,14 @@ function updateStageRotationCheck() {
   if (enableStageRotation) {
     stageRotater.style.display = "block"; // Show the slider
     stageSliderValue.style.display = "block"; // Show the value
+    stageSliderUnit.style.display = "block"; // Show the unit
     stageLabel.style.display = "block"; // Show the label
     lockCheckbox.style.display = "block"; // Show the checkbox
     lockCheckboxLabel.style.display = "block"; // Show the checkbox label
   } else {
     stageRotater.style.display = "none"; // Hide it
     stageSliderValue.style.display = "none"; // Hide it
+    stageSliderUnit.style.display = "none"; // Hide the unit
     stageLabel.style.display = "none"; // Hide the label
     lockCheckbox.style.display = "none"; // Hide the checkbox
     lockCheckboxLabel.style.display = "none"; // Hide the checkbox label
@@ -6889,17 +8240,12 @@ viewer.addHandler("canvas-scroll", function (event) {
     );
     const newRotation = currentRotation + delta * ROTATION_SENSITIVITY;
     const positiveRotation = ((newRotation % 360) + 360) % 360;
-    stageRotater.value = positiveRotation;
-
-    document.getElementById("stageRotationValue").innerHTML =
-      Math.round(positiveRotation) + "°";
+    setStageRotationAngle(positiveRotation, false);
 
     // If checkbox is checked, sync image rotation
     if (rotateWithStage.checked) {
       imageRotater.value = positiveRotation;
-      document.getElementById("imageRotationValue").textContent = `${Math.round(
-        positiveRotation
-      )}°`;
+      setRotationValueDisplay(imageRotationValue, positiveRotation);
       viewer.viewport.setRotation(positiveRotation);
     }
     displayImages();
@@ -6958,15 +8304,16 @@ viewerContainer.addEventListener("mousemove", function (subevent) {
   const labelFontSize = Number(
     document.getElementById("annoLabelFontSize").value
   );
-  const labelFontColor = document.getElementById("annoLabelFontColor").value;
-  const labelBackgroundColor = document.getElementById(
-    "annoLabelBackgroundColor"
-  ).value;
+  currentPolyStyleColors = getCurrentAnnotationStyleColors(
+    currentPolyStyleColors
+  );
+  const labelFontColor = currentPolyStyleColors.labelFontColor;
+  const labelBackgroundColor = currentPolyStyleColors.labelBackgroundColor;
   const labelBackgroundOpacity = Number(
     document.getElementById("annoLabelBackgroundOpacity").value
   );
   const lineWeight = Number(document.getElementById("lineWeight").value);
-  const lineColor = document.getElementById("lineColor").value;
+  const lineColor = currentPolyStyleColors.lineColor;
   const lineStyle = document.getElementById("lineStyle").value;
   const lineOpacity = Number(document.getElementById("lineOpacity").value);
 
@@ -6987,3 +8334,35 @@ viewerContainer.addEventListener("mousemove", function (subevent) {
 
   drawShape(polyCanvas, [annoJSON, annoJSONTemp]);
 });
+
+function recordGridControlHistory(label = "Change grid setting") {
+  const currentState = cloneGridControlState();
+  if (!lastCommittedGridControlState) {
+    lastCommittedGridControlState = currentState;
+    return;
+  }
+
+  if (
+    JSON.stringify(currentState) === JSON.stringify(lastCommittedGridControlState)
+  ) {
+    return;
+  }
+
+  const undoState = cloneAnnotationState();
+  undoState.gridControls = cloneData(lastCommittedGridControlState);
+  annotationHistory.push(label, undoState);
+  lastCommittedGridControlState = currentState;
+}
+
+setTimeout(() => {
+  lastCommittedGridControlState = cloneGridControlState();
+  GRID_CONTROL_IDS.forEach((id) => {
+    const element = document.getElementById(id);
+    if (!element) return;
+    element.addEventListener("change", () => {
+      recordGridControlHistory(
+        GRID_CONTROL_HISTORY_LABELS[id] || "Change grid setting"
+      );
+    });
+  });
+}, 0);
