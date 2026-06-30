@@ -30,7 +30,9 @@ function initializeImportWizardAutoResize() {
   scheduleResize();
 }
 
-document.addEventListener("DOMContentLoaded", initializeImportWizardAutoResize);
+// The import wizard now uses a resizable two-column layout. Continuous
+// content-based resizing fights manual window resizing, so the Electron window
+// owns sizing instead.
 
 function addGroup(btn) {
   const container = document.getElementById("groupContainer");
@@ -87,26 +89,6 @@ function validateGroupUniqueness() {
   return !Object.values(counts).some((c) => c > 1);
 }
 
-function toggleURI(checkbox) {
-  // Find the nearest image-row containing this checkbox
-  const row = checkbox.closest(".image-row");
-  if (!row) return;
-
-  const fileLabel = row.querySelector(".jpg-label");
-  const uriInput = row.querySelector(".uri-input");
-
-  if (!fileLabel || !uriInput) return;
-
-  if (checkbox.checked) {
-    fileLabel.style.display = "none";
-    uriInput.style.display = "inline-block";
-  } else {
-    fileLabel.style.display = "flex";
-    uriInput.style.display = "none";
-    uriInput.value = ""; // reset URI
-  }
-}
-
 function hasElectronJpgPicker() {
   return Boolean(window.electronAPI?.selectJpgFile);
 }
@@ -125,7 +107,14 @@ function updateJpgLabel(row, text) {
 function setJpgRowConversionState(row, state, message) {
   row.dataset.dziState = state;
   row.title = message || "";
-  updateJpgLabel(row, message || "Select JPG file");
+  updateJpgLabel(row, message || "Choose JPG");
+}
+
+function setImageRowUri(row, uri) {
+  const uriInput = row.querySelector(".uri-input");
+  if (uriInput) {
+    uriInput.value = uri || "";
+  }
 }
 
 function displaySelectedJpgFallback(fileInput) {
@@ -136,6 +125,7 @@ function displaySelectedJpgFallback(fileInput) {
 
   const filePath = file.path || file.name || "";
   row.dataset.sourceJpgPath = filePath;
+  setImageRowUri(row, filePath);
   updateJpgLabel(row, file.name);
 }
 
@@ -159,16 +149,47 @@ document.addEventListener("click", async (event) => {
       setJpgRowConversionState(
         row,
         priorPath ? "selected" : "idle",
-        priorPath ? "JPG selected" : "Select JPG file",
+        priorPath ? "JPG selected" : "Choose JPG",
       );
       return;
     }
 
-    row.dataset.sourceJpgPath = result.sourcePath || "";
-    setJpgRowConversionState(row, "selected", "JPG selected");
+    const sourcePath = result.sourcePath || "";
+    row.dataset.sourceJpgPath = sourcePath;
+
+    if (!sourcePath) {
+      setImageRowUri(row, "");
+      setJpgRowConversionState(row, "idle", "Choose JPG");
+      return;
+    }
+
+    if (!hasElectronDziConverter()) {
+      setImageRowUri(row, sourcePath);
+      setJpgRowConversionState(row, "selected", "JPG selected");
+      return;
+    }
+
+    activeConversionProgress = {
+      sourcePath,
+      fileIndex: 1,
+      totalFiles: 1,
+    };
+    showImportProgress(`Preparing: ${getPathFileName(sourcePath)}`, 0);
+    setJpgRowConversionState(row, "converting", "Converting...");
+
+    const conversion = await window.electronAPI.convertJpgToDzi(sourcePath);
+    const dziUri = conversion.relativeDziPath || conversion.dziPath || "";
+
+    setImageRowUri(row, dziUri);
+    delete row.dataset.sourceJpgPath;
+    activeConversionProgress = null;
+    showImportProgress("Converted JPG to DZI.", 100);
+    window.setTimeout(hideImportProgress, 1200);
+    setJpgRowConversionState(row, "converted", "DZI ready");
   } catch (error) {
     console.error(error);
     row.dataset.sourceJpgPath = "";
+    activeConversionProgress = null;
     setJpgRowConversionState(row, "error", "Selection failed");
     alert(error.message || "Could not select the JPG file.");
   }
@@ -192,10 +213,15 @@ function addTileRow() {
   row.innerHTML = `
     <div class="tile-row-header">
 	  <!--Tile set label-->
-      <span class="tile-set-label"></span>
-      <button type="button" class="img-btn" onclick="addTileRow(this)">+</button>
-	  <!--Will need to unhide minus button on 2nd+ tile sets-->
-      <button type="button" class="img-btn remove-tile-btn" onclick="removeTileRow(this)" hidden>&minus;</button>
+      <div class="tile-row-title">
+        <span class="tile-set-label"></span>
+        <span class="required-field-label tile-set-required-label">required</span>
+      </div>
+      <div class="tile-row-actions">
+        <button type="button" class="img-btn" onclick="addTileRow(this)">+</button>
+	    <!--Will need to unhide minus button on 2nd+ tile sets-->
+        <button type="button" class="img-btn remove-tile-btn" onclick="removeTileRow(this)" hidden>&minus;</button>
+      </div>
     </div>
 
     <select onchange="updateTileSetType(this)" title="Specify the format for the tile set">
@@ -253,15 +279,11 @@ function addTileRow() {
 
             <!-- JPG / URI inputs -->
             <div class="jpg-row">
-                <label class="file-label jpg-label" style="--file-label-width: 141px">
-                  <span class="jpg-label-text">Select JPG file</span>
+                <label class="file-label jpg-label" style="--file-label-width: 104px">
+                  <span class="jpg-label-text">Choose JPG</span>
                   <input type="file" class="file-input jpg-file" accept=".jpg,.jpeg,image/jpeg"/>
 				</label>
-                <!--URI input-->
-                <input type="text" class="uri-input" placeholder="Enter image URI" style="display: none" />
-                <!--Toggle checkbox-->
-                <input type="checkbox" onclick="toggleURI(this)" />
-                <label>Use URI?</label>
+                <input type="text" class="uri-input" placeholder="dzi/sample.dzi" />
             </div>
         </div>
     </div>
@@ -289,6 +311,11 @@ function renumberTileSets() {
     if (minusBtn) {
       minusBtn.hidden = index === 0; // hide on first tile set
     }
+
+    const requiredLabel = row.querySelector(".tile-set-required-label");
+    if (requiredLabel) {
+      requiredLabel.hidden = index !== 0;
+    }
   });
 }
 
@@ -300,26 +327,24 @@ function addImageRowMultiple(btn) {
 
   row.innerHTML = `
     <input type="text" class="image-label" placeholder="Image label" />
-    <button type="button" class="img-btn" onclick="addImageRowMultiple(this)">
+    <button type="button" class="img-btn add-btn" onclick="addImageRowMultiple(this)">
         +
     </button>
     <button
         type="button"
-        class="img-btn"
+        class="img-btn remove-btn"
         onclick="removeImageRow(this)"
     >
         &minus;
     </button>
 
     <div class="jpg-row">
-      <label class="file-label jpg-label" style="--file-label-width: 141px">
-        <span class="jpg-label-text">Select JPG file</span>
+      <label class="file-label jpg-label" style="--file-label-width: 104px">
+        <span class="jpg-label-text">Choose JPG</span>
 	    <input type="file" class="file-input jpg-file" accept=".jpg,.jpeg,image/jpeg" />
 	  </label>
       
-      <input type="text" class="uri-input" placeholder="Enter image URI" style="display: none" />
-      <input type="checkbox" onclick="toggleURI(this)" />
-      <label>Use URI?</label>
+      <input type="text" class="uri-input" placeholder="dzi/sample.dzi" />
     </div>
   `;
 
@@ -343,26 +368,24 @@ function addImageRowRotation(btn) {
         max="360"
         value="0"
     />
-    <button type="button" class="img-btn" onclick="addImageRowRotation(this)">
+    <button type="button" class="img-btn add-btn" onclick="addImageRowRotation(this)">
         +
     </button>
     <button
         type="button"
-        class="img-btn"
+        class="img-btn remove-btn"
         onclick="removeImageRow(this)"
     >
         &minus;
     </button>
 
     <div class="jpg-row">
-      <label class="file-label jpg-label" style="--file-label-width: 141px">
-        <span class="jpg-label-text">Select JPG file</span>
+      <label class="file-label jpg-label" style="--file-label-width: 104px">
+        <span class="jpg-label-text">Choose JPG</span>
         <input type="file" class="file-input jpg-file" accept=".jpg,.jpeg,image/jpeg" />
 	  </label>
       
-      <input type="text" class="uri-input" placeholder="Enter image URI" style="display: none" />
-      <input type="checkbox" onclick="toggleURI(this)" />
-      <label>Use URI?</label>
+      <input type="text" class="uri-input" placeholder="dzi/sample.dzi" />
     </div>
   `;
 
@@ -591,13 +614,11 @@ function addImageRowTemplate(btn, mode = "label") {
       <button type="button" class="img-btn add-btn" onclick="addImageRowTemplate(this,'label')">+</button>
       <button type="button" class="img-btn remove-btn" onclick="removeImageRow(this)">&minus;</button>
       <div class="jpg-row">
-        <label class="file-label jpg-label" style="--file-label-width:141px">
-          <span class="jpg-label-text">Select JPG file</span>
+        <label class="file-label jpg-label" style="--file-label-width:104px">
+          <span class="jpg-label-text">Choose JPG</span>
 			<input type="file" class="file-input jpg-file" accept=".jpg,.jpeg,image/jpeg" />
 		</label>
-        <input type="text" class="uri-input" placeholder="Enter image URI" style="display:none;" />
-        <input type="checkbox" onclick="toggleURI(this)" />
-        <label>Use URI?</label>
+        <input type="text" class="uri-input" placeholder="dzi/sample.dzi" />
       </div>
     `;
   } else if (mode === "angle") {
@@ -610,13 +631,11 @@ function addImageRowTemplate(btn, mode = "label") {
 	  <button type="button" class="img-btn add-btn" onclick="addImageRowTemplate(this,'angle')">+</button>
       <button type="button" class="img-btn remove-btn" onclick="removeImageRow(this)">&minus;</button>
       <div class="jpg-row">
-        <label class="file-label jpg-label" style="--file-label-width:141px">
-          <span class="jpg-label-text">Select JPG file</span>
+        <label class="file-label jpg-label" style="--file-label-width:104px">
+          <span class="jpg-label-text">Choose JPG</span>
 			<input type="file" class="file-input jpg-file" accept=".jpg,.jpeg,image/jpeg" />
 		</label>
-        <input type="text" class="uri-input" placeholder="Enter image URI" style="display:none;" />
-        <input type="checkbox" onclick="toggleURI(this)" />
-        <label>Use URI?</label>
+        <input type="text" class="uri-input" placeholder="dzi/sample.dzi" />
       </div>
     `;
   }
@@ -645,8 +664,12 @@ function createJSON() {
 
   // Metadata fields
   data.title = document.getElementById("TitleText")?.value || "";
+  const pixelsPerMeterValue = document.getElementById("pixelsPerMeterValue")?.value;
+  const pixelsPerMeter = parseFloat(pixelsPerMeterValue);
   data.pixelsPerMeter =
-    parseFloat(document.getElementById("pixelsPerMeterValue")?.value) || 1000;
+    pixelsPerMeterValue && Number.isFinite(pixelsPerMeter) && pixelsPerMeter > 0
+      ? pixelsPerMeter
+      : null;
   data.description = document.getElementById("DescriptionText")?.value || "";
 
   // Tile sets
@@ -666,15 +689,14 @@ function createJSON() {
 
       imageRows.forEach((imgRow) => {
         const uriInput = imgRow.querySelector(".uri-input");
-        const useURI = uriInput && uriInput.style.display !== "none";
         const fileInput = imgRow.querySelector(".jpg-file");
         const selectedFile = fileInput?.files[0];
-        let uri = useURI
-          ? uriInput.value
-          : selectedFile?.path ||
-            imgRow.dataset.sourceJpgPath ||
-            selectedFile?.name ||
-            "";
+        let uri =
+          uriInput?.value ||
+          imgRow.dataset.sourceJpgPath ||
+          selectedFile?.path ||
+          selectedFile?.name ||
+          "";
         uri = uri.replace(/^["']+|["']+$/g, ""); // remove leading/trailing quotes
 
         if (type === "Individual") {
@@ -730,8 +752,7 @@ let activeConversionProgress = null;
 
 function hasRequiredSampleFields() {
   const title = titleInput.value.trim();
-  const pixelsPerMeter = parseFloat(pixelsPerMeterInput.value);
-  return Boolean(title && Number.isFinite(pixelsPerMeter) && pixelsPerMeter > 0);
+  return Boolean(title);
 }
 
 function updateExportButtonState() {
@@ -936,7 +957,9 @@ document.getElementById("exportJSONBtn").addEventListener("click", async () => {
 
   // Gather the new sample
   const newSample = createJSON();
-  newSample.pixelsPerMeter = newSample.pixelsPerMeter.toString(); // ensure string
+  if (newSample.pixelsPerMeter !== null) {
+    newSample.pixelsPerMeter = newSample.pixelsPerMeter.toString(); // ensure string
+  }
 
   const mode = document.getElementById("saveTypeDropdown").value;
 

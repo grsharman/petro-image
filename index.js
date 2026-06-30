@@ -3,23 +3,90 @@
 // Index of the currently selected sample
 let currentIndex = 0;
 let samples = [];
+let currentLibraryData = { samples: [] };
 let currentLibraryPath = "";
 let annotationFiles = {}; // For loading predefined annotations
 let groupMapping = {}; // To map groups to sample indices
 let scrollIndex = 1e6; // Prevents indexing error if starting at 0, due to negative numbers
 let enableStageRotation = false;
 let tileLoadGeneration = 0;
+let measurementControlsInitialized = false;
+let circleControlsInitialized = false;
+let measurementModeActive = false;
+let circleModeActive = false;
+let tileLoadFailureWarningKey = "";
+let tileLoadFailureWarningInFlight = false;
 
 // Accessors for attributes of the current sample
 const title = () => samples[currentIndex].title;
 const tileSets = () => samples[currentIndex].tileSets;
+const normalizePixelsPerMeter = (value) => {
+  const numericValue = Number(value);
+  return Number.isFinite(numericValue) && numericValue > 0 ? numericValue : null;
+};
 const pixelsPerMeter = () => {
-  return samples[currentIndex].pixelsPerMeter;
+  return normalizePixelsPerMeter(samples[currentIndex]?.pixelsPerMeter);
 };
+const hasKnownScale = () => pixelsPerMeter() !== null;
 const pixelsPerMicron = () => {
+  const scale = pixelsPerMeter();
+  if (scale === null) return null;
   const micronsPerMeter = 10 ** 6;
-  return pixelsPerMeter() / micronsPerMeter;
+  return scale / micronsPerMeter;
 };
+const metersFromPixels = (pixels) => {
+  const scale = pixelsPerMeter();
+  return scale === null ? null : pixels / scale;
+};
+const squareMetersFromSquarePixels = (pixels2) => {
+  const scale = pixelsPerMeter();
+  return scale === null ? null : pixels2 / scale ** 2;
+};
+
+function serializeTileSetForLibrary(tileSet) {
+  return {
+    ...tileSet,
+    tiles: (tileSet.tiles || []).map((tile) => {
+      const { image, ...libraryTile } = tile;
+      return libraryTile;
+    }),
+  };
+}
+
+function serializeSampleForLibrary(sample) {
+  return {
+    ...sample,
+    tileSets: (sample.tileSets || []).map(serializeTileSetForLibrary),
+  };
+}
+
+function serializeLibraryDataForSave() {
+  return {
+    ...(currentLibraryData || {}),
+    samples: samples.map(serializeSampleForLibrary),
+  };
+}
+
+function isTextEntryElement(element) {
+  if (!element) return false;
+  if (element.isContentEditable) return true;
+
+  const tagName = element.tagName;
+  if (tagName === "TEXTAREA" || tagName === "SELECT") return true;
+  if (tagName !== "INPUT") return false;
+
+  const textInputTypes = new Set([
+    "",
+    "email",
+    "number",
+    "password",
+    "search",
+    "tel",
+    "text",
+    "url",
+  ]);
+  return textInputTypes.has((element.type || "").toLowerCase());
+}
 
 // Global variables related to annotations
 let hasAnnotationInJSON = false; // for keeping track of whether the selected sample has annotations in the JSON
@@ -51,24 +118,26 @@ let measureAreaJSONTemp = {
   features: [],
 }; // For drawing temporary measurements of area
 
-function loadSampleJSON(input) {
+function loadSampleJSON(input, options = {}) {
   if (typeof input === "string") {
     // Load necessary information from JSON
     return fetch(input)
       .then((response) => response.json())
       .then((data) => {
-        return processJSON(data); // Process JSON data
+        return processJSON(data, options); // Process JSON data
       });
   } else if (typeof input === "object") {
     // Case 2: Input is already parsed JSON
-    return processJSON(input);
+    return processJSON(input, options);
   }
 
   return Promise.resolve();
 }
 
-async function processJSON(data) {
+async function processJSON(data, options = {}) {
+  const { autoLoadSample = true } = options;
   currentIndex = 0;
+  currentLibraryData = data;
   samples = data.samples;
   annotationFiles = {}; // For loading predefined annotations
   groupMapping = {}; // To map groups to sample indices
@@ -113,18 +182,20 @@ async function processJSON(data) {
         groupMapping[group].includes(sampleIndex)
       );
       document.getElementById("groupDropdown").value = groupForSample || "All";
-      populateSampleDropdown(groupForSample || "All");
+      populateSampleDropdown(groupForSample || "All", { autoSelect: autoLoadSample });
       document.getElementById("sampleDropdown").value = sampleIndex;
-      document
-        .getElementById("sampleDropdown")
-        .dispatchEvent(new Event("change"));
+      if (autoLoadSample) {
+        document
+          .getElementById("sampleDropdown")
+          .dispatchEvent(new Event("change"));
+      }
     }
   } else {
     // Default behavior if no sample is specified
     const firstGroup = Object.keys(groupMapping)[0];
     if (firstGroup) {
       document.getElementById("groupDropdown").value = firstGroup;
-      populateSampleDropdown(firstGroup);
+      populateSampleDropdown(firstGroup, { autoSelect: autoLoadSample });
     }
   }
 }
@@ -179,7 +250,378 @@ async function changeProjectWithElectronDialog() {
 
 const loadLibraryInput = document.getElementById("load-sample-JSON");
 const loadLibraryButton = document.getElementById("loadLibraryButton");
+const actionLoadLibraryButton = document.getElementById("actionLoadLibraryButton");
+const electronActionButton = document.getElementById("electronActionButton");
+const electronActionTray = document.getElementById("electronActionTray");
 const changeProjectButton = document.getElementById("changeProjectButton");
+const openGridCountPaletteButton = document.getElementById(
+  "openGridCountPaletteButton"
+);
+const openAnnotatePaletteButton = document.getElementById(
+  "openAnnotatePaletteButton"
+);
+const openMeasurePaletteButton = document.getElementById(
+  "openMeasurePaletteButton"
+);
+const gridCountPalette = document.getElementById("gridCountPalette");
+const gridCountPaletteHeader = document.getElementById("gridCountPaletteHeader");
+const gridCountPaletteBody = document.getElementById("gridCountPaletteBody");
+const closeGridCountPaletteButton = document.getElementById(
+  "closeGridCountPaletteButton"
+);
+const annotatePalette = document.getElementById("annotatePalette");
+const annotatePaletteHeader = document.getElementById("annotatePaletteHeader");
+const annotatePaletteBody = document.getElementById("annotatePaletteBody");
+const closeAnnotatePaletteButton = document.getElementById(
+  "closeAnnotatePaletteButton"
+);
+const measurePalette = document.getElementById("measurePalette");
+const measurePaletteHeader = document.getElementById("measurePaletteHeader");
+const measurePaletteBody = document.getElementById("measurePaletteBody");
+const closeMeasurePaletteButton = document.getElementById(
+  "closeMeasurePaletteButton"
+);
+const openScaleWizardButton = document.getElementById("openScaleWizardButton");
+const openLibraryEditorButton = document.getElementById("openLibraryEditorButton");
+const hasElectronActions = Boolean(window.electronAPI);
+let gridCountPaletteControlsMoved = false;
+let annotatePaletteControlsMoved = false;
+let measurePaletteControlsMoved = false;
+
+function clampToolPaletteToViewer(palette) {
+  const viewerContainer = document.getElementById("viewer-container");
+  if (!viewerContainer || !palette) return;
+
+  const containerRect = viewerContainer.getBoundingClientRect();
+  const paletteRect = palette.getBoundingClientRect();
+  const maxLeft = Math.max(8, containerRect.width - paletteRect.width - 8);
+  const maxTop = Math.max(8, containerRect.height - paletteRect.height - 8);
+  const currentLeft = Number.parseFloat(palette.style.left || "12");
+  const currentTop = Number.parseFloat(palette.style.top || "56");
+
+  palette.style.left = `${Math.min(Math.max(currentLeft, 8), maxLeft)}px`;
+  palette.style.top = `${Math.min(Math.max(currentTop, 8), maxTop)}px`;
+}
+
+function setDefaultToolPalettePosition(palette) {
+  const viewerContainer = document.getElementById("viewer-container");
+  if (!viewerContainer || !palette) return;
+
+  const containerRect = viewerContainer.getBoundingClientRect();
+  const paletteRect = palette.getBoundingClientRect();
+  const defaultPosition = palette.dataset.defaultPosition || "bottom-right";
+  const bottomOffset = Number(palette.dataset.defaultBottomOffset || 12);
+  const left =
+    defaultPosition === "bottom-left"
+      ? 12
+      : Math.max(8, containerRect.width - paletteRect.width - 12);
+  const top = Math.max(
+    8,
+    containerRect.height - paletteRect.height - bottomOffset
+  );
+
+  palette.style.left = `${left}px`;
+  palette.style.top = `${top}px`;
+}
+
+function restoreToolPalettePosition(palette, storageKey) {
+  if (!palette) return;
+
+  try {
+    const storedPosition = JSON.parse(localStorage.getItem(storageKey) || "null");
+    if (storedPosition) {
+      palette.style.left = `${storedPosition.left}px`;
+      palette.style.top = `${storedPosition.top}px`;
+    } else {
+      setDefaultToolPalettePosition(palette);
+    }
+  } catch (error) {
+    console.warn("Could not restore tool palette position:", error);
+    setDefaultToolPalettePosition(palette);
+  }
+
+  clampToolPaletteToViewer(palette);
+}
+
+function saveToolPalettePosition(palette, storageKey) {
+  if (!palette) return;
+
+  try {
+    localStorage.setItem(
+      storageKey,
+      JSON.stringify({
+        left: Number.parseFloat(palette.style.left || "12"),
+        top: Number.parseFloat(palette.style.top || "56"),
+      })
+    );
+  } catch (error) {
+    console.warn("Could not save tool palette position:", error);
+  }
+}
+
+function makeToolPaletteDraggable(palette, handle, storageKey) {
+  if (!palette || !handle) return;
+
+  let dragState = null;
+
+  handle.addEventListener("pointerdown", function (event) {
+    if (event.button !== 0 || event.target.closest("button")) return;
+
+    const paletteRect = palette.getBoundingClientRect();
+    dragState = {
+      offsetX: event.clientX - paletteRect.left,
+      offsetY: event.clientY - paletteRect.top,
+    };
+    handle.setPointerCapture(event.pointerId);
+  });
+
+  handle.addEventListener("pointermove", function (event) {
+    if (!dragState) return;
+
+    const viewerContainer = document.getElementById("viewer-container");
+    if (!viewerContainer) return;
+
+    const containerRect = viewerContainer.getBoundingClientRect();
+    const paletteRect = palette.getBoundingClientRect();
+    const maxLeft = Math.max(8, containerRect.width - paletteRect.width - 8);
+    const maxTop = Math.max(8, containerRect.height - paletteRect.height - 8);
+    const nextLeft = event.clientX - containerRect.left - dragState.offsetX;
+    const nextTop = event.clientY - containerRect.top - dragState.offsetY;
+
+    palette.style.left = `${Math.min(Math.max(nextLeft, 8), maxLeft)}px`;
+    palette.style.top = `${Math.min(Math.max(nextTop, 8), maxTop)}px`;
+  });
+
+  function stopDrag(event) {
+    if (!dragState) return;
+    dragState = null;
+    saveToolPalettePosition(palette, storageKey);
+    if (handle.hasPointerCapture(event.pointerId)) {
+      handle.releasePointerCapture(event.pointerId);
+    }
+  }
+
+  handle.addEventListener("pointerup", stopDrag);
+  handle.addEventListener("pointercancel", stopDrag);
+}
+
+function moveGridCountControlsToPalette() {
+  if (
+    gridCountPaletteControlsMoved ||
+    !gridCountPaletteBody ||
+    !document.getElementById("detailsMenu") ||
+    !document.getElementById("countDetails")
+  ) {
+    return;
+  }
+
+  const gridDetails = document.getElementById("detailsMenu");
+  const countDetails = document.getElementById("countDetails");
+  gridDetails.open = true;
+  countDetails.open = false;
+  gridCountPaletteBody.append(gridDetails, countDetails);
+  setupGridCountAccordion(gridDetails, countDetails);
+  gridCountPaletteControlsMoved = true;
+}
+
+function moveAnnotateControlsToPalette() {
+  if (
+    annotatePaletteControlsMoved ||
+    !annotatePaletteBody ||
+    !document.getElementById("annotateDetails")
+  ) {
+    return;
+  }
+
+  const annotateDetails = document.getElementById("annotateDetails");
+  annotateDetails.open = true;
+  annotatePaletteBody.append(annotateDetails);
+  annotatePaletteControlsMoved = true;
+}
+
+function updateToolsMenuVisibility() {
+  const toolsMenu = document.getElementById("toolsMenu");
+  if (!toolsMenu || !hasElectronActions) return;
+
+  toolsMenu.hidden =
+    gridCountPaletteControlsMoved &&
+    annotatePaletteControlsMoved &&
+    measurePaletteControlsMoved;
+}
+
+function moveMeasureControlsToPalette() {
+  if (
+    measurePaletteControlsMoved ||
+    !measurePaletteBody ||
+    !document.getElementById("measureDetails")
+  ) {
+    return;
+  }
+
+  const measureDetails = document.getElementById("measureDetails");
+  measureDetails.open = true;
+  measurePaletteBody.append(measureDetails);
+  measurePaletteControlsMoved = true;
+  updateToolsMenuVisibility();
+}
+
+function setupGridCountAccordion(gridDetails, countDetails) {
+  if (!gridDetails || !countDetails || gridDetails.dataset.accordionReady) return;
+
+  gridDetails.dataset.accordionReady = "true";
+  countDetails.dataset.accordionReady = "true";
+
+  gridDetails.addEventListener("toggle", function () {
+    if (gridDetails.open && countDetails.open) {
+      countDetails.open = false;
+    }
+  });
+
+  countDetails.addEventListener("toggle", function () {
+    if (countDetails.open && gridDetails.open) {
+      gridDetails.open = false;
+    }
+  });
+}
+
+function openGridCountPalette() {
+  if (!gridCountPalette) return;
+
+  moveGridCountControlsToPalette();
+  gridCountPalette.hidden = false;
+  restoreToolPalettePosition(gridCountPalette, "petroImage.gridCountPalette");
+  openGridCountPaletteButton?.setAttribute("aria-pressed", "true");
+  clampToolPaletteToViewer(gridCountPalette);
+  updateToolsMenuVisibility();
+}
+
+function closeGridCountPalette() {
+  if (!gridCountPalette) return;
+
+  closeCountDropdowns();
+  gridCountPalette.hidden = true;
+  openGridCountPaletteButton?.setAttribute("aria-pressed", "false");
+}
+
+function toggleGridCountPalette() {
+  if (!gridCountPalette || gridCountPalette.hidden) {
+    openGridCountPalette();
+    return;
+  }
+
+  closeGridCountPalette();
+}
+
+function openAnnotatePalette() {
+  if (!annotatePalette) return;
+
+  moveAnnotateControlsToPalette();
+  annotatePalette.hidden = false;
+  restoreToolPalettePosition(annotatePalette, "petroImage.annotatePalette");
+  openAnnotatePaletteButton?.setAttribute("aria-pressed", "true");
+  clampToolPaletteToViewer(annotatePalette);
+  updateToolsMenuVisibility();
+}
+
+function closeAnnotatePalette() {
+  if (!annotatePalette) return;
+
+  deactivateAnnotationModes();
+  closeAnnotationSettingsPopover();
+  annotatePalette.hidden = true;
+  openAnnotatePaletteButton?.setAttribute("aria-pressed", "false");
+}
+
+function toggleAnnotatePalette() {
+  if (!annotatePalette || annotatePalette.hidden) {
+    openAnnotatePalette();
+    return;
+  }
+
+  closeAnnotatePalette();
+}
+
+function openMeasurePalette() {
+  if (!measurePalette) return;
+
+  moveMeasureControlsToPalette();
+  measurePalette.hidden = false;
+  restoreToolPalettePosition(measurePalette, "petroImage.measurePalette");
+  openMeasurePaletteButton?.setAttribute("aria-pressed", "true");
+  clampToolPaletteToViewer(measurePalette);
+}
+
+function closeMeasurePalette() {
+  if (!measurePalette) return;
+
+  closeCircleSettingsPopover();
+  measurePalette.hidden = true;
+  openMeasurePaletteButton?.setAttribute("aria-pressed", "false");
+}
+
+function toggleMeasurePalette() {
+  if (!measurePalette || measurePalette.hidden) {
+    openMeasurePalette();
+    return;
+  }
+
+  closeMeasurePalette();
+}
+
+function closeElectronActionTray() {
+  if (!electronActionTray || !electronActionButton) return;
+
+  electronActionTray.hidden = true;
+  electronActionButton.setAttribute("aria-expanded", "false");
+}
+
+function toggleElectronActionTray() {
+  if (!electronActionTray || !electronActionButton) return;
+
+  const willOpen = electronActionTray.hidden;
+  electronActionTray.hidden = !willOpen;
+  electronActionButton.setAttribute("aria-expanded", String(willOpen));
+
+  if (willOpen) {
+    const firstAction = electronActionTray.querySelector(
+      ".electron-action-item:not([hidden])"
+    );
+    firstAction?.focus();
+  }
+}
+
+if (hasElectronActions && electronActionButton && electronActionTray) {
+  loadLibraryButton.hidden = true;
+  electronActionButton.hidden = false;
+  moveGridCountControlsToPalette();
+  moveAnnotateControlsToPalette();
+  moveMeasureControlsToPalette();
+
+  electronActionButton.addEventListener("click", function (event) {
+    event.preventDefault();
+    event.stopPropagation();
+    toggleElectronActionTray();
+  });
+
+  electronActionTray.addEventListener("click", function (event) {
+    event.stopPropagation();
+  });
+
+  document.addEventListener("click", closeElectronActionTray);
+  document.addEventListener("keydown", function (event) {
+    if (event.key === "Escape") {
+      closeElectronActionTray();
+      closeGridCountPalette();
+      closeMeasurePalette();
+      closeScaleWizard();
+      if (tileSetEditor && !tileSetEditor.hidden) {
+        closeTileSetEditor();
+        return;
+      }
+      closeLibraryEditor();
+    }
+  });
+}
 
 if (loadLibraryButton) {
   loadLibraryButton.addEventListener("click", function (event) {
@@ -194,11 +636,104 @@ if (loadLibraryButton) {
   });
 }
 
+if (hasElectronActions && openGridCountPaletteButton && gridCountPalette) {
+  openGridCountPaletteButton.hidden = false;
+  openGridCountPaletteButton.setAttribute("aria-pressed", "false");
+  openGridCountPaletteButton.addEventListener("click", function (event) {
+    event.preventDefault();
+    closeElectronActionTray();
+    toggleGridCountPalette();
+  });
+  closeGridCountPaletteButton?.addEventListener("click", function () {
+    closeGridCountPalette();
+  });
+  makeToolPaletteDraggable(
+    gridCountPalette,
+    gridCountPaletteHeader,
+    "petroImage.gridCountPalette"
+  );
+  window.addEventListener("resize", function () {
+    closeCountDropdowns();
+    clampToolPaletteToViewer(gridCountPalette);
+  });
+}
+
+if (hasElectronActions && openAnnotatePaletteButton && annotatePalette) {
+  openAnnotatePaletteButton.hidden = false;
+  openAnnotatePaletteButton.setAttribute("aria-pressed", "false");
+  openAnnotatePaletteButton.addEventListener("click", function (event) {
+    event.preventDefault();
+    closeElectronActionTray();
+    toggleAnnotatePalette();
+  });
+  closeAnnotatePaletteButton?.addEventListener("click", function () {
+    closeAnnotatePalette();
+  });
+  makeToolPaletteDraggable(
+    annotatePalette,
+    annotatePaletteHeader,
+    "petroImage.annotatePalette"
+  );
+  window.addEventListener("resize", function () {
+    closeAnnotationSettingsPopover();
+    clampToolPaletteToViewer(annotatePalette);
+  });
+}
+
+if (hasElectronActions && openMeasurePaletteButton && measurePalette) {
+  openMeasurePaletteButton.hidden = false;
+  openMeasurePaletteButton.setAttribute("aria-pressed", "false");
+  openMeasurePaletteButton.addEventListener("click", function (event) {
+    event.preventDefault();
+    closeElectronActionTray();
+    toggleMeasurePalette();
+  });
+  closeMeasurePaletteButton?.addEventListener("click", function () {
+    closeMeasurePalette();
+  });
+  makeToolPaletteDraggable(
+    measurePalette,
+    measurePaletteHeader,
+    "petroImage.measurePalette"
+  );
+  window.addEventListener("resize", function () {
+    closeCircleSettingsPopover();
+    clampToolPaletteToViewer(measurePalette);
+  });
+}
+
+if (actionLoadLibraryButton && window.electronAPI?.selectExistingJsonFile) {
+  actionLoadLibraryButton.addEventListener("click", function (event) {
+    event.preventDefault();
+    closeElectronActionTray();
+    loadLibraryWithElectronDialog();
+  });
+}
+
 if (changeProjectButton && window.electronAPI?.changeProjectLibrary) {
   changeProjectButton.hidden = false;
   changeProjectButton.addEventListener("click", function (event) {
     event.preventDefault();
+    closeElectronActionTray();
     changeProjectWithElectronDialog();
+  });
+}
+
+if (openScaleWizardButton && window.electronAPI) {
+  openScaleWizardButton.hidden = false;
+  openScaleWizardButton.addEventListener("click", function (event) {
+    event.preventDefault();
+    closeElectronActionTray();
+    openScaleWizard();
+  });
+}
+
+if (openLibraryEditorButton && window.electronAPI) {
+  openLibraryEditorButton.hidden = false;
+  openLibraryEditorButton.addEventListener("click", function (event) {
+    event.preventDefault();
+    closeElectronActionTray();
+    openLibraryEditor();
   });
 }
 
@@ -259,7 +794,8 @@ function populateGroupDropdown() {
 }
 
 // Function to populate sample dropdown based on the selected group
-function populateSampleDropdown(selectedGroup) {
+function populateSampleDropdown(selectedGroup, options = {}) {
+  const { autoSelect = true } = options;
   const sampleDropdown = document.getElementById("sampleDropdown");
   sampleDropdown.innerHTML = ""; // Clear existing options
 
@@ -273,7 +809,9 @@ function populateSampleDropdown(selectedGroup) {
     // Automatically select the first sample in the group
     if (sampleDropdown.options.length > 0) {
       sampleDropdown.currentIndex = 0; // Select the first option
-      sampleDropdown.dispatchEvent(new Event("change")); // Trigger the change event
+      if (autoSelect) {
+        sampleDropdown.dispatchEvent(new Event("change")); // Trigger the change event
+      }
     }
   }
 }
@@ -288,33 +826,87 @@ const viewer = OpenSeadragon({
   showNavigationControl: false, // Disable the default navigation controls
 });
 
+viewer.addHandler("tile-load-failed", handleTileLoadFailed);
+
+async function handleTileLoadFailed(event) {
+  if (!window.electronAPI?.showTileLoadWarning) {
+    return;
+  }
+
+  const warningKey = `${currentIndex}:${tileLoadGeneration}`;
+  if (
+    tileLoadFailureWarningInFlight ||
+    tileLoadFailureWarningKey === warningKey
+  ) {
+    return;
+  }
+
+  tileLoadFailureWarningInFlight = true;
+  tileLoadFailureWarningKey = warningKey;
+
+  try {
+    await window.electronAPI.showTileLoadWarning({
+      sampleTitle: title(),
+      tileUrl: event?.tile?.getUrl?.() || "",
+      tilePath: getLocalTilePathFromUrl(event?.tile?.getUrl?.() || ""),
+      message: event?.message || "",
+    });
+  } catch (error) {
+    console.error("Could not show tile-load warning:", error);
+  } finally {
+    tileLoadFailureWarningInFlight = false;
+  }
+}
+
+function getLocalTilePathFromUrl(url) {
+  try {
+    const parsedUrl = new URL(url);
+    return parsedUrl.searchParams.get("path") || "";
+  } catch {
+    return "";
+  }
+}
+
 /// Event listener for sample selection change (only add once)
 document
   .getElementById("sampleDropdown")
   .addEventListener("change", async function () {
-    currentIndex = Number(this.value);
-    buildImageCheckboxes();
-    buildOpacitySliders();
-    clearAnnotations();
-    annotationHistory.reset();
-    updateImageCheckboxLabels();
-    addScalebar(pixelsPerMeter());
-    clearGrid();
-    enableGridButtons();
-    disableCountButtons();
-    removeAoiRectangle();
-    resetOpacitySliders();
-    resetLockStage();
-    updateOpacityImageSliderVisibility();
-    updateOpacitySliderLabels();
-    resetMeasurements(true);
-    document.getElementById("enableDivideImages").checked = true;
-    enableDivideImages = true;
-    await loadTileSet();
-    displayImages();
-    toggleOnImages();
-    resetRotation();
-    updateStageRotationCheck();
+    try {
+      currentIndex = Number(this.value);
+      closeScaleWizard();
+      buildImageCheckboxes();
+      buildOpacitySliders();
+      clearAnnotations();
+      annotationHistory.reset();
+      updateImageCheckboxLabels();
+      clearGrid();
+      enableGridButtons();
+      disableCountButtons();
+      removeAoiRectangle();
+      resetOpacitySliders();
+      resetLockStage();
+      updateOpacityImageSliderVisibility();
+      updateOpacitySliderLabels();
+      if (measurementControlsInitialized) {
+        resetMeasurements(true);
+      }
+      document.getElementById("enableDivideImages").checked = true;
+      enableDivideImages = true;
+      const canLoadTiles = await confirmSampleTilesAvailable();
+      if (!canLoadTiles) {
+        return;
+      }
+      await loadTileSet();
+      displayImages();
+      toggleOnImages();
+      resetRotation();
+      updateStageRotationCheck();
+      updateScaleDependentControls();
+      addScalebar();
+    } catch (error) {
+      console.error("[sample-switch] failed", error);
+      throw error;
+    }
 
     const annoJSONButtonContainer = document.getElementById("loadAnnoFromJSON");
     annoJSONButtonContainer.innerHTML = "";
@@ -326,10 +918,10 @@ document
     if (annotationFileOptions.length > 0) {
       hasAnnotationInJSON = true;
       const button = document.createElement("button");
-      button.textContent = "Load from JSON";
+      button.textContent = "Load Existing Annotations";
       button.id = "loadAnnoFromJSONButton";
       button.className = "custom-button";
-      button.style.setProperty("--button-width", "110px"); // button.style.display = "block"; // Make sure the button is visible
+      button.style.setProperty("--button-width", "170px"); // button.style.display = "block"; // Make sure the button is visible
       annoJSONButtonContainer.appendChild(button);
 
       if (annotationFileOptions.length === 1) {
@@ -428,7 +1020,7 @@ function toggleOnImages() {
 
   checkboxes.forEach((checkbox, i) => {
     if (i < count) {
-      checkbox.checked = true;
+      checkbox.checked = i === 0;
     }
   });
 
@@ -650,7 +1242,12 @@ const annotationHistory = {
 
 function cloneData(value) {
   if (typeof structuredClone === "function") {
-    return structuredClone(value);
+    try {
+      return structuredClone(value);
+    } catch {
+      // Some runtime objects in Electron cannot be structured-cloned; the app
+      // state snapshots are JSON-like, so JSON cloning is the right fallback.
+    }
   }
   return JSON.parse(JSON.stringify(value));
 }
@@ -787,13 +1384,13 @@ function redrawAnnotationDraft() {
       labelFontSize: Number(document.getElementById("annoLabelFontSize").value),
       labelFontColor: currentPolyStyleColors.labelFontColor,
       labelBackgroundColor: currentPolyStyleColors.labelBackgroundColor,
-      labelBackgroundOpacity: Number(
-        document.getElementById("annoLabelBackgroundOpacity").value
+      labelBackgroundOpacity: getAnnotationOpacityValue(
+        "annoLabelBackgroundOpacity"
       ),
       lineStyle: document.getElementById("lineStyle").value,
       lineWeight: Number(document.getElementById("lineWeight").value),
       lineColor: currentPolyStyleColors.lineColor,
-      lineOpacity: Number(document.getElementById("lineOpacity").value),
+      lineOpacity: getAnnotationOpacityValue("lineOpacity"),
     });
   }
 
@@ -809,13 +1406,13 @@ function redrawAnnotationDraft() {
       labelFontSize: Number(document.getElementById("annoLabelFontSize").value),
       labelFontColor: currentEllipseStyleColors.labelFontColor,
       labelBackgroundColor: currentEllipseStyleColors.labelBackgroundColor,
-      labelBackgroundOpacity: Number(
-        document.getElementById("annoLabelBackgroundOpacity").value
+      labelBackgroundOpacity: getAnnotationOpacityValue(
+        "annoLabelBackgroundOpacity"
       ),
       lineStyle: document.getElementById("lineStyle").value,
       lineWeight: Number(document.getElementById("lineWeight").value),
       lineColor: currentEllipseStyleColors.lineColor,
-      lineOpacity: Number(document.getElementById("lineOpacity").value),
+      lineOpacity: getAnnotationOpacityValue("lineOpacity"),
     };
 
     if (ellipseImageCoordinates.length === 1) {
@@ -835,7 +1432,7 @@ function redrawAnnotationDraft() {
       addPolygonToGeoJSON(annoJSONTemp, [...ellipseTempPoints], {
         ...commonStyle,
         fillColor: currentEllipseStyleColors.fillColor,
-        fillOpacity: Number(document.getElementById("fillOpacity").value),
+        fillOpacity: getAnnotationOpacityValue("fillOpacity"),
       });
     }
   }
@@ -1237,7 +1834,27 @@ window.addEventListener("beforeunload", function (e) {
 
 // Initialize the scalebar, except for pixelsPerMeter, which depends on the grid
 // settings.
+function removeScalebar() {
+  if (viewer.scalebarInstance) {
+    viewer.scalebar({
+      type: 0,
+      pixelsPerMeter: null,
+      location: 0,
+    });
+  }
+}
+
 function addScalebar() {
+  const scale = pixelsPerMeter();
+  if (scale === null) {
+    document.getElementById("scalebarType").value = "None";
+    removeScalebar();
+    return;
+  }
+
+  if (document.getElementById("scalebarType").value === "None") {
+    document.getElementById("scalebarType").value = "Map";
+  }
   const scalebarType = document.getElementById("scalebarType").value;
 
   const locationMapper = {
@@ -1305,30 +1922,31 @@ function addScalebar() {
     backgroundColor: scalebarBackgroundColorToPlot,
     fontSize: scalebarFontSize,
     barThickness: parseInt(scalebarBarThickness),
-    pixelsPerMeter: pixelsPerMeter(),
+    pixelsPerMeter: scale,
   });
 }
 
 function restoreScalebarDefaults() {
   const scalebarBackgroundColorToPlot = applyOpacityToColor("#ffffff", 0.5);
-  const pixelsPerMeter = pixelsPerMeter();
+  const scale = pixelsPerMeter();
+  const defaultScalebarType = scale === null ? "None" : "Map";
 
   // Reset scalebar settings to default values
-  document.getElementById("scalebarType").value = "Map";
+  document.getElementById("scalebarType").value = defaultScalebarType;
   document.getElementById("scalebarUnitSystem").value = "Metric";
-  document.getElementById("scalebarMinWidth").innerHTML = 75;
+  document.getElementById("scalebarMinWidth").value = 75;
   document.getElementById("scalebarLocation").value = "Bottom left";
-  document.getElementById("scalebarXOffset").innerHTML = 10;
-  document.getElementById("scalebarYOffset").innerHTML = 10;
+  document.getElementById("scalebarXOffset").value = 10;
+  document.getElementById("scalebarYOffset").value = 10;
   document.getElementById("scalebarColor").value = "#000000";
   document.getElementById("scalebarFontColor").value = "#000000";
   document.getElementById("scalebarBackgroundColor").value = "#ffffff";
-  document.getElementById("scalebarBackgroundOpacity").innerHTML = 0.5;
+  document.getElementById("scalebarBackgroundOpacity").value = 0.5;
   document.getElementById("scalebarFontSize").value = "medium";
-  document.getElementById("scalebarLineWeight").innerHTML = 2;
+  document.getElementById("scalebarLineWeight").value = 2;
 
   viewer.scalebar({
-    type: OpenSeadragon.ScalebarType.MAP,
+    type: scale === null ? 0 : OpenSeadragon.ScalebarType.MAP,
     unitSystem: "Metric",
     sizeAndTextRenderer:
       OpenSeadragon.ScalebarSizeAndTextRenderer.METRIC_LENGTH,
@@ -1342,12 +1960,128 @@ function restoreScalebarDefaults() {
     backgroundColor: scalebarBackgroundColorToPlot,
     fontSize: "medium",
     barThickness: 2,
-    pixelsPerMeter: pixelsPerMeter,
+    pixelsPerMeter: scale,
   });
+}
+
+function setControlDisabled(id, disabled, disabledTitle = "") {
+  const element = document.getElementById(id);
+  if (!element) return;
+
+  element.disabled = disabled;
+  if (disabled) {
+    if (!element.dataset.enabledTitle) {
+      element.dataset.enabledTitle = element.title || "";
+    }
+    element.title = disabledTitle;
+  } else if (element.dataset.enabledTitle !== undefined) {
+    element.title = element.dataset.enabledTitle;
+    delete element.dataset.enabledTitle;
+  }
+}
+
+function setMeasurementControlsToIdle() {
+  const showMeasure = document.getElementById("show-measure");
+  const measurementButton = document.getElementById("toggleMeasurementButton");
+  const circleButton = document.getElementById("toggleCircleButton");
+
+  if (showMeasure) showMeasure.checked = false;
+  if (measurementButton) {
+    measurementButton.classList.remove("active");
+    measurementButton.textContent = "Start Measuring";
+  }
+  if (circleButton) {
+    circleButton.classList.remove("active");
+    circleButton.textContent = "Draw Circle";
+  }
+  measurementModeActive = false;
+  circleModeActive = false;
+}
+
+function updateScaleDependentControls() {
+  const hasScale = hasKnownScale();
+  const disabledTitle = "Requires a known image scale.";
+  const scalebarControlIds = [
+    "scalebarType",
+    "scalebarUnitSystem",
+    "scalebarLocation",
+    "scalebarMinWidth",
+    "scalebarXOffset",
+    "scalebarYOffset",
+    "scalebarColor",
+    "scalebarFontColor",
+    "scalebarBackgroundColor",
+    "scalebarBackgroundOpacity",
+    "scalebarFontSize",
+    "scalebarLineWeight",
+    "restoreScalebarDedfaults",
+  ];
+  const measurementControlIds = [
+    "show-measure",
+    "toggleMeasurementButton",
+    "toggleCircleButton",
+    "circleGearButton",
+    "distanceUnits",
+    "areaUnits",
+    "ECDUnits",
+    "circleUnits",
+    "circle",
+  ];
+
+  scalebarControlIds.forEach((id) => {
+    setControlDisabled(id, !hasScale, disabledTitle);
+  });
+  measurementControlIds.forEach((id) => {
+    setControlDisabled(id, !hasScale, disabledTitle);
+  });
+
+  if (!hasScale) {
+    document.getElementById("scalebarType").value = "None";
+    const showMeasure = document.getElementById("show-measure");
+    if (showMeasure && showMeasure.checked) {
+      showMeasure.dataset.disabledByNoScale = "true";
+    }
+    disableGridOptions();
+    document.getElementById("apply-grid-settings").disabled = true;
+    document.getElementById("clear-grid").disabled = true;
+    disableCountButtons();
+    setMeasurementControlsToIdle();
+    if (measureCanvas) measureCanvas.style.display = "none";
+  } else {
+    const showMeasure = document.getElementById("show-measure");
+    if (showMeasure?.dataset.disabledByNoScale === "true") {
+      showMeasure.checked = true;
+      delete showMeasure.dataset.disabledByNoScale;
+    }
+    if (measureCanvas && showMeasure) {
+      measureCanvas.style.display = showMeasure.checked ? "block" : "none";
+    }
+    enableGridOptions();
+    enableGridButtons();
+  }
 }
 
 // Load the images for the tile set at the given index within the currently
 // selected sample's tile sets.
+async function confirmSampleTilesAvailable() {
+  if (!window.electronAPI?.validateSampleTiles) {
+    return true;
+  }
+
+  const validationResult = await window.electronAPI.validateSampleTiles(
+    tileSets().map(serializeTileSetForLibrary)
+  );
+  if (validationResult.ok) {
+    return true;
+  }
+
+  if (!window.electronAPI?.confirmSlowTiles) {
+    return false;
+  }
+
+  return window.electronAPI.confirmSlowTiles(validationResult);
+}
+
 async function loadTileSet() {
   const loadGeneration = ++tileLoadGeneration;
   const sampleIndex = currentIndex;
@@ -1777,7 +2511,7 @@ function buildImageCheckboxes() {
 
     const checkbox = document.createElement("input");
     checkbox.type = "checkbox";
-    checkbox.checked = true;
+    checkbox.checked = i === 0;
     checkbox.className = "image-checkbox";
     checkbox.dataset.index = i;
     checkbox.addEventListener("change", displayImages);
@@ -1980,6 +2714,24 @@ function removeTemporaryPoints() {
   drawShape(polyCanvas, [annoJSON, annoJSONTemp]);
 }
 
+function deactivateAnnotationModes() {
+  pointButton.classList.remove("active");
+  polylineButton.classList.remove("active");
+  rectButton.classList.remove("active");
+  repeatButton.classList.remove("active");
+  polygonButton.classList.remove("active");
+  ellipseButton.classList.remove("active");
+
+  isPointMode = false;
+  isPolylineMode = false;
+  isRectangleMode = false;
+  isRepeatMode = false;
+  isPolygonMode = false;
+  isEllipseMode = false;
+
+  removeTemporaryPoints();
+}
+
 pointButton.addEventListener("click", () => {
   // Deactivate rect and poly buttons
   rectButton.classList.remove("active");
@@ -2121,18 +2873,78 @@ window.addEventListener("click", function (event) {
   }
 });
 
+function positionAnnotationSettingsPopover(menu, button) {
+  const buttonRect = button.getBoundingClientRect();
+  const menuRect = menu.getBoundingClientRect();
+  const margin = 8;
+  const maxLeft = window.innerWidth - menuRect.width - margin;
+  const left = Math.min(Math.max(buttonRect.left, margin), maxLeft);
+  const spaceBelow = window.innerHeight - buttonRect.bottom - margin;
+  const spaceAbove = buttonRect.top - margin;
+  const opensUp = spaceBelow < menuRect.height && spaceAbove > spaceBelow;
+  const top = opensUp
+    ? Math.max(margin, buttonRect.top - menuRect.height - 4)
+    : Math.min(
+        buttonRect.bottom + 4,
+        window.innerHeight - menuRect.height - margin
+      );
+
+  menu.style.left = `${left}px`;
+  menu.style.top = `${top}px`;
+}
+
+function openAnnotationSettingsPopover(button) {
+  const menu = document.getElementById("annoSettingsMenu");
+  if (!menu || !button) return;
+
+  if (menu.parentElement !== document.body) {
+    document.body.appendChild(menu);
+  }
+
+  menu.classList.add("annotation-settings-popover");
+  menu.style.display = "block";
+  positionAnnotationSettingsPopover(menu, button);
+}
+
+function closeAnnotationSettingsPopover() {
+  const menu = document.getElementById("annoSettingsMenu");
+  if (!menu) return;
+
+  menu.style.display = "none";
+  menu.classList.remove("annotation-settings-popover");
+}
+
+function openCircleSettingsPopover(button) {
+  const menu = document.getElementById("circleSettingsMenu");
+  if (!menu || !button) return;
+
+  if (menu.parentElement !== document.body) {
+    document.body.appendChild(menu);
+  }
+
+  menu.classList.add("measure-settings-popover");
+  menu.style.display = "block";
+  positionAnnotationSettingsPopover(menu, button);
+}
+
+function closeCircleSettingsPopover() {
+  const menu = document.getElementById("circleSettingsMenu");
+  if (!menu) return;
+
+  menu.style.display = "none";
+  menu.classList.remove("measure-settings-popover");
+}
+
 // Show or hide the annotations settings menu when the gear button is clicked
-document
-  .getElementById("gearButton")
-  .addEventListener("click", function (event) {
-    event.stopPropagation(); // Prevent click from reaching the window listener
-    const menu = document.getElementById("annoSettingsMenu");
-    if (menu.style.display === "none" || menu.style.display === "") {
-      menu.style.display = "block";
-    } else {
-      menu.style.display = "none";
-    }
-  });
+document.getElementById("gearButton").addEventListener("click", function (event) {
+  event.stopPropagation(); // Prevent click from reaching the window listener
+  const menu = document.getElementById("annoSettingsMenu");
+  if (menu.style.display === "block") {
+    closeAnnotationSettingsPopover();
+  } else {
+    openAnnotationSettingsPopover(event.currentTarget);
+  }
+});
 
 // Show or hide the annotations settings menu when the circle gear button is clicked
 document
@@ -2140,10 +2952,10 @@ document
   .addEventListener("click", function (event) {
     event.stopPropagation(); // Prevent click from reaching the window listener
     const menu = document.getElementById("circleSettingsMenu");
-    if (menu.style.display === "none" || menu.style.display === "") {
-      menu.style.display = "block";
+    if (menu.style.display === "block") {
+      closeCircleSettingsPopover();
     } else {
-      menu.style.display = "none";
+      openCircleSettingsPopover(event.currentTarget);
     }
   });
 
@@ -2167,7 +2979,17 @@ window.addEventListener("click", function (event) {
     !event.target.closest("#gearButton") &&
     !event.target.closest("#annoSettingsMenu")
   ) {
-    menu.style.display = "none";
+    closeAnnotationSettingsPopover();
+  }
+});
+
+window.addEventListener("click", function (event) {
+  const menu = document.getElementById("circleSettingsMenu");
+  if (
+    !event.target.closest("#circleGearButton") &&
+    !event.target.closest("#circleSettingsMenu")
+  ) {
+    closeCircleSettingsPopover();
   }
 });
 
@@ -2194,6 +3016,14 @@ function getAnnotationColor(inputId) {
     return getRandomAnnotationColor();
   }
   return colorInput?.value || "#FFFFFF";
+}
+
+function getAnnotationOpacityValue(inputId) {
+  const input = document.getElementById(inputId);
+  const percentValue = Number(input?.value);
+  if (!Number.isFinite(percentValue)) return 0;
+
+  return Math.min(100, Math.max(0, percentValue)) / 100;
 }
 
 function getCurrentAnnotationStyleColors(existingColors = {}) {
@@ -2244,17 +3074,6 @@ function getAnnotationLabelFontColor() {
 function getAnnotationLabelBackgroundColor() {
   return getAnnotationColor("annoLabelBackgroundColor");
 }
-
-// Close the menu if clicked outside (circle menu)
-window.addEventListener("click", function (event) {
-  const menu = document.getElementById("circleSettingsMenu");
-  if (
-    !event.target.closest("#circleGearButton") &&
-    !event.target.closest("#circleSettingsMenu")
-  ) {
-    menu.style.display = "none";
-  }
-});
 
 // Close the menu if clicked outside (grid menu)
 window.addEventListener("click", function (event) {
@@ -2434,15 +3253,15 @@ function applyCurrentAnno(id, changeLabel = false) {
   );
   const labelFontColor = getAnnotationLabelFontColor();
   const labelBackgroundColor = getAnnotationLabelBackgroundColor();
-  const labelBackgroundOpacity = Number(
-    document.getElementById("annoLabelBackgroundOpacity").value
+  const labelBackgroundOpacity = getAnnotationOpacityValue(
+    "annoLabelBackgroundOpacity"
   );
   const lineWeight = Number(document.getElementById("lineWeight").value);
   const lineColor = getAnnotationLineColor();
-  const lineOpacity = Number(document.getElementById("lineOpacity").value);
+  const lineOpacity = getAnnotationOpacityValue("lineOpacity");
   const lineStyle = document.getElementById("lineStyle").value;
   const fillColor = getAnnotationFillColor();
-  const fillOpacity = Number(document.getElementById("fillOpacity").value);
+  const fillOpacity = getAnnotationOpacityValue("fillOpacity");
   const uuid = annoJSON.features[id - 1].properties.uuid;
   const type = annoJSON.features[id - 1].geometry.type;
   if (type === "Point") {
@@ -3093,12 +3912,10 @@ viewer.addHandler("canvas-click", function (event) {
     );
     const labelFontColor = getAnnotationLabelFontColor();
     const labelBackgroundColor = getAnnotationLabelBackgroundColor();
-    const labelBackgroundOpacity = Number(
-      document.getElementById("annoLabelBackgroundOpacity").value
-    );
+    const labelBackgroundOpacity = getAnnotationOpacityValue("annoLabelBackgroundOpacity");
     const lineWeight = Number(document.getElementById("lineWeight").value);
     const lineColor = getAnnotationLineColor();
-    const lineOpacity = Number(document.getElementById("lineOpacity").value);
+    const lineOpacity = getAnnotationOpacityValue("lineOpacity");
 
     let constPointLabel;
     if (isRepeatMode) {
@@ -3347,15 +4164,13 @@ viewer.addHandler("canvas-click", function (event) {
     );
     const labelFontColor = currentEllipseStyleColors.labelFontColor;
     const labelBackgroundColor = currentEllipseStyleColors.labelBackgroundColor;
-    const labelBackgroundOpacity = Number(
-      document.getElementById("annoLabelBackgroundOpacity").value
-    );
+    const labelBackgroundOpacity = getAnnotationOpacityValue("annoLabelBackgroundOpacity");
     const lineWeight = Number(document.getElementById("lineWeight").value);
     const lineColor = currentEllipseStyleColors.lineColor;
     const lineStyle = document.getElementById("lineStyle").value;
-    const lineOpacity = Number(document.getElementById("lineOpacity").value);
+    const lineOpacity = getAnnotationOpacityValue("lineOpacity");
     const fillColor = currentEllipseStyleColors.fillColor;
-    const fillOpacity = Number(document.getElementById("fillOpacity").value);
+    const fillOpacity = getAnnotationOpacityValue("fillOpacity");
     ellipseCoordinates.push({ x, y });
     ellipseImageCoordinates.push([imagePoint.x, imagePoint.y]);
     activeAnnotationDraft = "ellipse";
@@ -3543,9 +4358,9 @@ function finalizeEllipseAnnotation(
     labelImagePoint[1]
   );
   const areaPixels2 = calculatePolygonArea([ellipsePoints]);
-  const areaM2 = areaPixels2 / pixelsPerMeter() ** 2;
+  const areaM2 = squareMetersFromSquarePixels(areaPixels2);
   const perimeterPixels = calculatePolygonExteriorPerimeter([ellipsePoints]);
-  const perimeterM = perimeterPixels / pixelsPerMeter();
+  const perimeterM = metersFromPixels(perimeterPixels);
 
   addPolygonToGeoJSON(annoJSON, [...ellipsePoints], {
     uuid: uniqueID,
@@ -3614,8 +4429,1268 @@ let currentPolyStyleColors = null;
 const polyCanvas = document.getElementById("annotation-overlay"); // Includes polyline and polygon
 const circleCanvas = document.getElementById("circle-overlay"); // Includes circles
 const measureCanvas = document.getElementById("measurement-overlay"); // Includes polyline and polygon
+const scaleCanvas = document.getElementById("scale-overlay"); // Scale wizard calibration line
+const scaleWizard = document.getElementById("scaleWizard");
+const scaleWizardStatus = document.getElementById("scaleWizardStatus");
+const scaleWizardLength = document.getElementById("scaleWizardLength");
+const scaleWizardUnits = document.getElementById("scaleWizardUnits");
+const scaleWizardResult = document.getElementById("scaleWizardResult");
+const applyScaleWizardButton = document.getElementById("applyScaleWizardButton");
+const resetScaleWizardButton = document.getElementById("resetScaleWizardButton");
+const cancelScaleWizardButton = document.getElementById("cancelScaleWizardButton");
+const closeScaleWizardButton = document.getElementById("closeScaleWizardButton");
+const libraryEditor = document.getElementById("libraryEditor");
+const libraryEditorSummary = document.getElementById("libraryEditorSummary");
+const libraryEditorRows = document.getElementById("libraryEditorRows");
+const libraryEditorSearch = document.getElementById("libraryEditorSearch");
+const libraryEditorForm = document.getElementById("libraryEditorForm");
+const libraryEditorTitleInput = document.getElementById("libraryEditorTitleInput");
+const libraryEditorDescriptionInput = document.getElementById(
+  "libraryEditorDescriptionInput"
+);
+const libraryEditorGroupsInput = document.getElementById("libraryEditorGroupsInput");
+const libraryEditorScaleInput = document.getElementById("libraryEditorScaleInput");
+const libraryEditorAnnotationsInput = document.getElementById(
+  "libraryEditorAnnotationsInput"
+);
+const libraryEditorTileSetCount = document.getElementById("libraryEditorTileSetCount");
+const libraryEditorDeleteButton = document.getElementById("libraryEditorDeleteButton");
+const libraryEditorStatus = document.getElementById("libraryEditorStatus");
+const cancelLibraryEditorButton = document.getElementById("cancelLibraryEditorButton");
+const saveAsLibraryEditorButton = document.getElementById("saveAsLibraryEditorButton");
+const saveLibraryEditorButton = document.getElementById("saveLibraryEditorButton");
+const applyCloseLibraryEditorButton = document.getElementById(
+  "applyCloseLibraryEditorButton"
+);
+const closeLibraryEditorButton = document.getElementById("closeLibraryEditorButton");
+const openTileSetEditorButton = document.getElementById("openTileSetEditorButton");
+const tileSetEditor = document.getElementById("tileSetEditor");
+const tileSetEditorTitle = document.getElementById("tileSetEditorTitle");
+const tileSetEditorSummary = document.getElementById("tileSetEditorSummary");
+const tileSetEditorRows = document.getElementById("tileSetEditorRows");
+const tileSetEditorStatus = document.getElementById("tileSetEditorStatus");
+const cancelTileSetEditorButton = document.getElementById("cancelTileSetEditorButton");
+const saveTileSetEditorButton = document.getElementById("saveTileSetEditorButton");
+const closeTileSetEditorButton = document.getElementById("closeTileSetEditorButton");
+const scaleWizardState = {
+  active: false,
+  points: [],
+  calculatedPixelsPerMeter: null,
+  saving: false,
+};
+const libraryEditorState = {
+  samples: [],
+  selectedIndex: 0,
+  saving: false,
+};
+const tileSetEditorState = {
+  sampleIndex: -1,
+  convertingRow: null,
+  progressUnsubscribe: null,
+};
 let activelyMakingPoly = false; // Either polyline or polygon
+
+function cloneLibraryValue(value) {
+  return JSON.parse(JSON.stringify(value));
+}
+
+function openLibraryEditor() {
+  if (!window.electronAPI || !libraryEditor) return;
+
+  stopMeasurementMode();
+  stopCircleMode();
+  closeScaleWizard();
+
+  const libraryData = serializeLibraryDataForSave();
+  libraryEditorState.samples = cloneLibraryValue(libraryData.samples || []);
+  libraryEditorState.selectedIndex = Math.min(
+    Math.max(currentIndex, 0),
+    Math.max(libraryEditorState.samples.length - 1, 0)
+  );
+  if (libraryEditorSearch) libraryEditorSearch.value = "";
+  setLibraryEditorStatus("");
+  libraryEditor.hidden = false;
+  renderLibraryEditor();
+  libraryEditorSearch?.focus();
+}
+
+function closeLibraryEditor() {
+  if (!libraryEditor || libraryEditorState.saving) return;
+  if (tileSetEditorState.convertingRow) return;
+  closeTileSetEditor();
+  libraryEditor.hidden = true;
+}
+
+function getLibraryEditorSelectedSample() {
+  return libraryEditorState.samples[libraryEditorState.selectedIndex] || null;
+}
+
+function formatLibraryEditorGroups(sample) {
+  return Array.isArray(sample?.groups) ? sample.groups.join("; ") : "";
+}
+
+function formatLibraryEditorAnnotations(sample) {
+  return normalizeAnnotationFileOptions(sample?.annotations).join("\n");
+}
+
+function getLibraryEditorSearchText() {
+  return (libraryEditorSearch?.value || "").trim().toLowerCase();
+}
+
+function renderLibraryEditor() {
+  renderLibraryEditorRows();
+  renderLibraryEditorForm();
+
+  if (libraryEditorSummary) {
+    const count = libraryEditorState.samples.length;
+    libraryEditorSummary.textContent = `${count} sample${count === 1 ? "" : "s"}`;
+  }
+}
+
+function renderLibraryEditorRows() {
+  if (!libraryEditorRows) return;
+
+  const query = getLibraryEditorSearchText();
+  libraryEditorRows.innerHTML = "";
+
+  libraryEditorState.samples.forEach((sample, index) => {
+    const searchableText = [
+      sample.title,
+      sample.description,
+      formatLibraryEditorGroups(sample),
+    ]
+      .join(" ")
+      .toLowerCase();
+    if (query && !searchableText.includes(query)) return;
+
+    const row = document.createElement("tr");
+    row.className = "library-editor-row";
+    row.dataset.index = String(index);
+    if (index === libraryEditorState.selectedIndex) {
+      row.classList.add("selected");
+    }
+
+    const sampleCell = document.createElement("td");
+    const titleElement = document.createElement("div");
+    titleElement.className = "library-editor-row-title";
+    titleElement.textContent = sample.title || "(Untitled sample)";
+    const descriptionElement = document.createElement("div");
+    descriptionElement.className = "library-editor-row-description";
+    descriptionElement.textContent = sample.description || "";
+    sampleCell.append(titleElement, descriptionElement);
+
+    const groupsCell = document.createElement("td");
+    groupsCell.className = "library-editor-row-groups";
+    groupsCell.textContent = formatLibraryEditorGroups(sample);
+
+    const tileSetsCell = document.createElement("td");
+    tileSetsCell.textContent = String((sample.tileSets || []).length);
+
+    const moveCell = document.createElement("td");
+    const moveActions = document.createElement("div");
+    moveActions.className = "library-editor-row-actions";
+    [
+      ["top", "Move to top", "assets/2_go_to_first.png"],
+      ["up", "Move up", "assets/2_go_to_previous.png"],
+      ["down", "Move down", "assets/2_go_to_next.png"],
+      ["bottom", "Move to bottom", "assets/2_go_to_last.png"],
+    ].forEach(([action, titleText, iconPath]) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.dataset.action = action;
+      button.dataset.index = String(index);
+      button.title = titleText;
+      button.setAttribute("aria-label", `${titleText}: ${sample.title || "sample"}`);
+      const icon = document.createElement("img");
+      icon.src = iconPath;
+      icon.alt = "";
+      icon.className = `library-editor-move-icon-${action}`;
+      button.appendChild(icon);
+      button.disabled =
+        (index === 0 && (action === "top" || action === "up")) ||
+        (index === libraryEditorState.samples.length - 1 &&
+          (action === "down" || action === "bottom"));
+      moveActions.appendChild(button);
+    });
+    moveCell.appendChild(moveActions);
+
+    row.append(sampleCell, groupsCell, tileSetsCell, moveCell);
+    libraryEditorRows.appendChild(row);
+  });
+}
+
+function renderLibraryEditorForm() {
+  const selectedSample = getLibraryEditorSelectedSample();
+  const hasSample = Boolean(selectedSample);
+
+  [
+    libraryEditorTitleInput,
+    libraryEditorDescriptionInput,
+    libraryEditorGroupsInput,
+    libraryEditorScaleInput,
+    libraryEditorAnnotationsInput,
+    openTileSetEditorButton,
+    libraryEditorDeleteButton,
+  ].forEach((element) => {
+    if (element) element.disabled = !hasSample;
+  });
+
+  if (!hasSample) {
+    if (libraryEditorTitleInput) libraryEditorTitleInput.value = "";
+    if (libraryEditorDescriptionInput) libraryEditorDescriptionInput.value = "";
+    if (libraryEditorGroupsInput) libraryEditorGroupsInput.value = "";
+    if (libraryEditorScaleInput) libraryEditorScaleInput.value = "";
+    if (libraryEditorAnnotationsInput) libraryEditorAnnotationsInput.value = "";
+    if (libraryEditorTileSetCount) libraryEditorTileSetCount.textContent = "0";
+    return;
+  }
+
+  if (libraryEditorTitleInput) libraryEditorTitleInput.value = selectedSample.title || "";
+  if (libraryEditorDescriptionInput) {
+    libraryEditorDescriptionInput.value = selectedSample.description || "";
+  }
+  if (libraryEditorGroupsInput) {
+    libraryEditorGroupsInput.value = formatLibraryEditorGroups(selectedSample);
+  }
+  if (libraryEditorScaleInput) {
+    libraryEditorScaleInput.value =
+      selectedSample.pixelsPerMeter === undefined ||
+      selectedSample.pixelsPerMeter === null
+        ? ""
+        : String(selectedSample.pixelsPerMeter);
+  }
+  if (libraryEditorAnnotationsInput) {
+    libraryEditorAnnotationsInput.value = formatLibraryEditorAnnotations(selectedSample);
+  }
+  if (libraryEditorTileSetCount) {
+    libraryEditorTileSetCount.textContent = String((selectedSample.tileSets || []).length);
+  }
+}
+
+function updateLibraryEditorSelectedSample() {
+  const selectedSample = getLibraryEditorSelectedSample();
+  if (!selectedSample) return;
+
+  selectedSample.title = libraryEditorTitleInput?.value.trim() || "";
+  selectedSample.description = libraryEditorDescriptionInput?.value.trim() || "";
+
+  const groups = (libraryEditorGroupsInput?.value || "")
+    .split(";")
+    .map((group) => group.trim())
+    .filter(Boolean);
+  if (groups.length) {
+    selectedSample.groups = groups;
+  } else {
+    delete selectedSample.groups;
+  }
+
+  const pixelsPerMeter = libraryEditorScaleInput?.value.trim() || "";
+  if (pixelsPerMeter) {
+    selectedSample.pixelsPerMeter = pixelsPerMeter;
+  } else {
+    delete selectedSample.pixelsPerMeter;
+  }
+
+  const annotationFiles = (libraryEditorAnnotationsInput?.value || "")
+    .split(/\r?\n/)
+    .map((file) => file.trim())
+    .filter(Boolean);
+  if (annotationFiles.length === 1) {
+    selectedSample.annotations = annotationFiles[0];
+  } else if (annotationFiles.length > 1) {
+    selectedSample.annotations = annotationFiles;
+  } else {
+    delete selectedSample.annotations;
+  }
+}
+
+function selectLibraryEditorSample(index) {
+  updateLibraryEditorSelectedSample();
+  libraryEditorState.selectedIndex = Math.min(
+    Math.max(index, 0),
+    Math.max(libraryEditorState.samples.length - 1, 0)
+  );
+  setLibraryEditorStatus("");
+  renderLibraryEditor();
+}
+
+function moveLibraryEditorSample(fromIndex, toIndex) {
+  updateLibraryEditorSelectedSample();
+  const maxIndex = libraryEditorState.samples.length - 1;
+  const clampedToIndex = Math.min(Math.max(toIndex, 0), maxIndex);
+  if (fromIndex === clampedToIndex) return;
+
+  const [sample] = libraryEditorState.samples.splice(fromIndex, 1);
+  libraryEditorState.samples.splice(clampedToIndex, 0, sample);
+  libraryEditorState.selectedIndex = clampedToIndex;
+  renderLibraryEditor();
+}
+
+function deleteLibraryEditorSample() {
+  const selectedSample = getLibraryEditorSelectedSample();
+  if (!selectedSample) return;
+  if (libraryEditorState.samples.length <= 1) {
+    setLibraryEditorStatus("A library must contain at least one sample.", true);
+    return;
+  }
+
+  const titleText = selectedSample.title || "this sample";
+  const shouldDelete = window.confirm(
+    `Delete "${titleText}" from this library? Image and annotation files will not be deleted.`
+  );
+  if (!shouldDelete) return;
+
+  libraryEditorState.samples.splice(libraryEditorState.selectedIndex, 1);
+  libraryEditorState.selectedIndex = Math.min(
+    libraryEditorState.selectedIndex,
+    libraryEditorState.samples.length - 1
+  );
+  setLibraryEditorStatus(`Deleted "${titleText}". Apply to keep this change.`);
+  renderLibraryEditor();
+}
+
+function validateLibraryEditorSamples() {
+  if (!libraryEditorState.samples.length) {
+    return "A library must contain at least one sample.";
+  }
+
+  for (const [index, sample] of libraryEditorState.samples.entries()) {
+    const rowNumber = index + 1;
+    if (!sample.title || !sample.title.trim()) {
+      return `Sample ${rowNumber} needs a title.`;
+    }
+
+    if (sample.pixelsPerMeter !== undefined && sample.pixelsPerMeter !== "") {
+      const scale = Number(sample.pixelsPerMeter);
+      if (!Number.isFinite(scale) || scale <= 0) {
+        return `"${sample.title}" needs a positive pixels-per-meter value.`;
+      }
+    }
+
+    if (!Array.isArray(sample.tileSets) || sample.tileSets.length === 0) {
+      return `"${sample.title}" needs at least one tile set.`;
+    }
+  }
+
+  return "";
+}
+
+function setLibraryEditorStatus(message, isError = false) {
+  if (!libraryEditorStatus) return;
+  libraryEditorStatus.textContent = message;
+  libraryEditorStatus.classList.toggle("error", isError);
+}
+
+async function saveLibraryEditor({
+  forceSaveAs = false,
+  closeAfterSave = false,
+} = {}) {
+  if (libraryEditorState.saving) return;
+
+  updateLibraryEditorSelectedSample();
+  const validationMessage = validateLibraryEditorSamples();
+  if (validationMessage) {
+    setLibraryEditorStatus(validationMessage, true);
+    return;
+  }
+
+  const previousTitle = samples[currentIndex]?.title || "";
+  const jsonData = {
+    ...(currentLibraryData || {}),
+    samples: cloneLibraryValue(libraryEditorState.samples),
+  };
+
+  libraryEditorState.saving = true;
+  [
+    saveLibraryEditorButton,
+    saveAsLibraryEditorButton,
+    applyCloseLibraryEditorButton,
+  ].forEach((button) => {
+    if (button) button.disabled = true;
+  });
+  setLibraryEditorStatus("Applying library changes...");
+
+  try {
+    await saveLibraryData(jsonData, {
+      forceSaveAs,
+      canceledMessage: "Library changes were not saved.",
+    });
+    await loadSampleJSON(jsonData, { autoLoadSample: false });
+    selectSampleAfterLibraryEdit(previousTitle);
+    if (closeAfterSave) {
+      setLibraryEditorStatus("");
+      libraryEditorState.saving = false;
+      closeLibraryEditor();
+    } else {
+      setLibraryEditorStatus("Library changes applied.");
+    }
+  } catch (error) {
+    console.error("Could not save library edits:", error);
+    setLibraryEditorStatus(error.message || "Could not save library changes.", true);
+  } finally {
+    libraryEditorState.saving = false;
+    [
+      saveLibraryEditorButton,
+      saveAsLibraryEditorButton,
+      applyCloseLibraryEditorButton,
+    ].forEach((button) => {
+      if (button) button.disabled = false;
+    });
+  }
+}
+
+function selectSampleAfterLibraryEdit(previousTitle) {
+  const sampleDropdown = document.getElementById("sampleDropdown");
+  const groupDropdown = document.getElementById("groupDropdown");
+  if (!sampleDropdown || !groupDropdown || samples.length === 0) return;
+
+  const nextIndex = Math.max(
+    samples.findIndex((sample) => sample.title === previousTitle),
+    0
+  );
+  const groupForSample =
+    Object.keys(groupMapping).find((group) => groupMapping[group].includes(nextIndex)) ||
+    "All";
+  groupDropdown.value = groupForSample;
+  populateSampleDropdown(groupForSample, { autoSelect: false });
+  sampleDropdown.value = String(nextIndex);
+  sampleDropdown.dispatchEvent(new Event("change"));
+}
+
+async function saveLibraryData(
+  jsonData,
+  { forceSaveAs = false, canceledMessage = "Library was not saved." } = {}
+) {
+  currentLibraryData = jsonData;
+
+  if (!forceSaveAs && currentLibraryPath && window.electronAPI?.writeJsonFile) {
+    try {
+      await window.electronAPI.writeJsonFile(currentLibraryPath, jsonData);
+      window.electronAPI.setUnsavedState?.(
+        window.appState.hasUnsavedAnnotations || window.appState.hasUnsavedCounts
+      );
+      return;
+    } catch (error) {
+      console.warn("Could not write current library; falling back to Save As.", error);
+    }
+  }
+
+  if (!window.electronAPI?.saveJsonFileAs) {
+    throw new Error("No Electron save API is available.");
+  }
+
+  const result = await window.electronAPI.saveJsonFileAs("library.json", jsonData);
+  if (result?.canceled) {
+    throw new Error(canceledMessage);
+  }
+  currentLibraryPath = result.filePath || currentLibraryPath;
+  window.electronAPI.setUnsavedState?.(
+    window.appState.hasUnsavedAnnotations || window.appState.hasUnsavedCounts
+  );
+}
+
+function inferTileSetEditorType(tileSet) {
+  const tiles = tileSet?.tiles || [];
+  if (
+    tileSet?.periodDegrees !== undefined ||
+    tiles.some((tile) => tile?.angleDegrees !== undefined)
+  ) {
+    return "rotation";
+  }
+  return tiles.length > 1 ? "multiple" : "individual";
+}
+
+function getTileSetEditorSelectedSample() {
+  return libraryEditorState.samples[tileSetEditorState.sampleIndex] || null;
+}
+
+function openTileSetEditor() {
+  updateLibraryEditorSelectedSample();
+  const selectedSample = getLibraryEditorSelectedSample();
+  if (!selectedSample || !tileSetEditor || !tileSetEditorRows) return;
+
+  tileSetEditorState.sampleIndex = libraryEditorState.selectedIndex;
+  setTileSetEditorStatus("");
+  if (tileSetEditorTitle) {
+    tileSetEditorTitle.textContent = "Edit Tile Sets";
+  }
+  if (tileSetEditorSummary) {
+    tileSetEditorSummary.textContent = selectedSample.title || "(Untitled sample)";
+  }
+
+  tileSetEditor.hidden = false;
+  renderTileSetEditor(selectedSample.tileSets || []);
+}
+
+function closeTileSetEditor() {
+  if (!tileSetEditor) return;
+  if (tileSetEditorState.convertingRow) return;
+
+  tileSetEditor.hidden = true;
+  tileSetEditorState.sampleIndex = -1;
+  setTileSetEditorStatus("");
+}
+
+function setTileSetEditorStatus(message, isError = false) {
+  if (!tileSetEditorStatus) return;
+  tileSetEditorStatus.textContent = message;
+  tileSetEditorStatus.classList.toggle("error", isError);
+}
+
+function renderTileSetEditor(tileSets) {
+  if (!tileSetEditorRows) return;
+
+  tileSetEditorRows.innerHTML = "";
+  const rows = tileSets.length ? tileSets : [{ label: "", tiles: [{ uri: "" }] }];
+  rows.forEach((tileSet) => {
+    tileSetEditorRows.appendChild(createTileSetEditorRow(tileSet));
+  });
+  renumberTileSetEditorRows();
+}
+
+function createTileSetEditorRow(tileSet = {}) {
+  const row = document.createElement("section");
+  row.className = "tile-set-editor-row";
+  row.dataset.originalTileSet = JSON.stringify(tileSet || {});
+
+  const header = document.createElement("div");
+  header.className = "tile-set-editor-row-header";
+
+  const heading = document.createElement("h3");
+  heading.textContent = "Tile Set";
+
+  const headerActions = document.createElement("div");
+  headerActions.className = "tile-set-editor-row-actions";
+  [
+    ["move-tile-set-top", "Move tile set to top", "assets/2_go_to_first.png", "top"],
+    ["move-tile-set-up", "Move tile set up", "assets/2_go_to_previous.png", "up"],
+    ["move-tile-set-down", "Move tile set down", "assets/2_go_to_next.png", "down"],
+    ["move-tile-set-bottom", "Move tile set to bottom", "assets/2_go_to_last.png", "bottom"],
+  ].forEach(([action, titleText, iconPath, iconClass]) => {
+    const button = createTileSetEditorButton(titleText, "", action);
+    const icon = document.createElement("img");
+    icon.src = iconPath;
+    icon.alt = "";
+    icon.className = `library-editor-move-icon-${iconClass}`;
+    button.appendChild(icon);
+    headerActions.appendChild(button);
+  });
+  const addButton = createTileSetEditorButton("Add tile set", "+", "add-tile-set");
+  const removeButton = createTileSetEditorButton(
+    "Remove tile set",
+    "-",
+    "remove-tile-set"
+  );
+  headerActions.append(addButton, removeButton);
+  header.append(heading, headerActions);
+
+  const typeSelect = document.createElement("select");
+  typeSelect.className = "tile-set-editor-type";
+  typeSelect.setAttribute("aria-label", "Tile set type");
+  [
+    ["individual", "Individual"],
+    ["multiple", "Multiple"],
+    ["rotation", "Multiple (rotation enabled)"],
+  ].forEach(([value, label]) => {
+    const option = document.createElement("option");
+    option.value = value;
+    option.textContent = label;
+    typeSelect.appendChild(option);
+  });
+  typeSelect.value = inferTileSetEditorType(tileSet);
+
+  const labelWrap = document.createElement("label");
+  labelWrap.className = "tile-set-editor-label-wrap";
+  labelWrap.textContent = "Tile set label";
+  const labelInput = document.createElement("input");
+  labelInput.className = "tile-set-editor-label-input";
+  labelInput.type = "text";
+  labelInput.value = tileSet.label || "";
+  labelInput.placeholder = "PPL";
+  labelWrap.appendChild(labelInput);
+
+  const periodWrap = document.createElement("label");
+  periodWrap.className = "tile-set-editor-period-wrap";
+  periodWrap.textContent = "Angle periodicity";
+  const periodInput = document.createElement("input");
+  periodInput.className = "tile-set-editor-period-input";
+  periodInput.type = "number";
+  periodInput.min = "1";
+  periodInput.max = "360";
+  periodInput.step = "any";
+  periodInput.value =
+    tileSet.periodDegrees === undefined || tileSet.periodDegrees === null
+      ? "90"
+      : String(tileSet.periodDegrees);
+  periodWrap.appendChild(periodInput);
+
+  const images = document.createElement("div");
+  images.className = "tile-set-editor-images";
+  const tiles = tileSet.tiles?.length ? tileSet.tiles : [{ uri: "" }];
+  tiles.forEach((tile) => {
+    images.appendChild(createTileImageEditorRow(tile, typeSelect.value));
+  });
+
+  row.append(header, typeSelect, labelWrap, periodWrap, images);
+  updateTileSetEditorType(row);
+  return row;
+}
+
+function createTileImageEditorRow(tile = {}, type = "individual") {
+  const row = document.createElement("div");
+  row.className = "tile-image-editor-row";
+  row.dataset.originalTile = JSON.stringify(tile || {});
+
+  const labelInput = document.createElement("input");
+  labelInput.className = "tile-image-editor-label-input";
+  labelInput.type = "text";
+  labelInput.placeholder = "Image label";
+  labelInput.value = tile.label || "";
+
+  const angleLabel = document.createElement("label");
+  angleLabel.className = "tile-image-editor-angle-wrap";
+  angleLabel.textContent = "Angle";
+  const angleInput = document.createElement("input");
+  angleInput.className = "tile-image-editor-angle-input";
+  angleInput.type = "number";
+  angleInput.min = "0";
+  angleInput.max = "360";
+  angleInput.step = "any";
+  angleInput.value =
+    tile.angleDegrees === undefined || tile.angleDegrees === null
+      ? "0"
+      : String(tile.angleDegrees);
+  angleLabel.appendChild(angleInput);
+
+  const uriInput = document.createElement("input");
+  uriInput.className = "tile-image-editor-uri-input";
+  uriInput.type = "text";
+  uriInput.placeholder = "images/sample.dzi";
+  uriInput.value = tile.uri || "";
+
+  const chooseButton = createTileSetEditorButton("Choose JPG", "Choose JPG", "choose-jpg");
+  chooseButton.disabled =
+    !window.electronAPI?.selectJpgFile || !window.electronAPI?.convertJpgToDzi;
+
+  const addButton = createTileSetEditorButton("Add image", "+", "add-image");
+  const removeButton = createTileSetEditorButton("Remove image", "-", "remove-image");
+
+  const status = document.createElement("div");
+  status.className = "tile-image-editor-status";
+
+  row.append(labelInput, angleLabel, uriInput, chooseButton, addButton, removeButton, status);
+  updateTileImageEditorRowForType(row, type);
+  return row;
+}
+
+function createTileSetEditorButton(title, text, action) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.dataset.action = action;
+  button.title = title;
+  button.textContent = text;
+  return button;
+}
+
+function updateTileSetEditorType(tileSetRow) {
+  const type = tileSetRow.querySelector(".tile-set-editor-type")?.value || "individual";
+  const labelWrap = tileSetRow.querySelector(".tile-set-editor-label-wrap");
+  const periodWrap = tileSetRow.querySelector(".tile-set-editor-period-wrap");
+  const images = tileSetRow.querySelector(".tile-set-editor-images");
+
+  if (labelWrap) labelWrap.hidden = type === "multiple";
+  if (periodWrap) periodWrap.hidden = type !== "rotation";
+
+  const imageRows = Array.from(images?.querySelectorAll(".tile-image-editor-row") || []);
+  if (type === "individual") {
+    imageRows.slice(1).forEach((row) => row.remove());
+  } else if (imageRows.length < 2) {
+    images.appendChild(createTileImageEditorRow({}, type));
+  }
+
+  Array.from(images?.querySelectorAll(".tile-image-editor-row") || []).forEach((row) => {
+    updateTileImageEditorRowForType(row, type);
+  });
+  updateTileSetEditorButtons();
+}
+
+function updateTileImageEditorRowForType(row, type) {
+  const labelInput = row.querySelector(".tile-image-editor-label-input");
+  const angleWrap = row.querySelector(".tile-image-editor-angle-wrap");
+
+  if (labelInput) labelInput.hidden = type !== "multiple";
+  if (angleWrap) angleWrap.hidden = type !== "rotation";
+}
+
+function renumberTileSetEditorRows() {
+  const rows = Array.from(tileSetEditorRows?.querySelectorAll(".tile-set-editor-row") || []);
+  rows.forEach((row, index) => {
+    const heading = row.querySelector("h3");
+    if (heading) heading.textContent = `Tile Set ${index + 1}`;
+  });
+  updateTileSetEditorButtons();
+}
+
+function updateTileSetEditorButtons() {
+  const tileSetRows = Array.from(
+    tileSetEditorRows?.querySelectorAll(".tile-set-editor-row") || []
+  );
+  tileSetRows.forEach((tileSetRow, index) => {
+    const removeTileSetButton = tileSetRow.querySelector(
+      'button[data-action="remove-tile-set"]'
+    );
+    if (removeTileSetButton) {
+      removeTileSetButton.hidden = index === 0;
+      removeTileSetButton.disabled = tileSetRows.length <= 1;
+    }
+    [
+      ["move-tile-set-top", index === 0],
+      ["move-tile-set-up", index === 0],
+      ["move-tile-set-down", index === tileSetRows.length - 1],
+      ["move-tile-set-bottom", index === tileSetRows.length - 1],
+    ].forEach(([action, disabled]) => {
+      const button = tileSetRow.querySelector(`button[data-action="${action}"]`);
+      if (button) button.disabled = disabled;
+    });
+
+    const imageRows = Array.from(
+      tileSetRow.querySelectorAll(".tile-image-editor-row")
+    );
+    const type = tileSetRow.querySelector(".tile-set-editor-type")?.value || "individual";
+    imageRows.forEach((imageRow) => {
+      const addButton = imageRow.querySelector('button[data-action="add-image"]');
+      const removeButton = imageRow.querySelector('button[data-action="remove-image"]');
+      if (addButton) addButton.hidden = type === "individual";
+      if (removeButton) {
+        removeButton.hidden = type === "individual";
+        removeButton.disabled = imageRows.length <= 1;
+      }
+    });
+  });
+}
+
+function addTileSetEditorRow(afterRow) {
+  const row = createTileSetEditorRow({ label: "", tiles: [{ uri: "" }] });
+  afterRow.after(row);
+  renumberTileSetEditorRows();
+}
+
+function removeTileSetEditorRow(row) {
+  if (!tileSetEditorRows || tileSetEditorRows.children.length <= 1) return;
+  row.remove();
+  renumberTileSetEditorRows();
+}
+
+function moveTileSetEditorRow(row, targetIndex) {
+  if (!tileSetEditorRows || !row) return;
+
+  const rows = Array.from(tileSetEditorRows.querySelectorAll(".tile-set-editor-row"));
+  const currentIndex = rows.indexOf(row);
+  if (currentIndex === -1) return;
+
+  const clampedTargetIndex = Math.min(Math.max(targetIndex, 0), rows.length - 1);
+  if (currentIndex === clampedTargetIndex) return;
+
+  row.remove();
+  const remainingRows = Array.from(
+    tileSetEditorRows.querySelectorAll(".tile-set-editor-row")
+  );
+  if (clampedTargetIndex >= remainingRows.length) {
+    tileSetEditorRows.appendChild(row);
+  } else {
+    tileSetEditorRows.insertBefore(row, remainingRows[clampedTargetIndex]);
+  }
+  renumberTileSetEditorRows();
+}
+
+function addTileImageEditorRow(afterRow) {
+  const tileSetRow = afterRow.closest(".tile-set-editor-row");
+  const type = tileSetRow.querySelector(".tile-set-editor-type")?.value || "individual";
+  const row = createTileImageEditorRow({}, type);
+  afterRow.after(row);
+  updateTileSetEditorType(tileSetRow);
+}
+
+function removeTileImageEditorRow(row) {
+  const tileSetRow = row.closest(".tile-set-editor-row");
+  const imageRows = tileSetRow?.querySelectorAll(".tile-image-editor-row") || [];
+  if (imageRows.length <= 1) return;
+  row.remove();
+  updateTileSetEditorType(tileSetRow);
+}
+
+function parseTileSetEditorJson(datasetValue) {
+  if (!datasetValue) return {};
+  try {
+    return JSON.parse(datasetValue);
+  } catch {
+    return {};
+  }
+}
+
+function collectTileSetsFromEditor() {
+  const tileSetRows = Array.from(
+    tileSetEditorRows?.querySelectorAll(".tile-set-editor-row") || []
+  );
+
+  return tileSetRows.map((tileSetRow) => {
+    const type = tileSetRow.querySelector(".tile-set-editor-type")?.value || "individual";
+    const originalTileSet = parseTileSetEditorJson(tileSetRow.dataset.originalTileSet);
+    const tileSet = { ...originalTileSet };
+    delete tileSet.tiles;
+    delete tileSet.label;
+    delete tileSet.periodDegrees;
+
+    const label = tileSetRow.querySelector(".tile-set-editor-label-input")?.value.trim();
+    const periodValue = tileSetRow
+      .querySelector(".tile-set-editor-period-input")
+      ?.value.trim();
+
+    if (type !== "multiple" && label) {
+      tileSet.label = label;
+    }
+    if (type === "rotation") {
+      tileSet.periodDegrees = Number(periodValue || 90);
+    }
+
+    tileSet.tiles = Array.from(
+      tileSetRow.querySelectorAll(".tile-image-editor-row")
+    ).map((imageRow) => {
+      const originalTile = parseTileSetEditorJson(imageRow.dataset.originalTile);
+      const tile = { ...originalTile };
+      delete tile.uri;
+      delete tile.label;
+      delete tile.angleDegrees;
+
+      tile.uri =
+        imageRow.querySelector(".tile-image-editor-uri-input")?.value.trim() || "";
+      if (type === "multiple") {
+        const imageLabel = imageRow
+          .querySelector(".tile-image-editor-label-input")
+          ?.value.trim();
+        if (imageLabel) tile.label = imageLabel;
+      }
+      if (type === "rotation") {
+        tile.angleDegrees = Number(
+          imageRow.querySelector(".tile-image-editor-angle-input")?.value || 0
+        );
+      }
+      return tile;
+    });
+
+    return tileSet;
+  });
+}
+
+function validateTileSetsForEditor(tileSets) {
+  if (!tileSets.length) return "Add at least one tile set.";
+
+  for (const [tileSetIndex, tileSet] of tileSets.entries()) {
+    const label = `Tile Set ${tileSetIndex + 1}`;
+    if (!Array.isArray(tileSet.tiles) || tileSet.tiles.length === 0) {
+      return `${label} needs at least one image.`;
+    }
+
+    if (tileSet.periodDegrees !== undefined) {
+      const period = Number(tileSet.periodDegrees);
+      if (!Number.isFinite(period) || period <= 0 || period > 360) {
+        return `${label} needs an angle periodicity from 1 to 360.`;
+      }
+    }
+
+    for (const [tileIndex, tile] of tileSet.tiles.entries()) {
+      if (!tile.uri) {
+        return `${label}, image ${tileIndex + 1} needs a URI or converted JPG.`;
+      }
+      if (tile.angleDegrees !== undefined) {
+        const angle = Number(tile.angleDegrees);
+        if (!Number.isFinite(angle) || angle < 0 || angle > 360) {
+          return `${label}, image ${tileIndex + 1} needs an angle from 0 to 360.`;
+        }
+      }
+    }
+  }
+
+  return "";
+}
+
+function saveTileSetEditorDraft() {
+  const selectedSample = getTileSetEditorSelectedSample();
+  if (!selectedSample) return;
+  if (tileSetEditorState.convertingRow) {
+    setTileSetEditorStatus("Wait for the JPG conversion to finish.", true);
+    return;
+  }
+
+  const tileSets = collectTileSetsFromEditor();
+  const validationMessage = validateTileSetsForEditor(tileSets);
+  if (validationMessage) {
+    setTileSetEditorStatus(validationMessage, true);
+    return;
+  }
+
+  selectedSample.tileSets = tileSets;
+  setTileSetEditorStatus("");
+  closeTileSetEditor();
+  renderLibraryEditorRows();
+  renderLibraryEditorForm();
+  setLibraryEditorStatus("Tile set changes saved to the draft. Apply to write them.");
+}
+
+function setTileImageRowStatus(row, message, isError = false) {
+  const status = row.querySelector(".tile-image-editor-status");
+  if (!status) return;
+  status.textContent = message;
+  status.classList.toggle("error", isError);
+}
+
+async function chooseAndConvertTileImage(row) {
+  if (!window.electronAPI?.selectJpgFile || !window.electronAPI?.convertJpgToDzi) {
+    setTileImageRowStatus(row, "JPG conversion is unavailable.", true);
+    return;
+  }
+  if (tileSetEditorState.convertingRow) return;
+
+  const chooseButton = row.querySelector('button[data-action="choose-jpg"]');
+  try {
+    tileSetEditorState.convertingRow = row;
+    if (chooseButton) chooseButton.disabled = true;
+    if (saveTileSetEditorButton) saveTileSetEditorButton.disabled = true;
+    setTileImageRowStatus(row, "Selecting JPG...");
+    const result = await window.electronAPI.selectJpgFile();
+    if (result?.canceled || !result?.sourcePath) {
+      setTileImageRowStatus(row, "");
+      return;
+    }
+
+    setTileImageRowStatus(row, "Converting JPG to DZI...");
+    const conversion = await window.electronAPI.convertJpgToDzi(result.sourcePath);
+    const uri = conversion?.relativeDziPath || conversion?.dziPath || "";
+    row.querySelector(".tile-image-editor-uri-input").value = uri;
+    setTileImageRowStatus(row, "Converted.");
+  } catch (error) {
+    console.error("Could not convert JPG:", error);
+    setTileImageRowStatus(row, error.message || "Conversion failed.", true);
+  } finally {
+    tileSetEditorState.convertingRow = null;
+    if (chooseButton) chooseButton.disabled = false;
+    if (saveTileSetEditorButton) saveTileSetEditorButton.disabled = false;
+  }
+}
+
+function handleTileSetEditorConversionProgress(progress) {
+  const row = tileSetEditorState.convertingRow;
+  if (!row || !progress) return;
+
+  const percent = Number(progress.percent);
+  const percentLabel = Number.isFinite(percent) ? ` ${Math.round(percent)}%` : "";
+  setTileImageRowStatus(row, `Converting JPG to DZI...${percentLabel}`);
+}
+
+if (window.electronAPI?.onDziConversionProgress) {
+  tileSetEditorState.progressUnsubscribe = window.electronAPI.onDziConversionProgress(
+    handleTileSetEditorConversionProgress
+  );
+}
+
+tileSetEditorRows?.addEventListener("change", function (event) {
+  const typeSelect = event.target.closest(".tile-set-editor-type");
+  if (typeSelect) {
+    updateTileSetEditorType(typeSelect.closest(".tile-set-editor-row"));
+  }
+});
+
+tileSetEditorRows?.addEventListener("click", function (event) {
+  const button = event.target.closest("button[data-action]");
+  if (!button) return;
+
+  const action = button.dataset.action;
+  if (action === "add-tile-set") {
+    addTileSetEditorRow(button.closest(".tile-set-editor-row"));
+  } else if (action === "remove-tile-set") {
+    removeTileSetEditorRow(button.closest(".tile-set-editor-row"));
+  } else if (action.startsWith("move-tile-set-")) {
+    const row = button.closest(".tile-set-editor-row");
+    if (!row) return;
+    const rows = Array.from(tileSetEditorRows.querySelectorAll(".tile-set-editor-row"));
+    const index = rows.indexOf(row);
+    const lastIndex = rows.length - 1;
+    const targetIndex =
+      action === "move-tile-set-top"
+        ? 0
+        : action === "move-tile-set-up"
+          ? index - 1
+          : action === "move-tile-set-down"
+            ? index + 1
+            : lastIndex;
+    moveTileSetEditorRow(row, targetIndex);
+  } else if (action === "add-image") {
+    addTileImageEditorRow(button.closest(".tile-image-editor-row"));
+  } else if (action === "remove-image") {
+    removeTileImageEditorRow(button.closest(".tile-image-editor-row"));
+  } else if (action === "choose-jpg") {
+    chooseAndConvertTileImage(button.closest(".tile-image-editor-row"));
+  }
+});
+
+libraryEditorRows?.addEventListener("click", function (event) {
+  const moveButton = event.target.closest("button[data-action]");
+  if (moveButton) {
+    event.stopPropagation();
+    const index = Number(moveButton.dataset.index);
+    const action = moveButton.dataset.action;
+    const lastIndex = libraryEditorState.samples.length - 1;
+    const nextIndex =
+      action === "top"
+        ? 0
+        : action === "up"
+          ? index - 1
+          : action === "down"
+            ? index + 1
+            : lastIndex;
+    moveLibraryEditorSample(index, nextIndex);
+    return;
+  }
+
+  const row = event.target.closest(".library-editor-row");
+  if (row) {
+    selectLibraryEditorSample(Number(row.dataset.index));
+  }
+});
+
+[
+  libraryEditorTitleInput,
+  libraryEditorDescriptionInput,
+  libraryEditorGroupsInput,
+  libraryEditorScaleInput,
+  libraryEditorAnnotationsInput,
+].forEach((element) =>
+  element?.addEventListener("input", function () {
+    updateLibraryEditorSelectedSample();
+    renderLibraryEditorRows();
+  })
+);
+libraryEditorSearch?.addEventListener("input", renderLibraryEditorRows);
+libraryEditorForm?.addEventListener("submit", (event) => event.preventDefault());
+libraryEditorDeleteButton?.addEventListener("click", deleteLibraryEditorSample);
+cancelLibraryEditorButton?.addEventListener("click", closeLibraryEditor);
+closeLibraryEditorButton?.addEventListener("click", closeLibraryEditor);
+openTileSetEditorButton?.addEventListener("click", openTileSetEditor);
+cancelTileSetEditorButton?.addEventListener("click", closeTileSetEditor);
+closeTileSetEditorButton?.addEventListener("click", closeTileSetEditor);
+saveTileSetEditorButton?.addEventListener("click", saveTileSetEditorDraft);
+saveLibraryEditorButton?.addEventListener("click", () => saveLibraryEditor());
+saveAsLibraryEditorButton?.addEventListener("click", () =>
+  saveLibraryEditor({ forceSaveAs: true })
+);
+applyCloseLibraryEditorButton?.addEventListener("click", () =>
+  saveLibraryEditor({ closeAfterSave: true })
+);
+
+function openScaleWizard() {
+  if (!window.electronAPI || !scaleWizard) return;
+
+  stopMeasurementMode();
+  stopCircleMode();
+  scaleWizard.hidden = false;
+  scaleWizardState.active = true;
+  resetScaleWizard(false);
+  scaleWizardLength?.focus();
+}
+
+function closeScaleWizard() {
+  if (!scaleWizard) return;
+
+  scaleWizard.hidden = true;
+  scaleWizardState.active = false;
+  scaleWizardState.points = [];
+  scaleWizardState.calculatedPixelsPerMeter = null;
+  drawScaleWizardOverlay();
+}
+
+function resetScaleWizard(keepLength = true) {
+  scaleWizardState.points = [];
+  scaleWizardState.calculatedPixelsPerMeter = null;
+  if (!keepLength && scaleWizardLength) {
+    scaleWizardLength.value = "";
+  }
+  updateScaleWizardStatus();
+  drawScaleWizardOverlay();
+}
+
+function updateScaleWizardStatus() {
+  if (!scaleWizardStatus || !scaleWizardResult || !applyScaleWizardButton) return;
+
+  const selectedCount = scaleWizardState.points.length;
+  const nextPoint = selectedCount === 0 ? "start" : "end";
+  scaleWizardStatus.textContent =
+    selectedCount < 2
+      ? `Click the ${nextPoint} of the image scalebar.`
+      : "Enter the scalebar length, then apply the scale.";
+
+  const scale = calculateScaleWizardPixelsPerMeter();
+  scaleWizardState.calculatedPixelsPerMeter = scale;
+  scaleWizardResult.classList.remove("error");
+
+  if (scale === null) {
+    scaleWizardResult.textContent =
+      selectedCount < 2
+        ? "Select two points to calculate scale."
+        : "Enter a positive length to calculate scale.";
+    applyScaleWizardButton.disabled = true;
+    return;
+  }
+
+  scaleWizardResult.textContent = `Calculated scale: ${formatScaleValue(scale)} pixels/m`;
+  applyScaleWizardButton.disabled = false;
+}
+
+function formatScaleValue(value) {
+  if (!Number.isFinite(value)) return "";
+  if (value >= 100) return Math.round(value).toLocaleString();
+  return value.toPrecision(6);
+}
+
+function calculateScaleWizardPixelsPerMeter() {
+  if (scaleWizardState.points.length !== 2) return null;
+
+  const lengthValue = Number(scaleWizardLength?.value);
+  const unitsPerMeter = Number(scaleWizardUnits?.value);
+  if (!Number.isFinite(lengthValue) || lengthValue <= 0) return null;
+  if (!Number.isFinite(unitsPerMeter) || unitsPerMeter <= 0) return null;
+
+  const pixelLength = calculateDistance(
+    scaleWizardState.points[0],
+    scaleWizardState.points[1]
+  );
+  if (!Number.isFinite(pixelLength) || pixelLength <= 0) return null;
+
+  return pixelLength / (lengthValue / unitsPerMeter);
+}
+
+function drawScaleWizardOverlay() {
+  if (!scaleCanvas) return;
+
+  const container = viewer.container;
+  scaleCanvas.width = container.clientWidth;
+  scaleCanvas.height = container.clientHeight;
+
+  const ctx = scaleCanvas.getContext("2d");
+  ctx.clearRect(0, 0, scaleCanvas.width, scaleCanvas.height);
+  if (!scaleWizardState.active || scaleWizardState.points.length === 0) return;
+
+  const image = viewer.world.getItemAt(0);
+  if (!image) return;
+
+  const screenPoints = scaleWizardState.points.map(([x, y]) => {
+    const viewportPoint = image.imageToViewportCoordinates(x, y);
+    return viewer.viewport.pixelFromPoint(viewportPoint, true);
+  });
+
+  ctx.save();
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = "#f4c542";
+  ctx.fillStyle = "#f4c542";
+  ctx.shadowColor = "rgba(0, 0, 0, 0.7)";
+  ctx.shadowBlur = 3;
+
+  if (screenPoints.length === 2) {
+    ctx.beginPath();
+    ctx.moveTo(screenPoints[0].x, screenPoints[0].y);
+    ctx.lineTo(screenPoints[1].x, screenPoints[1].y);
+    ctx.stroke();
+  }
+
+  screenPoints.forEach((point) => {
+    ctx.beginPath();
+    ctx.arc(point.x, point.y, 5, 0, Math.PI * 2);
+    ctx.fill();
+  });
+  ctx.restore();
+}
+
+async function applyScaleWizard() {
+  if (scaleWizardState.saving) return;
+
+  const scale = calculateScaleWizardPixelsPerMeter();
+  if (scale === null) {
+    showScaleWizardError("Select two points and enter a positive length.");
+    return;
+  }
+
+  scaleWizardState.saving = true;
+  applyScaleWizardButton.disabled = true;
+  if (scaleWizardStatus) {
+    scaleWizardStatus.textContent = "Applying scale...";
+  }
+  if (scaleWizardResult) {
+    scaleWizardResult.classList.remove("error");
+    scaleWizardResult.textContent = "Saving scale to the library JSON...";
+  }
+  const previousPixelsPerMeter = samples[currentIndex].pixelsPerMeter;
+  try {
+    samples[currentIndex].pixelsPerMeter = scale;
+    updateScaleDependentControls();
+    addScalebar();
+    closeScaleWizard();
+    window.electronAPI?.setUnsavedState?.(true);
+    await saveCurrentLibraryForScaleUpdate();
+  } catch (error) {
+    samples[currentIndex].pixelsPerMeter = previousPixelsPerMeter;
+    updateScaleDependentControls();
+    addScalebar();
+    console.error("Could not save scale:", error);
+    openScaleWizard();
+    showScaleWizardError(error.message || "Could not apply the scale.");
+  } finally {
+    scaleWizardState.saving = false;
+    updateScaleWizardStatus();
+  }
+}
+
+function showScaleWizardError(message) {
+  if (!scaleWizardResult) return;
+  scaleWizardResult.textContent = message;
+  scaleWizardResult.classList.add("error");
+}
+
+async function saveCurrentLibraryForScaleUpdate() {
+  const jsonData = serializeLibraryDataForSave();
+  await saveLibraryData(jsonData, { canceledMessage: "Scale was not saved." });
+}
+
 viewer.addHandler("canvas-click", function (event) {
+  if (!scaleWizardState.active) return;
+
+  event.preventDefaultAction = true;
+  const image = viewer.world.getItemAt(0);
+  if (!image) return;
+
+  const viewportPoint = viewer.viewport.pointFromPixel(event.position);
+  const imagePoint = image.viewportToImageCoordinates(
+    viewportPoint.x,
+    viewportPoint.y
+  );
+
+  if (scaleWizardState.points.length >= 2) {
+    scaleWizardState.points = [];
+  }
+  scaleWizardState.points.push([imagePoint.x, imagePoint.y]);
+  updateScaleWizardStatus();
+  drawScaleWizardOverlay();
+});
+
+[
+  scaleWizardLength,
+  scaleWizardUnits,
+].forEach((element) => element?.addEventListener("input", updateScaleWizardStatus));
+resetScaleWizardButton?.addEventListener("click", () => resetScaleWizard(true));
+cancelScaleWizardButton?.addEventListener("click", closeScaleWizard);
+closeScaleWizardButton?.addEventListener("click", closeScaleWizard);
+applyScaleWizardButton?.addEventListener("click", applyScaleWizard);
+
+viewer.addHandler("canvas-click", function (event) {
+  if (scaleWizardState.active) return;
   if (isPolylineMode || isPolygonMode || isZPressed || isXPressed) {
     activelyMakingPoly = true;
     const image = viewer.world.getItemAt(0);
@@ -3636,15 +5711,13 @@ viewer.addHandler("canvas-click", function (event) {
     );
     const labelFontColor = currentPolyStyleColors.labelFontColor;
     const labelBackgroundColor = currentPolyStyleColors.labelBackgroundColor;
-    const labelBackgroundOpacity = Number(
-      document.getElementById("annoLabelBackgroundOpacity").value
-    );
+    const labelBackgroundOpacity = getAnnotationOpacityValue("annoLabelBackgroundOpacity");
     const lineWeight = Number(document.getElementById("lineWeight").value);
     const lineColor = currentPolyStyleColors.lineColor;
     const lineStyle = document.getElementById("lineStyle").value;
-    const lineOpacity = Number(document.getElementById("lineOpacity").value);
+    const lineOpacity = getAnnotationOpacityValue("lineOpacity");
     const fillColor = currentPolyStyleColors.fillColor;
-    const fillOpacity = Number(document.getElementById("fillOpacity").value);
+    const fillOpacity = getAnnotationOpacityValue("fillOpacity");
     clickCoordinates.push({ x, y });
     clickImageCoordinates.push([imagePoint.x, imagePoint.y]);
     activeAnnotationDraft = "poly";
@@ -3738,15 +5811,15 @@ viewer.addHandler("canvas-click", function (event) {
       );
 
       const rectAreaPixels2 = calculatePolygonArea([clickImageCoordinates]);
-      const rectAreaM2 = rectAreaPixels2 / pixelsPerMeter() ** 2;
+      const rectAreaM2 = squareMetersFromSquarePixels(rectAreaPixels2);
       const rectPerimeterPixels = calculatePolygonExteriorPerimeter([
         clickImageCoordinates,
       ]);
-      const rectPerimeterM = rectPerimeterPixels / pixelsPerMeter();
+      const rectPerimeterM = metersFromPixels(rectPerimeterPixels);
       const lineLengthPixels = calculateLineStringLength(
         clickImageCoordinates.slice(0, clickImageCoordinates.length - 1)
       );
-      const lineLengthM = lineLengthPixels / pixelsPerMeter();
+      const lineLengthM = metersFromPixels(lineLengthPixels);
 
       if (isRepeatMode) {
         const annoId = parseInt(document.getElementById("anno-id").value);
@@ -3985,6 +6058,7 @@ viewer.addHandler("viewport-change", () => {
   drawShape(polyCanvas, [annoJSONTemp, annoJSON]);
   drawShape(circleCanvas, [circleJSON]);
   drawShape(measureCanvas, [measureJSONTemp, measureAreaJSONTemp, measureJSON]);
+  drawScaleWizardOverlay();
 });
 
 // TOOD: Is this necessary? Could be partially redundant with the above function
@@ -3992,6 +6066,7 @@ viewerContainer.addEventListener("mousemove", () => {
   drawShape(polyCanvas, [annoJSONTemp, annoJSON]);
   drawShape(circleCanvas, [circleJSON]);
   drawShape(measureCanvas, [measureJSONTemp, measureAreaJSONTemp, measureJSON]);
+  drawScaleWizardOverlay();
 });
 
 // Event listener for double-click to end collection
@@ -4068,7 +6143,7 @@ function drawPolygon(ctx, coordinates, image, feature) {
   } else {
     // Apply current annotation style
     const fillColor = document.getElementById("fillColor").value;
-    const fillOpacity = Number(document.getElementById("fillOpacity").value);
+    const fillOpacity = getAnnotationOpacityValue("fillOpacity");
     const fillColorToPlot = applyOpacityToColor(fillColor, fillOpacity);
     ctx.fillStyle = fillColorToPlot;
     ctx.fill("evenodd");
@@ -4084,7 +6159,7 @@ function drawPolygon(ctx, coordinates, image, feature) {
   } else {
     // Apply current annotation style
     const lineColor = document.getElementById("lineColor").value;
-    const lineOpacity = Number(document.getElementById("lineOpacity").value);
+    const lineOpacity = getAnnotationOpacityValue("lineOpacity");
     const lineColorToPlot = applyOpacityToColor(lineColor, lineOpacity);
     ctx.strokeStyle = lineColorToPlot;
   }
@@ -4161,7 +6236,7 @@ function drawPath(ctx, coordinates, image, shape, closePath) {
   } else {
     // Apply current annotation style
     const lineColor = document.getElementById("lineColor").value;
-    const lineOpacity = Number(document.getElementById("lineOpacity").value);
+    const lineOpacity = getAnnotationOpacityValue("lineOpacity");
     const lineColorToPlot = applyOpacityToColor(lineColor, lineOpacity);
     ctx.strokeStyle = lineColorToPlot;
   }
@@ -4218,15 +6293,13 @@ viewer.addHandler("canvas-drag", function (event) {
     );
     const labelFontColor = currentRectStyleColors.labelFontColor;
     const labelBackgroundColor = currentRectStyleColors.labelBackgroundColor;
-    const labelBackgroundOpacity = Number(
-      document.getElementById("annoLabelBackgroundOpacity").value
-    );
+    const labelBackgroundOpacity = getAnnotationOpacityValue("annoLabelBackgroundOpacity");
     const lineWeight = Number(document.getElementById("lineWeight").value);
     const lineColor = currentRectStyleColors.lineColor;
     const lineStyle = document.getElementById("lineStyle").value;
-    const lineOpacity = Number(document.getElementById("lineOpacity").value);
+    const lineOpacity = getAnnotationOpacityValue("lineOpacity");
     const fillColor = currentRectStyleColors.fillColor;
-    const fillOpacity = Number(document.getElementById("fillOpacity").value);
+    const fillOpacity = getAnnotationOpacityValue("fillOpacity");
 
     if (!startPoint) {
       // Mouse down - initialize start point and overlay
@@ -4376,15 +6449,13 @@ viewer.addHandler("canvas-release", function (event) {
     );
     const labelFontColor = currentRectStyleColors.labelFontColor;
     const labelBackgroundColor = currentRectStyleColors.labelBackgroundColor;
-    const labelBackgroundOpacity = Number(
-      document.getElementById("annoLabelBackgroundOpacity").value
-    );
+    const labelBackgroundOpacity = getAnnotationOpacityValue("annoLabelBackgroundOpacity");
     const lineWeight = Number(document.getElementById("lineWeight").value);
     const lineColor = currentRectStyleColors.lineColor;
     const lineStyle = document.getElementById("lineStyle").value;
-    const lineOpacity = Number(document.getElementById("lineOpacity").value);
+    const lineOpacity = getAnnotationOpacityValue("lineOpacity");
     const fillColor = currentRectStyleColors.fillColor;
-    const fillOpacity = Number(document.getElementById("fillOpacity").value);
+    const fillOpacity = getAnnotationOpacityValue("fillOpacity");
 
     if (isRepeatMode) {
       const annoId = parseInt(document.getElementById("anno-id").value);
@@ -4496,9 +6567,9 @@ function finalizeRectAnnotationWithCoords(
 
   // Calculate area and perimeter
   const rectAreaPixels2 = calculatePolygonArea([coordinates]);
-  const rectAreaM2 = rectAreaPixels2 / pixelsPerMeter() ** 2;
+  const rectAreaM2 = squareMetersFromSquarePixels(rectAreaPixels2);
   const rectPerimeterPixels = calculatePolygonExteriorPerimeter([coordinates]);
-  const rectPerimeterM = rectPerimeterPixels / pixelsPerMeter();
+  const rectPerimeterM = metersFromPixels(rectPerimeterPixels);
 
   // Add the rectangle to geoJSON
   addPolygonToGeoJSON(annoJSON, coordinates, {
@@ -5198,7 +7269,7 @@ function saveAnnotationToJSON(type, coordinates, properties) {
     geometry: { type, coordinates },
     properties: {
       ...properties,
-      pixelsPerMeter: Number(properties.pixelsPerMeter),
+      pixelsPerMeter: normalizePixelsPerMeter(properties.pixelsPerMeter),
       imageWidth: Number(properties.imageWidth),
       imageHeight: Number(properties.imageHeight),
       labelFontSize: Number(properties.labelFontSize),
@@ -5414,6 +7485,11 @@ const Grid = class {
   }
 };
 
+const MIN_GRID_STEP_MICRONS = 2;
+const MIN_GRID_POINTS = 2;
+const MAX_GRID_POINTS = 5000;
+const MAX_GRID_CANDIDATE_POINTS = 250000;
+
 // Initialize grid with default settings.
 let grid = new Grid({
   xMin: 20,
@@ -5426,7 +7502,7 @@ let grid = new Grid({
 let gridApplied = false;
 
 const enableGridButtons = () => {
-  document.getElementById("apply-grid-settings").disabled = false;
+  document.getElementById("apply-grid-settings").disabled = !hasKnownScale();
   // document.getElementById("restore-grid-settings").disabled = false;
 };
 
@@ -5436,6 +7512,10 @@ let gridOverlayCrosshairs = []; ///
 
 // TODO: Could combine enableGridButtons() and disableGridButtons() into a single function
 function enableCountButtons() {
+  if (!hasKnownScale()) {
+    disableCountButtons();
+    return;
+  }
   // Enable buttons and input fields
   document.getElementById("count-first").disabled = false;
   document.getElementById("count-prev").disabled = false;
@@ -5446,6 +7526,8 @@ function enableCountButtons() {
   document.getElementById("count-notes").disabled = false;
   document.getElementById("count-export").disabled = false;
   document.getElementById("save-counts").disabled = false;
+  document.getElementById("count-geojson-input").disabled = false;
+  document.getElementById("count-file-input").disabled = false;
   document.getElementById("filterButton").disabled = false;
   document.getElementById("countFilterButton").disabled = false;
   document.getElementById("summarizeButton").disabled = false;
@@ -5462,6 +7544,8 @@ function disableCountButtons() {
   document.getElementById("count-notes").disabled = true;
   document.getElementById("count-export").disabled = true;
   document.getElementById("save-counts").disabled = true;
+  document.getElementById("count-geojson-input").disabled = true;
+  document.getElementById("count-file-input").disabled = true;
   document.getElementById("filterButton").disabled = true;
   document.getElementById("countFilterButton").disabled = true;
   document.getElementById("summarizeButton").disabled = true;
@@ -5470,41 +7554,106 @@ function disableCountButtons() {
 document
   .getElementById("apply-grid-settings")
   .addEventListener("click", function () {
+    const preparedGrid = prepareGridSettings();
+    if (!preparedGrid) return;
+
     annotationHistory.push("Apply grid");
-    applyGridSettings();
+    applyGridSettings(preparedGrid);
   });
 
-const applyGridSettings = () => {
+function getNumericGridInput(id) {
+  return Number(document.getElementById(id).value);
+}
+
+function validateGridSettings(nextGrid) {
+  if (
+    !Number.isFinite(nextGrid.xMin) ||
+    !Number.isFinite(nextGrid.yMin) ||
+    !Number.isFinite(nextGrid.xMax) ||
+    !Number.isFinite(nextGrid.yMax) ||
+    nextGrid.xMin >= nextGrid.xMax ||
+    nextGrid.yMin >= nextGrid.yMax
+  ) {
+    return "Choose a valid area of interest before applying the grid.";
+  }
+
+  if (
+    !Number.isInteger(nextGrid.step) ||
+    nextGrid.step < MIN_GRID_STEP_MICRONS
+  ) {
+    return `Step size must be at least ${MIN_GRID_STEP_MICRONS} micrometers.`;
+  }
+
+  if (
+    !Number.isInteger(nextGrid.noPoints) ||
+    nextGrid.noPoints < MIN_GRID_POINTS ||
+    nextGrid.noPoints > MAX_GRID_POINTS
+  ) {
+    return `Number of points must be between ${MIN_GRID_POINTS} and ${MAX_GRID_POINTS}.`;
+  }
+
+  return "";
+}
+
+function prepareGridSettings() {
+  const image = viewer.world.getItemAt(0);
+  if (!image) {
+    alert("Load an image before applying the grid.");
+    return null;
+  }
+
+  const nextGrid = new Grid({
+    xMin: getNumericGridInput("grid-left"),
+    yMin: getNumericGridInput("grid-top"),
+    xMax: getNumericGridInput("grid-right"),
+    yMax: getNumericGridInput("grid-bottom"),
+    step: Math.trunc(getNumericGridInput("step-size")),
+    noPoints: Math.trunc(getNumericGridInput("no-points")),
+  });
+
+  const validationMessage = validateGridSettings(nextGrid);
+  if (validationMessage) {
+    alert(validationMessage);
+    return null;
+  }
+
+  const imageSize = image.getContentSize();
+  const micronsPerPixel = pixelsPerMicron();
+  if (!Number.isFinite(micronsPerPixel) || micronsPerPixel <= 0) {
+    alert("Set a valid image scale before applying the grid.");
+    return null;
+  }
+
+  const x_min_um = ((nextGrid.xMin / 100) * imageSize.x) / micronsPerPixel;
+  const x_max_um = ((nextGrid.xMax / 100) * imageSize.x) / micronsPerPixel;
+  const y_min_um = ((nextGrid.yMin / 100) * imageSize.y) / micronsPerPixel;
+  const y_max_um = ((nextGrid.yMax / 100) * imageSize.y) / micronsPerPixel;
+
+  try {
+    const points = makePoints(
+      x_min_um,
+      x_max_um,
+      y_min_um,
+      y_max_um,
+      nextGrid.step,
+      nextGrid.noPoints
+    );
+    return { image, imageSize, grid: nextGrid, points };
+  } catch (error) {
+    alert(error.message || "Could not create grid points.");
+    return null;
+  }
+}
+
+const applyGridSettings = (preparedGrid) => {
   clearGrid();
 
   // Enable buttons and input field after settings are applied
   enableCountButtons();
 
-  const image = viewer.world.getItemAt(0);
-  grid = new Grid({
-    xMin: parseFloat(document.getElementById("grid-left").value),
-    yMin: parseFloat(document.getElementById("grid-top").value),
-    xMax: parseFloat(document.getElementById("grid-right").value),
-    yMax: parseFloat(document.getElementById("grid-bottom").value),
-    step: parseInt(document.getElementById("step-size").value),
-    noPoints: parseInt(document.getElementById("no-points").value),
-  });
-
-  const imageSize = image.getContentSize();
-  const x_min_um = ((grid.xMin / 100) * imageSize.x) / pixelsPerMicron();
-  const x_max_um = ((grid.xMax / 100) * imageSize.x) / pixelsPerMicron();
-  const y_min_um = ((grid.yMin / 100) * imageSize.y) / pixelsPerMicron();
-  const y_max_um = ((grid.yMax / 100) * imageSize.y) / pixelsPerMicron();
-
-  // Get the coordinates and labels for point counts
-  let [X, Y, A] = makePoints(
-    x_min_um,
-    x_max_um,
-    y_min_um,
-    y_max_um,
-    grid.step,
-    grid.noPoints
-  );
+  const { image, imageSize } = preparedGrid;
+  grid = preparedGrid.grid;
+  const [X, Y, A] = preparedGrid.points;
 
   for (let i = 0; i < X.length; i++) {
     // Get the coordinates in microns.
@@ -5699,10 +7848,28 @@ function pointMatrix(
   // Units of x and y must be same as step_size
   // i_ini is starting point count ID label (default=1)
   // reverse (bool) indicates whether starting in top left (false) or bottom right (true)
+  if (!Number.isFinite(step_size) || step_size <= 0) {
+    throw new Error("Step size must be a positive number.");
+  }
 
   // Start at top-left pixel and progress to the bottom-right in snake-like pattern
   let n_y_rows = Math.floor((y_max - y_min) / step_size) + 1;
   let n_x_cols = Math.floor((x_max - x_min) / step_size) + 1;
+
+  if (
+    !Number.isFinite(n_y_rows) ||
+    !Number.isFinite(n_x_cols) ||
+    n_y_rows <= 0 ||
+    n_x_cols <= 0
+  ) {
+    throw new Error("Grid area and step size must produce valid point rows.");
+  }
+
+  if (n_y_rows * n_x_cols > MAX_GRID_CANDIDATE_POINTS) {
+    throw new Error(
+      "Grid step size is too small for this image scale and area. Increase the step size or reduce the area of interest."
+    );
+  }
 
   // Make 1D x-axis array that reflects snaking increments from top left to bottom right
   let x_vals = Array.from(
@@ -5735,6 +7902,12 @@ function pointMatrix(
 }
 
 function makePoints(x_min, x_max, y_min, y_max, step_size, num_points) {
+  if (!Number.isInteger(num_points) || num_points < MIN_GRID_POINTS) {
+    throw new Error(
+      `Number of points must be at least ${MIN_GRID_POINTS}.`
+    );
+  }
+
   let c = 0; // Counter for total number of points logged
   let d = 1.0; // Counter that reflects decreasing step count
   let e = 0; // Counter to control snake pattern direction (normal or reversed)
@@ -5769,25 +7942,21 @@ function makePoints(x_min, x_max, y_min, y_max, step_size, num_points) {
     Y = filteredPoints.map((p) => p[1]);
     A = Array.from({ length: X.length }, (_, i) => i + 1 + c);
 
-    c += X.length;
-
-    if (c <= num_points) {
-      Xs = [...Xs, ...X];
-      Ys = [...Ys, ...Y];
-      As = [...As, ...A];
-      legend = [...legend, ...Array(X.length).fill(e + 1)];
-      d /= 2.0;
-    } else {
-      Xs = [...Xs, ...X.slice(0, num_points - c)];
-      Ys = [...Ys, ...Y.slice(0, num_points - c)];
-      As = [...As, ...A.slice(0, num_points - c)];
-      legend = [
-        ...legend,
-        ...Array(X.slice(0, num_points - c).length).fill(e + 1),
-      ];
-      break;
+    if (X.length === 0) {
+      throw new Error("Grid settings could not produce enough unique points.");
     }
 
+    const remainingPoints = num_points - c;
+    const pointsToAdd = Math.min(remainingPoints, X.length);
+    Xs = [...Xs, ...X.slice(0, pointsToAdd)];
+    Ys = [...Ys, ...Y.slice(0, pointsToAdd)];
+    As = [...As, ...A.slice(0, pointsToAdd)];
+    legend = [...legend, ...Array(pointsToAdd).fill(e + 1)];
+
+    c += pointsToAdd;
+    if (c >= num_points) break;
+
+    d /= 2.0;
     e += 1;
   }
 
@@ -5928,6 +8097,8 @@ function applyAnnoLabel(idBase, uuid) {
     idBase === "annoLabelFontColor" ||
     idBase === "annoLabelBackgroundColor"
       ? getAnnotationColor(idBase)
+      : idBase === "annoLabelBackgroundOpacity"
+        ? getAnnotationOpacityValue(idBase)
       : input.value;
   feature.properties[formattingMap[idBase]] = value;
 
@@ -5971,7 +8142,7 @@ function applyAnnoLabel(idBase, uuid) {
     );
   } else if (idBase === "annoLabelBackgroundOpacity") {
     // Need both backgroundColor and backgroundOpacity to apply background
-    const bgOpacity = input.value;
+    const bgOpacity = value;
     const bgColor = props["labelBackgroundColor"];
     if (!bgColor) {
       // Background color is not set, cannot apply background opacity.
@@ -5997,6 +8168,8 @@ function applyAnnoFeature(idBase, uuid) {
   props[idBase] =
     idBase === "fillColor" || idBase === "lineColor"
       ? getAnnotationColor(idBase)
+      : idBase === "lineOpacity" || idBase === "fillOpacity"
+        ? getAnnotationOpacityValue(idBase)
       : input.value;
   if (feature.geometry.type === "Point") {
     // Update crosshair if the feature is a Point
@@ -6409,13 +8582,14 @@ document.addEventListener("keydown", function (event) {
 
 // Shortcuts for going to next (space) or previous (shift+space)
 document.addEventListener("keydown", function (event) {
+  const textInput = document.getElementById("count-text");
+  const activeElement = document.activeElement;
+  const allowCountTextShortcut = activeElement === textInput;
+
   // Check if the space bar is pressed without modifiers
   if (
     event.code === "Space" &&
-    document.activeElement.id !== "count-notes" &&
-    document.activeElement.id !== "anno-label" &&
-    document.activeElement.id !== "anno-notes" &&
-    document.activeElement.id !== "promptInput"
+    (allowCountTextShortcut || !isTextEntryElement(activeElement))
   ) {
     event.preventDefault();
     if (event.shiftKey) {
@@ -6624,6 +8798,10 @@ function disableGridOptions() {
 }
 
 function enableGridOptions() {
+  if (!hasKnownScale()) {
+    disableGridOptions();
+    return;
+  }
   document.getElementById("show-aoi").disabled = false;
   document.getElementById("grid-left").disabled = false;
   document.getElementById("grid-right").disabled = false;
@@ -6863,29 +9041,79 @@ function showResults() {
   document.getElementById("resultsModal").style.display = "block";
 }
 
+function closeCountDropdown(dropdown) {
+  if (!dropdown) return;
+
+  dropdown.style.display = "none";
+  dropdown.classList.remove("count-dropdown-popover");
+}
+
+function closeCountDropdowns() {
+  closeCountDropdown(document.getElementById("includeDropdown"));
+  closeCountDropdown(document.getElementById("countFilterDropdown"));
+}
+
+function positionCountDropdown(dropdown, button) {
+  const buttonRect = button.getBoundingClientRect();
+  const dropdownRect = dropdown.getBoundingClientRect();
+  const margin = 8;
+  const maxLeft = window.innerWidth - dropdownRect.width - margin;
+  const left = Math.min(Math.max(buttonRect.left, margin), maxLeft);
+  const spaceBelow = window.innerHeight - buttonRect.bottom - margin;
+  const spaceAbove = buttonRect.top - margin;
+  const opensUp = spaceBelow < dropdownRect.height && spaceAbove > spaceBelow;
+  const top = opensUp
+    ? Math.max(margin, buttonRect.top - dropdownRect.height - 4)
+    : Math.min(
+        buttonRect.bottom + 4,
+        window.innerHeight - dropdownRect.height - margin
+      );
+
+  dropdown.style.left = `${left}px`;
+  dropdown.style.top = `${top}px`;
+}
+
+function openCountDropdown(dropdown, button) {
+  if (!dropdown || !button) return;
+
+  if (dropdown.parentElement !== document.body) {
+    document.body.appendChild(dropdown);
+  }
+
+  dropdown.classList.add("count-dropdown-popover");
+  dropdown.style.display = "block";
+  positionCountDropdown(dropdown, button);
+}
+
 // Attach event listener to the filterButton
-document.getElementById("filterButton").addEventListener("click", function () {
+document.getElementById("filterButton").addEventListener("click", function (event) {
+  event.stopPropagation();
   populateFilterDropdown();
   const includeDropdown = document.getElementById("includeDropdown");
+  const countFilterDropdown = document.getElementById("countFilterDropdown");
+  closeCountDropdown(countFilterDropdown);
 
   // Toggle visibility of the dropdown menu
   if (includeDropdown.style.display === "block") {
-    includeDropdown.style.display = "none";
+    closeCountDropdown(includeDropdown);
   } else {
-    includeDropdown.style.display = "block";
+    openCountDropdown(includeDropdown, event.currentTarget);
   }
 });
 
 document
   .getElementById("countFilterButton")
-  .addEventListener("click", function () {
+  .addEventListener("click", function (event) {
+    event.stopPropagation();
     populateCountFilterDropdown();
     const countFilterDropdown = document.getElementById("countFilterDropdown");
+    const includeDropdown = document.getElementById("includeDropdown");
+    closeCountDropdown(includeDropdown);
 
     if (countFilterDropdown.style.display === "block") {
-      countFilterDropdown.style.display = "none";
+      closeCountDropdown(countFilterDropdown);
     } else {
-      countFilterDropdown.style.display = "block";
+      openCountDropdown(countFilterDropdown, event.currentTarget);
     }
   });
 
@@ -6901,14 +9129,14 @@ document.addEventListener("click", function (event) {
     !includeDropdown.contains(event.target) &&
     event.target !== filterButton
   ) {
-    includeDropdown.style.display = "none";
+    closeCountDropdown(includeDropdown);
   }
 
   if (
     !countFilterDropdown.contains(event.target) &&
     event.target !== countFilterButton
   ) {
-    countFilterDropdown.style.display = "none";
+    closeCountDropdown(countFilterDropdown);
   }
 });
 
@@ -7067,20 +9295,26 @@ function applyOpacityToColor(color, opacity) {
 // Import, add, and export points with labels
 const toggleMeasurement = (checkbox) => {
   if (!measureCanvas) return;
+  if (!hasKnownScale()) {
+    checkbox.checked = false;
+    measureCanvas.style.display = "none";
+    return;
+  }
   measureCanvas.style.display = checkbox.checked ? "block" : "none";
 };
 
 const measurementButton = document.getElementById("toggleMeasurementButton");
 const circleButton = document.getElementById("toggleCircleButton");
 
-let measurementModeActive = false;
 function stopMeasurementMode() {
+  if (!measurementButton) return;
   measurementButton.classList.remove("active");
   measurementButton.textContent = "Start Measuring";
   measurementModeActive = false;
 }
 
 function toggleMeasurementMode() {
+  if (!hasKnownScale()) return;
   const isMeasuring = measurementButton.classList.contains("active");
 
   // Toggle the active state of the button
@@ -7105,8 +9339,21 @@ let circleJSON = {
   type: "FeatureCollection",
   features: [],
 };
-let circleModeActive = false;
+circleControlsInitialized = true;
+function stopCircleMode() {
+  if (!circleControlsInitialized || !circleButton) return;
+  circleButton.classList.remove("active");
+  circleButton.textContent = "Draw Circle";
+  circleModeActive = false;
+  circleJSON = {
+    type: "FeatureCollection",
+    features: [],
+  };
+  drawShape(circleCanvas, [circleJSON]);
+}
+
 function toggleCircleMode() {
+  if (!hasKnownScale()) return;
   const isMeasuring = circleButton.classList.contains("active");
 
   // Toggle the active state of the button
@@ -7114,13 +9361,7 @@ function toggleCircleMode() {
 
   if (isMeasuring) {
     // Disable measurement mode
-    circleButton.textContent = "Draw Circle";
-    circleModeActive = false;
-    circleJSON = {
-      type: "FeatureCollection",
-      features: [],
-    };
-    drawShape(circleCanvas, [circleJSON]);
+    stopCircleMode();
   } else {
     // Enable measurement mode
     circleButton.textContent = "Stop";
@@ -7152,6 +9393,10 @@ function getCircleCoordinatesInImageSpace(centerX, centerY, diameter) {
 let circleConversion = 0;
 viewerContainer.addEventListener("mousemove", function (event) {
   if (!circleModeActive) return; // Only draw when mode is active
+  if (!hasKnownScale()) {
+    stopCircleMode();
+    return;
+  }
 
   circleJSON = {
     type: "FeatureCollection",
@@ -7159,6 +9404,7 @@ viewerContainer.addEventListener("mousemove", function (event) {
   };
 
   const circleDiameter = parseFloat(document.getElementById("circle").value);
+  const scale = pixelsPerMeter();
   const circleUnits = parseInt(document.getElementById("circleUnits").value);
   if (circleUnits === 0) {
     circleConversion = 1;
@@ -7178,7 +9424,7 @@ viewerContainer.addEventListener("mousemove", function (event) {
   const coordinates = getCircleCoordinatesInImageSpace(
     imagePoint.x,
     imagePoint.y,
-    circleDiameter * (pixelsPerMeter() / circleConversion) // Convert microns to meters
+    circleDiameter * (scale / circleConversion) // Convert physical units to pixels
   );
 
   const lineColor = document.getElementById("circleLineColor").value;
@@ -7309,10 +9555,12 @@ let ECDConversion = 0;
 let ECDInM;
 let polylineCoords = [];
 let polygonCoords = [];
+measurementControlsInitialized = true;
 // let activeMeasurement = false;
 viewer.addHandler("canvas-click", function (event) {
+  if (scaleWizardState.active) return;
   const isMeasuring = measurementButton.classList.contains("active");
-  if (measurementModeActive) {
+  if (measurementModeActive && hasKnownScale()) {
     const distanceUnits = parseInt(
       document.getElementById("distanceUnits").value
     );
@@ -7455,7 +9703,7 @@ viewer.addHandler("canvas-click", function (event) {
         const measurePerimeterPixels = calculatePolygonExteriorPerimeter([
           currentMeasureImageCoordinates,
         ]);
-        distanceInM = measurePerimeterPixels / pixelsPerMeter();
+        distanceInM = metersFromPixels(measurePerimeterPixels);
         const measurePerimeter = distanceInM * distanceConversion;
         distanceElement.value = measurePerimeter.toFixed(2);
 
@@ -7470,12 +9718,13 @@ viewer.addHandler("canvas-click", function (event) {
           const measureAreaPixels = calculatePolygonArea([
             currentMeasureImageCoordinatesPolygon,
           ]);
-          areaInM2 = measureAreaPixels / pixelsPerMeter() ** 2;
+          areaInM2 = squareMetersFromSquarePixels(measureAreaPixels);
           const measureArea = areaInM2 * areaConversion;
           areaElement.value = measureArea.toFixed(2);
 
-          ECDInM =
-            2 * Math.sqrt(measureAreaPixels / pixelsPerMeter() ** 2 / Math.PI);
+          ECDInM = areaInM2 === null
+            ? null
+            : 2 * Math.sqrt(areaInM2 / Math.PI);
           const ECD = ECDInM * ECDConversion;
           ECDElement.value = ECD.toFixed(2);
         } else {
@@ -7501,7 +9750,7 @@ viewer.addHandler("canvas-click", function (event) {
         measureImageCoordinates,
       ]);
       const measurePerimeter =
-        (measurePerimeterPixels / pixelsPerMeter()) * distanceConversion;
+        metersFromPixels(measurePerimeterPixels) * distanceConversion;
 
       // Close the polygon by adding the first point to the end
       const finalMeasureImageCoordinatesPolygon = [
@@ -7512,11 +9761,10 @@ viewer.addHandler("canvas-click", function (event) {
       const measureAreaPixels = calculatePolygonArea([
         finalMeasureImageCoordinatesPolygon,
       ]);
-      areaInM2 = measureAreaPixels / pixelsPerMeter() ** 2;
+      areaInM2 = squareMetersFromSquarePixels(measureAreaPixels);
       const measureArea = areaInM2 * areaConversion;
 
-      ECDInM =
-        2 * Math.sqrt(measureAreaPixels / pixelsPerMeter() ** 2 / Math.PI);
+      ECDInM = areaInM2 === null ? null : 2 * Math.sqrt(areaInM2 / Math.PI);
       const ECD = ECDInM * ECDConversion;
       ECDElement.value = ECD.toFixed(2);
 
@@ -8213,7 +10461,7 @@ function updateStageRotationCheck() {
 }
 
 function resetLockStage() {
-  rotateWithStage.checked = true;
+  rotateWithStage.checked = false;
 }
 
 //////////////////////////////////////////////////////
@@ -8309,13 +10557,11 @@ viewerContainer.addEventListener("mousemove", function (subevent) {
   );
   const labelFontColor = currentPolyStyleColors.labelFontColor;
   const labelBackgroundColor = currentPolyStyleColors.labelBackgroundColor;
-  const labelBackgroundOpacity = Number(
-    document.getElementById("annoLabelBackgroundOpacity").value
-  );
+  const labelBackgroundOpacity = getAnnotationOpacityValue("annoLabelBackgroundOpacity");
   const lineWeight = Number(document.getElementById("lineWeight").value);
   const lineColor = currentPolyStyleColors.lineColor;
   const lineStyle = document.getElementById("lineStyle").value;
-  const lineOpacity = Number(document.getElementById("lineOpacity").value);
+  const lineOpacity = getAnnotationOpacityValue("lineOpacity");
 
   addPolylineToGeoJSON(
     annoJSONTemp,

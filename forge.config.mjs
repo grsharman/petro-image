@@ -5,7 +5,9 @@ const version = process.env.npm_package_version;
 
 export default {
   packagerConfig: {
-    asar: true,
+    asar: {
+      unpackDir: "node_modules/{sharp,@img}",
+    },
     icon: "assets/icon", // base name; electron-packager will use .icns/.ico/.png depending on platform
     overwrite: true, // overwrite existing packaged apps
   },

@@ -1,72 +1,95 @@
 <head>
+  <meta
+    http-equiv="Content-Security-Policy"
+    content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' file: data: blob: http://127.0.0.1:* https:; connect-src 'self' file: http://127.0.0.1:* https:; object-src 'none'; base-uri 'self'"
+  />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body class="import-wizard-page">
   <div class="import-wizard-container">
-    <h3 style="text-align: center">Sample Import Wizard</h3>
-    <div>
-      <input type="text" id="TitleText" placeholder="Title" required />
-      <span class="required-field-label">required</span>
+    <div class="import-wizard-header">
+      <div>
+        <h2>Sample Import Wizard</h2>
+        <p>Create a new sample or add it to an existing library.</p>
+      </div>
     </div>
-    <div>
-      <input
-        type="number"
-        id="pixelsPerMeterValue"
-        placeholder="# of pixels per meter"
-        min="0"
-        step="any"
-        required
-      />
-      <span class="required-field-label">required</span>
-    </div>
-    <div>
-      <input
-        type="text"
-        id="DescriptionText"
-        placeholder="Description (optional)"
-      />
-    </div>
-    <div id="groupContainer">
-      <div class="group-row">
+    <div class="import-wizard-body">
+      <section class="import-wizard-metadata">
+        <h3>Sample</h3>
+        <label for="TitleText" class="field-label-with-note">
+          <span>Title</span>
+          <span class="required-field-label">required</span>
+        </label>
+        <input type="text" id="TitleText" placeholder="Sample title" required />
+
+        <label for="DescriptionText">Description</label>
         <input
           type="text"
-          class="group-input"
-          placeholder="Group 1"
-          oninput="validateGroupUniqueness()"
+          id="DescriptionText"
+          placeholder="Description (optional)"
         />
-        <button
-          type="button"
-          class="group-btn"
-          onclick="addGroup(this)"
-          title="Add group"
+
+        <label for="pixelsPerMeterValue">Pixels per meter</label>
+        <input
+          type="number"
+          id="pixelsPerMeterValue"
+          placeholder="Optional"
+          min="0"
+          step="any"
+        />
+
+        <div class="import-wizard-field-header">
+          <span>Groups</span>
+          <span class="import-wizard-field-hint">Add one or more groups.</span>
+        </div>
+        <div id="groupContainer">
+          <div class="group-row">
+            <input
+              type="text"
+              class="group-input"
+              placeholder="Group 1"
+              oninput="validateGroupUniqueness()"
+            />
+            <button
+              type="button"
+              class="group-btn"
+              onclick="addGroup(this)"
+              title="Add group"
+            >
+              +
+            </button>
+          </div>
+        </div>
+
+        <label for="saveTypeDropdown">Save target</label>
+        <select
+          id="saveTypeDropdown"
+          onchange="updateSaveType()"
+          title="Specify whether to save as a new or existing library JSON file"
         >
-          +
-        </button>
+          <option value="createNewJSON" selected>Create new library JSON</option>
+          <option value="modifyExistingJSON">Add to existing library JSON</option>
+        </select>
+        <button id="loadExistingJSONBtn" hidden>Select file</button>
+      </section>
+      <section class="import-wizard-tiles">
+        <div class="import-wizard-section-header">
+          <h3>Tile Sets</h3>
+        </div>
+        <div id="tileSetContainer">
+          <!-- Tile set rows will be added dynamically here in JS -->
+        </div>
+      </section>
+    </div>
+    <div class="import-wizard-footer">
+      <div id="importProgressContainer" class="import-progress" hidden>
+        <div class="import-progress-track">
+          <div id="importProgressBar" class="import-progress-bar"></div>
+        </div>
+        <div id="importProgressText" class="import-progress-text"></div>
       </div>
+      <button id="exportJSONBtn">Export JSON</button>
     </div>
-    <hr />
-    <div id="tileSetContainer">
-      <!-- Tile set rows will be added dynamically here in JS -->
-    </div>
-    <hr />
-    <div>
-      <select
-        id="saveTypeDropdown"
-        onchange="updateSaveType()"
-        title="Specify whether to save as a new or existing library JSON file"
-      >
-        <option value="createNewJSON" selected>Create new library JSON</option>
-        <option value="modifyExistingJSON">Add to existing library JSON</option>
-      </select>
-    </div>
-    <button id="loadExistingJSONBtn" hidden>Select file</button>
-    <div id="importProgressContainer" class="import-progress" hidden>
-      <div class="import-progress-track">
-        <div id="importProgressBar" class="import-progress-bar"></div>
-      </div>
-      <div id="importProgressText" class="import-progress-text"></div>
-    </div>
-    <button id="exportJSONBtn">Export JSON</button>
     <input
       type="file"
       id="selectExistingJSON"

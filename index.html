@@ -2,6 +2,10 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; img-src 'self' file: data: blob: http://127.0.0.1:* https:; connect-src 'self' file: http://127.0.0.1:* https:; object-src 'none'; base-uri 'self'"
+    />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>petro-image</title>
     <!-- <link
@@ -86,6 +90,17 @@
           pointer-events: none;
         "
       ></canvas>
+      <canvas
+        id="scale-overlay"
+        class="electron-only"
+        style="
+          position: absolute;
+          top: 0;
+          left: 0;
+          z-index: 1002;
+          pointer-events: none;
+        "
+      ></canvas>
       <div class="viewer-corner-actions">
         <button
           id="loadLibraryButton"
@@ -102,27 +117,478 @@
           </svg>
         </button>
         <button
-          id="changeProjectButton"
-          class="electron-only viewer-corner-button"
-          type="button"
-          title="Open Project"
-          aria-label="Open Project"
-          hidden
+          class="viewer-corner-button history-button"
+          id="undoButton"
+          disabled
+          title="Undo"
+          aria-label="Undo"
         >
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M3 6h7l2 2h9v10a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3z" />
-            <path d="M3 10h18" />
+          <svg class="history-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M8 7 4 11l4 4" />
+            <path d="M4 11h9a5 5 0 1 1-3.5 8.5" />
           </svg>
         </button>
         <button
-          id="openImportWizardButton"
-          class="electron-only viewer-corner-button"
+          class="viewer-corner-button history-button"
+          id="redoButton"
+          disabled
+          title="Redo"
+          aria-label="Redo"
+        >
+          <svg class="history-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="m16 7 4 4-4 4" />
+            <path d="M20 11h-9a5 5 0 1 0 3.5 8.5" />
+          </svg>
+        </button>
+        <button
+          id="electronActionButton"
+          class="electron-only viewer-corner-button viewer-action-button"
           type="button"
-          title="Open Sample Import Wizard"
+          title="Actions"
+          aria-label="Actions"
+          aria-expanded="false"
+          aria-controls="electronActionTray"
           hidden
         >
-          <img src="assets/sample-import-wizard.svg" alt="" />
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 12h16" />
+            <path d="M4 6h16" />
+            <path d="M4 18h16" />
+          </svg>
         </button>
+        <div
+          id="electronActionTray"
+          class="electron-action-tray"
+          role="menu"
+          aria-label="Actions"
+          hidden
+        >
+          <button
+            id="actionLoadLibraryButton"
+            class="electron-action-item"
+            type="button"
+            role="menuitem"
+          >
+            <span class="electron-action-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <path d="M4 3h11l5 5v13H4z" />
+                <path d="M14 3v6h6" />
+                <path d="M8 14h8" />
+                <path d="M8 18h5" />
+              </svg>
+            </span>
+            <span>
+              <span class="electron-action-title">Load Library JSON</span>
+              <span class="electron-action-description">Open a library file</span>
+            </span>
+          </button>
+          <button
+            id="changeProjectButton"
+            class="electron-action-item"
+            type="button"
+            role="menuitem"
+            hidden
+          >
+            <span class="electron-action-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <path d="M3 6h7l2 2h9v10a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3z" />
+                <path d="M3 10h18" />
+              </svg>
+            </span>
+            <span>
+              <span class="electron-action-title">Open Project</span>
+              <span class="electron-action-description">Switch project folder</span>
+            </span>
+          </button>
+          <button
+            id="openImportWizardButton"
+            class="electron-action-item"
+            type="button"
+            role="menuitem"
+            hidden
+          >
+            <span class="electron-action-icon" aria-hidden="true">
+              <img src="assets/sample-import-wizard.svg" alt="" />
+            </span>
+            <span>
+              <span class="electron-action-title">Import Samples</span>
+              <span class="electron-action-description">Launch the sample wizard</span>
+            </span>
+          </button>
+          <button
+            id="openScaleWizardButton"
+            class="electron-action-item"
+            type="button"
+            role="menuitem"
+            hidden
+          >
+            <span class="electron-action-icon" aria-hidden="true">
+              <span class="scale-action-icon">
+                <span></span>
+                <span></span>
+                <span></span>
+                <span></span>
+              </span>
+            </span>
+            <span>
+              <span class="electron-action-title">Add Scale</span>
+              <span class="electron-action-description">Digitize a scalebar</span>
+            </span>
+          </button>
+          <button
+            id="openLibraryEditorButton"
+            class="electron-action-item"
+            type="button"
+            role="menuitem"
+            hidden
+          >
+            <span class="electron-action-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <rect x="4" y="5" width="16" height="14" rx="1.5" />
+                <path d="M4 9h16" />
+                <path d="M4 14h16" />
+                <path d="M9 5v14" />
+                <path d="M15 5v14" />
+              </svg>
+            </span>
+            <span>
+              <span class="electron-action-title">Edit Library</span>
+              <span class="electron-action-description">Reorder and update samples</span>
+            </span>
+          </button>
+          <button
+            id="openGridCountPaletteButton"
+            class="electron-action-item"
+            type="button"
+            role="menuitem"
+            hidden
+          >
+            <span class="electron-action-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <path d="M7 5v4" />
+                <path d="M5 7h4" />
+                <path d="M17 5v4" />
+                <path d="M15 7h4" />
+                <path d="M7 15v4" />
+                <path d="M5 17h4" />
+                <path d="M17 15v4" />
+                <path d="M15 17h4" />
+              </svg>
+            </span>
+            <span>
+              <span class="electron-action-title">Grid and Point Count</span>
+              <span class="electron-action-description">Create a Grid and Point Counts</span>
+            </span>
+          </button>
+          <button
+            id="openAnnotatePaletteButton"
+            class="electron-action-item"
+            type="button"
+            role="menuitem"
+            hidden
+          >
+            <span class="electron-action-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <path d="M5 17.5 6.5 22l4.5-1.5L20 7l-6-4z" />
+                <path d="M12.5 5.5 18.5 9.5" />
+                <path d="M6.5 18.5 9.5 21.5" />
+              </svg>
+            </span>
+            <span>
+              <span class="electron-action-title">Annotate</span>
+              <span class="electron-action-description">Draw and edit annotations</span>
+            </span>
+          </button>
+          <button
+            id="openMeasurePaletteButton"
+            class="electron-action-item"
+            type="button"
+            role="menuitem"
+            hidden
+          >
+            <span class="electron-action-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <path d="M4 20 20 4" />
+                <path d="m6 18 2 2" />
+                <path d="m9 15 2 2" />
+                <path d="m12 12 2 2" />
+                <path d="m15 9 2 2" />
+                <path d="m18 6 2 2" />
+              </svg>
+            </span>
+            <span>
+              <span class="electron-action-title">Measure</span>
+              <span class="electron-action-description">Calculate length and area</span>
+            </span>
+          </button>
+        </div>
+      </div>
+      <div
+        id="gridCountPalette"
+        class="tool-palette grid-count-palette electron-only"
+        data-default-position="bottom-right"
+        role="dialog"
+        aria-labelledby="gridCountPaletteTitle"
+        hidden
+      >
+        <div id="gridCountPaletteHeader" class="tool-palette-header">
+          <h2 id="gridCountPaletteTitle">Grid and Point Count</h2>
+          <button
+            id="closeGridCountPaletteButton"
+            class="tool-palette-close"
+            type="button"
+            aria-label="Close Grid and Point Count"
+            title="Close"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M6 6l12 12" />
+              <path d="M18 6 6 18" />
+            </svg>
+          </button>
+        </div>
+        <div id="gridCountPaletteBody" class="tool-palette-body"></div>
+      </div>
+      <div
+        id="annotatePalette"
+        class="tool-palette annotate-palette electron-only"
+        data-default-position="bottom-left"
+        data-default-bottom-offset="52"
+        role="dialog"
+        aria-labelledby="annotatePaletteTitle"
+        hidden
+      >
+        <div id="annotatePaletteHeader" class="tool-palette-header">
+          <h2 id="annotatePaletteTitle">Annotate</h2>
+          <button
+            id="closeAnnotatePaletteButton"
+            class="tool-palette-close"
+            type="button"
+            aria-label="Close Annotate"
+            title="Close"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M6 6l12 12" />
+              <path d="M18 6 6 18" />
+            </svg>
+          </button>
+        </div>
+        <div id="annotatePaletteBody" class="tool-palette-body"></div>
+      </div>
+      <div
+        id="measurePalette"
+        class="tool-palette measure-palette electron-only"
+        data-default-position="bottom-right"
+        data-default-bottom-offset="52"
+        role="dialog"
+        aria-labelledby="measurePaletteTitle"
+        hidden
+      >
+        <div id="measurePaletteHeader" class="tool-palette-header">
+          <h2 id="measurePaletteTitle">Measure</h2>
+          <button
+            id="closeMeasurePaletteButton"
+            class="tool-palette-close"
+            type="button"
+            aria-label="Close Measure"
+            title="Close"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M6 6l12 12" />
+              <path d="M18 6 6 18" />
+            </svg>
+          </button>
+        </div>
+        <div id="measurePaletteBody" class="tool-palette-body"></div>
+      </div>
+      <div
+        id="libraryEditor"
+        class="library-editor electron-only"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="libraryEditorTitle"
+        hidden
+      >
+        <div class="library-editor-panel">
+          <div class="library-editor-header">
+            <div>
+              <h2 id="libraryEditorTitle">Edit Library</h2>
+              <p id="libraryEditorSummary">No samples loaded.</p>
+            </div>
+            <button
+              id="closeLibraryEditorButton"
+              class="scale-wizard-icon-button"
+              type="button"
+              aria-label="Close library editor"
+              title="Close"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M6 6l12 12" />
+                <path d="M18 6 6 18" />
+              </svg>
+            </button>
+          </div>
+          <div class="library-editor-body">
+            <div class="library-editor-list-panel">
+              <div class="library-editor-toolbar">
+                <input
+                  id="libraryEditorSearch"
+                  type="search"
+                  placeholder="Search samples"
+                  aria-label="Search samples"
+                />
+              </div>
+              <div class="library-editor-table-wrap">
+                <table class="library-editor-table">
+                  <thead>
+                    <tr>
+                      <th scope="col">Sample</th>
+                      <th scope="col">Groups</th>
+                      <th scope="col">Tiles</th>
+                      <th scope="col">Move</th>
+                    </tr>
+                  </thead>
+                  <tbody id="libraryEditorRows"></tbody>
+                </table>
+              </div>
+            </div>
+            <form id="libraryEditorForm" class="library-editor-form">
+              <label for="libraryEditorTitleInput">Title</label>
+              <input id="libraryEditorTitleInput" type="text" />
+
+              <label for="libraryEditorDescriptionInput">Description</label>
+              <textarea id="libraryEditorDescriptionInput" rows="3"></textarea>
+
+              <label for="libraryEditorGroupsInput">Groups</label>
+              <input
+                id="libraryEditorGroupsInput"
+                type="text"
+                placeholder="Favorites; Microtectonics"
+              />
+
+              <label for="libraryEditorScaleInput">Pixels per meter</label>
+              <input id="libraryEditorScaleInput" type="number" min="0" step="any" />
+
+              <label for="libraryEditorAnnotationsInput">Annotation GeoJSON URIs</label>
+              <textarea
+                id="libraryEditorAnnotationsInput"
+                rows="4"
+                placeholder="annotations/annotations.geojson"
+              ></textarea>
+
+              <div class="library-editor-readonly">
+                <span>Tile sets</span>
+                <strong id="libraryEditorTileSetCount">0</strong>
+                <button id="openTileSetEditorButton" type="button">
+                  Edit Tile Sets
+                </button>
+              </div>
+              <button
+                id="libraryEditorDeleteButton"
+                class="library-editor-delete"
+                type="button"
+              >
+                Delete Sample
+              </button>
+            </form>
+          </div>
+          <div id="libraryEditorStatus" class="library-editor-status"></div>
+          <div class="library-editor-actions">
+            <button id="cancelLibraryEditorButton" type="button">Cancel</button>
+            <button id="saveAsLibraryEditorButton" type="button">Save As...</button>
+            <button id="saveLibraryEditorButton" type="button">Apply</button>
+            <button id="applyCloseLibraryEditorButton" type="button">
+              Apply and Close
+            </button>
+          </div>
+        </div>
+      </div>
+      <div
+        id="tileSetEditor"
+        class="tile-set-editor electron-only"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="tileSetEditorTitle"
+        hidden
+      >
+        <div class="tile-set-editor-panel">
+          <div class="library-editor-header">
+            <div>
+              <h2 id="tileSetEditorTitle">Edit Tile Sets</h2>
+              <p id="tileSetEditorSummary">No sample selected.</p>
+            </div>
+            <button
+              id="closeTileSetEditorButton"
+              class="scale-wizard-icon-button"
+              type="button"
+              aria-label="Close tile set editor"
+              title="Close"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M6 6l12 12" />
+                <path d="M18 6 6 18" />
+              </svg>
+            </button>
+          </div>
+          <div id="tileSetEditorRows" class="tile-set-editor-rows"></div>
+          <div id="tileSetEditorStatus" class="library-editor-status"></div>
+          <div class="library-editor-actions">
+            <button id="cancelTileSetEditorButton" type="button">Cancel</button>
+            <button id="saveTileSetEditorButton" type="button">Save</button>
+          </div>
+        </div>
+      </div>
+      <div
+        id="scaleWizard"
+        class="scale-wizard electron-only"
+        role="dialog"
+        aria-labelledby="scaleWizardTitle"
+        hidden
+      >
+        <div class="scale-wizard-panel">
+          <div class="scale-wizard-header">
+            <h2 id="scaleWizardTitle">Add Scale</h2>
+            <button
+              id="closeScaleWizardButton"
+              class="scale-wizard-icon-button"
+              type="button"
+              aria-label="Close Add Scale wizard"
+              title="Close"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M6 6l12 12" />
+                <path d="M18 6 6 18" />
+              </svg>
+            </button>
+          </div>
+          <p id="scaleWizardStatus">
+            Click the start and end of the image scalebar.
+          </p>
+          <div class="scale-wizard-fields">
+            <label for="scaleWizardLength">Length</label>
+            <input
+              id="scaleWizardLength"
+              type="number"
+              min="0"
+              step="any"
+              placeholder="100"
+            />
+            <select id="scaleWizardUnits" aria-label="Scale length units">
+              <option value="1">m</option>
+              <option value="1000">mm</option>
+              <option value="1000000" selected>µm</option>
+            </select>
+          </div>
+          <div id="scaleWizardResult" class="scale-wizard-result">
+            Select two points to calculate scale.
+          </div>
+          <div class="scale-wizard-actions">
+            <button id="resetScaleWizardButton" type="button">Reset</button>
+            <button id="cancelScaleWizardButton" type="button">Cancel</button>
+            <button id="applyScaleWizardButton" type="button" disabled>
+              Apply
+            </button>
+          </div>
+        </div>
       </div>
       <input type="file" id="load-sample-JSON" class="file-input" />
     </div>
@@ -429,7 +895,6 @@
         <input
           type="checkbox"
           id="rotateWithStage"
-          checked
           title="Lock stage"
           style="display: none;"
           onclick="toggleImageRotationWithStage(this)"
@@ -439,35 +904,9 @@
       <hr />
       <div id="imageCheckboxContainer"></div>
       <hr />
-      <details closed>
+      <details id="toolsMenu" closed>
         <summary class="tools-summary">
           <span>Tools</span>
-          <span class="history-controls">
-            <button
-              class="custom-button history-button"
-              id="undoButton"
-              disabled
-              title="Undo"
-              aria-label="Undo"
-            >
-              <svg class="history-icon" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M8 7 4 11l4 4" />
-                <path d="M4 11h9a5 5 0 1 1-3.5 8.5" />
-              </svg>
-            </button>
-            <button
-              class="custom-button history-button"
-              id="redoButton"
-              disabled
-              title="Redo"
-              aria-label="Redo"
-            >
-              <svg class="history-icon" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="m16 7 4 4-4 4" />
-                <path d="M20 11h-9a5 5 0 1 0 3.5 8.5" />
-              </svg>
-            </button>
-          </span>
         </summary>
         <details id="detailsMenu" closed>
           <summary>Grid</summary>
@@ -608,6 +1047,7 @@
               type="number"
               value="600"
               min="2"
+              max="5000"
               title="Number of points"
               onchange="enableGridButtons()"
             />
@@ -1176,7 +1616,7 @@
             <button id="clear-grid" disabled>Clear</button>
           </div>
         </details>
-        <details closed>
+        <details id="countDetails" closed>
           <summary>Count</summary>
           <div class="button-container">
             <button
@@ -1230,19 +1670,21 @@
           </div>
           <div>
             <div id="filterMenu" class="dropdown-container">
-              <button
-                id="filterButton"
-                class="custom-button"
-                style="--button-width: 50px"
-              >
-                Select
-              </button>
-              <div
-                id="includeDropdown"
-                class="dropdown-content"
-                style="display: none"
-              >
-                <!-- Checkboxes will be added dynamically -->
+              <div class="count-dropdown-control">
+                <button
+                  id="filterButton"
+                  class="custom-button"
+                  style="--button-width: 50px"
+                >
+                  Select
+                </button>
+                <div
+                  id="includeDropdown"
+                  class="dropdown-content"
+                  style="display: none"
+                >
+                  <!-- Checkboxes will be added dynamically -->
+                </div>
               </div>
               <button
                 id="summarizeButton"
@@ -1252,19 +1694,21 @@
               >
                 Summarize
               </button>
-              <button
-                id="countFilterButton"
-                class="custom-button"
-                style="--button-width: 50px"
-              >
-                Filter
-              </button>
-              <div
-                id="countFilterDropdown"
-                class="dropdown-content"
-                style="display: none"
-              >
-                <!-- Filter checkboxes will be added dynamically -->
+              <div class="count-dropdown-control">
+                <button
+                  id="countFilterButton"
+                  class="custom-button"
+                  style="--button-width: 50px"
+                >
+                  Filter
+                </button>
+                <div
+                  id="countFilterDropdown"
+                  class="dropdown-content"
+                  style="display: none"
+                >
+                  <!-- Filter checkboxes will be added dynamically -->
+                </div>
               </div>
             </div>
           </div>
@@ -1304,7 +1748,7 @@
             </button>
           </div>
         </details>
-        <details closed>
+        <details id="annotateDetails" closed>
           <summary>Annotate</summary>
           <div>
             <input
@@ -1521,8 +1965,10 @@
 
           <!-- Hidden Settings Menu -->
           <div id="annoSettingsMenu" class="hiddenSettingsMenu">
-            <h4>Label</h4>
-            <h4>Font</h4>
+            <div class="annotation-settings-layout">
+              <section class="annotation-settings-section annotation-label-settings">
+                <h3>Label</h3>
+                <h4>Font</h4>
             <div class="setting-row">
               <input
                 type="number"
@@ -1730,11 +2176,12 @@
                 type="number"
                 class="wide-number-input"
                 id="annoLabelBackgroundOpacity"
-                value="0.5"
+                value="50"
                 min="0"
-                max="1"
+                max="100"
+                step="1"
               />
-              <label for="annoLabelBackgroundOpacity">Opacity</label>
+              <label for="annoLabelBackgroundOpacity">Opacity (%)</label>
               <div class="button-group">
                 <button
                   class="apply-current-btn"
@@ -1792,13 +2239,14 @@
                 </button>
               </div>
             </div>
-            <div>
+            <div class="annotation-settings-actions">
               <button id="applyCurrentAnnoLabel">Apply to Current</button>
               <button id="applyAllAnnoLabel">Apply to All</button>
             </div>
-            <hr />
-            <h4>Feature</h4>
-            <h4>Line</h4>
+              </section>
+              <section class="annotation-settings-section annotation-feature-settings">
+                <h3>Feature</h3>
+                <h4>Line</h4>
             <div class="setting-row">
               <input
                 type="number"
@@ -1872,13 +2320,14 @@
                 type="number"
                 class="wide-number-input"
                 id="lineOpacity"
-                placeholder="1"
+                placeholder="100"
                 maxlength="3"
-                value="1"
+                value="100"
                 min="0"
-                max="1"
+                max="100"
+                step="1"
               />
-              <label for="lineOpacity">Opacity</label>
+              <label for="lineOpacity">Opacity (%)</label>
               <div class="button-group">
                 <button
                   class="apply-current-btn"
@@ -2136,13 +2585,14 @@
                 type="number"
                 class="wide-number-input"
                 id="fillOpacity"
-                placeholder="1"
+                placeholder="0"
                 maxlength="3"
                 value="0"
                 min="0"
-                max="1"
+                max="100"
+                step="1"
               />
-              <label for="fillOpacity">Opacity</label>
+              <label for="fillOpacity">Opacity (%)</label>
               <div class="button-group">
                 <button
                   class="apply-current-btn"
@@ -2201,9 +2651,11 @@
               </div>
             </div>
 
-            <div>
+            <div class="annotation-settings-actions">
               <button id="applyCurrentAnno">Apply to Current</button>
               <button id="applyAllAnno">Apply to All</button>
+            </div>
+              </section>
             </div>
           </div>
           <div class="dropdown-container">
@@ -2236,7 +2688,7 @@
           </div>
           <div id="loadAnnoFromJSON"></div>
         </details>
-        <details closed>
+        <details id="measureDetails" closed>
           <summary>Measure</summary>
           <div>
             <input
@@ -2350,7 +2802,7 @@
             <button
               id="toggleCircleButton"
               class="custom-button"
-              style="width: 80px"
+              style="width: 92px"
               onclick="toggleCircleMode(this)"
               title="Start/stop measuring"
             >

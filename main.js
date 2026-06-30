@@ -2,6 +2,7 @@ import { app, BrowserWindow, ipcMain, dialog, screen } from "electron";
 import { fileURLToPath } from "url";
 import path from "path";
 import fs from "fs/promises";
+import { createReadStream } from "fs";
 import http from "http";
 import { randomUUID } from "crypto";
 import { convertJpgToDzi } from "./dzi-converter.js";
@@ -17,7 +18,7 @@ let localFileServerPort;
 const localFileServerToken = randomUUID();
 const grantedLocalRoots = [];
 const APP_TITLE = "petro-image";
-const DEFAULT_LIBRARY_FILE_NAME = "default_library.json";
+const WELCOME_LIBRARY_FILE_NAME = "welcome_library.json";
 const USER_LIBRARY_FILE_NAME = "library.json";
 const DZI_FOLDER_NAME = "dzi";
 
@@ -69,20 +70,24 @@ function getBundledDefaultLibraryPath() {
   return path.join(__dirname, "samples.json");
 }
 
+function getBundledWelcomeLibraryPath() {
+  return path.join(__dirname, WELCOME_LIBRARY_FILE_NAME);
+}
+
 async function ensureProjectStructure(projectDirectory) {
   await fs.mkdir(projectDirectory, { recursive: true });
   await fs.mkdir(path.join(projectDirectory, DZI_FOLDER_NAME), { recursive: true });
 
-  const defaultLibraryPath = path.join(projectDirectory, DEFAULT_LIBRARY_FILE_NAME);
-  if (!(await pathExists(defaultLibraryPath))) {
-    const defaultLibraryText = await fs.readFile(
-      getBundledDefaultLibraryPath(),
+  const welcomeLibraryPath = path.join(projectDirectory, WELCOME_LIBRARY_FILE_NAME);
+  if (!(await pathExists(welcomeLibraryPath))) {
+    const welcomeLibraryText = await fs.readFile(
+      getBundledWelcomeLibraryPath(),
       "utf8",
     );
-    await fs.writeFile(defaultLibraryPath, defaultLibraryText, "utf8");
+    await fs.writeFile(welcomeLibraryPath, welcomeLibraryText, "utf8");
   }
 
-  return defaultLibraryPath;
+  return welcomeLibraryPath;
 }
 
 async function promptForProjectDirectory(mode) {
@@ -99,7 +104,66 @@ async function promptForProjectDirectory(mode) {
     return null;
   }
 
-  return filePaths[0];
+  const selectedPath = filePaths[0];
+  const shouldUsePath = await confirmCloudProjectDirectory(selectedPath);
+  if (!shouldUsePath) {
+    return promptForProjectDirectory(mode);
+  }
+
+  return selectedPath;
+}
+
+function getCloudProjectProvider(projectDirectory) {
+  const normalizedPath = projectDirectory.replace(/\\/g, "/");
+  const cloudPathPatterns = [
+    { provider: "OneDrive", pattern: /(^|\/)OneDrive([-/]|$)/i },
+    { provider: "iCloud Drive", pattern: /(^|\/)(iCloud Drive|Mobile Documents)(\/|$)/i },
+    { provider: "Dropbox", pattern: /(^|\/)Dropbox(\/|$)/i },
+    { provider: "Google Drive", pattern: /(^|\/)(Google Drive|GoogleDrive)(\/|$)/i },
+    { provider: "Box", pattern: /(^|\/)Box(\/|$)/i },
+    { provider: "cloud-synced storage", pattern: /\/Library\/CloudStorage\//i },
+  ];
+
+  return cloudPathPatterns.find(({ pattern }) => pattern.test(normalizedPath))
+    ?.provider;
+}
+
+async function confirmCloudProjectDirectory(projectDirectory) {
+  const provider = getCloudProjectProvider(projectDirectory);
+  if (!provider) {
+    return true;
+  }
+
+  const result = await dialog.showMessageBox(mainWindow, {
+    type: "warning",
+    buttons: ["Choose Another Folder", "Use This Folder Anyway"],
+    defaultId: 0,
+    cancelId: 0,
+    message: "Cloud-Synced Project Folder",
+    detail:
+      `This folder appears to be inside ${provider}. DZI tile files may be offloaded or slow to read, which can make image loading very slow or cause the app to become unresponsive.\n\nFor best performance, choose a folder stored on this computer, or mark the project folder as always available offline in your cloud storage app.`,
+  });
+
+  return result.response === 1;
+}
+
+async function confirmRememberedCloudProjectDirectory(projectDirectory) {
+  const provider = getCloudProjectProvider(projectDirectory);
+  if (!provider) {
+    return true;
+  }
+
+  const result = await dialog.showMessageBox(mainWindow, {
+    type: "warning",
+    buttons: ["Choose Another Folder", "Open Anyway"],
+    defaultId: 1,
+    cancelId: 1,
+    message: "Cloud-Synced Project Folder",
+    detail:
+      `The remembered Project Folder appears to be inside ${provider}. DZI tile files may be offloaded or slow to read, which can make image loading very slow or cause the app to become unresponsive.\n\nFor best performance, choose a folder stored on this computer, or mark the project folder as always available offline in your cloud storage app.`,
+  });
+
+  return result.response === 1;
 }
 
 async function chooseProjectDirectory({ allowCancel = false } = {}) {
@@ -340,6 +404,13 @@ async function getInitialProjectLibrary(settings) {
     return initializeMissingProject(settings);
   }
 
+  if (!(await confirmRememberedCloudProjectDirectory(projectDirectory))) {
+    const selectedProject = await selectProjectForChange(settings);
+    if (!selectedProject.canceled) {
+      return selectedProject;
+    }
+  }
+
   return initializeRememberedProject(settings, projectDirectory);
 }
 
@@ -372,7 +443,7 @@ async function rememberLastLibraryPath(filePath) {
   const projectDirectory = settings.projectDirectory || path.dirname(filePath);
   const defaultLibraryPath =
     settings.defaultLibraryPath ||
-    path.join(projectDirectory, DEFAULT_LIBRARY_FILE_NAME);
+    path.join(projectDirectory, WELCOME_LIBRARY_FILE_NAME);
   const recentLibrariesByProject = {
     ...(settings.recentLibrariesByProject || {}),
     [projectDirectory]: filePath,
@@ -410,14 +481,26 @@ async function startLocalFileServer() {
         return;
       }
 
-      const data = await fs.readFile(filePath);
+      const stats = await fs.stat(filePath);
       response.writeHead(200, {
         "Content-Type": getContentType(filePath),
-        "Content-Length": data.byteLength,
+        "Content-Length": stats.size,
         "Cache-Control": "no-store",
         "Access-Control-Allow-Origin": "*",
       });
-      response.end(data);
+      const stream = createReadStream(filePath);
+      response.on("close", () => {
+        if (!response.writableEnded) {
+          stream.destroy();
+        }
+      });
+      stream.on("error", (error) => {
+        if (!response.headersSent) {
+          response.writeHead(error.code === "ENOENT" ? 404 : 500);
+        }
+        response.end(error.message);
+      });
+      stream.pipe(response);
     } catch (error) {
       response.writeHead(error.code === "ENOENT" ? 404 : 500);
       response.end(error.message);
@@ -520,8 +603,10 @@ ipcMain.handle("open-import-wizard", () => {
   }
 
   importWizardWindow = new BrowserWindow({
-    width: 324,
-    height: 420,
+    width: 980,
+    height: 760,
+    minWidth: 900,
+    minHeight: 520,
     parent: mainWindow,
     useContentSize: true,
     webPreferences: {
@@ -674,6 +759,50 @@ ipcMain.handle("get-local-dzi-tile-source", async (event, dziPath) => {
   return getDziTileSource(event, dziPath);
 });
 
+ipcMain.handle("validate-sample-tiles", async (event, tileSets) => {
+  return validateSampleTiles(event, tileSets);
+});
+
+ipcMain.handle("confirm-slow-tiles", async (event, validationResult) => {
+  const ownerWindow =
+    BrowserWindow.fromWebContents(event.sender) ||
+    BrowserWindow.getFocusedWindow() ||
+    mainWindow;
+  const checkedCount = validationResult?.checkedCount || 0;
+  const issueCount = validationResult?.issues?.length || 0;
+  const sampleIssues = (validationResult?.issues || [])
+    .slice(0, 5)
+    .map((issue) => `- ${issue.file || issue.dziPath}: ${issue.reason}`)
+    .join("\n");
+  const result = await dialog.showMessageBox(ownerWindow, {
+    type: "warning",
+    buttons: ["Cancel", "Try Loading Anyway"],
+    defaultId: 0,
+    cancelId: 0,
+    message: "Image Tiles May Not Be Available",
+    detail:
+      `Some DZI tile files for this sample could not be read quickly from disk.\n\nChecked ${checkedCount} file${checkedCount === 1 ? "" : "s"} and found ${issueCount} issue${issueCount === 1 ? "" : "s"}.\n\n${sampleIssues}\n\nThis often happens when a project is stored in a cloud-synced folder and files are not available offline. Loading may be very slow or the app may become unresponsive.`,
+  });
+
+  return result.response === 1;
+});
+
+ipcMain.handle("show-tile-load-warning", async (event, failure) => {
+  const ownerWindow =
+    BrowserWindow.fromWebContents(event.sender) ||
+    BrowserWindow.getFocusedWindow() ||
+    mainWindow;
+  await dialog.showMessageBox(ownerWindow, {
+    type: "warning",
+    buttons: ["OK"],
+    defaultId: 0,
+    cancelId: 0,
+    message: "Image Tiles Are Not Loading",
+    detail:
+      `OpenSeadragon could not load one or more DZI image tiles for ${failure?.sampleTitle || "the selected sample"}.\n\n${failure?.tilePath || failure?.tileUrl || ""}\n\n${failure?.message || "The tile request failed."}\n\nThis often happens when a project is stored in a cloud-synced folder and tile files are not available offline. Move the Project Folder to local storage or mark the full project folder as always available offline.`,
+  });
+});
+
 ipcMain.handle("read-local-json-file", async (event, filePath) => {
   const resolvedPath = await resolveLibraryFilePath(filePath);
   const jsonText = await fs.readFile(resolvedPath, "utf8");
@@ -762,12 +891,7 @@ async function getDziTileSource(event, dziPath) {
   const result = await readDziXmlWithPermissionFallback(event, dziPath);
   const { dziXml } = result;
   dziPath = result.dziPath;
-  const imageTag = dziXml.match(/<Image\b([^>]*)>/i);
-  const sizeTag = dziXml.match(/<Size\b([^>]*)>/i);
-
-  if (!imageTag || !sizeTag) {
-    throw new Error(`Could not parse DZI file: ${path.basename(dziPath)}`);
-  }
+  const dziInfo = parseDziInfo(dziPath, dziXml);
 
   const parsedPath = path.parse(dziPath);
   const tilesPath = path.join(parsedPath.dir, `${parsedPath.name}_files`);
@@ -776,15 +900,146 @@ async function getDziTileSource(event, dziPath) {
     Image: {
       xmlns: "http://schemas.microsoft.com/deepzoom/2008",
       Url: localFileServerUrl(`${tilesPath}${path.sep}`),
-      Format: getXmlAttribute(imageTag[1], "Format") || "jpg",
-      Overlap: parseInt(getXmlAttribute(imageTag[1], "Overlap") || "1", 10),
-      TileSize: parseInt(getXmlAttribute(imageTag[1], "TileSize") || "254", 10),
+      Format: dziInfo.format,
+      Overlap: dziInfo.overlap,
+      TileSize: dziInfo.tileSize,
       Size: {
-        Width: parseInt(getXmlAttribute(sizeTag[1], "Width"), 10),
-        Height: parseInt(getXmlAttribute(sizeTag[1], "Height"), 10),
+        Width: dziInfo.width,
+        Height: dziInfo.height,
       },
     },
   };
+}
+
+function parseDziInfo(dziPath, dziXml) {
+  const imageTag = dziXml.match(/<Image\b([^>]*)>/i);
+  const sizeTag = dziXml.match(/<Size\b([^>]*)>/i);
+
+  if (!imageTag || !sizeTag) {
+    throw new Error(`Could not parse DZI file: ${path.basename(dziPath)}`);
+  }
+
+  return {
+    format: getXmlAttribute(imageTag[1], "Format") || "jpg",
+    overlap: parseInt(getXmlAttribute(imageTag[1], "Overlap") || "1", 10),
+    tileSize: parseInt(getXmlAttribute(imageTag[1], "TileSize") || "254", 10),
+    width: parseInt(getXmlAttribute(sizeTag[1], "Width"), 10),
+    height: parseInt(getXmlAttribute(sizeTag[1], "Height"), 10),
+  };
+}
+
+async function validateSampleTiles(event, tileSets) {
+  const issues = [];
+  let checkedCount = 0;
+  const tileUris = (tileSets || [])
+    .flatMap((tileSet) => tileSet.tiles || [])
+    .map((tile) => tile.uri)
+    .filter((uri) => typeof uri === "string" && /\.dzi$/i.test(uri));
+
+  for (const uri of tileUris) {
+    try {
+      const dziPath = await resolveLibraryFilePath(uri);
+      if (/^[a-z][a-z0-9+.-]*:\/\//i.test(dziPath)) continue;
+
+      const result = await readDziXmlWithPermissionFallback(event, dziPath);
+      checkedCount += 1;
+      const cloudProvider = getCloudProjectProvider(result.dziPath);
+      if (cloudProvider) {
+        issues.push({
+          dziPath: result.dziPath,
+          reason:
+            `DZI tiles are stored in ${cloudProvider}. Confirm the full tile folder is available offline before loading.`,
+        });
+        continue;
+      }
+
+      const dziInfo = parseDziInfo(result.dziPath, result.dziXml);
+      const expectedTiles = getRepresentativeDziTilePaths(result.dziPath, dziInfo);
+
+      for (const file of expectedTiles) {
+        checkedCount += 1;
+        const issue = await checkReadableQuickly(file);
+        if (issue) {
+          issues.push({ dziPath: result.dziPath, file, reason: issue });
+        }
+      }
+    } catch (error) {
+      issues.push({ dziPath: uri, reason: error.message || "Could not read DZI." });
+    }
+  }
+
+  return {
+    ok: issues.length === 0,
+    checkedCount,
+    issues,
+  };
+}
+
+function getRepresentativeDziTilePaths(dziPath, dziInfo) {
+  const parsedPath = path.parse(dziPath);
+  const tilesPath = path.join(parsedPath.dir, `${parsedPath.name}_files`);
+  const maxDimension = Math.max(dziInfo.width, dziInfo.height);
+  const level = Math.ceil(Math.log2(maxDimension));
+  const columns = Math.max(1, Math.ceil(dziInfo.width / dziInfo.tileSize));
+  const rows = Math.max(1, Math.ceil(dziInfo.height / dziInfo.tileSize));
+  const columnSamples = sampleTileIndexes(columns);
+  const rowSamples = sampleTileIndexes(rows);
+  const coordinates = columnSamples.flatMap((column) =>
+    rowSamples.map((row) => [column, row]),
+  );
+  const uniqueCoordinates = Array.from(
+    new Set(coordinates.map(([column, row]) => `${column}_${row}`)),
+  );
+
+  return uniqueCoordinates.map((coordinate) =>
+    path.join(tilesPath, String(level), `${coordinate}.${dziInfo.format}`),
+  );
+}
+
+function sampleTileIndexes(count) {
+  return Array.from(
+    new Set([0, Math.floor((count - 1) / 2), count - 1]),
+  );
+}
+
+async function checkReadableQuickly(filePath, timeoutMs = 1500) {
+  try {
+    await readFirstChunkQuickly(filePath, timeoutMs);
+    return "";
+  } catch (error) {
+    if (error.message === "Read check timed out.") {
+      return `Read check exceeded ${timeoutMs} ms.`;
+    }
+    if (error.code === "ENOENT") {
+      return "File is missing or not available offline.";
+    }
+    return error.message || "Could not read file quickly.";
+  }
+}
+
+function readFirstChunkQuickly(filePath, timeoutMs) {
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const stream = createReadStream(filePath, { start: 0, end: 65535 });
+    const finish = (error) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
+      stream.destroy();
+      if (error) {
+        reject(error);
+      } else {
+        resolve();
+      }
+    };
+    const timeout = setTimeout(() => {
+      finish(new Error("Read check timed out."));
+    }, timeoutMs);
+
+    stream.once("data", () => finish());
+    stream.once("end", () => finish());
+    stream.once("error", finish);
+  });
 }
 
 async function resolveLibraryFilePath(filePath) {

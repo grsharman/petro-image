@@ -10,6 +10,12 @@ contextBridge.exposeInMainWorld("electronAPI", {
   getProjectSettings: () => ipcRenderer.invoke("get-project-settings"),
   getLocalDziTileSource: (dziPath) =>
     ipcRenderer.invoke("get-local-dzi-tile-source", dziPath),
+  validateSampleTiles: (tileSets) =>
+    ipcRenderer.invoke("validate-sample-tiles", tileSets),
+  confirmSlowTiles: (validationResult) =>
+    ipcRenderer.invoke("confirm-slow-tiles", validationResult),
+  showTileLoadWarning: (failure) =>
+    ipcRenderer.invoke("show-tile-load-warning", failure),
   readLocalJsonFile: (filePath) =>
     ipcRenderer.invoke("read-local-json-file", filePath),
   selectJpgFile: () => ipcRenderer.invoke("select-jpg-file"),

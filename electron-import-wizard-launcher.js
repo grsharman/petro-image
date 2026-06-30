@@ -9,6 +9,10 @@ if (window.electronAPI?.openImportWizard && openImportWizardButton) {
   openImportWizardButton.addEventListener("click", (event) => {
     event.preventDefault();
     event.stopPropagation();
+    document.getElementById("electronActionTray")?.setAttribute("hidden", "");
+    document
+      .getElementById("electronActionButton")
+      ?.setAttribute("aria-expanded", "false");
     window.electronAPI.openImportWizard();
   });
 }
