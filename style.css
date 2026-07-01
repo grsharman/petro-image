@@ -114,9 +114,21 @@ body.import-wizard-page {
   content: "Actions";
 }
 
+.viewer-tools-button::after {
+  content: "Tools";
+}
+
 .viewer-action-button svg {
   width: 18px;
   height: 18px;
+}
+
+#viewerToolsButton {
+  order: 10;
+}
+
+#electronActionButton {
+  order: 11;
 }
 
 .electron-action-tray {
@@ -129,6 +141,10 @@ body.import-wizard-page {
   border-radius: 6px;
   background-color: rgba(255, 255, 255, 0.82);
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.22);
+}
+
+.viewer-tools-tray {
+  right: 84px;
 }
 
 .electron-action-item {
@@ -183,19 +199,19 @@ body.import-wizard-page {
 .tool-palette {
   position: absolute;
   top: 56px;
-  left: 12px;
+  left: 5px;
   z-index: 3000;
   box-sizing: border-box;
-  width: min(208px, calc(100vw - 24px));
+  width: min(198px, calc(100vw - 24px));
   max-height: min(680px, calc(100vh - 72px));
   display: flex;
   flex-direction: column;
-  border: 1px solid rgba(20, 20, 20, 0.34);
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.9);
-  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.24);
+  border: 1px solid black;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.75);
+  box-shadow: none;
   color: #1f1f1f;
-  font: 13px/1.3 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font: 12px/1.2 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
 .tool-palette[hidden] {
@@ -206,41 +222,60 @@ body.import-wizard-page {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  min-height: 32px;
-  padding: 5px 7px 5px 10px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.16);
+  gap: 6px;
+  min-height: 24px;
+  padding: 2px 3px 2px 7px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.18);
   cursor: move;
   user-select: none;
 }
 
 .tool-palette-header h2 {
+  min-width: 0;
   margin: 0;
-  font-size: 13px;
-  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.1;
 }
 
-.tool-palette-close {
-  width: 24px;
-  height: 24px;
+.tool-palette-header-actions {
+  display: inline-flex;
+  gap: 2px;
+  align-items: center;
+}
+
+.tool-palette-close,
+.tool-palette-minimize {
+  width: 20px;
+  height: 20px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   border: 1px solid rgba(0, 0, 0, 0.28);
   border-radius: 4px;
-  padding: 3px;
+  padding: 2px;
   background: rgba(255, 255, 255, 0.72);
   color: #222;
   cursor: pointer;
 }
 
+.tool-palette-minimize[aria-pressed="true"] svg {
+  transform: rotate(90deg);
+}
+
 .tool-palette-close:hover,
-.tool-palette-close:focus-visible {
+.tool-palette-close:focus-visible,
+.tool-palette-minimize:hover,
+.tool-palette-minimize:focus-visible {
   background: rgba(0, 0, 0, 0.08);
   outline: none;
 }
 
-.tool-palette-close svg {
+.tool-palette-close svg,
+.tool-palette-minimize svg {
   width: 16px;
   height: 16px;
   fill: none;
@@ -252,8 +287,19 @@ body.import-wizard-page {
 
 .tool-palette-body {
   min-height: 0;
-  padding: 7px 8px 9px;
+  padding: 4px 7px 8px;
   overflow: auto;
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.tool-palette-minimized .tool-palette-body {
+  display: none;
+}
+
+.annotate-palette #annotateDetails > summary,
+.measure-palette #measureDetails > summary {
+  display: none;
 }
 
 .tool-palette-body details {
@@ -266,7 +312,16 @@ body.import-wizard-page {
 
 .tool-palette-body summary {
   cursor: pointer;
-  font-weight: 700;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.tool-palette-body input,
+.tool-palette-body select,
+.tool-palette-body textarea,
+.tool-palette-body button,
+.tool-palette-body label {
+  font: inherit;
 }
 
 .tool-palette-body hr {
@@ -338,6 +393,51 @@ body.import-wizard-page {
   z-index: 3000;
 }
 
+.controls-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.controls-minimize-button {
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(0, 0, 0, 0.28);
+  border-radius: 4px;
+  padding: 2px;
+  background: rgba(255, 255, 255, 0.72);
+  color: #222;
+  cursor: pointer;
+}
+
+.controls-minimize-button:hover,
+.controls-minimize-button:focus-visible {
+  background: rgba(0, 0, 0, 0.08);
+  outline: none;
+}
+
+.controls-minimize-button svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.controls-minimized .controls-body {
+  display: none;
+}
+
+.controls-minimized .controls-minimize-button svg {
+  transform: rotate(90deg);
+}
+
 .controls button,
 .controls input,
 .controls label,
@@ -369,6 +469,15 @@ body.import-wizard-page {
   white-space: nowrap;
   font-size: var(--font-size, 16px);
   z-index: 1002;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+}
+
+.annotate-label.annotation-selected {
+  outline: 2px solid rgba(255, 204, 0, 0.95);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.45);
 }
 
 /* .annotate-crosshairs {
@@ -421,6 +530,377 @@ body.import-wizard-page {
   width: var(--crosshair-line-weight, 2px);
   height: 12px; /* Default height */
   transform: translate(-50%, -50%);
+}
+
+.annotate-crosshairs.annotation-selected::before,
+.annotate-crosshairs.annotation-selected::after {
+  box-shadow: 0 0 0 2px rgba(255, 204, 0, 0.95);
+}
+
+.annotation-group-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 20px 20px 20px 20px 20px;
+  gap: 3px;
+  margin: 4px 2px;
+  align-items: center;
+}
+
+.annotation-group-controls select {
+  min-width: 0;
+  height: 22px;
+  font: inherit;
+}
+
+.annotation-group-controls .custom-button,
+.annotation-group-controls .annotation-visibility-button,
+.annotation-group-controls .annotation-lock-button {
+  margin: 0;
+}
+
+.annotation-group-color-input {
+  width: 20px;
+  height: 20px;
+  padding: 1px;
+  border: 1px solid #444;
+  border-radius: 4px;
+  background: #f0f0f0;
+  cursor: pointer;
+}
+
+.annotation-group-color-input:disabled {
+  cursor: not-allowed;
+  border-color: grey;
+  opacity: 0.5;
+}
+
+.annotation-group-color-input::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.annotation-group-color-input::-webkit-color-swatch {
+  border: 0;
+  border-radius: 2px;
+}
+
+.annotation-group-icon-button {
+  --button-width: 20px;
+}
+
+.annotation-list {
+  display: grid;
+  gap: 1px;
+  max-height: 168px;
+  overflow-y: auto;
+  margin: 3px 2px 5px;
+  padding: 1px;
+  border: 1px solid rgba(68, 68, 68, 0.35);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.62);
+}
+
+.annotation-list-empty {
+  padding: 6px;
+  color: #555;
+  font-size: 12px;
+}
+
+.annotation-list-row {
+  display: grid;
+  grid-template-columns: 24px 20px minmax(0, 1fr) 16px 20px 20px;
+  align-items: center;
+  gap: 3px;
+  min-height: 21px;
+  padding: 1px 3px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: #1f1f1f;
+  font: 12px/1.2 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  text-align: left;
+  cursor: pointer;
+}
+
+.annotation-row-hidden {
+  opacity: 0.48;
+}
+
+.annotation-row-locked .annotation-list-label {
+  color: #555;
+}
+
+.annotation-list-row.annotation-row-locked {
+  cursor: default;
+}
+
+.annotation-list-row.annotation-row-locked .annotation-lock-button:not(:disabled) {
+  cursor: pointer;
+}
+
+.annotation-list-row:hover,
+.annotation-list-row:focus-visible {
+  border-color: rgba(0, 0, 0, 0.25);
+  background: rgba(255, 255, 255, 0.86);
+  outline: none;
+}
+
+.annotation-list-row.annotation-list-row-selected {
+  border-color: rgba(255, 180, 0, 0.95);
+  background: rgba(255, 230, 150, 0.78);
+}
+
+.annotation-list-row.annotation-list-row-primary {
+  box-shadow: inset 3px 0 0 rgba(255, 180, 0, 0.95);
+}
+
+.annotation-list-index,
+.annotation-list-type {
+  font-weight: 700;
+}
+
+.annotation-list-type {
+  color: #444;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.annotation-geometry-icon {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+}
+
+.annotation-geometry-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #333;
+}
+
+.annotation-geometry-icon .annotation-geometry-dot + .annotation-geometry-dot {
+  margin-left: -1px;
+}
+
+.annotation-geometry-line {
+  width: 16px;
+  height: 3px;
+  border-radius: 2px;
+  background: #333;
+  transform: rotate(-32deg);
+}
+
+.annotation-geometry-line-secondary {
+  position: absolute;
+  top: 10px;
+  left: 2px;
+  opacity: 0.55;
+}
+
+.annotation-geometry-polygon {
+  width: 15px;
+  height: 14px;
+  background: rgba(51, 51, 51, 0.14);
+  clip-path: polygon(50% 0, 96% 35%, 78% 100%, 22% 100%, 4% 35%);
+}
+
+.annotation-geometry-polygon::after {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  background: #333;
+  clip-path: polygon(
+    50% 0,
+    100% 36%,
+    81% 100%,
+    19% 100%,
+    0 36%,
+    50% 0,
+    50% 18%,
+    17% 42%,
+    30% 84%,
+    70% 84%,
+    83% 42%,
+    50% 18%
+  );
+}
+
+.annotation-geometry-polygon-secondary {
+  position: absolute;
+  right: 0;
+  bottom: 1px;
+  opacity: 0.55;
+  transform: scale(0.78);
+  transform-origin: bottom right;
+}
+
+.annotation-geometry-circle {
+  width: 14px;
+  height: 14px;
+  box-sizing: border-box;
+  border: 2px solid #333;
+  border-radius: 50%;
+  background: rgba(51, 51, 51, 0.12);
+}
+
+.annotation-geometry-rectangle {
+  width: 15px;
+  height: 11px;
+  box-sizing: border-box;
+  border: 2px solid #333;
+  border-radius: 1px;
+  background: rgba(51, 51, 51, 0.12);
+}
+
+.annotation-geometry-ellipse {
+  width: 16px;
+  height: 11px;
+  box-sizing: border-box;
+  border: 2px solid #333;
+  border-radius: 50%;
+  background: rgba(51, 51, 51, 0.12);
+}
+
+.annotation-list-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.annotation-list-group {
+  width: 10px;
+  height: 10px;
+  border: 1px solid rgba(0, 0, 0, 0.35);
+  border-radius: 50%;
+  justify-self: center;
+}
+
+.annotation-visibility-button {
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 4px;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.annotation-visibility-button:hover,
+.annotation-visibility-button:focus-visible {
+  background: rgba(0, 0, 0, 0.1);
+  outline: none;
+}
+
+.annotation-lock-button {
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 4px;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.annotation-lock-button:hover,
+.annotation-lock-button:focus-visible {
+  background: rgba(0, 0, 0, 0.1);
+  outline: none;
+}
+
+.annotation-lock-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.annotation-visibility-icon {
+  position: relative;
+  width: 18px;
+  height: 14px;
+}
+
+.annotation-visibility-eye {
+  position: absolute;
+  inset: 0;
+}
+
+.annotation-visibility-eye::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 17px;
+  height: 14px;
+  background: #333;
+  clip-path: polygon(0 0, 100% 50%, 0 100%, 0 78%, 72% 50%, 0 22%);
+}
+
+.annotation-visibility-eye::after {
+  content: "";
+  position: absolute;
+  left: 3px;
+  top: 3px;
+  width: 4px;
+  height: 8px;
+  border-radius: 50%;
+  background: #333;
+}
+
+.annotation-visibility-slash {
+  position: absolute;
+  left: 7px;
+  top: -2px;
+  width: 2px;
+  height: 18px;
+  background: #333;
+  transform: rotate(-42deg);
+}
+
+.annotation-lock-icon {
+  position: relative;
+  width: 14px;
+  height: 16px;
+}
+
+.annotation-lock-shackle {
+  position: absolute;
+  left: 3px;
+  top: 0;
+  width: 8px;
+  height: 8px;
+  box-sizing: border-box;
+  border: 2px solid #333;
+  border-bottom: 0;
+  border-radius: 7px 7px 0 0;
+}
+
+.annotation-lock-body {
+  position: absolute;
+  left: 1px;
+  top: 7px;
+  width: 12px;
+  height: 8px;
+  border-radius: 1px;
+  background: #333;
+}
+
+.annotation-lock-icon-unlocked .annotation-lock-shackle {
+  left: 7px;
+  top: -2px;
+  transform: rotate(34deg);
+  transform-origin: left bottom;
+  background: rgba(255, 255, 255, 0.95);
+}
+
+.annotation-lock-icon-unlocked .annotation-lock-body {
+  top: 8px;
 }
 
 .measure-symbol {
@@ -604,6 +1084,19 @@ body.import-wizard-page {
   text-align: left; /* Center the number */
 }
 
+#anno-label,
+#anno-notes {
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.tool-palette-body #anno-label,
+.tool-palette-body #anno-notes,
+.tool-palette-body #annotationGroupSelect {
+  font-size: 12px;
+  font-weight: 400;
+}
+
 /* #filterButton {
   width: 50px;
   height: 20px;
@@ -624,7 +1117,7 @@ body.import-wizard-page {
   border-color: grey;
   opacity: 0.5;
 } */
-/* 
+/*
 #summarizeButton {
   width: 80px;
   height: 20px;
@@ -705,7 +1198,8 @@ body.import-wizard-page {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 14px;
+  font: inherit;
+  font-weight: 500;
 }
 
 .file-label:hover {
@@ -847,11 +1341,14 @@ body.import-wizard-page {
   display: flex;
   align-items: center;
   justify-content: center;
+  font: inherit;
+  font-weight: 500;
 }
 
 #loadAnnoFromJSONButton {
   --button-width: 124px;
-  font: 600 12px/1.1 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font: inherit;
+  font-weight: 500;
   white-space: nowrap;
 }
 
@@ -936,6 +1433,82 @@ body.import-wizard-page {
   opacity: 0.5;
 }
 
+#viewer-container.annotation-move-mode,
+#viewer-container.annotation-move-mode * {
+  cursor: move;
+}
+
+#viewer-container.annotation-moving,
+#viewer-container.annotation-moving * {
+  cursor: grabbing;
+}
+
+#viewer-container.annotation-label-move-mode .annotate-label {
+  cursor: grab;
+}
+
+#viewer-container.annotation-label-moving .annotate-label {
+  cursor: grabbing;
+}
+
+.annotation-vertex-handle {
+  box-sizing: border-box;
+  appearance: none;
+  width: 8px;
+  height: 8px;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  line-height: 0;
+  position: relative;
+  border: 2px solid #111;
+  border-radius: 0;
+  background: #ffcc00;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.9);
+  transform: translate(-50%, -50%);
+  cursor: grab;
+  touch-action: none;
+  z-index: 1004;
+}
+
+.annotation-vertex-handle:hover,
+.annotation-vertex-handle:focus-visible {
+  background: #ffe36a;
+  outline: none;
+}
+
+.annotation-shape-handle-center {
+  border-radius: 50%;
+  background: #ffffff;
+}
+
+.annotation-shape-handle-rotate {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #ffcc00;
+  cursor: alias;
+}
+
+#viewer-container.annotation-vertex-editing,
+#viewer-container.annotation-vertex-editing .annotation-vertex-handle,
+#viewer-container.annotation-shape-editing,
+#viewer-container.annotation-shape-editing .annotation-shape-handle {
+  cursor: grab;
+}
+
+#viewer-container.annotation-vertex-editing .annotation-shape-handle-rotate,
+#viewer-container.annotation-shape-editing .annotation-shape-handle-rotate {
+  cursor: alias;
+}
+
+#viewer-container.annotation-vertex-dragging,
+#viewer-container.annotation-vertex-dragging .annotation-vertex-handle,
+#viewer-container.annotation-shape-dragging,
+#viewer-container.annotation-shape-dragging .annotation-shape-handle {
+  cursor: grabbing;
+}
+
 /* Point (dot) button */
 .crosshairs-button {
   width: 100%;
@@ -1008,7 +1581,7 @@ body.import-wizard-page {
 /* .opacity-slider {
   width: 100px;
 }
-  
+
 
 .slider-value {
   width: 75px;
@@ -1284,6 +1857,46 @@ input[type="range"] {
   z-index: 4200;
 }
 
+.hiddenSettingsMenu.circle-annotation-options-popover {
+  position: fixed;
+  box-sizing: border-box;
+  width: min(220px, calc(100vw - 16px));
+  max-height: min(260px, calc(100vh - 24px));
+  overflow: auto;
+  z-index: 4200;
+}
+
+.circle-annotation-options {
+  display: grid;
+  gap: 6px;
+}
+
+.circle-annotation-option {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+}
+
+.circle-annotation-diameter-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 58px;
+  gap: 6px;
+  align-items: center;
+}
+
+.hiddenSettingsMenu .circle-annotation-diameter-row input[type="number"] {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.circle-annotation-note {
+  margin: 0;
+  color: #555;
+  font-size: 12px;
+  line-height: 1.25;
+}
+
 .measure-settings-popover > div {
   display: grid;
   grid-template-columns: 54px 1fr;
@@ -1332,6 +1945,126 @@ input[type="range"] {
   z-index: 1000; /* Above viewer */
 }
 
+.annotation-marquee {
+  position: absolute;
+  z-index: 1003;
+  box-sizing: border-box;
+  border: 1px solid rgba(30, 110, 255, 0.95);
+  background: rgba(30, 110, 255, 0.16);
+  pointer-events: none;
+}
+
+.snapshot-selection {
+  position: absolute;
+  z-index: 1004;
+  box-sizing: border-box;
+  border: 1px solid rgba(255, 193, 7, 0.98);
+  background: rgba(255, 193, 7, 0.14);
+  box-shadow: 0 0 0 1px rgba(25, 25, 25, 0.32);
+  pointer-events: auto;
+  touch-action: none;
+}
+
+#viewer-container.snapshot-mode {
+  cursor: crosshair;
+}
+
+.snapshot-selection-body {
+  position: absolute;
+  inset: 0;
+  cursor: move;
+}
+
+.snapshot-resize-handle {
+  box-sizing: border-box;
+  appearance: none;
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  border: 2px solid #111;
+  border-radius: 0;
+  background: #ffcc00;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.9);
+  touch-action: none;
+}
+
+.snapshot-resize-handle:hover,
+.snapshot-resize-handle:focus-visible {
+  background: #ffe36a;
+  outline: none;
+}
+
+.snapshot-resize-handle-nw,
+.snapshot-resize-handle-ne,
+.snapshot-resize-handle-se,
+.snapshot-resize-handle-sw {
+  margin-left: -4px;
+  margin-top: -4px;
+}
+
+.snapshot-resize-handle-n,
+.snapshot-resize-handle-s {
+  margin-left: -4px;
+  margin-top: -4px;
+}
+
+.snapshot-resize-handle-e,
+.snapshot-resize-handle-w {
+  margin-left: -4px;
+  margin-top: -4px;
+}
+
+.snapshot-resize-handle-nw {
+  left: 0;
+  top: 0;
+  cursor: nwse-resize;
+}
+
+.snapshot-resize-handle-n {
+  left: 50%;
+  top: 0;
+  cursor: ns-resize;
+}
+
+.snapshot-resize-handle-ne {
+  left: 100%;
+  top: 0;
+  cursor: nesw-resize;
+}
+
+.snapshot-resize-handle-e {
+  left: 100%;
+  top: 50%;
+  cursor: ew-resize;
+}
+
+.snapshot-resize-handle-se {
+  left: 100%;
+  top: 100%;
+  cursor: nwse-resize;
+}
+
+.snapshot-resize-handle-s {
+  left: 50%;
+  top: 100%;
+  cursor: ns-resize;
+}
+
+.snapshot-resize-handle-sw {
+  left: 0;
+  top: 100%;
+  cursor: nesw-resize;
+}
+
+.snapshot-resize-handle-w {
+  left: 0;
+  top: 50%;
+  cursor: ew-resize;
+}
+
 #circle-overlay {
   position: absolute;
   top: 0;
@@ -1359,6 +2092,58 @@ input[type="range"] {
 
 .scale-wizard[hidden] {
   display: none;
+}
+
+.snapshot-palette-body {
+  display: grid;
+  gap: 6px;
+}
+
+.snapshot-option,
+.snapshot-field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  font: inherit;
+}
+
+.snapshot-option {
+  justify-content: flex-start;
+}
+
+.snapshot-field input {
+  width: 64px;
+  padding: 2px 4px;
+  font: inherit;
+}
+
+.snapshot-field select {
+  max-width: 176px;
+  width: 100%;
+  padding: 2px 4px;
+  font: inherit;
+}
+
+.snapshot-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.snapshot-actions button {
+  min-width: 0;
+  padding: 4px 6px;
+  font: inherit;
+}
+
+.snapshot-status {
+  min-height: 2.4em;
+  margin: 0;
+  color: rgba(17, 17, 17, 0.9);
+  font: inherit;
+  line-height: 1.2;
 }
 
 .scale-wizard-panel {
@@ -2092,6 +2877,13 @@ input[type="range"] {
   visibility: hidden; /* Hidden by default */
 }
 
+.circle-floater {
+  stroke: black;
+  stroke-width: 2;
+  fill: none;
+  visibility: hidden;
+}
+
 #load-sample-JSON {
   justify-content: center;
   align-items: center;
@@ -2240,6 +3032,93 @@ input[type="range"] {
   display: flex;
 }
 
+.annotation-dialog-content {
+  text-align: left;
+  transform: translateY(-10%);
+}
+
+.annotation-dialog-content h3 {
+  margin: 0 0 8px;
+  font-size: 16px;
+}
+
+.annotation-dialog-note {
+  margin: 0 0 10px;
+  color: #555;
+  font-size: 12px;
+}
+
+.annotation-dialog-option {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 8px 0;
+  font-size: 13px;
+}
+
+.annotation-dialog-content select,
+.annotation-dialog-content input[type="text"] {
+  width: 100%;
+  box-sizing: border-box;
+  height: 24px;
+  margin: 4px 0;
+}
+
+.annotation-dialog-inline {
+  margin-left: 22px;
+}
+
+.annotation-dialog-toolbar,
+.annotation-dialog-actions {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+  margin-top: 10px;
+}
+
+.annotation-dialog-toolbar {
+  justify-content: flex-start;
+  margin: 4px 0;
+}
+
+.annotation-export-group-list {
+  max-height: 180px;
+  overflow-y: auto;
+  border: 1px solid rgba(68, 68, 68, 0.35);
+  border-radius: 4px;
+  padding: 4px;
+}
+
+.annotation-export-group-row {
+  display: grid;
+  grid-template-columns: 18px 14px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px;
+  min-height: 24px;
+  font-size: 12px;
+}
+
+.annotation-export-group-row-hidden {
+  opacity: 0.55;
+}
+
+.annotation-export-group-color {
+  width: 10px;
+  height: 10px;
+  border: 1px solid rgba(0, 0, 0, 0.35);
+  border-radius: 50%;
+}
+
+.annotation-export-group-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.annotation-export-group-count {
+  color: #555;
+}
+
 .lock-stage-container {
   display: flex;
   align-items: center;
@@ -2257,8 +3136,8 @@ input[type="range"] {
 }
 
 .slider-container label {
-  flex: 0 0 40px; /* keep label its natural width */
-  font-size: 16px; /* you can shrink font if needed */
+  flex: 0 0 40px; /* keep labels aligned */
+  font-size: 13px;
   text-align: left;
 }
 

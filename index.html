@@ -59,6 +59,83 @@
         <button onclick="cancelPrompt()">Cancel</button>
       </div>
     </div>
+    <div id="annotationImportDialog" class="modal-prompt modal-prompt-hidden">
+      <div class="modal-prompt-content annotation-dialog-content">
+        <h3>Import Annotations</h3>
+        <p id="annotationImportSource" class="annotation-dialog-note"></p>
+        <label class="annotation-dialog-option">
+          <input type="radio" name="annotationImportMode" value="assign" />
+          Add imported annotations to group
+        </label>
+        <select id="annotationImportGroupSelect"></select>
+        <label class="annotation-dialog-option">
+          <input type="radio" name="annotationImportMode" value="preserve" />
+          Preserve groups from file; ungrouped annotations use Default
+        </label>
+        <label class="annotation-dialog-option">
+          <input type="checkbox" id="annotationImportSelectAfter" checked />
+          Select imported annotations after import
+        </label>
+        <div class="annotation-dialog-actions">
+          <button id="annotationImportConfirmButton">Import</button>
+          <button id="annotationImportCancelButton">Cancel</button>
+        </div>
+      </div>
+    </div>
+    <div id="annotationExportDialog" class="modal-prompt modal-prompt-hidden">
+      <div class="modal-prompt-content annotation-dialog-content">
+        <h3>Export Annotations</h3>
+        <label class="annotation-dialog-option">
+          <input type="radio" name="annotationExportScope" value="groups" checked />
+          Export selected groups
+        </label>
+        <div class="annotation-dialog-toolbar">
+          <button id="annotationExportSelectAllButton">All</button>
+          <button id="annotationExportSelectNoneButton">None</button>
+        </div>
+        <div
+          id="annotationExportGroupList"
+          class="annotation-export-group-list"
+        ></div>
+        <label class="annotation-dialog-option">
+          <input type="radio" name="annotationExportScope" value="selection" />
+          Export current selection only
+        </label>
+        <label class="annotation-dialog-option">
+          <input type="checkbox" id="annotationExportIncludeHidden" checked />
+          Include hidden annotations
+        </label>
+        <div class="annotation-dialog-actions">
+          <button id="annotationExportConfirmButton">Export</button>
+          <button id="annotationExportCancelButton">Cancel</button>
+        </div>
+      </div>
+    </div>
+    <div id="annotationClearDialog" class="modal-prompt modal-prompt-hidden">
+      <div class="modal-prompt-content annotation-dialog-content">
+        <h3>Clear Annotations</h3>
+        <label class="annotation-dialog-option">
+          <input type="radio" name="annotationClearScope" value="groups" checked />
+          Clear selected groups
+        </label>
+        <div class="annotation-dialog-toolbar">
+          <button id="annotationClearSelectAllButton">All</button>
+          <button id="annotationClearSelectNoneButton">None</button>
+        </div>
+        <div
+          id="annotationClearGroupList"
+          class="annotation-export-group-list"
+        ></div>
+        <label class="annotation-dialog-option">
+          <input type="radio" name="annotationClearScope" value="selection" />
+          Clear current selection only
+        </label>
+        <div class="annotation-dialog-actions">
+          <button id="annotationClearConfirmButton">Clear</button>
+          <button id="annotationClearCancelButton">Cancel</button>
+        </div>
+      </div>
+    </div>
     <div id="viewer-container">
       <canvas
         id="annotation-overlay"
@@ -101,13 +178,77 @@
           pointer-events: none;
         "
       ></canvas>
+      <div id="annotation-marquee" class="annotation-marquee" hidden></div>
+      <div id="snapshot-selection" class="snapshot-selection" hidden>
+        <div
+          id="snapshotSelectionBody"
+          class="snapshot-selection-body"
+          title="Drag to move"
+        ></div>
+        <button
+          type="button"
+          class="snapshot-resize-handle snapshot-resize-handle-nw"
+          data-handle="nw"
+          aria-label="Resize snapshot area from top left"
+          title="Resize"
+        ></button>
+        <button
+          type="button"
+          class="snapshot-resize-handle snapshot-resize-handle-n"
+          data-handle="n"
+          aria-label="Resize snapshot area from top"
+          title="Resize"
+        ></button>
+        <button
+          type="button"
+          class="snapshot-resize-handle snapshot-resize-handle-ne"
+          data-handle="ne"
+          aria-label="Resize snapshot area from top right"
+          title="Resize"
+        ></button>
+        <button
+          type="button"
+          class="snapshot-resize-handle snapshot-resize-handle-e"
+          data-handle="e"
+          aria-label="Resize snapshot area from right"
+          title="Resize"
+        ></button>
+        <button
+          type="button"
+          class="snapshot-resize-handle snapshot-resize-handle-se"
+          data-handle="se"
+          aria-label="Resize snapshot area from bottom right"
+          title="Resize"
+        ></button>
+        <button
+          type="button"
+          class="snapshot-resize-handle snapshot-resize-handle-s"
+          data-handle="s"
+          aria-label="Resize snapshot area from bottom"
+          title="Resize"
+        ></button>
+        <button
+          type="button"
+          class="snapshot-resize-handle snapshot-resize-handle-sw"
+          data-handle="sw"
+          aria-label="Resize snapshot area from bottom left"
+          title="Resize"
+        ></button>
+        <button
+          type="button"
+          class="snapshot-resize-handle snapshot-resize-handle-w"
+          data-handle="w"
+          aria-label="Resize snapshot area from left"
+          title="Resize"
+        ></button>
+      </div>
       <div class="viewer-corner-actions">
         <button
           id="loadLibraryButton"
           class="viewer-corner-button"
           type="button"
-          title="Load Library JSON"
-          aria-label="Load Library JSON"
+          title="Load Library"
+          aria-label="Load Library"
         >
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="M4 3h11l5 5v13H4z" />
@@ -116,6 +257,116 @@
             <path d="M8 18h5" />
           </svg>
         </button>
+        <button
+          id="viewerToolsButton"
+          class="electron-only viewer-corner-button viewer-action-button viewer-tools-button"
+          type="button"
+          title="Tools"
+          aria-label="Tools"
+          aria-expanded="false"
+          aria-controls="viewerToolsTray"
+          hidden
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M14.5 5.5 18 2l4 4-3.5 3.5" />
+            <path d="M4 20 14.5 9.5" />
+            <path d="M6 4h4" />
+            <path d="M8 2v4" />
+            <path d="M3 11h4" />
+            <path d="M5 9v4" />
+          </svg>
+        </button>
+        <div
+          id="viewerToolsTray"
+          class="electron-action-tray viewer-tools-tray"
+          role="menu"
+          aria-label="Tools"
+          hidden
+        >
+          <button
+            id="openGridCountPaletteButton"
+            class="electron-action-item"
+            type="button"
+            role="menuitem"
+            hidden
+          >
+            <span class="electron-action-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <path d="M7 5v4" />
+                <path d="M5 7h4" />
+                <path d="M17 5v4" />
+                <path d="M15 7h4" />
+                <path d="M7 15v4" />
+                <path d="M5 17h4" />
+                <path d="M17 15v4" />
+                <path d="M15 17h4" />
+              </svg>
+            </span>
+            <span>
+              <span class="electron-action-title">Grid and Point Count</span>
+              <span class="electron-action-description">Create grids and point counts</span>
+            </span>
+          </button>
+          <button
+            id="openAnnotatePaletteButton"
+            class="electron-action-item"
+            type="button"
+            role="menuitem"
+            hidden
+          >
+            <span class="electron-action-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <path d="M5 17.5 6.5 22l4.5-1.5L20 7l-6-4z" />
+                <path d="M12.5 5.5 18.5 9.5" />
+                <path d="M6.5 18.5 9.5 21.5" />
+              </svg>
+            </span>
+            <span>
+              <span class="electron-action-title">Annotate</span>
+              <span class="electron-action-description">Draw and edit annotations</span>
+            </span>
+          </button>
+          <button
+            id="openMeasurePaletteButton"
+            class="electron-action-item"
+            type="button"
+            role="menuitem"
+            hidden
+          >
+            <span class="electron-action-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <path d="M4 20 20 4" />
+                <path d="m6 18 2 2" />
+                <path d="m9 15 2 2" />
+                <path d="m12 12 2 2" />
+                <path d="m15 9 2 2" />
+                <path d="m18 6 2 2" />
+              </svg>
+            </span>
+            <span>
+              <span class="electron-action-title">Measure</span>
+              <span class="electron-action-description">Calculate length and area</span>
+            </span>
+          </button>
+          <button
+            id="openSnapshotPaletteButton"
+            class="electron-action-item"
+            type="button"
+            role="menuitem"
+            hidden
+          >
+            <span class="electron-action-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <path d="M4 8h4l2-3h4l2 3h4v11H4z" />
+                <circle cx="12" cy="13.5" r="3.5" />
+              </svg>
+            </span>
+            <span>
+              <span class="electron-action-title">Snapshot</span>
+              <span class="electron-action-description">Export an image crop</span>
+            </span>
+          </button>
+        </div>
         <button
           class="viewer-corner-button history-button"
           id="undoButton"
@@ -178,8 +429,8 @@
               </svg>
             </span>
             <span>
-              <span class="electron-action-title">Load Library JSON</span>
-              <span class="electron-action-description">Open a library file</span>
+              <span class="electron-action-title">Load Library</span>
+              <span class="electron-action-description">Open a library JSON file</span>
             </span>
           </button>
           <button
@@ -256,71 +507,6 @@
               <span class="electron-action-description">Reorder and update samples</span>
             </span>
           </button>
-          <button
-            id="openGridCountPaletteButton"
-            class="electron-action-item"
-            type="button"
-            role="menuitem"
-            hidden
-          >
-            <span class="electron-action-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24">
-                <path d="M7 5v4" />
-                <path d="M5 7h4" />
-                <path d="M17 5v4" />
-                <path d="M15 7h4" />
-                <path d="M7 15v4" />
-                <path d="M5 17h4" />
-                <path d="M17 15v4" />
-                <path d="M15 17h4" />
-              </svg>
-            </span>
-            <span>
-              <span class="electron-action-title">Grid and Point Count</span>
-              <span class="electron-action-description">Create a Grid and Point Counts</span>
-            </span>
-          </button>
-          <button
-            id="openAnnotatePaletteButton"
-            class="electron-action-item"
-            type="button"
-            role="menuitem"
-            hidden
-          >
-            <span class="electron-action-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24">
-                <path d="M5 17.5 6.5 22l4.5-1.5L20 7l-6-4z" />
-                <path d="M12.5 5.5 18.5 9.5" />
-                <path d="M6.5 18.5 9.5 21.5" />
-              </svg>
-            </span>
-            <span>
-              <span class="electron-action-title">Annotate</span>
-              <span class="electron-action-description">Draw and edit annotations</span>
-            </span>
-          </button>
-          <button
-            id="openMeasurePaletteButton"
-            class="electron-action-item"
-            type="button"
-            role="menuitem"
-            hidden
-          >
-            <span class="electron-action-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24">
-                <path d="M4 20 20 4" />
-                <path d="m6 18 2 2" />
-                <path d="m9 15 2 2" />
-                <path d="m12 12 2 2" />
-                <path d="m15 9 2 2" />
-                <path d="m18 6 2 2" />
-              </svg>
-            </span>
-            <span>
-              <span class="electron-action-title">Measure</span>
-              <span class="electron-action-description">Calculate length and area</span>
-            </span>
-          </button>
         </div>
       </div>
       <div
@@ -333,18 +519,32 @@
       >
         <div id="gridCountPaletteHeader" class="tool-palette-header">
           <h2 id="gridCountPaletteTitle">Grid and Point Count</h2>
-          <button
-            id="closeGridCountPaletteButton"
-            class="tool-palette-close"
-            type="button"
-            aria-label="Close Grid and Point Count"
-            title="Close"
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M6 6l12 12" />
-              <path d="M18 6 6 18" />
-            </svg>
-          </button>
+          <div class="tool-palette-header-actions">
+            <button
+              id="minimizeGridCountPaletteButton"
+              class="tool-palette-minimize"
+              type="button"
+              aria-label="Minimize Grid and Point Count"
+              aria-pressed="false"
+              title="Minimize"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M6 12h12" />
+              </svg>
+            </button>
+            <button
+              id="closeGridCountPaletteButton"
+              class="tool-palette-close"
+              type="button"
+              aria-label="Close Grid and Point Count"
+              title="Close"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M6 6l12 12" />
+                <path d="M18 6 6 18" />
+              </svg>
+            </button>
+          </div>
         </div>
         <div id="gridCountPaletteBody" class="tool-palette-body"></div>
       </div>
@@ -359,18 +559,32 @@
       >
         <div id="annotatePaletteHeader" class="tool-palette-header">
           <h2 id="annotatePaletteTitle">Annotate</h2>
-          <button
-            id="closeAnnotatePaletteButton"
-            class="tool-palette-close"
-            type="button"
-            aria-label="Close Annotate"
-            title="Close"
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M6 6l12 12" />
-              <path d="M18 6 6 18" />
-            </svg>
-          </button>
+          <div class="tool-palette-header-actions">
+            <button
+              id="minimizeAnnotatePaletteButton"
+              class="tool-palette-minimize"
+              type="button"
+              aria-label="Minimize Annotate"
+              aria-pressed="false"
+              title="Minimize"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M6 12h12" />
+              </svg>
+            </button>
+            <button
+              id="closeAnnotatePaletteButton"
+              class="tool-palette-close"
+              type="button"
+              aria-label="Close Annotate"
+              title="Close"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M6 6l12 12" />
+                <path d="M18 6 6 18" />
+              </svg>
+            </button>
+          </div>
         </div>
         <div id="annotatePaletteBody" class="tool-palette-body"></div>
       </div>
@@ -385,20 +599,120 @@
       >
         <div id="measurePaletteHeader" class="tool-palette-header">
           <h2 id="measurePaletteTitle">Measure</h2>
-          <button
-            id="closeMeasurePaletteButton"
-            class="tool-palette-close"
-            type="button"
-            aria-label="Close Measure"
-            title="Close"
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M6 6l12 12" />
-              <path d="M18 6 6 18" />
-            </svg>
-          </button>
+          <div class="tool-palette-header-actions">
+            <button
+              id="minimizeMeasurePaletteButton"
+              class="tool-palette-minimize"
+              type="button"
+              aria-label="Minimize Measure"
+              aria-pressed="false"
+              title="Minimize"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M6 12h12" />
+              </svg>
+            </button>
+            <button
+              id="closeMeasurePaletteButton"
+              class="tool-palette-close"
+              type="button"
+              aria-label="Close Measure"
+              title="Close"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M6 6l12 12" />
+                <path d="M18 6 6 18" />
+              </svg>
+            </button>
+          </div>
         </div>
         <div id="measurePaletteBody" class="tool-palette-body"></div>
+      </div>
+      <div
+        id="snapshotPalette"
+        class="tool-palette snapshot-palette electron-only"
+        data-default-position="bottom-right"
+        data-default-bottom-offset="104"
+        role="dialog"
+        aria-labelledby="snapshotPaletteTitle"
+        hidden
+      >
+        <div id="snapshotPaletteHeader" class="tool-palette-header">
+          <h2 id="snapshotPaletteTitle">Snapshot</h2>
+          <div class="tool-palette-header-actions">
+            <button
+              id="minimizeSnapshotPaletteButton"
+              class="tool-palette-minimize"
+              type="button"
+              aria-label="Minimize Snapshot"
+              aria-pressed="false"
+              title="Minimize"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M6 12h12" />
+              </svg>
+            </button>
+            <button
+              id="closeSnapshotPaletteButton"
+              class="tool-palette-close"
+              type="button"
+              aria-label="Close Snapshot"
+              title="Close"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M6 6l12 12" />
+                <path d="M18 6 6 18" />
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div class="tool-palette-body snapshot-palette-body">
+          <label class="snapshot-field">
+            <span>Tile set</span>
+            <select id="snapshotTileSetSelect"></select>
+          </label>
+          <label class="snapshot-field">
+            <span>Contents</span>
+            <select id="snapshotContentMode">
+              <option value="image">Image only</option>
+              <option value="annotations">Image + visible annotations</option>
+              <option value="labels">Image + visible annotations + labels</option>
+            </select>
+          </label>
+          <label class="snapshot-field">
+            <span>Resolution</span>
+            <select id="snapshotResolutionMode">
+              <option value="current">Current view</option>
+              <option value="2x">2x</option>
+              <option value="full">Full resolution</option>
+            </select>
+          </label>
+          <label class="snapshot-option">
+            <input id="snapshotIncludeScalebar" type="checkbox" checked />
+            <span>Include scalebar</span>
+          </label>
+          <label class="snapshot-field">
+            <span>JPG quality</span>
+            <input
+              id="snapshotJpegQuality"
+              type="number"
+              min="50"
+              max="100"
+              step="5"
+              value="92"
+            />
+          </label>
+          <div class="snapshot-actions">
+            <button id="snapshotDrawButton" type="button">Draw Area</button>
+            <button id="snapshotClearButton" type="button" disabled>Clear</button>
+            <button id="snapshotExportButton" type="button" disabled>
+              Export
+            </button>
+          </div>
+          <p id="snapshotStatus" class="snapshot-status">
+            Set options, then draw a rectangle.
+          </p>
+        </div>
       </div>
       <div
         id="libraryEditor"
@@ -623,9 +937,33 @@
         points="0,0 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0"
       />
     </svg>
+    <svg id="anno-circle-svg" class="svg-floater">
+      <circle
+        id="anno-circle-floater"
+        class="circle-floater"
+        cx="0"
+        cy="0"
+        r="6"
+      />
+    </svg>
     <!--Controls-->
     <div class="controls">
-      <div id="image-container"></div>
+      <div class="controls-header">
+        <div id="image-container"></div>
+        <button
+          id="minimizeControlsButton"
+          class="controls-minimize-button"
+          type="button"
+          aria-label="Minimize image controls"
+          aria-pressed="false"
+          title="Minimize image controls"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M6 12h12" />
+          </svg>
+        </button>
+      </div>
+      <div id="controlsBody" class="controls-body">
       <div class="dropdown-container">
         <select id="groupDropdown"></select>
         <!--Gear icon to trigger hidden image menu-->
@@ -903,7 +1241,6 @@
       </div>
       <hr />
       <div id="imageCheckboxContainer"></div>
-      <hr />
       <details id="toolsMenu" closed>
         <summary class="tools-summary">
           <span>Tools</span>
@@ -1791,9 +2128,7 @@
               title="Polyline Mode"
             >
               <svg class="annotation-icon" viewBox="0 0 24 24" aria-hidden="true">
-                <line x1="5" y1="18" x2="19" y2="6" />
-                <circle cx="5" cy="18" r="2" />
-                <circle cx="19" cy="6" r="2" />
+                <polyline points="4,18 9,10 15,14 20,5" />
               </svg>
             </button>
             <button
@@ -1828,49 +2163,14 @@
                 <ellipse cx="12" cy="12" rx="8" ry="5" />
               </svg>
             </button>
-          </div>
-          <div class="button-container">
             <button
               class="custom-button"
-              id="anno-first-button"
-              disabled
-              title="Go to First"
+              id="circleAnnotationButton"
+              title="Circle Mode"
             >
-              <span>&#8676;</span>
-            </button>
-            <button
-              class="custom-button"
-              id="anno-prev-button"
-              disabled
-              title="Previous"
-            >
-              <span>&larr;</span>
-            </button>
-            <input
-              type="number"
-              id="anno-id"
-              placeholder="1"
-              maxlength="3"
-              value="1"
-              min="1"
-              max="9999"
-              disabled
-            />
-            <button
-              class="custom-button"
-              id="anno-next-button"
-              disabled
-              title="Next"
-            >
-              <span>&rarr;</span>
-            </button>
-            <button
-              class="custom-button"
-              id="anno-last-button"
-              disabled
-              title="Go to Last"
-            >
-              <span>&#8677;</span>
+              <svg class="annotation-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="12" r="7" />
+              </svg>
             </button>
           </div>
           <div>
@@ -1879,6 +2179,58 @@
           <div>
             <input type="text" id="anno-notes" placeholder="Notes" disabled />
           </div>
+          <div class="annotation-group-controls">
+            <select id="annotationGroupSelect" disabled title="Annotation Group"></select>
+            <input
+              type="color"
+              id="annotationGroupColorInput"
+              class="annotation-group-color-input"
+              disabled
+              title="Group Color"
+              aria-label="Group Color"
+            />
+            <button
+              class="annotation-visibility-button"
+              id="annotationGroupVisibilityButton"
+              disabled
+              title="Show/Hide Group"
+              aria-label="Show/Hide Group"
+            ></button>
+            <button
+              class="annotation-lock-button"
+              id="annotationGroupLockButton"
+              disabled
+              title="Lock/Unlock Group"
+              aria-label="Lock/Unlock Group"
+            ></button>
+            <button
+              class="custom-button annotation-group-icon-button"
+              id="renameAnnotationGroupButton"
+              disabled
+              title="Rename Group"
+              aria-label="Rename Group"
+            >
+              <svg class="annotation-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M5 18.5 6.5 14 16.8 3.7a2.1 2.1 0 0 1 3 3L9.5 17 5 18.5z" />
+                <path d="M14.8 5.7 17.8 8.7" />
+                <path d="M5 21h14" />
+              </svg>
+            </button>
+            <button
+              class="custom-button"
+              id="newAnnotationGroupButton"
+              disabled
+              title="New Group"
+            >
+              <span>+</span>
+            </button>
+          </div>
+          <div
+            id="annotationList"
+            class="annotation-list"
+            aria-label="Annotations"
+            tabindex="0"
+          ></div>
           <div class="button-container">
             <!-- Trash can button -->
             <button
@@ -1899,39 +2251,67 @@
             </button>
             <button
               class="custom-button"
-              id="gearButton"
-              title="Annotation Settings"
+              id="moveAnnotationButton"
+              disabled
+              title="Move Selected Annotations"
+              aria-label="Move Selected Annotations"
+              aria-pressed="false"
             >
-              <svg
-                class="gear-icon"
-                version="1.1"
-                id="Layer_1"
-                xmlns="http://www.w3.org/2000/svg"
-                xmlns:xlink="http://www.w3.org/1999/xlink"
-                viewBox="0 0 64 64"
-                enable-background="new 0 0 64 64"
-                xml:space="preserve"
-              >
-                <g>
-                  <polygon
-                    fill="#444"
-                    stroke="#000000"
-                    stroke-width="2"
-                    stroke-miterlimit="10"
-                    points="32,1 26,1 26,10 20,12 14,6 6,14 12,20 
-                  10,26 1,26 1,38 10,38 12,44 6,50 14,58 20,52 26,54 26,63 32,63 38,63 38,54 44,52 50,58 58,50 52,44 54,38 63,38 63,26 54,26 
-                  52,20 58,14 50,6 44,12 38,10 38,1 	"
-                  />
-                  <circle
-                    fill="#FFFFFF"
-                    stroke="#000000"
-                    stroke-width="2"
-                    stroke-miterlimit="10"
-                    cx="32"
-                    cy="32"
-                    r="6"
-                  />
-                </g>
+              <svg class="annotation-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 3v18" />
+                <path d="M12 3 8 7" />
+                <path d="M12 3l4 4" />
+                <path d="M12 21l-4-4" />
+                <path d="M12 21l4-4" />
+                <path d="M3 12h18" />
+                <path d="M3 12l4-4" />
+                <path d="M3 12l4 4" />
+                <path d="M21 12l-4-4" />
+                <path d="M21 12l-4 4" />
+              </svg>
+            </button>
+            <button
+              class="custom-button"
+              id="moveAnnotationLabelButton"
+              disabled
+              title="Move Annotation Label"
+              aria-label="Move Annotation Label"
+              aria-pressed="false"
+            >
+              <svg class="annotation-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M5 5h11v8h-6l-5 4V5z" />
+                <path d="M18 5v12" />
+                <path d="M18 5l-3 3" />
+                <path d="M18 5l3 3" />
+                <path d="M18 17l-3-3" />
+                <path d="M18 17l3-3" />
+              </svg>
+            </button>
+            <button
+              class="custom-button"
+              id="gearButton"
+              title="Annotation Appearance"
+              aria-label="Annotation Appearance"
+            >
+              <svg class="annotation-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 16.5c3.5-6 8.5-9.5 15-10.5" />
+                <path d="M14 5l5 5" />
+                <path d="M12.8 6.2 18 11.4 9.4 20H4v-5.4l8.8-8.4z" />
+                <path d="M7 17h2" />
+              </svg>
+            </button>
+            <button
+              class="custom-button"
+              id="circleAnnotationOptionsButton"
+              title="Circle Options"
+              aria-label="Circle Options"
+            >
+              <svg class="annotation-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="10" r="5" />
+                <path d="M6 18h12" />
+                <path d="M6 16v4" />
+                <path d="M18 16v4" />
+                <path d="M9 10h6" />
               </svg>
             </button>
             <button
@@ -1961,6 +2341,55 @@
                 </g>
               </svg>
             </button>
+            <button
+              class="custom-button"
+              id="promptLabelButton"
+              title="Prompt for Label"
+              aria-pressed="false"
+            >
+              <svg class="annotation-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M5 5h14v10H10l-5 4V5z" />
+              </svg>
+            </button>
+          </div>
+
+          <div id="circleAnnotationOptionsMenu" class="hiddenSettingsMenu">
+            <div class="circle-annotation-options">
+              <label class="circle-annotation-option">
+                <input
+                  type="radio"
+                  name="circleAnnotationMode"
+                  value="free"
+                  checked
+                />
+                Free radius
+              </label>
+              <label class="circle-annotation-option">
+                <input
+                  type="radio"
+                  name="circleAnnotationMode"
+                  value="fixed"
+                />
+                Fixed diameter
+              </label>
+              <div class="circle-annotation-diameter-row">
+                <input
+                  type="number"
+                  id="circleAnnotationDiameter"
+                  value="100"
+                  min="0"
+                  step="1"
+                />
+                <select id="circleAnnotationUnits">
+                  <option value="0">m</option>
+                  <option value="1">mm</option>
+                  <option value="2" selected>µm</option>
+                </select>
+              </div>
+              <p id="circleAnnotationScaleNote" class="circle-annotation-note">
+                Fixed diameter requires a known image scale.
+              </p>
+            </div>
           </div>
 
           <!-- Hidden Settings Menu -->
@@ -2240,7 +2669,8 @@
               </div>
             </div>
             <div class="annotation-settings-actions">
-              <button id="applyCurrentAnnoLabel">Apply to Current</button>
+              <button id="applyCurrentAnnoLabel">Apply to Selected</button>
+              <button id="applyGroupAnnoLabel">Apply to Group</button>
               <button id="applyAllAnnoLabel">Apply to All</button>
             </div>
               </section>
@@ -2652,7 +3082,8 @@
             </div>
 
             <div class="annotation-settings-actions">
-              <button id="applyCurrentAnno">Apply to Current</button>
+              <button id="applyCurrentAnno">Apply to Selected</button>
+              <button id="applyGroupAnno">Apply to Group</button>
               <button id="applyAllAnno">Apply to All</button>
             </div>
               </section>
@@ -2884,6 +3315,7 @@
           </div> -->
         </details>
       </details>
+      </div>
     </div>
     <script src="js/openseadragon.min.js"></script>
     <script src="js/openseadragon-scalebar.min.js"></script>

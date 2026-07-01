@@ -109,6 +109,33 @@ let annoJSONTemp = {
   type: "FeatureCollection",
   features: [],
 }; // For drawing temporary annotations
+let selectedAnnotationUuid = null;
+let selectedAnnotationUuids = new Set();
+let annotationListSelectionAnchorUuid = null;
+let suppressNextAnnotationClick = false;
+let suppressNextAnnotationDoubleClick = false;
+
+function suppressAnnotationClickBriefly() {
+  suppressNextAnnotationClick = true;
+  window.setTimeout(() => {
+    suppressNextAnnotationClick = false;
+  }, 300);
+}
+
+function suppressAnnotationDoubleClickBriefly() {
+  suppressNextAnnotationDoubleClick = true;
+  window.setTimeout(() => {
+    suppressNextAnnotationDoubleClick = false;
+  }, 350);
+}
+let selectImportedAnnotationsPreference = true;
+const DEFAULT_ANNOTATION_GROUP = {
+  groupId: "default",
+  groupName: "Default",
+  groupColor: "#ffcc00",
+  groupVisible: true,
+  groupLocked: false,
+};
 let measureJSONTemp = {
   type: "FeatureCollection",
   features: [],
@@ -253,7 +280,13 @@ const loadLibraryButton = document.getElementById("loadLibraryButton");
 const actionLoadLibraryButton = document.getElementById("actionLoadLibraryButton");
 const electronActionButton = document.getElementById("electronActionButton");
 const electronActionTray = document.getElementById("electronActionTray");
+const viewerToolsButton = document.getElementById("viewerToolsButton");
+const viewerToolsTray = document.getElementById("viewerToolsTray");
 const changeProjectButton = document.getElementById("changeProjectButton");
+const controlsPanel = document.querySelector(".controls");
+const minimizeControlsButton = document.getElementById(
+  "minimizeControlsButton"
+);
 const openGridCountPaletteButton = document.getElementById(
   "openGridCountPaletteButton"
 );
@@ -263,11 +296,17 @@ const openAnnotatePaletteButton = document.getElementById(
 const openMeasurePaletteButton = document.getElementById(
   "openMeasurePaletteButton"
 );
+const openSnapshotPaletteButton = document.getElementById(
+  "openSnapshotPaletteButton"
+);
 const gridCountPalette = document.getElementById("gridCountPalette");
 const gridCountPaletteHeader = document.getElementById("gridCountPaletteHeader");
 const gridCountPaletteBody = document.getElementById("gridCountPaletteBody");
 const closeGridCountPaletteButton = document.getElementById(
   "closeGridCountPaletteButton"
+);
+const minimizeGridCountPaletteButton = document.getElementById(
+  "minimizeGridCountPaletteButton"
 );
 const annotatePalette = document.getElementById("annotatePalette");
 const annotatePaletteHeader = document.getElementById("annotatePaletteHeader");
@@ -275,18 +314,177 @@ const annotatePaletteBody = document.getElementById("annotatePaletteBody");
 const closeAnnotatePaletteButton = document.getElementById(
   "closeAnnotatePaletteButton"
 );
+const minimizeAnnotatePaletteButton = document.getElementById(
+  "minimizeAnnotatePaletteButton"
+);
 const measurePalette = document.getElementById("measurePalette");
 const measurePaletteHeader = document.getElementById("measurePaletteHeader");
 const measurePaletteBody = document.getElementById("measurePaletteBody");
 const closeMeasurePaletteButton = document.getElementById(
   "closeMeasurePaletteButton"
 );
+const minimizeMeasurePaletteButton = document.getElementById(
+  "minimizeMeasurePaletteButton"
+);
+const snapshotPalette = document.getElementById("snapshotPalette");
+const snapshotPaletteHeader = document.getElementById("snapshotPaletteHeader");
+const closeSnapshotPaletteButton = document.getElementById(
+  "closeSnapshotPaletteButton"
+);
+const minimizeSnapshotPaletteButton = document.getElementById(
+  "minimizeSnapshotPaletteButton"
+);
+const snapshotSelection = document.getElementById("snapshot-selection");
+const snapshotSelectionBody = document.getElementById("snapshotSelectionBody");
+const snapshotDrawButton = document.getElementById("snapshotDrawButton");
+const snapshotClearButton = document.getElementById("snapshotClearButton");
+const snapshotExportButton = document.getElementById("snapshotExportButton");
+const snapshotStatus = document.getElementById("snapshotStatus");
+const snapshotIncludeScalebar = document.getElementById(
+  "snapshotIncludeScalebar"
+);
+const snapshotTileSetSelect = document.getElementById("snapshotTileSetSelect");
+const snapshotContentMode = document.getElementById("snapshotContentMode");
+const snapshotResolutionMode = document.getElementById("snapshotResolutionMode");
+const snapshotJpegQuality = document.getElementById("snapshotJpegQuality");
 const openScaleWizardButton = document.getElementById("openScaleWizardButton");
 const openLibraryEditorButton = document.getElementById("openLibraryEditorButton");
 const hasElectronActions = Boolean(window.electronAPI);
 let gridCountPaletteControlsMoved = false;
 let annotatePaletteControlsMoved = false;
 let measurePaletteControlsMoved = false;
+let snapshotModeActive = false;
+let snapshotDragState = null;
+let snapshotSelectionRect = null;
+let snapshotAdjustState = null;
+const TOOL_PALETTE_EDGE_MARGIN = 5;
+
+function getPaletteBounds(left, top, paletteRect) {
+  return {
+    left,
+    top,
+    right: left + paletteRect.width,
+    bottom: top + paletteRect.height,
+  };
+}
+
+function rectsOverlap(a, b) {
+  return (
+    a.left < b.right &&
+    a.right > b.left &&
+    a.top < b.bottom &&
+    a.bottom > b.top
+  );
+}
+
+function getControlsReservedRect() {
+  const controls = controlsPanel || document.querySelector(".controls");
+  const viewerContainer = document.getElementById("viewer-container");
+  if (!controls || !viewerContainer) return null;
+
+  const controlsRect = controls.getBoundingClientRect();
+  const containerRect = viewerContainer.getBoundingClientRect();
+  return {
+    left: controlsRect.left - containerRect.left - TOOL_PALETTE_EDGE_MARGIN,
+    top: controlsRect.top - containerRect.top - TOOL_PALETTE_EDGE_MARGIN,
+    right: controlsRect.right - containerRect.left + TOOL_PALETTE_EDGE_MARGIN,
+    bottom: controlsRect.bottom - containerRect.top + TOOL_PALETTE_EDGE_MARGIN,
+  };
+}
+
+function resolveControlsDragCollision(
+  left,
+  top,
+  paletteRect,
+  reservedRect,
+  previousPosition
+) {
+  if (!previousPosition) return { left, top };
+
+  const previousBounds = getPaletteBounds(
+    previousPosition.left,
+    previousPosition.top,
+    paletteRect
+  );
+  let nextLeft = left;
+  let nextTop = top;
+
+  if (previousBounds.bottom <= reservedRect.top) {
+    nextTop = reservedRect.top - paletteRect.height;
+  } else if (previousBounds.top >= reservedRect.bottom) {
+    nextTop = reservedRect.bottom;
+  } else if (previousBounds.right <= reservedRect.left) {
+    nextLeft = reservedRect.left - paletteRect.width;
+  } else if (previousBounds.left >= reservedRect.right) {
+    nextLeft = reservedRect.right;
+  }
+
+  return { left: nextLeft, top: nextTop };
+}
+
+function resolveControlsAutoCollision(left, top, paletteRect, maxLeft, maxTop) {
+  const reservedRect = getControlsReservedRect();
+  if (!reservedRect) return { left, top };
+
+  const belowControls = reservedRect.bottom;
+  if (belowControls <= maxTop) {
+    return { left, top: belowControls };
+  }
+
+  const aboveControls = reservedRect.top - paletteRect.height;
+  if (aboveControls >= TOOL_PALETTE_EDGE_MARGIN) {
+    return { left, top: aboveControls };
+  }
+
+  const rightOfControls = reservedRect.right;
+  if (rightOfControls <= maxLeft) {
+    return { left: rightOfControls, top };
+  }
+
+  return {
+    left: Math.min(Math.max(left, TOOL_PALETTE_EDGE_MARGIN), maxLeft),
+    top: Math.min(Math.max(top, TOOL_PALETTE_EDGE_MARGIN), maxTop),
+  };
+}
+
+function avoidControlsOverlap(
+  left,
+  top,
+  paletteRect,
+  maxLeft,
+  maxTop,
+  options = {}
+) {
+  const reservedRect = getControlsReservedRect();
+  if (!reservedRect) return { left, top };
+
+  if (!rectsOverlap(getPaletteBounds(left, top, paletteRect), reservedRect)) {
+    return { left, top };
+  }
+
+  if (options.previousPosition) {
+    const dragPosition = resolveControlsDragCollision(
+      left,
+      top,
+      paletteRect,
+      reservedRect,
+      options.previousPosition
+    );
+
+    return {
+      left: Math.min(
+        Math.max(dragPosition.left, TOOL_PALETTE_EDGE_MARGIN),
+        maxLeft
+      ),
+      top: Math.min(
+        Math.max(dragPosition.top, TOOL_PALETTE_EDGE_MARGIN),
+        maxTop
+      ),
+    };
+  }
+
+  return resolveControlsAutoCollision(left, top, paletteRect, maxLeft, maxTop);
+}
 
 function clampToolPaletteToViewer(palette) {
   const viewerContainer = document.getElementById("viewer-container");
@@ -294,13 +492,37 @@ function clampToolPaletteToViewer(palette) {
 
   const containerRect = viewerContainer.getBoundingClientRect();
   const paletteRect = palette.getBoundingClientRect();
-  const maxLeft = Math.max(8, containerRect.width - paletteRect.width - 8);
-  const maxTop = Math.max(8, containerRect.height - paletteRect.height - 8);
-  const currentLeft = Number.parseFloat(palette.style.left || "12");
+  const maxLeft = Math.max(
+    TOOL_PALETTE_EDGE_MARGIN,
+    containerRect.width - paletteRect.width - TOOL_PALETTE_EDGE_MARGIN
+  );
+  const maxTop = Math.max(
+    TOOL_PALETTE_EDGE_MARGIN,
+    containerRect.height - paletteRect.height - TOOL_PALETTE_EDGE_MARGIN
+  );
+  const currentLeft = Number.parseFloat(
+    palette.style.left || String(TOOL_PALETTE_EDGE_MARGIN)
+  );
   const currentTop = Number.parseFloat(palette.style.top || "56");
 
-  palette.style.left = `${Math.min(Math.max(currentLeft, 8), maxLeft)}px`;
-  palette.style.top = `${Math.min(Math.max(currentTop, 8), maxTop)}px`;
+  const nextLeft = Math.min(
+    Math.max(currentLeft, TOOL_PALETTE_EDGE_MARGIN),
+    maxLeft
+  );
+  const nextTop = Math.min(
+    Math.max(currentTop, TOOL_PALETTE_EDGE_MARGIN),
+    maxTop
+  );
+  const adjustedPosition = avoidControlsOverlap(
+    nextLeft,
+    nextTop,
+    paletteRect,
+    maxLeft,
+    maxTop
+  );
+
+  palette.style.left = `${adjustedPosition.left}px`;
+  palette.style.top = `${adjustedPosition.top}px`;
 }
 
 function setDefaultToolPalettePosition(palette) {
@@ -313,10 +535,13 @@ function setDefaultToolPalettePosition(palette) {
   const bottomOffset = Number(palette.dataset.defaultBottomOffset || 12);
   const left =
     defaultPosition === "bottom-left"
-      ? 12
-      : Math.max(8, containerRect.width - paletteRect.width - 12);
+      ? TOOL_PALETTE_EDGE_MARGIN
+      : Math.max(
+          TOOL_PALETTE_EDGE_MARGIN,
+          containerRect.width - paletteRect.width - TOOL_PALETTE_EDGE_MARGIN
+        );
   const top = Math.max(
-    8,
+    TOOL_PALETTE_EDGE_MARGIN,
     containerRect.height - paletteRect.height - bottomOffset
   );
 
@@ -350,7 +575,9 @@ function saveToolPalettePosition(palette, storageKey) {
     localStorage.setItem(
       storageKey,
       JSON.stringify({
-        left: Number.parseFloat(palette.style.left || "12"),
+        left: Number.parseFloat(
+          palette.style.left || String(TOOL_PALETTE_EDGE_MARGIN)
+        ),
         top: Number.parseFloat(palette.style.top || "56"),
       })
     );
@@ -371,6 +598,10 @@ function makeToolPaletteDraggable(palette, handle, storageKey) {
     dragState = {
       offsetX: event.clientX - paletteRect.left,
       offsetY: event.clientY - paletteRect.top,
+      lastLeft: Number.parseFloat(
+        palette.style.left || String(TOOL_PALETTE_EDGE_MARGIN)
+      ),
+      lastTop: Number.parseFloat(palette.style.top || "56"),
     };
     handle.setPointerCapture(event.pointerId);
   });
@@ -383,13 +614,41 @@ function makeToolPaletteDraggable(palette, handle, storageKey) {
 
     const containerRect = viewerContainer.getBoundingClientRect();
     const paletteRect = palette.getBoundingClientRect();
-    const maxLeft = Math.max(8, containerRect.width - paletteRect.width - 8);
-    const maxTop = Math.max(8, containerRect.height - paletteRect.height - 8);
+    const maxLeft = Math.max(
+      TOOL_PALETTE_EDGE_MARGIN,
+      containerRect.width - paletteRect.width - TOOL_PALETTE_EDGE_MARGIN
+    );
+    const maxTop = Math.max(
+      TOOL_PALETTE_EDGE_MARGIN,
+      containerRect.height - paletteRect.height - TOOL_PALETTE_EDGE_MARGIN
+    );
     const nextLeft = event.clientX - containerRect.left - dragState.offsetX;
     const nextTop = event.clientY - containerRect.top - dragState.offsetY;
 
-    palette.style.left = `${Math.min(Math.max(nextLeft, 8), maxLeft)}px`;
-    palette.style.top = `${Math.min(Math.max(nextTop, 8), maxTop)}px`;
+    const adjustedPosition = avoidControlsOverlap(
+      Math.min(
+        Math.max(nextLeft, TOOL_PALETTE_EDGE_MARGIN),
+        maxLeft
+      ),
+      Math.min(
+        Math.max(nextTop, TOOL_PALETTE_EDGE_MARGIN),
+        maxTop
+      ),
+      paletteRect,
+      maxLeft,
+      maxTop,
+      {
+        previousPosition: {
+          left: dragState.lastLeft,
+          top: dragState.lastTop,
+        },
+      }
+    );
+
+    palette.style.left = `${adjustedPosition.left}px`;
+    palette.style.top = `${adjustedPosition.top}px`;
+    dragState.lastLeft = adjustedPosition.left;
+    dragState.lastTop = adjustedPosition.top;
   });
 
   function stopDrag(event) {
@@ -403,6 +662,37 @@ function makeToolPaletteDraggable(palette, handle, storageKey) {
 
   handle.addEventListener("pointerup", stopDrag);
   handle.addEventListener("pointercancel", stopDrag);
+}
+
+function toggleToolPaletteMinimized(palette, button) {
+  if (!palette || !button) return;
+
+  const title =
+    document.getElementById(palette.getAttribute("aria-labelledby"))
+      ?.textContent || "panel";
+  const isMinimized = palette.classList.toggle("tool-palette-minimized");
+  button.setAttribute("aria-pressed", String(isMinimized));
+  button.setAttribute(
+    "aria-label",
+    isMinimized ? `Expand ${title}` : `Minimize ${title}`
+  );
+  button.title = isMinimized ? "Expand" : "Minimize";
+  clampToolPaletteToViewer(palette);
+}
+
+function restoreToolPaletteFromMinimized(palette, button) {
+  if (!palette?.classList.contains("tool-palette-minimized")) return;
+  toggleToolPaletteMinimized(palette, button);
+}
+
+function clampOpenToolPalettes() {
+  [gridCountPalette, annotatePalette, measurePalette, snapshotPalette].forEach(
+    (palette) => {
+      if (palette && !palette.hidden) {
+        clampToolPaletteToViewer(palette);
+      }
+    }
+  );
 }
 
 function moveGridCountControlsToPalette() {
@@ -528,6 +818,7 @@ function closeAnnotatePalette() {
 
   deactivateAnnotationModes();
   closeAnnotationSettingsPopover();
+  closeCircleAnnotationOptionsPopover();
   annotatePalette.hidden = true;
   openAnnotatePaletteButton?.setAttribute("aria-pressed", "false");
 }
@@ -568,11 +859,1154 @@ function toggleMeasurePalette() {
   closeMeasurePalette();
 }
 
+function openSnapshotPalette() {
+  if (!snapshotPalette) return;
+
+  snapshotPalette.hidden = false;
+  restoreToolPalettePosition(snapshotPalette, "petroImage.snapshotPalette");
+  openSnapshotPaletteButton?.setAttribute("aria-pressed", "true");
+  clampToolPaletteToViewer(snapshotPalette);
+  updateSnapshotStatus();
+}
+
+function closeSnapshotPalette() {
+  if (!snapshotPalette) return;
+
+  stopSnapshotDrawMode({ clearSelection: true });
+  snapshotPalette.hidden = true;
+  openSnapshotPaletteButton?.setAttribute("aria-pressed", "false");
+}
+
+function toggleSnapshotPalette() {
+  if (!snapshotPalette || snapshotPalette.hidden) {
+    openSnapshotPalette();
+    return;
+  }
+
+  closeSnapshotPalette();
+}
+
+function updateSnapshotStatus(message) {
+  if (!snapshotStatus) return;
+
+  if (message) {
+    snapshotStatus.textContent = message;
+    return;
+  }
+
+  if (snapshotModeActive) {
+    snapshotStatus.textContent = "Drag a rectangle over the image.";
+  } else if (snapshotSelectionRect) {
+    const sourceCanvas = getOpenSeadragonImageCanvas();
+    const sourceRect = sourceCanvas
+      ? getSnapshotSourceRect(sourceCanvas, snapshotSelectionRect)
+      : null;
+    const exportSize = getSnapshotExportSize(sourceRect);
+    if (exportSize) {
+      snapshotStatus.textContent = `Ready to export ${exportSize.width} x ${exportSize.height}px.`;
+    } else {
+      const width = Math.round(snapshotSelectionRect.width);
+      const height = Math.round(snapshotSelectionRect.height);
+      snapshotStatus.textContent = `Ready to export ${width} x ${height}px.`;
+    }
+  } else {
+    snapshotStatus.textContent = "Set options, then draw a rectangle.";
+  }
+}
+
+function clearSnapshotSelection() {
+  snapshotSelectionRect = null;
+  snapshotAdjustState = null;
+  if (snapshotSelection) {
+    snapshotSelection.hidden = true;
+    snapshotSelection.removeAttribute("style");
+  }
+  if (snapshotClearButton) {
+    snapshotClearButton.disabled = true;
+  }
+  if (snapshotExportButton) {
+    snapshotExportButton.disabled = true;
+  }
+  updateSnapshotStatus();
+}
+
+function startSnapshotDrawMode() {
+  if (!snapshotSelection) return;
+
+  deactivateAnnotationModes();
+  closeAnnotationSettingsPopover();
+  closeCircleAnnotationOptionsPopover();
+  closeCircleSettingsPopover();
+  stopSnapshotDrawMode({ clearSelection: false });
+  clearSnapshotSelection();
+  snapshotModeActive = true;
+  snapshotDragState = null;
+  snapshotSelection.style.pointerEvents = "none";
+  document.getElementById("viewer-container")?.classList.add("snapshot-mode");
+  updateSnapshotStatus();
+}
+
+function stopSnapshotDrawMode(options = {}) {
+  snapshotModeActive = false;
+  snapshotDragState = null;
+  if (snapshotSelection) {
+    snapshotSelection.style.pointerEvents = "auto";
+  }
+  document.getElementById("viewer-container")?.classList.remove("snapshot-mode");
+  if (options.clearSelection) {
+    clearSnapshotSelection();
+  } else {
+    updateSnapshotStatus();
+  }
+}
+
+function normalizeSnapshotRect(startPixel, endPixel) {
+  const left = Math.min(startPixel.x, endPixel.x);
+  const top = Math.min(startPixel.y, endPixel.y);
+  const right = Math.max(startPixel.x, endPixel.x);
+  const bottom = Math.max(startPixel.y, endPixel.y);
+  return {
+    left,
+    top,
+    width: right - left,
+    height: bottom - top,
+  };
+}
+
+function updateSnapshotSelection(startPixel, endPixel) {
+  renderSnapshotSelection(normalizeSnapshotRect(startPixel, endPixel));
+}
+
+function finishSnapshotSelection(endPixel) {
+  if (!snapshotDragState) {
+    stopSnapshotDrawMode();
+    return;
+  }
+
+  const rect = normalizeSnapshotRect(snapshotDragState.startPixel, endPixel);
+  stopSnapshotDrawMode();
+
+  if (rect.width < 8 || rect.height < 8) {
+    clearSnapshotSelection();
+    updateSnapshotStatus("Draw a larger rectangle.");
+    return;
+  }
+
+  snapshotSelectionRect = rect;
+  renderSnapshotSelection(rect);
+  updateSnapshotStatus();
+}
+
+function renderSnapshotSelection(rect = snapshotSelectionRect) {
+  if (!snapshotSelection || !rect) return;
+
+  snapshotSelectionRect = {
+    left: rect.left,
+    top: rect.top,
+    width: rect.width,
+    height: rect.height,
+  };
+  snapshotSelection.hidden = false;
+  snapshotSelection.style.left = `${snapshotSelectionRect.left}px`;
+  snapshotSelection.style.top = `${snapshotSelectionRect.top}px`;
+  snapshotSelection.style.width = `${snapshotSelectionRect.width}px`;
+  snapshotSelection.style.height = `${snapshotSelectionRect.height}px`;
+  if (snapshotClearButton) {
+    snapshotClearButton.disabled = false;
+  }
+  if (snapshotExportButton) {
+    snapshotExportButton.disabled = false;
+  }
+  updateSnapshotStatus();
+}
+
+function getSnapshotViewerBounds() {
+  const container = viewer?.container;
+  if (!container) return null;
+  return {
+    width: container.clientWidth,
+    height: container.clientHeight,
+  };
+}
+
+function clampSnapshotRect(rect) {
+  const bounds = getSnapshotViewerBounds();
+  if (!bounds) return rect;
+
+  const width = Math.min(Math.max(rect.width, 8), bounds.width);
+  const height = Math.min(Math.max(rect.height, 8), bounds.height);
+  const left = Math.min(Math.max(rect.left, 0), Math.max(bounds.width - width, 0));
+  const top = Math.min(Math.max(rect.top, 0), Math.max(bounds.height - height, 0));
+  return {
+    left,
+    top,
+    width,
+    height,
+  };
+}
+
+function getSnapshotNormalizedRectFromEdges(left, top, right, bottom) {
+  return clampSnapshotRect({
+    left: Math.min(left, right),
+    top: Math.min(top, bottom),
+    width: Math.abs(right - left),
+    height: Math.abs(bottom - top),
+  });
+}
+
+function updateSnapshotRectFromAdjustment(pointerX, pointerY) {
+  if (!snapshotAdjustState) return;
+
+  const { mode, handle, startPointer, startRect } = snapshotAdjustState;
+  const dx = pointerX - startPointer.x;
+  const dy = pointerY - startPointer.y;
+
+  if (mode === "move") {
+    renderSnapshotSelection(
+      clampSnapshotRect({
+        left: startRect.left + dx,
+        top: startRect.top + dy,
+        width: startRect.width,
+        height: startRect.height,
+      })
+    );
+    return;
+  }
+
+  let left = startRect.left;
+  let top = startRect.top;
+  let right = startRect.left + startRect.width;
+  let bottom = startRect.top + startRect.height;
+
+  if (handle.includes("w")) left += dx;
+  if (handle.includes("e")) right += dx;
+  if (handle.includes("n")) top += dy;
+  if (handle.includes("s")) bottom += dy;
+
+  renderSnapshotSelection(
+    getSnapshotNormalizedRectFromEdges(left, top, right, bottom)
+  );
+}
+
+function finishSnapshotAdjustment() {
+  snapshotAdjustState = null;
+}
+
+function startSnapshotAdjustment(event, mode, handle = "") {
+  if (!snapshotSelectionRect || snapshotModeActive) return;
+
+  event.preventDefault();
+  event.stopPropagation();
+  snapshotAdjustState = {
+    mode,
+    handle,
+    startPointer: {
+      x: event.clientX,
+      y: event.clientY,
+    },
+    startRect: { ...snapshotSelectionRect },
+  };
+}
+
+function getOpenSeadragonImageCanvas(targetViewer = viewer) {
+  if (targetViewer.drawer?.canvas instanceof HTMLCanvasElement) {
+    return targetViewer.drawer.canvas;
+  }
+
+  const ignoredCanvasIds = new Set([
+    "annotation-overlay",
+    "measurement-overlay",
+    "circle-overlay",
+    "scale-overlay",
+  ]);
+  return Array.from(targetViewer.container.querySelectorAll("canvas")).find(
+    (canvas) => !ignoredCanvasIds.has(canvas.id)
+  );
+}
+
+function getSnapshotSourceRect(sourceCanvas, selectionRect) {
+  const canvasBounds = sourceCanvas.getBoundingClientRect();
+  const viewerBounds = viewer.container.getBoundingClientRect();
+  const scaleX = sourceCanvas.width / canvasBounds.width;
+  const scaleY = sourceCanvas.height / canvasBounds.height;
+  const selectionLeft = viewerBounds.left + selectionRect.left;
+  const selectionTop = viewerBounds.top + selectionRect.top;
+  const rawLeft = (selectionLeft - canvasBounds.left) * scaleX;
+  const rawTop = (selectionTop - canvasBounds.top) * scaleY;
+  const rawWidth = selectionRect.width * scaleX;
+  const rawHeight = selectionRect.height * scaleY;
+  const left = Math.max(0, Math.min(sourceCanvas.width, rawLeft));
+  const top = Math.max(0, Math.min(sourceCanvas.height, rawTop));
+  const right = Math.max(0, Math.min(sourceCanvas.width, rawLeft + rawWidth));
+  const bottom = Math.max(0, Math.min(sourceCanvas.height, rawTop + rawHeight));
+
+  return {
+    left,
+    top,
+    width: Math.max(0, right - left),
+    height: Math.max(0, bottom - top),
+  };
+}
+
+function renderVisibleSnapshotBaseCanvas(sourceCanvas, sourceRect, exportSize) {
+  if (!sourceCanvas || !sourceRect || !sourceRect.width || !sourceRect.height) {
+    return null;
+  }
+
+  const outputCanvas = document.createElement("canvas");
+  outputCanvas.width = exportSize.width;
+  outputCanvas.height = exportSize.height;
+  const ctx = outputCanvas.getContext("2d");
+  if (!ctx) return null;
+
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
+  ctx.drawImage(
+    sourceCanvas,
+    sourceRect.left,
+    sourceRect.top,
+    sourceRect.width,
+    sourceRect.height,
+    0,
+    0,
+    outputCanvas.width,
+    outputCanvas.height
+  );
+  return outputCanvas;
+}
+
+function getSnapshotViewportBounds(selectionRect) {
+  const topLeft = viewer.viewport.pointFromPixel(
+    new OpenSeadragon.Point(selectionRect.left, selectionRect.top),
+    true
+  );
+  const bottomRight = viewer.viewport.pointFromPixel(
+    new OpenSeadragon.Point(
+      selectionRect.left + selectionRect.width,
+      selectionRect.top + selectionRect.height
+    ),
+    true
+  );
+
+  return new OpenSeadragon.Rect(
+    Math.min(topLeft.x, bottomRight.x),
+    Math.min(topLeft.y, bottomRight.y),
+    Math.abs(bottomRight.x - topLeft.x),
+    Math.abs(bottomRight.y - topLeft.y)
+  );
+}
+
+function getSnapshotScreenPointFromImagePoint(imagePoint) {
+  const image = viewer.world.getItemAt(0);
+  if (!image) return null;
+  const viewportPoint = image.imageToViewportCoordinates(
+    new OpenSeadragon.Point(imagePoint[0], imagePoint[1])
+  );
+  return viewer.viewport.viewportToViewerElementCoordinates(viewportPoint);
+}
+
+function drawSnapshotPath(ctx, coordinates, selectionRect, outputCanvas, closePath) {
+  if (!coordinates?.length) return;
+  const scaleX = outputCanvas.width / selectionRect.width;
+  const scaleY = outputCanvas.height / selectionRect.height;
+  let hasPoint = false;
+
+  coordinates.forEach((coordinate, index) => {
+    const screenPoint = getSnapshotScreenPointFromImagePoint(coordinate);
+    if (!screenPoint) return;
+    const x = (screenPoint.x - selectionRect.left) * scaleX;
+    const y = (screenPoint.y - selectionRect.top) * scaleY;
+    if (!Number.isFinite(x) || !Number.isFinite(y)) return;
+    if (!hasPoint) {
+      ctx.moveTo(x, y);
+      hasPoint = true;
+    } else if (index > 0) {
+      ctx.lineTo(x, y);
+    }
+  });
+
+  if (hasPoint && closePath) {
+    ctx.closePath();
+  }
+}
+
+function applySnapshotFeatureStroke(ctx, feature, selectionRect, outputCanvas) {
+  const lineColor =
+    feature.properties.lineColor || document.getElementById("lineColor").value;
+  const lineOpacity = Number.isFinite(Number(feature.properties.lineOpacity))
+    ? Number(feature.properties.lineOpacity)
+    : getAnnotationOpacityValue("lineOpacity");
+  const lineWeight = Number.isFinite(Number(feature.properties.lineWeight))
+    ? Number(feature.properties.lineWeight)
+    : Number(document.getElementById("lineWeight").value);
+  const lineStyle =
+    feature.properties.lineStyle || document.getElementById("lineStyle").value;
+
+  ctx.strokeStyle = applyOpacityToColor(lineColor, lineOpacity);
+  ctx.lineWidth = Math.max(
+    1,
+    lineWeight * (outputCanvas.width / selectionRect.width)
+  );
+  if (lineStyle === "dashed") {
+    ctx.setLineDash([4, 2].map((value) => value * (outputCanvas.width / selectionRect.width)));
+  } else if (lineStyle === "dotted") {
+    ctx.setLineDash([2, 2].map((value) => value * (outputCanvas.width / selectionRect.width)));
+  } else {
+    ctx.setLineDash([]);
+  }
+}
+
+function drawSnapshotAnnotationShapes(ctx, outputCanvas, selectionRect) {
+  if (!document.getElementById("show-annotations").checked) return;
+
+  annoJSON.features.forEach((feature) => {
+    if (!isAnnotationFeatureVisible(feature)) return;
+    if (!feature.geometry || !feature.properties) return;
+    const { type, coordinates } = feature.geometry;
+
+    if (type === "Polygon") {
+      ctx.beginPath();
+      coordinates.forEach((ring) => {
+        drawSnapshotPath(ctx, ring, selectionRect, outputCanvas, true);
+      });
+      const fillColor =
+        feature.properties.fillColor || document.getElementById("fillColor").value;
+      const fillOpacity = Number.isFinite(Number(feature.properties.fillOpacity))
+        ? Number(feature.properties.fillOpacity)
+        : getAnnotationOpacityValue("fillOpacity");
+      ctx.fillStyle = applyOpacityToColor(fillColor, fillOpacity);
+      ctx.fill("evenodd");
+      applySnapshotFeatureStroke(ctx, feature, selectionRect, outputCanvas);
+      ctx.stroke();
+      return;
+    }
+
+    if (type === "MultiPolygon") {
+      ctx.beginPath();
+      coordinates.forEach((polygon) => {
+        polygon.forEach((ring) => {
+          drawSnapshotPath(ctx, ring, selectionRect, outputCanvas, true);
+        });
+      });
+      const fillColor =
+        feature.properties.fillColor || document.getElementById("fillColor").value;
+      const fillOpacity = Number.isFinite(Number(feature.properties.fillOpacity))
+        ? Number(feature.properties.fillOpacity)
+        : getAnnotationOpacityValue("fillOpacity");
+      ctx.fillStyle = applyOpacityToColor(fillColor, fillOpacity);
+      ctx.fill("evenodd");
+      applySnapshotFeatureStroke(ctx, feature, selectionRect, outputCanvas);
+      ctx.stroke();
+      return;
+    }
+
+    if (type === "LineString") {
+      ctx.beginPath();
+      drawSnapshotPath(ctx, coordinates, selectionRect, outputCanvas, false);
+      applySnapshotFeatureStroke(ctx, feature, selectionRect, outputCanvas);
+      ctx.stroke();
+      return;
+    }
+
+    if (type === "MultiLineString") {
+      ctx.beginPath();
+      coordinates.forEach((line) => {
+        drawSnapshotPath(ctx, line, selectionRect, outputCanvas, false);
+      });
+      applySnapshotFeatureStroke(ctx, feature, selectionRect, outputCanvas);
+      ctx.stroke();
+    }
+  });
+}
+
+function drawSnapshotPointAnnotations(ctx, outputCanvas, selectionRect) {
+  if (!document.getElementById("show-annotations").checked) return;
+
+  const scaleX = outputCanvas.width / selectionRect.width;
+  const scaleY = outputCanvas.height / selectionRect.height;
+  const crosshairSize = 12;
+
+  annoJSON.features.forEach((feature) => {
+    if (!isAnnotationFeatureVisible(feature)) return;
+    if (feature.geometry?.type !== "Point") return;
+    const coords = feature.geometry.coordinates;
+    const screenPoint = getSnapshotScreenPointFromImagePoint(coords);
+    if (!screenPoint) return;
+    const x = (screenPoint.x - selectionRect.left) * scaleX;
+    const y = (screenPoint.y - selectionRect.top) * scaleY;
+    const lineWeight = Number(feature.properties.lineWeight) || 2;
+    const color = feature.properties.lineColor || "rgb(0, 128, 0)";
+    const opacity = Number.isFinite(Number(feature.properties.lineOpacity))
+      ? Number(feature.properties.lineOpacity)
+      : 1;
+    const halfSize = (crosshairSize * scaleX) / 2;
+
+    ctx.save();
+    ctx.strokeStyle = applyOpacityToColor(color, opacity);
+    ctx.lineWidth = Math.max(1, lineWeight * scaleX);
+    ctx.beginPath();
+    ctx.moveTo(x - halfSize, y);
+    ctx.lineTo(x + halfSize, y);
+    ctx.moveTo(x, y - halfSize);
+    ctx.lineTo(x, y + halfSize);
+    ctx.stroke();
+    ctx.restore();
+  });
+}
+
+function drawSnapshotLabelBubble(ctx, x, y, width, height, radius, color) {
+  const right = x + width;
+  const bottom = y + height;
+  ctx.beginPath();
+  ctx.moveTo(x, bottom);
+  ctx.lineTo(x, y + radius);
+  ctx.quadraticCurveTo(x, y, x + radius, y);
+  ctx.lineTo(right - radius, y);
+  ctx.quadraticCurveTo(right, y, right, y + radius);
+  ctx.lineTo(right, bottom - radius);
+  ctx.quadraticCurveTo(right, bottom, right - radius, bottom);
+  ctx.lineTo(x, bottom);
+  ctx.closePath();
+  ctx.fillStyle = color;
+  ctx.fill();
+}
+
+function drawSnapshotAnnotationLabels(ctx, outputCanvas, selectionRect) {
+  const showAnnotations = document.getElementById("show-annotations").checked;
+  const showLabels = document.getElementById("show-annotation-labels").checked;
+  if (!showAnnotations || !showLabels) return;
+
+  const scaleX = outputCanvas.width / selectionRect.width;
+  const scaleY = outputCanvas.height / selectionRect.height;
+
+  annoJSON.features.forEach((feature) => {
+    if (!isAnnotationFeatureVisible(feature)) return;
+    const label = feature.properties?.label;
+    const labelX = Number(feature.properties?.xLabel);
+    const labelY = Number(feature.properties?.yLabel);
+    if (!label || !label.trim() || !Number.isFinite(labelX) || !Number.isFinite(labelY)) {
+      return;
+    }
+
+    const screenPoint = getSnapshotScreenPointFromImagePoint([labelX, labelY]);
+    if (!screenPoint) return;
+    const anchorX = (screenPoint.x - selectionRect.left) * scaleX;
+    const anchorY = (screenPoint.y - selectionRect.top) * scaleY;
+    const fontSize =
+      (Number(feature.properties.labelFontSize) || 16) * scaleX;
+    const paddingX = Math.max(4, fontSize * 0.3);
+    const textHeight = Math.max(fontSize * 1.2, 12);
+
+    ctx.save();
+    ctx.font = `${fontSize}px Arial, sans-serif`;
+    const textWidth = ctx.measureText(label).width;
+    const bubbleWidth = textWidth + paddingX * 2;
+    const bubbleHeight = textHeight;
+    const bubbleX = anchorX;
+    const bubbleY = anchorY - bubbleHeight;
+    drawSnapshotLabelBubble(
+      ctx,
+      bubbleX,
+      bubbleY,
+      bubbleWidth,
+      bubbleHeight,
+      Math.min(bubbleHeight / 2, 10 * scaleX),
+      applyOpacityToColor(
+        feature.properties.labelBackgroundColor || "#000000",
+        Number.isFinite(Number(feature.properties.labelBackgroundOpacity))
+          ? Number(feature.properties.labelBackgroundOpacity)
+          : 0.5
+      )
+    );
+    ctx.fillStyle = feature.properties.labelFontColor || "#ffffff";
+    ctx.textBaseline = "middle";
+    ctx.fillText(label, bubbleX + paddingX, bubbleY + bubbleHeight / 2);
+    ctx.restore();
+  });
+}
+
+function getSnapshotContentMode() {
+  return snapshotContentMode?.value || "image";
+}
+
+function getSnapshotTileSetLabel(tileSet, index) {
+  return tileSet?.label?.trim() || `Img ${index + 1}`;
+}
+
+function populateSnapshotTileSetSelect() {
+  if (!snapshotTileSetSelect) return;
+
+  const previousValue = snapshotTileSetSelect.value;
+  snapshotTileSetSelect.innerHTML = "";
+  tileSets().forEach((tileSet, index) => {
+    const option = document.createElement("option");
+    option.value = String(index);
+    option.textContent = getSnapshotTileSetLabel(tileSet, index);
+    snapshotTileSetSelect.append(option);
+  });
+
+  const hasPrevious =
+    previousValue !== "" &&
+    Array.from(snapshotTileSetSelect.options).some(
+      (option) => option.value === previousValue
+    );
+  if (hasPrevious) {
+    snapshotTileSetSelect.value = previousValue;
+    return;
+  }
+
+  const checkedIndex = Array.from(
+    document.querySelectorAll(".image-checkbox")
+  ).findIndex((checkbox) => checkbox.checked);
+  snapshotTileSetSelect.value = String(checkedIndex >= 0 ? checkedIndex : 0);
+}
+
+function getSnapshotTileSetIndex() {
+  const rawIndex = Number.parseInt(snapshotTileSetSelect?.value || "0", 10);
+  if (!Number.isFinite(rawIndex)) return 0;
+  return Math.min(Math.max(rawIndex, 0), Math.max(tileSets().length - 1, 0));
+}
+
+function getSnapshotSelectedTileSet() {
+  return tileSets()[getSnapshotTileSetIndex()] || null;
+}
+
+function getSnapshotResolutionMode() {
+  const mode = snapshotResolutionMode?.value || "current";
+  return mode === "native" ? "full" : mode;
+}
+
+function getSnapshotImagePixelsPerScreenPixel(selectionRect) {
+  const image = viewer.world.getItemAt(0);
+  if (!image || !selectionRect) return null;
+
+  const leftPoint = new OpenSeadragon.Point(
+    selectionRect.left,
+    selectionRect.top + selectionRect.height / 2
+  );
+  const rightPoint = new OpenSeadragon.Point(
+    selectionRect.left + selectionRect.width,
+    selectionRect.top + selectionRect.height / 2
+  );
+  const topPoint = new OpenSeadragon.Point(
+    selectionRect.left + selectionRect.width / 2,
+    selectionRect.top
+  );
+  const bottomPoint = new OpenSeadragon.Point(
+    selectionRect.left + selectionRect.width / 2,
+    selectionRect.top + selectionRect.height
+  );
+
+  const leftImage = image.viewportToImageCoordinates(
+    viewer.viewport.pointFromPixel(leftPoint)
+  );
+  const rightImage = image.viewportToImageCoordinates(
+    viewer.viewport.pointFromPixel(rightPoint)
+  );
+  const topImage = image.viewportToImageCoordinates(
+    viewer.viewport.pointFromPixel(topPoint)
+  );
+  const bottomImage = image.viewportToImageCoordinates(
+    viewer.viewport.pointFromPixel(bottomPoint)
+  );
+
+  return {
+    x:
+      Math.hypot(rightImage.x - leftImage.x, rightImage.y - leftImage.y) /
+      selectionRect.width,
+    y:
+      Math.hypot(bottomImage.x - topImage.x, bottomImage.y - topImage.y) /
+      selectionRect.height,
+  };
+}
+
+function getSnapshotExportSize(sourceRect = null) {
+  if (!snapshotSelectionRect) return null;
+
+  const resolutionMode = getSnapshotResolutionMode();
+  if (resolutionMode === "full") {
+    const imagePixelsPerScreenPixel = getSnapshotImagePixelsPerScreenPixel(
+      snapshotSelectionRect
+    );
+    if (!imagePixelsPerScreenPixel) return null;
+    return {
+      width: Math.max(
+        1,
+        Math.round(snapshotSelectionRect.width * imagePixelsPerScreenPixel.x)
+      ),
+      height: Math.max(
+        1,
+        Math.round(snapshotSelectionRect.height * imagePixelsPerScreenPixel.y)
+      ),
+    };
+  }
+
+  const baseWidth = Math.max(
+    1,
+    Math.round(sourceRect?.width || snapshotSelectionRect.width)
+  );
+  const baseHeight = Math.max(
+    1,
+    Math.round(sourceRect?.height || snapshotSelectionRect.height)
+  );
+  const scale = resolutionMode === "2x" ? 2 : 1;
+  return {
+    width: Math.max(1, Math.round(baseWidth * scale)),
+    height: Math.max(1, Math.round(baseHeight * scale)),
+  };
+}
+
+function getSnapshotMetersPerOutputPixel(selectionRect, outputWidth) {
+  const image = viewer.world.getItemAt(0);
+  const scale = pixelsPerMeter();
+  if (!image || scale === null || !outputWidth) return null;
+
+  const leftPoint = new OpenSeadragon.Point(
+    selectionRect.left,
+    selectionRect.top + selectionRect.height / 2
+  );
+  const rightPoint = new OpenSeadragon.Point(
+    selectionRect.left + selectionRect.width,
+    selectionRect.top + selectionRect.height / 2
+  );
+  const leftImage = image.viewportToImageCoordinates(
+    viewer.viewport.pointFromPixel(leftPoint)
+  );
+  const rightImage = image.viewportToImageCoordinates(
+    viewer.viewport.pointFromPixel(rightPoint)
+  );
+  const imagePixelDistance = Math.hypot(
+    rightImage.x - leftImage.x,
+    rightImage.y - leftImage.y
+  );
+
+  return imagePixelDistance / outputWidth / scale;
+}
+
+function getNiceSnapshotScaleLength(targetMeters) {
+  if (!Number.isFinite(targetMeters) || targetMeters <= 0) return null;
+
+  const exponent = Math.floor(Math.log10(targetMeters));
+  const base = 10 ** exponent;
+  const normalized = targetMeters / base;
+  const niceFactor =
+    normalized >= 5 ? 5 : normalized >= 2 ? 2 : normalized >= 1 ? 1 : 0.5;
+  return niceFactor * base;
+}
+
+function formatSnapshotScaleLabel(meters) {
+  if (meters < 0.001) {
+    return `${Number((meters * 1e6).toPrecision(3))} um`;
+  }
+  if (meters < 1) {
+    return `${Number((meters * 1000).toPrecision(3))} mm`;
+  }
+  if (meters < 1000) {
+    return `${Number(meters.toPrecision(3))} m`;
+  }
+  return `${Number((meters / 1000).toPrecision(3))} km`;
+}
+
+function getSnapshotScalebarFontSize() {
+  const value = document.getElementById("scalebarFontSize")?.value || "medium";
+  const mapper = {
+    small: 12,
+    medium: 14,
+    large: 18,
+  };
+  return mapper[value] || Number.parseFloat(value) || 14;
+}
+
+function drawSnapshotScalebar(ctx, outputCanvas, selectionRect) {
+  const metersPerPixel = getSnapshotMetersPerOutputPixel(
+    selectionRect,
+    outputCanvas.width
+  );
+  if (metersPerPixel === null) return false;
+
+  const targetMeters = metersPerPixel * outputCanvas.width * 0.22;
+  const scaleMeters = getNiceSnapshotScaleLength(targetMeters);
+  if (scaleMeters === null) return false;
+
+  const barWidth = scaleMeters / metersPerPixel;
+  if (!Number.isFinite(barWidth) || barWidth < 12) return false;
+
+  const lineColor = document.getElementById("scalebarColor")?.value || "#000000";
+  const fontColor =
+    document.getElementById("scalebarFontColor")?.value || "#000000";
+  const backgroundColor =
+    document.getElementById("scalebarBackgroundColor")?.value || "#ffffff";
+  const backgroundOpacity = Number(
+    document.getElementById("scalebarBackgroundOpacity")?.value || 0.65
+  );
+  const lineWeight = Math.max(
+    1,
+    Number.parseInt(document.getElementById("scalebarLineWeight")?.value, 10) ||
+      2
+  );
+  const fontSize = getSnapshotScalebarFontSize();
+  const label = formatSnapshotScaleLabel(scaleMeters);
+  const margin = Math.max(12, Math.round(outputCanvas.width * 0.018));
+  const x = margin;
+  const y = outputCanvas.height - margin - fontSize - lineWeight - 6;
+
+  ctx.save();
+  ctx.font = `${fontSize}px Arial, sans-serif`;
+  const labelWidth = ctx.measureText(label).width;
+  const backgroundWidth = Math.max(barWidth, labelWidth) + 16;
+  const backgroundHeight = fontSize + lineWeight + 18;
+  ctx.fillStyle = applyOpacityToColor(backgroundColor, backgroundOpacity);
+  ctx.fillRect(x - 8, y - 8, backgroundWidth, backgroundHeight);
+  ctx.strokeStyle = lineColor;
+  ctx.lineWidth = lineWeight;
+  ctx.beginPath();
+  ctx.moveTo(x, y + fontSize + 6);
+  ctx.lineTo(x + barWidth, y + fontSize + 6);
+  ctx.stroke();
+  ctx.fillStyle = fontColor;
+  ctx.fillText(label, x, y + fontSize);
+  ctx.restore();
+  return true;
+}
+
+function getSnapshotQuality() {
+  const qualityValue = Number(snapshotJpegQuality?.value || 92);
+  if (!Number.isFinite(qualityValue)) return 0.92;
+  return Math.min(1, Math.max(0.5, qualityValue / 100));
+}
+
+function getSnapshotFilename() {
+  const sampleTitle = (title?.() || "image")
+    .replace(/[^a-z0-9_-]+/gi, "-")
+    .replace(/^-+|-+$/g, "")
+    .toLowerCase();
+  const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+  return `${sampleTitle || "image"}-snapshot-${timestamp}.jpg`;
+}
+
+function downloadSnapshotBlob(blob) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = getSnapshotFilename();
+  document.body.append(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function getTileOpacityGetterForViewer(targetViewer, tileSet, tileSetOpacity = 1) {
+  const tiles = tileSet.tiles;
+  const periodDegrees = tileSet.periodDegrees;
+  if (!periodDegrees) {
+    return (index) => (index === scrollIndex % tiles.length ? tileSetOpacity : 0);
+  }
+
+  let rotation;
+  if (rotateWithStage.checked) {
+    rotation =
+      ((targetViewer.viewport.getRotation(true) % periodDegrees) + periodDegrees) %
+      periodDegrees;
+  } else {
+    rotation =
+      ((parseFloat(document.getElementById("stageRotation").value) % periodDegrees) +
+        periodDegrees) %
+      periodDegrees;
+  }
+
+  let supremumIndex = 0;
+  let supremum;
+  let infimumIndex;
+  let infimum;
+  for (let index = 0; index < tiles.length; ++index) {
+    if (tiles[index].angleDegrees > rotation) {
+      supremumIndex = index;
+      break;
+    }
+  }
+  supremum = tiles[supremumIndex].angleDegrees;
+  if (supremumIndex === 0) {
+    infimumIndex = tiles.length - 1;
+    supremum += periodDegrees;
+  } else {
+    infimumIndex = supremumIndex - 1;
+  }
+  infimum = tiles[infimumIndex].angleDegrees;
+
+  const infimumImage = tiles[infimumIndex].image;
+  const supremumImage = tiles[supremumIndex].image;
+  if (infimumImage && supremumImage) {
+    const infimumWorldIndex = targetViewer.world.getIndexOfItem(infimumImage);
+    const supremumWorldIndex = targetViewer.world.getIndexOfItem(supremumImage);
+    const minWorldIndex = Math.min(infimumWorldIndex, supremumWorldIndex);
+    const maxWorldIndex = Math.max(infimumWorldIndex, supremumWorldIndex);
+    targetViewer.world.setItemIndex(infimumImage, minWorldIndex);
+    targetViewer.world.setItemIndex(supremumImage, maxWorldIndex);
+  }
+
+  const t = (rotation - infimum) / (supremum - infimum);
+  return (index) => {
+    switch (index) {
+      case infimumIndex:
+        return (tileSetOpacity * (1 - t)) / (1 - tileSetOpacity * t);
+      case supremumIndex:
+        return tileSetOpacity * t;
+      default:
+        return 0;
+    }
+  };
+}
+
+function applySnapshotTileSetComposition(targetViewer, tileSet, tileSetOpacity = 1) {
+  const activeTileImages = [];
+  if (!tileSet) return activeTileImages;
+
+  const getTileOpacity = getTileOpacityGetterForViewer(
+    targetViewer,
+    tileSet,
+    tileSetOpacity
+  );
+  tileSet.tiles.forEach((tile, index) => {
+    if (!tile.image) return;
+    const tileOpacity = getTileOpacity(index);
+    tile.image.setOpacity(tileOpacity);
+    tile.image.resetCroppingPolygons();
+    if (tileOpacity > 0) {
+      activeTileImages.push(tile.image);
+    }
+  });
+  targetViewer.forceRedraw();
+  return activeTileImages;
+}
+
+function wait(ms) {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+
+async function waitForExportViewerReady(exportViewer, activeTileImages) {
+  const startTime = Date.now();
+  let lastActivity = Date.now();
+  const markActivity = () => {
+    lastActivity = Date.now();
+  };
+
+  exportViewer.addHandler("tile-loaded", markActivity);
+  exportViewer.addHandler("tile-drawn", markActivity);
+  exportViewer.addHandler("animation", markActivity);
+  exportViewer.addHandler("animation-finish", markActivity);
+
+  try {
+    while (Date.now() - startTime < 30000) {
+      const relevantTilesLoaded = activeTileImages.every((image) =>
+        image && typeof image.getFullyLoaded === "function"
+          ? image.getFullyLoaded()
+          : Boolean(image)
+      );
+      if (
+        relevantTilesLoaded &&
+        !exportViewer.world.needsDraw() &&
+        Date.now() - lastActivity > 250
+      ) {
+        return;
+      }
+      await wait(100);
+    }
+    throw new Error("Timed out while loading full-resolution tiles.");
+  } finally {
+    exportViewer.removeHandler("tile-loaded", markActivity);
+    exportViewer.removeHandler("tile-drawn", markActivity);
+    exportViewer.removeHandler("animation", markActivity);
+    exportViewer.removeHandler("animation-finish", markActivity);
+  }
+}
+
+async function renderFullResolutionSnapshotBaseCanvas(exportSize) {
+  const pixelDensity =
+    OpenSeadragon.pixelDensityRatio || window.devicePixelRatio || 1;
+  const containerWidth = Math.max(1, Math.ceil(exportSize.width / pixelDensity));
+  const containerHeight = Math.max(1, Math.ceil(exportSize.height / pixelDensity));
+  const selectionViewportBounds = getSnapshotViewportBounds(snapshotSelectionRect);
+  const selectedTileSet = getSnapshotSelectedTileSet();
+  const selectedTileSetOpacity = 1;
+
+  const exportContainer = document.createElement("div");
+  exportContainer.id = `snapshot-export-${Date.now()}`;
+  exportContainer.style.position = "fixed";
+  exportContainer.style.left = "-100000px";
+  exportContainer.style.top = "0";
+  exportContainer.style.width = `${containerWidth}px`;
+  exportContainer.style.height = `${containerHeight}px`;
+  exportContainer.style.pointerEvents = "none";
+  document.body.append(exportContainer);
+
+  const exportViewer = OpenSeadragon({
+    id: exportContainer.id,
+    prefixUrl: "js/images/",
+    showNavigationControl: false,
+    mouseNavEnabled: false,
+    animationTime: 0,
+    blendTime: 0,
+    immediateRender: true,
+    minZoomImageRatio: 0,
+    maxZoomPixelRatio: 100,
+    visibilityRatio: 0,
+    constrainDuringPan: false,
+    crossOriginPolicy: "Anonymous",
+  });
+
+  const exportTileSet = selectedTileSet
+    ? {
+        ...selectedTileSet,
+        tiles: selectedTileSet.tiles.map((tile) => ({
+          ...tile,
+          image: null,
+        })),
+      }
+    : null;
+
+  try {
+    if (!exportTileSet) {
+      throw new Error("No tile set is available for snapshot export.");
+    }
+
+    for (const tile of exportTileSet.tiles) {
+        const tileSource = await getTileSource(tile.uri);
+        await new Promise((resolve, reject) => {
+          exportViewer.addTiledImage({
+            tileSource,
+            success: (event) => {
+              tile.image = event.item;
+              resolve();
+            },
+            error: (event) => {
+              reject(
+                new Error(event?.message || `Could not load tile source: ${tile.uri}`)
+              );
+            },
+          });
+        });
+    }
+
+    if (typeof exportViewer.viewport.setFlip === "function") {
+      exportViewer.viewport.setFlip(viewer.viewport.getFlip());
+    }
+    exportViewer.viewport.setRotation(viewer.viewport.getRotation(true), true);
+    exportViewer.viewport.fitBounds(selectionViewportBounds, true);
+
+    const activeTileImages = applySnapshotTileSetComposition(
+      exportViewer,
+      exportTileSet,
+      selectedTileSetOpacity
+    );
+    await waitForExportViewerReady(exportViewer, activeTileImages);
+    const sourceCanvas = getOpenSeadragonImageCanvas(exportViewer);
+    if (!sourceCanvas) {
+      throw new Error("Could not render the full-resolution snapshot.");
+    }
+
+    const outputCanvas = document.createElement("canvas");
+    outputCanvas.width = exportSize.width;
+    outputCanvas.height = exportSize.height;
+    const ctx = outputCanvas.getContext("2d");
+    if (!ctx) {
+      throw new Error("Could not create the full-resolution snapshot canvas.");
+    }
+    ctx.drawImage(
+      sourceCanvas,
+      0,
+      0,
+      sourceCanvas.width,
+      sourceCanvas.height,
+      0,
+      0,
+      outputCanvas.width,
+      outputCanvas.height
+    );
+    return outputCanvas;
+  } finally {
+    exportViewer.destroy();
+    exportContainer.remove();
+  }
+}
+
+async function exportSnapshotSelection() {
+  if (!snapshotSelectionRect) {
+    updateSnapshotStatus("Draw a rectangle before exporting.");
+    return;
+  }
+
+  let outputCanvas = null;
+  let ctx = null;
+  const sourceCanvas = getOpenSeadragonImageCanvas();
+  const sourceRect = sourceCanvas
+    ? getSnapshotSourceRect(sourceCanvas, snapshotSelectionRect)
+    : null;
+  const exportSize = getSnapshotExportSize(sourceRect);
+  if (!exportSize) {
+    updateSnapshotStatus("Could not determine the snapshot resolution.");
+    return;
+  }
+
+  try {
+    outputCanvas =
+      getSnapshotResolutionMode() === "current"
+        ? renderVisibleSnapshotBaseCanvas(sourceCanvas, sourceRect, exportSize)
+        : await renderFullResolutionSnapshotBaseCanvas(exportSize);
+    ctx = outputCanvas?.getContext("2d");
+    if (!ctx || !outputCanvas) {
+      updateSnapshotStatus("Could not create the snapshot canvas.");
+      return;
+    }
+
+    const contentMode = getSnapshotContentMode();
+    if (contentMode === "annotations" || contentMode === "labels") {
+      drawSnapshotAnnotationShapes(ctx, outputCanvas, snapshotSelectionRect);
+      drawSnapshotPointAnnotations(ctx, outputCanvas, snapshotSelectionRect);
+    }
+    if (contentMode === "labels") {
+      drawSnapshotAnnotationLabels(ctx, outputCanvas, snapshotSelectionRect);
+    }
+
+    const scalebarRequested = Boolean(snapshotIncludeScalebar?.checked);
+    const scalebarDrawn = scalebarRequested
+      ? drawSnapshotScalebar(ctx, outputCanvas, snapshotSelectionRect)
+      : false;
+
+    outputCanvas.toBlob(
+      (blob) => {
+        if (!blob) {
+          updateSnapshotStatus("Could not encode the JPG snapshot.");
+          return;
+        }
+        downloadSnapshotBlob(blob);
+        clearSnapshotSelection();
+        updateSnapshotStatus(
+          scalebarRequested && !scalebarDrawn
+            ? "Snapshot exported without scalebar; scale unknown."
+            : "Snapshot exported."
+        );
+      },
+      "image/jpeg",
+      getSnapshotQuality()
+    );
+  } catch (error) {
+    console.error("Snapshot export failed:", error);
+    updateSnapshotStatus("Snapshot export was blocked by image security.");
+  }
+}
+
 function closeElectronActionTray() {
   if (!electronActionTray || !electronActionButton) return;
 
   electronActionTray.hidden = true;
   electronActionButton.setAttribute("aria-expanded", "false");
+}
+
+function closeViewerToolsTray() {
+  if (!viewerToolsTray || !viewerToolsButton) return;
+
+  viewerToolsTray.hidden = true;
+  viewerToolsButton.setAttribute("aria-expanded", "false");
 }
 
 function toggleElectronActionTray() {
@@ -581,6 +2015,7 @@ function toggleElectronActionTray() {
   const willOpen = electronActionTray.hidden;
   electronActionTray.hidden = !willOpen;
   electronActionButton.setAttribute("aria-expanded", String(willOpen));
+  if (willOpen) closeViewerToolsTray();
 
   if (willOpen) {
     const firstAction = electronActionTray.querySelector(
@@ -590,9 +2025,26 @@ function toggleElectronActionTray() {
   }
 }
 
+function toggleViewerToolsTray() {
+  if (!viewerToolsTray || !viewerToolsButton) return;
+
+  const willOpen = viewerToolsTray.hidden;
+  viewerToolsTray.hidden = !willOpen;
+  viewerToolsButton.setAttribute("aria-expanded", String(willOpen));
+  if (willOpen) closeElectronActionTray();
+
+  if (willOpen) {
+    const firstTool = viewerToolsTray.querySelector(
+      ".electron-action-item:not([hidden])"
+    );
+    firstTool?.focus();
+  }
+}
+
 if (hasElectronActions && electronActionButton && electronActionTray) {
   loadLibraryButton.hidden = true;
   electronActionButton.hidden = false;
+  if (viewerToolsButton) viewerToolsButton.hidden = false;
   moveGridCountControlsToPalette();
   moveAnnotateControlsToPalette();
   moveMeasureControlsToPalette();
@@ -603,16 +2055,31 @@ if (hasElectronActions && electronActionButton && electronActionTray) {
     toggleElectronActionTray();
   });
 
+  viewerToolsButton?.addEventListener("click", function (event) {
+    event.preventDefault();
+    event.stopPropagation();
+    toggleViewerToolsTray();
+  });
+
   electronActionTray.addEventListener("click", function (event) {
     event.stopPropagation();
   });
 
-  document.addEventListener("click", closeElectronActionTray);
+  viewerToolsTray?.addEventListener("click", function (event) {
+    event.stopPropagation();
+  });
+
+  document.addEventListener("click", function () {
+    closeElectronActionTray();
+    closeViewerToolsTray();
+  });
   document.addEventListener("keydown", function (event) {
     if (event.key === "Escape") {
       closeElectronActionTray();
+      closeViewerToolsTray();
       closeGridCountPalette();
       closeMeasurePalette();
+      closeSnapshotPalette();
       closeScaleWizard();
       if (tileSetEditor && !tileSetEditor.hidden) {
         closeTileSetEditor();
@@ -641,11 +2108,17 @@ if (hasElectronActions && openGridCountPaletteButton && gridCountPalette) {
   openGridCountPaletteButton.setAttribute("aria-pressed", "false");
   openGridCountPaletteButton.addEventListener("click", function (event) {
     event.preventDefault();
-    closeElectronActionTray();
+    closeViewerToolsTray();
     toggleGridCountPalette();
   });
   closeGridCountPaletteButton?.addEventListener("click", function () {
     closeGridCountPalette();
+  });
+  minimizeGridCountPaletteButton?.addEventListener("click", function () {
+    toggleToolPaletteMinimized(
+      gridCountPalette,
+      minimizeGridCountPaletteButton
+    );
   });
   makeToolPaletteDraggable(
     gridCountPalette,
@@ -658,16 +2131,47 @@ if (hasElectronActions && openGridCountPaletteButton && gridCountPalette) {
   });
 }
 
+if (window.ResizeObserver && controlsPanel) {
+  const controlsResizeObserver = new ResizeObserver(() => {
+    clampOpenToolPalettes();
+  });
+  controlsResizeObserver.observe(controlsPanel);
+}
+
+if (controlsPanel && minimizeControlsButton) {
+  minimizeControlsButton.addEventListener("click", function () {
+    const isMinimized = controlsPanel.classList.toggle("controls-minimized");
+    minimizeControlsButton.setAttribute("aria-pressed", String(isMinimized));
+    minimizeControlsButton.setAttribute(
+      "aria-label",
+      isMinimized ? "Expand image controls" : "Minimize image controls"
+    );
+    minimizeControlsButton.title = isMinimized
+      ? "Expand image controls"
+      : "Minimize image controls";
+    if (isMinimized) {
+      const imageSettingsMenu = document.getElementById("imageSettingsMenu");
+      if (imageSettingsMenu) {
+        imageSettingsMenu.style.display = "none";
+      }
+    }
+    clampOpenToolPalettes();
+  });
+}
+
 if (hasElectronActions && openAnnotatePaletteButton && annotatePalette) {
   openAnnotatePaletteButton.hidden = false;
   openAnnotatePaletteButton.setAttribute("aria-pressed", "false");
   openAnnotatePaletteButton.addEventListener("click", function (event) {
     event.preventDefault();
-    closeElectronActionTray();
+    closeViewerToolsTray();
     toggleAnnotatePalette();
   });
   closeAnnotatePaletteButton?.addEventListener("click", function () {
     closeAnnotatePalette();
+  });
+  minimizeAnnotatePaletteButton?.addEventListener("click", function () {
+    toggleToolPaletteMinimized(annotatePalette, minimizeAnnotatePaletteButton);
   });
   makeToolPaletteDraggable(
     annotatePalette,
@@ -685,11 +2189,14 @@ if (hasElectronActions && openMeasurePaletteButton && measurePalette) {
   openMeasurePaletteButton.setAttribute("aria-pressed", "false");
   openMeasurePaletteButton.addEventListener("click", function (event) {
     event.preventDefault();
-    closeElectronActionTray();
+    closeViewerToolsTray();
     toggleMeasurePalette();
   });
   closeMeasurePaletteButton?.addEventListener("click", function () {
     closeMeasurePalette();
+  });
+  minimizeMeasurePaletteButton?.addEventListener("click", function () {
+    toggleToolPaletteMinimized(measurePalette, minimizeMeasurePaletteButton);
   });
   makeToolPaletteDraggable(
     measurePalette,
@@ -701,6 +2208,72 @@ if (hasElectronActions && openMeasurePaletteButton && measurePalette) {
     clampToolPaletteToViewer(measurePalette);
   });
 }
+
+if (hasElectronActions && openSnapshotPaletteButton && snapshotPalette) {
+  openSnapshotPaletteButton.hidden = false;
+  openSnapshotPaletteButton.setAttribute("aria-pressed", "false");
+  openSnapshotPaletteButton.addEventListener("click", function (event) {
+    event.preventDefault();
+    closeViewerToolsTray();
+    toggleSnapshotPalette();
+  });
+  closeSnapshotPaletteButton?.addEventListener("click", function () {
+    closeSnapshotPalette();
+  });
+  minimizeSnapshotPaletteButton?.addEventListener("click", function () {
+    toggleToolPaletteMinimized(snapshotPalette, minimizeSnapshotPaletteButton);
+  });
+  snapshotDrawButton?.addEventListener("click", function () {
+    restoreToolPaletteFromMinimized(
+      snapshotPalette,
+      minimizeSnapshotPaletteButton
+    );
+    startSnapshotDrawMode();
+  });
+  snapshotClearButton?.addEventListener("click", function () {
+    stopSnapshotDrawMode({ clearSelection: true });
+  });
+  snapshotExportButton?.addEventListener("click", function () {
+    exportSnapshotSelection();
+  });
+  makeToolPaletteDraggable(
+    snapshotPalette,
+    snapshotPaletteHeader,
+    "petroImage.snapshotPalette"
+  );
+  window.addEventListener("resize", function () {
+    clampToolPaletteToViewer(snapshotPalette);
+    if (snapshotSelectionRect) {
+      clearSnapshotSelection();
+      updateSnapshotStatus("Draw a new area after resizing the viewer.");
+    }
+  });
+}
+
+snapshotSelectionBody?.addEventListener("pointerdown", function (event) {
+  startSnapshotAdjustment(event, "move");
+});
+
+snapshotSelection?.querySelectorAll("[data-handle]").forEach((handle) => {
+  handle.addEventListener("pointerdown", function (event) {
+    startSnapshotAdjustment(event, "resize", handle.dataset.handle || "");
+  });
+});
+
+[snapshotTileSetSelect, snapshotContentMode, snapshotResolutionMode].forEach((element) => {
+  element?.addEventListener("change", function () {
+    updateSnapshotStatus();
+  });
+});
+
+window.addEventListener("pointermove", function (event) {
+  if (!snapshotAdjustState) return;
+  updateSnapshotRectFromAdjustment(event.clientX, event.clientY);
+});
+
+window.addEventListener("pointerup", function () {
+  finishSnapshotAdjustment();
+});
 
 if (actionLoadLibraryButton && window.electronAPI?.selectExistingJsonFile) {
   actionLoadLibraryButton.addEventListener("click", function (event) {
@@ -824,6 +2397,7 @@ const viewer = OpenSeadragon({
   zoomPerClick: 1, // Disable zoom on click (or shift+click)
   sequenceMode: false,
   showNavigationControl: false, // Disable the default navigation controls
+  crossOriginPolicy: "Anonymous",
 });
 
 viewer.addHandler("tile-load-failed", handleTileLoadFailed);
@@ -874,6 +2448,7 @@ document
     try {
       currentIndex = Number(this.value);
       closeScaleWizard();
+      stopSnapshotDrawMode({ clearSelection: true });
       buildImageCheckboxes();
       buildOpacitySliders();
       clearAnnotations();
@@ -1263,7 +2838,8 @@ function cloneAnnotationState() {
     grid: cloneData(grid),
     gridApplied,
     gridControls: cloneGridControlState(),
-    selectedAnnoId: document.getElementById("anno-id")?.value || "1",
+    selectedAnnotationUuid,
+    selectedAnnotationUuids: [...selectedAnnotationUuids],
     selectedCountId: document.getElementById("count-id")?.value || "1",
   };
 }
@@ -1321,7 +2897,7 @@ function clearAnnotationDraftState() {
 }
 
 function clearTransientAnnotationShortcutState() {
-  ["KeyQ", "KeyZ", "KeyX", "KeyC"].forEach((code) => {
+  ["KeyQ", "KeyZ", "KeyX", "KeyC", "KeyV"].forEach((code) => {
     pressedKeys?.delete(code);
     if (typeof keyTimestamps !== "undefined") {
       delete keyTimestamps[code];
@@ -1332,9 +2908,13 @@ function clearTransientAnnotationShortcutState() {
   isZPressed = false;
   isXPressed = false;
   isCPressed = false;
+  isVPressed = false;
 
   if (!pointButton?.classList.contains("active")) {
     toggleCrosshairFloaterOn(false);
+  }
+  if (!rectButton?.classList.contains("active")) {
+    toggleRectFloaterOn(false);
   }
   if (!polylineButton?.classList.contains("active")) {
     togglePolylineFloaterOn(false);
@@ -1344,6 +2924,10 @@ function clearTransientAnnotationShortcutState() {
   }
   if (!ellipseButton?.classList.contains("active")) {
     toggleEllipseFloaterOn(false);
+  }
+  if (!circleAnnotationButton?.classList.contains("active")) {
+    isCircleAnnotationMode = false;
+    toggleCircleAnnotationFloaterOn(false);
   }
 }
 
@@ -1503,6 +3087,8 @@ function redoAnnotationDraftPoint() {
 }
 
 function removeAnnotationOverlays() {
+  removeAnnotationVertexHandles();
+
   [...document.getElementsByClassName("annotate-label")].forEach((label) => {
     const container = label.closest(".annotation-overlay");
     viewer.removeOverlay(container || label);
@@ -1526,12 +3112,17 @@ function applyAnnotationVisibilityState() {
   const showLabels = document.getElementById("show-annotation-labels").checked;
 
   for (let el of document.getElementsByClassName("annotate-crosshairs")) {
-    el.style.visibility = showAnnotations ? "visible" : "hidden";
+    const visible =
+      showAnnotations && isAnnotationUuidVisible(el.dataset.annotationUuid);
+    el.style.visibility = visible ? "visible" : "hidden";
   }
 
   for (let el of document.getElementsByClassName("annotate-label")) {
-    el.style.visibility =
-      showAnnotations && showLabels ? "visible" : "hidden";
+    const visible =
+      showAnnotations &&
+      showLabels &&
+      isAnnotationUuidVisible(el.dataset.annotationUuid);
+    el.style.visibility = visible ? "visible" : "hidden";
   }
 
   polyCanvas.style.display = showAnnotations ? "block" : "none";
@@ -1691,24 +3282,34 @@ function restoreCountGridState(state) {
 function restoreAnnotationState(state) {
   suppressUnsavedAnnotationTracking = true;
   try {
+    exitAnnotationVertexEditMode();
+    exitAnnotationShapeEditMode();
     removeAnnotationOverlays();
     annoJSON = cloneData(state.annoJSON);
+    annoJSON.features.forEach(normalizeAnnotationFeature);
     annoJSONTemp = cloneData(state.annoJSONTemp);
     renderAnnotationOverlaysFromJSON();
-
-    const selectedId = Math.min(
-      Number(state.selectedAnnoId) || 1,
-      annoJSON.features.length || 1
-    );
-    document.getElementById("anno-id").value = selectedId;
+    renderAnnotationList();
 
     if (annoJSON.features.length > 0) {
       enableAnnoButtons();
-      annoLabelToText();
+      const restoredUuid =
+        getAnnotationByUuid(state.selectedAnnotationUuid)?.properties.uuid ||
+        null;
+      const restoredUuids = Array.isArray(state.selectedAnnotationUuids)
+        ? state.selectedAnnotationUuids
+        : restoredUuid
+          ? [restoredUuid]
+          : [];
+      setAnnotationSelection(restoredUuids, restoredUuid);
     } else {
+      selectedAnnotationUuid = null;
+      selectedAnnotationUuids = new Set();
+      annotationListSelectionAnchorUuid = null;
       disableAnnoButtons();
       document.getElementById("anno-label").value = "";
       document.getElementById("anno-notes").value = "";
+      syncSelectedAnnotationVisuals();
     }
 
     restoreCountGridState(state);
@@ -2034,6 +3635,7 @@ function updateScaleDependentControls() {
   measurementControlIds.forEach((id) => {
     setControlDisabled(id, !hasScale, disabledTitle);
   });
+  updateCircleAnnotationOptionsControls();
 
   if (!hasScale) {
     document.getElementById("scalebarType").value = "None";
@@ -2523,6 +4125,7 @@ function buildImageCheckboxes() {
     div.appendChild(label);
     container.appendChild(div);
   }
+  populateSnapshotTileSetSelect();
 }
 
 function buildOpacitySliders() {
@@ -2686,16 +4289,44 @@ let pointButton = document.getElementById("crosshairButton");
 let polylineButton = document.getElementById("polylineButton");
 let rectButton = document.getElementById("rectangleButton");
 let repeatButton = document.getElementById("repeatButton");
+let promptLabelButton = document.getElementById("promptLabelButton");
+let moveAnnotationButton = document.getElementById("moveAnnotationButton");
+let moveAnnotationLabelButton = document.getElementById(
+  "moveAnnotationLabelButton"
+);
 let polygonButton = document.getElementById("polygonButton");
 let ellipseButton = document.getElementById("ellipseButton");
+let circleAnnotationButton = document.getElementById("circleAnnotationButton");
 
 // Flags to track modes
 let isPointMode = false;
 let isPolylineMode = false;
 let isRectangleMode = false;
 let isRepeatMode = false;
+let isPromptLabelMode = false;
+let isAnnotationMoveMode = false;
+let isAnnotationLabelMoveMode = false;
 let isPolygonMode = false;
 let isEllipseMode = false;
+let isCircleAnnotationMode = false;
+let circleAnnotationCenter = null;
+let circleAnnotationCenterImage = null;
+let currentCircleAnnotationUniqueId = null;
+let currentCircleAnnotationStyleColors = null;
+let activelyMakingCircleAnnotation = false;
+let annotationMoveDragState = null;
+let annotationLabelMoveDragState = null;
+let activeVertexEditUuid = null;
+let annotationVertexDragState = null;
+let activeShapeEditUuid = null;
+let annotationShapeDragState = null;
+const CIRCLE_ANNOTATION_OPTIONS_STORAGE_KEY =
+  "petroImage.circleAnnotationOptions";
+let circleAnnotationOptions = {
+  mode: "free",
+  diameter: 100,
+  units: "2",
+};
 
 function removeTemporaryPoints() {
   clickCoordinates = [];
@@ -2703,9 +4334,14 @@ function removeTemporaryPoints() {
   clickCoordinatesArray = [];
   ellipseCoordinates = [];
   ellipseImageCoordinates = [];
+  circleAnnotationCenter = null;
+  circleAnnotationCenterImage = null;
+  currentCircleAnnotationUniqueId = null;
   currentEllipseStyleColors = null;
+  currentCircleAnnotationStyleColors = null;
   currentPolyStyleColors = null;
   currentRectStyleColors = null;
+  activelyMakingCircleAnnotation = false;
   annoJSONTemp = {
     type: "FeatureCollection",
     features: [],
@@ -2714,26 +4350,42 @@ function removeTemporaryPoints() {
   drawShape(polyCanvas, [annoJSON, annoJSONTemp]);
 }
 
-function deactivateAnnotationModes() {
+function deactivateAnnotationDrawingModes() {
   pointButton.classList.remove("active");
   polylineButton.classList.remove("active");
   rectButton.classList.remove("active");
-  repeatButton.classList.remove("active");
   polygonButton.classList.remove("active");
   ellipseButton.classList.remove("active");
+  circleAnnotationButton.classList.remove("active");
 
   isPointMode = false;
   isPolylineMode = false;
   isRectangleMode = false;
-  isRepeatMode = false;
   isPolygonMode = false;
   isEllipseMode = false;
-
+  isCircleAnnotationMode = false;
   removeTemporaryPoints();
+}
+
+function deactivateAnnotationModes() {
+  deactivateAnnotationDrawingModes();
+  repeatButton.classList.remove("active");
+  promptLabelButton.classList.remove("active");
+  promptLabelButton.setAttribute("aria-pressed", "false");
+  setAnnotationMoveMode(false);
+  setAnnotationLabelMoveMode(false);
+  exitAnnotationVertexEditMode();
+
+  isRepeatMode = false;
+  isPromptLabelMode = false;
+  isAnnotationMoveMode = false;
+  isAnnotationLabelMoveMode = false;
 }
 
 pointButton.addEventListener("click", () => {
   // Deactivate rect and poly buttons
+  setAnnotationMoveMode(false);
+  setAnnotationLabelMoveMode(false);
   rectButton.classList.remove("active");
   isRectangleMode = false;
   polylineButton.classList.remove("active");
@@ -2742,6 +4394,8 @@ pointButton.addEventListener("click", () => {
   isPolygonMode = false;
   ellipseButton.classList.remove("active");
   isEllipseMode = false;
+  circleAnnotationButton.classList.remove("active");
+  isCircleAnnotationMode = false;
   removeTemporaryPoints();
   // Remove any existing temporary points
 
@@ -2756,6 +4410,8 @@ pointButton.addEventListener("click", () => {
 
 polylineButton.addEventListener("click", () => {
   // Deactivate point and poly buttons
+  setAnnotationMoveMode(false);
+  setAnnotationLabelMoveMode(false);
   pointButton.classList.remove("active");
   isPointMode = false;
   rectButton.classList.remove("active");
@@ -2764,6 +4420,8 @@ polylineButton.addEventListener("click", () => {
   isPolygonMode = false;
   ellipseButton.classList.remove("active");
   isEllipseMode = false;
+  circleAnnotationButton.classList.remove("active");
+  isCircleAnnotationMode = false;
   removeTemporaryPoints();
 
   if (isPolylineMode === false) {
@@ -2778,6 +4436,8 @@ polylineButton.addEventListener("click", () => {
 
 rectButton.addEventListener("click", () => {
   // Deactivate point and poly buttons
+  setAnnotationMoveMode(false);
+  setAnnotationLabelMoveMode(false);
   pointButton.classList.remove("active");
   isPointMode = false;
   polylineButton.classList.remove("active");
@@ -2786,6 +4446,8 @@ rectButton.addEventListener("click", () => {
   isPolygonMode = false;
   ellipseButton.classList.remove("active");
   isEllipseMode = false;
+  circleAnnotationButton.classList.remove("active");
+  isCircleAnnotationMode = false;
   removeTemporaryPoints();
 
   if (isRectangleMode === false) {
@@ -2807,8 +4469,30 @@ repeatButton.addEventListener("click", () => {
   }
 });
 
+promptLabelButton.addEventListener("click", () => {
+  isPromptLabelMode = !isPromptLabelMode;
+  promptLabelButton.classList.toggle("active", isPromptLabelMode);
+  promptLabelButton.setAttribute("aria-pressed", String(isPromptLabelMode));
+});
+
+moveAnnotationButton.addEventListener("click", () => {
+  if (!isAnnotationMoveMode) {
+    deactivateAnnotationDrawingModes();
+  }
+  setAnnotationMoveMode(!isAnnotationMoveMode);
+});
+
+moveAnnotationLabelButton.addEventListener("click", () => {
+  if (!isAnnotationLabelMoveMode) {
+    deactivateAnnotationDrawingModes();
+  }
+  setAnnotationLabelMoveMode(!isAnnotationLabelMoveMode);
+});
+
 polygonButton.addEventListener("click", () => {
   // Deactivate point and rect buttons
+  setAnnotationMoveMode(false);
+  setAnnotationLabelMoveMode(false);
   pointButton.classList.remove("active");
   isPointMode = false;
   rectButton.classList.remove("active");
@@ -2817,6 +4501,8 @@ polygonButton.addEventListener("click", () => {
   isPolylineMode = false;
   ellipseButton.classList.remove("active");
   isEllipseMode = false;
+  circleAnnotationButton.classList.remove("active");
+  isCircleAnnotationMode = false;
   removeTemporaryPoints();
 
   if (isPolygonMode === false) {
@@ -2830,6 +4516,8 @@ polygonButton.addEventListener("click", () => {
 
 ellipseButton.addEventListener("click", () => {
   // Deactivate point and rect buttons
+  setAnnotationMoveMode(false);
+  setAnnotationLabelMoveMode(false);
   pointButton.classList.remove("active");
   isPointMode = false;
   rectButton.classList.remove("active");
@@ -2838,6 +4526,8 @@ ellipseButton.addEventListener("click", () => {
   isPolylineMode = false;
   polygonButton.classList.remove("active");
   isPolygonMode = false;
+  circleAnnotationButton.classList.remove("active");
+  isCircleAnnotationMode = false;
   removeTemporaryPoints();
 
   if (isEllipseMode === false) {
@@ -2847,6 +4537,31 @@ ellipseButton.addEventListener("click", () => {
     ellipseButton.classList.remove("active");
     isEllipseMode = false;
   }
+});
+
+circleAnnotationButton.addEventListener("click", () => {
+  setAnnotationMoveMode(false);
+  setAnnotationLabelMoveMode(false);
+  pointButton.classList.remove("active");
+  isPointMode = false;
+  rectButton.classList.remove("active");
+  isRectangleMode = false;
+  polylineButton.classList.remove("active");
+  isPolylineMode = false;
+  polygonButton.classList.remove("active");
+  isPolygonMode = false;
+  ellipseButton.classList.remove("active");
+  isEllipseMode = false;
+  removeTemporaryPoints();
+
+  if (isCircleAnnotationMode === false) {
+    circleAnnotationButton.classList.add("active");
+    isCircleAnnotationMode = true;
+  } else {
+    circleAnnotationButton.classList.remove("active");
+    isCircleAnnotationMode = false;
+  }
+  refreshAnnotationFloaters();
 });
 
 // Show or hide the image menu when the gear button is clicked
@@ -2935,6 +4650,110 @@ function closeCircleSettingsPopover() {
   menu.classList.remove("measure-settings-popover");
 }
 
+function getCircleAnnotationOptionsElements() {
+  return {
+    menu: document.getElementById("circleAnnotationOptionsMenu"),
+    button: document.getElementById("circleAnnotationOptionsButton"),
+    diameterInput: document.getElementById("circleAnnotationDiameter"),
+    unitsSelect: document.getElementById("circleAnnotationUnits"),
+    scaleNote: document.getElementById("circleAnnotationScaleNote"),
+    modeInputs: [
+      ...document.getElementsByName("circleAnnotationMode"),
+    ],
+  };
+}
+
+function loadCircleAnnotationOptions() {
+  try {
+    const stored = JSON.parse(
+      localStorage.getItem(CIRCLE_ANNOTATION_OPTIONS_STORAGE_KEY) || "null"
+    );
+    if (!stored) return;
+    circleAnnotationOptions = {
+      mode: stored.mode === "fixed" ? "fixed" : "free",
+      diameter:
+        Number.isFinite(Number(stored.diameter)) && Number(stored.diameter) > 0
+          ? Number(stored.diameter)
+          : 100,
+      units: ["0", "1", "2"].includes(String(stored.units))
+        ? String(stored.units)
+        : "2",
+    };
+  } catch (error) {
+    console.warn("Could not load circle annotation options:", error);
+  }
+}
+
+function saveCircleAnnotationOptions() {
+  try {
+    localStorage.setItem(
+      CIRCLE_ANNOTATION_OPTIONS_STORAGE_KEY,
+      JSON.stringify(circleAnnotationOptions)
+    );
+  } catch (error) {
+    console.warn("Could not save circle annotation options:", error);
+  }
+}
+
+function updateCircleAnnotationOptionsControls() {
+  const { diameterInput, unitsSelect, scaleNote, modeInputs } =
+    getCircleAnnotationOptionsElements();
+  const hasScale = hasKnownScale();
+
+  if (!hasScale && circleAnnotationOptions.mode === "fixed") {
+    circleAnnotationOptions.mode = "free";
+    saveCircleAnnotationOptions();
+  }
+
+  modeInputs.forEach((input) => {
+    input.checked = input.value === circleAnnotationOptions.mode;
+    if (input.value === "fixed") {
+      input.disabled = !hasScale;
+      input.title = hasScale ? "" : "Requires a known image scale.";
+    }
+  });
+
+  if (diameterInput) {
+    diameterInput.value = circleAnnotationOptions.diameter;
+    diameterInput.disabled =
+      !hasScale || circleAnnotationOptions.mode !== "fixed";
+    diameterInput.title = hasScale ? "" : "Requires a known image scale.";
+  }
+
+  if (unitsSelect) {
+    unitsSelect.value = circleAnnotationOptions.units;
+    unitsSelect.disabled =
+      !hasScale || circleAnnotationOptions.mode !== "fixed";
+    unitsSelect.title = hasScale ? "" : "Requires a known image scale.";
+  }
+
+  if (scaleNote) {
+    scaleNote.hidden = hasScale;
+  }
+}
+
+function openCircleAnnotationOptionsPopover(button) {
+  const { menu } = getCircleAnnotationOptionsElements();
+  if (!menu || !button) return;
+
+  if (menu.parentElement !== document.body) {
+    document.body.appendChild(menu);
+  }
+
+  updateCircleAnnotationOptionsControls();
+  menu.classList.add("circle-annotation-options-popover");
+  menu.style.display = "block";
+  positionAnnotationSettingsPopover(menu, button);
+}
+
+function closeCircleAnnotationOptionsPopover() {
+  const { menu } = getCircleAnnotationOptionsElements();
+  if (!menu) return;
+
+  menu.style.display = "none";
+  menu.classList.remove("circle-annotation-options-popover");
+}
+
 // Show or hide the annotations settings menu when the gear button is clicked
 document.getElementById("gearButton").addEventListener("click", function (event) {
   event.stopPropagation(); // Prevent click from reaching the window listener
@@ -2972,6 +4791,51 @@ document
     }
   });
 
+document
+  .getElementById("circleAnnotationOptionsButton")
+  .addEventListener("click", function (event) {
+    event.stopPropagation();
+    const { menu } = getCircleAnnotationOptionsElements();
+    if (menu?.style.display === "block") {
+      closeCircleAnnotationOptionsPopover();
+    } else {
+      openCircleAnnotationOptionsPopover(event.currentTarget);
+    }
+  });
+
+getCircleAnnotationOptionsElements().modeInputs.forEach((input) => {
+  input.addEventListener("change", function (event) {
+    if (event.target.value === "fixed" && !hasKnownScale()) {
+      circleAnnotationOptions.mode = "free";
+    } else {
+      circleAnnotationOptions.mode = event.target.value;
+    }
+    saveCircleAnnotationOptions();
+    updateCircleAnnotationOptionsControls();
+  });
+});
+
+document
+  .getElementById("circleAnnotationDiameter")
+  .addEventListener("change", function (event) {
+    const diameter = Number(event.target.value);
+    circleAnnotationOptions.diameter =
+      Number.isFinite(diameter) && diameter > 0 ? diameter : 100;
+    saveCircleAnnotationOptions();
+    updateCircleAnnotationOptionsControls();
+  });
+
+document
+  .getElementById("circleAnnotationUnits")
+  .addEventListener("change", function (event) {
+    circleAnnotationOptions.units = event.target.value;
+    saveCircleAnnotationOptions();
+    updateCircleAnnotationOptionsControls();
+  });
+
+loadCircleAnnotationOptions();
+updateCircleAnnotationOptionsControls();
+
 // Close the menu if clicked outside (annotations menu)
 window.addEventListener("click", function (event) {
   const menu = document.getElementById("annoSettingsMenu");
@@ -2980,6 +4844,17 @@ window.addEventListener("click", function (event) {
     !event.target.closest("#annoSettingsMenu")
   ) {
     closeAnnotationSettingsPopover();
+  }
+
+  const circleAnnotationMenu = document.getElementById(
+    "circleAnnotationOptionsMenu"
+  );
+  if (
+    circleAnnotationMenu?.style.display === "block" &&
+    !event.target.closest("#circleAnnotationOptionsButton") &&
+    !event.target.closest("#circleAnnotationOptionsMenu")
+  ) {
+    closeCircleAnnotationOptionsPopover();
   }
 });
 
@@ -3087,167 +4962,1054 @@ window.addEventListener("click", function (event) {
 });
 
 const enableAnnoButtons = () => {
-  document.getElementById("anno-first-button").disabled = false;
-  document.getElementById("anno-prev-button").disabled = false;
-  document.getElementById("anno-id").disabled = false;
-  document.getElementById("anno-next-button").disabled = false;
-  document.getElementById("anno-last-button").disabled = false;
-  document.getElementById("anno-label").disabled = false;
-  document.getElementById("anno-notes").disabled = false;
-  document.getElementById("deleteButton").disabled = false;
   document.getElementById("gearButton").disabled = false;
-  document.getElementById("repeatButton").disabled = false;
   document.getElementById("exportBtn").disabled = false;
   document.getElementById("clearBtn").disabled = false;
+  updateSelectedAnnotationControls();
 };
 
 const disableAnnoButtons = () => {
-  document.getElementById("anno-first-button").disabled = true;
-  document.getElementById("anno-prev-button").disabled = true;
-  document.getElementById("anno-id").disabled = true;
-  document.getElementById("anno-next-button").disabled = true;
-  document.getElementById("anno-last-button").disabled = true;
   document.getElementById("anno-label").disabled = true;
   document.getElementById("anno-notes").disabled = true;
   document.getElementById("deleteButton").disabled = true;
+  document.getElementById("moveAnnotationButton").disabled = true;
+  document.getElementById("moveAnnotationLabelButton").disabled = true;
   document.getElementById("gearButton").disabled = false;
   document.getElementById("repeatButton").disabled = true;
   document.getElementById("exportBtn").disabled = true;
   document.getElementById("clearBtn").disabled = true;
+  document.getElementById("annotationGroupSelect").disabled = true;
+  document.getElementById("annotationGroupColorInput").disabled = true;
+  document.getElementById("annotationGroupVisibilityButton").disabled = true;
+  document.getElementById("annotationGroupLockButton").disabled = true;
+  document.getElementById("renameAnnotationGroupButton").disabled = true;
+  document.getElementById("newAnnotationGroupButton").disabled = true;
   isRepeatMode = false; // Reset repeat mode when disabling buttons
   repeatButton.classList.remove("active");
+  setAnnotationMoveMode(false);
+  setAnnotationLabelMoveMode(false);
 };
 
-document
-  .getElementById("anno-first-button")
-  .addEventListener("click", function () {
-    const annoIdBox = document.getElementById("anno-id");
-    const annoIds = Array.from(
-      { length: annoJSON.features.length },
-      (_, i) => i + 1
-    );
-    const firstId = annoIds[0];
-    annoIdBox.value = firstId;
+function updateSelectedAnnotationControls() {
+  const hasSelection = selectedAnnotationUuids.size > 0;
+  const hasUnlockedSelection = getUnlockedSelectedAnnotationUuids().length > 0;
+  document.getElementById("anno-label").disabled =
+    !hasSelection || isAnnotationUuidLocked(selectedAnnotationUuid);
+  document.getElementById("anno-notes").disabled =
+    !hasSelection || isAnnotationUuidLocked(selectedAnnotationUuid);
+  document.getElementById("deleteButton").disabled = !hasUnlockedSelection;
+  document.getElementById("moveAnnotationButton").disabled = !hasUnlockedSelection;
+  document.getElementById("moveAnnotationLabelButton").disabled =
+    !hasUnlockedSelection;
+  document.getElementById("repeatButton").disabled = !hasSelection;
+  document.getElementById("newAnnotationGroupButton").disabled =
+    !hasUnlockedSelection;
+
+  if (!hasSelection || !hasUnlockedSelection) {
+    isRepeatMode = false;
+    repeatButton.classList.remove("active");
+    setAnnotationMoveMode(false);
+    setAnnotationLabelMoveMode(false);
+  }
+}
+
+function setAnnotationMoveMode(enabled) {
+  const hasSelection = getUnlockedSelectedAnnotationUuids().length > 0;
+  isAnnotationMoveMode = Boolean(enabled && hasSelection);
+  if (isAnnotationMoveMode) {
+    setAnnotationLabelMoveMode(false);
+    exitAnnotationVertexEditMode();
+    exitAnnotationShapeEditMode();
+  }
+  moveAnnotationButton.classList.toggle("active", isAnnotationMoveMode);
+  moveAnnotationButton.setAttribute("aria-pressed", String(isAnnotationMoveMode));
+  viewerContainer?.classList.toggle("annotation-move-mode", isAnnotationMoveMode);
+  if (!isAnnotationMoveMode) {
+    annotationMoveDragState = null;
+    viewerContainer?.classList.remove("annotation-moving");
+  }
+}
+
+function setAnnotationLabelMoveMode(enabled) {
+  const hasSelection = getUnlockedSelectedAnnotationUuids().length > 0;
+  isAnnotationLabelMoveMode = Boolean(enabled && hasSelection);
+  if (isAnnotationLabelMoveMode) {
+    setAnnotationMoveMode(false);
+    exitAnnotationVertexEditMode();
+    exitAnnotationShapeEditMode();
+  }
+  moveAnnotationLabelButton.classList.toggle("active", isAnnotationLabelMoveMode);
+  moveAnnotationLabelButton.setAttribute(
+    "aria-pressed",
+    String(isAnnotationLabelMoveMode)
+  );
+  viewerContainer?.classList.toggle(
+    "annotation-label-move-mode",
+    isAnnotationLabelMoveMode
+  );
+  if (!isAnnotationLabelMoveMode) {
+    annotationLabelMoveDragState = null;
+    viewerContainer?.classList.remove("annotation-label-moving");
+    window.removeEventListener("pointermove", handleAnnotationLabelWindowPointerMove);
+    window.removeEventListener("pointerup", handleAnnotationLabelWindowPointerUp);
+    window.removeEventListener("pointercancel", handleAnnotationLabelWindowPointerUp);
+  }
+}
+
+function getAnnotationIndexByUuid(uuid) {
+  return annoJSON.features.findIndex(
+    (feature) => feature.properties?.uuid === uuid
+  );
+}
+
+function getAnnotationByUuid(uuid) {
+  const index = getAnnotationIndexByUuid(uuid);
+  return index >= 0 ? annoJSON.features[index] : null;
+}
+
+function getSelectedAnnotationUuids() {
+  return [...selectedAnnotationUuids].filter(
+    (uuid) => getAnnotationIndexByUuid(uuid) >= 0
+  );
+}
+
+function getSelectedAnnotation() {
+  return getAnnotationByUuid(selectedAnnotationUuid);
+}
+
+function getSelectedAnnotationUuid() {
+  return getSelectedAnnotation()?.properties?.uuid || null;
+}
+
+function setAnnotationTextInputs(feature) {
+  const annoLabel = document.getElementById("anno-label");
+  const annoNotes = document.getElementById("anno-notes");
+  annoLabel.value = feature?.properties?.label ?? "";
+  annoNotes.value = feature?.properties?.notes ?? "";
+}
+
+function scrollSelectedAnnotationRowIntoView() {
+  if (!selectedAnnotationUuid) return;
+  const row = document.querySelector(
+    `.annotation-list-row[data-annotation-uuid="${CSS.escape(
+      selectedAnnotationUuid
+    )}"]`
+  );
+  row?.scrollIntoView({ block: "nearest" });
+}
+
+function setAnnotationSelection(uuids, primaryUuid = null, options = {}) {
+  const { pan = false, redraw = true, scroll = true } = options;
+  const validUuids = uuids.filter(
+    (uuid) => getAnnotationIndexByUuid(uuid) >= 0 && !isAnnotationUuidLocked(uuid)
+  );
+  selectedAnnotationUuids = new Set(validUuids);
+
+  const primaryIsValid =
+    primaryUuid &&
+    selectedAnnotationUuids.has(primaryUuid) &&
+    getAnnotationIndexByUuid(primaryUuid) >= 0 &&
+    !isAnnotationUuidLocked(primaryUuid);
+  selectedAnnotationUuid = primaryIsValid
+    ? primaryUuid
+    : validUuids[validUuids.length - 1] || null;
+
+  if (activeVertexEditUuid && activeVertexEditUuid !== selectedAnnotationUuid) {
+    exitAnnotationVertexEditMode();
+  }
+  if (activeShapeEditUuid && activeShapeEditUuid !== selectedAnnotationUuid) {
+    exitAnnotationShapeEditMode();
+  }
+
+  setAnnotationTextInputs(getSelectedAnnotation());
+  syncSelectedAnnotationVisuals();
+
+  if (redraw) {
+    drawShape(polyCanvas, [annoJSON, annoJSONTemp]);
+  }
+
+  if (scroll) {
+    scrollSelectedAnnotationRowIntoView();
+  }
+
+  if (pan && selectedAnnotationUuid) {
+    const feature = getSelectedAnnotation();
     const image = viewer.world.getItemAt(0);
     const viewportPoint = image.imageToViewportCoordinates(
-      annoJSON.features[firstId - 1].properties.xLabel,
-      annoJSON.features[firstId - 1].properties.yLabel
+      feature.properties.xLabel,
+      feature.properties.yLabel
     );
     goToPoint(viewportPoint.x, viewportPoint.y);
-    annoLabelToText();
+  }
+
+  if (selectedAnnotationUuid) {
+    enableAnnoButtons();
+  } else {
+    updateSelectedAnnotationControls();
+  }
+}
+
+function clearAnnotationSelection(options = {}) {
+  annotationListSelectionAnchorUuid = null;
+  setAnnotationSelection([], null, options);
+}
+
+function normalizeAnnotationProperties(properties = {}) {
+  return {
+    ...properties,
+    uuid: properties.uuid || generateUniqueId(12),
+    visible:
+      properties.visible === undefined ? true : Boolean(properties.visible),
+    locked:
+      properties.locked === undefined ? false : Boolean(properties.locked),
+    groupId: properties.groupId || DEFAULT_ANNOTATION_GROUP.groupId,
+    groupName: properties.groupName || DEFAULT_ANNOTATION_GROUP.groupName,
+    groupColor: properties.groupColor || DEFAULT_ANNOTATION_GROUP.groupColor,
+    groupVisible:
+      properties.groupVisible === undefined
+        ? DEFAULT_ANNOTATION_GROUP.groupVisible
+        : Boolean(properties.groupVisible),
+    groupLocked:
+      properties.groupLocked === undefined
+        ? DEFAULT_ANNOTATION_GROUP.groupLocked
+        : Boolean(properties.groupLocked),
+  };
+}
+
+function normalizeAnnotationFeature(feature) {
+  if (!feature?.properties) return feature;
+  feature.properties = normalizeAnnotationProperties(feature.properties);
+  return feature;
+}
+
+function getAnnotationGroups() {
+  const groups = new Map();
+  groups.set(DEFAULT_ANNOTATION_GROUP.groupId, { ...DEFAULT_ANNOTATION_GROUP });
+
+  annoJSON.features.forEach((feature) => {
+    const props = normalizeAnnotationFeature(feature)?.properties;
+    if (!props) return;
+    groups.set(props.groupId, {
+      groupId: props.groupId,
+      groupName: props.groupName,
+      groupColor: props.groupColor,
+      groupVisible: props.groupVisible,
+      groupLocked: props.groupLocked,
+    });
   });
 
-document
-  .getElementById("anno-last-button")
-  .addEventListener("click", function () {
-    const annoIdBox = document.getElementById("anno-id");
-    // const annoIds = Object.keys(annoDict).map(Number);
-    const annoIds = Array.from(
-      { length: annoJSON.features.length },
-      (_, i) => i + 1
-    );
-    const lastId = annoIds[annoIds.length - 1];
-    annoIdBox.value = lastId;
-    const image = viewer.world.getItemAt(0);
-    const viewportPoint = image.imageToViewportCoordinates(
-      annoJSON.features[lastId - 1].properties.xLabel,
-      annoJSON.features[lastId - 1].properties.yLabel
-    );
-    goToPoint(viewportPoint.x, viewportPoint.y);
-    annoLabelToText();
+  return [...groups.values()].sort((a, b) =>
+    a.groupName.localeCompare(b.groupName)
+  );
+}
+
+function isAnnotationFeatureVisible(feature) {
+  if (!feature?.properties?.uuid) return true;
+  const props = normalizeAnnotationFeature(feature).properties;
+  return props.visible !== false && props.groupVisible !== false;
+}
+
+function isAnnotationFeatureLocked(feature) {
+  if (!feature?.properties?.uuid) return false;
+  const props = normalizeAnnotationFeature(feature).properties;
+  return props.locked === true || props.groupLocked === true;
+}
+
+function isAnnotationUuidLocked(uuid) {
+  return isAnnotationFeatureLocked(getAnnotationByUuid(uuid));
+}
+
+function getUnlockedSelectedAnnotationUuids() {
+  return getSelectedAnnotationUuids().filter((uuid) => !isAnnotationUuidLocked(uuid));
+}
+
+function getUnlockedAnnotationUuids() {
+  return annoJSON.features
+    .filter((feature) => !isAnnotationFeatureLocked(feature))
+    .map((feature) => feature.properties.uuid);
+}
+
+function getUnlockedAnnotationIds() {
+  return annoJSON.features
+    .map((feature, index) => ({ feature, id: index + 1 }))
+    .filter(({ feature }) => !isAnnotationFeatureLocked(feature))
+    .map(({ id }) => id);
+}
+
+function getUnlockedAnnotationIdsForGroup(groupId) {
+  if (!groupId) return [];
+  return annoJSON.features
+    .map((feature, index) => ({ feature, id: index + 1 }))
+    .filter(
+      ({ feature }) =>
+        feature.properties?.groupId === groupId &&
+        !isAnnotationFeatureLocked(feature)
+    )
+    .map(({ id }) => id);
+}
+
+function isAnnotationUuidVisible(uuid) {
+  return isAnnotationFeatureVisible(getAnnotationByUuid(uuid));
+}
+
+function getGeometryTypeLabel(type, shapeType) {
+  if (shapeType === "circle") return "Circle";
+  if (shapeType === "rectangle") return "Rectangle";
+  if (shapeType === "ellipse") return "Ellipse";
+
+  const labels = {
+    Point: "Point",
+    MultiPoint: "MultiPoint",
+    LineString: "LineString",
+    MultiLineString: "MultiLineString",
+    Polygon: "Polygon",
+    MultiPolygon: "MultiPolygon",
+  };
+  return labels[type] || "?";
+}
+
+function createGeometryTypeIcon(type, shapeType) {
+  const icon = document.createElement("span");
+  icon.className = "annotation-geometry-icon";
+  icon.title = getGeometryTypeLabel(type, shapeType);
+  icon.setAttribute("aria-label", getGeometryTypeLabel(type, shapeType));
+
+  if (shapeType === "circle") {
+    const circle = document.createElement("span");
+    circle.className = "annotation-geometry-circle";
+    icon.appendChild(circle);
+  } else if (shapeType === "rectangle") {
+    const rectangle = document.createElement("span");
+    rectangle.className = "annotation-geometry-rectangle";
+    icon.appendChild(rectangle);
+  } else if (shapeType === "ellipse") {
+    const ellipse = document.createElement("span");
+    ellipse.className = "annotation-geometry-ellipse";
+    icon.appendChild(ellipse);
+  } else if (type === "Point" || type === "MultiPoint") {
+    const dotCount = type === "MultiPoint" ? 3 : 1;
+    for (let i = 0; i < dotCount; i++) {
+      const dot = document.createElement("span");
+      dot.className = "annotation-geometry-dot";
+      icon.appendChild(dot);
+    }
+  } else if (type === "LineString" || type === "MultiLineString") {
+    const line = document.createElement("span");
+    line.className = "annotation-geometry-line";
+    icon.appendChild(line);
+    if (type === "MultiLineString") {
+      const secondLine = document.createElement("span");
+      secondLine.className = "annotation-geometry-line annotation-geometry-line-secondary";
+      icon.appendChild(secondLine);
+    }
+  } else if (type === "Polygon" || type === "MultiPolygon") {
+    const polygon = document.createElement("span");
+    polygon.className = "annotation-geometry-polygon";
+    icon.appendChild(polygon);
+    if (type === "MultiPolygon") {
+      const secondPolygon = document.createElement("span");
+      secondPolygon.className =
+        "annotation-geometry-polygon annotation-geometry-polygon-secondary";
+      icon.appendChild(secondPolygon);
+    }
+  } else {
+    icon.textContent = "?";
+  }
+
+  return icon;
+}
+
+function getAnnotationGroupColor(groupIndex) {
+  const palette = [
+    "#ffcc00",
+    "#2f80ed",
+    "#27ae60",
+    "#eb5757",
+    "#9b51e0",
+    "#00a6a6",
+    "#f2994a",
+    "#4f4f4f",
+  ];
+  return palette[groupIndex % palette.length];
+}
+
+function getSafeGroupColor(color) {
+  return /^#[0-9a-f]{6}$/i.test(color)
+    ? color
+    : DEFAULT_ANNOTATION_GROUP.groupColor;
+}
+
+function renderAnnotationGroupOptions() {
+  const select = document.getElementById("annotationGroupSelect");
+  if (!select) return;
+
+  const selectedFeature = getSelectedAnnotation();
+  const previousGroupId = select.value;
+  const groups = getAnnotationGroups();
+  const selectedGroupId =
+    selectedFeature?.properties?.groupId ||
+    (groups.some((group) => group.groupId === previousGroupId)
+      ? previousGroupId
+      : DEFAULT_ANNOTATION_GROUP.groupId);
+
+  select.innerHTML = "";
+  groups.forEach((group) => {
+    const option = document.createElement("option");
+    option.value = group.groupId;
+    option.textContent = group.groupName;
+    select.appendChild(option);
   });
 
-// When the previous annotation button is clicked
-document
-  .getElementById("anno-prev-button")
-  .addEventListener("click", function () {
-    // Current annotation id
-    const annoIdBox = document.getElementById("anno-id");
-    const currentId = parseInt(annoIdBox.value);
-    // List of all the annotation ids
-    // const annoIds = Object.keys(annoDict).map(Number);
-    const annoIds = Array.from(
-      { length: annoJSON.features.length },
-      (_, i) => i + 1
-    );
+  select.value = selectedGroupId;
+  select.disabled = annoJSON.features.length === 0;
+  updateGroupControls();
 
-    // Index of current annotation id
-    const currentIdx = annoIds.indexOf(currentId); // Index of current annotation
+  const newGroupButton = document.getElementById("newAnnotationGroupButton");
+  if (newGroupButton) {
+    newGroupButton.disabled = getUnlockedSelectedAnnotationUuids().length === 0;
+  }
+  updateSelectedAnnotationControls();
+}
 
-    if (currentIdx > 0) {
-      const nextIdx = currentIdx - 1;
-      const nextId = annoIds[nextIdx];
-      annoIdBox.value = nextId;
-      const image = viewer.world.getItemAt(0);
-      const viewportPoint = image.imageToViewportCoordinates(
-        annoJSON.features[nextId - 1].properties.xLabel,
-        annoJSON.features[nextId - 1].properties.yLabel
+function getSelectedGroupFromDropdown() {
+  const select = document.getElementById("annotationGroupSelect");
+  if (!select) return null;
+  return getAnnotationGroups().find((group) => group.groupId === select.value);
+}
+
+function updateGroupControls() {
+  const group = getSelectedGroupFromDropdown();
+  const hasAnnotations = annoJSON.features.length > 0;
+  const isEnabled = Boolean(group && hasAnnotations);
+
+  const colorInput = document.getElementById("annotationGroupColorInput");
+  if (colorInput) {
+    colorInput.disabled = !isEnabled;
+    colorInput.value = getSafeGroupColor(group?.groupColor);
+    colorInput.title = group ? `Color: ${group.groupName}` : "Group Color";
+  }
+
+  const visibilityButton = document.getElementById(
+    "annotationGroupVisibilityButton"
+  );
+  if (visibilityButton) {
+    visibilityButton.innerHTML = "";
+    visibilityButton.disabled = !isEnabled;
+    if (isEnabled) {
+      const isVisible = group.groupVisible !== false;
+      visibilityButton.title = isVisible ? "Hide group" : "Show group";
+      visibilityButton.setAttribute(
+        "aria-label",
+        isVisible ? "Hide group" : "Show group"
       );
-      goToPoint(viewportPoint.x, viewportPoint.y);
-      annoLabelToText();
+      visibilityButton.appendChild(createVisibilityIcon(isVisible));
+    }
+  }
+
+  const lockButton = document.getElementById("annotationGroupLockButton");
+  if (lockButton) {
+    lockButton.innerHTML = "";
+    lockButton.disabled = !isEnabled;
+    if (isEnabled) {
+      const isLocked = group.groupLocked === true;
+      lockButton.title = isLocked ? "Unlock group" : "Lock group";
+      lockButton.setAttribute(
+        "aria-label",
+        isLocked ? "Unlock group" : "Lock group"
+      );
+      lockButton.appendChild(createLockIcon(isLocked));
+    }
+  }
+
+  const renameButton = document.getElementById("renameAnnotationGroupButton");
+  if (renameButton) {
+    renameButton.disabled = !isEnabled;
+    renameButton.title = group ? `Rename ${group.groupName}` : "Rename Group";
+  }
+}
+
+function createVisibilityIcon(isVisible) {
+  const icon = document.createElement("span");
+  icon.className = "annotation-visibility-icon";
+  icon.setAttribute("aria-hidden", "true");
+
+  const eye = document.createElement("span");
+  eye.className = "annotation-visibility-eye";
+  icon.appendChild(eye);
+
+  if (!isVisible) {
+    const slash = document.createElement("span");
+    slash.className = "annotation-visibility-slash";
+    icon.appendChild(slash);
+  }
+
+  return icon;
+}
+
+function createLockIcon(isLocked) {
+  const icon = document.createElement("span");
+  icon.className = `annotation-lock-icon ${
+    isLocked ? "annotation-lock-icon-locked" : "annotation-lock-icon-unlocked"
+  }`;
+  icon.setAttribute("aria-hidden", "true");
+
+  const shackle = document.createElement("span");
+  shackle.className = "annotation-lock-shackle";
+  icon.appendChild(shackle);
+
+  const body = document.createElement("span");
+  body.className = "annotation-lock-body";
+  icon.appendChild(body);
+
+  return icon;
+}
+
+function syncAnnotationListSelection() {
+  [...document.getElementsByClassName("annotation-list-row")].forEach((row) => {
+    const isSelected = selectedAnnotationUuids.has(row.dataset.annotationUuid);
+    row.classList.toggle("annotation-list-row-selected", isSelected);
+    row.setAttribute("aria-selected", String(isSelected));
+    row.classList.toggle(
+      "annotation-list-row-primary",
+      row.dataset.annotationUuid === selectedAnnotationUuid
+    );
+  });
+}
+
+function toggleAnnotationInSelection(uuid, options = {}) {
+  if (isAnnotationUuidLocked(uuid)) return;
+  const { pan = true } = options;
+  const nextSelection = new Set(selectedAnnotationUuids);
+  if (nextSelection.has(uuid)) {
+    nextSelection.delete(uuid);
+  } else {
+    nextSelection.add(uuid);
+  }
+  annotationListSelectionAnchorUuid = uuid;
+  setAnnotationSelection([...nextSelection], uuid, { pan });
+}
+
+function handleAnnotationListRowClick(event, uuid) {
+  const clickedIndex = getAnnotationIndexByUuid(uuid);
+  if (clickedIndex < 0) return;
+  if (isAnnotationUuidLocked(uuid)) return;
+
+  if (event.shiftKey && annotationListSelectionAnchorUuid) {
+    const anchorIndex = getAnnotationIndexByUuid(annotationListSelectionAnchorUuid);
+    if (anchorIndex >= 0) {
+      const start = Math.min(anchorIndex, clickedIndex);
+      const end = Math.max(anchorIndex, clickedIndex);
+      const rangeUuids = annoJSON.features
+        .slice(start, end + 1)
+        .filter((feature) => !isAnnotationFeatureLocked(feature))
+        .map((feature) => feature.properties.uuid);
+      setAnnotationSelection(rangeUuids, uuid, { pan: true });
+      return;
+    }
+  }
+
+  if (event.ctrlKey || event.metaKey) {
+    toggleAnnotationInSelection(uuid, { pan: true });
+    return;
+  }
+
+  annotationListSelectionAnchorUuid = uuid;
+  setAnnotationSelection([uuid], uuid, { pan: true });
+}
+
+function focusAnnotationListRow(uuid) {
+  if (!uuid) return;
+  const row = document.querySelector(
+    `.annotation-list-row[data-annotation-uuid="${CSS.escape(uuid)}"]`
+  );
+  row?.focus({ preventScroll: true });
+}
+
+function handleAnnotationListArrowKey(event, uuid) {
+  if (!["ArrowUp", "ArrowDown"].includes(event.key)) return false;
+  if (annoJSON.features.length === 0) return false;
+
+  event.preventDefault();
+  event.stopPropagation();
+
+  const selectableFeatures = annoJSON.features.filter(
+    (feature) => !isAnnotationFeatureLocked(feature)
+  );
+  if (selectableFeatures.length === 0) return true;
+
+  const currentIndex = Math.max(0, getAnnotationIndexByUuid(uuid));
+  const direction = event.key === "ArrowDown" ? 1 : -1;
+  let nextIndex = currentIndex;
+  for (let i = 0; i < annoJSON.features.length; i++) {
+    nextIndex =
+      (nextIndex + direction + annoJSON.features.length) %
+      annoJSON.features.length;
+    if (!isAnnotationFeatureLocked(annoJSON.features[nextIndex])) break;
+  }
+  const nextUuid = annoJSON.features[nextIndex]?.properties?.uuid;
+  if (!nextUuid) return true;
+
+  if (event.shiftKey) {
+    const anchorUuid = annotationListSelectionAnchorUuid || uuid || nextUuid;
+    const anchorIndex = getAnnotationIndexByUuid(anchorUuid);
+    if (anchorIndex >= 0) {
+      const start = Math.min(anchorIndex, nextIndex);
+      const end = Math.max(anchorIndex, nextIndex);
+      const rangeUuids = annoJSON.features
+        .slice(start, end + 1)
+        .filter((feature) => !isAnnotationFeatureLocked(feature))
+        .map((feature) => feature.properties.uuid);
+      setAnnotationSelection(rangeUuids, nextUuid, { pan: false });
+    }
+  } else {
+    annotationListSelectionAnchorUuid = nextUuid;
+    setAnnotationSelection([nextUuid], nextUuid, { pan: false });
+  }
+
+  focusAnnotationListRow(nextUuid);
+  return true;
+}
+
+document
+  .getElementById("annotationList")
+  ?.addEventListener("keydown", function (event) {
+    if (event.target !== event.currentTarget) return;
+    handleAnnotationListArrowKey(
+      event,
+      selectedAnnotationUuid || annoJSON.features[0]?.properties?.uuid
+    );
+  });
+
+document.addEventListener(
+  "keydown",
+  function (event) {
+    if (!["ArrowUp", "ArrowDown"].includes(event.key)) return;
+    if (!selectedAnnotationUuid || annotatePalette?.hidden) return;
+
+    const tag = event.target?.tagName;
+    if (
+      ["INPUT", "TEXTAREA", "SELECT", "BUTTON"].includes(tag) ||
+      event.target?.isContentEditable
+    ) {
+      return;
+    }
+
+    handleAnnotationListArrowKey(event, selectedAnnotationUuid);
+  },
+  true
+);
+
+function refreshAnnotationVisibilityViews() {
+  drawShape(polyCanvas, [annoJSON, annoJSONTemp]);
+  applyAnnotationVisibilityState();
+  renderAnnotationList();
+  updateGroupControls();
+}
+
+function setAnnotationVisibility(uuid, visible) {
+  const feature = getAnnotationByUuid(uuid);
+  if (!feature) return;
+
+  annotationHistory.push(visible ? "Show annotation" : "Hide annotation");
+  feature.properties.visible = visible;
+  refreshAnnotationVisibilityViews();
+  unsavedAnnotations(true);
+}
+
+function setAnnotationLocked(uuid, locked) {
+  const feature = getAnnotationByUuid(uuid);
+  if (!feature) return;
+
+  annotationHistory.push(locked ? "Lock annotation" : "Unlock annotation");
+  feature.properties.locked = locked;
+  if (locked && selectedAnnotationUuids.has(uuid)) {
+    const nextSelection = getSelectedAnnotationUuids().filter(
+      (selectedUuid) => selectedUuid !== uuid
+    );
+    setAnnotationSelection(nextSelection, nextSelection[nextSelection.length - 1], {
+      redraw: true,
+      scroll: false,
+    });
+  }
+  renderAnnotationList();
+  updateSelectedAnnotationControls();
+  unsavedAnnotations(true);
+}
+
+function setAnnotationGroupVisibility(groupId, visible) {
+  annotationHistory.push(visible ? "Show annotation group" : "Hide annotation group");
+  annoJSON.features.forEach((feature) => {
+    normalizeAnnotationFeature(feature);
+    if (feature.properties.groupId === groupId) {
+      feature.properties.groupVisible = visible;
     }
   });
+  refreshAnnotationVisibilityViews();
+  unsavedAnnotations(true);
+}
 
-// When the next annotation button is clicked
-document
-  .getElementById("anno-next-button")
-  .addEventListener("click", function () {
-    // Current annotation id
-    const annoIdBox = document.getElementById("anno-id");
-    const currentId = parseInt(annoIdBox.value);
-    // List of all the annotation ids
-    // const annoIds = Object.keys(annoDict).map(Number);
-    const annoIds = Array.from(
-      { length: annoJSON.features.length },
-      (_, i) => i + 1
-    );
-    // Index of current annotation id
-    const currentIdx = annoIds.indexOf(currentId); // Index of current annotation
-
-    // if (currentIdx + 1 < Object.keys(annoDict).length) {
-    if (currentIdx + 1 < annoJSON.features.length) {
-      const nextIdx = currentIdx + 1;
-      const nextId = annoIds[nextIdx];
-      annoIdBox.value = nextId;
-      const image = viewer.world.getItemAt(0);
-      const viewportPoint = image.imageToViewportCoordinates(
-        annoJSON.features[nextId - 1].properties.xLabel,
-        annoJSON.features[nextId - 1].properties.yLabel
-      );
-      goToPoint(viewportPoint.x, viewportPoint.y);
-      annoLabelToText();
+function setAnnotationGroupLocked(groupId, locked) {
+  annotationHistory.push(locked ? "Lock annotation group" : "Unlock annotation group");
+  const lockedUuids = [];
+  annoJSON.features.forEach((feature) => {
+    normalizeAnnotationFeature(feature);
+    if (feature.properties.groupId === groupId) {
+      feature.properties.groupLocked = locked;
+      if (locked) lockedUuids.push(feature.properties.uuid);
     }
   });
+  if (locked && lockedUuids.length > 0) {
+    const lockedSet = new Set(lockedUuids);
+    const nextSelection = getSelectedAnnotationUuids().filter(
+      (uuid) => !lockedSet.has(uuid)
+    );
+    setAnnotationSelection(nextSelection, nextSelection[nextSelection.length - 1], {
+      redraw: true,
+      scroll: false,
+    });
+  }
+  renderAnnotationList();
+  updateGroupControls();
+  updateSelectedAnnotationControls();
+  unsavedAnnotations(true);
+}
+
+function updateAnnotationGroupProperties(groupId, updates, historyLabel) {
+  const group = getAnnotationGroups().find(
+    (candidate) => candidate.groupId === groupId
+  );
+  if (!group) return false;
+
+  annotationHistory.push(historyLabel);
+  annoJSON.features.forEach((feature) => {
+    normalizeAnnotationFeature(feature);
+    if (feature.properties.groupId === groupId) {
+      Object.assign(feature.properties, updates);
+    }
+  });
+  renderAnnotationList();
+  drawShape(polyCanvas, [annoJSON, annoJSONTemp]);
+  applyAnnotationVisibilityState();
+  unsavedAnnotations(true);
+  return true;
+}
+
+function renameAnnotationGroup(groupId, groupName) {
+  const trimmedName = groupName.trim();
+  if (!trimmedName) return;
+
+  const duplicateGroup = getAnnotationGroups().find(
+    (group) =>
+      group.groupId !== groupId &&
+      group.groupName.toLowerCase() === trimmedName.toLowerCase()
+  );
+  if (duplicateGroup) {
+    alert("A group with that name already exists.");
+    return;
+  }
+
+  updateAnnotationGroupProperties(
+    groupId,
+    { groupName: trimmedName },
+    "Rename annotation group"
+  );
+}
+
+function setAnnotationGroupColor(groupId, groupColor) {
+  updateAnnotationGroupProperties(
+    groupId,
+    { groupColor: getSafeGroupColor(groupColor) },
+    "Recolor annotation group"
+  );
+}
+
+function renderAnnotationList() {
+  const list = document.getElementById("annotationList");
+  if (!list) return;
+
+  list.innerHTML = "";
+
+  if (annoJSON.features.length === 0) {
+    const empty = document.createElement("div");
+    empty.className = "annotation-list-empty";
+    empty.textContent = "No annotations";
+    list.appendChild(empty);
+    renderAnnotationGroupOptions();
+    return;
+  }
+
+  annoJSON.features.forEach((feature, index) => {
+    normalizeAnnotationFeature(feature);
+
+    const props = feature.properties;
+    const isVisible = isAnnotationFeatureVisible(feature);
+    const isLocked = isAnnotationFeatureLocked(feature);
+    const isGroupLocked = props.groupLocked === true;
+    const row = document.createElement("div");
+    row.className = "annotation-list-row";
+    row.tabIndex = 0;
+    row.setAttribute("role", "option");
+    row.dataset.annotationUuid = props.uuid;
+    row.setAttribute("aria-selected", "false");
+    row.title = `${index + 1}. ${props.label || "(no label)"}`;
+    row.addEventListener("click", function (event) {
+      handleAnnotationListRowClick(event, props.uuid);
+    });
+    row.addEventListener("keydown", function (event) {
+      if (handleAnnotationListArrowKey(event, props.uuid)) return;
+      if (event.code === "Enter" || event.code === "Space") {
+        event.preventDefault();
+        handleAnnotationListRowClick(event, props.uuid);
+      }
+    });
+    row.classList.toggle("annotation-row-hidden", !isVisible);
+    row.classList.toggle("annotation-row-locked", isLocked);
+
+    const indexCell = document.createElement("span");
+    indexCell.className = "annotation-list-index";
+    indexCell.textContent = String(index + 1);
+
+    const typeCell = document.createElement("span");
+    typeCell.className = "annotation-list-type";
+    typeCell.appendChild(
+      createGeometryTypeIcon(feature.geometry?.type, props.shapeType)
+    );
+
+    const labelCell = document.createElement("span");
+    labelCell.className = "annotation-list-label";
+    labelCell.textContent = props.label || "(no label)";
+
+    const groupCell = document.createElement("span");
+    groupCell.className = "annotation-list-group";
+    groupCell.style.backgroundColor = props.groupColor;
+    groupCell.title = props.groupName;
+
+    const visibilityButton = document.createElement("button");
+    visibilityButton.type = "button";
+    visibilityButton.className = "annotation-visibility-button";
+    visibilityButton.title = isVisible ? "Hide annotation" : "Show annotation";
+    visibilityButton.setAttribute(
+      "aria-label",
+      isVisible ? "Hide annotation" : "Show annotation"
+    );
+    visibilityButton.appendChild(createVisibilityIcon(isVisible));
+    visibilityButton.addEventListener("click", function (event) {
+      event.stopPropagation();
+      setAnnotationVisibility(props.uuid, !isVisible);
+    });
+
+    const lockButton = document.createElement("button");
+    lockButton.type = "button";
+    lockButton.className = "annotation-lock-button";
+    lockButton.disabled = isGroupLocked;
+    lockButton.title = isGroupLocked
+      ? "Locked by group"
+      : isLocked
+        ? "Unlock annotation"
+        : "Lock annotation";
+    lockButton.setAttribute(
+      "aria-label",
+      isGroupLocked
+        ? "Locked by group"
+        : isLocked
+          ? "Unlock annotation"
+          : "Lock annotation"
+    );
+    lockButton.appendChild(createLockIcon(isLocked));
+    lockButton.addEventListener("click", function (event) {
+      event.stopPropagation();
+      setAnnotationLocked(props.uuid, !props.locked);
+    });
+
+    row.append(
+      indexCell,
+      typeCell,
+      labelCell,
+      groupCell,
+      visibilityButton,
+      lockButton
+    );
+    list.appendChild(row);
+  });
+
+  syncAnnotationListSelection();
+  renderAnnotationGroupOptions();
+  updateSelectedAnnotationControls();
+}
+
+function assignSelectedAnnotationGroup(group) {
+  const selectedUuids = getUnlockedSelectedAnnotationUuids();
+  if (selectedUuids.length === 0 || !group) return;
+
+  annotationHistory.push("Assign annotation group");
+  selectedUuids.forEach((uuid) => {
+    const feature = getAnnotationByUuid(uuid);
+    if (!feature) return;
+    feature.properties.groupId = group.groupId;
+    feature.properties.groupName = group.groupName;
+    feature.properties.groupColor = group.groupColor;
+    feature.properties.groupVisible = group.groupVisible;
+    feature.properties.groupLocked = group.groupLocked;
+  });
+  renderAnnotationList();
+  unsavedAnnotations(true);
+}
+
+function createAnnotationGroupForSelection(groupName) {
+  const trimmedName = groupName.trim();
+  if (!trimmedName) return;
+
+  const groups = getAnnotationGroups();
+  const existingGroup = groups.find(
+    (group) => group.groupName.toLowerCase() === trimmedName.toLowerCase()
+  );
+
+  assignSelectedAnnotationGroup(
+    existingGroup || {
+      groupId: `group-${generateUniqueId(8)}`,
+      groupName: trimmedName,
+      groupColor: getAnnotationGroupColor(groups.length),
+      groupVisible: true,
+      groupLocked: false,
+    }
+  );
+}
+
+function syncSelectedAnnotationVisuals() {
+  [...document.getElementsByClassName("annotate-label")].forEach((label) => {
+    label.classList.toggle(
+      "annotation-selected",
+      selectedAnnotationUuids.has(label.dataset.annotationUuid)
+    );
+  });
+
+  [...document.getElementsByClassName("annotate-crosshairs")].forEach(
+    (crosshair) => {
+      crosshair.classList.toggle(
+        "annotation-selected",
+        selectedAnnotationUuids.has(crosshair.dataset.annotationUuid)
+      );
+    }
+  );
+  syncAnnotationListSelection();
+  renderAnnotationGroupOptions();
+  applyAnnotationVisibilityState();
+}
+
+function selectAnnotationByUuid(uuid, options = {}) {
+  if (getAnnotationIndexByUuid(uuid) < 0) {
+    clearAnnotationSelection(options);
+    return null;
+  }
+
+  annotationListSelectionAnchorUuid = uuid;
+  setAnnotationSelection([uuid], uuid, options);
+  return getAnnotationByUuid(uuid);
+}
+
+function selectAnnotationById(id, options = {}) {
+  const feature = annoJSON.features[id - 1];
+  if (!feature) return selectAnnotationByUuid(null, options);
+  return selectAnnotationByUuid(feature.properties.uuid, options);
+}
+
+document
+  .getElementById("annotationGroupSelect")
+  .addEventListener("change", function (event) {
+    const group = getAnnotationGroups().find(
+      (candidate) => candidate.groupId === event.target.value
+    );
+    if (getSelectedAnnotationUuids().length > 0) {
+      assignSelectedAnnotationGroup(group);
+    }
+    updateGroupControls();
+  });
+
+document
+  .getElementById("annotationGroupColorInput")
+  .addEventListener("change", function (event) {
+    const group = getSelectedGroupFromDropdown();
+    if (!group) return;
+    setAnnotationGroupColor(group.groupId, event.target.value);
+  });
+
+document
+  .getElementById("annotationGroupVisibilityButton")
+  .addEventListener("click", function () {
+    const group = getSelectedGroupFromDropdown();
+    if (!group) return;
+    setAnnotationGroupVisibility(group.groupId, group.groupVisible === false);
+  });
+
+document
+  .getElementById("annotationGroupLockButton")
+  .addEventListener("click", function () {
+    const group = getSelectedGroupFromDropdown();
+    if (!group) return;
+    setAnnotationGroupLocked(group.groupId, group.groupLocked !== true);
+  });
+
+document
+  .getElementById("renameAnnotationGroupButton")
+  .addEventListener("click", function () {
+    const group = getSelectedGroupFromDropdown();
+    if (!group) return;
+    showPrompt("Rename group:", (value) => {
+      renameAnnotationGroup(group.groupId, value);
+    }, group.groupName);
+  });
+
+document
+  .getElementById("newAnnotationGroupButton")
+  .addEventListener("click", function () {
+    if (getUnlockedSelectedAnnotationUuids().length === 0) return;
+    showPrompt("Enter the group name:", createAnnotationGroupForSelection);
+  });
+
+renderAnnotationList();
 
 // When the delete annotation button is clicked
 document.getElementById("deleteButton").addEventListener("click", function () {
-  // Deleting the last item is equivalent to clearing all items
-  if (annoJSON.features.length === 1) {
-    annotationHistory.push("Delete annotation");
+  const selectedUuids = getUnlockedSelectedAnnotationUuids();
+  if (selectedUuids.length === 0) return;
+
+  if (
+    selectedUuids.length === annoJSON.features.length &&
+    annoJSON.features.every((feature) => !isAnnotationFeatureLocked(feature))
+  ) {
+    annotationHistory.push("Delete annotations");
     clearAnnotations();
     unsavedAnnotations(true);
     disableAnnoButtons();
-  } else {
-    annotationHistory.push("Delete annotation");
-    const id = parseInt(document.getElementById("anno-id").value);
-    const uuid = annoJSON.features[id - 1].properties.uuid;
+    return;
+  }
+
+  annotationHistory.push(
+    selectedUuids.length === 1 ? "Delete annotation" : "Delete annotations"
+  );
+
+  const selectedSet = new Set(selectedUuids);
+  selectedUuids.forEach((uuid) => {
     deleteText(uuid, "anno");
     deleteCrosshairs(uuid, "anno");
-    deleteFromGeoJSON(id);
-    selectNextAnno(id);
-    drawShape(polyCanvas, [annoJSON]);
-    // Disable the annotation buttons if there are no annotations left
-    if (annoJSON.features.length === 0) {
-      disableAnnoButtons();
-      document.getElementById("anno-id").value = "";
-      document.getElementById("anno-label").value = "";
-      document.getElementById("anno-notes").value = "";
-    }
+  });
+  annoJSON.features = annoJSON.features.filter(
+    (feature) => !selectedSet.has(feature.properties?.uuid)
+  );
+  clearAnnotationSelection({ redraw: false, scroll: false });
+  drawShape(polyCanvas, [annoJSON]);
+  renderAnnotationList();
+
+  if (annoJSON.features.length === 0) {
+    disableAnnoButtons();
   }
 });
 
 // labels could be changed without affecting the underlying color of the shapes
 function applyCurrentAnno(id, changeLabel = false) {
+  const feature = annoJSON.features[id - 1];
+  if (!feature || isAnnotationFeatureLocked(feature)) return;
+
   const labelFontSize = Number(
     document.getElementById("annoLabelFontSize").value
   );
@@ -3262,8 +6024,8 @@ function applyCurrentAnno(id, changeLabel = false) {
   const lineStyle = document.getElementById("lineStyle").value;
   const fillColor = getAnnotationFillColor();
   const fillOpacity = getAnnotationOpacityValue("fillOpacity");
-  const uuid = annoJSON.features[id - 1].properties.uuid;
-  const type = annoJSON.features[id - 1].geometry.type;
+  const uuid = feature.properties.uuid;
+  const type = feature.geometry.type;
   if (type === "Point") {
     if (changeLabel) {
       annoJSON.features[id - 1].properties.labelFontSize = labelFontSize;
@@ -3418,11 +6180,28 @@ function applyCurrentGrid(id, changeLabel = false) {
 document
   .getElementById("applyCurrentAnnoLabel")
   .addEventListener("click", function () {
-    const id = parseInt(document.getElementById("anno-id").value);
-    if (annoJSON.features[id - 1]) {
+    const selectedUuids = getUnlockedSelectedAnnotationUuids();
+    if (selectedUuids.length > 0) {
       annotationHistory.push("Style annotation label");
+      selectedUuids.forEach((uuid) => {
+        const id = getAnnotationIndexByUuid(uuid) + 1;
+        if (id > 0) applyCurrentAnno(id, true);
+      });
     }
-    applyCurrentAnno(id, true);
+  });
+
+// Apply current annotation text label style to the selected group
+document
+  .getElementById("applyGroupAnnoLabel")
+  .addEventListener("click", function () {
+    const group = getSelectedGroupFromDropdown();
+    const annoIds = getUnlockedAnnotationIdsForGroup(group?.groupId);
+    if (annoIds.length > 0) {
+      annotationHistory.push("Style annotation group labels");
+    }
+    for (let i = 0; i < annoIds.length; i++) {
+      applyCurrentAnno(annoIds[i], true);
+    }
   });
 
 // Apply current grid text label style
@@ -3442,14 +6221,10 @@ document
 document
   .getElementById("applyAllAnnoLabel")
   .addEventListener("click", function () {
-    if (annoJSON.features.length > 0) {
+    const annoIds = getUnlockedAnnotationIds();
+    if (annoIds.length > 0) {
       annotationHistory.push("Style annotation labels");
     }
-    const annoIds = Array.from(
-      { length: annoJSON.features.length },
-      (_, i) => i + 1
-    );
-    // const annoIds = Object.keys(annoDict).map(Number);
     for (let i = 0; i < annoIds.length; i++) {
       applyCurrentAnno(annoIds[i], true);
     }
@@ -3477,11 +6252,28 @@ document
 document
   .getElementById("applyCurrentAnno")
   .addEventListener("click", function () {
-    const id = parseInt(document.getElementById("anno-id").value);
-    if (annoJSON.features[id - 1]) {
+    const selectedUuids = getUnlockedSelectedAnnotationUuids();
+    if (selectedUuids.length > 0) {
       annotationHistory.push("Style annotation");
+      selectedUuids.forEach((uuid) => {
+        const id = getAnnotationIndexByUuid(uuid) + 1;
+        if (id > 0) applyCurrentAnno(id, false);
+      });
     }
-    applyCurrentAnno(id, false);
+  });
+
+// Apply current annotation feature style to the selected group
+document
+  .getElementById("applyGroupAnno")
+  .addEventListener("click", function () {
+    const group = getSelectedGroupFromDropdown();
+    const annoIds = getUnlockedAnnotationIdsForGroup(group?.groupId);
+    if (annoIds.length > 0) {
+      annotationHistory.push("Style annotation group");
+    }
+    for (let i = 0; i < annoIds.length; i++) {
+      applyCurrentAnno(annoIds[i], false);
+    }
   });
 
 // Apply current grid feature style
@@ -3499,14 +6291,10 @@ document
 
 // Apply all annotations feature style
 document.getElementById("applyAllAnno").addEventListener("click", function () {
-  if (annoJSON.features.length > 0) {
+  const annoIds = getUnlockedAnnotationIds();
+  if (annoIds.length > 0) {
     annotationHistory.push("Style annotations");
   }
-  const annoIds = Array.from(
-    { length: annoJSON.features.length },
-    (_, i) => i + 1
-  );
-  // const annoIds = Object.keys(annoDict).map(Number);
   for (let i = 0; i < annoIds.length; i++) {
     applyCurrentAnno(annoIds[i], false);
   }
@@ -3528,81 +6316,63 @@ document.getElementById("applyAllGrid").addEventListener("click", function () {
   }
 });
 
-function selectNextAnno(id) {
-  const annoIdBox = document.getElementById("anno-id");
-  const annoLabelBox = document.getElementById("anno-label");
-  const annoNotesBox = document.getElementById("anno-notes");
-  const annoIds = Array.from(
-    { length: annoJSON.features.length },
-    (_, i) => i + 1
+// Function to update the textbox with the JSON label
+function annoLabelToText() {
+  setAnnotationTextInputs(getSelectedAnnotation());
+}
+
+function focusSelectedAnnotationLabelInput() {
+  const feature = getSelectedAnnotation();
+  if (!feature || isAnnotationFeatureLocked(feature)) return false;
+
+  openAnnotatePalette();
+  restoreToolPaletteFromMinimized(
+    annotatePalette,
+    minimizeAnnotatePaletteButton
   );
 
-  // Case where there are no annotations left
-  if (annoIds.length === 0) {
-    annoLabelBox.value = "";
-    annoNotesBox.value = "";
-    annoIdBox.value = 1;
-    document.getElementById("anno-id").disabled = false;
+  const annotateDetails = document.getElementById("annotateDetails");
+  if (annotateDetails) annotateDetails.open = true;
+
+  const annoLabel = document.getElementById("anno-label");
+  if (!annoLabel || annoLabel.disabled) return false;
+
+  requestAnimationFrame(() => {
+    annoLabel.focus();
+    annoLabel.select();
+  });
+  return true;
+}
+
+// Function to update the JSON based on the selected annotation text boxes
+function annoTextToLabel() {
+  const feature = getSelectedAnnotation();
+  const annoLabel = document.getElementById("anno-label");
+  const annoNotes = document.getElementById("anno-notes");
+  if (feature && !isAnnotationFeatureLocked(feature)) {
+    feature.properties.label = annoLabel.value;
+    feature.properties.notes = annoNotes.value;
+  }
+}
+
+function commitAnnotationTextInput(historyLabel) {
+  const feature = getSelectedAnnotation();
+  if (!feature) return;
+  if (isAnnotationFeatureLocked(feature)) {
+    setAnnotationTextInputs(feature);
     return;
   }
 
-  // Case where there is no index that is < id
-  if (id > Math.min(annoIds)) {
-    const nextId = annoIds[0];
-    annoIdBox.value = nextId;
-    annoLabelToText();
-  } else {
-    // Find the index of the closest value that is < id
-    const nextIdx = annoIds.reduce(
-      (closestIndex, currentValue, currentIndex) => {
-        if (currentValue <= id) {
-          const closestValue = annoIds[closestIndex];
-          if (
-            closestValue === undefined ||
-            id - currentValue < id - closestValue
-          ) {
-            return currentIndex;
-          }
-        }
-        return closestIndex;
-      },
-      -1
-    );
-    const nextId = annoIds[nextIdx];
-    annoIdBox.value = nextId;
-    annoLabelToText();
-  }
-}
-
-// Function to update the textbox with the JSON label
-function annoLabelToText() {
-  const idInput = parseInt(document.getElementById("anno-id").value);
-  // Find the annotation by id
-  let label = "";
-  let notes = "";
-  if (annoJSON.features[idInput - 1]) {
-    // Access the label within the properties of the GeoJSON object
-    label = annoJSON.features[idInput - 1].properties.label ?? "";
-    // Access the notes within the properties of the GeoJSON object
-    notes = annoJSON.features[idInput - 1].properties.notes ?? "";
-  }
   const annoLabel = document.getElementById("anno-label");
   const annoNotes = document.getElementById("anno-notes");
-  annoLabel.value = `${label}`;
-  annoNotes.value = `${notes}`;
-}
+  const labelChanged = feature.properties.label !== annoLabel.value;
+  const notesChanged = feature.properties.notes !== annoNotes.value;
+  if (!labelChanged && !notesChanged) return;
 
-// Function to update the JSON based on the anno-id text box
-function annoTextToLabel() {
-  const idInput = parseInt(document.getElementById("anno-id").value);
-  const annoLabel = document.getElementById("anno-label");
-  const annoNotes = document.getElementById("anno-notes");
-  // Check if the ID exists in the annoJSON dictionary
-  if (annoJSON.features[idInput - 1]) {
-    // Update the label within the properties of the GeoJSON object
-    annoJSON.features[idInput - 1].properties.label = annoLabel.value;
-    annoJSON.features[idInput - 1].properties.notes = annoNotes.value;
-  }
+  annotationHistory.push(historyLabel);
+  annoTextToLabel();
+  updateText(feature.properties.uuid, "anno", annoLabel.value);
+  renderAnnotationList();
 }
 
 // When Enter is pressed in the anno-label text box
@@ -3611,18 +6381,10 @@ document.addEventListener("keydown", function (event) {
   // Check for Enter key in anno-label field
   if (event.code === "Enter" && document.activeElement === textInput) {
     event.preventDefault(); // Prevent any default action for Enter key
-    const idInput = parseInt(document.getElementById("anno-id").value);
-    const feature = annoJSON.features[idInput - 1];
-    if (!feature) return;
-    if (
-      feature.properties.label !== textInput.value ||
-      feature.properties.notes !== document.getElementById("anno-notes").value
-    ) {
-      annotationHistory.push("Edit annotation label");
-    }
-    annoTextToLabel();
-    const uuid = annoJSON.features[idInput - 1].properties.uuid;
-    updateText(uuid, "anno", textInput.value);
+    commitAnnotationTextInput("Edit annotation label");
+  } else if (event.key === "Escape" && document.activeElement === textInput) {
+    event.preventDefault();
+    textInput.blur();
   }
 });
 
@@ -3632,44 +6394,34 @@ document.addEventListener("keydown", function (event) {
   // Check for Enter key in anno-notes field
   if (event.code === "Enter" && document.activeElement === textInput) {
     event.preventDefault(); // Prevent any default action for Enter key
-    const idInput = parseInt(document.getElementById("anno-id").value);
-    const feature = annoJSON.features[idInput - 1];
-    if (!feature) return;
-    if (
-      feature.properties.label !== document.getElementById("anno-label").value ||
-      feature.properties.notes !== textInput.value
-    ) {
-      annotationHistory.push("Edit annotation notes");
-    }
-    annoTextToLabel();
+    commitAnnotationTextInput("Edit annotation notes");
+  } else if (event.key === "Escape" && document.activeElement === textInput) {
+    event.preventDefault();
+    textInput.blur();
   }
 });
 
-// When Enter is pressed in the anno-id input box
+document
+  .getElementById("anno-label")
+  ?.addEventListener("change", () =>
+    commitAnnotationTextInput("Edit annotation label")
+  );
+
+document
+  .getElementById("anno-notes")
+  ?.addEventListener("change", () =>
+    commitAnnotationTextInput("Edit annotation notes")
+  );
+
 document.addEventListener("keydown", function (event) {
-  if (
-    event.code === "Enter" &&
-    document.activeElement === document.getElementById("anno-id")
-  ) {
-    const idInput = document.getElementById("anno-id");
+  if (event.ctrlKey || event.metaKey || event.altKey) return;
+  if (isTextEntryElement(event.target)) return;
+  if (event.key !== "l" && event.key !== "L") return;
+  if (!selectedAnnotationUuid) return;
 
-    event.preventDefault(); // Prevent any default action for Enter key
-    annoLabelToText();
-
-    const image = viewer.world.getItemAt(0);
-    const viewportPoint = image.imageToViewportCoordinates(
-      annoJSON.features[parseInt(idInput.value) - 1].properties.xLabel,
-      annoJSON.features[parseInt(idInput.value) - 1].properties.yLabel
-    );
-    goToPoint(viewportPoint.x, viewportPoint.y);
-
-    // Provide visual feedback by changing the border color
-    idInput.style.borderColor = "green";
-    idInput.style.outline = "none"; // Removes the default focus outline
-
-    setTimeout(() => {
-      idInput.style.borderColor = ""; // Revert to original after 1 second
-    }, 1000);
+  if (focusSelectedAnnotationLabelInput()) {
+    event.preventDefault();
+    event.stopPropagation();
   }
 });
 
@@ -3681,9 +6433,1905 @@ function goToPoint(x, y) {
   );
 }
 
+function isAnnotationDrawingActive() {
+  return (
+    isQPressed ||
+    isPointMode ||
+    isRectangleMode ||
+    isZPressed ||
+    isPolylineMode ||
+    isXPressed ||
+    isPolygonMode ||
+    isCPressed ||
+    isEllipseMode ||
+    isVPressed ||
+    isCircleAnnotationMode ||
+    activelyMakingPoly ||
+    activelyMakingEllipse ||
+    activelyMakingCircleAnnotation ||
+    startPoint
+  );
+}
+
+function isAnnotationDraftActive() {
+  return (
+    activelyMakingPoly ||
+    activelyMakingEllipse ||
+    activelyMakingCircleAnnotation ||
+    Boolean(startPoint) ||
+    clickImageCoordinates.length > 0 ||
+    ellipseImageCoordinates.length > 0 ||
+    Boolean(circleAnnotationCenterImage)
+  );
+}
+
+function imageCoordToViewerPixel(image, coord) {
+  const viewportPoint = image.imageToViewportCoordinates(coord[0], coord[1]);
+  return viewer.viewport.viewportToViewerElementCoordinates(viewportPoint);
+}
+
+function distanceToSegment(point, start, end) {
+  const dx = end.x - start.x;
+  const dy = end.y - start.y;
+  if (dx === 0 && dy === 0) {
+    return Math.hypot(point.x - start.x, point.y - start.y);
+  }
+
+  const t = Math.max(
+    0,
+    Math.min(
+      1,
+      ((point.x - start.x) * dx + (point.y - start.y) * dy) /
+        (dx * dx + dy * dy)
+    )
+  );
+  return Math.hypot(point.x - (start.x + t * dx), point.y - (start.y + t * dy));
+}
+
+function isImagePointInRing(point, ring) {
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const xi = ring[i][0];
+    const yi = ring[i][1];
+    const xj = ring[j][0];
+    const yj = ring[j][1];
+    const crosses =
+      yi > point.y !== yj > point.y &&
+      point.x < ((xj - xi) * (point.y - yi)) / (yj - yi) + xi;
+    if (crosses) inside = !inside;
+  }
+  return inside;
+}
+
+function isNearLineCoordinates(viewerPoint, image, coordinates, tolerance = 8) {
+  for (let i = 1; i < coordinates.length; i++) {
+    const start = imageCoordToViewerPixel(image, coordinates[i - 1]);
+    const end = imageCoordToViewerPixel(image, coordinates[i]);
+    if (distanceToSegment(viewerPoint, start, end) <= tolerance) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function polygonContainsImagePoint(imagePoint, polygon) {
+  if (!polygon.length || !isImagePointInRing(imagePoint, polygon[0])) {
+    return false;
+  }
+
+  return !polygon.slice(1).some((hole) => isImagePointInRing(imagePoint, hole));
+}
+
+function imagePointFromCoord(coord) {
+  return { x: coord[0], y: coord[1] };
+}
+
+function pointOnImageSegment(point, start, end) {
+  const cross =
+    (point.y - start.y) * (end.x - start.x) -
+    (point.x - start.x) * (end.y - start.y);
+  if (Math.abs(cross) > 1e-9) return false;
+
+  return (
+    point.x >= Math.min(start.x, end.x) - 1e-9 &&
+    point.x <= Math.max(start.x, end.x) + 1e-9 &&
+    point.y >= Math.min(start.y, end.y) - 1e-9 &&
+    point.y <= Math.max(start.y, end.y) + 1e-9
+  );
+}
+
+function getImageSegmentOrientation(a, b, c) {
+  const value = (b.y - a.y) * (c.x - b.x) - (b.x - a.x) * (c.y - b.y);
+  if (Math.abs(value) < 1e-9) return 0;
+  return value > 0 ? 1 : 2;
+}
+
+function imageSegmentsIntersect(a, b, c, d) {
+  const orientation1 = getImageSegmentOrientation(a, b, c);
+  const orientation2 = getImageSegmentOrientation(a, b, d);
+  const orientation3 = getImageSegmentOrientation(c, d, a);
+  const orientation4 = getImageSegmentOrientation(c, d, b);
+
+  if (orientation1 !== orientation2 && orientation3 !== orientation4) {
+    return true;
+  }
+
+  return (
+    (orientation1 === 0 && pointOnImageSegment(c, a, b)) ||
+    (orientation2 === 0 && pointOnImageSegment(d, a, b)) ||
+    (orientation3 === 0 && pointOnImageSegment(a, c, d)) ||
+    (orientation4 === 0 && pointOnImageSegment(b, c, d))
+  );
+}
+
+function getRingSegments(ring) {
+  const segments = [];
+  for (let i = 1; i < ring.length; i++) {
+    segments.push([
+      imagePointFromCoord(ring[i - 1]),
+      imagePointFromCoord(ring[i]),
+    ]);
+  }
+  return segments;
+}
+
+function imagePointInMarquee(point, marqueePolygon) {
+  return isImagePointInRing(point, marqueePolygon);
+}
+
+function lineCoordinatesIntersectMarquee(coordinates, marqueePolygon) {
+  const marqueeSegments = getRingSegments(marqueePolygon);
+  const lineSegments = getRingSegments(coordinates);
+
+  if (
+    coordinates.some((coord) =>
+      imagePointInMarquee(imagePointFromCoord(coord), marqueePolygon)
+    )
+  ) {
+    return true;
+  }
+
+  return lineSegments.some(([lineStart, lineEnd]) =>
+    marqueeSegments.some(([marqueeStart, marqueeEnd]) =>
+      imageSegmentsIntersect(lineStart, lineEnd, marqueeStart, marqueeEnd)
+    )
+  );
+}
+
+function polygonIntersectsMarquee(polygon, marqueePolygon) {
+  const marqueeSegments = getRingSegments(marqueePolygon);
+
+  if (
+    polygon.some((ring) =>
+      ring.some((coord) =>
+        imagePointInMarquee(imagePointFromCoord(coord), marqueePolygon)
+      )
+    )
+  ) {
+    return true;
+  }
+
+  if (
+    marqueePolygon.some((coord) =>
+      polygonContainsImagePoint(imagePointFromCoord(coord), polygon)
+    )
+  ) {
+    return true;
+  }
+
+  return polygon.some((ring) =>
+    getRingSegments(ring).some(([ringStart, ringEnd]) =>
+      marqueeSegments.some(([marqueeStart, marqueeEnd]) =>
+        imageSegmentsIntersect(ringStart, ringEnd, marqueeStart, marqueeEnd)
+      )
+    )
+  );
+}
+
+function annotationFeatureIntersectsMarquee(feature, marqueePolygon) {
+  if (!feature.geometry || !feature.properties?.uuid) return false;
+  if (!isAnnotationFeatureVisible(feature)) return false;
+
+  const { type, coordinates } = feature.geometry;
+  if (type === "Point") {
+    return imagePointInMarquee(imagePointFromCoord(coordinates), marqueePolygon);
+  }
+  if (type === "MultiPoint") {
+    return coordinates.some((coord) =>
+      imagePointInMarquee(imagePointFromCoord(coord), marqueePolygon)
+    );
+  }
+  if (type === "LineString") {
+    return lineCoordinatesIntersectMarquee(coordinates, marqueePolygon);
+  }
+  if (type === "MultiLineString") {
+    return coordinates.some((line) =>
+      lineCoordinatesIntersectMarquee(line, marqueePolygon)
+    );
+  }
+  if (type === "Polygon") {
+    return polygonIntersectsMarquee(coordinates, marqueePolygon);
+  }
+  if (type === "MultiPolygon") {
+    return coordinates.some((polygon) =>
+      polygonIntersectsMarquee(polygon, marqueePolygon)
+    );
+  }
+  return false;
+}
+
+function findAnnotationUuidAtViewerPoint(viewerPoint, options = {}) {
+  const lineTolerance = options.lineTolerance ?? 8;
+  const image = viewer.world.getItemAt(0);
+  if (!image) return null;
+
+  const viewportPoint = viewer.viewport.pointFromPixel(viewerPoint);
+  const imagePoint = image.viewportToImageCoordinates(viewportPoint);
+
+  for (let i = annoJSON.features.length - 1; i >= 0; i--) {
+    const feature = annoJSON.features[i];
+    if (!feature.geometry || !feature.properties?.uuid) continue;
+    if (!isAnnotationFeatureVisible(feature)) continue;
+    if (isAnnotationFeatureLocked(feature)) continue;
+
+    const { type, coordinates } = feature.geometry;
+    if (type === "Point") {
+      const pointPixel = imageCoordToViewerPixel(image, coordinates);
+      if (Math.hypot(viewerPoint.x - pointPixel.x, viewerPoint.y - pointPixel.y) <= 10) {
+        return feature.properties.uuid;
+      }
+    } else if (type === "LineString") {
+      if (isNearLineCoordinates(viewerPoint, image, coordinates, lineTolerance)) {
+        return feature.properties.uuid;
+      }
+    } else if (type === "MultiLineString") {
+      if (
+        coordinates.some((line) =>
+          isNearLineCoordinates(viewerPoint, image, line, lineTolerance)
+        )
+      ) {
+        return feature.properties.uuid;
+      }
+    } else if (type === "Polygon") {
+      if (
+        polygonContainsImagePoint(imagePoint, coordinates) ||
+        coordinates.some((ring) =>
+          isNearLineCoordinates(viewerPoint, image, ring, lineTolerance)
+        )
+      ) {
+        return feature.properties.uuid;
+      }
+    } else if (type === "MultiPolygon") {
+      if (
+        coordinates.some(
+          (polygon) =>
+            polygonContainsImagePoint(imagePoint, polygon) ||
+            polygon.some((ring) =>
+              isNearLineCoordinates(viewerPoint, image, ring, lineTolerance)
+            )
+        )
+      ) {
+        return feature.properties.uuid;
+      }
+    }
+  }
+
+  return null;
+}
+
+function getImagePointFromViewerPixel(pixelPoint) {
+  const image = viewer.world.getItemAt(0);
+  if (!image) return null;
+
+  const viewportPoint = viewer.viewport.pointFromPixel(pixelPoint);
+  return image.viewportToImageCoordinates(viewportPoint);
+}
+
+function getImagePointFromPointerEvent(event) {
+  return getImagePointFromViewerPixel(
+    new OpenSeadragon.Point(event.clientX, event.clientY)
+  );
+}
+
+function translateCoordinateArray(coordinates, dx, dy) {
+  if (!Array.isArray(coordinates)) return coordinates;
+  if (
+    coordinates.length >= 2 &&
+    typeof coordinates[0] === "number" &&
+    typeof coordinates[1] === "number"
+  ) {
+    coordinates[0] += dx;
+    coordinates[1] += dy;
+    return coordinates;
+  }
+
+  coordinates.forEach((coordinate) => translateCoordinateArray(coordinate, dx, dy));
+  return coordinates;
+}
+
+function translateAnnotationFeature(feature, dx, dy) {
+  if (!feature?.geometry?.coordinates || !feature.properties) return;
+
+  translateCoordinateArray(feature.geometry.coordinates, dx, dy);
+
+  ["xLabel", "circleCenterX"].forEach((property) => {
+    if (typeof feature.properties[property] === "number") {
+      feature.properties[property] += dx;
+    }
+  });
+  ["yLabel", "circleCenterY"].forEach((property) => {
+    if (typeof feature.properties[property] === "number") {
+      feature.properties[property] += dy;
+    }
+  });
+}
+
+function refreshAnnotationAfterMove({ updateList = false } = {}) {
+  drawShape(polyCanvas, [annoJSON, annoJSONTemp]);
+  removeAnnotationOverlays();
+  renderAnnotationOverlaysFromJSON();
+  applyAnnotationVisibilityState();
+  syncSelectedAnnotationVisuals();
+  if (updateList) renderAnnotationList();
+}
+
+function startAnnotationMoveDrag(event) {
+  if (!isAnnotationMoveMode || getUnlockedSelectedAnnotationUuids().length === 0) {
+    return false;
+  }
+  if (isAnnotationDrawingActive()) return false;
+
+  const delta = event.delta || new OpenSeadragon.Point(0, 0);
+  const startPixel = new OpenSeadragon.Point(
+    event.position.x - delta.x,
+    event.position.y - delta.y
+  );
+  const uuidAtStart = findAnnotationUuidAtViewerPoint(startPixel);
+  if (!uuidAtStart) return false;
+
+  if (isAnnotationUuidLocked(uuidAtStart)) return false;
+
+  if (!selectedAnnotationUuids.has(uuidAtStart)) {
+    selectAnnotationByUuid(uuidAtStart, { pan: false, scroll: false });
+  }
+
+  const startImagePoint = getImagePointFromViewerPixel(startPixel);
+  const currentImagePoint = getImagePointFromViewerPixel(event.position);
+  if (!startImagePoint || !currentImagePoint) return false;
+
+  annotationHistory.push(
+    selectedAnnotationUuids.size === 1 ? "Move annotation" : "Move annotations"
+  );
+  annotationMoveDragState = {
+    lastImagePoint: startImagePoint,
+    moved: false,
+  };
+  viewerContainer?.classList.add("annotation-moving");
+
+  moveSelectedAnnotationsToImagePoint(currentImagePoint);
+  return true;
+}
+
+function moveSelectedAnnotationsToImagePoint(imagePoint) {
+  if (!annotationMoveDragState || !imagePoint) return false;
+
+  const dx = imagePoint.x - annotationMoveDragState.lastImagePoint.x;
+  const dy = imagePoint.y - annotationMoveDragState.lastImagePoint.y;
+  if (!Number.isFinite(dx) || !Number.isFinite(dy) || (dx === 0 && dy === 0)) {
+    return true;
+  }
+
+  getUnlockedSelectedAnnotationUuids().forEach((uuid) => {
+    translateAnnotationFeature(getAnnotationByUuid(uuid), dx, dy);
+  });
+  annotationMoveDragState.lastImagePoint = imagePoint;
+  annotationMoveDragState.moved = true;
+  refreshAnnotationAfterMove();
+  return true;
+}
+
+function finishAnnotationMoveDrag() {
+  if (!annotationMoveDragState) return false;
+
+  const moved = annotationMoveDragState.moved;
+  annotationMoveDragState = null;
+  viewerContainer?.classList.remove("annotation-moving");
+  if (moved) {
+    refreshAnnotationAfterMove({ updateList: true });
+    unsavedAnnotations(true);
+    suppressAnnotationClickBriefly();
+  }
+  return true;
+}
+
+function updateAnnotationLabelOverlayPosition(uuid) {
+  const feature = getAnnotationByUuid(uuid);
+  const label = document.getElementById(`annotate-label-${uuid}`);
+  const container = label?.closest(".annotation-overlay");
+  const image = viewer.world.getItemAt(0);
+  if (!feature?.properties || !container || !image) return;
+
+  const viewportPoint = image.imageToViewportCoordinates(
+    new OpenSeadragon.Point(feature.properties.xLabel, feature.properties.yLabel)
+  );
+  viewer.updateOverlay(container, viewportPoint);
+}
+
+function startAnnotationLabelMoveDrag(event, uuid) {
+  if (!isAnnotationLabelMoveMode || !uuid) return false;
+  const feature = getAnnotationByUuid(uuid);
+  if (!feature) return false;
+  if (isAnnotationFeatureLocked(feature)) return false;
+
+  const imagePoint = getImagePointFromPointerEvent(event);
+  if (!imagePoint) return false;
+
+  if (!selectedAnnotationUuids.has(uuid)) {
+    selectAnnotationByUuid(uuid, { pan: false, scroll: false });
+  }
+
+  annotationHistory.push("Move annotation label");
+  annotationLabelMoveDragState = {
+    uuid,
+    lastImagePoint: imagePoint,
+    moved: false,
+  };
+  viewerContainer?.classList.add("annotation-label-moving");
+  window.addEventListener("pointermove", handleAnnotationLabelWindowPointerMove);
+  window.addEventListener("pointerup", handleAnnotationLabelWindowPointerUp);
+  window.addEventListener("pointercancel", handleAnnotationLabelWindowPointerUp);
+  return true;
+}
+
+function moveAnnotationLabelToImagePoint(imagePoint) {
+  if (!annotationLabelMoveDragState || !imagePoint) return false;
+
+  const feature = getAnnotationByUuid(annotationLabelMoveDragState.uuid);
+  if (!feature?.properties) return false;
+
+  const dx = imagePoint.x - annotationLabelMoveDragState.lastImagePoint.x;
+  const dy = imagePoint.y - annotationLabelMoveDragState.lastImagePoint.y;
+  if (!Number.isFinite(dx) || !Number.isFinite(dy) || (dx === 0 && dy === 0)) {
+    return true;
+  }
+
+  feature.properties.xLabel = Number(feature.properties.xLabel) + dx;
+  feature.properties.yLabel = Number(feature.properties.yLabel) + dy;
+  annotationLabelMoveDragState.lastImagePoint = imagePoint;
+  annotationLabelMoveDragState.moved = true;
+  updateAnnotationLabelOverlayPosition(annotationLabelMoveDragState.uuid);
+  return true;
+}
+
+function finishAnnotationLabelMoveDrag() {
+  if (!annotationLabelMoveDragState) return false;
+
+  const moved = annotationLabelMoveDragState.moved;
+  annotationLabelMoveDragState = null;
+  viewerContainer?.classList.remove("annotation-label-moving");
+  window.removeEventListener("pointermove", handleAnnotationLabelWindowPointerMove);
+  window.removeEventListener("pointerup", handleAnnotationLabelWindowPointerUp);
+  window.removeEventListener("pointercancel", handleAnnotationLabelWindowPointerUp);
+  if (moved) {
+    unsavedAnnotations(true);
+    suppressAnnotationClickBriefly();
+  }
+  return true;
+}
+
+function isVertexEditableAnnotation(feature) {
+  if (!feature?.geometry || !feature.properties?.uuid) return false;
+  if (feature.geometry.type === "LineString") return true;
+  if (feature.geometry.type !== "Polygon") return false;
+
+  return !["rectangle", "ellipse", "circle"].includes(feature.properties.shapeType);
+}
+
+function isShapeEditableAnnotation(feature) {
+  return (
+    feature?.geometry?.type === "Point" ||
+    (feature?.geometry?.type === "Polygon" &&
+      ["rectangle", "ellipse", "circle"].includes(feature.properties?.shapeType))
+  );
+}
+
+function isRotationEditableAnnotation(feature) {
+  if (!feature?.geometry || !feature.properties?.uuid) return false;
+  if (feature.geometry.type === "LineString") return true;
+  if (feature.geometry.type !== "Polygon") return false;
+
+  const shapeType = feature.properties?.shapeType;
+  return shapeType !== "circle";
+}
+
+function getEditableVertexCoordinates(feature) {
+  if (!isVertexEditableAnnotation(feature)) return [];
+  if (feature.geometry.type === "LineString") return feature.geometry.coordinates;
+
+  const ring = feature.geometry.coordinates?.[0] || [];
+  const isClosed = ring.length > 1 && coordinatesMatch(ring[0], ring[ring.length - 1]);
+  return isClosed ? ring.slice(0, -1) : ring;
+}
+
+function removeAnnotationVertexHandles() {
+  [...document.getElementsByClassName("annotation-vertex-handle")].forEach(
+    (handle) => {
+      viewer.removeOverlay(handle);
+      handle.remove();
+    }
+  );
+}
+
+function addAnnotationEditMoveHandle(uuid, coordinate, image) {
+  if (!uuid || !coordinate || !image) return;
+  const handle = document.createElement("button");
+  handle.type = "button";
+  handle.className =
+    "annotation-vertex-handle annotation-shape-handle annotation-shape-handle-center";
+  handle.title = "Move annotation";
+  handle.setAttribute("aria-label", "Move annotation");
+  handle.dataset.annotationUuid = uuid;
+  handle.dataset.handleType = "center";
+  handle.addEventListener("pointerdown", function (event) {
+    handleAnnotationShapePointerDown(event, uuid, "center");
+  });
+
+  viewer.addOverlay({
+    element: handle,
+    location: image.imageToViewportCoordinates(
+      new OpenSeadragon.Point(coordinate.x, coordinate.y)
+    ),
+    checkResize: false,
+    rotationMode: OpenSeadragon.OverlayRotationMode.NO_ROTATION,
+  });
+}
+
+function renderAnnotationVertexHandles() {
+  removeAnnotationVertexHandles();
+
+  const feature = getAnnotationByUuid(activeVertexEditUuid);
+  if (!isVertexEditableAnnotation(feature)) return;
+
+  const image = viewer.world.getItemAt(0);
+  if (!image) return;
+
+  addAnnotationEditMoveHandle(
+    activeVertexEditUuid,
+    getFeatureEditMoveCoordinate(feature),
+    image
+  );
+
+  const rotationHandleCoordinate = getRotationHandleCoordinate(feature);
+  if (rotationHandleCoordinate) {
+    const rotateHandle = document.createElement("button");
+    rotateHandle.type = "button";
+    rotateHandle.className =
+      "annotation-vertex-handle annotation-shape-handle annotation-shape-handle-rotate";
+    rotateHandle.title = "Rotate annotation. Hold Shift to snap.";
+    rotateHandle.setAttribute(
+      "aria-label",
+      "Rotate annotation. Hold Shift to snap."
+    );
+    rotateHandle.dataset.annotationUuid = activeVertexEditUuid;
+    rotateHandle.dataset.handleType = "rotate";
+    rotateHandle.addEventListener("pointerdown", function (event) {
+      handleAnnotationShapePointerDown(event, activeVertexEditUuid, "rotate");
+    });
+
+    viewer.addOverlay({
+      element: rotateHandle,
+      location: image.imageToViewportCoordinates(
+        new OpenSeadragon.Point(
+          rotationHandleCoordinate[0],
+          rotationHandleCoordinate[1]
+        )
+      ),
+      checkResize: false,
+      rotationMode: OpenSeadragon.OverlayRotationMode.NO_ROTATION,
+    });
+  }
+
+  getEditableVertexCoordinates(feature).forEach((coordinate, vertexIndex) => {
+    const handle = document.createElement("button");
+    handle.type = "button";
+    handle.className = "annotation-vertex-handle";
+    handle.title = "Drag vertex. Option-click to delete.";
+    handle.setAttribute(
+      "aria-label",
+      `Move vertex ${vertexIndex + 1}. Option-click to delete.`
+    );
+    handle.dataset.annotationUuid = activeVertexEditUuid;
+    handle.dataset.vertexIndex = String(vertexIndex);
+    handle.addEventListener("pointerdown", function (event) {
+      handleAnnotationVertexPointerDown(event, activeVertexEditUuid, vertexIndex);
+    });
+
+    viewer.addOverlay({
+      element: handle,
+      location: image.imageToViewportCoordinates(
+        new OpenSeadragon.Point(coordinate[0], coordinate[1])
+      ),
+      checkResize: false,
+      rotationMode: OpenSeadragon.OverlayRotationMode.NO_ROTATION,
+    });
+  });
+  updateAnnotationOverlayRotation();
+}
+
+function enterAnnotationVertexEditMode(uuid) {
+  const feature = getAnnotationByUuid(uuid);
+  if (!isVertexEditableAnnotation(feature)) return false;
+  if (isAnnotationFeatureLocked(feature)) return false;
+
+  exitAnnotationShapeEditMode();
+  setAnnotationMoveMode(false);
+  setAnnotationLabelMoveMode(false);
+  activeVertexEditUuid = uuid;
+  viewerContainer?.classList.add("annotation-vertex-editing");
+  renderAnnotationVertexHandles();
+  return true;
+}
+
+function exitAnnotationVertexEditMode() {
+  if (!activeVertexEditUuid && !annotationVertexDragState) return;
+
+  activeVertexEditUuid = null;
+  annotationVertexDragState = null;
+  removeAnnotationVertexHandles();
+  viewerContainer?.classList.remove(
+    "annotation-vertex-editing",
+    "annotation-vertex-dragging"
+  );
+  window.removeEventListener("pointermove", handleAnnotationVertexWindowPointerMove);
+  window.removeEventListener("pointerup", handleAnnotationVertexWindowPointerUp);
+  window.removeEventListener("pointercancel", handleAnnotationVertexWindowPointerUp);
+}
+
+function coordinatesMatch(a, b) {
+  return (
+    Array.isArray(a) &&
+    Array.isArray(b) &&
+    Math.abs(Number(a[0]) - Number(b[0])) < 1e-6 &&
+    Math.abs(Number(a[1]) - Number(b[1])) < 1e-6
+  );
+}
+
+function getCoordinatesWithoutTrailingDuplicate(coordinates) {
+  const cleanedCoordinates = coordinates.map((coordinate) => [...coordinate]);
+  while (
+    cleanedCoordinates.length > 1 &&
+    coordinatesMatch(
+      cleanedCoordinates[cleanedCoordinates.length - 1],
+      cleanedCoordinates[cleanedCoordinates.length - 2]
+    )
+  ) {
+    cleanedCoordinates.pop();
+  }
+  return cleanedCoordinates;
+}
+
+function setAnnotationVertexCoordinate(feature, vertexIndex, imagePoint) {
+  if (!isVertexEditableAnnotation(feature) || !imagePoint) return;
+
+  const nextCoordinate = [imagePoint.x, imagePoint.y];
+  let oldCoordinate = null;
+
+  if (feature.geometry.type === "LineString") {
+    oldCoordinate = [...feature.geometry.coordinates[vertexIndex]];
+    feature.geometry.coordinates[vertexIndex] = nextCoordinate;
+  } else if (feature.geometry.type === "Polygon") {
+    const ring = feature.geometry.coordinates?.[0];
+    if (!ring?.[vertexIndex]) return;
+    const closingIndex = ring.length - 1;
+    const isClosed = ring.length > 1 && coordinatesMatch(ring[0], ring[closingIndex]);
+
+    oldCoordinate = [...ring[vertexIndex]];
+    ring[vertexIndex] = nextCoordinate;
+    if (isClosed && (vertexIndex === 0 || vertexIndex === closingIndex)) {
+      ring[0] = [...nextCoordinate];
+      ring[closingIndex] = [...nextCoordinate];
+    }
+  }
+
+  if (
+    oldCoordinate &&
+    coordinatesMatch(
+      [feature.properties.xLabel, feature.properties.yLabel],
+      oldCoordinate
+    )
+  ) {
+    feature.properties.xLabel = nextCoordinate[0];
+    feature.properties.yLabel = nextCoordinate[1];
+    updateAnnotationLabelOverlayPosition(feature.properties.uuid);
+  }
+}
+
+function getMinimumEditableVertexCount(feature) {
+  if (feature?.geometry?.type === "Polygon") return 3;
+  if (feature?.geometry?.type === "LineString") return 2;
+  return 0;
+}
+
+function setEditableVertexCoordinates(feature, coordinates) {
+  if (!isVertexEditableAnnotation(feature)) return false;
+
+  if (feature.geometry.type === "LineString") {
+    feature.geometry.coordinates = coordinates.map((coordinate) => [...coordinate]);
+    return true;
+  }
+
+  if (feature.geometry.type === "Polygon") {
+    const ring = coordinates.map((coordinate) => [...coordinate]);
+    if (
+      ring.length > 0 &&
+      !coordinatesMatch(ring[0], ring[ring.length - 1])
+    ) {
+      ring.push([...ring[0]]);
+    }
+    feature.geometry.coordinates[0] = ring;
+    return true;
+  }
+
+  return false;
+}
+
+function finishAnnotationVertexGeometryEdit(uuid, historyLabel, undoState) {
+  annotationHistory.push(historyLabel, undoState);
+  drawShape(polyCanvas, [annoJSON, annoJSONTemp]);
+  renderAnnotationVertexHandles();
+  renderAnnotationList();
+  syncSelectedAnnotationVisuals();
+  unsavedAnnotations(true);
+  suppressAnnotationClickBriefly();
+}
+
+function getVectorLength(vector) {
+  return Math.hypot(vector.x, vector.y);
+}
+
+function normalizeVector(vector) {
+  const length = getVectorLength(vector);
+  if (length === 0) return null;
+  return { x: vector.x / length, y: vector.y / length };
+}
+
+function dotVector(a, b) {
+  return a.x * b.x + a.y * b.y;
+}
+
+function addScaledVector(point, vector, scale) {
+  return [point.x + vector.x * scale, point.y + vector.y * scale];
+}
+
+function rotatePointAroundCenter(point, center, angleRadians) {
+  const cosAngle = Math.cos(angleRadians);
+  const sinAngle = Math.sin(angleRadians);
+  const dx = Number(point[0]) - center.x;
+  const dy = Number(point[1]) - center.y;
+  return [
+    center.x + dx * cosAngle - dy * sinAngle,
+    center.y + dx * sinAngle + dy * cosAngle,
+  ];
+}
+
+function rotateVector(vector, angleRadians) {
+  const cosAngle = Math.cos(angleRadians);
+  const sinAngle = Math.sin(angleRadians);
+  return {
+    x: vector.x * cosAngle - vector.y * sinAngle,
+    y: vector.x * sinAngle + vector.y * cosAngle,
+  };
+}
+
+function snapAngleRadians(angleRadians, snapDegrees = 15) {
+  const snapRadians = (snapDegrees * Math.PI) / 180;
+  return Math.round(angleRadians / snapRadians) * snapRadians;
+}
+
+function coordToPoint(coord) {
+  return { x: Number(coord[0]), y: Number(coord[1]) };
+}
+
+function getVisiblePolygonRing(feature) {
+  const ring = getCoordinatesWithoutTrailingDuplicate(
+    feature.geometry.coordinates?.[0] || []
+  );
+  if (ring.length > 1 && coordinatesMatch(ring[0], ring[ring.length - 1])) {
+    ring.pop();
+  }
+  return ring;
+}
+
+function getCoordinateCenter(coordinates) {
+  if (!coordinates.length) return null;
+  const center = coordinates.reduce(
+    (acc, coord) => ({
+      x: acc.x + Number(coord[0]) / coordinates.length,
+      y: acc.y + Number(coord[1]) / coordinates.length,
+    }),
+    { x: 0, y: 0 }
+  );
+  if (!Number.isFinite(center.x) || !Number.isFinite(center.y)) return null;
+  return center;
+}
+
+function getFeatureEditMoveCoordinate(feature) {
+  if (!feature?.geometry) return null;
+  if (feature.geometry.type === "Point") {
+    return coordToPoint(feature.geometry.coordinates);
+  }
+  if (feature.geometry.type === "LineString") {
+    return getCoordinateCenter(feature.geometry.coordinates || []);
+  }
+  if (feature.geometry.type === "Polygon") {
+    if (feature.properties?.shapeType === "rectangle") {
+      return getRectangleEditModel(feature)?.center || null;
+    }
+    if (feature.properties?.shapeType === "ellipse") {
+      return getEllipseEditModel(feature)?.center || null;
+    }
+    if (feature.properties?.shapeType === "circle") {
+      return getCircleEditModel(feature)?.center || null;
+    }
+    return getCoordinateCenter(getVisiblePolygonRing(feature));
+  }
+  return null;
+}
+
+function getFeatureRotationCoordinates(feature) {
+  if (!feature?.geometry) return [];
+  if (feature.geometry.type === "LineString") {
+    return (feature.geometry.coordinates || []).filter(Array.isArray);
+  }
+  if (feature.geometry.type === "Polygon") {
+    return getVisiblePolygonRing(feature);
+  }
+  return [];
+}
+
+function getImageDistanceForViewerPixels(center, pixelDistance) {
+  const image = viewer.world.getItemAt(0);
+  if (!image || !center) return pixelDistance;
+
+  const centerViewport = image.imageToViewportCoordinates(
+    new OpenSeadragon.Point(center.x, center.y)
+  );
+  const centerPixel =
+    viewer.viewport.viewportToViewerElementCoordinates(centerViewport);
+  const offsetViewport = viewer.viewport.viewerElementToViewportCoordinates(
+    new OpenSeadragon.Point(centerPixel.x, centerPixel.y - pixelDistance)
+  );
+  const offsetImage = image.viewportToImageCoordinates(offsetViewport);
+  return Math.hypot(offsetImage.x - center.x, offsetImage.y - center.y);
+}
+
+function getRotationHandleCoordinate(feature) {
+  if (!isRotationEditableAnnotation(feature)) return null;
+
+  const center = getFeatureEditMoveCoordinate(feature);
+  const coordinates = getFeatureRotationCoordinates(feature);
+  if (!center || coordinates.length < 2) return null;
+
+  const maxRadius = coordinates.reduce((maxDistance, coordinate) => {
+    const distance = Math.hypot(
+      Number(coordinate[0]) - center.x,
+      Number(coordinate[1]) - center.y
+    );
+    return Number.isFinite(distance) ? Math.max(maxDistance, distance) : maxDistance;
+  }, 0);
+  const handleOffset = getImageDistanceForViewerPixels(center, 28);
+  return [center.x, center.y - maxRadius - handleOffset];
+}
+
+function getRectangleEditModel(feature) {
+  const ring = getVisiblePolygonRing(feature);
+  if (ring.length < 4) return null;
+
+  const p0 = coordToPoint(ring[0]);
+  const p1 = coordToPoint(ring[1]);
+  const p3 = coordToPoint(ring[3]);
+  const u = normalizeVector({ x: p1.x - p0.x, y: p1.y - p0.y });
+  const v = normalizeVector({ x: p3.x - p0.x, y: p3.y - p0.y });
+  if (!u || !v) return null;
+
+  const center = ring.slice(0, 4).reduce(
+    (acc, coord) => ({
+      x: acc.x + Number(coord[0]) / 4,
+      y: acc.y + Number(coord[1]) / 4,
+    }),
+    { x: 0, y: 0 }
+  );
+  const projections = ring.slice(0, 4).map((coord) => {
+    const point = coordToPoint(coord);
+    const relative = { x: point.x - center.x, y: point.y - center.y };
+    return {
+      u: dotVector(relative, u),
+      v: dotVector(relative, v),
+    };
+  });
+
+  return {
+    center,
+    u,
+    v,
+    minU: Math.min(...projections.map((point) => point.u)),
+    maxU: Math.max(...projections.map((point) => point.u)),
+    minV: Math.min(...projections.map((point) => point.v)),
+    maxV: Math.max(...projections.map((point) => point.v)),
+  };
+}
+
+function getRectangleCoordinatesFromModel(model) {
+  return [
+    addScaledVector(
+      { x: model.center.x + model.v.x * model.minV, y: model.center.y + model.v.y * model.minV },
+      model.u,
+      model.minU
+    ),
+    addScaledVector(
+      { x: model.center.x + model.v.x * model.minV, y: model.center.y + model.v.y * model.minV },
+      model.u,
+      model.maxU
+    ),
+    addScaledVector(
+      { x: model.center.x + model.v.x * model.maxV, y: model.center.y + model.v.y * model.maxV },
+      model.u,
+      model.maxU
+    ),
+    addScaledVector(
+      { x: model.center.x + model.v.x * model.maxV, y: model.center.y + model.v.y * model.maxV },
+      model.u,
+      model.minU
+    ),
+  ];
+}
+
+function getEllipseEditModel(feature) {
+  const ring = getVisiblePolygonRing(feature);
+  if (ring.length < 8) return null;
+
+  const center = ring.reduce(
+    (acc, coord) => ({
+      x: acc.x + Number(coord[0]) / ring.length,
+      y: acc.y + Number(coord[1]) / ring.length,
+    }),
+    { x: 0, y: 0 }
+  );
+  const majorEndpoint = coordToPoint(ring[0]);
+  const u = normalizeVector({
+    x: majorEndpoint.x - center.x,
+    y: majorEndpoint.y - center.y,
+  });
+  if (!u) return null;
+
+  const v = { x: -u.y, y: u.x };
+  const projections = ring.map((coord) => {
+    const point = coordToPoint(coord);
+    const relative = { x: point.x - center.x, y: point.y - center.y };
+    return {
+      u: Math.abs(dotVector(relative, u)),
+      v: Math.abs(dotVector(relative, v)),
+    };
+  });
+
+  return {
+    center,
+    u,
+    v,
+    majorRadius: Math.max(...projections.map((point) => point.u)),
+    minorRadius: Math.max(...projections.map((point) => point.v)),
+  };
+}
+
+function cloneEllipseEditModel(model) {
+  if (!model) return null;
+  return {
+    center: { ...model.center },
+    u: { ...model.u },
+    v: { ...model.v },
+    majorRadius: model.majorRadius,
+    minorRadius: model.minorRadius,
+  };
+}
+
+function cloneRectangleEditModel(model) {
+  if (!model) return null;
+  return {
+    center: { ...model.center },
+    u: { ...model.u },
+    v: { ...model.v },
+    minU: model.minU,
+    maxU: model.maxU,
+    minV: model.minV,
+    maxV: model.maxV,
+  };
+}
+
+function getCircleEditModel(feature) {
+  const props = feature.properties || {};
+  const ring = getVisiblePolygonRing(feature);
+  let center = {
+    x: Number(props.circleCenterX),
+    y: Number(props.circleCenterY),
+  };
+  if (!Number.isFinite(center.x) || !Number.isFinite(center.y)) {
+    center = ring.reduce(
+      (acc, coord) => ({
+        x: acc.x + Number(coord[0]) / ring.length,
+        y: acc.y + Number(coord[1]) / ring.length,
+      }),
+      { x: 0, y: 0 }
+    );
+  }
+
+  let radius = Number(props.circleRadiusPixels);
+  if (!Number.isFinite(radius) || radius <= 0) {
+    const firstPoint = ring[0];
+    if (!firstPoint) return null;
+    radius = getVectorLength({
+      x: Number(firstPoint[0]) - center.x,
+      y: Number(firstPoint[1]) - center.y,
+    });
+  }
+  if (!Number.isFinite(center.x) || !Number.isFinite(center.y) || radius <= 0) {
+    return null;
+  }
+
+  return { center, radius };
+}
+
+function getShapeEditHandles(feature) {
+  if (!isShapeEditableAnnotation(feature)) return [];
+  if (feature.geometry.type === "Point") {
+    const center = getFeatureEditMoveCoordinate(feature);
+    return center ? [{ handleType: "center", coordinate: [center.x, center.y] }] : [];
+  }
+  const shapeType = feature.properties.shapeType;
+
+  if (shapeType === "rectangle") {
+    const model = getRectangleEditModel(feature);
+    if (!model) return [];
+    const { minU, maxU, minV, maxV, u, v, center } = model;
+    const point = (uValue, vValue) =>
+      addScaledVector(
+        {
+          x: center.x + v.x * vValue,
+          y: center.y + v.y * vValue,
+        },
+        u,
+        uValue
+      );
+    const handles = [
+      { handleType: "center", coordinate: [center.x, center.y] },
+      { handleType: "top-left", coordinate: point(minU, minV) },
+      { handleType: "top", coordinate: point((minU + maxU) / 2, minV) },
+      { handleType: "top-right", coordinate: point(maxU, minV) },
+      { handleType: "right", coordinate: point(maxU, (minV + maxV) / 2) },
+      { handleType: "bottom-right", coordinate: point(maxU, maxV) },
+      { handleType: "bottom", coordinate: point((minU + maxU) / 2, maxV) },
+      { handleType: "bottom-left", coordinate: point(minU, maxV) },
+      { handleType: "left", coordinate: point(minU, (minV + maxV) / 2) },
+    ];
+    const rotationHandleCoordinate = getRotationHandleCoordinate(feature);
+    if (rotationHandleCoordinate) {
+      handles.push({ handleType: "rotate", coordinate: rotationHandleCoordinate });
+    }
+    return handles;
+  }
+
+  if (shapeType === "ellipse") {
+    const model = getEllipseEditModel(feature);
+    if (!model) return [];
+    const { center, u, v, majorRadius, minorRadius } = model;
+    const handles = [
+      { handleType: "center", coordinate: [center.x, center.y] },
+      { handleType: "major-radius", coordinate: addScaledVector(center, u, majorRadius) },
+      { handleType: "minor-radius", coordinate: addScaledVector(center, v, minorRadius) },
+    ];
+    const rotationHandleCoordinate = getRotationHandleCoordinate(feature);
+    if (rotationHandleCoordinate) {
+      handles.push({ handleType: "rotate", coordinate: rotationHandleCoordinate });
+    }
+    return handles;
+  }
+
+  if (shapeType === "circle") {
+    const model = getCircleEditModel(feature);
+    if (!model) return [];
+    const handles = [
+      { handleType: "center", coordinate: [model.center.x, model.center.y] },
+    ];
+    if (feature.properties.circleMode !== "fixed") {
+      handles.push({
+        handleType: "radius",
+        coordinate: [model.center.x + model.radius, model.center.y],
+      });
+    }
+    return handles;
+  }
+
+  return [];
+}
+
+function getShapeHandleLabel(shapeType, handleType) {
+  if (handleType === "center") return "Move annotation";
+  if (handleType === "rotate") return "Rotate annotation. Hold Shift to snap.";
+  if (shapeType === "ellipse") {
+    if (handleType === "major-radius") return "Adjust ellipse long axis";
+    if (handleType === "minor-radius") return "Adjust ellipse short axis";
+  }
+  if (shapeType === "circle") {
+    if (handleType === "radius") return "Adjust circle radius";
+  }
+  return `Drag ${handleType} handle`;
+}
+
+function removeAnnotationShapeHandles() {
+  [...document.getElementsByClassName("annotation-shape-handle")].forEach(
+    (handle) => {
+      viewer.removeOverlay(handle);
+      handle.remove();
+    }
+  );
+}
+
+function renderAnnotationShapeHandles() {
+  removeAnnotationShapeHandles();
+  const feature = getAnnotationByUuid(activeShapeEditUuid);
+  if (!isShapeEditableAnnotation(feature)) return;
+
+  const image = viewer.world.getItemAt(0);
+  if (!image) return;
+
+  getShapeEditHandles(feature).forEach(({ handleType, coordinate }) => {
+    const handle = document.createElement("button");
+    const handleLabel = getShapeHandleLabel(feature.properties.shapeType, handleType);
+    handle.type = "button";
+    handle.className = `annotation-vertex-handle annotation-shape-handle annotation-shape-handle-${handleType}`;
+    handle.title = handleLabel;
+    handle.setAttribute("aria-label", handleLabel);
+    handle.dataset.annotationUuid = activeShapeEditUuid;
+    handle.dataset.handleType = handleType;
+    handle.addEventListener("pointerdown", function (event) {
+      handleAnnotationShapePointerDown(event, activeShapeEditUuid, handleType);
+    });
+
+    viewer.addOverlay({
+      element: handle,
+      location: image.imageToViewportCoordinates(
+        new OpenSeadragon.Point(coordinate[0], coordinate[1])
+      ),
+      checkResize: false,
+      rotationMode: OpenSeadragon.OverlayRotationMode.NO_ROTATION,
+    });
+  });
+  updateAnnotationOverlayRotation();
+}
+
+function enterAnnotationShapeEditMode(uuid) {
+  const feature = getAnnotationByUuid(uuid);
+  if (!isShapeEditableAnnotation(feature)) return false;
+  if (isAnnotationFeatureLocked(feature)) return false;
+
+  exitAnnotationVertexEditMode();
+  setAnnotationMoveMode(false);
+  setAnnotationLabelMoveMode(false);
+  removeAnnotationShapeHandles();
+  activeShapeEditUuid = uuid;
+  viewerContainer?.classList.add("annotation-shape-editing");
+  renderAnnotationShapeHandles();
+  return true;
+}
+
+function exitAnnotationShapeEditMode() {
+  if (!activeShapeEditUuid && !annotationShapeDragState) return;
+
+  activeShapeEditUuid = null;
+  annotationShapeDragState = null;
+  removeAnnotationShapeHandles();
+  viewerContainer?.classList.remove(
+    "annotation-shape-editing",
+    "annotation-shape-dragging"
+  );
+  window.removeEventListener("pointermove", handleAnnotationShapeWindowPointerMove);
+  window.removeEventListener("pointerup", handleAnnotationShapeWindowPointerUp);
+  window.removeEventListener("pointercancel", handleAnnotationShapeWindowPointerUp);
+}
+
+function updatePolygonFeatureCoordinates(feature, coordinates) {
+  const ring = coordinates.map((coordinate) => [...coordinate]);
+  if (ring.length > 0 && !coordinatesMatch(ring[0], ring[ring.length - 1])) {
+    ring.push([...ring[0]]);
+  }
+  feature.geometry.coordinates[0] = ring;
+  feature.properties.area_m2 = squareMetersFromSquarePixels(
+    calculatePolygonArea([ring])
+  );
+  feature.properties.perimeter_m = metersFromPixels(
+    calculatePolygonExteriorPerimeter([ring])
+  );
+}
+
+function updateDefaultShapeLabelPosition(feature, oldLabelPoint, newLabelPoint) {
+  const currentLabelPoint = [feature.properties.xLabel, feature.properties.yLabel];
+  if (coordinatesMatch(currentLabelPoint, oldLabelPoint)) {
+    feature.properties.xLabel = newLabelPoint[0];
+    feature.properties.yLabel = newLabelPoint[1];
+    updateAnnotationLabelOverlayPosition(feature.properties.uuid);
+  }
+}
+
+function getDefaultShapeLabelPoint(feature) {
+  const shapeType = feature.properties?.shapeType;
+  if (feature.geometry?.type === "Point") return feature.geometry.coordinates;
+  if (feature.geometry?.type === "LineString") return feature.geometry.coordinates?.[0];
+
+  const ring = getVisiblePolygonRing(feature);
+  if (shapeType === "rectangle") return ring[0];
+  if (shapeType === "ellipse") return getTopmostPoint(ring);
+  if (shapeType === "circle") return getTopCenterPoint(ring);
+  return ring[0];
+}
+
+function updateAnnotationPointOverlayPosition(uuid) {
+  const feature = getAnnotationByUuid(uuid);
+  const crosshair = document.getElementById(`annotate-crosshair-${uuid}`);
+  const image = viewer.world.getItemAt(0);
+  if (!feature?.geometry || feature.geometry.type !== "Point" || !crosshair || !image) {
+    return;
+  }
+
+  viewer.updateOverlay(
+    crosshair,
+    image.imageToViewportCoordinates(
+      new OpenSeadragon.Point(
+        feature.geometry.coordinates[0],
+        feature.geometry.coordinates[1]
+      )
+    )
+  );
+}
+
+function moveAnnotationFeatureCenterToImagePoint(feature, imagePoint) {
+  const currentCenter = getFeatureEditMoveCoordinate(feature);
+  if (!currentCenter || !imagePoint) return false;
+
+  const pointerOffset = annotationShapeDragState?.pointerOffset || { x: 0, y: 0 };
+  const targetCenter = {
+    x: imagePoint.x - pointerOffset.x,
+    y: imagePoint.y - pointerOffset.y,
+  };
+  translateAnnotationFeature(
+    feature,
+    targetCenter.x - currentCenter.x,
+    targetCenter.y - currentCenter.y
+  );
+  updateAnnotationLabelOverlayPosition(feature.properties.uuid);
+  updateAnnotationPointOverlayPosition(feature.properties.uuid);
+  return true;
+}
+
+function updateRectangleShapeFromDrag(feature, handleType, imagePoint) {
+  if (handleType === "center") {
+    return moveAnnotationFeatureCenterToImagePoint(feature, imagePoint);
+  }
+
+  const model = getRectangleEditModel(feature);
+  if (!model) return false;
+
+  const oldLabelPoint = getDefaultShapeLabelPoint(feature);
+  const relativePoint = {
+    x: imagePoint.x - model.center.x,
+    y: imagePoint.y - model.center.y,
+  };
+  const projectedU = dotVector(relativePoint, model.u);
+  const projectedV = dotVector(relativePoint, model.v);
+  const minSize = 1;
+
+  if (handleType.includes("left")) model.minU = Math.min(projectedU, model.maxU - minSize);
+  if (handleType.includes("right")) model.maxU = Math.max(projectedU, model.minU + minSize);
+  if (handleType.includes("top")) model.minV = Math.min(projectedV, model.maxV - minSize);
+  if (handleType.includes("bottom")) model.maxV = Math.max(projectedV, model.minV + minSize);
+
+  const coordinates = getRectangleCoordinatesFromModel(model);
+  updatePolygonFeatureCoordinates(feature, coordinates);
+  updateDefaultShapeLabelPosition(
+    feature,
+    oldLabelPoint,
+    getDefaultShapeLabelPoint(feature)
+  );
+  return true;
+}
+
+function updateEllipseShapeFromDrag(feature, handleType, imagePoint) {
+  if (handleType === "center") {
+    return moveAnnotationFeatureCenterToImagePoint(feature, imagePoint);
+  }
+
+  const model =
+    annotationShapeDragState?.uuid === feature.properties.uuid &&
+    annotationShapeDragState.shapeModel
+      ? cloneEllipseEditModel(annotationShapeDragState.shapeModel)
+      : getEllipseEditModel(feature);
+  if (!model) return false;
+
+  const oldLabelPoint = getDefaultShapeLabelPoint(feature);
+  const minRadius = 1;
+
+  if (handleType === "major-radius") {
+    const relativePoint = {
+      x: imagePoint.x - model.center.x,
+      y: imagePoint.y - model.center.y,
+    };
+    model.majorRadius = Math.max(minRadius, Math.abs(dotVector(relativePoint, model.u)));
+  } else if (handleType === "minor-radius") {
+    const relativePoint = {
+      x: imagePoint.x - model.center.x,
+      y: imagePoint.y - model.center.y,
+    };
+    model.minorRadius = Math.max(minRadius, Math.abs(dotVector(relativePoint, model.v)));
+  }
+
+  const coordinates = getEllipsePoints([
+    [model.center.x, model.center.y],
+    addScaledVector(model.center, model.u, model.majorRadius),
+    addScaledVector(model.center, model.v, model.minorRadius),
+  ]);
+  updatePolygonFeatureCoordinates(feature, coordinates);
+  updateDefaultShapeLabelPosition(
+    feature,
+    oldLabelPoint,
+    getDefaultShapeLabelPoint(feature)
+  );
+  return true;
+}
+
+function updateCircleShapeFromDrag(feature, handleType, imagePoint) {
+  if (handleType === "center") {
+    return moveAnnotationFeatureCenterToImagePoint(feature, imagePoint);
+  }
+
+  const model = getCircleEditModel(feature);
+  if (!model) return false;
+
+  const oldLabelPoint = getDefaultShapeLabelPoint(feature);
+  if (handleType === "radius") {
+    model.radius = Math.max(
+      1,
+      getVectorLength({
+        x: imagePoint.x - model.center.x,
+        y: imagePoint.y - model.center.y,
+      })
+    );
+  }
+
+  const coordinates = getCircleCoordinatesInImageSpace(
+    model.center.x,
+    model.center.y,
+    model.radius * 2
+  );
+  updatePolygonFeatureCoordinates(feature, coordinates);
+  feature.properties.circleCenterX = model.center.x;
+  feature.properties.circleCenterY = model.center.y;
+  feature.properties.circleRadiusPixels = model.radius;
+  feature.properties.circleDiameterPixels = model.radius * 2;
+  updateDefaultShapeLabelPosition(
+    feature,
+    oldLabelPoint,
+    getDefaultShapeLabelPoint(feature)
+  );
+  return true;
+}
+
+function getAnnotationRotationStartState(feature, center, startImagePoint) {
+  if (!isRotationEditableAnnotation(feature) || !center || !startImagePoint) {
+    return null;
+  }
+
+  const startAngle = Math.atan2(
+    startImagePoint.y - center.y,
+    startImagePoint.x - center.x
+  );
+
+  return {
+    center: { ...center },
+    startAngle,
+    coordinates: cloneData(feature.geometry.coordinates),
+    rectangleModel:
+      feature.properties?.shapeType === "rectangle"
+        ? cloneRectangleEditModel(getRectangleEditModel(feature))
+        : null,
+    ellipseModel:
+      feature.properties?.shapeType === "ellipse"
+        ? cloneEllipseEditModel(getEllipseEditModel(feature))
+        : null,
+  };
+}
+
+function rotateLineStringFeature(feature, startCoordinates, center, angleRadians) {
+  feature.geometry.coordinates = startCoordinates.map((coordinate) =>
+    rotatePointAroundCenter(coordinate, center, angleRadians)
+  );
+}
+
+function rotatePolygonFeature(feature, startCoordinates, center, angleRadians) {
+  const ring = startCoordinates?.[0];
+  if (!Array.isArray(ring)) return false;
+
+  const coordinates = getCoordinatesWithoutTrailingDuplicate(ring).map((coordinate) =>
+    rotatePointAroundCenter(coordinate, center, angleRadians)
+  );
+  updatePolygonFeatureCoordinates(feature, coordinates);
+  return true;
+}
+
+function rotateAnnotationFeatureFromDrag(feature, imagePoint, options = {}) {
+  const rotationState = annotationShapeDragState?.rotationState;
+  if (!rotationState || !imagePoint) return false;
+
+  const currentAngle = Math.atan2(
+    imagePoint.y - rotationState.center.y,
+    imagePoint.x - rotationState.center.x
+  );
+  let angleDelta = currentAngle - rotationState.startAngle;
+  if (options.snap) {
+    angleDelta = snapAngleRadians(angleDelta);
+  }
+
+  const oldLabelPoint = getDefaultShapeLabelPoint(feature);
+
+  if (feature.geometry.type === "LineString") {
+    rotateLineStringFeature(
+      feature,
+      rotationState.coordinates,
+      rotationState.center,
+      angleDelta
+    );
+  } else if (feature.properties?.shapeType === "rectangle") {
+    const model = cloneRectangleEditModel(rotationState.rectangleModel);
+    if (!model) return false;
+    model.u = rotateVector(model.u, angleDelta);
+    model.v = rotateVector(model.v, angleDelta);
+    updatePolygonFeatureCoordinates(feature, getRectangleCoordinatesFromModel(model));
+  } else if (feature.properties?.shapeType === "ellipse") {
+    const model = cloneEllipseEditModel(rotationState.ellipseModel);
+    if (!model) return false;
+    model.u = rotateVector(model.u, angleDelta);
+    model.v = rotateVector(model.v, angleDelta);
+    const coordinates = getEllipsePoints([
+      [model.center.x, model.center.y],
+      addScaledVector(model.center, model.u, model.majorRadius),
+      addScaledVector(model.center, model.v, model.minorRadius),
+    ]);
+    updatePolygonFeatureCoordinates(feature, coordinates);
+  } else if (feature.geometry.type === "Polygon") {
+    if (
+      !rotatePolygonFeature(
+        feature,
+        rotationState.coordinates,
+        rotationState.center,
+        angleDelta
+      )
+    ) {
+      return false;
+    }
+  } else {
+    return false;
+  }
+
+  updateDefaultShapeLabelPosition(
+    feature,
+    oldLabelPoint,
+    getDefaultShapeLabelPoint(feature)
+  );
+  return true;
+}
+
+function updateShapeFromDrag(feature, handleType, imagePoint, options = {}) {
+  if (feature.geometry.type === "Point" && handleType === "center") {
+    return moveAnnotationFeatureCenterToImagePoint(feature, imagePoint);
+  }
+  if (handleType === "center" && isVertexEditableAnnotation(feature)) {
+    return moveAnnotationFeatureCenterToImagePoint(feature, imagePoint);
+  }
+  if (handleType === "rotate") {
+    return rotateAnnotationFeatureFromDrag(feature, imagePoint, options);
+  }
+  if (feature.properties.shapeType === "rectangle") {
+    return updateRectangleShapeFromDrag(feature, handleType, imagePoint);
+  }
+  if (feature.properties.shapeType === "ellipse") {
+    return updateEllipseShapeFromDrag(feature, handleType, imagePoint);
+  }
+  if (feature.properties.shapeType === "circle") {
+    return updateCircleShapeFromDrag(feature, handleType, imagePoint);
+  }
+  return false;
+}
+
+function startAnnotationShapeDrag(event, uuid, handleType) {
+  const feature = getAnnotationByUuid(uuid);
+  if (isAnnotationFeatureLocked(feature)) return false;
+  if (
+    !isShapeEditableAnnotation(feature) &&
+    !(handleType === "center" && isVertexEditableAnnotation(feature)) &&
+    !(handleType === "rotate" && isRotationEditableAnnotation(feature))
+  ) {
+    return false;
+  }
+
+  const imagePoint = getImagePointFromPointerEvent(event);
+  if (!imagePoint) return false;
+  const moveCenter = handleType === "center"
+    ? getFeatureEditMoveCoordinate(feature)
+    : null;
+  const rotationCenter = handleType === "rotate"
+    ? getFeatureEditMoveCoordinate(feature)
+    : null;
+  const ellipseModel =
+    feature.properties.shapeType === "ellipse"
+      ? getEllipseEditModel(feature)
+      : null;
+  const rotationState =
+    handleType === "rotate"
+      ? getAnnotationRotationStartState(feature, rotationCenter, imagePoint)
+      : null;
+  if (handleType === "rotate" && !rotationState) return false;
+
+  annotationShapeDragState = {
+    uuid,
+    handleType,
+    shapeModel: cloneEllipseEditModel(ellipseModel),
+    rotationState,
+    pointerOffset:
+      handleType === "center" && moveCenter
+        ? {
+            x: imagePoint.x - moveCenter.x,
+            y: imagePoint.y - moveCenter.y,
+          }
+        : { x: 0, y: 0 },
+    undoState: cloneAnnotationState(),
+    moved: false,
+  };
+  viewerContainer?.classList.add("annotation-shape-dragging");
+  window.addEventListener("pointermove", handleAnnotationShapeWindowPointerMove);
+  window.addEventListener("pointerup", handleAnnotationShapeWindowPointerUp);
+  window.addEventListener("pointercancel", handleAnnotationShapeWindowPointerUp);
+  return true;
+}
+
+function moveAnnotationShapeHandleToImagePoint(imagePoint, options = {}) {
+  if (!annotationShapeDragState || !imagePoint) return false;
+
+  const { uuid, handleType } = annotationShapeDragState;
+  const feature = getAnnotationByUuid(uuid);
+  if (
+    !isShapeEditableAnnotation(feature) &&
+    !(handleType === "center" && isVertexEditableAnnotation(feature)) &&
+    !(handleType === "rotate" && isRotationEditableAnnotation(feature))
+  ) {
+    return false;
+  }
+
+  if (!annotationShapeDragState.moved) {
+    annotationHistory.push(
+      handleType === "rotate" ? "Rotate annotation" : "Edit annotation shape",
+      annotationShapeDragState.undoState
+    );
+  }
+  if (!updateShapeFromDrag(feature, handleType, imagePoint, options)) return false;
+  annotationShapeDragState.moved = true;
+  drawShape(polyCanvas, [annoJSON, annoJSONTemp]);
+  if (activeVertexEditUuid === uuid && !activeShapeEditUuid) {
+    renderAnnotationVertexHandles();
+  } else {
+    renderAnnotationShapeHandles();
+  }
+  return true;
+}
+
+function finishAnnotationShapeDrag() {
+  if (!annotationShapeDragState) return false;
+
+  const moved = annotationShapeDragState.moved;
+  annotationShapeDragState = null;
+  viewerContainer?.classList.remove("annotation-shape-dragging");
+  window.removeEventListener("pointermove", handleAnnotationShapeWindowPointerMove);
+  window.removeEventListener("pointerup", handleAnnotationShapeWindowPointerUp);
+  window.removeEventListener("pointercancel", handleAnnotationShapeWindowPointerUp);
+  if (moved) {
+    unsavedAnnotations(true);
+    renderAnnotationList();
+    syncSelectedAnnotationVisuals();
+    suppressAnnotationClickBriefly();
+  }
+  return true;
+}
+
+function handleAnnotationShapePointerDown(event, uuid, handleType) {
+  if (!startAnnotationShapeDrag(event, uuid, handleType)) return;
+
+  event.preventDefault();
+  event.stopPropagation();
+}
+
+function handleAnnotationShapeWindowPointerMove(event) {
+  if (!annotationShapeDragState) return;
+
+  event.preventDefault();
+  event.stopPropagation();
+  moveAnnotationShapeHandleToImagePoint(getImagePointFromPointerEvent(event), {
+    snap: event.shiftKey,
+  });
+}
+
+function handleAnnotationShapeWindowPointerUp(event) {
+  if (!annotationShapeDragState) return;
+
+  event.preventDefault();
+  event.stopPropagation();
+  finishAnnotationShapeDrag();
+}
+
+function deleteAnnotationVertex(uuid, vertexIndex) {
+  const feature = getAnnotationByUuid(uuid);
+  if (!isVertexEditableAnnotation(feature)) return false;
+  if (isAnnotationFeatureLocked(feature)) return false;
+
+  const coordinates = getEditableVertexCoordinates(feature).map((coordinate) => [
+    ...coordinate,
+  ]);
+  if (coordinates.length <= getMinimumEditableVertexCount(feature)) return false;
+  if (!coordinates[vertexIndex]) return false;
+
+  const undoState = cloneAnnotationState();
+  coordinates.splice(vertexIndex, 1);
+  setEditableVertexCoordinates(feature, coordinates);
+  finishAnnotationVertexGeometryEdit(uuid, "Delete annotation vertex", undoState);
+  return true;
+}
+
+function getNearestEditableSegmentAtViewerPoint(feature, viewerPoint, tolerance = 10) {
+  if (!isVertexEditableAnnotation(feature)) return null;
+
+  const image = viewer.world.getItemAt(0);
+  if (!image) return null;
+
+  const coordinates = getEditableVertexCoordinates(feature);
+  const segmentCount =
+    feature.geometry.type === "Polygon"
+      ? coordinates.length
+      : Math.max(0, coordinates.length - 1);
+  let nearestSegment = null;
+
+  for (let i = 0; i < segmentCount; i++) {
+    const startCoordinate = coordinates[i];
+    const endCoordinate =
+      feature.geometry.type === "Polygon"
+        ? coordinates[(i + 1) % coordinates.length]
+        : coordinates[i + 1];
+    if (!startCoordinate || !endCoordinate) continue;
+
+    const distance = distanceToSegment(
+      viewerPoint,
+      imageCoordToViewerPixel(image, startCoordinate),
+      imageCoordToViewerPixel(image, endCoordinate)
+    );
+
+    if (distance <= tolerance && (!nearestSegment || distance < nearestSegment.distance)) {
+      nearestSegment = {
+        distance,
+        insertIndex: i + 1,
+      };
+    }
+  }
+
+  return nearestSegment;
+}
+
+function insertAnnotationVertexAtViewerPoint(uuid, viewerPoint) {
+  const feature = getAnnotationByUuid(uuid);
+  if (!isVertexEditableAnnotation(feature)) return false;
+  if (isAnnotationFeatureLocked(feature)) return false;
+
+  const nearestSegment = getNearestEditableSegmentAtViewerPoint(
+    feature,
+    viewerPoint,
+    12
+  );
+  if (!nearestSegment) return false;
+
+  const imagePoint = getImagePointFromViewerPixel(viewerPoint);
+  if (!imagePoint) return false;
+
+  const coordinates = getEditableVertexCoordinates(feature).map((coordinate) => [
+    ...coordinate,
+  ]);
+  const undoState = cloneAnnotationState();
+  coordinates.splice(nearestSegment.insertIndex, 0, [imagePoint.x, imagePoint.y]);
+  setEditableVertexCoordinates(feature, coordinates);
+  finishAnnotationVertexGeometryEdit(uuid, "Add annotation vertex", undoState);
+  return true;
+}
+
+function updateAnnotationVertexHandlePosition(uuid, vertexIndex) {
+  const feature = getAnnotationByUuid(uuid);
+  const coordinate = getEditableVertexCoordinates(feature)[vertexIndex];
+  const handle = document.querySelector(
+    `.annotation-vertex-handle[data-annotation-uuid="${CSS.escape(
+      uuid
+    )}"][data-vertex-index="${vertexIndex}"]`
+  );
+  const image = viewer.world.getItemAt(0);
+  if (!coordinate || !handle || !image) return;
+
+  viewer.updateOverlay(
+    handle,
+    image.imageToViewportCoordinates(
+      new OpenSeadragon.Point(coordinate[0], coordinate[1])
+    )
+  );
+}
+
+function updateAnnotationEditMoveHandlePosition(uuid) {
+  const feature = getAnnotationByUuid(uuid);
+  const coordinate = getFeatureEditMoveCoordinate(feature);
+  const handle = document.querySelector(
+    `.annotation-shape-handle-center[data-annotation-uuid="${CSS.escape(uuid)}"]`
+  );
+  const image = viewer.world.getItemAt(0);
+  if (!coordinate || !handle || !image) return;
+
+  viewer.updateOverlay(
+    handle,
+    image.imageToViewportCoordinates(
+      new OpenSeadragon.Point(coordinate.x, coordinate.y)
+    )
+  );
+}
+
+function startAnnotationVertexDrag(event, uuid, vertexIndex) {
+  const feature = getAnnotationByUuid(uuid);
+  if (!isVertexEditableAnnotation(feature)) return false;
+  if (isAnnotationFeatureLocked(feature)) return false;
+
+  const imagePoint = getImagePointFromPointerEvent(event);
+  if (!imagePoint) return false;
+  const coordinate = getEditableVertexCoordinates(feature)[vertexIndex];
+  if (!coordinate) return false;
+
+  annotationVertexDragState = {
+    uuid,
+    vertexIndex,
+    offsetX: imagePoint.x - coordinate[0],
+    offsetY: imagePoint.y - coordinate[1],
+    undoState: cloneAnnotationState(),
+    moved: false,
+  };
+  viewerContainer?.classList.add("annotation-vertex-dragging");
+  window.addEventListener("pointermove", handleAnnotationVertexWindowPointerMove);
+  window.addEventListener("pointerup", handleAnnotationVertexWindowPointerUp);
+  window.addEventListener("pointercancel", handleAnnotationVertexWindowPointerUp);
+  return true;
+}
+
+function moveAnnotationVertexToImagePoint(imagePoint) {
+  if (!annotationVertexDragState || !imagePoint) return false;
+
+  const { uuid, vertexIndex } = annotationVertexDragState;
+  const feature = getAnnotationByUuid(uuid);
+  if (!isVertexEditableAnnotation(feature)) return false;
+
+  const adjustedImagePoint = {
+    x: imagePoint.x - annotationVertexDragState.offsetX,
+    y: imagePoint.y - annotationVertexDragState.offsetY,
+  };
+  if (!annotationVertexDragState.moved) {
+    annotationHistory.push(
+      "Move annotation vertex",
+      annotationVertexDragState.undoState
+    );
+  }
+  setAnnotationVertexCoordinate(feature, vertexIndex, adjustedImagePoint);
+  annotationVertexDragState.moved = true;
+  drawShape(polyCanvas, [annoJSON, annoJSONTemp]);
+  updateAnnotationVertexHandlePosition(uuid, vertexIndex);
+  updateAnnotationEditMoveHandlePosition(uuid);
+  return true;
+}
+
+function finishAnnotationVertexDrag() {
+  if (!annotationVertexDragState) return false;
+
+  const moved = annotationVertexDragState.moved;
+  annotationVertexDragState = null;
+  viewerContainer?.classList.remove("annotation-vertex-dragging");
+  window.removeEventListener("pointermove", handleAnnotationVertexWindowPointerMove);
+  window.removeEventListener("pointerup", handleAnnotationVertexWindowPointerUp);
+  window.removeEventListener("pointercancel", handleAnnotationVertexWindowPointerUp);
+  if (moved) {
+    unsavedAnnotations(true);
+    renderAnnotationList();
+    suppressAnnotationClickBriefly();
+  }
+  return true;
+}
+
+function handleAnnotationVertexPointerDown(event, uuid, vertexIndex) {
+  if (event.altKey) {
+    event.preventDefault();
+    event.stopPropagation();
+    deleteAnnotationVertex(uuid, vertexIndex);
+    return;
+  }
+
+  if (!startAnnotationVertexDrag(event, uuid, vertexIndex)) return;
+
+  event.preventDefault();
+  event.stopPropagation();
+}
+
+function handleAnnotationVertexWindowPointerMove(event) {
+  if (!annotationVertexDragState) return;
+
+  event.preventDefault();
+  event.stopPropagation();
+  moveAnnotationVertexToImagePoint(getImagePointFromPointerEvent(event));
+}
+
+function handleAnnotationVertexWindowPointerUp(event) {
+  if (!annotationVertexDragState) return;
+
+  event.preventDefault();
+  event.stopPropagation();
+  finishAnnotationVertexDrag();
+}
+
+function handleAnnotationLabelPointerDown(event, uuid) {
+  if (!startAnnotationLabelMoveDrag(event, uuid)) return;
+
+  event.preventDefault();
+  event.stopPropagation();
+}
+
+function handleAnnotationLabelWindowPointerMove(event) {
+  if (!annotationLabelMoveDragState) return;
+
+  event.preventDefault();
+  event.stopPropagation();
+  moveAnnotationLabelToImagePoint(getImagePointFromPointerEvent(event));
+}
+
+function handleAnnotationLabelWindowPointerUp(event) {
+  if (!annotationLabelMoveDragState) return;
+
+  event.preventDefault();
+  event.stopPropagation();
+  finishAnnotationLabelMoveDrag();
+}
+
+function resolveNewAnnotationLabel(callback) {
+  if (isRepeatMode) {
+    callback(getSelectedAnnotation()?.properties?.label || "");
+    return;
+  }
+
+  if (isPromptLabelMode) {
+    showPrompt("Enter the annotation label:", (value) => {
+      callback(value || "");
+    });
+    return;
+  }
+
+  callback("");
+}
+
 // Function to add a point to the annoJSON
 function addPointToGeoJSON(x, y, metadata) {
   annotationHistory.push("Add annotation");
+  const properties = normalizeAnnotationProperties(
+    applyActiveAnnotationGroup(metadata)
+  );
 
   // Create a GeoJSON point feature
   // x, y = coordinates in image (pixel) coordinates
@@ -3694,11 +8342,13 @@ function addPointToGeoJSON(x, y, metadata) {
       type: "Point",
       coordinates: [x, y], // [x, y] format for coordinates
     },
-    properties: metadata, // metadata like label, description, etc.
+    properties: properties, // metadata like label, description, etc.
   };
 
   // Add the point feature to the annoJSON under the provided id
   annoJSON.features.push(pointFeature);
+  renderAnnotationList();
+  selectAnnotationByUuid(properties.uuid, { redraw: false });
 }
 
 // Function to add a point to the annoJSON
@@ -3706,6 +8356,10 @@ function addPolylineToGeoJSON(JSON, coordinates, metadata) {
   if (JSON === annoJSON) {
     annotationHistory.push("Add annotation");
   }
+  const properties =
+    JSON === annoJSON
+      ? normalizeAnnotationProperties(applyActiveAnnotationGroup(metadata))
+      : metadata;
 
   // Create a GeoJSON point feature
   // coordinates = array of x,y values in image (pixel) coordinates
@@ -3716,10 +8370,14 @@ function addPolylineToGeoJSON(JSON, coordinates, metadata) {
       type: "LineString",
       coordinates: coordinates, // [[x0, y0],[x1,y1]] format for coordinates
     },
-    properties: metadata, // metadata like label, description, etc.
+    properties: properties, // metadata like label, description, etc.
   };
   // Add the point feature to the annoJSON under the provided id
   JSON.features.push(polylineFeature);
+  if (JSON === annoJSON) {
+    renderAnnotationList();
+    selectAnnotationByUuid(properties.uuid, { redraw: false });
+  }
 }
 
 // Function to add a point to the annoJSON
@@ -3727,6 +8385,10 @@ function addPolygonToGeoJSON(JSON, coordinates, metadata) {
   if (JSON === annoJSON) {
     annotationHistory.push("Add annotation");
   }
+  const properties =
+    JSON === annoJSON
+      ? normalizeAnnotationProperties(applyActiveAnnotationGroup(metadata))
+      : metadata;
 
   // Create a GeoJSON polygon feature
   // coordinates = array of x,y values in image (pixel) coordinates
@@ -3737,10 +8399,14 @@ function addPolygonToGeoJSON(JSON, coordinates, metadata) {
       type: "Polygon",
       coordinates: [coordinates], // [[[x0, y0],[x1,y1]]] format for coordinates
     },
-    properties: metadata, // metadata like label, description, etc.
+    properties: properties, // metadata like label, description, etc.
   };
   // Add the point feature to the annoJSON under the provided id
   JSON.features.push(polygonFeature);
+  if (JSON === annoJSON) {
+    renderAnnotationList();
+    selectAnnotationByUuid(properties.uuid, { redraw: false });
+  }
 }
 
 // Function to delete an entry in the JSON
@@ -3780,31 +8446,19 @@ const toggleDivideImages = (event) => {
 
 // Import, add, and export points with labels
 const toggleAnnotation = (event) => {
-  for (let el of document.getElementsByClassName("annotate-crosshairs")) {
-    el.style.visibility = event.checked ? "visible" : "hidden";
-  }
-  if (document.getElementById("show-annotation-labels").checked) {
-    for (let el of document.getElementsByClassName("annotate-label")) {
-      el.style.visibility = event.checked ? "visible" : "hidden";
-    }
-  }
-  if (polyCanvas.style.display === "none") {
-    polyCanvas.style.display = "block"; // Show the canvas
-  } else {
-    polyCanvas.style.display = "none"; // Hide the canvas
-  }
+  applyAnnotationVisibilityState();
 };
 
 // Import, add, and export points with labels
 const toggleAnnotationLabels = (event) => {
-  if (document.getElementById("show-annotations").checked) {
-    for (let el of document.getElementsByClassName("annotate-label")) {
-      el.style.visibility = event.checked ? "visible" : "hidden";
-    }
-  }
+  applyAnnotationVisibilityState();
 };
 
 function disableOtherAnnoModes(mode) {
+  setAnnotationMoveMode(false);
+  setAnnotationLabelMoveMode(false);
+  exitAnnotationVertexEditMode();
+  exitAnnotationShapeEditMode();
   if (mode !== "point") {
     isQPressed = false;
     pointButton.classList.remove("active");
@@ -3834,6 +8488,11 @@ function disableOtherAnnoModes(mode) {
     isEllipseMode = false;
     toggleEllipseFloaterOn(false);
   }
+  if (mode !== "circle") {
+    circleAnnotationButton.classList.remove("active");
+    isCircleAnnotationMode = false;
+    toggleCircleAnnotationFloaterOn(false);
+  }
 }
 
 // Functions for detecting when q, z, anc x are pressed and released
@@ -3841,8 +8500,10 @@ let isQPressed = false;
 let isZPressed = false;
 let isXPressed = false;
 let isCPressed = false;
+let isVPressed = false;
 document.addEventListener("keydown", function (event) {
   if (event.ctrlKey || event.metaKey || event.altKey) return;
+  if (isTextEntryElement(event.target)) return;
 
   if (event.key === "q" || event.key === "Q") {
     isQPressed = true;
@@ -3864,9 +8525,15 @@ document.addEventListener("keydown", function (event) {
     toggleEllipseFloaterOn(true);
     disableOtherAnnoModes("ellipse");
   }
+  if (event.key === "v" || event.key === "V") {
+    isVPressed = true;
+    disableOtherAnnoModes("circle");
+    refreshAnnotationFloaters();
+  }
 });
 document.addEventListener("keyup", function (event) {
   if (event.ctrlKey || event.metaKey || event.altKey) return;
+  if (isTextEntryElement(event.target)) return;
 
   if (event.key === "q" || event.key === "Q") {
     isQPressed = false;
@@ -3894,11 +8561,16 @@ document.addEventListener("keyup", function (event) {
       toggleEllipseFloaterOn(false);
     }
   }
+  if (event.key === "v" || event.key === "V") {
+    isVPressed = false;
+    refreshAnnotationFloaters();
+  }
 });
 
 // Handler for adding point annotations
 viewer.addHandler("canvas-click", function (event) {
   if (isQPressed || isPointMode) {
+    event.preventDefaultAction = true;
     const image = viewer.world.getItemAt(0);
     const imageSize = image.getContentSize();
     let viewportPoint = viewer.viewport.pointFromPixel(event.position); // Get viewport coordinates
@@ -3917,11 +8589,7 @@ viewer.addHandler("canvas-click", function (event) {
     const lineColor = getAnnotationLineColor();
     const lineOpacity = getAnnotationOpacityValue("lineOpacity");
 
-    let constPointLabel;
-    if (isRepeatMode) {
-      const annoId = parseInt(document.getElementById("anno-id").value);
-      constPointLabel = annoJSON.features[annoId - 1].properties.label;
-
+    resolveNewAnnotationLabel((constPointLabel) => {
       addPointToGeoJSON(imagePoint.x, imagePoint.y, {
         uuid: uniqueID,
         label: constPointLabel,
@@ -3949,78 +8617,16 @@ viewer.addHandler("canvas-click", function (event) {
         labelBackgroundColor,
         labelBackgroundOpacity
       );
-    } else {
-      showPrompt("Enter the annotation label:", (value) => {
-        if (value) {
-          constPointLabel = value;
 
-          addPointToGeoJSON(imagePoint.x, imagePoint.y, {
-            uuid: uniqueID,
-            label: constPointLabel,
-            xLabel: imagePoint.x,
-            yLabel: imagePoint.y,
-            imageTitle: title(),
-            pixelsPerMeter: pixelsPerMeter(),
-            imageWidth: imageSize.x,
-            imageHeight: imageSize.y,
-            labelFontSize: labelFontSize,
-            labelFontColor: labelFontColor,
-            labelBackgroundColor: labelBackgroundColor,
-            labelBackgroundOpacity: labelBackgroundOpacity,
-            lineWeight: lineWeight,
-            lineColor: lineColor,
-            lineOpacity: lineOpacity,
-          });
-          addText(
-            uniqueID,
-            constPointLabel,
-            viewportPoint,
-            "anno",
-            labelFontColor,
-            labelFontSize,
-            labelBackgroundColor,
-            labelBackgroundOpacity
-          );
-        } else {
-          addPointToGeoJSON(imagePoint.x, imagePoint.y, {
-            uuid: uniqueID,
-            label: "",
-            xLabel: imagePoint.x,
-            yLabel: imagePoint.y,
-            imageTitle: title(),
-            pixelsPerMeter: pixelsPerMeter(),
-            imageWidth: imageSize.x,
-            imageHeight: imageSize.y,
-            labelFontSize: labelFontSize,
-            labelFontColor: labelFontColor,
-            labelBackgroundColor: labelBackgroundColor,
-            labelBackgroundOpacity: labelBackgroundOpacity,
-            lineWeight: lineWeight,
-            lineColor: lineColor,
-            lineOpacity: lineOpacity,
-          });
-          addText(
-            uniqueID,
-            "",
-            viewportPoint,
-            "anno",
-            labelFontColor,
-            labelFontSize,
-            labelBackgroundColor,
-            labelBackgroundOpacity
-          );
-        }
-      });
-    }
-
-    addCrosshairs(
-      uniqueID,
-      viewportPoint,
-      "anno",
-      lineColor,
-      lineWeight,
-      lineOpacity
-    );
+      addCrosshairs(
+        uniqueID,
+        viewportPoint,
+        "anno",
+        lineColor,
+        lineWeight,
+        lineOpacity
+      );
+    });
     // Store annotation
     isQPressed = false; // Reset
     if (!pointButton.classList.contains("active")) {
@@ -4029,6 +8635,29 @@ viewer.addHandler("canvas-click", function (event) {
     enableAnnoButtons();
     // window.appState.hasUnsavedAnnotations = true;
     unsavedAnnotations(true);
+  }
+});
+
+viewer.addHandler("canvas-click", function (event) {
+  if (suppressNextAnnotationClick) {
+    suppressNextAnnotationClick = false;
+    event.preventDefaultAction = true;
+    return;
+  }
+  if (event.preventDefaultAction) return;
+  if (isAnnotationDrawingActive()) return;
+  if (event.originalEvent?.altKey) return;
+  if (event.quick === false) return;
+
+  const uuid = findAnnotationUuidAtViewerPoint(event.position);
+  if (uuid) {
+    if (event.originalEvent?.ctrlKey || event.originalEvent?.metaKey) {
+      toggleAnnotationInSelection(uuid, { pan: false });
+    } else {
+      selectAnnotationByUuid(uuid);
+    }
+  } else {
+    selectAnnotationByUuid(null);
   }
 });
 
@@ -4127,13 +8756,23 @@ function getEllipsePoints(points, numPoints = 50) {
   return ellipsePoints;
 }
 
-function getLowestYPoint(points) {
-  let minIndex = points.reduce(
-    (minIndex, point, currentIndex, array) =>
-      point[1] < array[minIndex][1] ? currentIndex : minIndex,
-    0
+function getTopCenterPoint(points) {
+  const bounds = points.reduce(
+    (acc, point) => ({
+      minX: Math.min(acc.minX, point[0]),
+      maxX: Math.max(acc.maxX, point[0]),
+      minY: Math.min(acc.minY, point[1]),
+    }),
+    { minX: Infinity, maxX: -Infinity, minY: Infinity }
   );
-  return points[minIndex];
+
+  return [(bounds.minX + bounds.maxX) / 2, bounds.minY];
+}
+
+function getTopmostPoint(points) {
+  return points.reduce((topmostPoint, point) =>
+    point[1] < topmostPoint[1] ? point : topmostPoint
+  );
 }
 
 // TODO: There is a fair bit of code redundancy between ellipse and polyline/
@@ -4267,9 +8906,7 @@ viewer.addHandler("canvas-click", function (event) {
     });
 
     if (ellipseCoordinates.length === 3) {
-      if (isRepeatMode) {
-        const annoId = parseInt(document.getElementById("anno-id").value);
-        var constEllipseLabel = annoJSON.features[annoId - 1].properties.label;
+      resolveNewAnnotationLabel((constEllipseLabel) => {
         finalizeEllipseAnnotation(
           constEllipseLabel,
           image,
@@ -4287,50 +8924,7 @@ viewer.addHandler("canvas-click", function (event) {
           fillOpacity
         );
         drawPath(polyCanvas, [annoJSON]);
-      } else {
-        // var constEllipseLabel = prompt("Enter a label for this polyline:");
-        var constEllipseLabel;
-        showPrompt("Enter the annotation label:", (value) => {
-          if (value) {
-            constEllipseLabel = value;
-            finalizeEllipseAnnotation(
-              constEllipseLabel,
-              image,
-              imageSize,
-              uniqueID,
-              labelFontSize,
-              labelFontColor,
-              labelBackgroundColor,
-              labelBackgroundOpacity,
-              lineStyle,
-              lineWeight,
-              lineColor,
-              lineOpacity,
-              fillColor,
-              fillOpacity
-            );
-          } else {
-            constEllipseLabel = "";
-            finalizeEllipseAnnotation(
-              constEllipseLabel,
-              image,
-              imageSize,
-              uniqueID,
-              labelFontSize,
-              labelFontColor,
-              labelBackgroundColor,
-              labelBackgroundOpacity,
-              lineStyle,
-              lineWeight,
-              lineColor,
-              lineOpacity,
-              fillColor,
-              fillOpacity
-            );
-          }
-        });
-        drawPath(polyCanvas, [annoJSON]);
-      }
+      });
     }
   }
 });
@@ -4352,7 +8946,7 @@ function finalizeEllipseAnnotation(
   fillOpacity
 ) {
   const ellipsePoints = getEllipsePoints(ellipseImageCoordinates);
-  const labelImagePoint = getLowestYPoint(ellipsePoints);
+  const labelImagePoint = getTopmostPoint(ellipsePoints);
   const labelViewportPoint = image.imageToViewportCoordinates(
     labelImagePoint[0],
     labelImagePoint[1]
@@ -4365,6 +8959,7 @@ function finalizeEllipseAnnotation(
   addPolygonToGeoJSON(annoJSON, [...ellipsePoints], {
     uuid: uniqueID,
     label: label,
+    shapeType: "ellipse",
     xLabel: labelImagePoint[0],
     yLabel: labelImagePoint[1],
     imageTitle: title(),
@@ -4418,6 +9013,240 @@ function finalizeEllipseAnnotation(
   enableAnnoButtons();
 }
 
+function getCircleRadiusPixels(center, perimeterPoint) {
+  return Math.hypot(perimeterPoint[0] - center[0], perimeterPoint[1] - center[1]);
+}
+
+function getCircleAnnotationUnitConversion() {
+  const conversions = {
+    0: 1,
+    1: 1e3,
+    2: 1e6,
+  };
+  return conversions[Number(circleAnnotationOptions.units)] || 1e6;
+}
+
+function getFixedCircleAnnotationDiameterPixels() {
+  if (!hasKnownScale() || circleAnnotationOptions.mode !== "fixed") return null;
+  const diameter = Number(circleAnnotationOptions.diameter);
+  if (!Number.isFinite(diameter) || diameter <= 0) return null;
+  return diameter * (pixelsPerMeter() / getCircleAnnotationUnitConversion());
+}
+
+function getAnnotationCircleStyle() {
+  currentCircleAnnotationStyleColors = getCurrentAnnotationStyleColors(
+    currentCircleAnnotationStyleColors
+  );
+
+  return {
+    labelFontSize: Number(document.getElementById("annoLabelFontSize").value),
+    labelFontColor: currentCircleAnnotationStyleColors.labelFontColor,
+    labelBackgroundColor:
+      currentCircleAnnotationStyleColors.labelBackgroundColor,
+    labelBackgroundOpacity: getAnnotationOpacityValue(
+      "annoLabelBackgroundOpacity"
+    ),
+    lineStyle: document.getElementById("lineStyle").value,
+    lineWeight: Number(document.getElementById("lineWeight").value),
+    lineColor: currentCircleAnnotationStyleColors.lineColor,
+    lineOpacity: getAnnotationOpacityValue("lineOpacity"),
+    fillColor: currentCircleAnnotationStyleColors.fillColor,
+    fillOpacity: getAnnotationOpacityValue("fillOpacity"),
+  };
+}
+
+function previewCircleAnnotation(perimeterImagePoint) {
+  if (!circleAnnotationCenterImage) return;
+
+  const radiusPixels = getCircleRadiusPixels(
+    circleAnnotationCenterImage,
+    perimeterImagePoint
+  );
+  const coordinates = getCircleCoordinatesInImageSpace(
+    circleAnnotationCenterImage[0],
+    circleAnnotationCenterImage[1],
+    radiusPixels * 2
+  );
+  const style = getAnnotationCircleStyle();
+
+  annoJSONTemp = {
+    type: "FeatureCollection",
+    features: [],
+  };
+
+  addPolygonToGeoJSON(annoJSONTemp, coordinates, {
+    uuid: currentCircleAnnotationUniqueId,
+    labelFontSize: style.labelFontSize,
+    labelFontColor: style.labelFontColor,
+    labelBackgroundColor: style.labelBackgroundColor,
+    labelBackgroundOpacity: style.labelBackgroundOpacity,
+    lineStyle: style.lineStyle,
+    lineWeight: style.lineWeight,
+    lineColor: style.lineColor,
+    lineOpacity: style.lineOpacity,
+    fillColor: style.fillColor,
+    fillOpacity: style.fillOpacity,
+  });
+  drawShape(polyCanvas, [annoJSON, annoJSONTemp]);
+}
+
+function finalizeCircleAnnotation(
+  label,
+  image,
+  imageSize,
+  perimeterImagePoint,
+  options = {}
+) {
+  const style = getAnnotationCircleStyle();
+  const fixedDiameterPixels = Number(options.fixedDiameterPixels);
+  const radiusPixels =
+    Number.isFinite(fixedDiameterPixels) && fixedDiameterPixels > 0
+      ? fixedDiameterPixels / 2
+      : getCircleRadiusPixels(circleAnnotationCenterImage, perimeterImagePoint);
+  const coordinates = getCircleCoordinatesInImageSpace(
+    circleAnnotationCenterImage[0],
+    circleAnnotationCenterImage[1],
+    radiusPixels * 2
+  );
+  const labelImagePoint = getTopCenterPoint(coordinates);
+  const labelViewportPoint = image.imageToViewportCoordinates(
+    labelImagePoint[0],
+    labelImagePoint[1]
+  );
+  const areaPixels2 = calculatePolygonArea([coordinates]);
+  const areaM2 = squareMetersFromSquarePixels(areaPixels2);
+  const perimeterPixels = calculatePolygonExteriorPerimeter([coordinates]);
+  const perimeterM = metersFromPixels(perimeterPixels);
+
+  addPolygonToGeoJSON(annoJSON, coordinates, {
+    uuid: currentCircleAnnotationUniqueId,
+    label: label,
+    shapeType: "circle",
+    circleMode: options.circleMode || "free",
+    circleCenterX: circleAnnotationCenterImage[0],
+    circleCenterY: circleAnnotationCenterImage[1],
+    circleRadiusPixels: radiusPixels,
+    circleDiameterPixels: radiusPixels * 2,
+    circleFixedDiameter:
+      options.circleMode === "fixed"
+        ? circleAnnotationOptions.diameter
+        : undefined,
+    circleFixedDiameterUnits:
+      options.circleMode === "fixed"
+        ? circleAnnotationOptions.units
+        : undefined,
+    xLabel: labelImagePoint[0],
+    yLabel: labelImagePoint[1],
+    imageTitle: title(),
+    pixelsPerMeter: pixelsPerMeter(),
+    imageWidth: imageSize.x,
+    imageHeight: imageSize.y,
+    labelFontSize: style.labelFontSize,
+    labelFontColor: style.labelFontColor,
+    labelBackgroundColor: style.labelBackgroundColor,
+    labelBackgroundOpacity: style.labelBackgroundOpacity,
+    lineStyle: style.lineStyle,
+    lineWeight: style.lineWeight,
+    lineColor: style.lineColor,
+    lineOpacity: style.lineOpacity,
+    fillColor: style.fillColor,
+    fillOpacity: style.fillOpacity,
+    area_m2: areaM2,
+    perimeter_m: perimeterM,
+  });
+
+  addText(
+    currentCircleAnnotationUniqueId,
+    label,
+    labelViewportPoint,
+    "anno",
+    style.labelFontColor,
+    style.labelFontSize,
+    style.labelBackgroundColor,
+    style.labelBackgroundOpacity
+  );
+
+  circleAnnotationCenter = null;
+  circleAnnotationCenterImage = null;
+  currentCircleAnnotationUniqueId = null;
+  currentCircleAnnotationStyleColors = null;
+  activelyMakingCircleAnnotation = false;
+  annoJSONTemp = {
+    type: "FeatureCollection",
+    features: [],
+  };
+  drawShape(polyCanvas, [annoJSON]);
+  unsavedAnnotations(true);
+  isVPressed = false;
+  enableAnnoButtons();
+}
+
+viewer.addHandler("canvas-click", function (event) {
+  if (!isCircleAnnotationMode && !isVPressed) {
+    return;
+  }
+
+  event.preventDefaultAction = true;
+  const image = viewer.world.getItemAt(0);
+  if (!image) return;
+
+  const imageSize = image.getContentSize();
+  const viewportPoint = viewer.viewport.pointFromPixel(event.position);
+  const imagePoint = image.viewportToImageCoordinates(
+    viewportPoint.x,
+    viewportPoint.y
+  );
+  const imageCoordinates = [imagePoint.x, imagePoint.y];
+  const fixedDiameterPixels = getFixedCircleAnnotationDiameterPixels();
+
+  if (fixedDiameterPixels) {
+    circleAnnotationCenter = { x: viewportPoint.x, y: viewportPoint.y };
+    circleAnnotationCenterImage = imageCoordinates;
+    currentCircleAnnotationUniqueId = generateUniqueId(8);
+    currentCircleAnnotationStyleColors = null;
+    resolveNewAnnotationLabel((circleLabel) => {
+      finalizeCircleAnnotation(circleLabel, image, imageSize, imageCoordinates, {
+        circleMode: "fixed",
+        fixedDiameterPixels,
+      });
+    });
+    return;
+  }
+
+  if (!circleAnnotationCenterImage) {
+    circleAnnotationCenter = { x: viewportPoint.x, y: viewportPoint.y };
+    circleAnnotationCenterImage = imageCoordinates;
+    currentCircleAnnotationUniqueId = generateUniqueId(8);
+    currentCircleAnnotationStyleColors = null;
+    getAnnotationCircleStyle();
+    activelyMakingCircleAnnotation = true;
+    return;
+  }
+
+  resolveNewAnnotationLabel((circleLabel) => {
+    finalizeCircleAnnotation(circleLabel, image, imageSize, imageCoordinates);
+  });
+});
+
+viewerContainer.addEventListener("mousemove", function (event) {
+  if (!activelyMakingCircleAnnotation || !circleAnnotationCenterImage) return;
+
+  const image = viewer.world.getItemAt(0);
+  if (!image) return;
+
+  const rect = viewerContainer.getBoundingClientRect();
+  const positionPoint = new OpenSeadragon.Point(
+    event.clientX - rect.left,
+    event.clientY - rect.top
+  );
+  const viewportPoint = viewer.viewport.pointFromPixel(positionPoint);
+  const imagePoint = image.viewportToImageCoordinates(
+    viewportPoint.x,
+    viewportPoint.y
+  );
+  previewCircleAnnotation([imagePoint.x, imagePoint.y]);
+});
+
 // Event listener to add polyline and polygon annotations
 let clickCoordinates = []; // Array to store viewport coordinates
 let clickImageCoordinates = []; // Array to store image coordinates
@@ -4430,6 +9259,7 @@ const polyCanvas = document.getElementById("annotation-overlay"); // Includes po
 const circleCanvas = document.getElementById("circle-overlay"); // Includes circles
 const measureCanvas = document.getElementById("measurement-overlay"); // Includes polyline and polygon
 const scaleCanvas = document.getElementById("scale-overlay"); // Scale wizard calibration line
+const annotationMarquee = document.getElementById("annotation-marquee");
 const scaleWizard = document.getElementById("scaleWizard");
 const scaleWizardStatus = document.getElementById("scaleWizardStatus");
 const scaleWizardLength = document.getElementById("scaleWizardLength");
@@ -5784,6 +10614,9 @@ viewer.addHandler("canvas-click", function (event) {
     // If the time between this click and the last click is shorter than clickDelay, it's a double-click
     const currentTime = new Date().getTime();
     if (currentTime - lastClickTime < clickDelay) {
+      suppressAnnotationDoubleClickBriefly();
+      clickImageCoordinates = getCoordinatesWithoutTrailingDuplicate(clickImageCoordinates);
+      clickCoordinates = clickCoordinates.slice(0, clickImageCoordinates.length);
       // Check whether z or x keys were being held at time of double click
       let ZWasPressed = false;
       let XWasPressed = false;
@@ -5816,14 +10649,10 @@ viewer.addHandler("canvas-click", function (event) {
         clickImageCoordinates,
       ]);
       const rectPerimeterM = metersFromPixels(rectPerimeterPixels);
-      const lineLengthPixels = calculateLineStringLength(
-        clickImageCoordinates.slice(0, clickImageCoordinates.length - 1)
-      );
+      const lineLengthPixels = calculateLineStringLength(clickImageCoordinates);
       const lineLengthM = metersFromPixels(lineLengthPixels);
 
-      if (isRepeatMode) {
-        const annoId = parseInt(document.getElementById("anno-id").value);
-        var constPolylineLabel = annoJSON.features[annoId - 1].properties.label;
+      resolveNewAnnotationLabel((constPolylineLabel) => {
         finalizePolyAnnotation(
           constPolylineLabel,
           labelImagePoint,
@@ -5873,61 +10702,7 @@ viewer.addHandler("canvas-click", function (event) {
         }
         activelyMakingPoly = false;
         enableAnnoButtons();
-      } else {
-        // var constPolylineLabel = prompt("Enter a label for this polyline:");
-        showPrompt("Enter the annotation label:", (value) => {
-          const constPolylineLabel = value || "";
-          finalizePolyAnnotation(
-            constPolylineLabel,
-            labelImagePoint,
-            imageSize,
-            uuid,
-            labelViewportPoint,
-            labelFontSize,
-            labelFontColor,
-            labelBackgroundColor,
-            labelBackgroundOpacity,
-            lineStyle,
-            lineWeight,
-            lineColor,
-            lineOpacity,
-            fillColor,
-            fillOpacity,
-            rectAreaM2,
-            rectPerimeterM,
-            lineLengthM,
-            isPolygonMode,
-            XWasPressed,
-            isPolylineMode,
-            ZWasPressed,
-            clickImageCoordinates
-          );
-          drawPath(polyCanvas, [annoJSON]);
-          // Reset the coordinates array for the next set of clicks
-          clickCoordinatesArray.push(clickCoordinates);
-          clickCoordinates = [];
-          clickImageCoordinates = []; // Clear
-          currentPolyStyleColors = null;
-          clearAnnotationDraftState();
-
-          annoJSONTemp = {
-            type: "FeatureCollection",
-            features: [],
-          };
-          // window.appState.hasUnsavedAnnotations = true;
-          unsavedAnnotations(true);
-          enableAnnoButtons();
-          isXPressed = false; // reset (because keyup not detected)
-          XWasPressed = false; // reset
-          isZPressed = false; // reset (because keyup not detected)
-          ZWasPressed = false; // reset
-          if (!polylineButton.classList.contains("active")) {
-            togglePolylineFloaterOn(false);
-          }
-          activelyMakingPoly = false;
-          enableAnnoButtons();
-        });
-      }
+      });
     } else {
       // It's a single click, so set a timeout to handle it
       clickTimeout = setTimeout(function () {
@@ -5966,13 +10741,18 @@ function finalizePolyAnnotation(
   clickImageCoordinates
 ) {
   if (isPolygonMode || XWasPressed) {
-    // Close the polygon by adding the first point to the end
-    clickCoordinates = clickImageCoordinates.slice(
-      0,
-      clickImageCoordinates.length - 1
-    ); // To avoid getting a duplicated final point
-    clickImageCoordinates.push(clickImageCoordinates[0]);
-    addPolygonToGeoJSON(annoJSON, clickImageCoordinates, {
+    const polygonCoordinates =
+      getCoordinatesWithoutTrailingDuplicate(clickImageCoordinates);
+    if (
+      polygonCoordinates.length > 1 &&
+      !coordinatesMatch(
+        polygonCoordinates[0],
+        polygonCoordinates[polygonCoordinates.length - 1]
+      )
+    ) {
+      polygonCoordinates.push([...polygonCoordinates[0]]);
+    }
+    addPolygonToGeoJSON(annoJSON, polygonCoordinates, {
       uuid: uuid,
       label: constPolylineLabel,
       xLabel: labelImagePoint.x,
@@ -6000,9 +10780,11 @@ function finalizePolyAnnotation(
     }
   }
   if (isPolylineMode || ZWasPressed) {
+    const polylineCoordinates =
+      getCoordinatesWithoutTrailingDuplicate(clickImageCoordinates);
     addPolylineToGeoJSON(
       annoJSON,
-      clickImageCoordinates.slice(0, clickImageCoordinates.length - 1), // To avoid getting a duplicated final point
+      polylineCoordinates,
       {
         uuid: uuid,
         label: constPolylineLabel,
@@ -6069,8 +10851,43 @@ viewerContainer.addEventListener("mousemove", () => {
   drawScaleWizardOverlay();
 });
 
-// Event listener for double-click to end collection
-viewer.addHandler("canvas-dblclick", function (event) {
+// Event listener for double-click to edit existing vertices or end collection
+viewer.addHandler("canvas-double-click", function (event) {
+  if (suppressNextAnnotationDoubleClick) {
+    suppressNextAnnotationDoubleClick = false;
+    event.preventDefaultAction = true;
+    return;
+  }
+
+  if (activeVertexEditUuid && !isAnnotationDraftActive()) {
+    if (insertAnnotationVertexAtViewerPoint(activeVertexEditUuid, event.position)) {
+      event.preventDefaultAction = true;
+      suppressAnnotationClickBriefly();
+      return;
+    }
+  }
+
+  if (!isAnnotationDraftActive()) {
+    const uuid = findAnnotationUuidAtViewerPoint(event.position, {
+      lineTolerance: 14,
+    });
+    const feature = getAnnotationByUuid(uuid);
+    if (isShapeEditableAnnotation(feature)) {
+      event.preventDefaultAction = true;
+      selectAnnotationByUuid(uuid, { pan: false });
+      enterAnnotationShapeEditMode(uuid);
+      suppressAnnotationClickBriefly();
+      return;
+    }
+    if (isVertexEditableAnnotation(feature)) {
+      event.preventDefaultAction = true;
+      selectAnnotationByUuid(uuid, { pan: false });
+      enterAnnotationVertexEditMode(uuid);
+      suppressAnnotationClickBriefly();
+      return;
+    }
+  }
+
   if (isPolylineMode) {
     // Double-click detected, stop collecting points
     const viewportPoint = viewer.viewport.pointFromPixel(event.position);
@@ -6101,6 +10918,7 @@ function drawShape(canvas, JSONArray) {
   allFeatures.forEach((feature) => {
     // Only process features that have geometry and properties
     if (feature.geometry && feature.properties) {
+      if (!isAnnotationFeatureVisible(feature)) return;
       const coordinates = feature.geometry.coordinates;
       const type = feature.geometry.type;
 
@@ -6192,6 +11010,15 @@ function drawPolygon(ctx, coordinates, image, feature) {
     }
   }
   ctx.stroke();
+
+  if (selectedAnnotationUuids.has(feature.properties.uuid)) {
+    ctx.save();
+    ctx.setLineDash([]);
+    ctx.strokeStyle = "rgba(255, 204, 0, 0.95)";
+    ctx.lineWidth = Math.max(Number(ctx.lineWidth) + 4, 6);
+    ctx.stroke();
+    ctx.restore();
+  }
 }
 
 function drawLineString(ctx, coordinates, image, feature) {
@@ -6270,6 +11097,15 @@ function drawPath(ctx, coordinates, image, shape, closePath) {
     }
   }
   ctx.stroke();
+
+  if (selectedAnnotationUuids.has(shape.properties.uuid)) {
+    ctx.save();
+    ctx.setLineDash([]);
+    ctx.strokeStyle = "rgba(255, 204, 0, 0.95)";
+    ctx.lineWidth = Math.max(Number(ctx.lineWidth) + 4, 6);
+    ctx.stroke();
+    ctx.restore();
+  }
 }
 
 let startPoint = null;
@@ -6278,9 +11114,132 @@ let startPointImage = null;
 let overlayElement = null;
 let currentRectUniqueId;
 let currentRectStyleColors = null;
+let isDrawingRectangle = false;
+let annotationMarqueeState = null;
+
+function isRectangleDrawGesture(event) {
+  return isRectangleMode || event.originalEvent?.altKey;
+}
+
+function getImageMarqueePolygon(startPixel, endPixel) {
+  const image = viewer.world.getItemAt(0);
+  if (!image) return null;
+
+  const left = Math.min(startPixel.x, endPixel.x);
+  const top = Math.min(startPixel.y, endPixel.y);
+  const right = Math.max(startPixel.x, endPixel.x);
+  const bottom = Math.max(startPixel.y, endPixel.y);
+
+  const corners = [
+    new OpenSeadragon.Point(left, top),
+    new OpenSeadragon.Point(right, top),
+    new OpenSeadragon.Point(right, bottom),
+    new OpenSeadragon.Point(left, bottom),
+  ].map((pixelPoint) => {
+    const viewportPoint = viewer.viewport.pointFromPixel(pixelPoint);
+    const imagePoint = image.viewportToImageCoordinates(viewportPoint);
+    return [imagePoint.x, imagePoint.y];
+  });
+
+  corners.push(corners[0]);
+  return corners;
+}
+
+function updateAnnotationMarquee(startPixel, endPixel) {
+  if (!annotationMarquee) return;
+
+  const left = Math.min(startPixel.x, endPixel.x);
+  const top = Math.min(startPixel.y, endPixel.y);
+  const width = Math.abs(endPixel.x - startPixel.x);
+  const height = Math.abs(endPixel.y - startPixel.y);
+
+  annotationMarquee.hidden = false;
+  annotationMarquee.style.left = `${left}px`;
+  annotationMarquee.style.top = `${top}px`;
+  annotationMarquee.style.width = `${width}px`;
+  annotationMarquee.style.height = `${height}px`;
+}
+
+function hideAnnotationMarquee() {
+  if (annotationMarquee) {
+    annotationMarquee.hidden = true;
+  }
+  annotationMarqueeState = null;
+}
+
+function toggleAnnotationsInMarquee(marqueePolygon) {
+  const touchedUuids = annoJSON.features
+    .filter((feature) =>
+      !isAnnotationFeatureLocked(feature) &&
+      annotationFeatureIntersectsMarquee(feature, marqueePolygon)
+    )
+    .map((feature) => feature.properties.uuid);
+
+  if (touchedUuids.length === 0) return;
+
+  const nextSelection = new Set(selectedAnnotationUuids);
+  touchedUuids.forEach((uuid) => {
+    if (nextSelection.has(uuid)) {
+      nextSelection.delete(uuid);
+    } else {
+      nextSelection.add(uuid);
+    }
+  });
+
+  const primaryUuid = touchedUuids[touchedUuids.length - 1];
+  annotationListSelectionAnchorUuid = primaryUuid;
+  setAnnotationSelection([...nextSelection], primaryUuid, {
+    pan: false,
+    scroll: false,
+  });
+}
+
 viewer.addHandler("canvas-drag", function (event) {
-  if (event.originalEvent.shiftKey || isRectangleMode) {
+  if (snapshotModeActive) {
+    event.preventDefaultAction = true;
+    const delta = event.delta || new OpenSeadragon.Point(0, 0);
+    if (!snapshotDragState) {
+      snapshotDragState = {
+        startPixel: new OpenSeadragon.Point(
+          event.position.x - delta.x,
+          event.position.y - delta.y
+        ),
+      };
+    }
+    updateSnapshotSelection(snapshotDragState.startPixel, event.position);
+    return;
+  }
+
+  if (isAnnotationMoveMode) {
+    const imagePoint = getImagePointFromViewerPixel(event.position);
+    if (annotationMoveDragState) {
+      event.preventDefaultAction = true;
+      moveSelectedAnnotationsToImagePoint(imagePoint);
+      return;
+    }
+    if (startAnnotationMoveDrag(event)) {
+      event.preventDefaultAction = true;
+      return;
+    }
+  }
+
+  if (event.originalEvent.shiftKey && !isAnnotationDrawingActive()) {
+    event.preventDefaultAction = true;
+    suppressAnnotationClickBriefly();
+
+    if (!annotationMarqueeState) {
+      annotationMarqueeState = {
+        startPixel: event.position,
+      };
+    }
+
+    updateAnnotationMarquee(annotationMarqueeState.startPixel, event.position);
+    return;
+  }
+
+  if (isRectangleDrawGesture(event)) {
     event.preventDefaultAction = true; // Prevent default behavior (like panning)
+    isDrawingRectangle = true;
 
     const canvasPoint = event.position;
     const viewportPoint = viewer.viewport.pointFromPixel(event.position);
@@ -6293,7 +11252,9 @@ viewer.addHandler("canvas-drag", function (event) {
     );
     const labelFontColor = currentRectStyleColors.labelFontColor;
     const labelBackgroundColor = currentRectStyleColors.labelBackgroundColor;
-    const labelBackgroundOpacity = getAnnotationOpacityValue("annoLabelBackgroundOpacity");
+    const labelBackgroundOpacity = getAnnotationOpacityValue(
+      "annoLabelBackgroundOpacity"
+    );
     const lineWeight = Number(document.getElementById("lineWeight").value);
     const lineColor = currentRectStyleColors.lineColor;
     const lineStyle = document.getElementById("lineStyle").value;
@@ -6378,7 +11339,32 @@ viewer.addHandler("canvas-drag", function (event) {
 
 // Finalize the rectangle on mouseup
 viewer.addHandler("canvas-release", function (event) {
-  if ((event.originalEvent.shiftKey || isRectangleMode) && startPoint) {
+  if (snapshotModeActive) {
+    event.preventDefaultAction = true;
+    finishSnapshotSelection(event.position);
+    return;
+  }
+
+  if (finishAnnotationMoveDrag()) {
+    event.preventDefaultAction = true;
+    return;
+  }
+
+  if (annotationMarqueeState) {
+    event.preventDefaultAction = true;
+    suppressAnnotationClickBriefly();
+    const marqueePolygon = getImageMarqueePolygon(
+      annotationMarqueeState.startPixel,
+      event.position
+    );
+    if (marqueePolygon) {
+      toggleAnnotationsInMarquee(marqueePolygon);
+    }
+    hideAnnotationMarquee();
+    return;
+  }
+
+  if (isDrawingRectangle && startPoint) {
     // Capture the final rectangle's coordinates and size
     const image = viewer.world.getItemAt(0);
     const imageSize = image.getContentSize();
@@ -6457,9 +11443,8 @@ viewer.addHandler("canvas-release", function (event) {
     const fillColor = currentRectStyleColors.fillColor;
     const fillOpacity = getAnnotationOpacityValue("fillOpacity");
 
-    if (isRepeatMode) {
-      const annoId = parseInt(document.getElementById("anno-id").value);
-      var constRectLabel = annoJSON.features[annoId - 1].properties.label;
+    drawShape(polyCanvas, [annoJSON, annoJSONTemp]);
+    resolveNewAnnotationLabel((constRectLabel) => {
       finalizeRectAnnotationWithCoords(
         rectCoordinates,
         title(),
@@ -6482,68 +11467,14 @@ viewer.addHandler("canvas-release", function (event) {
         features: [],
       };
       drawShape(polyCanvas, [annoJSON]);
-    } else {
-      var constRectLabel;
-      drawShape(polyCanvas, [annoJSON, annoJSONTemp]);
-      showPrompt("Enter the annotation label:", (value) => {
-        if (value) {
-          constRectLabel = value;
-          finalizeRectAnnotationWithCoords(
-            rectCoordinates,
-            title(),
-            currentRectUniqueId,
-            constRectLabel,
-            imageSize,
-            labelFontSize,
-            labelFontColor,
-            labelBackgroundColor,
-            labelBackgroundOpacity,
-            lineStyle,
-            lineWeight,
-            lineColor,
-            lineOpacity,
-            fillColor,
-            fillOpacity
-          );
-          annoJSONTemp = {
-            type: "FeatureCollection",
-            features: [],
-          };
-          drawShape(polyCanvas, [annoJSON]);
-        } else {
-          constRectLabel = "";
-          finalizeRectAnnotationWithCoords(
-            rectCoordinates,
-            title(),
-            currentRectUniqueId,
-            constRectLabel,
-            imageSize,
-            labelFontSize,
-            labelFontColor,
-            labelBackgroundColor,
-            labelBackgroundOpacity,
-            lineStyle,
-            lineWeight,
-            lineColor,
-            lineOpacity,
-            fillColor,
-            fillOpacity
-          );
-          annoJSONTemp = {
-            type: "FeatureCollection",
-            features: [],
-          };
-          drawShape(polyCanvas, [annoJSON]);
-        }
-      });
-    }
+    });
   }
   enableAnnoButtons();
   window.appState.hasUnsavedAnnotations = true; // TODO: Turn off button between each annotation???
   if (!rectButton.classList.contains("active")) {
     toggleRectFloaterOn(false);
   }
-  shiftKeyHeld = false; // TODO: is this right?    // Clear upon release
+  isDrawingRectangle = false;
 });
 
 function finalizeRectAnnotationWithCoords(
@@ -6575,6 +11506,7 @@ function finalizeRectAnnotationWithCoords(
   addPolygonToGeoJSON(annoJSON, coordinates, {
     uuid: currentRectUniqueId,
     label: constRectLabel,
+    shapeType: "rectangle",
     xLabel: coordinates[0][0], // top-left corner
     yLabel: coordinates[0][1],
     imageTitle: sampleName,
@@ -6620,10 +11552,7 @@ function finalizeRectAnnotationWithCoords(
 
 // Clear annotations & grid
 document.getElementById("clearBtn").addEventListener("click", function () {
-  annotationHistory.push("Clear annotations");
-  clearAnnotations();
-  unsavedAnnotations(true);
-  disableAnnoButtons();
+  showAnnotationClearDialog();
 });
 
 // New function to allow rotation of text labels to keep them upright
@@ -6637,6 +11566,14 @@ function addText(
   backgroundColor = "#000000",
   backgroundOpacity = 0.5
 ) {
+  const labelText = label === undefined || label === null ? "" : String(label);
+  if (type === "anno" && labelText.trim() === "") {
+    unsavedAnnotations(true);
+    updateRepeatButton();
+    syncSelectedAnnotationVisuals();
+    return;
+  }
+
   let className;
   if (type === "anno") {
     className = "annotate-label";
@@ -6650,9 +11587,23 @@ function addText(
 
   // Inner element — put your actual text here and rotate this to cancel viewer rotation
   const pointLabel = document.createElement("div");
-  pointLabel.innerHTML = `${label}`;
+  pointLabel.textContent = labelText;
   pointLabel.className = `${className}`;
   pointLabel.id = `${className}-${i}`;
+  if (type === "anno") {
+    pointLabel.dataset.annotationUuid = i;
+    pointLabel.addEventListener("pointerdown", function (event) {
+      handleAnnotationLabelPointerDown(event, i);
+    });
+    pointLabel.addEventListener("click", function (event) {
+      event.stopPropagation();
+      if (suppressNextAnnotationClick) {
+        suppressNextAnnotationClick = false;
+        return;
+      }
+      selectAnnotationByUuid(i);
+    });
+  }
 
   const backgroundColorToPlot = applyOpacityToColor(
     backgroundColor,
@@ -6666,7 +11617,7 @@ function addText(
 
   // Important: make the inner element inline-block so transform-origin behaves
   pointLabel.style.display = "inline-block";
-  pointLabel.style.transformOrigin = "center center";
+  pointLabel.style.transformOrigin = "top left";
   pointLabel.style.willChange = "transform"; // performance hint
 
   // assemble and add overlay
@@ -6675,6 +11626,7 @@ function addText(
     element: container,
     location: location,
     checkResize: false,
+    rotationMode: OpenSeadragon.OverlayRotationMode.NO_ROTATION,
   });
 
   // keep reference to the INNER label so we can rotate it later
@@ -6683,10 +11635,9 @@ function addText(
     unsavedAnnotations(true);
     updateRepeatButton();
   }
+  syncSelectedAnnotationVisuals();
 
-  // immediately sync it to current rotation (so newly added labels are upright)
-  const currentRotation = viewer.viewport.getRotation();
-  pointLabel.style.transform = `rotate(${-currentRotation}deg)`;
+  updateAnnotationOverlayRotation();
 }
 
 // // OG Functions to add annotation test and crosshairs
@@ -6787,10 +11738,45 @@ function updateText(
     pointLabel = document.getElementById(`grid-label-${uuid}`);
   }
 
+  if (type === "anno" && newLabel !== undefined) {
+    const nextLabel = newLabel === null ? "" : String(newLabel);
+    if (nextLabel.trim() === "") {
+      if (pointLabel) {
+        deleteText(uuid, type);
+      }
+      return;
+    }
+
+    if (!pointLabel) {
+      const feature = getAnnotationByUuid(uuid);
+      const image = viewer.world.getItemAt(0);
+      const labelX = Number(feature?.properties?.xLabel);
+      const labelY = Number(feature?.properties?.yLabel);
+      if (
+        feature?.properties &&
+        image &&
+        Number.isFinite(labelX) &&
+        Number.isFinite(labelY)
+      ) {
+        const labelFontSize = fontSize ?? Number(feature.properties.labelFontSize);
+        addText(
+          uuid,
+          nextLabel,
+          image.imageToViewportCoordinates(new OpenSeadragon.Point(labelX, labelY)),
+          type,
+          color ?? feature.properties.labelFontColor ?? "#FFFFFF",
+          Number.isFinite(labelFontSize) ? labelFontSize : 16,
+          backgroundColor ?? feature.properties.labelBackgroundColor ?? "#000000",
+          backgroundOpacity ?? feature.properties.labelBackgroundOpacity ?? 0.5
+        );
+      }
+      return;
+    }
+  }
+
   if (pointLabel) {
     if (newLabel !== undefined && newLabel !== null) {
-      // Update the innerHTML with the new label
-      pointLabel.innerHTML = newLabel;
+      pointLabel.textContent = String(newLabel);
     }
 
     if (type === "anno") {
@@ -6828,6 +11814,18 @@ function addCrosshairs(
   if (type === "anno") {
     crosshair.className = "annotate-crosshairs"; // Used for css styling
     crosshair.id = `annotate-crosshair-${uuid}`;
+    crosshair.dataset.annotationUuid = uuid;
+    crosshair.addEventListener("click", function (event) {
+      event.stopPropagation();
+      selectAnnotationByUuid(uuid);
+    });
+    crosshair.addEventListener("dblclick", function (event) {
+      event.preventDefault();
+      event.stopPropagation();
+      selectAnnotationByUuid(uuid, { pan: false });
+      enterAnnotationShapeEditMode(uuid);
+      suppressAnnotationClickBriefly();
+    });
   } else if (type === "grid") {
     crosshair.className = "grid-crosshairs"; // Used for css styling
     crosshair.id = `grid-crosshair-${uuid}`;
@@ -6852,6 +11850,7 @@ function addCrosshairs(
     unsavedAnnotations(true);
     updateRepeatButton();
   }
+  syncSelectedAnnotationVisuals();
 }
 
 // TOOD: update this function
@@ -6916,7 +11915,9 @@ async function loadAnnotationsFromJSON(file) {
         ? await window.electronAPI.readLocalJsonFile(file)
         : await fetchAnnotationJSON(file);
 
-    loadAnnotations(data);
+    showAnnotationImportDialog(data, {
+      sourceName: getAnnotationFileLabel(file, 0),
+    });
     updateRepeatButton();
   } catch (error) {
     console.error("Error loading GeoJSON:", error);
@@ -7045,30 +12046,293 @@ function parseJSON(geoJSONData) {
   return geoJSON;
 }
 
-// New loadAnnotations() for testing
-function loadAnnotations(geoJSONData) {
-  const geoJSON = parseJSON(geoJSONData);
+let pendingAnnotationImport = null;
 
-  const features = geoJSON.features || Object.values(geoJSON); // Supports both formats
+function getOrCreateAnnotationGroup(groupName) {
+  const trimmedName = (groupName || DEFAULT_ANNOTATION_GROUP.groupName).trim();
+  const existingGroup = getAnnotationGroups().find(
+    (group) => group.groupName.toLowerCase() === trimmedName.toLowerCase()
+  );
+  if (existingGroup) return existingGroup;
+
+  const groups = getAnnotationGroups();
+  return {
+    groupId: `group-${generateUniqueId(8)}`,
+    groupName: trimmedName,
+    groupColor: getAnnotationGroupColor(groups.length),
+    groupVisible: true,
+    groupLocked: false,
+  };
+}
+
+function hasExplicitAnnotationGroup(properties = {}) {
+  return [
+    "groupId",
+    "groupName",
+    "groupColor",
+    "groupVisible",
+    "groupLocked",
+  ].some((key) => Object.prototype.hasOwnProperty.call(properties, key));
+}
+
+function applyAnnotationGroupToProperties(properties, group) {
+  return {
+    ...properties,
+    groupId: group.groupId,
+    groupName: group.groupName,
+    groupColor: group.groupColor,
+    groupVisible: group.groupVisible,
+    groupLocked: group.groupLocked,
+  };
+}
+
+function applyActiveAnnotationGroup(properties = {}) {
+  if (hasExplicitAnnotationGroup(properties)) return properties;
+  const group = getSelectedGroupFromDropdown();
+  return group ? applyAnnotationGroupToProperties(properties, group) : properties;
+}
+
+function getPreservedImportGroup(properties = {}, preservedGroups) {
+  if (!hasExplicitAnnotationGroup(properties)) return null;
+
+  const groupName =
+    properties.groupName ||
+    (properties.groupId
+      ? `Imported group ${properties.groupId}`
+      : DEFAULT_ANNOTATION_GROUP.groupName);
+  const key = properties.groupId || groupName.toLowerCase();
+  if (preservedGroups.has(key)) return preservedGroups.get(key);
+
+  const existingGroup = getAnnotationGroups().find(
+    (group) =>
+      (properties.groupId && group.groupId === properties.groupId) ||
+      group.groupName.toLowerCase() === groupName.toLowerCase()
+  );
+  const group =
+    existingGroup || {
+      groupId: properties.groupId || `group-${generateUniqueId(8)}`,
+      groupName,
+      groupColor:
+        properties.groupColor ||
+        getAnnotationGroupColor(getAnnotationGroups().length),
+      groupVisible:
+        properties.groupVisible === undefined
+          ? true
+          : Boolean(properties.groupVisible),
+      groupLocked:
+        properties.groupLocked === undefined
+          ? false
+          : Boolean(properties.groupLocked),
+    };
+
+  preservedGroups.set(key, group);
+  return group;
+}
+
+function getAnnotationFeaturesFromGeoJSON(geoJSONData) {
+  const geoJSON = parseJSON(geoJSONData);
+  if (!geoJSON) return [];
+  const features = geoJSON.features || Object.values(geoJSON);
+  return Array.isArray(features) ? features.filter(Boolean) : [];
+}
+
+function annotationImportHasExplicitGroups(features) {
+  return features.some((feature) =>
+    hasExplicitAnnotationGroup(feature.properties)
+  );
+}
+
+function getDefaultImportGroupName(sourceName) {
+  return (sourceName || "Imported annotations").trim();
+}
+
+function showAnnotationImportDialog(geoJSONData, options = {}) {
+  const features = getAnnotationFeaturesFromGeoJSON(geoJSONData);
+  if (features.length === 0) {
+    alert("No annotation features were found in that GeoJSON file.");
+    return;
+  }
+
+  const sourceName = options.sourceName || "Imported annotations";
+  const hasGroups = annotationImportHasExplicitGroups(features);
+  pendingAnnotationImport = { geoJSONData, sourceName };
+
+  document.getElementById(
+    "annotationImportSource"
+  ).textContent = `${features.length} feature${features.length === 1 ? "" : "s"} from ${sourceName}`;
+
+  const groupSelect = document.getElementById("annotationImportGroupSelect");
+  groupSelect.innerHTML = "";
+  getAnnotationGroups().forEach((group) => {
+    const option = document.createElement("option");
+    option.value = group.groupId;
+    option.textContent = group.groupName;
+    groupSelect.appendChild(option);
+  });
+  const newOption = document.createElement("option");
+  newOption.value = "__new__";
+  newOption.textContent = "New group...";
+  groupSelect.appendChild(newOption);
+  groupSelect.value = DEFAULT_ANNOTATION_GROUP.groupId;
+
+  const assignMode = document.querySelector(
+    'input[name="annotationImportMode"][value="assign"]'
+  );
+  const preserveMode = document.querySelector(
+    'input[name="annotationImportMode"][value="preserve"]'
+  );
+  preserveMode.disabled = !hasGroups;
+  preserveMode.checked = hasGroups;
+  assignMode.checked = !hasGroups;
+  updateAnnotationImportGroupInputs();
+
+  document.getElementById("annotationImportSelectAfter").checked =
+    selectImportedAnnotationsPreference;
+  document.getElementById("annotationImportDialog").classList.remove(
+    "modal-prompt-hidden"
+  );
+  document
+    .getElementById("annotationImportDialog")
+    .classList.add("modal-prompt-visible");
+}
+
+function hideAnnotationImportDialog() {
+  pendingAnnotationImport = null;
+  document.getElementById("annotationImportDialog").classList.remove(
+    "modal-prompt-visible"
+  );
+  document
+    .getElementById("annotationImportDialog")
+    .classList.add("modal-prompt-hidden");
+}
+
+function confirmAnnotationImport() {
+  if (!pendingAnnotationImport) return;
+
+  const mode =
+    document.querySelector('input[name="annotationImportMode"]:checked')
+      ?.value || "assign";
+  const selectImported = document.getElementById(
+    "annotationImportSelectAfter"
+  ).checked;
+  selectImportedAnnotationsPreference = selectImported;
+  const loadOptions = {
+    groupMode: "preserve",
+    selectImported,
+  };
+
+  if (mode === "assign") {
+    const groupSelect = document.getElementById("annotationImportGroupSelect");
+    const selectedGroupId = groupSelect.value;
+    const group =
+      selectedGroupId === "__new__"
+        ? getOrCreateAnnotationGroup(
+            pendingAnnotationImport.newGroupName ||
+              getDefaultImportGroupName(pendingAnnotationImport.sourceName)
+          )
+        : getAnnotationGroups().find(
+            (candidate) => candidate.groupId === selectedGroupId
+          );
+    loadOptions.groupMode = "assign";
+    loadOptions.group = group;
+  }
+
+  const importData = pendingAnnotationImport.geoJSONData;
+  hideAnnotationImportDialog();
+  loadAnnotations(importData, loadOptions);
+  updateRepeatButton();
+}
+
+function promptForAnnotationImportGroupName() {
+  if (!pendingAnnotationImport) return;
+
+  showPrompt(
+    "Enter the group name:",
+    (value) => {
+      const groupName =
+        value.trim() ||
+        getDefaultImportGroupName(pendingAnnotationImport.sourceName);
+      pendingAnnotationImport.newGroupName = groupName;
+      const groupSelect = document.getElementById("annotationImportGroupSelect");
+      const newGroupOption = groupSelect.querySelector('option[value="__new__"]');
+      if (newGroupOption) {
+        newGroupOption.textContent = `New group: ${groupName}`;
+      }
+      groupSelect.value = "__new__";
+      document.querySelector(
+        'input[name="annotationImportMode"][value="assign"]'
+      ).checked = true;
+      updateAnnotationImportGroupInputs();
+      document
+        .getElementById("annotationImportDialog")
+        .classList.remove("modal-prompt-hidden");
+      document
+        .getElementById("annotationImportDialog")
+        .classList.add("modal-prompt-visible");
+    },
+    getDefaultImportGroupName(pendingAnnotationImport.sourceName)
+  );
+}
+
+function updateAnnotationImportGroupInputs() {
+  const mode =
+    document.querySelector('input[name="annotationImportMode"]:checked')
+      ?.value || "assign";
+  const isNewGroup =
+    document.getElementById("annotationImportGroupSelect").value === "__new__";
+  document.getElementById("annotationImportGroupSelect").disabled =
+    mode !== "assign";
+  if (mode === "assign" && isNewGroup && pendingAnnotationImport?.newGroupName) {
+    document.getElementById("annotationImportGroupSelect").title =
+      pendingAnnotationImport.newGroupName;
+  } else {
+    document.getElementById("annotationImportGroupSelect").title = "";
+  }
+}
+
+// New loadAnnotations() for testing
+function loadAnnotations(geoJSONData, options = {}) {
+  const features = getAnnotationFeaturesFromGeoJSON(geoJSONData);
+  const assignedGroup =
+    options.groupMode === "assign" && options.group
+      ? options.group
+      : null;
+  const preservedImportGroups = new Map();
+  const existingUuids = new Set(
+    annoJSON.features.map((feature) => feature.properties.uuid)
+  );
+  const addedUuids = [];
   annotationHistory.push("Import annotations");
   annotationHistoryPaused = true;
   try {
     features.forEach((feature) => {
+      if (!feature) return;
+
       const geometry = feature.geometry;
-      const properties = feature.properties;
+      const sourceProperties = feature.properties || {};
+      const preservedGroup = assignedGroup
+        ? null
+        : getPreservedImportGroup(sourceProperties, preservedImportGroups);
+      const properties = normalizeAnnotationProperties(
+        assignedGroup
+          ? applyAnnotationGroupToProperties(sourceProperties, assignedGroup)
+          : preservedGroup
+            ? applyAnnotationGroupToProperties(sourceProperties, preservedGroup)
+          : sourceProperties
+      );
       if (!geometry || !properties) {
         // Invalid feature, skipping
         return;
       }
 
       // Skip duplicate UUIDs
-      const uuids = annoJSON.features.map((f) => f.properties.uuid);
-      if (uuids.includes(properties.uuid)) {
+      if (existingUuids.has(properties.uuid)) {
         // Annotation already exists, skipping
         return;
       }
 
       const { type, coordinates } = geometry;
+      const featureCountBefore = annoJSON.features.length;
 
       // Handle different geometry types
       if (type === "Point") {
@@ -7085,11 +12349,28 @@ function loadAnnotations(geoJSONData) {
         handleMultiPolygon(coordinates, properties);
       }
 
+      annoJSON.features.slice(featureCountBefore).forEach((addedFeature) => {
+        normalizeAnnotationFeature(addedFeature);
+        existingUuids.add(addedFeature.properties.uuid);
+        addedUuids.push(addedFeature.properties.uuid);
+      });
+
       // Redraw the shapes and enable annotation features
       drawShape(polyCanvas, [annoJSON]);
       enableAnnoButtons();
       annoLabelToText();
     });
+    renderAnnotationList();
+  if (addedUuids.length > 0 && options.selectImported !== false) {
+      setAnnotationSelection(addedUuids, addedUuids[addedUuids.length - 1]);
+    } else if (addedUuids.length > 0 && options.selectImported === false) {
+      clearAnnotationSelection({ redraw: true, scroll: false });
+    } else if (
+      annoJSON.features.length > 0 &&
+      getAnnotationIndexByUuid(selectedAnnotationUuid) < 0
+    ) {
+      selectAnnotationByUuid(annoJSON.features[0].properties.uuid);
+    }
   } finally {
     annotationHistoryPaused = false;
     updateAnnotationHistoryControls();
@@ -7263,20 +12544,23 @@ function handleMultiPolygon(coords, properties) {
 // Save the annotation as GeoJSON
 function saveAnnotationToJSON(type, coordinates, properties) {
   annotationHistory.push("Add annotation");
+  const normalizedProperties = normalizeAnnotationProperties(
+    applyActiveAnnotationGroup(properties)
+  );
 
   const geoJSONFeature = {
     type: "Feature",
     geometry: { type, coordinates },
     properties: {
-      ...properties,
-      pixelsPerMeter: normalizePixelsPerMeter(properties.pixelsPerMeter),
-      imageWidth: Number(properties.imageWidth),
-      imageHeight: Number(properties.imageHeight),
-      labelFontSize: Number(properties.labelFontSize),
-      labelBackgroundOpacity: Number(properties.labelBackgroundOpacity),
-      lineWeight: Number(properties.lineWeight),
-      lineOpacity: Number(properties.lineOpacity),
-      fillOpacity: Number(properties.fillOpacity),
+      ...normalizedProperties,
+      pixelsPerMeter: normalizePixelsPerMeter(normalizedProperties.pixelsPerMeter),
+      imageWidth: Number(normalizedProperties.imageWidth),
+      imageHeight: Number(normalizedProperties.imageHeight),
+      labelFontSize: Number(normalizedProperties.labelFontSize),
+      labelBackgroundOpacity: Number(normalizedProperties.labelBackgroundOpacity),
+      lineWeight: Number(normalizedProperties.lineWeight),
+      lineOpacity: Number(normalizedProperties.lineOpacity),
+      fillOpacity: Number(normalizedProperties.fillOpacity),
     },
   };
   annoJSON.features.push(geoJSONFeature);
@@ -7296,7 +12580,9 @@ document
       const reader = new FileReader();
       reader.onload = function (event) {
         const geoJSONData = event.target.result;
-        loadAnnotations(geoJSONData);
+        showAnnotationImportDialog(geoJSONData, {
+          sourceName: file.name.replace(/\.(geo)?json$/i, ""),
+        });
         fileInput.value = "";
       };
       reader.readAsText(file);
@@ -7305,18 +12591,419 @@ document
     }
   });
 
-// Attach export functionality to the button (GeoJSON version)
-document.getElementById("exportBtn").addEventListener("click", function () {
-  const geoJSON = annoJSON;
-  // Create a Blob from the GeoJSON object
+document
+  .getElementById("annotationImportGroupSelect")
+  .addEventListener("change", function () {
+    document.querySelector(
+      'input[name="annotationImportMode"][value="assign"]'
+    ).checked = true;
+    if (this.value === "__new__") {
+      document.getElementById("annotationImportDialog").classList.remove(
+        "modal-prompt-visible"
+      );
+      document
+        .getElementById("annotationImportDialog")
+        .classList.add("modal-prompt-hidden");
+      promptForAnnotationImportGroupName();
+      return;
+    }
+    updateAnnotationImportGroupInputs();
+  });
+
+[...document.getElementsByName("annotationImportMode")].forEach((input) => {
+  input.addEventListener("change", updateAnnotationImportGroupInputs);
+});
+
+document
+  .getElementById("annotationImportConfirmButton")
+  .addEventListener("click", confirmAnnotationImport);
+
+document
+  .getElementById("annotationImportCancelButton")
+  .addEventListener("click", hideAnnotationImportDialog);
+
+function getAnnotationGroupCounts() {
+  const counts = new Map();
+  annoJSON.features.forEach((feature) => {
+    const props = normalizeAnnotationFeature(feature)?.properties;
+    if (!props) return;
+    counts.set(props.groupId, (counts.get(props.groupId) || 0) + 1);
+  });
+  return counts;
+}
+
+function showAnnotationExportDialog() {
+  const groups = getAnnotationGroups();
+  const counts = getAnnotationGroupCounts();
+  const list = document.getElementById("annotationExportGroupList");
+  list.innerHTML = "";
+
+  groups.forEach((group) => {
+    const row = document.createElement("label");
+    row.className = "annotation-export-group-row";
+    row.classList.toggle(
+      "annotation-export-group-row-hidden",
+      group.groupVisible === false
+    );
+
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.className = "annotation-export-group-checkbox";
+    checkbox.value = group.groupId;
+    checkbox.checked = true;
+
+    const swatch = document.createElement("span");
+    swatch.className = "annotation-export-group-color";
+    swatch.style.backgroundColor = group.groupColor;
+
+    const name = document.createElement("span");
+    name.className = "annotation-export-group-name";
+    name.textContent = group.groupName;
+
+    const count = document.createElement("span");
+    count.className = "annotation-export-group-count";
+    count.textContent = String(counts.get(group.groupId) || 0);
+
+    row.append(checkbox, swatch, name, count);
+    list.appendChild(row);
+  });
+
+  const selectedUuids = getSelectedAnnotationUuids();
+  const selectionOption = document.querySelector(
+    'input[name="annotationExportScope"][value="selection"]'
+  );
+  selectionOption.disabled = selectedUuids.length === 0;
+  selectionOption.parentElement.title =
+    selectedUuids.length === 0 ? "No annotations are selected" : "";
+  document.querySelector(
+    'input[name="annotationExportScope"][value="groups"]'
+  ).checked = true;
+  document.getElementById("annotationExportIncludeHidden").checked = true;
+
+  document.getElementById("annotationExportDialog").classList.remove(
+    "modal-prompt-hidden"
+  );
+  document
+    .getElementById("annotationExportDialog")
+    .classList.add("modal-prompt-visible");
+}
+
+function hideAnnotationExportDialog() {
+  document.getElementById("annotationExportDialog").classList.remove(
+    "modal-prompt-visible"
+  );
+  document
+    .getElementById("annotationExportDialog")
+    .classList.add("modal-prompt-hidden");
+}
+
+function getAnnotationExportFeatures() {
+  const scope =
+    document.querySelector('input[name="annotationExportScope"]:checked')
+      ?.value || "groups";
+  const includeHidden = document.getElementById(
+    "annotationExportIncludeHidden"
+  ).checked;
+
+  if (scope === "selection") {
+    const selectedUuids = new Set(getSelectedAnnotationUuids());
+    return annoJSON.features.filter((feature) => {
+      normalizeAnnotationFeature(feature);
+      return (
+        selectedUuids.has(feature.properties.uuid) &&
+        (includeHidden || isAnnotationFeatureVisible(feature))
+      );
+    });
+  }
+
+  const selectedGroupIds = new Set(
+    [...document.getElementsByClassName("annotation-export-group-checkbox")]
+      .filter((checkbox) => checkbox.checked)
+      .map((checkbox) => checkbox.value)
+  );
+  return annoJSON.features.filter((feature) => {
+    normalizeAnnotationFeature(feature);
+    return (
+      selectedGroupIds.has(feature.properties.groupId) &&
+      (includeHidden || isAnnotationFeatureVisible(feature))
+    );
+  });
+}
+
+function exportAnnotations(features) {
+  const isFullExport = features.length === annoJSON.features.length;
+  const geoJSON = {
+    type: "FeatureCollection",
+    features: cloneData(features),
+  };
   const geoJSONBlob = new Blob([JSON.stringify(geoJSON, null, 2)], {
     type: "application/geo+json",
   });
-  // Trigger the download with 'saveAs'
   saveAs(geoJSONBlob, "annotations.geojson");
-  // Reset the unsaved annotations flag (if necessary)
-  // window.appState.hasUnsavedAnnotations = false;
-  unsavedAnnotations(false);
+  if (isFullExport) {
+    unsavedAnnotations(false);
+  }
+}
+
+function confirmAnnotationExport() {
+  const features = getAnnotationExportFeatures();
+  if (features.length === 0) {
+    alert("No annotations match the export options.");
+    return;
+  }
+  hideAnnotationExportDialog();
+  exportAnnotations(features);
+}
+
+document
+  .getElementById("annotationExportSelectAllButton")
+  .addEventListener("click", function () {
+    [...document.getElementsByClassName("annotation-export-group-checkbox")].forEach(
+      (checkbox) => {
+        checkbox.checked = true;
+      }
+    );
+    document.querySelector(
+      'input[name="annotationExportScope"][value="groups"]'
+    ).checked = true;
+  });
+
+document
+  .getElementById("annotationExportSelectNoneButton")
+  .addEventListener("click", function () {
+    [...document.getElementsByClassName("annotation-export-group-checkbox")].forEach(
+      (checkbox) => {
+        checkbox.checked = false;
+      }
+    );
+    document.querySelector(
+      'input[name="annotationExportScope"][value="groups"]'
+    ).checked = true;
+  });
+
+document
+  .getElementById("annotationExportGroupList")
+  .addEventListener("change", function (event) {
+    if (event.target.classList.contains("annotation-export-group-checkbox")) {
+      document.querySelector(
+        'input[name="annotationExportScope"][value="groups"]'
+      ).checked = true;
+    }
+  });
+
+document
+  .getElementById("annotationExportConfirmButton")
+  .addEventListener("click", confirmAnnotationExport);
+
+document
+  .getElementById("annotationExportCancelButton")
+  .addEventListener("click", hideAnnotationExportDialog);
+
+function createAnnotationGroupChecklistRow(group, count, checkboxClass) {
+  const row = document.createElement("label");
+  row.className = "annotation-export-group-row";
+  row.classList.toggle(
+    "annotation-export-group-row-hidden",
+    group.groupVisible === false
+  );
+
+  const checkbox = document.createElement("input");
+  checkbox.type = "checkbox";
+  checkbox.className = checkboxClass;
+  checkbox.value = group.groupId;
+  checkbox.checked = true;
+
+  const swatch = document.createElement("span");
+  swatch.className = "annotation-export-group-color";
+  swatch.style.backgroundColor = group.groupColor;
+
+  const name = document.createElement("span");
+  name.className = "annotation-export-group-name";
+  name.textContent = group.groupName;
+
+  const countEl = document.createElement("span");
+  countEl.className = "annotation-export-group-count";
+  countEl.textContent = String(count);
+
+  row.append(checkbox, swatch, name, countEl);
+  return row;
+}
+
+function showAnnotationClearDialog() {
+  const groups = getAnnotationGroups();
+  const counts = getAnnotationGroupCounts();
+  const list = document.getElementById("annotationClearGroupList");
+  list.innerHTML = "";
+
+  groups.forEach((group) => {
+    list.appendChild(
+      createAnnotationGroupChecklistRow(
+        group,
+        counts.get(group.groupId) || 0,
+        "annotation-clear-group-checkbox"
+      )
+    );
+  });
+
+  const selectedUuids = getSelectedAnnotationUuids();
+  const selectionOption = document.querySelector(
+    'input[name="annotationClearScope"][value="selection"]'
+  );
+  selectionOption.disabled = selectedUuids.length === 0;
+  selectionOption.parentElement.title =
+    selectedUuids.length === 0 ? "No annotations are selected" : "";
+  document.querySelector(
+    'input[name="annotationClearScope"][value="groups"]'
+  ).checked = true;
+
+  document.getElementById("annotationClearDialog").classList.remove(
+    "modal-prompt-hidden"
+  );
+  document
+    .getElementById("annotationClearDialog")
+    .classList.add("modal-prompt-visible");
+}
+
+function hideAnnotationClearDialog() {
+  document.getElementById("annotationClearDialog").classList.remove(
+    "modal-prompt-visible"
+  );
+  document
+    .getElementById("annotationClearDialog")
+    .classList.add("modal-prompt-hidden");
+}
+
+function removeAnnotationFeatureOverlays(feature) {
+  const uuid = feature?.properties?.uuid;
+  if (!uuid) return;
+  deleteText(uuid, "anno");
+  if (feature.geometry?.type === "Point") {
+    deleteCrosshairs(uuid, "anno");
+  }
+}
+
+function clearAnnotationFeatures(featuresToClear) {
+  featuresToClear = featuresToClear.filter(
+    (feature) => !isAnnotationFeatureLocked(feature)
+  );
+  if (featuresToClear.length === 0) return;
+
+  if (
+    featuresToClear.length === annoJSON.features.length &&
+    annoJSON.features.every((feature) => !isAnnotationFeatureLocked(feature))
+  ) {
+    clearAnnotations();
+    unsavedAnnotations(true);
+    disableAnnoButtons();
+    return;
+  }
+
+  const clearSet = new Set(
+    featuresToClear.map((feature) => feature.properties?.uuid).filter(Boolean)
+  );
+  featuresToClear.forEach(removeAnnotationFeatureOverlays);
+  annoJSON.features = annoJSON.features.filter(
+    (feature) => !clearSet.has(feature.properties?.uuid)
+  );
+  clearAnnotationSelection({ redraw: false, scroll: false });
+  drawShape(polyCanvas, [annoJSON]);
+  renderAnnotationList();
+  unsavedAnnotations(true);
+}
+
+function getAnnotationClearFeatures() {
+  const scope =
+    document.querySelector('input[name="annotationClearScope"]:checked')
+      ?.value || "groups";
+
+  if (scope === "selection") {
+    const selectedUuids = new Set(getSelectedAnnotationUuids());
+    return annoJSON.features.filter((feature) =>
+      selectedUuids.has(feature.properties?.uuid)
+    );
+  }
+
+  const selectedGroupIds = new Set(
+    [...document.getElementsByClassName("annotation-clear-group-checkbox")]
+      .filter((checkbox) => checkbox.checked)
+      .map((checkbox) => checkbox.value)
+  );
+  return annoJSON.features.filter((feature) => {
+    normalizeAnnotationFeature(feature);
+    return selectedGroupIds.has(feature.properties.groupId);
+  });
+}
+
+function confirmAnnotationClear() {
+  const features = getAnnotationClearFeatures();
+  if (features.length === 0) {
+    alert("No annotations match the clear options.");
+    return;
+  }
+  const unlockedFeatures = features.filter(
+    (feature) => !isAnnotationFeatureLocked(feature)
+  );
+  if (unlockedFeatures.length === 0) {
+    alert("The matching annotations are locked.");
+    return;
+  }
+
+  annotationHistory.push(
+    unlockedFeatures.length === annoJSON.features.length
+      ? "Clear annotations"
+      : "Clear annotation group"
+  );
+  hideAnnotationClearDialog();
+  clearAnnotationFeatures(unlockedFeatures);
+}
+
+document
+  .getElementById("annotationClearSelectAllButton")
+  .addEventListener("click", function () {
+    [...document.getElementsByClassName("annotation-clear-group-checkbox")].forEach(
+      (checkbox) => {
+        checkbox.checked = true;
+      }
+    );
+    document.querySelector(
+      'input[name="annotationClearScope"][value="groups"]'
+    ).checked = true;
+  });
+
+document
+  .getElementById("annotationClearSelectNoneButton")
+  .addEventListener("click", function () {
+    [...document.getElementsByClassName("annotation-clear-group-checkbox")].forEach(
+      (checkbox) => {
+        checkbox.checked = false;
+      }
+    );
+    document.querySelector(
+      'input[name="annotationClearScope"][value="groups"]'
+    ).checked = true;
+  });
+
+document
+  .getElementById("annotationClearGroupList")
+  .addEventListener("change", function (event) {
+    if (event.target.classList.contains("annotation-clear-group-checkbox")) {
+      document.querySelector(
+        'input[name="annotationClearScope"][value="groups"]'
+      ).checked = true;
+    }
+  });
+
+document
+  .getElementById("annotationClearConfirmButton")
+  .addEventListener("click", confirmAnnotationClear);
+
+document
+  .getElementById("annotationClearCancelButton")
+  .addEventListener("click", hideAnnotationClearDialog);
+
+// Attach export functionality to the button (GeoJSON version)
+document.getElementById("exportBtn").addEventListener("click", function () {
+  showAnnotationExportDialog();
 });
 
 // Attach export functionality to the button (GeoJSON version)
@@ -7332,6 +13019,8 @@ document.getElementById("save-counts").addEventListener("click", function () {
 });
 
 const clearAnnotations = () => {
+  exitAnnotationVertexEditMode();
+  exitAnnotationShapeEditMode();
   const annoIds = Array.from(
     { length: annoJSON.features.length },
     (_, i) => i + 1
@@ -7359,13 +13048,16 @@ const clearAnnotations = () => {
     type: "FeatureCollection",
     features: [],
   };
+  selectedAnnotationUuid = null;
+  selectedAnnotationUuids = new Set();
+  annotationListSelectionAnchorUuid = null;
   drawShape(polyCanvas, [annoJSON, annoJSONTemp]);
   const annoLabel = document.getElementById("anno-label");
   const annoNotes = document.getElementById("anno-notes");
-  const annoId = document.getElementById("anno-id");
   annoLabel.value = "";
   annoNotes.value = "";
-  annoId.value = 1;
+  syncSelectedAnnotationVisuals();
+  renderAnnotationList();
   // window.appState.hasUnsavedAnnotations = false;
   unsavedAnnotations(false);
 };
@@ -8036,50 +13728,40 @@ document
 
 // Functionality for applying specific formatting for annotations
 function applyAllAnnoLabel(idBase) {
-  if (annoJSON.features.length > 0) {
+  const unlockedUuids = getUnlockedAnnotationUuids();
+  if (unlockedUuids.length > 0) {
     annotationHistory.push("Style annotation labels");
   }
 
-  // Loop through all features in the annoJSON
-  annoJSON.features.forEach((feature) => {
-    const props = feature.properties;
-    const uuid = props.uuid;
-    applyAnnoLabel(idBase, uuid);
-  });
+  unlockedUuids.forEach((uuid) => applyAnnoLabel(idBase, uuid));
 }
 
 // Functionality for applying specific formatting for annotations
 function applyAllAnnoFeature(idBase) {
-  if (annoJSON.features.length > 0) {
+  const unlockedUuids = getUnlockedAnnotationUuids();
+  if (unlockedUuids.length > 0) {
     annotationHistory.push("Style annotations");
   }
 
-  // Loop through all features in the annoJSON
-  annoJSON.features.forEach((feature) => {
-    const props = feature.properties;
-    const uuid = props.uuid;
-    applyAnnoFeature(idBase, uuid);
-  });
+  unlockedUuids.forEach((uuid) => applyAnnoFeature(idBase, uuid));
 }
 
 function applyCurrentAnnoLabel(idBase) {
-  if (annoJSON.features.length === 0) {
+  const selectedUuids = getUnlockedSelectedAnnotationUuids();
+  if (selectedUuids.length === 0) {
     return;
   }
   annotationHistory.push("Style annotation label");
-  const id = document.getElementById("anno-id").value;
-  const uuid = annoJSON.features[id - 1].properties.uuid;
-  applyAnnoLabel(idBase, uuid);
+  selectedUuids.forEach((uuid) => applyAnnoLabel(idBase, uuid));
 }
 
 function applyCurrentAnnoFeature(idBase) {
-  if (annoJSON.features.length === 0) {
+  const selectedUuids = getUnlockedSelectedAnnotationUuids();
+  if (selectedUuids.length === 0) {
     return;
   }
   annotationHistory.push("Style annotation");
-  const id = document.getElementById("anno-id").value;
-  const uuid = annoJSON.features[id - 1].properties.uuid;
-  applyAnnoFeature(idBase, uuid);
+  selectedUuids.forEach((uuid) => applyAnnoFeature(idBase, uuid));
 }
 
 function applyAnnoLabel(idBase, uuid) {
@@ -8091,6 +13773,7 @@ function applyAnnoLabel(idBase, uuid) {
   };
 
   const feature = annoJSON.features.find((f) => f.properties.uuid === uuid);
+  if (!feature || isAnnotationFeatureLocked(feature)) return;
   const props = feature.properties;
   const input = document.getElementById(idBase);
   const value =
@@ -8163,6 +13846,7 @@ function applyAnnoLabel(idBase, uuid) {
 
 function applyAnnoFeature(idBase, uuid) {
   const feature = annoJSON.features.find((f) => f.properties.uuid === uuid);
+  if (!feature || isAnnotationFeatureLocked(feature)) return;
   const props = feature.properties;
   const input = document.getElementById(idBase);
   props[idBase] =
@@ -8650,8 +14334,11 @@ function inputNotesText() {
 
 // Function to update repeatButton state
 function updateRepeatButton() {
-  // Enable the checkbox if the dictionary has at least one item
-  repeatButton.disabled = annoJSON.features.length === 0;
+  repeatButton.disabled = !selectedAnnotationUuid;
+  if (!selectedAnnotationUuid) {
+    isRepeatMode = false;
+    repeatButton.classList.remove("active");
+  }
 }
 
 // Shortcut for entering labels and notes
@@ -9907,6 +15594,7 @@ const polylineFloater = document.getElementById("anno-polyline-floater");
 const rectFloater = document.getElementById("anno-rect-floater");
 const polygonFloater = document.getElementById("anno-polygon-floater");
 const ellipseFloater = document.getElementById("anno-ellipse-floater");
+const circleAnnotationFloater = document.getElementById("anno-circle-floater");
 
 // This keeps track of key presses and releases, in case the keyup event listener is missed
 const pressedKeys = new Set();
@@ -9918,7 +15606,7 @@ window.addEventListener("keydown", (event) => {
   const code = event.code;
   if (
     (event.ctrlKey || event.metaKey || event.altKey) &&
-    ["KeyQ", "KeyZ", "KeyX", "KeyC"].includes(code)
+    ["KeyQ", "KeyZ", "KeyX", "KeyC", "KeyV"].includes(code)
   ) {
     pressedKeys.delete(code);
     delete keyTimestamps[code];
@@ -9933,6 +15621,10 @@ window.addEventListener("keyup", (event) => {
   const code = event.code;
   pressedKeys.delete(code);
   delete keyTimestamps[code];
+  if (code === "KeyV") {
+    isVPressed = false;
+    refreshAnnotationFloaters();
+  }
 });
 
 setInterval(() => {
@@ -9946,13 +15638,15 @@ setInterval(() => {
 }, 250); // check four times a second
 
 document.addEventListener("mousemove", (event) => {
-  if (!event.shiftKey) {
-    shiftKeyHeld = false; // Reset shift key state if not held
-  }
   isCPressed = pressedKeys.has("KeyC");
   isXPressed = pressedKeys.has("KeyX");
   isQPressed = pressedKeys.has("KeyQ");
   isZPressed = pressedKeys.has("KeyZ");
+  isVPressed = pressedKeys.has("KeyV");
+  refreshAnnotationFloaters(event);
+});
+
+function refreshAnnotationFloaters(event = {}) {
   if (isQPressed || isPointMode) {
     // crosshairFloater.style.display = "block";
     // document.body.style.cursor = "default"; // Hide system cursor when crosshair is active
@@ -9961,23 +15655,26 @@ document.addEventListener("mousemove", (event) => {
     // crosshairFloater.style.top = `${event.clientY - 5}px`;
   } else if (isZPressed || isPolylineMode) {
     togglePolylineFloaterOn(true);
-  } else if (shiftKeyHeld || isRectangleMode) {
+  } else if (event.altKey || isRectangleMode) {
     toggleRectFloaterOn(true);
   } else if (isXPressed || isPolygonMode) {
     togglePolygonFloaterOn(true);
   } else if (isCPressed || isEllipseMode) {
     toggleEllipseFloaterOn(true);
+  } else if (isVPressed || isCircleAnnotationMode) {
+    toggleCircleAnnotationFloaterOn(true);
   } else {
     toggleCrosshairFloaterOn(false);
     togglePolylineFloaterOn(false);
     toggleRectFloaterOn(false);
     togglePolygonFloaterOn(false);
     toggleEllipseFloaterOn(false);
+    toggleCircleAnnotationFloaterOn(false);
   }
-});
+}
 
 viewer.addHandler("canvas-drag", function (event) {
-  if (event.originalEvent.shiftKey || isRectangleMode) {
+  if (isRectangleDrawGesture(event)) {
     const x = event.position.x;
     const y = event.position.y;
     rectFloater.setAttribute(
@@ -9989,25 +15686,14 @@ viewer.addHandler("canvas-drag", function (event) {
   }
 });
 
-let shiftKeyHeld = false; // Track shift key state
 window.addEventListener("keydown", function (event) {
-  if (event.key === "Shift" && !shiftKeyHeld) {
-    disableOtherAnnoModes("rect");
-    shiftKeyHeld = true;
-    toggleRectFloaterOn(true);
-  }
+  if (event.ctrlKey || event.metaKey || event.altKey) return;
+
   if (event.key === "x" || event.key === "X") {
     togglePolygonFloaterOn(true);
   }
   if (event.key === "c" || event.key === "C") {
     toggleEllipseFloaterOn(true);
-  }
-});
-
-window.addEventListener("keyup", function (event) {
-  if (event.key === "Shift") {
-    shiftKeyHeld = false;
-    toggleRectFloaterOn(false);
   }
 });
 
@@ -10046,6 +15732,16 @@ function toggleRectFloaterOn(enable) {
         y + 5
       } ${x + 5},${y + -5}`
     );
+  }
+}
+
+function toggleCircleAnnotationFloaterOn(enable) {
+  circleAnnotationFloater.style.visibility = enable ? "visible" : "hidden";
+  if (enable) {
+    const currentMousePos = getMousePosition();
+    circleAnnotationFloater.setAttribute("cx", `${currentMousePos.x + 10}`);
+    circleAnnotationFloater.setAttribute("cy", `${currentMousePos.y}`);
+    circleAnnotationFloater.setAttribute("r", "6");
   }
 }
 
@@ -10165,7 +15861,7 @@ function updateSelfIntersectionWarning(coords) {
 
 let promptCallback = null;
 
-function showPrompt(message, callback) {
+function showPrompt(message, callback, defaultValue = "") {
   const promptBox = document.getElementById("customPrompt");
   const promptInput = document.getElementById("promptInput");
   const promptMessage = document.getElementById("promptMessage");
@@ -10174,7 +15870,7 @@ function showPrompt(message, callback) {
   promptBox.classList.remove("modal-prompt-hidden");
   promptBox.classList.add("modal-prompt-visible");
 
-  promptInput.value = "";
+  promptInput.value = defaultValue;
   // promptInput.focus();
 
   // Use setTimeout to defer focus until after rendering
@@ -10297,35 +15993,27 @@ document.addEventListener("keydown", (event) => {
   }
 });
 
-//// Code for keeping annotation and grid labels upright when rotating ////
+//// Code for keeping HTML annotation overlays upright when rotating ////
 
-// Keep labels roughly upright, snapping to 45° increments
-function updateAnnotationUpright() {
-  const angle = viewer.viewport.getRotation();
+function updateAnnotationOverlayRotation() {
+  document
+    .querySelectorAll(".annotate-label, .grid-label")
+    .forEach((labelEl) => {
+      labelEl.style.transform = "";
+      labelEl.style.transformOrigin = "top left";
+    });
 
-  // Compute snapped rotation
-  // Round to nearest multiple of 45 degrees
-  const snappedAngle = Math.round(-angle / 22.5) * 22.5;
-
-  annotateLabels.forEach((labelEl) => {
-    labelEl.style.transform = `rotate(${snappedAngle}deg)`;
-    labelEl.style.transformOrigin = "top left";
+  document.querySelectorAll(".annotation-vertex-handle").forEach((handle) => {
+    handle.style.transform = "translate(-50%, -50%)";
+    handle.style.transformOrigin = "center center";
   });
-
-  for (let labelEl of document.getElementsByClassName("grid-label")) {
-    labelEl.style.transform = `rotate(${snappedAngle}deg)`;
-    labelEl.style.transformOrigin = "top left";
-  }
 }
 
-// Trigger only when rotation changes (avoids fighting animations)
-viewer.addHandler("rotate", updateAnnotationUpright);
+viewer.addHandler("rotate", updateAnnotationOverlayRotation);
+viewer.addHandler("animation", updateAnnotationOverlayRotation);
+viewer.addHandler("animation-finish", updateAnnotationOverlayRotation);
 
-// Also update after animations finish
-viewer.addHandler("animation-finish", updateAnnotationUpright);
-
-// Call once at init
-updateAnnotationUpright();
+updateAnnotationOverlayRotation();
 
 // //////////////////////////////////////////////////////
 // //// Controls for zoom/rotation with mouse scroll ////
@@ -10525,9 +16213,13 @@ viewer.addHandler("canvas-scroll", function (event) {
 // Attempt to improve performance when adding annotations
 // Only once during initialization:
 document.addEventListener("keydown", function (event) {
-  if (event.key === "Escape") {
-    removeTemporaryPoints();
-  }
+	  if (event.key === "Escape") {
+	    setAnnotationMoveMode(false);
+	    setAnnotationLabelMoveMode(false);
+	    exitAnnotationVertexEditMode();
+	    exitAnnotationShapeEditMode();
+	    removeTemporaryPoints();
+	  }
 });
 
 viewerContainer.addEventListener("mousemove", function (subevent) {
