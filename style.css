@@ -2109,8 +2109,17 @@ input[type="range"] {
   font: inherit;
 }
 
+.snapshot-field > span {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
 .snapshot-option {
   justify-content: flex-start;
+}
+
+.snapshot-option:has(input:disabled) {
+  color: rgba(17, 17, 17, 0.45);
 }
 
 .snapshot-field input {

@@ -357,6 +357,8 @@ let snapshotModeActive = false;
 let snapshotDragState = null;
 let snapshotSelectionRect = null;
 let snapshotAdjustState = null;
+const SNAPSHOT_MAX_OUTPUT_DIMENSION = 16000;
+const SNAPSHOT_MAX_OUTPUT_PIXELS = 100000000;
 const TOOL_PALETTE_EDGE_MARGIN = 5;
 
 function getPaletteBounds(left, top, paletteRect) {
@@ -886,8 +888,69 @@ function toggleSnapshotPalette() {
   closeSnapshotPalette();
 }
 
+function updateSnapshotScalebarAvailability() {
+  if (!snapshotIncludeScalebar) return;
+
+  const scaleAvailable = hasKnownScale();
+  if (!scaleAvailable) {
+    if (!snapshotIncludeScalebar.disabled) {
+      snapshotIncludeScalebar.dataset.restoreChecked = String(
+        snapshotIncludeScalebar.checked
+      );
+    }
+    snapshotIncludeScalebar.checked = false;
+    snapshotIncludeScalebar.disabled = true;
+    snapshotIncludeScalebar.title = "Set an image scale before including a scalebar.";
+    return;
+  }
+
+  if (snapshotIncludeScalebar.disabled) {
+    snapshotIncludeScalebar.checked =
+      snapshotIncludeScalebar.dataset.restoreChecked !== "false";
+  }
+  snapshotIncludeScalebar.disabled = false;
+  snapshotIncludeScalebar.title = "";
+}
+
+function getSnapshotExportLimitError(exportSize) {
+  if (!exportSize) return "";
+
+  const totalPixels = exportSize.width * exportSize.height;
+  if (
+    exportSize.width > SNAPSHOT_MAX_OUTPUT_DIMENSION ||
+    exportSize.height > SNAPSHOT_MAX_OUTPUT_DIMENSION
+  ) {
+    return `Output is too large (${exportSize.width} x ${exportSize.height}px). Maximum side length is ${SNAPSHOT_MAX_OUTPUT_DIMENSION}px.`;
+  }
+  if (totalPixels > SNAPSHOT_MAX_OUTPUT_PIXELS) {
+    return `Output is too large (${exportSize.width} x ${exportSize.height}px). Maximum area is ${Math.round(
+      SNAPSHOT_MAX_OUTPUT_PIXELS / 1000000
+    )} megapixels.`;
+  }
+  return "";
+}
+
 function updateSnapshotStatus(message) {
   if (!snapshotStatus) return;
+
+  updateSnapshotScalebarAvailability();
+
+  let exportSize = null;
+  let exportLimitError = "";
+  if (snapshotSelectionRect) {
+    const sourceCanvas = getOpenSeadragonImageCanvas();
+    const sourceRect = sourceCanvas
+      ? getSnapshotSourceRect(sourceCanvas, snapshotSelectionRect)
+      : null;
+    exportSize = getSnapshotExportSize(sourceRect);
+    exportLimitError = getSnapshotExportLimitError(exportSize);
+  }
+
+  if (snapshotExportButton) {
+    snapshotExportButton.disabled =
+      !snapshotSelectionRect || snapshotModeActive || Boolean(exportLimitError);
+    snapshotExportButton.title = exportLimitError || "";
+  }
 
   if (message) {
     snapshotStatus.textContent = message;
@@ -897,12 +960,9 @@ function updateSnapshotStatus(message) {
   if (snapshotModeActive) {
     snapshotStatus.textContent = "Drag a rectangle over the image.";
   } else if (snapshotSelectionRect) {
-    const sourceCanvas = getOpenSeadragonImageCanvas();
-    const sourceRect = sourceCanvas
-      ? getSnapshotSourceRect(sourceCanvas, snapshotSelectionRect)
-      : null;
-    const exportSize = getSnapshotExportSize(sourceRect);
-    if (exportSize) {
+    if (exportLimitError) {
+      snapshotStatus.textContent = `${exportLimitError} Zoom in or choose a lower resolution.`;
+    } else if (exportSize) {
       snapshotStatus.textContent = `Ready to export ${exportSize.width} x ${exportSize.height}px.`;
     } else {
       const width = Math.round(snapshotSelectionRect.width);
@@ -1607,6 +1667,36 @@ function formatSnapshotScaleLabel(meters) {
   return `${Number((meters / 1000).toPrecision(3))} km`;
 }
 
+function getSnapshotScalebarRenderer() {
+  const mapper = {
+    Metric: OpenSeadragon.ScalebarSizeAndTextRenderer.METRIC_LENGTH,
+    Imperial: OpenSeadragon.ScalebarSizeAndTextRenderer.IMPERIAL_LENGTH,
+    Astronomical: OpenSeadragon.ScalebarSizeAndTextRenderer.ASTRONOMY,
+  };
+  const unitSystem =
+    document.getElementById("scalebarUnitSystem")?.value || "Metric";
+  return mapper[unitSystem] || mapper.Metric;
+}
+
+function getSnapshotScalebarType() {
+  return document.getElementById("scalebarType")?.value || "Map";
+}
+
+function getSnapshotScalebarLocation() {
+  return document.getElementById("scalebarLocation")?.value || "Bottom left";
+}
+
+function getSnapshotScalebarNumber(id, fallback) {
+  const value = Number(document.getElementById(id)?.value);
+  return Number.isFinite(value) ? value : fallback;
+}
+
+function decodeSnapshotScalebarText(text) {
+  const decoder = document.createElement("textarea");
+  decoder.innerHTML = text;
+  return decoder.value;
+}
+
 function getSnapshotScalebarFontSize() {
   const value = document.getElementById("scalebarFontSize")?.value || "medium";
   const mapper = {
@@ -1617,18 +1707,52 @@ function getSnapshotScalebarFontSize() {
   return mapper[value] || Number.parseFloat(value) || 14;
 }
 
+function getSnapshotZoomedScalebarScale(selectionRect, outputCanvas) {
+  const bounds = getSnapshotViewerBounds();
+  if (!bounds || !selectionRect.width || !selectionRect.height) {
+    return {
+      x: outputCanvas.width / selectionRect.width,
+      y: outputCanvas.height / selectionRect.height,
+      ui: outputCanvas.width / selectionRect.width,
+    };
+  }
+
+  const fitScale = Math.min(
+    bounds.width / selectionRect.width,
+    bounds.height / selectionRect.height
+  );
+  const zoomedSelectionWidth = selectionRect.width * fitScale;
+  const zoomedSelectionHeight = selectionRect.height * fitScale;
+  const x = outputCanvas.width / zoomedSelectionWidth;
+  const y = outputCanvas.height / zoomedSelectionHeight;
+
+  return {
+    x,
+    y,
+    ui: Math.min(x, y),
+  };
+}
+
 function drawSnapshotScalebar(ctx, outputCanvas, selectionRect) {
+  if (getSnapshotScalebarType() === "None") return false;
+
   const metersPerPixel = getSnapshotMetersPerOutputPixel(
     selectionRect,
     outputCanvas.width
   );
   if (metersPerPixel === null) return false;
 
-  const targetMeters = metersPerPixel * outputCanvas.width * 0.22;
-  const scaleMeters = getNiceSnapshotScaleLength(targetMeters);
-  if (scaleMeters === null) return false;
+  const zoomedScale = getSnapshotZoomedScalebarScale(
+    selectionRect,
+    outputCanvas
+  );
+  const outputPixelsPerMeter = 1 / metersPerPixel;
+  const minWidth =
+    getSnapshotScalebarNumber("scalebarMinWidth", 75) * zoomedScale.x;
+  const renderer = getSnapshotScalebarRenderer();
+  const scalebarProps = renderer(outputPixelsPerMeter, minWidth);
 
-  const barWidth = scaleMeters / metersPerPixel;
+  const barWidth = scalebarProps?.size;
   if (!Number.isFinite(barWidth) || barWidth < 12) return false;
 
   const lineColor = document.getElementById("scalebarColor")?.value || "#000000";
@@ -1639,32 +1763,63 @@ function drawSnapshotScalebar(ctx, outputCanvas, selectionRect) {
   const backgroundOpacity = Number(
     document.getElementById("scalebarBackgroundOpacity")?.value || 0.65
   );
-  const lineWeight = Math.max(
-    1,
-    Number.parseInt(document.getElementById("scalebarLineWeight")?.value, 10) ||
-      2
-  );
-  const fontSize = getSnapshotScalebarFontSize();
-  const label = formatSnapshotScaleLabel(scaleMeters);
-  const margin = Math.max(12, Math.round(outputCanvas.width * 0.018));
-  const x = margin;
-  const y = outputCanvas.height - margin - fontSize - lineWeight - 6;
+  const lineWeight =
+    Math.max(1, getSnapshotScalebarNumber("scalebarLineWeight", 2)) *
+    zoomedScale.ui;
+  const fontSize = getSnapshotScalebarFontSize() * zoomedScale.ui;
+  const label = decodeSnapshotScalebarText(scalebarProps.text || "");
+  const xOffset =
+    getSnapshotScalebarNumber("scalebarXOffset", 10) * zoomedScale.x;
+  const yOffset =
+    getSnapshotScalebarNumber("scalebarYOffset", 10) * zoomedScale.y;
+  const textHeight = Math.max(fontSize * 1.25, 12 * zoomedScale.ui);
+  const barHeight = textHeight + lineWeight * 2;
+  const location = getSnapshotScalebarLocation();
+  const x = location.includes("right")
+    ? outputCanvas.width - xOffset - barWidth
+    : xOffset;
+  const y = location.includes("Top")
+    ? yOffset
+    : outputCanvas.height - yOffset - barHeight;
+  const isMapScalebar = getSnapshotScalebarType() === "Map";
+
+  if (
+    !Number.isFinite(x) ||
+    !Number.isFinite(y) ||
+    x < 0 ||
+    y < 0 ||
+    x + barWidth > outputCanvas.width ||
+    y + barHeight > outputCanvas.height
+  ) {
+    return false;
+  }
 
   ctx.save();
   ctx.font = `${fontSize}px Arial, sans-serif`;
-  const labelWidth = ctx.measureText(label).width;
-  const backgroundWidth = Math.max(barWidth, labelWidth) + 16;
-  const backgroundHeight = fontSize + lineWeight + 18;
-  ctx.fillStyle = applyOpacityToColor(backgroundColor, backgroundOpacity);
-  ctx.fillRect(x - 8, y - 8, backgroundWidth, backgroundHeight);
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillStyle = applyOpacityToColor(
+    backgroundColor,
+    Number.isFinite(backgroundOpacity) ? backgroundOpacity : 0.5
+  );
+  ctx.fillRect(x, y, barWidth, barHeight);
+
+  ctx.fillStyle = fontColor;
+  ctx.fillText(label, x + barWidth / 2, y + textHeight / 2);
   ctx.strokeStyle = lineColor;
   ctx.lineWidth = lineWeight;
   ctx.beginPath();
-  ctx.moveTo(x, y + fontSize + 6);
-  ctx.lineTo(x + barWidth, y + fontSize + 6);
+  if (isMapScalebar) {
+    ctx.moveTo(x, y + textHeight);
+    ctx.lineTo(x, y + barHeight);
+    ctx.lineTo(x + barWidth, y + barHeight);
+    ctx.lineTo(x + barWidth, y + textHeight);
+  } else {
+    const lineY = y + barHeight - lineWeight / 2;
+    ctx.moveTo(x, lineY);
+    ctx.lineTo(x + barWidth, lineY);
+  }
   ctx.stroke();
-  ctx.fillStyle = fontColor;
-  ctx.fillText(label, x, y + fontSize);
   ctx.restore();
   return true;
 }
@@ -1944,6 +2099,13 @@ async function exportSnapshotSelection() {
   const exportSize = getSnapshotExportSize(sourceRect);
   if (!exportSize) {
     updateSnapshotStatus("Could not determine the snapshot resolution.");
+    return;
+  }
+  const exportLimitError = getSnapshotExportLimitError(exportSize);
+  if (exportLimitError) {
+    updateSnapshotStatus(
+      `${exportLimitError} Zoom in or choose a lower resolution.`
+    );
     return;
   }
 
@@ -2260,7 +2422,12 @@ snapshotSelection?.querySelectorAll("[data-handle]").forEach((handle) => {
   });
 });
 
-[snapshotTileSetSelect, snapshotContentMode, snapshotResolutionMode].forEach((element) => {
+[
+  snapshotTileSetSelect,
+  snapshotContentMode,
+  snapshotResolutionMode,
+  snapshotIncludeScalebar,
+].forEach((element) => {
   element?.addEventListener("change", function () {
     updateSnapshotStatus();
   });
@@ -3443,6 +3610,7 @@ function removeScalebar() {
       location: 0,
     });
   }
+  updateSnapshotStatus();
 }
 
 function addScalebar() {
@@ -3525,6 +3693,7 @@ function addScalebar() {
     barThickness: parseInt(scalebarBarThickness),
     pixelsPerMeter: scale,
   });
+  updateSnapshotStatus();
 }
 
 function restoreScalebarDefaults() {
@@ -3563,6 +3732,7 @@ function restoreScalebarDefaults() {
     barThickness: 2,
     pixelsPerMeter: scale,
   });
+  updateSnapshotStatus();
 }
 
 function setControlDisabled(id, disabled, disabledTitle = "") {
