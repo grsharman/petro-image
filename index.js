@@ -13,6 +13,7 @@ let tileLoadGeneration = 0;
 let measurementControlsInitialized = false;
 let circleControlsInitialized = false;
 let measurementModeActive = false;
+let activeMeasureTool = null;
 let circleModeActive = false;
 let tileLoadFailureWarningKey = "";
 let tileLoadFailureWarningInFlight = false;
@@ -350,6 +351,12 @@ const snapshotJpegQuality = document.getElementById("snapshotJpegQuality");
 const openScaleWizardButton = document.getElementById("openScaleWizardButton");
 const openLibraryEditorButton = document.getElementById("openLibraryEditorButton");
 const hasElectronActions = Boolean(window.electronAPI);
+const hasSharedViewerMenus = Boolean(
+  electronActionButton &&
+    electronActionTray &&
+    viewerToolsButton &&
+    viewerToolsTray
+);
 let gridCountPaletteControlsMoved = false;
 let annotatePaletteControlsMoved = false;
 let measurePaletteControlsMoved = false;
@@ -360,6 +367,32 @@ let snapshotAdjustState = null;
 const SNAPSHOT_MAX_OUTPUT_DIMENSION = 16000;
 const SNAPSHOT_MAX_OUTPUT_PIXELS = 100000000;
 const TOOL_PALETTE_EDGE_MARGIN = 5;
+const TOOL_PALETTE_MIN_VISIBLE_WIDTH = 80;
+const TOOL_PALETTE_MIN_VISIBLE_HEIGHT = 32;
+const TOOL_PALETTE_EDGE_SNAP_DISTANCE = 18;
+let toolPaletteClampFrame = null;
+
+function getToolPaletteEdgeAffinity(palette, containerRect, paletteRect) {
+  const left = Number.parseFloat(
+    palette.style.left || String(TOOL_PALETTE_EDGE_MARGIN)
+  );
+  const top = Number.parseFloat(palette.style.top || "56");
+  const rightGap = containerRect.width - left - paletteRect.width;
+  const bottomGap = containerRect.height - top - paletteRect.height;
+
+  return {
+    horizontal:
+      rightGap <= TOOL_PALETTE_EDGE_SNAP_DISTANCE &&
+      rightGap <= left
+        ? "right"
+        : "left",
+    vertical:
+      bottomGap <= TOOL_PALETTE_EDGE_SNAP_DISTANCE &&
+      bottomGap <= top
+        ? "bottom"
+        : "top",
+  };
+}
 
 function getPaletteBounds(left, top, paletteRect) {
   return {
@@ -379,19 +412,42 @@ function rectsOverlap(a, b) {
   );
 }
 
-function getControlsReservedRect() {
-  const controls = controlsPanel || document.querySelector(".controls");
-  const viewerContainer = document.getElementById("viewer-container");
-  if (!controls || !viewerContainer) return null;
-
-  const controlsRect = controls.getBoundingClientRect();
-  const containerRect = viewerContainer.getBoundingClientRect();
+function getReservedRectForElement(element, containerRect, kind = "generic") {
+  if (!element || element.hidden) return null;
+  const rect = element.getBoundingClientRect();
+  if (rect.width === 0 || rect.height === 0) return null;
+  const leftMargin =
+    kind === "corner-actions"
+      ? Math.max(1, Math.floor(TOOL_PALETTE_EDGE_MARGIN / 2))
+      : TOOL_PALETTE_EDGE_MARGIN;
   return {
-    left: controlsRect.left - containerRect.left - TOOL_PALETTE_EDGE_MARGIN,
-    top: controlsRect.top - containerRect.top - TOOL_PALETTE_EDGE_MARGIN,
-    right: controlsRect.right - containerRect.left + TOOL_PALETTE_EDGE_MARGIN,
-    bottom: controlsRect.bottom - containerRect.top + TOOL_PALETTE_EDGE_MARGIN,
+    kind,
+    left: rect.left - containerRect.left - leftMargin,
+    top: rect.top - containerRect.top - TOOL_PALETTE_EDGE_MARGIN,
+    right: rect.right - containerRect.left + TOOL_PALETTE_EDGE_MARGIN,
+    bottom: rect.bottom - containerRect.top + TOOL_PALETTE_EDGE_MARGIN,
   };
+}
+
+function getToolPaletteReservedRects() {
+  const viewerContainer = document.getElementById("viewer-container");
+  if (!viewerContainer) return [];
+
+  const containerRect = viewerContainer.getBoundingClientRect();
+  return [
+    {
+      element: controlsPanel || document.querySelector(".controls"),
+      kind: "controls",
+    },
+    {
+      element: document.querySelector(".viewer-corner-actions"),
+      kind: "corner-actions",
+    },
+  ]
+    .map(({ element, kind }) =>
+      getReservedRectForElement(element, containerRect, kind)
+    )
+    .filter(Boolean);
 }
 
 function resolveControlsDragCollision(
@@ -411,6 +467,33 @@ function resolveControlsDragCollision(
   let nextLeft = left;
   let nextTop = top;
 
+  if (reservedRect.kind === "corner-actions") {
+    const wasHorizontallyOverlapping =
+      previousBounds.right > reservedRect.left &&
+      previousBounds.left < reservedRect.right;
+    const wasVerticallyOverlapping =
+      previousBounds.bottom > reservedRect.top &&
+      previousBounds.top < reservedRect.bottom;
+
+    if (!wasHorizontallyOverlapping && wasVerticallyOverlapping) {
+      if (previousBounds.right <= reservedRect.left) {
+        nextLeft = reservedRect.left - paletteRect.width;
+      } else if (previousBounds.left >= reservedRect.right) {
+        nextLeft = reservedRect.right;
+      }
+      return { left: nextLeft, top: nextTop };
+    }
+
+    if (wasHorizontallyOverlapping && !wasVerticallyOverlapping) {
+      if (previousBounds.bottom <= reservedRect.top) {
+        nextTop = reservedRect.top - paletteRect.height;
+      } else if (previousBounds.top >= reservedRect.bottom) {
+        nextTop = reservedRect.bottom;
+      }
+      return { left: nextLeft, top: nextTop };
+    }
+  }
+
   if (previousBounds.bottom <= reservedRect.top) {
     nextTop = reservedRect.top - paletteRect.height;
   } else if (previousBounds.top >= reservedRect.bottom) {
@@ -425,7 +508,10 @@ function resolveControlsDragCollision(
 }
 
 function resolveControlsAutoCollision(left, top, paletteRect, maxLeft, maxTop) {
-  const reservedRect = getControlsReservedRect();
+  const reservedRects = getToolPaletteReservedRects();
+  const reservedRect = reservedRects.find((rect) =>
+    rectsOverlap(getPaletteBounds(left, top, paletteRect), rect)
+  );
   if (!reservedRect) return { left, top };
 
   const belowControls = reservedRect.bottom;
@@ -457,35 +543,64 @@ function avoidControlsOverlap(
   maxTop,
   options = {}
 ) {
-  const reservedRect = getControlsReservedRect();
-  if (!reservedRect) return { left, top };
+  const reservedRects = getToolPaletteReservedRects();
+  if (reservedRects.length === 0) return { left, top };
 
-  if (!rectsOverlap(getPaletteBounds(left, top, paletteRect), reservedRect)) {
-    return { left, top };
-  }
+  let nextLeft = left;
+  let nextTop = top;
+  for (const reservedRect of reservedRects) {
+    if (!rectsOverlap(getPaletteBounds(nextLeft, nextTop, paletteRect), reservedRect)) {
+      continue;
+    }
 
-  if (options.previousPosition) {
-    const dragPosition = resolveControlsDragCollision(
-      left,
-      top,
-      paletteRect,
-      reservedRect,
-      options.previousPosition
-    );
+    if (options.previousPosition) {
+      const previousBounds = getPaletteBounds(
+        options.previousPosition.left,
+        options.previousPosition.top,
+        paletteRect
+      );
+      if (
+        reservedRect.kind === "corner-actions" &&
+        !rectsOverlap(previousBounds, reservedRect)
+      ) {
+        return {
+          left: Math.min(
+            Math.max(options.previousPosition.left, TOOL_PALETTE_EDGE_MARGIN),
+            maxLeft
+          ),
+          top: Math.min(
+            Math.max(options.previousPosition.top, TOOL_PALETTE_EDGE_MARGIN),
+            maxTop
+          ),
+        };
+      }
 
-    return {
-      left: Math.min(
-        Math.max(dragPosition.left, TOOL_PALETTE_EDGE_MARGIN),
-        maxLeft
-      ),
-      top: Math.min(
-        Math.max(dragPosition.top, TOOL_PALETTE_EDGE_MARGIN),
+      const dragPosition = resolveControlsDragCollision(
+        nextLeft,
+        nextTop,
+        paletteRect,
+        reservedRect,
+        options.previousPosition
+      );
+      nextLeft = dragPosition.left;
+      nextTop = dragPosition.top;
+    } else {
+      const autoPosition = resolveControlsAutoCollision(
+        nextLeft,
+        nextTop,
+        paletteRect,
+        maxLeft,
         maxTop
-      ),
-    };
+      );
+      nextLeft = autoPosition.left;
+      nextTop = autoPosition.top;
+    }
+
+    nextLeft = Math.min(Math.max(nextLeft, TOOL_PALETTE_EDGE_MARGIN), maxLeft);
+    nextTop = Math.min(Math.max(nextTop, TOOL_PALETTE_EDGE_MARGIN), maxTop);
   }
 
-  return resolveControlsAutoCollision(left, top, paletteRect, maxLeft, maxTop);
+  return { left: nextLeft, top: nextTop };
 }
 
 function clampToolPaletteToViewer(palette) {
@@ -494,25 +609,48 @@ function clampToolPaletteToViewer(palette) {
 
   const containerRect = viewerContainer.getBoundingClientRect();
   const paletteRect = palette.getBoundingClientRect();
+  const edgeAffinity =
+    palette.dataset.edgeHorizontal && palette.dataset.edgeVertical
+      ? {
+          horizontal: palette.dataset.edgeHorizontal,
+          vertical: palette.dataset.edgeVertical,
+        }
+      : getToolPaletteEdgeAffinity(palette, containerRect, paletteRect);
+  const paletteFitsX =
+    paletteRect.width + TOOL_PALETTE_EDGE_MARGIN * 2 <= containerRect.width;
+  const paletteFitsY =
+    paletteRect.height + TOOL_PALETTE_EDGE_MARGIN * 2 <= containerRect.height;
   const maxLeft = Math.max(
     TOOL_PALETTE_EDGE_MARGIN,
-    containerRect.width - paletteRect.width - TOOL_PALETTE_EDGE_MARGIN
+    paletteFitsX
+      ? containerRect.width - paletteRect.width - TOOL_PALETTE_EDGE_MARGIN
+      : containerRect.width - TOOL_PALETTE_MIN_VISIBLE_WIDTH
   );
   const maxTop = Math.max(
     TOOL_PALETTE_EDGE_MARGIN,
-    containerRect.height - paletteRect.height - TOOL_PALETTE_EDGE_MARGIN
+    paletteFitsY
+      ? containerRect.height - paletteRect.height - TOOL_PALETTE_EDGE_MARGIN
+      : containerRect.height - TOOL_PALETTE_MIN_VISIBLE_HEIGHT
   );
   const currentLeft = Number.parseFloat(
     palette.style.left || String(TOOL_PALETTE_EDGE_MARGIN)
   );
   const currentTop = Number.parseFloat(palette.style.top || "56");
+  const preferredLeft =
+    edgeAffinity.horizontal === "right" && paletteFitsX
+      ? containerRect.width - paletteRect.width - TOOL_PALETTE_EDGE_MARGIN
+      : currentLeft;
+  const preferredTop =
+    edgeAffinity.vertical === "bottom" && paletteFitsY
+      ? containerRect.height - paletteRect.height - TOOL_PALETTE_EDGE_MARGIN
+      : currentTop;
 
   const nextLeft = Math.min(
-    Math.max(currentLeft, TOOL_PALETTE_EDGE_MARGIN),
+    Math.max(preferredLeft, TOOL_PALETTE_EDGE_MARGIN),
     maxLeft
   );
   const nextTop = Math.min(
-    Math.max(currentTop, TOOL_PALETTE_EDGE_MARGIN),
+    Math.max(preferredTop, TOOL_PALETTE_EDGE_MARGIN),
     maxTop
   );
   const adjustedPosition = avoidControlsOverlap(
@@ -525,6 +663,8 @@ function clampToolPaletteToViewer(palette) {
 
   palette.style.left = `${adjustedPosition.left}px`;
   palette.style.top = `${adjustedPosition.top}px`;
+  palette.dataset.edgeHorizontal = edgeAffinity.horizontal;
+  palette.dataset.edgeVertical = edgeAffinity.vertical;
 }
 
 function setDefaultToolPalettePosition(palette) {
@@ -549,6 +689,9 @@ function setDefaultToolPalettePosition(palette) {
 
   palette.style.left = `${left}px`;
   palette.style.top = `${top}px`;
+  palette.dataset.edgeHorizontal =
+    defaultPosition === "bottom-left" ? "left" : "right";
+  palette.dataset.edgeVertical = "bottom";
 }
 
 function restoreToolPalettePosition(palette, storageKey) {
@@ -559,6 +702,8 @@ function restoreToolPalettePosition(palette, storageKey) {
     if (storedPosition) {
       palette.style.left = `${storedPosition.left}px`;
       palette.style.top = `${storedPosition.top}px`;
+      palette.dataset.edgeHorizontal = storedPosition.edgeHorizontal || "";
+      palette.dataset.edgeVertical = storedPosition.edgeVertical || "";
     } else {
       setDefaultToolPalettePosition(palette);
     }
@@ -574,6 +719,17 @@ function saveToolPalettePosition(palette, storageKey) {
   if (!palette) return;
 
   try {
+    const viewerContainer = document.getElementById("viewer-container");
+    const containerRect = viewerContainer?.getBoundingClientRect();
+    const paletteRect = palette.getBoundingClientRect();
+    const affinity = containerRect
+      ? getToolPaletteEdgeAffinity(palette, containerRect, paletteRect)
+      : {
+          horizontal: palette.dataset.edgeHorizontal || "left",
+          vertical: palette.dataset.edgeVertical || "top",
+        };
+    palette.dataset.edgeHorizontal = affinity.horizontal;
+    palette.dataset.edgeVertical = affinity.vertical;
     localStorage.setItem(
       storageKey,
       JSON.stringify({
@@ -581,6 +737,8 @@ function saveToolPalettePosition(palette, storageKey) {
           palette.style.left || String(TOOL_PALETTE_EDGE_MARGIN)
         ),
         top: Number.parseFloat(palette.style.top || "56"),
+        edgeHorizontal: affinity.horizontal,
+        edgeVertical: affinity.vertical,
       })
     );
   } catch (error) {
@@ -649,6 +807,8 @@ function makeToolPaletteDraggable(palette, handle, storageKey) {
 
     palette.style.left = `${adjustedPosition.left}px`;
     palette.style.top = `${adjustedPosition.top}px`;
+    palette.dataset.edgeHorizontal = "";
+    palette.dataset.edgeVertical = "";
     dragState.lastLeft = adjustedPosition.left;
     dragState.lastTop = adjustedPosition.top;
   });
@@ -697,6 +857,14 @@ function clampOpenToolPalettes() {
   );
 }
 
+function scheduleClampOpenToolPalettes() {
+  if (toolPaletteClampFrame !== null) return;
+  toolPaletteClampFrame = requestAnimationFrame(() => {
+    toolPaletteClampFrame = null;
+    clampOpenToolPalettes();
+  });
+}
+
 function moveGridCountControlsToPalette() {
   if (
     gridCountPaletteControlsMoved ||
@@ -733,7 +901,7 @@ function moveAnnotateControlsToPalette() {
 
 function updateToolsMenuVisibility() {
   const toolsMenu = document.getElementById("toolsMenu");
-  if (!toolsMenu || !hasElectronActions) return;
+  if (!toolsMenu || !hasSharedViewerMenus) return;
 
   toolsMenu.hidden =
     gridCountPaletteControlsMoved &&
@@ -847,7 +1015,12 @@ function openMeasurePalette() {
 function closeMeasurePalette() {
   if (!measurePalette) return;
 
-  closeCircleSettingsPopover();
+  closeReferenceCircleSettingsPopover();
+  closeMeasureColumnsMenu();
+  closeMeasureHistogramMenu();
+  closeMeasureScatterMenu();
+  closeMeasureRoseMenu();
+  closeMeasureParticleSizeMenu();
   measurePalette.hidden = true;
   openMeasurePaletteButton?.setAttribute("aria-pressed", "false");
 }
@@ -996,7 +1169,7 @@ function startSnapshotDrawMode() {
   deactivateAnnotationModes();
   closeAnnotationSettingsPopover();
   closeCircleAnnotationOptionsPopover();
-  closeCircleSettingsPopover();
+  closeReferenceCircleSettingsPopover();
   stopSnapshotDrawMode({ clearSelection: false });
   clearSnapshotSelection();
   snapshotModeActive = true;
@@ -2162,6 +2335,7 @@ function closeElectronActionTray() {
 
   electronActionTray.hidden = true;
   electronActionButton.setAttribute("aria-expanded", "false");
+  scheduleClampOpenToolPalettes();
 }
 
 function closeViewerToolsTray() {
@@ -2169,6 +2343,7 @@ function closeViewerToolsTray() {
 
   viewerToolsTray.hidden = true;
   viewerToolsButton.setAttribute("aria-expanded", "false");
+  scheduleClampOpenToolPalettes();
 }
 
 function toggleElectronActionTray() {
@@ -2178,6 +2353,7 @@ function toggleElectronActionTray() {
   electronActionTray.hidden = !willOpen;
   electronActionButton.setAttribute("aria-expanded", String(willOpen));
   if (willOpen) closeViewerToolsTray();
+  scheduleClampOpenToolPalettes();
 
   if (willOpen) {
     const firstAction = electronActionTray.querySelector(
@@ -2194,6 +2370,7 @@ function toggleViewerToolsTray() {
   viewerToolsTray.hidden = !willOpen;
   viewerToolsButton.setAttribute("aria-expanded", String(willOpen));
   if (willOpen) closeElectronActionTray();
+  scheduleClampOpenToolPalettes();
 
   if (willOpen) {
     const firstTool = viewerToolsTray.querySelector(
@@ -2203,10 +2380,10 @@ function toggleViewerToolsTray() {
   }
 }
 
-if (hasElectronActions && electronActionButton && electronActionTray) {
-  loadLibraryButton.hidden = true;
+if (hasSharedViewerMenus) {
+  if (loadLibraryButton) loadLibraryButton.hidden = true;
   electronActionButton.hidden = false;
-  if (viewerToolsButton) viewerToolsButton.hidden = false;
+  viewerToolsButton.hidden = false;
   moveGridCountControlsToPalette();
   moveAnnotateControlsToPalette();
   moveMeasureControlsToPalette();
@@ -2265,7 +2442,7 @@ if (loadLibraryButton) {
   });
 }
 
-if (hasElectronActions && openGridCountPaletteButton && gridCountPalette) {
+if (hasSharedViewerMenus && openGridCountPaletteButton && gridCountPalette) {
   openGridCountPaletteButton.hidden = false;
   openGridCountPaletteButton.setAttribute("aria-pressed", "false");
   openGridCountPaletteButton.addEventListener("click", function (event) {
@@ -2289,15 +2466,31 @@ if (hasElectronActions && openGridCountPaletteButton && gridCountPalette) {
   );
   window.addEventListener("resize", function () {
     closeCountDropdowns();
-    clampToolPaletteToViewer(gridCountPalette);
+    scheduleClampOpenToolPalettes();
   });
 }
 
 if (window.ResizeObserver && controlsPanel) {
   const controlsResizeObserver = new ResizeObserver(() => {
-    clampOpenToolPalettes();
+    scheduleClampOpenToolPalettes();
   });
   controlsResizeObserver.observe(controlsPanel);
+}
+
+const paletteResizeViewerContainer = document.getElementById("viewer-container");
+if (window.ResizeObserver && paletteResizeViewerContainer) {
+  const viewerResizeObserver = new ResizeObserver(() => {
+    scheduleClampOpenToolPalettes();
+  });
+  viewerResizeObserver.observe(paletteResizeViewerContainer);
+}
+
+const viewerCornerActions = document.querySelector(".viewer-corner-actions");
+if (window.ResizeObserver && viewerCornerActions) {
+  const viewerCornerActionsResizeObserver = new ResizeObserver(() => {
+    scheduleClampOpenToolPalettes();
+  });
+  viewerCornerActionsResizeObserver.observe(viewerCornerActions);
 }
 
 if (controlsPanel && minimizeControlsButton) {
@@ -2321,7 +2514,7 @@ if (controlsPanel && minimizeControlsButton) {
   });
 }
 
-if (hasElectronActions && openAnnotatePaletteButton && annotatePalette) {
+if (hasSharedViewerMenus && openAnnotatePaletteButton && annotatePalette) {
   openAnnotatePaletteButton.hidden = false;
   openAnnotatePaletteButton.setAttribute("aria-pressed", "false");
   openAnnotatePaletteButton.addEventListener("click", function (event) {
@@ -2342,11 +2535,11 @@ if (hasElectronActions && openAnnotatePaletteButton && annotatePalette) {
   );
   window.addEventListener("resize", function () {
     closeAnnotationSettingsPopover();
-    clampToolPaletteToViewer(annotatePalette);
+    scheduleClampOpenToolPalettes();
   });
 }
 
-if (hasElectronActions && openMeasurePaletteButton && measurePalette) {
+if (hasSharedViewerMenus && openMeasurePaletteButton && measurePalette) {
   openMeasurePaletteButton.hidden = false;
   openMeasurePaletteButton.setAttribute("aria-pressed", "false");
   openMeasurePaletteButton.addEventListener("click", function (event) {
@@ -2366,8 +2559,10 @@ if (hasElectronActions && openMeasurePaletteButton && measurePalette) {
     "petroImage.measurePalette"
   );
   window.addEventListener("resize", function () {
-    closeCircleSettingsPopover();
-    clampToolPaletteToViewer(measurePalette);
+    closeReferenceCircleSettingsPopover();
+    closeMeasureColumnsMenu();
+    refreshOpenMeasureAnalysisMenus();
+    scheduleClampOpenToolPalettes();
   });
 }
 
@@ -2404,7 +2599,7 @@ if (hasElectronActions && openSnapshotPaletteButton && snapshotPalette) {
     "petroImage.snapshotPalette"
   );
   window.addEventListener("resize", function () {
-    clampToolPaletteToViewer(snapshotPalette);
+    scheduleClampOpenToolPalettes();
     if (snapshotSelectionRect) {
       clearSnapshotSelection();
       updateSnapshotStatus("Draw a new area after resizing the viewer.");
@@ -2442,11 +2637,16 @@ window.addEventListener("pointerup", function () {
   finishSnapshotAdjustment();
 });
 
-if (actionLoadLibraryButton && window.electronAPI?.selectExistingJsonFile) {
+if (hasSharedViewerMenus && actionLoadLibraryButton) {
   actionLoadLibraryButton.addEventListener("click", function (event) {
     event.preventDefault();
     closeElectronActionTray();
-    loadLibraryWithElectronDialog();
+    if (window.electronAPI?.selectExistingJsonFile) {
+      loadLibraryWithElectronDialog();
+      return;
+    }
+
+    loadLibraryInput.click();
   });
 }
 
@@ -3753,19 +3953,16 @@ function setControlDisabled(id, disabled, disabledTitle = "") {
 
 function setMeasurementControlsToIdle() {
   const showMeasure = document.getElementById("show-measure");
-  const measurementButton = document.getElementById("toggleMeasurementButton");
   const circleButton = document.getElementById("toggleCircleButton");
 
   if (showMeasure) showMeasure.checked = false;
-  if (measurementButton) {
-    measurementButton.classList.remove("active");
-    measurementButton.textContent = "Start Measuring";
-  }
   if (circleButton) {
     circleButton.classList.remove("active");
-    circleButton.textContent = "Draw Circle";
+    circleButton.textContent = "Draw Reference Circle";
   }
   measurementModeActive = false;
+  activeMeasureTool = null;
+  updateMeasureValueControls();
   circleModeActive = false;
 }
 
@@ -3789,12 +3986,18 @@ function updateScaleDependentControls() {
   ];
   const measurementControlIds = [
     "show-measure",
-    "toggleMeasurementButton",
     "toggleCircleButton",
-    "circleGearButton",
+    "measureGearButton",
+    "referenceCircleGearButton",
+    "measureSelectedAnnotationsButton",
+    "measureGroupSelect",
+    "measureGroupColorInput",
+    "renameMeasureGroupButton",
+    "newMeasureGroupButton",
+    "exportMeasurementsButton",
+    "clearMeasurementsButton",
     "distanceUnits",
     "areaUnits",
-    "ECDUnits",
     "circleUnits",
     "circle",
   ];
@@ -4799,8 +5002,8 @@ function closeAnnotationSettingsPopover() {
   menu.classList.remove("annotation-settings-popover");
 }
 
-function openCircleSettingsPopover(button) {
-  const menu = document.getElementById("circleSettingsMenu");
+function openMeasureSettingsPopover(button) {
+  const menu = document.getElementById("measureSettingsMenu");
   if (!menu || !button) return;
 
   if (menu.parentElement !== document.body) {
@@ -4812,8 +5015,29 @@ function openCircleSettingsPopover(button) {
   positionAnnotationSettingsPopover(menu, button);
 }
 
-function closeCircleSettingsPopover() {
-  const menu = document.getElementById("circleSettingsMenu");
+function closeMeasureSettingsPopover() {
+  const menu = document.getElementById("measureSettingsMenu");
+  if (!menu) return;
+
+  menu.style.display = "none";
+  menu.classList.remove("measure-settings-popover");
+}
+
+function openReferenceCircleSettingsPopover(button) {
+  const menu = document.getElementById("referenceCircleSettingsMenu");
+  if (!menu || !button) return;
+
+  if (menu.parentElement !== document.body) {
+    document.body.appendChild(menu);
+  }
+
+  menu.classList.add("measure-settings-popover");
+  menu.style.display = "block";
+  positionAnnotationSettingsPopover(menu, button);
+}
+
+function closeReferenceCircleSettingsPopover() {
+  const menu = document.getElementById("referenceCircleSettingsMenu");
   if (!menu) return;
 
   menu.style.display = "none";
@@ -4935,16 +5159,28 @@ document.getElementById("gearButton").addEventListener("click", function (event)
   }
 });
 
-// Show or hide the annotations settings menu when the circle gear button is clicked
+// Show or hide the measurement settings menu when the gear button is clicked
 document
-  .getElementById("circleGearButton")
+  .getElementById("measureGearButton")
   .addEventListener("click", function (event) {
-    event.stopPropagation(); // Prevent click from reaching the window listener
-    const menu = document.getElementById("circleSettingsMenu");
+    event.stopPropagation();
+    const menu = document.getElementById("measureSettingsMenu");
     if (menu.style.display === "block") {
-      closeCircleSettingsPopover();
+      closeMeasureSettingsPopover();
     } else {
-      openCircleSettingsPopover(event.currentTarget);
+      openMeasureSettingsPopover(event.currentTarget);
+    }
+  });
+
+document
+  .getElementById("referenceCircleGearButton")
+  .addEventListener("click", function (event) {
+    event.stopPropagation();
+    const menu = document.getElementById("referenceCircleSettingsMenu");
+    if (menu.style.display === "block") {
+      closeReferenceCircleSettingsPopover();
+    } else {
+      openReferenceCircleSettingsPopover(event.currentTarget);
     }
   });
 
@@ -5029,12 +5265,19 @@ window.addEventListener("click", function (event) {
 });
 
 window.addEventListener("click", function (event) {
-  const menu = document.getElementById("circleSettingsMenu");
+  const menu = document.getElementById("measureSettingsMenu");
   if (
-    !event.target.closest("#circleGearButton") &&
-    !event.target.closest("#circleSettingsMenu")
+    !event.target.closest("#measureGearButton") &&
+    !event.target.closest("#measureSettingsMenu")
   ) {
-    closeCircleSettingsPopover();
+    closeMeasureSettingsPopover();
+  }
+
+  if (
+    !event.target.closest("#referenceCircleGearButton") &&
+    !event.target.closest("#referenceCircleSettingsMenu")
+  ) {
+    closeReferenceCircleSettingsPopover();
   }
 });
 
@@ -5660,6 +5903,9 @@ function toggleAnnotationInSelection(uuid, options = {}) {
 }
 
 function handleAnnotationListRowClick(event, uuid) {
+  if (event.ctrlKey || event.metaKey) {
+    event.preventDefault();
+  }
   const clickedIndex = getAnnotationIndexByUuid(uuid);
   if (clickedIndex < 0) return;
   if (isAnnotationUuidLocked(uuid)) return;
@@ -5925,6 +6171,11 @@ function renderAnnotationList() {
     row.addEventListener("click", function (event) {
       handleAnnotationListRowClick(event, props.uuid);
     });
+    row.addEventListener("contextmenu", function (event) {
+      if (event.ctrlKey || event.metaKey) {
+        event.preventDefault();
+      }
+    });
     row.addEventListener("keydown", function (event) {
       if (handleAnnotationListArrowKey(event, props.uuid)) return;
       if (event.code === "Enter" || event.code === "Space") {
@@ -5992,10 +6243,10 @@ function renderAnnotationList() {
     });
 
     row.append(
+      groupCell,
       indexCell,
       typeCell,
       labelCell,
-      groupCell,
       visibilityButton,
       lockButton
     );
@@ -11023,6 +11274,11 @@ viewerContainer.addEventListener("mousemove", () => {
 
 // Event listener for double-click to edit existing vertices or end collection
 viewer.addHandler("canvas-double-click", function (event) {
+  if (measurementModeActive) {
+    event.preventDefaultAction = true;
+    return;
+  }
+
   if (suppressNextAnnotationDoubleClick) {
     suppressNextAnnotationDoubleClick = false;
     event.preventDefaultAction = true;
@@ -11117,6 +11373,10 @@ function drawPolygon(ctx, coordinates, image, feature) {
     drawPath(ctx, ring, image, feature, isOuterBoundary);
   });
 
+  if (!shouldDrawMeasurementBase(feature)) {
+    return;
+  }
+
   // Use "evenodd" fill rule to create the donut effect
   if (
     feature.properties.hasOwnProperty("fillColor") &&
@@ -11189,6 +11449,15 @@ function drawPolygon(ctx, coordinates, image, feature) {
     ctx.stroke();
     ctx.restore();
   }
+
+  if (isSelectedMeasurementFeature(feature)) {
+    ctx.save();
+    ctx.setLineDash([]);
+    ctx.strokeStyle = "rgba(0, 180, 255, 0.95)";
+    ctx.lineWidth = Math.max(Number(ctx.lineWidth) + 4, 6);
+    ctx.stroke();
+    ctx.restore();
+  }
 }
 
 function drawLineString(ctx, coordinates, image, feature) {
@@ -11221,6 +11490,18 @@ function drawPath(ctx, coordinates, image, shape, closePath) {
 
   if (closePath) {
     ctx.closePath(); // Close the shape for polygons
+  }
+
+  if (!shouldDrawMeasurementBase(shape)) {
+    if (isSelectedMeasurementFeature(shape)) {
+      ctx.save();
+      ctx.setLineDash([]);
+      ctx.strokeStyle = "rgba(0, 180, 255, 0.95)";
+      ctx.lineWidth = 6;
+      ctx.stroke();
+      ctx.restore();
+    }
+    return;
   }
 
   // Set line color
@@ -11272,6 +11553,15 @@ function drawPath(ctx, coordinates, image, shape, closePath) {
     ctx.save();
     ctx.setLineDash([]);
     ctx.strokeStyle = "rgba(255, 204, 0, 0.95)";
+    ctx.lineWidth = Math.max(Number(ctx.lineWidth) + 4, 6);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  if (isSelectedMeasurementFeature(shape)) {
+    ctx.save();
+    ctx.setLineDash([]);
+    ctx.strokeStyle = "rgba(0, 180, 255, 0.95)";
     ctx.lineWidth = Math.max(Number(ctx.lineWidth) + 4, 6);
     ctx.stroke();
     ctx.restore();
@@ -11529,6 +11819,7 @@ viewer.addHandler("canvas-release", function (event) {
     );
     if (marqueePolygon) {
       toggleAnnotationsInMarquee(marqueePolygon);
+      toggleMeasurementsInMarquee(marqueePolygon);
     }
     hideAnnotationMarquee();
     return;
@@ -15155,37 +15446,35 @@ const toggleMeasurement = (checkbox) => {
   if (!hasKnownScale()) {
     checkbox.checked = false;
     measureCanvas.style.display = "none";
+    hideMeasureLiveReadout();
     return;
   }
   measureCanvas.style.display = checkbox.checked ? "block" : "none";
+  if (!checkbox.checked) {
+    stopMeasurementMode();
+    hideMeasureLiveReadout();
+  }
 };
 
-const measurementButton = document.getElementById("toggleMeasurementButton");
 const circleButton = document.getElementById("toggleCircleButton");
 
 function stopMeasurementMode() {
-  if (!measurementButton) return;
-  measurementButton.classList.remove("active");
-  measurementButton.textContent = "Start Measuring";
   measurementModeActive = false;
+  activeMeasureTool = null;
+  measureImageCoordinates = [];
+  clearMeasurePreview();
+  hideMeasureLiveReadout();
+  [...document.querySelectorAll("[data-measure-tool]")].forEach((button) => {
+    button.classList.remove("active");
+  });
+  updateMeasureValueControls();
+  refreshAnnotationFloaters();
 }
 
 function toggleMeasurementMode() {
   if (!hasKnownScale()) return;
-  const isMeasuring = measurementButton.classList.contains("active");
-
-  // Toggle the active state of the button
-  measurementButton.classList.toggle("active");
-
-  if (isMeasuring) {
-    // Disable measurement mode
-    stopMeasurementMode();
-    resetMeasurements();
-  } else {
-    // Enable measurement mode
-    measurementButton.textContent = "Stop Measuring";
-    measurementModeActive = true;
-  }
+  measurementModeActive = !measurementModeActive;
+  if (!measurementModeActive) resetMeasurements();
 }
 
 ///////////////////////////////////////////////////
@@ -15200,7 +15489,7 @@ circleControlsInitialized = true;
 function stopCircleMode() {
   if (!circleControlsInitialized || !circleButton) return;
   circleButton.classList.remove("active");
-  circleButton.textContent = "Draw Circle";
+  circleButton.textContent = "Draw Reference Circle";
   circleModeActive = false;
   circleJSON = {
     type: "FeatureCollection",
@@ -15383,6 +15672,11 @@ function calculatePolygonArea(coordinates) {
   return totalArea;
 }
 
+function calculateRingAreaFromCoordinates(coordinates) {
+  const ring = closeCoordinates(coordinates);
+  return calculateArea(ring);
+}
+
 function calculatePolygonExteriorPerimeter(coordinates) {
   let exteriorRing = coordinates[0];
   let exteriorPerimeter = calculatePerimeter(exteriorRing);
@@ -15396,278 +15690,1734 @@ function calculatePolygonExteriorPerimeter(coordinates) {
 const distanceElement = document.getElementById("distance");
 const areaElement = document.getElementById("area");
 const ECDElement = document.getElementById("ECD");
+const measureResultsBody = document.getElementById("measureResultsBody");
+const measureResultsTable = document.getElementById("measureResultsTable");
+const measureResultsHeader = document.getElementById("measureResultsHeader");
+const measureLengthHeader = document.getElementById("measureLengthHeader");
+const measureAreaHeader = document.getElementById("measureAreaHeader");
+const measurePerimeterHeader = document.getElementById("measurePerimeterHeader");
+const measureECDHeader = document.getElementById("measureECDHeader");
+const measureWidthHeader = document.getElementById("measureWidthHeader");
+const measureLiveReadout = document.getElementById("measure-live-readout");
+const measureToolButtons = document.getElementById("measureToolButtons");
+const measureSelectedAnnotationsButton = document.getElementById(
+  "measureSelectedAnnotationsButton"
+);
+const measureGroupSelect = document.getElementById("measureGroupSelect");
+const measureGroupColorInput = document.getElementById("measureGroupColorInput");
+const renameMeasureGroupButton = document.getElementById("renameMeasureGroupButton");
+const newMeasureGroupButton = document.getElementById("newMeasureGroupButton");
+const exportMeasurementsButton = document.getElementById(
+  "exportMeasurementsButton"
+);
+const clearMeasurementsButton = document.getElementById(
+  "clearMeasurementsButton"
+);
+const deleteMeasurementButton = document.getElementById(
+  "deleteMeasurementButton"
+);
+const measureColumnsButton = document.getElementById("measureColumnsButton");
+const measureColumnsMenu = document.getElementById("measureColumnsMenu");
+const measureColumnsList = document.getElementById("measureColumnsList");
+const restoreMeasureColumnsButton = document.getElementById(
+  "restoreMeasureColumnsButton"
+);
+const measureHistogramButton = document.getElementById("measureHistogramButton");
+const measureHistogramMenu = document.getElementById("measureHistogramMenu");
+const measureHistogramHeader = document.getElementById("measureHistogramHeader");
+const measureHistogramParameter = document.getElementById(
+  "measureHistogramParameter"
+);
+const measureHistogramPlotType = document.getElementById("measureHistogramPlotType");
+const measureHistogramMode = document.getElementById("measureHistogramMode");
+const measureHistogramGroups = document.getElementById("measureHistogramGroups");
+const measureHistogramCanvas = document.getElementById("measureHistogramCanvas");
+const measureHistogramStatsBody = document.getElementById(
+  "measureHistogramStatsBody"
+);
+const measureHistogramStatsMeanHeader = document.getElementById(
+  "measureHistogramStatsMeanHeader"
+);
+const measureHistogramStatsMedianHeader = document.getElementById(
+  "measureHistogramStatsMedianHeader"
+);
+const measureHistogramStatsSdHeader = document.getElementById(
+  "measureHistogramStatsSdHeader"
+);
+const measureHistogramStatsMinHeader = document.getElementById(
+  "measureHistogramStatsMinHeader"
+);
+const measureHistogramStatsMaxHeader = document.getElementById(
+  "measureHistogramStatsMaxHeader"
+);
+const exportMeasureHistogramButton = document.getElementById(
+  "exportMeasureHistogramButton"
+);
+const exportMeasureHistogramStatsButton = document.getElementById(
+  "exportMeasureHistogramStatsButton"
+);
+const measureScatterButton = document.getElementById("measureScatterButton");
+const measureScatterMenu = document.getElementById("measureScatterMenu");
+const measureScatterHeader = document.getElementById("measureScatterHeader");
+const measureScatterXParameter = document.getElementById(
+  "measureScatterXParameter"
+);
+const measureScatterYParameter = document.getElementById(
+  "measureScatterYParameter"
+);
+const measureScatterMode = document.getElementById("measureScatterMode");
+const measureScatterGroups = document.getElementById("measureScatterGroups");
+const measureScatterXMinInput = document.getElementById("measureScatterXMin");
+const measureScatterXMaxInput = document.getElementById("measureScatterXMax");
+const measureScatterYMinInput = document.getElementById("measureScatterYMin");
+const measureScatterYMaxInput = document.getElementById("measureScatterYMax");
+const measureScatterColorInput = document.getElementById("measureScatterColor");
+const measureScatterCanvas = document.getElementById("measureScatterCanvas");
+const measureScatterStatsBody = document.getElementById("measureScatterStatsBody");
+const measureScatterMeanXHeader = document.getElementById(
+  "measureScatterMeanXHeader"
+);
+const measureScatterMeanYHeader = document.getElementById(
+  "measureScatterMeanYHeader"
+);
+const measureScatterSdXHeader = document.getElementById("measureScatterSdXHeader");
+const measureScatterSdYHeader = document.getElementById("measureScatterSdYHeader");
+const exportMeasureScatterButton = document.getElementById(
+  "exportMeasureScatterButton"
+);
+const exportMeasureScatterStatsButton = document.getElementById(
+  "exportMeasureScatterStatsButton"
+);
+const closeMeasureScatterButton = document.getElementById(
+  "closeMeasureScatterButton"
+);
+const measureRoseButton = document.getElementById("measureRoseButton");
+const measureRoseMenu = document.getElementById("measureRoseMenu");
+const measureRoseHeader = document.getElementById("measureRoseHeader");
+const measureRoseParameter = document.getElementById("measureRoseParameter");
+const measureRoseMode = document.getElementById("measureRoseMode");
+const measureRoseColorInput = document.getElementById("measureRoseColor");
+const measureRoseBinSizeInput = document.getElementById("measureRoseBinSize");
+const measureRoseBidirectionalInput = document.getElementById(
+  "measureRoseBidirectional"
+);
+const measureRoseStackedInput = document.getElementById("measureRoseStacked");
+const measureRoseGroups = document.getElementById("measureRoseGroups");
+const measureRoseCanvas = document.getElementById("measureRoseCanvas");
+const measureRoseStatsBody = document.getElementById("measureRoseStatsBody");
+const exportMeasureRoseButton = document.getElementById("exportMeasureRoseButton");
+const exportMeasureRoseStatsButton = document.getElementById(
+  "exportMeasureRoseStatsButton"
+);
+const closeMeasureRoseButton = document.getElementById("closeMeasureRoseButton");
+const measureParticleSizeButton = document.getElementById(
+  "measureParticleSizeButton"
+);
+const measureParticleSizeMenu = document.getElementById("measureParticleSizeMenu");
+const measureParticleSizeHeader = document.getElementById(
+  "measureParticleSizeHeader"
+);
+const measureParticleSizeParameter = document.getElementById(
+  "measureParticleSizeParameter"
+);
+const measureParticleSizeWeight = document.getElementById(
+  "measureParticleSizeWeight"
+);
+const measureParticleSizeMode = document.getElementById("measureParticleSizeMode");
+const measureParticleSizeGroups = document.getElementById(
+  "measureParticleSizeGroups"
+);
+const measureParticleShowHistogram = document.getElementById(
+  "measureParticleShowHistogram"
+);
+const measureParticleShowCumulative = document.getElementById(
+  "measureParticleShowCumulative"
+);
+const measureParticleStacked = document.getElementById("measureParticleStacked");
+const measureParticlePhiMinInput = document.getElementById("measureParticlePhiMin");
+const measureParticlePhiMaxInput = document.getElementById("measureParticlePhiMax");
+const measureParticlePhiBinInput = document.getElementById("measureParticlePhiBin");
+const measureParticleColorInput = document.getElementById("measureParticleColor");
+const measureParticleSizeCanvas = document.getElementById(
+  "measureParticleSizeCanvas"
+);
+const measureParticleSizeStatsBody = document.getElementById(
+  "measureParticleSizeStatsBody"
+);
+const exportMeasureParticleSizeButton = document.getElementById(
+  "exportMeasureParticleSizeButton"
+);
+const exportMeasureParticleSizeStatsButton = document.getElementById(
+  "exportMeasureParticleSizeStatsButton"
+);
+const closeMeasureParticleSizeButton = document.getElementById(
+  "closeMeasureParticleSizeButton"
+);
+const closeMeasureHistogramButton = document.getElementById(
+  "closeMeasureHistogramButton"
+);
+const measureHistogramMinInput = document.getElementById("measureHistogramMin");
+const measureHistogramMaxInput = document.getElementById("measureHistogramMax");
+const measureHistogramBinSizeInput = document.getElementById(
+  "measureHistogramBinSize"
+);
+const measureHistogramColorInput = document.getElementById("measureHistogramColor");
+const measureHistogramStackedInput = document.getElementById(
+  "measureHistogramStacked"
+);
 
-// Event listener to add polyline annotations
-let measureCoordinates = []; // Array to store viewport coordinates
-let measureImageCoordinates = []; // Array to store image coordinates
-let measureCoordinatesArray = []; // Array to store arrays of coordinates
-let measureTimeout; // Timeout reference to detect double-click
-const measureClickDelay = 300; // Maximum delay between clicks for detecting double-click
-let measureLastClickTime = 0; // Timestamp of the last click
-let distanceConversion = 0; // 0 = 1, 1 = 1000, 2 = 1000000
+let measureImageCoordinates = [];
+let measureResults = [];
+let selectedMeasurementUuids = new Set();
+let measurementSelectionAnchorUuid = null;
 let distanceInM = 0;
-let areaConversion = 0; // 0 = 1, 1 = 1e6, 2 = 1e12
-let areaInM2;
-let ECDConversion = 0;
-let ECDInM;
-let polylineCoords = [];
-let polygonCoords = [];
+let areaInM2 = 0;
+let ECDInM = 0;
 measurementControlsInitialized = true;
-// let activeMeasurement = false;
-viewer.addHandler("canvas-click", function (event) {
-  if (scaleWizardState.active) return;
-  const isMeasuring = measurementButton.classList.contains("active");
-  if (measurementModeActive && hasKnownScale()) {
-    const distanceUnits = parseInt(
-      document.getElementById("distanceUnits").value
+
+const DEFAULT_MEASURE_GROUP = {
+  groupId: "measurements",
+  groupName: "Measurements",
+  groupColor: "#00b4ff",
+};
+let measureGroups = [{ ...DEFAULT_MEASURE_GROUP }];
+let activeMeasureGroupId = DEFAULT_MEASURE_GROUP.groupId;
+let measureHistogramSelectedGroupIds = new Set();
+let measureHistogramKnownGroupIds = new Set();
+let measureHistogramRangeEdited = false;
+let measureScatterSelectedGroupIds = new Set();
+let measureScatterKnownGroupIds = new Set();
+let measureScatterRangeEdited = false;
+let measureRoseSelectedGroupIds = new Set();
+let measureRoseKnownGroupIds = new Set();
+let measureParticleSizeSelectedGroupIds = new Set();
+let measureParticleSizeKnownGroupIds = new Set();
+let measureParticleSizeRangeEdited = false;
+
+const MEASURE_TOOL_LABELS = {
+  line: "Line",
+  polygon: "Polygon",
+};
+
+function isSelectedMeasurementFeature(feature) {
+  return (
+    selectedMeasurementUuids.has(feature?.properties?.uuid) &&
+    (feature?.properties?.source === "manual" ||
+      feature?.properties?.source === "annotation")
+  );
+}
+
+function shouldDrawMeasurementBase(feature) {
+  return feature?.properties?.source !== "annotation";
+}
+
+function getLinearUnitInfo() {
+  const units = [
+    { label: "m", factor: 1 },
+    { label: "mm", factor: 1e3 },
+    { label: "µm", factor: 1e6 },
+  ];
+  return (
+    units[parseInt(document.getElementById("distanceUnits").value, 10)] ||
+    units[1]
+  );
+}
+
+function getAreaUnitInfo() {
+  const units = [
+    { label: "m²", factor: 1 },
+    { label: "mm²", factor: 1e6 },
+    { label: "µm²", factor: 1e12 },
+  ];
+  return (
+    units[parseInt(document.getElementById("areaUnits").value, 10)] || units[1]
+  );
+}
+
+function getECDUnitInfo() {
+  const ECDUnits = document.getElementById("ECDUnits");
+  if (!ECDUnits) return { label: "mm", factor: 1e3 };
+  const units = [
+    { label: "m", factor: 1 },
+    { label: "mm", factor: 1e3 },
+    { label: "µm", factor: 1e6 },
+  ];
+  return (
+    units[parseInt(ECDUnits.value, 10)] || units[1]
+  );
+}
+
+function getMeasureStyle() {
+  return {
+    lineStyle: document.getElementById("measureLineStyle").value,
+    lineWeight: Number(document.getElementById("measureLineWeight").value),
+    lineColor: document.getElementById("measureLineColor").value,
+    lineOpacity: Number(document.getElementById("measureLineOpacity").value),
+    fillColor: document.getElementById("measureFillColor").value,
+    fillOpacity: Number(document.getElementById("measureFillOpacity").value),
+  };
+}
+
+function getSafeMeasureGroupColor(color) {
+  return /^#[0-9a-f]{6}$/i.test(color)
+    ? color
+    : DEFAULT_MEASURE_GROUP.groupColor;
+}
+
+function normalizeMeasureGroup(group = {}) {
+  return {
+    groupId: group.groupId || `measure-group-${generateUniqueId(8)}`,
+    groupName: group.groupName || DEFAULT_MEASURE_GROUP.groupName,
+    groupColor: getSafeMeasureGroupColor(group.groupColor),
+  };
+}
+
+function getMeasureGroupById(groupId) {
+  return measureGroups.find((group) => group.groupId === groupId) || null;
+}
+
+function ensureMeasureGroup(group = DEFAULT_MEASURE_GROUP) {
+  const normalized = normalizeMeasureGroup(group);
+  const existing = measureGroups.find(
+    (candidate) =>
+      candidate.groupId === normalized.groupId ||
+      candidate.groupName.toLowerCase() === normalized.groupName.toLowerCase()
+  );
+  if (existing) {
+    existing.groupColor = getSafeMeasureGroupColor(
+      normalized.groupColor || existing.groupColor
     );
-    const areaUnits = parseInt(document.getElementById("areaUnits").value);
-    const ECDUnits = parseInt(document.getElementById("ECDUnits").value);
-    if (distanceUnits === 0) {
-      distanceConversion = 1;
-    } else if (distanceUnits === 1) {
-      distanceConversion = 1e3;
-    } else if (distanceUnits === 2) {
-      distanceConversion = 1e6;
+    return existing;
+  }
+  measureGroups.push(normalized);
+  measureGroups.sort((a, b) => a.groupName.localeCompare(b.groupName));
+  return normalized;
+}
+
+function rebuildMeasureGroupsFromRows() {
+  const groups = new Map();
+  const addGroup = (group = DEFAULT_MEASURE_GROUP) => {
+    if (!group.groupId && !group.groupName) return;
+    const normalized = normalizeMeasureGroup(group);
+    groups.set(normalized.groupId, normalized);
+  };
+
+  addGroup(DEFAULT_MEASURE_GROUP);
+  measureResults.forEach((result) => {
+    addGroup({
+      groupId: result.groupId,
+      groupName: result.groupName,
+      groupColor: result.groupColor,
+    });
+  });
+  measureJSON.features.forEach((feature) => {
+    addGroup({
+      groupId: feature.properties?.groupId,
+      groupName: feature.properties?.groupName,
+      groupColor: feature.properties?.groupColor,
+    });
+  });
+
+  measureGroups = [...groups.values()].sort((a, b) =>
+    a.groupName.localeCompare(b.groupName)
+  );
+}
+
+function getActiveMeasureGroup() {
+  return (
+    getMeasureGroupById(activeMeasureGroupId) ||
+    ensureMeasureGroup(DEFAULT_MEASURE_GROUP)
+  );
+}
+
+function getMeasureGroupForAnnotation(feature) {
+  const props = normalizeAnnotationFeature(feature)?.properties || {};
+  return ensureMeasureGroup({
+    groupId: props.groupId || DEFAULT_ANNOTATION_GROUP.groupId,
+    groupName: props.groupName || DEFAULT_ANNOTATION_GROUP.groupName,
+    groupColor: props.groupColor || DEFAULT_ANNOTATION_GROUP.groupColor,
+  });
+}
+
+function getMeasureGroupForResult(result) {
+  return ensureMeasureGroup({
+    groupId: result?.groupId || DEFAULT_MEASURE_GROUP.groupId,
+    groupName: result?.groupName || DEFAULT_MEASURE_GROUP.groupName,
+    groupColor: result?.groupColor || DEFAULT_MEASURE_GROUP.groupColor,
+  });
+}
+
+function renderMeasureGroupOptions() {
+  if (!measureGroupSelect) return;
+  const preferredValue = activeMeasureGroupId || measureGroupSelect.value;
+  rebuildMeasureGroupsFromRows();
+  measureGroupSelect.innerHTML = "";
+  measureGroups.forEach((group) => {
+    const option = document.createElement("option");
+    option.value = group.groupId;
+    option.textContent = group.groupName;
+    measureGroupSelect.appendChild(option);
+  });
+
+  activeMeasureGroupId = getMeasureGroupById(preferredValue)
+    ? preferredValue
+    : DEFAULT_MEASURE_GROUP.groupId;
+  measureGroupSelect.value = activeMeasureGroupId;
+  updateMeasureGroupControls();
+}
+
+function updateMeasureGroupControls() {
+  const group = getMeasureGroupById(activeMeasureGroupId);
+  if (measureGroupColorInput) {
+    measureGroupColorInput.value = getSafeMeasureGroupColor(group?.groupColor);
+    measureGroupColorInput.title = group ? `Color: ${group.groupName}` : "Group Color";
+  }
+  if (renameMeasureGroupButton) {
+    renameMeasureGroupButton.disabled = !group;
+    renameMeasureGroupButton.title = group ? `Rename ${group.groupName}` : "Rename Group";
+  }
+}
+
+function updateMeasureGroupProperties(groupId, updates = {}) {
+  const group = getMeasureGroupById(groupId);
+  if (!group) return;
+  if (updates.groupName !== undefined) {
+    group.groupName = updates.groupName;
+  }
+  if (updates.groupColor !== undefined) {
+    group.groupColor = getSafeMeasureGroupColor(updates.groupColor);
+  }
+  measureResults.forEach((result) => {
+    if (result.groupId !== groupId) return;
+    result.groupName = group.groupName;
+    result.groupColor = group.groupColor;
+  });
+  measureJSON.features.forEach((feature) => {
+    if (feature.properties?.groupId !== groupId) return;
+    feature.properties.groupName = group.groupName;
+    feature.properties.groupColor = group.groupColor;
+  });
+  renderMeasureGroupOptions();
+  renderMeasureResults();
+  drawShape(measureCanvas, [measureJSON, measureAreaJSONTemp, measureJSONTemp]);
+}
+
+function assignSelectedMeasurementsToGroup(group) {
+  if (!group || selectedMeasurementUuids.size === 0) return;
+  measureResults.forEach((result) => {
+    if (!selectedMeasurementUuids.has(result.measurementUuid)) return;
+    result.groupId = group.groupId;
+    result.groupName = group.groupName;
+    result.groupColor = group.groupColor;
+  });
+  measureJSON.features.forEach((feature) => {
+    if (!selectedMeasurementUuids.has(feature.properties?.uuid)) return;
+    feature.properties.groupId = group.groupId;
+    feature.properties.groupName = group.groupName;
+    feature.properties.groupColor = group.groupColor;
+  });
+  renderMeasureResults();
+  drawShape(measureCanvas, [measureJSON, measureAreaJSONTemp, measureJSONTemp]);
+}
+
+function renameMeasureGroup(groupId, groupName) {
+  const trimmedName = groupName.trim();
+  if (!trimmedName) return;
+  const duplicate = measureGroups.find(
+    (group) =>
+      group.groupId !== groupId &&
+      group.groupName.toLowerCase() === trimmedName.toLowerCase()
+  );
+  if (duplicate) {
+    alert("A measurement group with that name already exists.");
+    return;
+  }
+  updateMeasureGroupProperties(groupId, { groupName: trimmedName });
+}
+
+function createMeasureGroup(groupName) {
+  const trimmedName = groupName.trim();
+  if (!trimmedName) return;
+  const existing = measureGroups.find(
+    (group) => group.groupName.toLowerCase() === trimmedName.toLowerCase()
+  );
+  const group =
+    existing ||
+    ensureMeasureGroup({
+      groupId: `measure-group-${generateUniqueId(8)}`,
+      groupName: trimmedName,
+      groupColor: getAnnotationGroupColor(measureGroups.length),
+    });
+  activeMeasureGroupId = group.groupId;
+  assignSelectedMeasurementsToGroup(group);
+  renderMeasureGroupOptions();
+}
+
+function getImagePointFromMeasureEventPosition(position) {
+  const image = viewer.world.getItemAt(0);
+  if (!image) return null;
+  const viewportPoint = viewer.viewport.pointFromPixel(position);
+  const imagePoint = image.viewportToImageCoordinates(
+    viewportPoint.x,
+    viewportPoint.y
+  );
+  return [imagePoint.x, imagePoint.y];
+}
+
+function getImagePointFromMeasureMouseEvent(event) {
+  const rect = viewerContainer.getBoundingClientRect();
+  const position = new OpenSeadragon.Point(
+    event.clientX - rect.left,
+    event.clientY - rect.top
+  );
+  return getImagePointFromMeasureEventPosition(position);
+}
+
+function closeCoordinates(coordinates) {
+  if (coordinates.length === 0) return [];
+  const closed = coordinates.map((coordinate) => [...coordinate]);
+  if (!coordinatesMatch(closed[0], closed[closed.length - 1])) {
+    closed.push([...closed[0]]);
+  }
+  return closed;
+}
+
+function getCleanCoordinateRing(coordinates) {
+  const cleaned = [];
+  coordinates.forEach((coordinate) => {
+    if (
+      !Array.isArray(coordinate) ||
+      coordinate.length < 2 ||
+      !Number.isFinite(coordinate[0]) ||
+      !Number.isFinite(coordinate[1])
+    ) {
+      return;
     }
-    if (areaUnits === 0) {
-      areaConversion = 1;
-    } else if (areaUnits === 1) {
-      areaConversion = 1e6;
-    } else if (areaUnits === 2) {
-      areaConversion = 1e12;
+    if (
+      cleaned.length === 0 ||
+      !coordinatesMatch(cleaned[cleaned.length - 1], coordinate)
+    ) {
+      cleaned.push([...coordinate]);
     }
-    if (ECDUnits === 0) {
-      ECDConversion = 1;
-    } else if (ECDUnits === 1) {
-      ECDConversion = 1e3;
-    } else if (ECDUnits === 2) {
-      ECDConversion = 1e6;
-    }
-    measureJSON = {
-      type: "FeatureCollection",
-      features: [],
-    };
-    // activeMeasurement = true;
-    const image = viewer.world.getItemAt(0);
-    const imageSize = image.getContentSize();
-    const viewportPoint = viewer.viewport.pointFromPixel(event.position);
-    const imagePoint = image.viewportToImageCoordinates(
-      viewportPoint.x,
-      viewportPoint.y
-    );
-    const x = viewportPoint.x;
-    const y = viewportPoint.y;
-    const lineWeight = Number(
-      document.getElementById("circleLineWeight").value
-    );
-    const lineColor = document.getElementById("circleLineColor").value;
-    const lineStyle = document.getElementById("circleLineStyle").value;
-    const lineOpacity = Number(
-      document.getElementById("circleLineOpacity").value
-    );
-    const fillColor = document.getElementById("circleFillColor").value;
-    const fillOpacity = Number(
-      document.getElementById("circleFillOpacity").value
-    );
-    measureCoordinates.push({ x, y });
-    measureImageCoordinates.push([imagePoint.x, imagePoint.y]);
-    if (measureCoordinates.length > 1) {
-      // Draw the polyline (polyline or polygon)
-      drawShape(measureCanvas, [
-        measureJSON,
-        measureAreaJSONTemp,
-        measureJSONTemp,
-      ]);
-    }
+  });
+  return closeCoordinates(cleaned);
+}
 
-    // Continually update the measureJSONTemp with the latest coordinates
-    viewerContainer.addEventListener("mousemove", function (subevent) {
-      if (measurementModeActive) {
-        // Clear to avoid duplicating lines
-        measureJSONTemp = {
-          type: "FeatureCollection",
-          features: [],
-        };
-        measureAreaJSONTemp = {
-          type: "FeatureCollection",
-          features: [],
-        };
+function segmentsShareCoordinateEndpoint(aStart, aEnd, bStart, bEnd) {
+  return (
+    coordinatesMatch(aStart, bStart) ||
+    coordinatesMatch(aStart, bEnd) ||
+    coordinatesMatch(aEnd, bStart) ||
+    coordinatesMatch(aEnd, bEnd)
+  );
+}
 
-        const rect = viewerContainer.getBoundingClientRect(); // Get container bounds
-        const position = {
-          x: subevent.clientX - rect.left,
-          y: subevent.clientY - rect.top,
-        };
-        const positionPoint = new OpenSeadragon.Point(position.x, position.y);
-        const subeventViewportPoint =
-          viewer.viewport.pointFromPixel(positionPoint);
-        const subeventImagePoint = image.viewportToImageCoordinates(
-          subeventViewportPoint.x,
-          subeventViewportPoint.y
-        );
+function getPolygonSelfIntersectionStatus(coordinates) {
+  if (!Array.isArray(coordinates) || coordinates.length < 4) {
+    return { validGeometry: true, geometryWarning: "" };
+  }
 
-        polylineCoords = [
-          ...measureImageCoordinates,
-          [subeventImagePoint.x, subeventImagePoint.y],
-        ];
-        polygonCoords = [
-          ...measureImageCoordinates,
-          [subeventImagePoint.x, subeventImagePoint.y],
-        ];
+  const ring = getCleanCoordinateRing(coordinates);
+  if (ring.length < 4) {
+    return { validGeometry: true, geometryWarning: "" };
+  }
+  const segmentCount = ring.length - 1;
+  for (let i = 0; i < segmentCount; i++) {
+    const aStart = ring[i];
+    const aEnd = ring[i + 1];
+    if (coordinatesMatch(aStart, aEnd)) continue;
 
-        addPolylineToGeoJSON(
-          measureJSONTemp,
-          polylineCoords,
-          // [
-          //   ...measureImageCoordinates,
-          //   [subeventImagePoint.x, subeventImagePoint.y],
-          // ],
-          {
-            lineStyle: lineStyle,
-            lineWeight: lineWeight,
-            lineColor: lineColor,
-            lineOpacity: lineOpacity,
-          }
-        );
+    for (let j = i + 1; j < segmentCount; j++) {
+      const sharesEndpoint =
+        Math.abs(i - j) <= 1 || (i === 0 && j === segmentCount - 1);
+      if (sharesEndpoint) continue;
 
-        if (
-          polylineCoords.length > 2 &&
-          (polylineCoords[0][0] !==
-            polylineCoords[polylineCoords.length - 1][0] ||
-            polylineCoords[0][1] !==
-              polylineCoords[polylineCoords.length - 1][1])
-        ) {
-          polygonCoords.push(polygonCoords[0]);
-        }
-
-        addPolygonToGeoJSON(measureAreaJSONTemp, polygonCoords, {
-          lineStyle: "dashed",
-          lineWeight: lineWeight,
-          lineColor: lineColor,
-          lineOpacity: lineOpacity,
-          fillColor: fillColor,
-          fillOpacity: fillOpacity,
-        });
-
-        updateSelfIntersectionWarning(polygonCoords);
-
-        const currentMeasureImageCoordinates = [
-          ...measureImageCoordinates,
-          [subeventImagePoint.x, subeventImagePoint.y],
-        ];
-
-        const measurePerimeterPixels = calculatePolygonExteriorPerimeter([
-          currentMeasureImageCoordinates,
-        ]);
-        distanceInM = metersFromPixels(measurePerimeterPixels);
-        const measurePerimeter = distanceInM * distanceConversion;
-        distanceElement.value = measurePerimeter.toFixed(2);
-
-        if (measureImageCoordinates.length >= 2) {
-          // Close the polygon by adding the first point to the end
-          const currentMeasureImageCoordinatesPolygon = [
-            ...measureImageCoordinates,
-            [subeventImagePoint.x, subeventImagePoint.y],
-            [measureImageCoordinates[0][0], measureImageCoordinates[0][1]],
-          ];
-
-          const measureAreaPixels = calculatePolygonArea([
-            currentMeasureImageCoordinatesPolygon,
-          ]);
-          areaInM2 = squareMetersFromSquarePixels(measureAreaPixels);
-          const measureArea = areaInM2 * areaConversion;
-          areaElement.value = measureArea.toFixed(2);
-
-          ECDInM = areaInM2 === null
-            ? null
-            : 2 * Math.sqrt(areaInM2 / Math.PI);
-          const ECD = ECDInM * ECDConversion;
-          ECDElement.value = ECD.toFixed(2);
-        } else {
-          areaElement.value = 0.0; // Reset
-          ECDElement.value = 0; // Reset
-        }
-
-        drawShape(measureCanvas, [
-          measureJSON,
-          measureAreaJSONTemp,
-          measureJSONTemp,
-        ]);
+      const bStart = ring[j];
+      const bEnd = ring[j + 1];
+      if (
+        coordinatesMatch(bStart, bEnd) ||
+        segmentsShareCoordinateEndpoint(aStart, aEnd, bStart, bEnd)
+      ) {
+        continue;
       }
+      if (
+        imageSegmentsIntersect(
+          imagePointFromCoord(aStart),
+          imagePointFromCoord(aEnd),
+          imagePointFromCoord(bStart),
+          imagePointFromCoord(bEnd)
+        )
+      ) {
+        return {
+          validGeometry: false,
+          geometryWarning:
+            "Self-intersecting polygon; area is ambiguous and was not calculated.",
+        };
+      }
+    }
+  }
+
+  return { validGeometry: true, geometryWarning: "" };
+}
+
+function getPolygonWidthHeight(coordinates) {
+  const xs = coordinates.map((coordinate) => coordinate[0]);
+  const ys = coordinates.map((coordinate) => coordinate[1]);
+  return {
+    widthPx: Math.max(...xs) - Math.min(...xs),
+    heightPx: Math.max(...ys) - Math.min(...ys),
+  };
+}
+
+function crossProduct(origin, a, b) {
+  return (
+    (a[0] - origin[0]) * (b[1] - origin[1]) -
+    (a[1] - origin[1]) * (b[0] - origin[0])
+  );
+}
+
+function getConvexHull(points) {
+  const uniquePoints = [...new Map(
+    points.map((point) => [`${point[0]},${point[1]}`, point])
+  ).values()].sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+
+  if (uniquePoints.length <= 1) return uniquePoints;
+
+  const lower = [];
+  uniquePoints.forEach((point) => {
+    while (
+      lower.length >= 2 &&
+      crossProduct(lower[lower.length - 2], lower[lower.length - 1], point) <= 0
+    ) {
+      lower.pop();
+    }
+    lower.push(point);
+  });
+
+  const upper = [];
+  [...uniquePoints].reverse().forEach((point) => {
+    while (
+      upper.length >= 2 &&
+      crossProduct(upper[upper.length - 2], upper[upper.length - 1], point) <= 0
+    ) {
+      upper.pop();
+    }
+    upper.push(point);
+  });
+
+  lower.pop();
+  upper.pop();
+  return lower.concat(upper);
+}
+
+function normalizeAxisAzimuthDegrees(dx, dy) {
+  if (!Number.isFinite(dx) || !Number.isFinite(dy) || (dx === 0 && dy === 0)) {
+    return null;
+  }
+
+  const northClockwise = (Math.atan2(dx, -dy) * 180) / Math.PI;
+  return ((northClockwise % 180) + 180) % 180;
+}
+
+function getOrientedAxisProperties(coordinates) {
+  const points = getCoordinatesWithoutTrailingDuplicate(coordinates);
+  if (points.length < 2) {
+    return {
+      shortAxisPx: null,
+      longAxisPx: null,
+      aspectRatio: null,
+      longAxisAzimuthDeg: null,
+    };
+  }
+
+  const hull = getConvexHull(points);
+  if (hull.length === 2) {
+    const dx = hull[1][0] - hull[0][0];
+    const dy = hull[1][1] - hull[0][1];
+    return {
+      shortAxisPx: 0,
+      longAxisPx: calculateDistance(hull[0], hull[1]),
+      aspectRatio: 0,
+      longAxisAzimuthDeg: normalizeAxisAzimuthDegrees(dx, dy),
+    };
+  }
+
+  let bestBox = null;
+  for (let i = 0; i < hull.length; i++) {
+    const start = hull[i];
+    const end = hull[(i + 1) % hull.length];
+    const angle = Math.atan2(end[1] - start[1], end[0] - start[0]);
+    const cos = Math.cos(-angle);
+    const sin = Math.sin(-angle);
+    const rotated = hull.map(([x, y]) => [
+      x * cos - y * sin,
+      x * sin + y * cos,
+    ]);
+    const xs = rotated.map((point) => point[0]);
+    const ys = rotated.map((point) => point[1]);
+    const width = Math.max(...xs) - Math.min(...xs);
+    const height = Math.max(...ys) - Math.min(...ys);
+    const area = width * height;
+    if (!bestBox || area < bestBox.area) {
+      bestBox = { width, height, angle, area };
+    }
+  }
+
+  if (!bestBox) {
+    return {
+      shortAxisPx: null,
+      longAxisPx: null,
+      aspectRatio: null,
+      longAxisAzimuthDeg: null,
+    };
+  }
+
+  const widthIsLong = bestBox.width >= bestBox.height;
+  const longAxisPx = widthIsLong ? bestBox.width : bestBox.height;
+  const shortAxisPx = widthIsLong ? bestBox.height : bestBox.width;
+  const longAxisAngle = bestBox.angle + (widthIsLong ? 0 : Math.PI / 2);
+
+  return {
+    shortAxisPx,
+    longAxisPx,
+    aspectRatio: longAxisPx === 0 ? null : shortAxisPx / longAxisPx,
+    longAxisAzimuthDeg: normalizeAxisAzimuthDegrees(
+      Math.cos(longAxisAngle),
+      Math.sin(longAxisAngle)
+    ),
+  };
+}
+
+function calculateMeasurementProperties(type, coordinates) {
+  const properties = {
+    lengthM: null,
+    perimeterM: null,
+    areaM2: null,
+    ecdM: null,
+    radiusM: null,
+    diameterM: null,
+    widthM: null,
+    heightM: null,
+    majorAxisM: null,
+    minorAxisM: null,
+    aspectRatio: null,
+    azimuthDeg: null,
+    solidity: null,
+    circularity: null,
+    validGeometry: true,
+    geometryWarning: "",
+  };
+
+  if (type === "line") {
+    properties.lengthM = metersFromPixels(calculateLineStringLength(coordinates));
+    return properties;
+  }
+
+  const closed = closeCoordinates(coordinates);
+  const geometryStatus = getPolygonSelfIntersectionStatus(closed);
+  properties.validGeometry = geometryStatus.validGeometry;
+  properties.geometryWarning = geometryStatus.geometryWarning;
+  const areaPixels = calculatePolygonArea([closed]);
+  const perimeterPixels = calculatePolygonExteriorPerimeter([closed]);
+  properties.areaM2 = geometryStatus.validGeometry
+    ? squareMetersFromSquarePixels(areaPixels)
+    : null;
+  properties.perimeterM = metersFromPixels(perimeterPixels);
+  properties.ecdM =
+    properties.areaM2 === null
+      ? null
+      : 2 * Math.sqrt(properties.areaM2 / Math.PI);
+  properties.circularity =
+    properties.areaM2 === null || properties.perimeterM === 0
+      ? null
+      : (4 * Math.PI * properties.areaM2) /
+        (properties.perimeterM * properties.perimeterM);
+
+  const hull = getConvexHull(getCoordinatesWithoutTrailingDuplicate(closed));
+  const hullAreaPixels = hull.length >= 3 ? calculateRingAreaFromCoordinates(hull) : 0;
+  properties.solidity =
+    properties.areaM2 === null || hullAreaPixels === 0
+      ? null
+      : areaPixels / hullAreaPixels;
+
+  const { widthPx, heightPx } = getPolygonWidthHeight(closed);
+  properties.widthM = metersFromPixels(widthPx);
+  properties.heightM = metersFromPixels(heightPx);
+  const axes = getOrientedAxisProperties(closed);
+  if (axes.shortAxisPx !== null && axes.longAxisPx !== null) {
+    properties.lengthM = metersFromPixels(axes.longAxisPx);
+    properties.widthM = metersFromPixels(axes.shortAxisPx);
+    properties.heightM = metersFromPixels(axes.longAxisPx);
+    properties.aspectRatio = axes.aspectRatio;
+    properties.azimuthDeg = axes.longAxisAzimuthDeg;
+  }
+
+  if (type === "circle") {
+    const diameterPx = Math.max(widthPx, heightPx);
+    properties.diameterM = metersFromPixels(diameterPx);
+    properties.radiusM = properties.diameterM / 2;
+  }
+
+  if (type === "ellipse") {
+    const majorAxisPx = Math.max(widthPx, heightPx);
+    const minorAxisPx = Math.min(widthPx, heightPx);
+    properties.majorAxisM = metersFromPixels(majorAxisPx);
+    properties.minorAxisM = metersFromPixels(minorAxisPx);
+  }
+
+  return properties;
+}
+
+function updateMeasurementSummaryFields(
+  result = measureResults[measureResults.length - 1]
+) {
+  const linearUnit = getLinearUnitInfo();
+  const areaUnit = getAreaUnitInfo();
+  const ecdUnit = getECDUnitInfo();
+
+  distanceInM = result?.lengthM ?? result?.perimeterM ?? 0;
+  areaInM2 = result?.areaM2 ?? 0;
+  ECDInM = result?.ecdM ?? 0;
+
+  distanceElement.value = (distanceInM * linearUnit.factor).toFixed(2);
+  areaElement.value = (areaInM2 * areaUnit.factor).toFixed(2);
+  if (ECDElement) {
+    ECDElement.value = (ECDInM * ecdUnit.factor).toFixed(2);
+  }
+}
+
+function formatMeasurementValue(value, unitInfo) {
+  if (value === null || value === undefined || Number.isNaN(value)) return "";
+  return `${(value * unitInfo.factor).toFixed(2)} ${unitInfo.label}`;
+}
+
+function formatMeasurementNumber(value, unitInfo) {
+  if (value === null || value === undefined || Number.isNaN(value)) return "";
+  return (value * unitInfo.factor).toFixed(2);
+}
+
+function formatPlainMeasurementNumber(value, fractionDigits = 2) {
+  if (value === null || value === undefined || Number.isNaN(value)) return "";
+  return Number(value).toFixed(fractionDigits);
+}
+
+function updateMeasureTableHeaders() {
+  const linearUnit = getLinearUnitInfo();
+  const areaUnit = getAreaUnitInfo();
+  if (measureLengthHeader) {
+    measureLengthHeader.innerHTML = `Length<br>(${linearUnit.label})`;
+  }
+  if (measureAreaHeader) {
+    measureAreaHeader.innerHTML = `Area<br>(${areaUnit.label})`;
+  }
+  if (measurePerimeterHeader) {
+    measurePerimeterHeader.innerHTML = `Perimeter<br>(${linearUnit.label})`;
+  }
+  if (measureECDHeader) {
+    measureECDHeader.innerHTML = `ECD<br>(${linearUnit.label})`;
+  }
+  if (measureWidthHeader) {
+    measureWidthHeader.innerHTML = `Width<br>(${linearUnit.label})`;
+  }
+}
+
+function hideMeasureLiveReadout() {
+  if (!measureLiveReadout) return;
+  measureLiveReadout.hidden = true;
+  measureLiveReadout.classList.remove("measure-live-readout-warning");
+}
+
+function updateMeasureLiveReadout(event, type, measurement) {
+  if (!measureLiveReadout || !measurement) return;
+  const linearUnit = getLinearUnitInfo();
+  const areaUnit = getAreaUnitInfo();
+  const label =
+    type === "polygon" && measurement.validGeometry === false
+      ? measurement.geometryWarning
+    : type === "polygon"
+      ? `Area: ${formatMeasurementValue(measurement.areaM2, areaUnit)}`
+      : `Length: ${formatMeasurementValue(measurement.lengthM, linearUnit)}`;
+
+  measureLiveReadout.textContent = label;
+  measureLiveReadout.classList.toggle(
+    "measure-live-readout-warning",
+    type === "polygon" && measurement.validGeometry === false
+  );
+  measureLiveReadout.style.left = `${event.clientX + 14}px`;
+  measureLiveReadout.style.top = `${event.clientY + 14}px`;
+  measureLiveReadout.hidden = false;
+}
+
+function createMeasureTypeIcon(type) {
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("class", "measure-type-icon annotation-icon");
+  svg.setAttribute("viewBox", "0 0 24 24");
+  svg.setAttribute("aria-hidden", "true");
+
+  if (type === "point") {
+    const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    circle.setAttribute("cx", "12");
+    circle.setAttribute("cy", "12");
+    circle.setAttribute("r", "3");
+    svg.appendChild(circle);
+    return svg;
+  }
+
+  if (type === "rectangle") {
+    const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+    rect.setAttribute("x", "5");
+    rect.setAttribute("y", "7");
+    rect.setAttribute("width", "14");
+    rect.setAttribute("height", "10");
+    svg.appendChild(rect);
+    return svg;
+  }
+
+  if (type === "circle") {
+    const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    circle.setAttribute("cx", "12");
+    circle.setAttribute("cy", "12");
+    circle.setAttribute("r", "7");
+    svg.appendChild(circle);
+    return svg;
+  }
+
+  if (type === "ellipse") {
+    const ellipse = document.createElementNS("http://www.w3.org/2000/svg", "ellipse");
+    ellipse.setAttribute("cx", "12");
+    ellipse.setAttribute("cy", "12");
+    ellipse.setAttribute("rx", "8");
+    ellipse.setAttribute("ry", "5.5");
+    svg.appendChild(ellipse);
+    return svg;
+  }
+
+  if (type === "polygon") {
+    const polygon = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+    polygon.setAttribute("points", "12 4 19 9 16.5 18 7.5 18 5 9");
+    svg.appendChild(polygon);
+    return svg;
+  }
+
+  const polyline = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
+  polyline.setAttribute("points", "4,18 9,10 15,14 20,5");
+  svg.appendChild(polyline);
+  return svg;
+}
+
+function createMeasureGroupColor(group) {
+  const swatch = document.createElement("span");
+  swatch.className = "measure-group-color annotation-list-group";
+  swatch.style.backgroundColor = getSafeMeasureGroupColor(group?.groupColor);
+  swatch.title = group?.groupName || DEFAULT_MEASURE_GROUP.groupName;
+  return swatch;
+}
+
+function getNextMeasurementId(source) {
+  const prefix = source === "annotation" ? "A" : "M";
+  const count = measureResults.filter((result) =>
+    String(result.id || "").startsWith(prefix)
+  ).length;
+  return `${prefix}${count + 1}`;
+}
+
+function updateDeleteMeasurementButton() {
+  if (deleteMeasurementButton) {
+    deleteMeasurementButton.disabled = selectedMeasurementUuids.size === 0;
+  }
+}
+
+function getMeasureFeatureByUuid(uuid) {
+  return measureJSON.features.find(
+    (feature) =>
+      feature.properties?.uuid === uuid &&
+      ["manual", "annotation"].includes(feature.properties?.source)
+  );
+}
+
+function getSelectableMeasurementUuids() {
+  return measureResults
+    .map((result) => result.measurementUuid)
+    .filter(Boolean);
+}
+
+function getMeasurementResultIndexByUuid(uuid) {
+  return measureResults.findIndex((result) => result.measurementUuid === uuid);
+}
+
+function focusMeasurementRow(uuid) {
+  if (!uuid) return;
+  requestAnimationFrame(() => {
+    const row = document.querySelector(
+      `#measureResultsBody tr[data-measurement-uuid="${CSS.escape(uuid)}"]`
+    );
+    if (!row) return;
+    row.focus({ preventScroll: true });
+    row.scrollIntoView({ block: "nearest" });
+  });
+}
+
+function setMeasurementSelection(uuids = [], options = {}) {
+  const selectable = new Set(getSelectableMeasurementUuids());
+  selectedMeasurementUuids = new Set(uuids.filter((uuid) => selectable.has(uuid)));
+  if (
+    measurementSelectionAnchorUuid &&
+    !selectable.has(measurementSelectionAnchorUuid)
+  ) {
+    measurementSelectionAnchorUuid = null;
+  }
+  const selectedUuids = [...selectedMeasurementUuids];
+  const primaryUuid =
+    options.primaryUuid && selectedMeasurementUuids.has(options.primaryUuid)
+      ? options.primaryUuid
+      : selectedUuids[selectedUuids.length - 1];
+  const primaryResult = measureResults.find(
+    (result) => result.measurementUuid === primaryUuid
+  );
+  if (primaryResult?.groupId) {
+    activeMeasureGroupId = primaryResult.groupId;
+  }
+  renderMeasureGroupOptions();
+  renderMeasureResults();
+  drawShape(measureCanvas, [measureJSON, measureAreaJSONTemp, measureJSONTemp]);
+  if (options.focusUuid) focusMeasurementRow(options.focusUuid);
+}
+
+function selectMeasurement(uuid, options = {}) {
+  const { toggle = false, append = false } = options;
+  if (!uuid) {
+    measurementSelectionAnchorUuid = null;
+    setMeasurementSelection([]);
+    return;
+  }
+
+  if (toggle) {
+    measurementSelectionAnchorUuid = uuid;
+    const nextSelection = new Set(selectedMeasurementUuids);
+    if (nextSelection.has(uuid)) {
+      nextSelection.delete(uuid);
+    } else {
+      nextSelection.add(uuid);
+    }
+    setMeasurementSelection([...nextSelection], {
+      focusUuid: nextSelection.has(uuid) ? uuid : null,
+      primaryUuid: nextSelection.has(uuid) ? uuid : null,
+    });
+    return;
+  }
+
+  if (append) {
+    measurementSelectionAnchorUuid = uuid;
+    setMeasurementSelection([...selectedMeasurementUuids, uuid], {
+      focusUuid: uuid,
+      primaryUuid: uuid,
+    });
+    return;
+  }
+
+  measurementSelectionAnchorUuid = uuid;
+  setMeasurementSelection([uuid], { focusUuid: uuid, primaryUuid: uuid });
+}
+
+function handleMeasureResultRowClick(event, uuid) {
+  if (event.ctrlKey || event.metaKey) {
+    event.preventDefault();
+  }
+  const clickedIndex = getMeasurementResultIndexByUuid(uuid);
+  if (clickedIndex < 0) return;
+
+  if (event.shiftKey && measurementSelectionAnchorUuid) {
+    const anchorIndex = getMeasurementResultIndexByUuid(
+      measurementSelectionAnchorUuid
+    );
+    if (anchorIndex >= 0) {
+      const start = Math.min(anchorIndex, clickedIndex);
+      const end = Math.max(anchorIndex, clickedIndex);
+      const rangeUuids = measureResults
+        .slice(start, end + 1)
+        .map((result) => result.measurementUuid)
+        .filter(Boolean);
+      setMeasurementSelection(rangeUuids, { focusUuid: uuid, primaryUuid: uuid });
+      return;
+    }
+  }
+
+  if (event.ctrlKey || event.metaKey) {
+    measurementSelectionAnchorUuid = uuid;
+    selectMeasurement(uuid, { toggle: true });
+    return;
+  }
+
+  measurementSelectionAnchorUuid = uuid;
+  selectMeasurement(uuid);
+}
+
+function selectAdjacentMeasurementRow(currentUuid, direction) {
+  const rows = [
+    ...measureResultsBody.querySelectorAll("tr[data-measurement-uuid]"),
+  ].filter((row) => row.dataset.measurementUuid);
+  if (rows.length === 0) return;
+
+  const selectedUuids = [...selectedMeasurementUuids];
+  const selectedUuid = currentUuid || selectedUuids[selectedUuids.length - 1];
+  const matchedIndex = rows.findIndex(
+    (row) => row.dataset.measurementUuid === selectedUuid
+  );
+  const currentIndex = matchedIndex >= 0 ? matchedIndex : -direction;
+  const nextIndex = Math.min(
+    rows.length - 1,
+    Math.max(0, currentIndex + direction)
+  );
+  const nextUuid = rows[nextIndex].dataset.measurementUuid;
+  measurementSelectionAnchorUuid = nextUuid;
+  selectMeasurement(nextUuid);
+}
+
+function deleteSelectedMeasurement() {
+  if (selectedMeasurementUuids.size === 0) return;
+  const selected = new Set(selectedMeasurementUuids);
+  measureJSON.features = measureJSON.features.filter(
+    (feature) => !selected.has(feature.properties?.uuid)
+  );
+  measureResults = measureResults.filter(
+    (result) => !selected.has(result.measurementUuid)
+  );
+  selectedMeasurementUuids = new Set();
+  measurementSelectionAnchorUuid = null;
+  renderMeasureResults();
+  drawShape(measureCanvas, [measureJSON, measureAreaJSONTemp, measureJSONTemp]);
+}
+
+function findMeasurementUuidAtViewerPoint(viewerPoint, options = {}) {
+  const lineTolerance = options.lineTolerance ?? 10;
+  const image = viewer.world.getItemAt(0);
+  if (!image) return null;
+
+  const viewportPoint = viewer.viewport.pointFromPixel(viewerPoint);
+  const imagePoint = image.viewportToImageCoordinates(viewportPoint);
+
+  for (let i = measureJSON.features.length - 1; i >= 0; i--) {
+    const feature = measureJSON.features[i];
+    if (
+      !feature.geometry ||
+      feature.properties?.source !== "manual"
+    ) {
+      continue;
+    }
+
+    const { type, coordinates } = feature.geometry;
+    if (type === "LineString") {
+      if (isNearLineCoordinates(viewerPoint, image, coordinates, lineTolerance)) {
+        return feature.properties.uuid;
+      }
+    } else if (type === "Polygon") {
+      if (
+        polygonContainsImagePoint(imagePoint, coordinates) ||
+        coordinates.some((ring) =>
+          isNearLineCoordinates(viewerPoint, image, ring, lineTolerance)
+        )
+      ) {
+        return feature.properties.uuid;
+      }
+    }
+  }
+
+  return null;
+}
+
+function measurementFeatureIntersectsMarquee(feature, marqueePolygon) {
+  if (
+    !feature.geometry ||
+    feature.properties?.source !== "manual"
+  ) {
+    return false;
+  }
+
+  const { type, coordinates } = feature.geometry;
+  if (type === "LineString") {
+    return lineCoordinatesIntersectMarquee(coordinates, marqueePolygon);
+  }
+  if (type === "Polygon") {
+    return polygonIntersectsMarquee(coordinates, marqueePolygon);
+  }
+  return false;
+}
+
+function toggleMeasurementsInMarquee(marqueePolygon) {
+  const touchedUuids = measureJSON.features
+    .filter((feature) => measurementFeatureIntersectsMarquee(feature, marqueePolygon))
+    .map((feature) => feature.properties.uuid);
+
+  if (touchedUuids.length === 0) return;
+
+  const nextSelection = new Set(selectedMeasurementUuids);
+  touchedUuids.forEach((uuid) => {
+    if (nextSelection.has(uuid)) {
+      nextSelection.delete(uuid);
+    } else {
+      nextSelection.add(uuid);
+    }
+  });
+
+  const primaryUuid =
+    touchedUuids.find((uuid) => nextSelection.has(uuid)) ||
+    [...nextSelection][nextSelection.size - 1];
+  setMeasurementSelection([...nextSelection], { primaryUuid });
+}
+
+const MEASURE_COLUMNS_STORAGE_KEY = "petroImage.measureColumns";
+
+function createMeasureGroupCellContent(result) {
+  return createMeasureGroupColor(getMeasureGroupForResult(result));
+}
+
+function createMeasureTypeCellContent(result) {
+  return createMeasureTypeIcon(result.type);
+}
+
+function createMeasureColumnTextCell(value, className = "") {
+  const cell = document.createElement("td");
+  if (className) cell.className = className;
+  cell.textContent = value;
+  return cell;
+}
+
+function getInvalidMeasurementText(result, value) {
+  return result.validGeometry === false ? "--" : value;
+}
+
+const MEASURE_COLUMN_DEFINITIONS = [
+  {
+    id: "group",
+    label: "Group",
+    csvHeader: "group",
+    defaultTable: true,
+    defaultCsv: true,
+    cellClass: "measure-group-cell measure-sticky-group-cell",
+    tableValue: createMeasureGroupCellContent,
+    csvValue: (result) => result.groupName ?? "",
+  },
+  {
+    id: "type",
+    label: "Type",
+    csvHeader: "type",
+    defaultTable: true,
+    defaultCsv: true,
+    cellClass: "measure-type-cell",
+    tableValue: createMeasureTypeCellContent,
+    csvValue: (result) => result.type ?? "",
+  },
+  {
+    id: "id",
+    label: "ID",
+    csvHeader: "id",
+    defaultTable: false,
+    defaultCsv: true,
+    tableEligible: false,
+    tableValue: (result) => result.id ?? "",
+    csvValue: (result) => result.id ?? "",
+  },
+  {
+    id: "source",
+    label: "Source",
+    csvHeader: "source",
+    defaultTable: false,
+    defaultCsv: true,
+    tableEligible: false,
+    tableValue: (result) => result.source ?? "",
+    csvValue: (result) => result.source ?? "",
+  },
+  {
+    id: "annotationLabel",
+    label: "Annotation",
+    csvHeader: "annotation_label",
+    defaultTable: false,
+    defaultCsv: true,
+    tableEligible: false,
+    tableValue: (result) => result.annotationLabel ?? "",
+    csvValue: (result) => result.annotationLabel ?? "",
+  },
+  {
+    id: "annotationUuid",
+    label: "Annotation UUID",
+    csvHeader: "annotation_uuid",
+    defaultTable: false,
+    defaultCsv: true,
+    tableEligible: false,
+    tableValue: (result) => result.annotationUuid ?? "",
+    csvValue: (result) => result.annotationUuid ?? "",
+  },
+  {
+    id: "groupColor",
+    label: "Group Color",
+    csvHeader: "group_color",
+    defaultTable: false,
+    defaultCsv: true,
+    tableEligible: false,
+    tableValue: (result) => result.groupColor ?? "",
+    csvValue: (result) => result.groupColor ?? "",
+  },
+  {
+    id: "lengthM",
+    label: "Length",
+    csvHeader: "length_m",
+    unit: "linear",
+    defaultTable: true,
+    defaultCsv: true,
+    tableValue: (result, units) => formatMeasurementNumber(result.lengthM, units.linear),
+    csvValue: (result) => result.lengthM ?? "",
+  },
+  {
+    id: "widthM",
+    label: "Width",
+    csvHeader: "width_m",
+    unit: "linear",
+    defaultTable: true,
+    defaultCsv: true,
+    tableValue: (result, units) => formatMeasurementNumber(result.widthM, units.linear),
+    csvValue: (result) => result.widthM ?? "",
+  },
+  {
+    id: "areaM2",
+    label: "Area",
+    csvHeader: "area_m2",
+    unit: "area",
+    defaultTable: true,
+    defaultCsv: true,
+    invalidAware: true,
+    tableValue: (result, units) =>
+      getInvalidMeasurementText(
+        result,
+        formatMeasurementNumber(result.areaM2, units.area)
+      ),
+    csvValue: (result) => result.areaM2 ?? "",
+  },
+  {
+    id: "perimeterM",
+    label: "Perimeter",
+    csvHeader: "perimeter_m",
+    unit: "linear",
+    defaultTable: true,
+    defaultCsv: true,
+    tableValue: (result, units) =>
+      formatMeasurementNumber(result.perimeterM, units.linear),
+    csvValue: (result) => result.perimeterM ?? "",
+  },
+  {
+    id: "ecdM",
+    label: "ECD",
+    csvHeader: "ecd_m",
+    unit: "linear",
+    defaultTable: true,
+    defaultCsv: true,
+    invalidAware: true,
+    tableValue: (result, units) =>
+      getInvalidMeasurementText(
+        result,
+        formatMeasurementNumber(result.ecdM, units.linear)
+      ),
+    csvValue: (result) => result.ecdM ?? "",
+  },
+  {
+    id: "aspectRatio",
+    label: "W/L",
+    csvHeader: "aspect_ratio",
+    defaultTable: true,
+    defaultCsv: true,
+    tableValue: (result) => formatPlainMeasurementNumber(result.aspectRatio, 2),
+    csvValue: (result) => result.aspectRatio ?? "",
+  },
+  {
+    id: "azimuthDeg",
+    label: "Azimuth",
+    csvHeader: "azimuth_deg",
+    unit: "degrees",
+    defaultTable: true,
+    defaultCsv: true,
+    tableValue: (result) => formatPlainMeasurementNumber(result.azimuthDeg, 1),
+    csvValue: (result) => result.azimuthDeg ?? "",
+  },
+  {
+    id: "solidity",
+    label: "Solidity",
+    csvHeader: "solidity",
+    defaultTable: true,
+    defaultCsv: true,
+    tableValue: (result) => formatPlainMeasurementNumber(result.solidity, 2),
+    csvValue: (result) => result.solidity ?? "",
+  },
+  {
+    id: "circularity",
+    label: "Circularity",
+    csvHeader: "circularity",
+    defaultTable: true,
+    defaultCsv: true,
+    tableValue: (result) => formatPlainMeasurementNumber(result.circularity, 2),
+    csvValue: (result) => result.circularity ?? "",
+  },
+  {
+    id: "validGeometry",
+    label: "Valid Geometry",
+    csvHeader: "valid_geometry",
+    defaultTable: false,
+    defaultCsv: true,
+    tableEligible: false,
+    tableValue: (result) =>
+      result.validGeometry === undefined ? "" : String(result.validGeometry),
+    csvValue: (result) =>
+      result.validGeometry === undefined ? "" : String(result.validGeometry),
+  },
+  {
+    id: "geometryWarning",
+    label: "Warning",
+    csvHeader: "geometry_warning",
+    defaultTable: false,
+    defaultCsv: true,
+    tableEligible: false,
+    tableValue: (result) => result.geometryWarning ?? "",
+    csvValue: (result) => result.geometryWarning ?? "",
+  },
+  {
+    id: "sample",
+    label: "Sample",
+    csvHeader: "sample",
+    defaultTable: false,
+    defaultCsv: true,
+    tableEligible: false,
+    tableValue: () => title(),
+    csvValue: () => title(),
+  },
+];
+
+let measureColumnState = loadMeasureColumnState();
+
+function getDefaultMeasureColumnState() {
+  return Object.fromEntries(
+    MEASURE_COLUMN_DEFINITIONS.map((column) => [
+      column.id,
+      {
+        table: column.defaultTable,
+        csv: column.defaultCsv,
+      },
+    ])
+  );
+}
+
+function normalizeMeasureColumnState(state = {}) {
+  const defaults = getDefaultMeasureColumnState();
+  MEASURE_COLUMN_DEFINITIONS.forEach((column) => {
+    const saved = state[column.id] || {};
+    defaults[column.id] = {
+      table:
+        column.tableEligible === false
+          ? false
+          : typeof saved.table === "boolean"
+            ? saved.table
+            : defaults[column.id].table,
+      csv:
+        typeof saved.csv === "boolean"
+          ? saved.csv
+          : defaults[column.id].csv,
+    };
+  });
+  return defaults;
+}
+
+function loadMeasureColumnState() {
+  try {
+    return normalizeMeasureColumnState(
+      JSON.parse(localStorage.getItem(MEASURE_COLUMNS_STORAGE_KEY) || "{}")
+    );
+  } catch (error) {
+    console.warn("Could not load measurement column settings:", error);
+    return getDefaultMeasureColumnState();
+  }
+}
+
+function saveMeasureColumnState() {
+  try {
+    localStorage.setItem(
+      MEASURE_COLUMNS_STORAGE_KEY,
+      JSON.stringify(measureColumnState)
+    );
+  } catch (error) {
+    console.warn("Could not save measurement column settings:", error);
+  }
+}
+
+function getVisibleMeasureTableColumns() {
+  const columns = MEASURE_COLUMN_DEFINITIONS.filter(
+    (column) =>
+      column.tableEligible !== false && measureColumnState[column.id]?.table
+  );
+  return columns.length > 0 ? columns : [MEASURE_COLUMN_DEFINITIONS[0]];
+}
+
+function getVisibleMeasureCsvColumns() {
+  const columns = MEASURE_COLUMN_DEFINITIONS.filter(
+    (column) => measureColumnState[column.id]?.csv
+  );
+  return columns.length > 0 ? columns : [MEASURE_COLUMN_DEFINITIONS[0]];
+}
+
+function getMeasureColumnUnits() {
+  return {
+    linear: getLinearUnitInfo(),
+    area: getAreaUnitInfo(),
+  };
+}
+
+function getMeasureColumnHeader(column, units) {
+  if (column.id === "group") return "";
+  if (column.unit === "linear") return `${column.label}<br>(${units.linear.label})`;
+  if (column.unit === "area") return `${column.label}<br>(${units.area.label})`;
+  if (column.unit === "degrees") return `${column.label}<br>(°)`;
+  return column.label;
+}
+
+function renderMeasureTableHeader(columns, units) {
+  if (!measureResultsHeader) return;
+  measureResultsHeader.innerHTML = "";
+  columns.forEach((column) => {
+    const th = document.createElement("th");
+    th.innerHTML = getMeasureColumnHeader(column, units);
+    if (column.id === "group") {
+      th.className = "measure-sticky-header-cell";
+    }
+    if (column.id === "group" || column.id === "type") {
+      th.setAttribute("aria-label", column.label);
+    }
+    measureResultsHeader.appendChild(th);
+  });
+}
+
+function renderMeasureColumnsMenu() {
+  if (!measureColumnsList) return;
+  measureColumnsList.innerHTML = "";
+  MEASURE_COLUMN_DEFINITIONS.forEach((column) => {
+    const row = document.createElement("label");
+    row.className = "measure-columns-row";
+
+    const name = document.createElement("span");
+    name.textContent = column.label;
+
+    let tableControl;
+    if (column.tableEligible === false) {
+      tableControl = document.createElement("span");
+      tableControl.className = "measure-columns-unavailable";
+      tableControl.textContent = "—";
+    } else {
+      tableControl = document.createElement("input");
+      tableControl.type = "checkbox";
+      tableControl.checked = Boolean(measureColumnState[column.id]?.table);
+      tableControl.addEventListener("change", () => {
+        measureColumnState[column.id].table = tableControl.checked;
+        saveMeasureColumnState();
+        renderMeasureResults();
+      });
+    }
+
+    const csvCheckbox = document.createElement("input");
+    csvCheckbox.type = "checkbox";
+    csvCheckbox.checked = Boolean(measureColumnState[column.id]?.csv);
+    csvCheckbox.addEventListener("change", () => {
+      measureColumnState[column.id].csv = csvCheckbox.checked;
+      saveMeasureColumnState();
     });
 
-    // If the time between this click and the last click is shorter than clickDelay, it's a double-click
-    const measureCurrentTime = new Date().getTime();
-    if (measureCurrentTime - measureLastClickTime < clickDelay) {
-      // It's a double-click, so stop the timeout and end collection
-      clearTimeout(measureTimeout);
+    row.append(name, tableControl, csvCheckbox);
+    measureColumnsList.appendChild(row);
+  });
+}
 
-      const measurePerimeterPixels = calculatePolygonExteriorPerimeter([
-        measureImageCoordinates,
-      ]);
-      const measurePerimeter =
-        metersFromPixels(measurePerimeterPixels) * distanceConversion;
+function closeMeasureColumnsMenu() {
+  if (!measureColumnsMenu) return;
+  measureColumnsMenu.hidden = true;
+  measureColumnsButton?.setAttribute("aria-expanded", "false");
+}
 
-      // Close the polygon by adding the first point to the end
-      const finalMeasureImageCoordinatesPolygon = [
-        ...measureImageCoordinates,
-        [measureImageCoordinates[0][0], measureImageCoordinates[0][1]],
-      ];
-
-      const measureAreaPixels = calculatePolygonArea([
-        finalMeasureImageCoordinatesPolygon,
-      ]);
-      areaInM2 = squareMetersFromSquarePixels(measureAreaPixels);
-      const measureArea = areaInM2 * areaConversion;
-
-      ECDInM = areaInM2 === null ? null : 2 * Math.sqrt(areaInM2 / Math.PI);
-      const ECD = ECDInM * ECDConversion;
-      ECDElement.value = ECD.toFixed(2);
-
-      addPolylineToGeoJSON(measureJSON, measureImageCoordinates, {
-        label: "measurement",
-        pixelsPerMeter: pixelsPerMeter(),
-        imageWidth: imageSize.x,
-        imageHeight: imageSize.y,
-        lineStyle: lineStyle,
-        lineWeight: lineWeight,
-        lineColor: lineColor,
-        lineOpacity: lineOpacity, // No line plotted, only fill (if any)
-      });
-
-      if (measurePerimeter > 0) {
-        distanceElement.value = measurePerimeter.toFixed(2);
-      }
-      if (measureArea > 0) {
-        areaElement.value = measureArea.toFixed(2);
-      }
-
-      // Reset the coordinates array for the next set of clicks
-      resetMeasurements();
-      // Disable the active measurement mode
-      toggleMeasurementMode();
-    } else {
-      // It's a single click, so set a timeout to handle it
-      measureTimeout = setTimeout(function () {
-        // Single click detected, continuing collection...
-      }, clickDelay);
-    }
-
-    // Update the last click timestamp
-    measureLastClickTime = measureCurrentTime;
+function openMeasureColumnsMenu(button) {
+  if (!measureColumnsMenu || !button) return;
+  if (measureColumnsMenu.parentElement !== document.body) {
+    document.body.appendChild(measureColumnsMenu);
   }
-});
+  renderMeasureColumnsMenu();
+  measureColumnsMenu.hidden = false;
+  measureColumnsButton?.setAttribute("aria-expanded", "true");
 
-function resetMeasurements(hardReset = false) {
-  if (hardReset) {
-    stopMeasurementMode();
-    clearTimeout(measureTimeout);
-    measureLastClickTime = 0;
+  const buttonRect = button.getBoundingClientRect();
+  const menuRect = measureColumnsMenu.getBoundingClientRect();
+  const margin = 8;
+  const maxLeft = window.innerWidth - menuRect.width - margin;
+  const left = Math.min(
+    Math.max(buttonRect.right - menuRect.width, margin),
+    maxLeft
+  );
+  const spaceAbove = buttonRect.top - margin;
+  const opensUp = spaceAbove >= menuRect.height;
+  const top = opensUp
+    ? buttonRect.top - menuRect.height - 4
+    : Math.min(
+        buttonRect.bottom + 4,
+        window.innerHeight - menuRect.height - margin
+      );
+
+  measureColumnsMenu.style.left = `${left}px`;
+  measureColumnsMenu.style.top = `${Math.max(margin, top)}px`;
+}
+
+function renderMeasureResults() {
+  if (!measureResultsBody) return;
+  const units = getMeasureColumnUnits();
+  const visibleColumns = getVisibleMeasureTableColumns();
+  renderMeasureGroupOptions();
+  renderMeasureTableHeader(visibleColumns, units);
+  renderMeasureColumnsMenu();
+  if (measureResultsTable) {
+    measureResultsTable.style.minWidth = `${Math.max(
+      240,
+      visibleColumns.length * 62
+    )}px`;
+  }
+  measureResultsBody.innerHTML = "";
+
+  if (measureResults.length === 0) {
+    const row = document.createElement("tr");
+    const cell = document.createElement("td");
+    cell.colSpan = visibleColumns.length;
+    cell.className = "measure-results-empty";
+    cell.textContent = "No results";
+    row.appendChild(cell);
+    measureResultsBody.appendChild(row);
+    updateMeasurementSummaryFields(null);
+    updateDeleteMeasurementButton();
+    updateMeasureHistogramAvailability();
+    renderMeasureHistogramMenu();
+    updateMeasureScatterAvailability();
+    renderMeasureScatterMenu();
+    updateMeasureRoseAvailability();
+    renderMeasureRoseMenu();
+    updateMeasureParticleSizeAvailability();
+    renderMeasureParticleSizeMenu();
+    return;
   }
 
-  measureCoordinates = [];
-  measureImageCoordinates = []; // Clear
+  measureResults.forEach((result) => {
+    const row = document.createElement("tr");
+    row.dataset.measurementUuid = result.measurementUuid || "";
+    if (result.measurementUuid) row.tabIndex = 0;
+    row.classList.toggle(
+      "measure-result-row-selected",
+      selectedMeasurementUuids.has(result.measurementUuid)
+    );
+    row.addEventListener("click", (event) => {
+      handleMeasureResultRowClick(event, result.measurementUuid);
+    });
+    row.addEventListener("contextmenu", (event) => {
+      if (event.ctrlKey || event.metaKey) {
+        event.preventDefault();
+      }
+    });
+    row.addEventListener("keydown", (event) => {
+      if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
+      event.preventDefault();
+      selectAdjacentMeasurementRow(
+        result.measurementUuid,
+        event.key === "ArrowDown" ? 1 : -1
+      );
+    });
+
+    visibleColumns.forEach((column) => {
+      const cell = document.createElement("td");
+      if (column.cellClass) cell.className = column.cellClass;
+      const value = column.tableValue(result, units);
+      if (value instanceof Node) {
+        cell.appendChild(value);
+      } else {
+        cell.textContent = value;
+      }
+      if (column.invalidAware && result.validGeometry === false) {
+        cell.title = result.geometryWarning || "Invalid geometry";
+        cell.classList.add("measure-invalid-area");
+      }
+      row.appendChild(cell);
+    });
+    measureResultsBody.appendChild(row);
+  });
+  updateMeasurementSummaryFields();
+  updateDeleteMeasurementButton();
+  updateMeasureHistogramAvailability();
+  renderMeasureHistogramMenu();
+  updateMeasureScatterAvailability();
+  renderMeasureScatterMenu();
+  updateMeasureRoseAvailability();
+  renderMeasureRoseMenu();
+  updateMeasureParticleSizeAvailability();
+  renderMeasureParticleSizeMenu();
+}
+
+function addMeasureFeature(type, coordinates, source = "manual", sourceFeature = null) {
+  const normalizedCoordinates =
+    type === "line"
+      ? getCoordinatesWithoutTrailingDuplicate(coordinates)
+      : closeCoordinates(coordinates);
+  const measurement = calculateMeasurementProperties(type, normalizedCoordinates);
+  const id = getNextMeasurementId(source);
+  const style = getMeasureStyle();
+  const measurementUuid = generateUniqueId(16);
+  const group =
+    source === "annotation"
+      ? getMeasureGroupForAnnotation(sourceFeature)
+      : getActiveMeasureGroup();
+  const properties = {
+    uuid: measurementUuid,
+    label: id,
+    shapeType: type,
+    source,
+    lineStyle: style.lineStyle,
+    lineWeight: style.lineWeight,
+    lineColor: style.lineColor,
+    lineOpacity: style.lineOpacity,
+    fillColor: style.fillColor,
+    fillOpacity: type === "line" ? 0 : style.fillOpacity,
+    groupId: group.groupId,
+    groupName: group.groupName,
+    groupColor: group.groupColor,
+    valid_geometry: measurement.validGeometry,
+    geometry_warning: measurement.geometryWarning,
+    ecd_m: measurement.ecdM,
+    width_m: measurement.widthM,
+    aspect_ratio: measurement.aspectRatio,
+    azimuth_deg: measurement.azimuthDeg,
+    solidity: measurement.solidity,
+    circularity: measurement.circularity,
+  };
+
+  if (type === "line") {
+    addPolylineToGeoJSON(measureJSON, normalizedCoordinates, properties);
+  } else {
+    addPolygonToGeoJSON(measureJSON, normalizedCoordinates, properties);
+  }
+
+  measureResults.push({
+    id,
+    measurementUuid,
+    source,
+    annotationUuid: sourceFeature?.properties?.uuid || "",
+    annotationLabel: sourceFeature?.properties?.label || "",
+    groupId: group.groupId,
+    groupName: group.groupName,
+    groupColor: group.groupColor,
+    type,
+    typeLabel: MEASURE_TOOL_LABELS[type] || type,
+    ...measurement,
+  });
+  selectedMeasurementUuids = new Set([measurementUuid]);
+  renderMeasureResults();
+  drawShape(measureCanvas, [measureJSON, measureAreaJSONTemp, measureJSONTemp]);
+}
+
+function previewMeasureFeature(type, coordinates) {
   measureJSONTemp = {
     type: "FeatureCollection",
     features: [],
@@ -15676,73 +17426,4050 @@ function resetMeasurements(hardReset = false) {
     type: "FeatureCollection",
     features: [],
   };
+
+  const style = getMeasureStyle();
+  if (type === "line") {
+    addPolylineToGeoJSON(measureJSONTemp, coordinates, style);
+  } else {
+    addPolygonToGeoJSON(measureAreaJSONTemp, closeCoordinates(coordinates), {
+      ...style,
+      lineStyle: type === "polygon" ? "dashed" : style.lineStyle,
+    });
+  }
+
+  const measurement = calculateMeasurementProperties(type, coordinates);
+  updateMeasurementSummaryFields(measurement);
+  drawShape(measureCanvas, [measureJSON, measureAreaJSONTemp, measureJSONTemp]);
+  return measurement;
+}
+
+function clearMeasurePreview() {
+  measureJSONTemp = {
+    type: "FeatureCollection",
+    features: [],
+  };
+  measureAreaJSONTemp = {
+    type: "FeatureCollection",
+    features: [],
+  };
+}
+
+function refreshMeasureDrawingPreview(event) {
+  if (
+    !measurementModeActive ||
+    !hasKnownScale() ||
+    !["line", "polygon"].includes(activeMeasureTool) ||
+    measureImageCoordinates.length === 0
+  ) {
+    hideMeasureLiveReadout();
+    return;
+  }
+
+  const imagePoint = getImagePointFromMeasureMouseEvent(event);
+  if (!imagePoint) return;
+  const coordinates = [...measureImageCoordinates, imagePoint];
+  const measurement = previewMeasureFeature(activeMeasureTool, coordinates);
+  updateMeasureLiveReadout(event, activeMeasureTool, measurement);
+}
+
+function setActiveMeasureTool(tool) {
+  if (activeMeasureTool === tool && measurementModeActive) {
+    stopMeasurementMode();
+    drawShape(measureCanvas, [measureJSON, measureAreaJSONTemp, measureJSONTemp]);
+    return;
+  }
+
+  activeMeasureTool = tool;
+  measurementModeActive = true;
+  const showMeasure = document.getElementById("show-measure");
+  if (showMeasure) {
+    showMeasure.checked = true;
+    if (measureCanvas) measureCanvas.style.display = "block";
+  }
+  [...document.querySelectorAll("[data-measure-tool]")].forEach((button) => {
+    button.classList.toggle("active", button.dataset.measureTool === tool);
+  });
+  measureImageCoordinates = [];
+  clearMeasurePreview();
+  hideMeasureLiveReadout();
+  updateMeasureValueControls();
+  refreshAnnotationFloaters();
+  drawShape(measureCanvas, [measureJSON, measureAreaJSONTemp, measureJSONTemp]);
+}
+
+function updateMeasureValueControls() {
+  [...document.querySelectorAll("[data-measure-tool]")].forEach((button) => {
+    button.classList.toggle(
+      "active",
+      measurementModeActive && button.dataset.measureTool === activeMeasureTool
+    );
+  });
+}
+
+measureToolButtons?.addEventListener("click", function (event) {
+  const button = event.target.closest("[data-measure-tool]");
+  if (!button) return;
+  setActiveMeasureTool(button.dataset.measureTool);
+});
+
+function finishClickMeasurement() {
+  let completed = false;
+  if (activeMeasureTool === "line" && measureImageCoordinates.length >= 2) {
+    addMeasureFeature("line", measureImageCoordinates);
+    completed = true;
+  } else if (
+    activeMeasureTool === "polygon" &&
+    measureImageCoordinates.length >= 3
+  ) {
+    addMeasureFeature("polygon", measureImageCoordinates);
+    completed = true;
+  }
+  measureImageCoordinates = [];
+  clearMeasurePreview();
+  hideMeasureLiveReadout();
+  if (completed) {
+    stopMeasurementMode();
+  }
+  drawShape(measureCanvas, [measureJSON, measureAreaJSONTemp, measureJSONTemp]);
+}
+
+viewer.addHandler("canvas-click", function (event) {
+  if (scaleWizardState.active) return;
+  if (!hasKnownScale()) {
+    return;
+  }
+  if (measurementModeActive) {
+    if (!["line", "polygon"].includes(activeMeasureTool)) return;
+
+    event.preventDefaultAction = true;
+    const imagePoint = getImagePointFromMeasureEventPosition(event.position);
+    if (!imagePoint) return;
+    measureImageCoordinates.push(imagePoint);
+
+    if (activeMeasureTool === "line" && measureImageCoordinates.length >= 2) {
+      previewMeasureFeature("line", measureImageCoordinates);
+    } else if (
+      activeMeasureTool === "polygon" &&
+      measureImageCoordinates.length >= 2
+    ) {
+      previewMeasureFeature("polygon", measureImageCoordinates);
+    }
+    return;
+  }
+
+  if (isAnnotationDrawingActive() || event.quick === false) return;
+
+  const showMeasure = document.getElementById("show-measure");
+  if (showMeasure && !showMeasure.checked) return;
+
+  const uuid = findMeasurementUuidAtViewerPoint(event.position, {
+    lineTolerance: 14,
+  });
+  if (uuid) {
+    selectMeasurement(uuid, {
+      toggle: event.originalEvent?.ctrlKey || event.originalEvent?.metaKey,
+    });
+    event.preventDefaultAction = true;
+  } else {
+    selectMeasurement(null);
+  }
+});
+
+viewerContainer.addEventListener("mousemove", refreshMeasureDrawingPreview);
+
+viewer.addHandler("canvas-double-click", function (event) {
+  if (!measurementModeActive || !["line", "polygon"].includes(activeMeasureTool)) {
+    return;
+  }
+  event.preventDefaultAction = true;
+  finishClickMeasurement();
+});
+
+document.addEventListener(
+  "keydown",
+  function (event) {
+    if (event.key !== "Escape" || !measurementModeActive) return;
+    event.preventDefault();
+    event.stopPropagation();
+    stopMeasurementMode();
+    drawShape(measureCanvas, [measureJSON, measureAreaJSONTemp, measureJSONTemp]);
+  },
+  true
+);
+
+function resetMeasurements(hardReset = false) {
+	  if (hardReset) {
+    stopMeasurementMode();
+  }
+
+  measureImageCoordinates = [];
+  clearMeasurePreview();
+  hideMeasureLiveReadout();
+  drawShape(measureCanvas, [measureJSON, measureAreaJSONTemp, measureJSONTemp]);
   if (hardReset) {
     measureJSON = {
       type: "FeatureCollection",
       features: [],
     };
+    measureResults = [];
+    selectedMeasurementUuids = new Set();
+    measurementSelectionAnchorUuid = null;
+    measureHistogramSelectedGroupIds = new Set();
+    measureHistogramKnownGroupIds = new Set();
+    measureScatterSelectedGroupIds = new Set();
+    measureScatterKnownGroupIds = new Set();
+    measureScatterRangeEdited = false;
+    measureRoseSelectedGroupIds = new Set();
+    measureRoseKnownGroupIds = new Set();
+    measureParticleSizeSelectedGroupIds = new Set();
+    measureParticleSizeKnownGroupIds = new Set();
+    measureParticleSizeRangeEdited = false;
+    activeMeasureGroupId = DEFAULT_MEASURE_GROUP.groupId;
+    measureGroups = [{ ...DEFAULT_MEASURE_GROUP }];
     distanceElement.value = 0;
     areaElement.value = 0;
-    ECDElement.value = 0;
+    if (ECDElement) ECDElement.value = 0;
+    renderMeasureResults();
     drawShape(measureCanvas, [measureJSON, measureAreaJSONTemp, measureJSONTemp]);
   }
 }
 
-// Update measurement values upon change of units
-document.getElementById("areaUnits").addEventListener("change", function () {
-  const areaInput = document.getElementById("area");
-  const newUnit = parseInt(this.value, 10);
-
-  // Define conversion factors relative to square meters
-  const conversionFactors = {
-    0: 1, // m² (base)
-    1: 1e6, // mm²
-    2: 1e12, // µm²
-  };
-
-  const newArea = areaInM2 * conversionFactors[newUnit];
-
-  // Update the area field
-  areaInput.value = newArea.toFixed(2);
-});
-
-// Update measurement values upon change of units
+document.getElementById("areaUnits").addEventListener("change", renderMeasureResults);
 document
   .getElementById("distanceUnits")
-  .addEventListener("change", function () {
-    const distanceInput = document.getElementById("distance");
-    const newUnit = parseInt(this.value, 10);
+  .addEventListener("change", renderMeasureResults);
+document.getElementById("ECDUnits")?.addEventListener("change", renderMeasureResults);
+updateMeasureValueControls();
 
-    // Define conversion factors relative to square meters
-    const conversionFactors = {
-      0: 1, // m
-      1: 1e3, // mm
-      2: 1e6, // µm
-    };
+function getMeasurementTypeForAnnotation(feature) {
+  const geometryType = feature?.geometry?.type;
+  const shapeType = String(feature?.properties?.shapeType || "").toLowerCase();
+  if (shapeType === "rectangle") return "rectangle";
+  if (shapeType === "circle") return "circle";
+  if (shapeType === "ellipse") return "ellipse";
+  if (shapeType === "polygon") return "polygon";
+  if (shapeType === "line" || shapeType === "polyline") return "line";
+  if (geometryType === "LineString" && isClosedCoordinateRing(feature.geometry.coordinates)) {
+    return "polygon";
+  }
+  if (
+    geometryType === "MultiLineString" &&
+    feature.geometry.coordinates?.some((line) => isClosedCoordinateRing(line))
+  ) {
+    return "polygon";
+  }
+  if (geometryType === "LineString" || geometryType === "MultiLineString") {
+    return "line";
+  }
+  if (geometryType === "Polygon" || geometryType === "MultiPolygon") {
+    return "polygon";
+  }
+  return geometryType === "Point" || geometryType === "MultiPoint" ? "point" : "";
+}
 
-    const newDistance = distanceInM * conversionFactors[newUnit];
+function isClosedCoordinateRing(coordinates) {
+  return (
+    Array.isArray(coordinates) &&
+    coordinates.length >= 4 &&
+    coordinatesMatch(coordinates[0], coordinates[coordinates.length - 1])
+  );
+}
 
-    // Update the area field
-    distanceInput.value = newDistance.toFixed(2);
+function getAnnotationMeasurementCoordinates(feature, measurementType = "") {
+  const { type, coordinates } = feature.geometry;
+  if (type === "LineString") return coordinates;
+  if (type === "Polygon") return coordinates[0] || [];
+  if (type === "MultiLineString") {
+    if (measurementType === "polygon") {
+      return coordinates.find((line) => isClosedCoordinateRing(line)) || coordinates[0] || [];
+    }
+    return coordinates.flat();
+  }
+  if (type === "MultiPolygon") return coordinates[0]?.[0] || [];
+  return [];
+}
+
+function measureSelectedAnnotations() {
+  if (!hasKnownScale()) return;
+  const selected = getSelectedAnnotationUuids();
+  if (selected.length === 0) {
+    alert("Select one or more annotations to measure.");
+    return;
+  }
+
+  selected.forEach((uuid) => {
+    const feature = getAnnotationByUuid(uuid);
+    if (!feature?.geometry) return;
+    const type = getMeasurementTypeForAnnotation(feature);
+    if (type === "point") {
+      const id = getNextMeasurementId("annotation");
+      const group = getMeasureGroupForAnnotation(feature);
+      const measurementUuid = generateUniqueId(16);
+      measureResults.push({
+        id,
+        measurementUuid,
+        source: "annotation",
+        annotationUuid: feature.properties?.uuid || "",
+        annotationLabel: feature.properties?.label || "",
+        groupId: group.groupId,
+        groupName: group.groupName,
+        groupColor: group.groupColor,
+        type,
+        typeLabel: "Point",
+        validGeometry: true,
+        geometryWarning: "",
+        x: feature.geometry.coordinates?.[0] ?? "",
+        y: feature.geometry.coordinates?.[1] ?? "",
+      });
+      return;
+    }
+    const coordinates = getAnnotationMeasurementCoordinates(feature, type);
+    if (coordinates.length < 2) return;
+    addMeasureFeature(type, coordinates, "annotation", feature);
   });
+  renderMeasureResults();
+}
 
-// Update measurement values upon change of units
-document.getElementById("ECDUnits").addEventListener("change", function () {
-  const distanceInput = document.getElementById("ECD");
-  const newUnit = parseInt(this.value, 10);
+function csvEscape(value) {
+  const text = value === null || value === undefined ? "" : String(value);
+  return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+}
 
-  // Define conversion factors relative to square meters
-  const conversionFactors = {
-    0: 1, // m
-    1: 1e3, // mm
-    2: 1e6, // µm
+function exportMeasurementsCSV() {
+  if (measureResults.length === 0) {
+    alert("No measurement results to export.");
+    return;
+  }
+
+  const columns = getVisibleMeasureCsvColumns();
+  const headers = columns.map((column) => column.csvHeader);
+  const rows = measureResults.map((result) =>
+    columns.map((column) => column.csvValue(result))
+  );
+
+  const csv = [headers, ...rows]
+    .map((row) => row.map(csvEscape).join(","))
+    .join("\n");
+  saveAs(new Blob([csv], { type: "text/csv;charset=utf-8" }), "measurements.csv");
+}
+
+const MEASURE_HISTOGRAM_PARAMETERS = [
+  { id: "lengthM", label: "Length", unit: "linear" },
+  { id: "widthM", label: "Width", unit: "linear" },
+  { id: "areaM2", label: "Area", unit: "area" },
+  { id: "perimeterM", label: "Perimeter", unit: "linear" },
+  { id: "ecdM", label: "ECD", unit: "linear" },
+  { id: "aspectRatio", label: "W/L", unit: "none" },
+  { id: "azimuthDeg", label: "Azimuth", unit: "degrees" },
+  { id: "solidity", label: "Solidity", unit: "none" },
+  { id: "circularity", label: "Circularity", unit: "none" },
+];
+
+function getMeasureHistogramParameter() {
+  const parameterId = measureHistogramParameter?.value;
+  return (
+    MEASURE_HISTOGRAM_PARAMETERS.find(
+      (parameter) => parameter.id === parameterId
+    ) || MEASURE_HISTOGRAM_PARAMETERS[0]
+  );
+}
+
+function getMeasureHistogramUnitInfo(parameter) {
+  if (parameter.unit === "linear") return getLinearUnitInfo();
+  if (parameter.unit === "area") return getAreaUnitInfo();
+  if (parameter.unit === "degrees") return { label: "°", factor: 1 };
+  return { label: "", factor: 1 };
+}
+
+function getMeasureHistogramLabel(parameter) {
+  const unit = getMeasureHistogramUnitInfo(parameter);
+  return unit.label ? `${parameter.label} (${unit.label})` : parameter.label;
+}
+
+function getMeasureHistogramSummaryMode() {
+  return measureHistogramMode?.value === "groups" ? "groups" : "combined";
+}
+
+function getMeasureHistogramPlotType() {
+  const value = measureHistogramPlotType?.value;
+  return value === "box" || value === "violin" ? value : "histogram";
+}
+
+function getMeasureHistogramDefaultColor() {
+  const color = measureHistogramColorInput?.value || "#8a8f94";
+  return /^#[0-9a-f]{6}$/i.test(color) ? color : "#8a8f94";
+}
+
+function getMeasureSummaryValues(parameter, mode = "combined") {
+  syncMeasureHistogramGroupSelection(getMeasureHistogramGroupsInUse());
+  const groups = new Map();
+  const addValue = (groupName, value) => {
+    if (!groups.has(groupName)) groups.set(groupName, []);
+    groups.get(groupName).push(value);
   };
 
-  const newECD = ECDInM * conversionFactors[newUnit];
+  measureResults.forEach((result) => {
+    const value = getMeasureParameterValue(result, parameter);
+    if (!Number.isFinite(value)) return;
+    const group = getMeasureGroupForResult(result);
+    if (!measureHistogramSelectedGroupIds.has(group.groupId)) return;
+    addValue(mode === "groups" ? group.groupName : "Combined", value);
+  });
 
-  // Update the area field
-  ECD.value = newECD.toFixed(2);
+  return [...groups.entries()].map(([name, values]) => ({ name, values }));
+}
+
+function percentile(sortedValues, probability) {
+  if (sortedValues.length === 0) return null;
+  if (sortedValues.length === 1) return sortedValues[0];
+  const index = (sortedValues.length - 1) * probability;
+  const lower = Math.floor(index);
+  const upper = Math.ceil(index);
+  if (lower === upper) return sortedValues[lower];
+  const weight = index - lower;
+  return sortedValues[lower] * (1 - weight) + sortedValues[upper] * weight;
+}
+
+function summarizeValues(values) {
+  const sortedValues = [...values].sort((a, b) => a - b);
+  const n = sortedValues.length;
+  if (n === 0) {
+    return {
+      n: 0,
+      mean: null,
+      median: null,
+      sd: null,
+      min: null,
+      q1: null,
+      q3: null,
+      max: null,
+    };
+  }
+  const mean = sortedValues.reduce((sum, value) => sum + value, 0) / n;
+  const variance =
+    n > 1
+      ? sortedValues.reduce((sum, value) => sum + (value - mean) ** 2, 0) /
+        (n - 1)
+      : 0;
+  return {
+    n,
+    mean,
+    median: percentile(sortedValues, 0.5),
+    sd: Math.sqrt(variance),
+    min: sortedValues[0],
+    q1: percentile(sortedValues, 0.25),
+    q3: percentile(sortedValues, 0.75),
+    max: sortedValues[n - 1],
+  };
+}
+
+function buildMeasureHistogramStatsRows() {
+  const parameter = getMeasureHistogramParameter();
+  const mode = getMeasureHistogramSummaryMode();
+  return getMeasureSummaryValues(parameter, mode).map((entry) => ({
+    set: entry.name,
+    ...summarizeValues(entry.values),
+  }));
+}
+
+function formatSummaryStat(value) {
+  return Number.isFinite(value) ? formatHistogramAxisNumber(value) : "";
+}
+
+function renderMeasureHistogramStats() {
+  if (!measureHistogramStatsBody) return;
+  updateMeasureHistogramStatsHeaders();
+  const rows = buildMeasureHistogramStatsRows();
+  measureHistogramStatsBody.innerHTML = "";
+  if (rows.length === 0) {
+    const row = document.createElement("tr");
+    const cell = document.createElement("td");
+    cell.colSpan = 7;
+    cell.textContent = "No plottable measurements";
+    row.appendChild(cell);
+    measureHistogramStatsBody.appendChild(row);
+    if (exportMeasureHistogramStatsButton) {
+      exportMeasureHistogramStatsButton.disabled = true;
+    }
+    return;
+  }
+
+  rows.forEach((summary) => {
+    const row = document.createElement("tr");
+    [
+      summary.set,
+      summary.n,
+      formatSummaryStat(summary.mean),
+      formatSummaryStat(summary.median),
+      formatSummaryStat(summary.sd),
+      formatSummaryStat(summary.min),
+      formatSummaryStat(summary.max),
+    ].forEach((value) => {
+      const cell = document.createElement("td");
+      cell.textContent = value;
+      row.appendChild(cell);
+    });
+    measureHistogramStatsBody.appendChild(row);
+  });
+  if (exportMeasureHistogramStatsButton) {
+    exportMeasureHistogramStatsButton.disabled = false;
+  }
+}
+
+function updateMeasureHistogramStatsHeaders() {
+  const parameter = getMeasureHistogramParameter();
+  const unit = getMeasureHistogramUnitInfo(parameter);
+  const suffix = unit.label ? ` (${unit.label})` : "";
+  if (measureHistogramStatsMeanHeader) {
+    measureHistogramStatsMeanHeader.textContent = `Mean${suffix}`;
+  }
+  if (measureHistogramStatsMedianHeader) {
+    measureHistogramStatsMedianHeader.textContent = `Median${suffix}`;
+  }
+  if (measureHistogramStatsSdHeader) {
+    measureHistogramStatsSdHeader.textContent = `SD${suffix}`;
+  }
+  if (measureHistogramStatsMinHeader) {
+    measureHistogramStatsMinHeader.textContent = `Min${suffix}`;
+  }
+  if (measureHistogramStatsMaxHeader) {
+    measureHistogramStatsMaxHeader.textContent = `Max${suffix}`;
+  }
+}
+
+function exportMeasureHistogramStatsCSV() {
+  const parameter = getMeasureHistogramParameter();
+  const unit = getMeasureHistogramUnitInfo(parameter);
+  const unitSuffix = unit.label ? ` (${unit.label})` : "";
+  const rows = buildMeasureHistogramStatsRows();
+  if (rows.length === 0) {
+    alert("No summary statistics to export.");
+    return;
+  }
+  const headers = [
+    "parameter",
+    "mode",
+    "set",
+    "n",
+    `mean${unitSuffix}`,
+    `median${unitSuffix}`,
+    `sd${unitSuffix}`,
+    `min${unitSuffix}`,
+    `q1${unitSuffix}`,
+    `q3${unitSuffix}`,
+    `max${unitSuffix}`,
+  ];
+  const csvRows = rows.map((row) => [
+    getMeasureHistogramLabel(parameter),
+    getMeasureHistogramSummaryMode(),
+    row.set,
+    row.n,
+    row.mean ?? "",
+    row.median ?? "",
+    row.sd ?? "",
+    row.min ?? "",
+    row.q1 ?? "",
+    row.q3 ?? "",
+    row.max ?? "",
+  ]);
+  const csv = [headers, ...csvRows]
+    .map((row) => row.map(csvEscape).join(","))
+    .join("\n");
+  saveAs(
+    new Blob([csv], { type: "text/csv;charset=utf-8" }),
+    "measurement-histogram-stats.csv"
+  );
+}
+
+function getMeasureHistogramGroupsInUse() {
+  const groups = new Map();
+  measureResults.forEach((result) => {
+    const group = getMeasureGroupForResult(result);
+    groups.set(group.groupId, group);
+  });
+  return [...groups.values()].sort((a, b) =>
+    a.groupName.localeCompare(b.groupName)
+  );
+}
+
+function syncMeasureHistogramGroupSelection(groups) {
+  const groupIds = new Set(groups.map((group) => group.groupId));
+  groupIds.forEach((groupId) => {
+    if (!measureHistogramKnownGroupIds.has(groupId)) {
+      measureHistogramSelectedGroupIds.add(groupId);
+    }
+  });
+  measureHistogramKnownGroupIds = groupIds;
+  measureHistogramSelectedGroupIds = new Set(
+    [...measureHistogramSelectedGroupIds].filter((groupId) =>
+      groupIds.has(groupId)
+    )
+  );
+}
+
+function getMeasureHistogramValues(parameter) {
+  const unit = getMeasureHistogramUnitInfo(parameter);
+  const groups = getMeasureHistogramGroupsInUse();
+  syncMeasureHistogramGroupSelection(groups);
+  const groupedValues = new Map(
+    groups.map((group) => [
+      group.groupId,
+      {
+        ...group,
+        values: [],
+      },
+    ])
+  );
+
+  measureResults.forEach((result) => {
+    const rawValue = result[parameter.id];
+    if (!Number.isFinite(rawValue)) return;
+    if (
+      result.validGeometry === false &&
+      (parameter.id === "areaM2" || parameter.id === "ecdM")
+    ) {
+      return;
+    }
+    const group = getMeasureGroupForResult(result);
+    if (!measureHistogramSelectedGroupIds.has(group.groupId)) return;
+    const entry = groupedValues.get(group.groupId);
+    if (!entry) return;
+    entry.values.push(rawValue * unit.factor);
+  });
+
+  const enabledGroups = [...groupedValues.values()].filter((group) =>
+    measureHistogramSelectedGroupIds.has(group.groupId)
+  );
+  const values = enabledGroups.flatMap((group) => group.values);
+  return { groups: enabledGroups, values };
+}
+
+function getDefaultHistogramExtent(values) {
+  if (values.length === 0) {
+    return {
+      min: 0,
+      max: 0,
+      binWidth: 0,
+      dataMin: null,
+      dataMax: null,
+    };
+  }
+
+  const dataMin = Math.min(...values);
+  const dataMax = Math.max(...values);
+  let min = dataMin;
+  let max = dataMax;
+  if (min === max) {
+    const padding = Math.abs(min) > 0 ? Math.abs(min) * 0.05 : 0.5;
+    min -= padding;
+    max += padding;
+  }
+
+  const binCount = Math.min(20, Math.max(5, Math.ceil(Math.sqrt(values.length))));
+  const binWidth = getNiceHistogramNumber((max - min) / binCount, true);
+  min = Math.floor(min / binWidth) * binWidth;
+  max = Math.ceil(max / binWidth) * binWidth;
+  if (dataMin >= 0 && min > 0) {
+    min = 0;
+  }
+  return { min, max, binWidth, dataMin, dataMax };
+}
+
+function getNiceHistogramNumber(value, round = false) {
+  if (!Number.isFinite(value) || value <= 0) return 1;
+  const exponent = Math.floor(Math.log10(value));
+  const fraction = value / 10 ** exponent;
+  let niceFraction;
+  if (round) {
+    if (fraction < 1.5) niceFraction = 1;
+    else if (fraction < 3) niceFraction = 2;
+    else if (fraction < 7) niceFraction = 5;
+    else niceFraction = 10;
+  } else if (fraction <= 1) {
+    niceFraction = 1;
+  } else if (fraction <= 2) {
+    niceFraction = 2;
+  } else if (fraction <= 5) {
+    niceFraction = 5;
+  } else {
+    niceFraction = 10;
+  }
+  return niceFraction * 10 ** exponent;
+}
+
+function createHistogramTicks(min, max, targetCount = 6, integer = false) {
+  if (!Number.isFinite(min) || !Number.isFinite(max) || max <= min) {
+    return [min, max].filter(Number.isFinite);
+  }
+  let step = getNiceHistogramNumber((max - min) / Math.max(1, targetCount - 1), true);
+  if (integer) step = Math.max(1, Math.round(step));
+  const first = Math.ceil(min / step) * step;
+  const ticks = [];
+  for (let value = first; value <= max + step * 0.5; value += step) {
+    const tick = integer ? Math.round(value) : Number(value.toPrecision(12));
+    if (tick >= min - step * 0.5 && tick <= max + step * 0.5) {
+      ticks.push(tick);
+    }
+    if (ticks.length > 30) break;
+  }
+  if (ticks.length === 0 || Math.abs(ticks[0] - min) > step * 0.35) {
+    ticks.unshift(integer ? Math.round(min) : min);
+  }
+  if (Math.abs(ticks[ticks.length - 1] - max) > step * 0.35) {
+    ticks.push(integer ? Math.round(max) : max);
+  }
+  return [...new Set(ticks)];
+}
+
+function getMeasureHistogramNumberInputValue(input) {
+  if (!input || input.value.trim() === "") return null;
+  const value = Number(input?.value);
+  return Number.isFinite(value) ? value : null;
+}
+
+function formatHistogramInputValue(value) {
+  if (!Number.isFinite(value)) return "";
+  return Number(value.toPrecision(4)).toString();
+}
+
+function updateMeasureHistogramRangeInputs(defaultExtent) {
+  if (
+    !measureHistogramMinInput ||
+    !measureHistogramMaxInput ||
+    !measureHistogramBinSizeInput
+  ) {
+    return;
+  }
+  if (measureHistogramRangeEdited) return;
+  measureHistogramMinInput.value = formatHistogramInputValue(defaultExtent.min);
+  measureHistogramMaxInput.value = formatHistogramInputValue(defaultExtent.max);
+  measureHistogramBinSizeInput.value = formatHistogramInputValue(
+    defaultExtent.binWidth
+  );
+}
+
+function createHistogramBins(values, options = {}) {
+  const defaultExtent = getDefaultHistogramExtent(values);
+  updateMeasureHistogramRangeInputs(defaultExtent);
+  if (values.length === 0) {
+    return {
+      bins: [],
+      min: defaultExtent.min,
+      max: defaultExtent.max,
+      binWidth: defaultExtent.binWidth,
+      dataMin: defaultExtent.dataMin,
+      dataMax: defaultExtent.dataMax,
+    };
+  }
+
+  let min = Number.isFinite(options.min) ? options.min : defaultExtent.min;
+  let max = Number.isFinite(options.max) ? options.max : defaultExtent.max;
+  let binWidth =
+    Number.isFinite(options.binWidth) && options.binWidth > 0
+      ? options.binWidth
+      : defaultExtent.binWidth;
+
+  if (max <= min) {
+    min = defaultExtent.min;
+    max = defaultExtent.max;
+  }
+  if (!Number.isFinite(binWidth) || binWidth <= 0) {
+    binWidth = defaultExtent.binWidth;
+  }
+  let binCount = Math.max(1, Math.ceil((max - min) / binWidth));
+  if (binCount > 200) {
+    binCount = 200;
+    binWidth = (max - min) / binCount;
+  }
+  max = min + binCount * binWidth;
+  const bins = Array.from({ length: binCount }, (_, index) => ({
+    min: min + index * binWidth,
+    max: min + (index + 1) * binWidth,
+    count: 0,
+    groupCounts: new Map(),
+  }));
+  return {
+    bins,
+    min,
+    max,
+    binWidth,
+    dataMin: defaultExtent.dataMin,
+    dataMax: defaultExtent.dataMax,
+  };
+}
+
+function buildMeasureHistogramModel() {
+  const parameter = getMeasureHistogramParameter();
+  const { groups, values } = getMeasureHistogramValues(parameter);
+  const rangeOptions = measureHistogramRangeEdited
+    ? {
+        min: getMeasureHistogramNumberInputValue(measureHistogramMinInput),
+        max: getMeasureHistogramNumberInputValue(measureHistogramMaxInput),
+        binWidth: getMeasureHistogramNumberInputValue(measureHistogramBinSizeInput),
+      }
+    : {};
+  const histogram = createHistogramBins(values, rangeOptions);
+  const mode = measureHistogramMode?.value || "combined";
+  const plotType = getMeasureHistogramPlotType();
+  const stacked = Boolean(measureHistogramStackedInput?.checked);
+
+  groups.forEach((group) => {
+    group.values.forEach((value) => {
+      if (!Number.isFinite(value) || histogram.bins.length === 0) return;
+      if (value < histogram.min || value > histogram.max) return;
+      const rawIndex =
+        histogram.binWidth === 0
+          ? 0
+          : Math.floor((value - histogram.min) / histogram.binWidth);
+      const index = Math.min(
+        histogram.bins.length - 1,
+        Math.max(0, rawIndex)
+      );
+      const bin = histogram.bins[index];
+      bin.count += 1;
+      bin.groupCounts.set(
+        group.groupId,
+        (bin.groupCounts.get(group.groupId) || 0) + 1
+      );
+    });
+  });
+
+  const rawYMax = Math.max(
+    1,
+    ...histogram.bins.map((bin) =>
+      mode === "groups" && !stacked
+        ? Math.max(
+            0,
+            ...groups.map((group) => bin.groupCounts.get(group.groupId) || 0)
+          )
+        : bin.count
+    )
+  );
+  const yTickStep = Math.max(1, Math.round(getNiceHistogramNumber(rawYMax / 4, true)));
+  const yMax = Math.max(yTickStep, Math.ceil(rawYMax / yTickStep) * yTickStep);
+  const sum = values.reduce((total, value) => total + value, 0);
+  return {
+    parameter,
+    parameterLabel: getMeasureHistogramLabel(parameter),
+    plotType,
+    defaultColor: getMeasureHistogramDefaultColor(),
+    mode,
+    stacked,
+    groups,
+    values,
+    ...histogram,
+    yMax,
+    rawYMax,
+    mean: values.length > 0 ? sum / values.length : null,
+  };
+}
+
+function formatHistogramAxisNumber(value) {
+  if (!Number.isFinite(value)) return "";
+  const abs = Math.abs(value);
+  if (abs >= 1000 || (abs > 0 && abs < 0.01)) return value.toExponential(1);
+  if (abs >= 100) return value.toFixed(0);
+  if (abs >= 10) return value.toFixed(1);
+  return value.toFixed(2);
+}
+
+function renderMeasureHistogramParameters() {
+  if (!measureHistogramParameter) return;
+  const previous = measureHistogramParameter.value || MEASURE_HISTOGRAM_PARAMETERS[0].id;
+  measureHistogramParameter.innerHTML = "";
+  MEASURE_HISTOGRAM_PARAMETERS.forEach((parameter) => {
+    const option = document.createElement("option");
+    option.value = parameter.id;
+    option.textContent = parameter.label;
+    measureHistogramParameter.appendChild(option);
+  });
+  measureHistogramParameter.value = MEASURE_HISTOGRAM_PARAMETERS.some(
+    (parameter) => parameter.id === previous
+  )
+    ? previous
+    : MEASURE_HISTOGRAM_PARAMETERS[0].id;
+}
+
+function renderMeasureHistogramGroupControls() {
+  if (!measureHistogramGroups) return;
+  const groups = getMeasureHistogramGroupsInUse();
+  syncMeasureHistogramGroupSelection(groups);
+  measureHistogramGroups.innerHTML = "";
+  if (groups.length === 0) {
+    measureHistogramGroups.textContent = "No groups";
+    return;
+  }
+
+  groups.forEach((group) => {
+    const label = document.createElement("label");
+    label.className = "measure-histogram-group";
+
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.checked = measureHistogramSelectedGroupIds.has(group.groupId);
+    checkbox.addEventListener("change", () => {
+      if (checkbox.checked) {
+        measureHistogramSelectedGroupIds.add(group.groupId);
+      } else {
+        measureHistogramSelectedGroupIds.delete(group.groupId);
+      }
+      drawMeasureHistogram();
+    });
+
+    const swatch = createMeasureGroupColor(group);
+    const name = document.createElement("span");
+    name.textContent = group.groupName;
+    label.append(checkbox, swatch, name);
+    measureHistogramGroups.appendChild(label);
+  });
+}
+
+function getMeasureDistributionEntries(model) {
+  if (model.mode === "groups") {
+    return model.groups
+      .filter((group) => group.values.length > 0)
+      .map((group) => ({
+        label: group.groupName,
+        color: getSafeMeasureGroupColor(group.groupColor),
+        values: group.values,
+      }));
+  }
+  return [
+    {
+      label: "Combined",
+      color: model.defaultColor,
+      values: model.values,
+    },
+  ].filter((entry) => entry.values.length > 0);
+}
+
+function drawMeasurePlotFrame(ctx, model, padding, plotWidth, plotHeight) {
+  ctx.fillStyle = "#222";
+  ctx.font = "12px sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "alphabetic";
+  ctx.fillText(model.parameterLabel, padding.left + plotWidth / 2, 14);
+
+  ctx.strokeStyle = "#444";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(padding.left, padding.top);
+  ctx.lineTo(padding.left, padding.top + plotHeight);
+  ctx.lineTo(padding.left + plotWidth, padding.top + plotHeight);
+  ctx.stroke();
+}
+
+function drawMeasureValueAxis(ctx, model, padding, plotWidth, plotHeight) {
+  const xTicks = createHistogramTicks(model.min, model.max, 6);
+  ctx.font = "10px sans-serif";
+  ctx.lineWidth = 1;
+  xTicks.forEach((tick) => {
+    const x =
+      padding.left + ((tick - model.min) / (model.max - model.min)) * plotWidth;
+    ctx.strokeStyle = "#444";
+    ctx.beginPath();
+    ctx.moveTo(x, padding.top + plotHeight);
+    ctx.lineTo(x, padding.top + plotHeight + 4);
+    ctx.stroke();
+    ctx.fillStyle = "#333";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+    ctx.fillText(
+      formatHistogramAxisNumber(tick),
+      x,
+      padding.top + plotHeight + 8
+    );
+  });
+}
+
+function getMeasureValueX(value, model, padding, plotWidth) {
+  const clampedValue = Math.min(model.max, Math.max(model.min, value));
+  return (
+    padding.left + ((clampedValue - model.min) / (model.max - model.min)) * plotWidth
+  );
+}
+
+function drawHistogramBars(ctx, model, padding, plotWidth, plotHeight) {
+  const yTicks = createHistogramTicks(0, model.yMax, 5, true);
+  ctx.font = "10px sans-serif";
+  ctx.lineWidth = 1;
+  yTicks.forEach((tick) => {
+    const y = padding.top + plotHeight - (tick / model.yMax) * plotHeight;
+    ctx.strokeStyle = tick === 0 ? "#444" : "#e4e4e4";
+    ctx.beginPath();
+    ctx.moveTo(padding.left, y);
+    ctx.lineTo(padding.left + plotWidth, y);
+    ctx.stroke();
+    ctx.strokeStyle = "#444";
+    ctx.beginPath();
+    ctx.moveTo(padding.left - 4, y);
+    ctx.lineTo(padding.left, y);
+    ctx.stroke();
+    ctx.fillStyle = "#333";
+    ctx.textAlign = "right";
+    ctx.textBaseline = "middle";
+    ctx.fillText(String(tick), padding.left - 6, y);
+  });
+  drawMeasureValueAxis(ctx, model, padding, plotWidth, plotHeight);
+
+  const binGap = 2;
+  const binWidth = plotWidth / model.bins.length;
+  model.bins.forEach((bin, index) => {
+    const x = padding.left + index * binWidth + binGap / 2;
+    const fullBarWidth = Math.max(1, binWidth - binGap);
+    if (model.mode === "groups") {
+      const activeGroups = model.groups.filter((group) => group.values.length > 0);
+      if (model.stacked) {
+        let stackedOffset = 0;
+        activeGroups.forEach((group) => {
+          const count = bin.groupCounts.get(group.groupId) || 0;
+          const barHeight = (count / model.yMax) * plotHeight;
+          ctx.fillStyle = getSafeMeasureGroupColor(group.groupColor);
+          ctx.globalAlpha = 0.78;
+          ctx.fillRect(
+            x,
+            padding.top + plotHeight - stackedOffset - barHeight,
+            fullBarWidth,
+            barHeight
+          );
+          stackedOffset += barHeight;
+        });
+      } else {
+        const groupWidth = fullBarWidth / Math.max(1, activeGroups.length);
+        activeGroups.forEach((group, groupIndex) => {
+          const count = bin.groupCounts.get(group.groupId) || 0;
+          const barHeight = (count / model.yMax) * plotHeight;
+          ctx.fillStyle = getSafeMeasureGroupColor(group.groupColor);
+          ctx.globalAlpha = 0.72;
+          ctx.fillRect(
+            x + groupIndex * groupWidth,
+            padding.top + plotHeight - barHeight,
+            Math.max(1, groupWidth - 1),
+            barHeight
+          );
+        });
+      }
+      ctx.globalAlpha = 1;
+    } else {
+      const barHeight = (bin.count / model.yMax) * plotHeight;
+      ctx.fillStyle = model.defaultColor;
+      ctx.fillRect(
+        x,
+        padding.top + plotHeight - barHeight,
+        fullBarWidth,
+        barHeight
+      );
+    }
+  });
+}
+
+function drawBoxPlot(ctx, model, padding, plotWidth, plotHeight) {
+  const entries = getMeasureDistributionEntries(model);
+  drawMeasureValueAxis(ctx, model, padding, plotWidth, plotHeight);
+  const rowHeight = plotHeight / Math.max(1, entries.length);
+  entries.forEach((entry, index) => {
+    const summary = summarizeValues(entry.values);
+    if (summary.n === 0) return;
+    const centerY = padding.top + rowHeight * (index + 0.5);
+    const boxHeight = Math.min(34, rowHeight * 0.46);
+    const minX = getMeasureValueX(summary.min, model, padding, plotWidth);
+    const q1X = getMeasureValueX(summary.q1, model, padding, plotWidth);
+    const medianX = getMeasureValueX(summary.median, model, padding, plotWidth);
+    const q3X = getMeasureValueX(summary.q3, model, padding, plotWidth);
+    const maxX = getMeasureValueX(summary.max, model, padding, plotWidth);
+    ctx.strokeStyle = entry.color;
+    ctx.fillStyle = entry.color;
+    ctx.globalAlpha = 0.22;
+    ctx.fillRect(q1X, centerY - boxHeight / 2, Math.max(1, q3X - q1X), boxHeight);
+    ctx.globalAlpha = 1;
+    ctx.lineWidth = 2;
+    ctx.strokeRect(q1X, centerY - boxHeight / 2, Math.max(1, q3X - q1X), boxHeight);
+    ctx.beginPath();
+    ctx.moveTo(minX, centerY);
+    ctx.lineTo(q1X, centerY);
+    ctx.moveTo(q3X, centerY);
+    ctx.lineTo(maxX, centerY);
+    ctx.moveTo(minX, centerY - boxHeight * 0.35);
+    ctx.lineTo(minX, centerY + boxHeight * 0.35);
+    ctx.moveTo(maxX, centerY - boxHeight * 0.35);
+    ctx.lineTo(maxX, centerY + boxHeight * 0.35);
+    ctx.moveTo(medianX, centerY - boxHeight / 2);
+    ctx.lineTo(medianX, centerY + boxHeight / 2);
+    ctx.stroke();
+    ctx.fillStyle = "#333";
+    ctx.font = "10px sans-serif";
+    ctx.textAlign = "right";
+    ctx.textBaseline = "middle";
+    ctx.fillText(entry.label, padding.left - 6, centerY);
+  });
+  ctx.lineWidth = 1;
+}
+
+function getSampleStandardDeviation(values) {
+  if (values.length < 2) return 0;
+  const mean = values.reduce((sum, value) => sum + value, 0) / values.length;
+  const variance =
+    values.reduce((sum, value) => sum + (value - mean) ** 2, 0) /
+    (values.length - 1);
+  return Math.sqrt(variance);
+}
+
+function getViolinBandwidth(values, min, max) {
+  const sortedValues = [...values].sort((a, b) => a - b);
+  const n = sortedValues.length;
+  const range = Math.max(Number.EPSILON, max - min);
+  if (n < 2) return range / 30;
+  const sd = getSampleStandardDeviation(sortedValues);
+  const iqr = percentile(sortedValues, 0.75) - percentile(sortedValues, 0.25);
+  const robustSpread = iqr > 0 ? iqr / 1.34 : sd;
+  let spread = Math.min(sd || robustSpread, robustSpread || sd);
+  if (!Number.isFinite(spread) || spread <= 0) {
+    spread = range / 30;
+  }
+  let bandwidth = 0.9 * spread * n ** (-1 / 5);
+  const minBandwidth = range / 200;
+  const maxBandwidth = range / 4;
+  if (!Number.isFinite(bandwidth) || bandwidth <= 0) {
+    bandwidth = range / 30;
+  }
+  return Math.min(maxBandwidth, Math.max(minBandwidth, bandwidth));
+}
+
+function getViolinDensityPoints(values, model, sampleCount = 120) {
+  if (values.length === 0 || model.max <= model.min) return [];
+  const bandwidth = getViolinBandwidth(values, model.min, model.max);
+  const visibleValues = values.filter(
+    (value) => value >= model.min && value <= model.max
+  );
+  const densityValues = visibleValues.length > 0 ? visibleValues : values;
+  const normalizer =
+    densityValues.length * bandwidth * Math.sqrt(2 * Math.PI);
+  return Array.from({ length: sampleCount }, (_, index) => {
+    const t = sampleCount === 1 ? 0 : index / (sampleCount - 1);
+    const value = model.min + t * (model.max - model.min);
+    const kernelSum = densityValues.reduce((sum, sample) => {
+      const z = (value - sample) / bandwidth;
+      return sum + Math.exp(-0.5 * z * z);
+    }, 0);
+    return {
+      value,
+      density: normalizer > 0 ? kernelSum / normalizer : 0,
+    };
+  });
+}
+
+function drawViolinPlot(ctx, model, padding, plotWidth, plotHeight) {
+  const entries = getMeasureDistributionEntries(model);
+  drawMeasureValueAxis(ctx, model, padding, plotWidth, plotHeight);
+  const rowHeight = plotHeight / Math.max(1, entries.length);
+  entries.forEach((entry, index) => {
+    if (entry.values.length === 0 || model.max <= model.min) return;
+    const centerY = padding.top + rowHeight * (index + 0.5);
+    const maxHalfHeight = Math.min(32, rowHeight * 0.38);
+    const densityPoints = getViolinDensityPoints(entry.values, model);
+    const maxDensity = Math.max(0, ...densityPoints.map((point) => point.density));
+    const topPoints = [];
+    const bottomPoints = [];
+    densityPoints.forEach((point) => {
+      const x = getMeasureValueX(point.value, model, padding, plotWidth);
+      const halfHeight =
+        maxDensity > 0 ? (point.density / maxDensity) * maxHalfHeight : 0;
+      topPoints.push([x, centerY - halfHeight]);
+      bottomPoints.unshift([x, centerY + halfHeight]);
+    });
+    if (topPoints.length === 0) return;
+    ctx.fillStyle = entry.color;
+    ctx.strokeStyle = entry.color;
+    ctx.globalAlpha = 0.24;
+    ctx.beginPath();
+    [...topPoints, ...bottomPoints].forEach(([x, y], pointIndex) => {
+      if (pointIndex === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    ctx.closePath();
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.stroke();
+    const summary = summarizeValues(entry.values);
+    const medianX = getMeasureValueX(summary.median, model, padding, plotWidth);
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(medianX, centerY - maxHalfHeight * 0.75);
+    ctx.lineTo(medianX, centerY + maxHalfHeight * 0.75);
+    ctx.stroke();
+    ctx.lineWidth = 1;
+    ctx.fillStyle = "#333";
+    ctx.font = "10px sans-serif";
+    ctx.textAlign = "right";
+    ctx.textBaseline = "middle";
+    ctx.fillText(entry.label, padding.left - 6, centerY);
+  });
+}
+
+function drawHistogramToCanvas(ctx, model, width, height) {
+  const padding = {
+    left: model.plotType === "histogram" ? 42 : 58,
+    top: 20,
+    right: 16,
+    bottom: 42,
+  };
+  const plotWidth = width - padding.left - padding.right;
+  const plotHeight = height - padding.top - padding.bottom;
+
+  ctx.clearRect(0, 0, width, height);
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, width, height);
+  ctx.strokeStyle = "#bdbdbd";
+  ctx.lineWidth = 1;
+  ctx.strokeRect(0.5, 0.5, width - 1, height - 1);
+
+  drawMeasurePlotFrame(ctx, model, padding, plotWidth, plotHeight);
+
+  if (model.values.length === 0 || model.bins.length === 0) {
+    ctx.fillStyle = "#666";
+    ctx.textAlign = "center";
+    ctx.fillText("No plottable measurements", width / 2, height / 2);
+    return;
+  }
+
+  if (model.plotType === "box") {
+    drawBoxPlot(ctx, model, padding, plotWidth, plotHeight);
+  } else if (model.plotType === "violin") {
+    drawViolinPlot(ctx, model, padding, plotWidth, plotHeight);
+  } else {
+    drawHistogramBars(ctx, model, padding, plotWidth, plotHeight);
+  }
+
+  ctx.textBaseline = "alphabetic";
+}
+
+function drawMeasureHistogram() {
+  if (!measureHistogramCanvas || measureHistogramMenu?.hidden) return null;
+  const model = buildMeasureHistogramModel();
+  const rect = measureHistogramCanvas.getBoundingClientRect();
+  const ratio = window.devicePixelRatio || 1;
+  const width = Math.max(320, Math.round(rect.width));
+  const height = Math.max(200, Math.round(rect.height));
+  measureHistogramCanvas.width = Math.round(width * ratio);
+  measureHistogramCanvas.height = Math.round(height * ratio);
+  const ctx = measureHistogramCanvas.getContext("2d");
+  ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+  drawHistogramToCanvas(ctx, model, width, height);
+  renderMeasureHistogramStats();
+  if (exportMeasureHistogramButton) {
+    exportMeasureHistogramButton.disabled =
+      model.values.length === 0 || model.plotType !== "histogram";
+    exportMeasureHistogramButton.title =
+      model.plotType === "histogram"
+        ? "Export histogram as PDF"
+        : "PDF export currently supports histogram view";
+  }
+  return model;
+}
+
+function renderMeasureHistogramMenu() {
+  if (!measureHistogramMenu || measureHistogramMenu.hidden) return;
+  renderMeasureHistogramParameters();
+  renderMeasureHistogramGroupControls();
+  updateMeasureHistogramControlState();
+  drawMeasureHistogram();
+}
+
+function updateMeasureHistogramControlState() {
+  const isHistogram = getMeasureHistogramPlotType() === "histogram";
+  if (measureHistogramBinSizeInput) {
+    measureHistogramBinSizeInput.disabled = !isHistogram;
+  }
+  if (measureHistogramStackedInput && measureHistogramMode) {
+    measureHistogramStackedInput.disabled =
+      !isHistogram || measureHistogramMode.value !== "groups";
+  }
+}
+
+function updateMeasureHistogramAvailability() {
+  if (!measureHistogramButton) return;
+  measureHistogramButton.disabled = measureResults.length === 0;
+}
+
+function positionMeasureHistogramMenu(button) {
+  if (!measureHistogramMenu || !button) return;
+  const buttonRect = button.getBoundingClientRect();
+  const menuRect = measureHistogramMenu.getBoundingClientRect();
+  const margin = 8;
+  const left = Math.min(
+    Math.max(buttonRect.left, margin),
+    window.innerWidth - menuRect.width - margin
+  );
+  const spaceAbove = buttonRect.top - margin;
+  const top =
+    spaceAbove >= menuRect.height
+      ? buttonRect.top - menuRect.height - 4
+      : Math.min(
+          buttonRect.bottom + 4,
+          window.innerHeight - menuRect.height - margin
+        );
+  measureHistogramMenu.style.left = `${left}px`;
+  measureHistogramMenu.style.top = `${Math.max(margin, top)}px`;
+}
+
+function openMeasureHistogramMenu(button) {
+  if (!measureHistogramMenu || !button) return;
+  if (measureHistogramMenu.parentElement !== document.body) {
+    document.body.appendChild(measureHistogramMenu);
+  }
+  measureHistogramRangeEdited = false;
+  renderMeasureHistogramParameters();
+  renderMeasureHistogramGroupControls();
+  updateMeasureHistogramControlState();
+  measureHistogramMenu.hidden = false;
+  measureHistogramButton?.setAttribute("aria-expanded", "true");
+  positionMeasureHistogramMenu(button);
+  drawMeasureHistogram();
+}
+
+function closeMeasureHistogramMenu() {
+  if (!measureHistogramMenu) return;
+  measureHistogramMenu.hidden = true;
+  measureHistogramButton?.setAttribute("aria-expanded", "false");
+}
+
+function makeFixedElementDraggable(element, handle) {
+  if (!element || !handle) return;
+  let dragState = null;
+
+  handle.addEventListener("pointerdown", function (event) {
+    if (event.button !== 0 || event.target.closest("button, input, select")) {
+      return;
+    }
+    const rect = element.getBoundingClientRect();
+    dragState = {
+      offsetX: event.clientX - rect.left,
+      offsetY: event.clientY - rect.top,
+    };
+    handle.setPointerCapture(event.pointerId);
+  });
+
+  handle.addEventListener("pointermove", function (event) {
+    if (!dragState) return;
+    const rect = element.getBoundingClientRect();
+    const margin = 8;
+    const maxLeft = Math.max(margin, window.innerWidth - rect.width - margin);
+    const maxTop = Math.max(margin, window.innerHeight - rect.height - margin);
+    const left = Math.min(
+      Math.max(event.clientX - dragState.offsetX, margin),
+      maxLeft
+    );
+    const top = Math.min(
+      Math.max(event.clientY - dragState.offsetY, margin),
+      maxTop
+    );
+    element.style.left = `${left}px`;
+    element.style.top = `${top}px`;
+  });
+
+  function stopDrag(event) {
+    if (!dragState) return;
+    dragState = null;
+    if (handle.hasPointerCapture(event.pointerId)) {
+      handle.releasePointerCapture(event.pointerId);
+    }
+  }
+
+  handle.addEventListener("pointerup", stopDrag);
+  handle.addEventListener("pointercancel", stopDrag);
+}
+
+function pdfText(value) {
+  return String(value)
+    .replace(/ɸ/g, "phi")
+    .replace(/µ/g, "um")
+    .replace(/²/g, "^2")
+    .replace(/°/g, " deg")
+    .replace(/[^\x20-\x7e]/g, "");
+}
+
+function escapePdfString(value) {
+  return pdfText(value).replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)");
+}
+
+function addPdfText(commands, label, x, y, size = 10, pageHeight = 432) {
+  commands.push(
+    `BT /F1 ${size} Tf ${x.toFixed(2)} ${(pageHeight - y).toFixed(2)} Td (${escapePdfString(label)}) Tj ET`
+  );
+}
+
+function addPdfRotatedText(commands, label, x, y, size = 10, pageHeight = 432) {
+  commands.push(
+    `BT /F1 ${size} Tf 0 1 -1 0 ${x.toFixed(2)} ${(pageHeight - y).toFixed(2)} Tm (${escapePdfString(label)}) Tj ET`
+  );
+}
+
+function hexToPdfRgb(color) {
+  const safe = getSafeMeasureGroupColor(color).slice(1);
+  const red = parseInt(safe.slice(0, 2), 16) / 255;
+  const green = parseInt(safe.slice(2, 4), 16) / 255;
+  const blue = parseInt(safe.slice(4, 6), 16) / 255;
+  return [red, green, blue].map((value) => value.toFixed(3)).join(" ");
+}
+
+function createMeasureHistogramPdf(model) {
+  const width = 612;
+  const height = 432;
+  const padding = { left: 64, top: 54, right: 34, bottom: 72 };
+  const plotWidth = width - padding.left - padding.right;
+  const plotHeight = height - padding.top - padding.bottom;
+  const commands = [];
+  const pdfY = (y) => height - y;
+  const text = (label, x, y, size = 10) => {
+    commands.push(`BT /F1 ${size} Tf ${x.toFixed(2)} ${pdfY(y).toFixed(2)} Td (${escapePdfString(label)}) Tj ET`);
+  };
+  const rotatedText = (label, x, y, size = 10) => {
+    commands.push(`BT /F1 ${size} Tf 0 1 -1 0 ${x.toFixed(2)} ${pdfY(y).toFixed(2)} Tm (${escapePdfString(label)}) Tj ET`);
+  };
+  const rect = (x, y, w, h, color) => {
+    if (w <= 0 || h <= 0) return;
+    commands.push(`${hexToPdfRgb(color)} rg ${x.toFixed(2)} ${pdfY(y + h).toFixed(2)} ${w.toFixed(2)} ${h.toFixed(2)} re f`);
+  };
+
+  commands.push("1 1 1 rg 0 0 612 432 re f");
+  commands.push("0.15 0.15 0.15 RG 1 w");
+  commands.push(`${padding.left} ${pdfY(padding.top)} m ${padding.left} ${pdfY(padding.top + plotHeight)} l ${padding.left + plotWidth} ${pdfY(padding.top + plotHeight)} l S`);
+  text(model.parameterLabel, padding.left + plotWidth / 2 - 65, 24, 13);
+
+  if (model.values.length === 0 || model.bins.length === 0) {
+    text("No plottable measurements", padding.left + 150, padding.top + plotHeight / 2, 12);
+  } else {
+    const binGap = 2;
+    const binWidth = plotWidth / model.bins.length;
+    model.bins.forEach((bin, index) => {
+      const x = padding.left + index * binWidth + binGap / 2;
+      const fullBarWidth = Math.max(1, binWidth - binGap);
+      if (model.mode === "groups") {
+        const activeGroups = model.groups.filter((group) => group.values.length > 0);
+        if (model.stacked) {
+          let stackedOffset = 0;
+          activeGroups.forEach((group) => {
+            const count = bin.groupCounts.get(group.groupId) || 0;
+            const barHeight = (count / model.yMax) * plotHeight;
+            rect(
+              x,
+              padding.top + plotHeight - stackedOffset - barHeight,
+              fullBarWidth,
+              barHeight,
+              group.groupColor
+            );
+            stackedOffset += barHeight;
+          });
+        } else {
+          const groupWidth = fullBarWidth / Math.max(1, activeGroups.length);
+          activeGroups.forEach((group, groupIndex) => {
+            const count = bin.groupCounts.get(group.groupId) || 0;
+            const barHeight = (count / model.yMax) * plotHeight;
+            rect(
+              x + groupIndex * groupWidth,
+              padding.top + plotHeight - barHeight,
+              Math.max(1, groupWidth - 1),
+              barHeight,
+              group.groupColor
+            );
+          });
+        }
+      } else {
+        const barHeight = (bin.count / model.yMax) * plotHeight;
+        rect(
+          x,
+          padding.top + plotHeight - barHeight,
+          fullBarWidth,
+          barHeight,
+          model.defaultColor
+        );
+      }
+    });
+    text(String(model.yMax), padding.left - 28, padding.top + 3, 9);
+    text("0", padding.left - 16, padding.top + plotHeight + 3, 9);
+    text(formatHistogramAxisNumber(model.min), padding.left, padding.top + plotHeight + 18, 9);
+    text(formatHistogramAxisNumber(model.max), padding.left + plotWidth - 48, padding.top + plotHeight + 18, 9);
+  }
+
+  text(
+    `n = ${model.values.length}; mean = ${formatHistogramAxisNumber(model.mean)}; min = ${formatHistogramAxisNumber(model.dataMin)}; max = ${formatHistogramAxisNumber(model.dataMax)}`,
+    padding.left,
+    height - 24,
+    10
+  );
+
+  if (model.mode === "groups") {
+    let legendX = padding.left;
+    const legendY = height - 42;
+    model.groups
+      .filter((group) => group.values.length > 0)
+      .forEach((group) => {
+        rect(legendX, legendY - 8, 8, 8, group.groupColor);
+        text(group.groupName, legendX + 12, legendY, 8);
+        legendX += Math.min(110, 18 + group.groupName.length * 5);
+      });
+  }
+
+  const stream = commands.join("\n");
+  const objects = [
+    "<< /Type /Catalog /Pages 2 0 R >>",
+    "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+    `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${width} ${height}] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>`,
+    "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+    `<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`,
+  ];
+  let pdf = "%PDF-1.4\n";
+  const offsets = [0];
+  objects.forEach((object, index) => {
+    offsets[index + 1] = pdf.length;
+    pdf += `${index + 1} 0 obj\n${object}\nendobj\n`;
+  });
+  const xrefOffset = pdf.length;
+  pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
+  for (let index = 1; index <= objects.length; index++) {
+    pdf += `${String(offsets[index]).padStart(10, "0")} 00000 n \n`;
+  }
+  pdf += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
+  return new Blob([pdf], { type: "application/pdf" });
+}
+
+function exportMeasureHistogramPDF() {
+  const model = buildMeasureHistogramModel();
+  if (model.plotType !== "histogram") {
+    alert("PDF export currently supports histogram view.");
+    return;
+  }
+  if (model.values.length === 0) {
+    alert("No plottable measurements to export.");
+    return;
+  }
+  const parameter = pdfText(model.parameter.label).toLowerCase().replace(/\W+/g, "-");
+  saveAs(createMeasureHistogramPdf(model), `measurement-histogram-${parameter}.pdf`);
+}
+
+function getMeasureParameterValue(result, parameter) {
+  const rawValue = result?.[parameter.id];
+  if (!Number.isFinite(rawValue)) return null;
+  if (
+    result.validGeometry === false &&
+    (parameter.id === "areaM2" || parameter.id === "ecdM")
+  ) {
+    return null;
+  }
+  return rawValue * getMeasureHistogramUnitInfo(parameter).factor;
+}
+
+function renderMeasureParameterOptions(select, fallbackId) {
+  if (!select) return;
+  const previous = select.value || fallbackId;
+  select.innerHTML = "";
+  MEASURE_HISTOGRAM_PARAMETERS.forEach((parameter) => {
+    const option = document.createElement("option");
+    option.value = parameter.id;
+    option.textContent = parameter.label;
+    select.appendChild(option);
+  });
+  select.value = MEASURE_HISTOGRAM_PARAMETERS.some(
+    (parameter) => parameter.id === previous
+  )
+    ? previous
+    : fallbackId;
+}
+
+function getMeasureScatterParameter(select, fallbackIndex) {
+  const parameterId = select?.value;
+  return (
+    MEASURE_HISTOGRAM_PARAMETERS.find(
+      (parameter) => parameter.id === parameterId
+    ) || MEASURE_HISTOGRAM_PARAMETERS[fallbackIndex]
+  );
+}
+
+function getMeasureScatterDefaultColor() {
+  const color = measureScatterColorInput?.value || "#8a8f94";
+  return /^#[0-9a-f]{6}$/i.test(color) ? color : "#8a8f94";
+}
+
+function syncMeasureScatterGroupSelection(groups) {
+  const groupIds = new Set(groups.map((group) => group.groupId));
+  groupIds.forEach((groupId) => {
+    if (!measureScatterKnownGroupIds.has(groupId)) {
+      measureScatterSelectedGroupIds.add(groupId);
+    }
+  });
+  measureScatterKnownGroupIds = groupIds;
+  measureScatterSelectedGroupIds = new Set(
+    [...measureScatterSelectedGroupIds].filter((groupId) => groupIds.has(groupId))
+  );
+}
+
+function getMeasureScatterPoints(xParameter, yParameter) {
+  const groups = getMeasureHistogramGroupsInUse();
+  syncMeasureScatterGroupSelection(groups);
+  const groupedPoints = new Map(
+    groups.map((group) => [
+      group.groupId,
+      {
+        ...group,
+        points: [],
+      },
+    ])
+  );
+
+  measureResults.forEach((result) => {
+    const group = getMeasureGroupForResult(result);
+    if (!measureScatterSelectedGroupIds.has(group.groupId)) return;
+    const x = getMeasureParameterValue(result, xParameter);
+    const y = getMeasureParameterValue(result, yParameter);
+    if (!Number.isFinite(x) || !Number.isFinite(y)) return;
+    groupedPoints.get(group.groupId)?.points.push({ x, y });
+  });
+
+  const enabledGroups = [...groupedPoints.values()].filter((group) =>
+    measureScatterSelectedGroupIds.has(group.groupId)
+  );
+  const points = enabledGroups.flatMap((group) => group.points);
+  return { groups: enabledGroups, points };
+}
+
+function getDefaultScatterExtent(values) {
+  if (values.length === 0) {
+    return { min: 0, max: 1, dataMin: null, dataMax: null };
+  }
+  const dataMin = Math.min(...values);
+  const dataMax = Math.max(...values);
+  let min = dataMin;
+  let max = dataMax;
+  if (min === max) {
+    const padding = Math.abs(min) > 0 ? Math.abs(min) * 0.05 : 0.5;
+    min -= padding;
+    max += padding;
+  }
+  const span = max - min;
+  const step = getNiceHistogramNumber(span / 5, true);
+  min = Math.floor(min / step) * step;
+  max = Math.ceil(max / step) * step;
+  if (dataMin >= 0 && min > 0) min = 0;
+  return { min, max, dataMin, dataMax };
+}
+
+function updateMeasureScatterRangeInputs(xExtent, yExtent) {
+  if (
+    !measureScatterXMinInput ||
+    !measureScatterXMaxInput ||
+    !measureScatterYMinInput ||
+    !measureScatterYMaxInput ||
+    measureScatterRangeEdited
+  ) {
+    return;
+  }
+  measureScatterXMinInput.value = formatHistogramInputValue(xExtent.min);
+  measureScatterXMaxInput.value = formatHistogramInputValue(xExtent.max);
+  measureScatterYMinInput.value = formatHistogramInputValue(yExtent.min);
+  measureScatterYMaxInput.value = formatHistogramInputValue(yExtent.max);
+}
+
+function renderMeasureScatterParameters() {
+  renderMeasureParameterOptions(measureScatterXParameter, "lengthM");
+  renderMeasureParameterOptions(measureScatterYParameter, "areaM2");
+}
+
+function renderMeasureScatterGroupControls() {
+  if (!measureScatterGroups) return;
+  const groups = getMeasureHistogramGroupsInUse();
+  syncMeasureScatterGroupSelection(groups);
+  measureScatterGroups.innerHTML = "";
+  if (groups.length === 0) {
+    measureScatterGroups.textContent = "No groups";
+    return;
+  }
+  groups.forEach((group) => {
+    const label = document.createElement("label");
+    label.className = "measure-histogram-group";
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.checked = measureScatterSelectedGroupIds.has(group.groupId);
+    checkbox.addEventListener("change", () => {
+      if (checkbox.checked) {
+        measureScatterSelectedGroupIds.add(group.groupId);
+      } else {
+        measureScatterSelectedGroupIds.delete(group.groupId);
+      }
+      drawMeasureScatter();
+    });
+    const swatch = createMeasureGroupColor(group);
+    const name = document.createElement("span");
+    name.textContent = group.groupName;
+    label.append(checkbox, swatch, name);
+    measureScatterGroups.appendChild(label);
+  });
+}
+
+function buildMeasureScatterModel() {
+  const xParameter = getMeasureScatterParameter(measureScatterXParameter, 0);
+  const yParameter = getMeasureScatterParameter(measureScatterYParameter, 2);
+  const { groups, points } = getMeasureScatterPoints(xParameter, yParameter);
+  const xExtent = getDefaultScatterExtent(points.map((point) => point.x));
+  const yExtent = getDefaultScatterExtent(points.map((point) => point.y));
+  updateMeasureScatterRangeInputs(xExtent, yExtent);
+
+  let xMin = measureScatterRangeEdited
+    ? getMeasureHistogramNumberInputValue(measureScatterXMinInput)
+    : null;
+  let xMax = measureScatterRangeEdited
+    ? getMeasureHistogramNumberInputValue(measureScatterXMaxInput)
+    : null;
+  let yMin = measureScatterRangeEdited
+    ? getMeasureHistogramNumberInputValue(measureScatterYMinInput)
+    : null;
+  let yMax = measureScatterRangeEdited
+    ? getMeasureHistogramNumberInputValue(measureScatterYMaxInput)
+    : null;
+  xMin = Number.isFinite(xMin) ? xMin : xExtent.min;
+  xMax = Number.isFinite(xMax) ? xMax : xExtent.max;
+  yMin = Number.isFinite(yMin) ? yMin : yExtent.min;
+  yMax = Number.isFinite(yMax) ? yMax : yExtent.max;
+  if (xMax <= xMin) {
+    xMin = xExtent.min;
+    xMax = xExtent.max;
+  }
+  if (yMax <= yMin) {
+    yMin = yExtent.min;
+    yMax = yExtent.max;
+  }
+
+  return {
+    xParameter,
+    yParameter,
+    xLabel: getMeasureHistogramLabel(xParameter),
+    yLabel: getMeasureHistogramLabel(yParameter),
+    mode: measureScatterMode?.value || "combined",
+    defaultColor: getMeasureScatterDefaultColor(),
+    groups,
+    points,
+    xMin,
+    xMax,
+    yMin,
+    yMax,
+    xDataMin: xExtent.dataMin,
+    xDataMax: xExtent.dataMax,
+    yDataMin: yExtent.dataMin,
+    yDataMax: yExtent.dataMax,
+  };
+}
+
+function drawScatterToCanvas(ctx, model, width, height) {
+  const padding = { left: 48, top: 24, right: 18, bottom: 48 };
+  const plotWidth = width - padding.left - padding.right;
+  const plotHeight = height - padding.top - padding.bottom;
+  const xScale = (value) =>
+    padding.left + ((value - model.xMin) / (model.xMax - model.xMin)) * plotWidth;
+  const yScale = (value) =>
+    padding.top + plotHeight - ((value - model.yMin) / (model.yMax - model.yMin)) * plotHeight;
+
+  ctx.clearRect(0, 0, width, height);
+  ctx.fillStyle = "#fff";
+  ctx.fillRect(0, 0, width, height);
+  ctx.strokeStyle = "#bdbdbd";
+  ctx.strokeRect(0.5, 0.5, width - 1, height - 1);
+  ctx.strokeStyle = "#444";
+  ctx.beginPath();
+  ctx.moveTo(padding.left, padding.top);
+  ctx.lineTo(padding.left, padding.top + plotHeight);
+  ctx.lineTo(padding.left + plotWidth, padding.top + plotHeight);
+  ctx.stroke();
+
+  ctx.fillStyle = "#222";
+  ctx.font = "12px sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText(`${model.yLabel} vs ${model.xLabel}`, padding.left + plotWidth / 2, 15);
+  ctx.save();
+  ctx.translate(12, padding.top + plotHeight / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillText(model.yLabel, 0, 0);
+  ctx.restore();
+
+  if (model.points.length === 0) {
+    ctx.fillStyle = "#666";
+    ctx.fillText("No plottable measurements", width / 2, height / 2);
+    return;
+  }
+
+  const drawPoint = (point, color) => {
+    if (
+      point.x < model.xMin ||
+      point.x > model.xMax ||
+      point.y < model.yMin ||
+      point.y > model.yMax
+    ) {
+      return;
+    }
+    ctx.beginPath();
+    ctx.fillStyle = color;
+    ctx.globalAlpha = 0.78;
+    ctx.arc(xScale(point.x), yScale(point.y), 3.2, 0, Math.PI * 2);
+    ctx.fill();
+  };
+
+  if (model.mode === "groups") {
+    model.groups.forEach((group) => {
+      group.points.forEach((point) =>
+        drawPoint(point, getSafeMeasureGroupColor(group.groupColor))
+      );
+    });
+  } else {
+    model.points.forEach((point) => drawPoint(point, model.defaultColor));
+  }
+  ctx.globalAlpha = 1;
+
+  ctx.fillStyle = "#333";
+  ctx.font = "10px sans-serif";
+  ctx.textAlign = "left";
+  ctx.fillText(formatHistogramAxisNumber(model.xMin), padding.left, padding.top + plotHeight + 16);
+  ctx.textAlign = "right";
+  ctx.fillText(formatHistogramAxisNumber(model.xMax), padding.left + plotWidth, padding.top + plotHeight + 16);
+  ctx.fillText(formatHistogramAxisNumber(model.yMax), padding.left - 5, padding.top + 4);
+  ctx.fillText(formatHistogramAxisNumber(model.yMin), padding.left - 5, padding.top + plotHeight + 3);
+  ctx.textAlign = "center";
+  ctx.fillText(model.xLabel, padding.left + plotWidth / 2, height - 10);
+}
+
+function summarizeScatterPoints(points) {
+  const n = points.length;
+  if (n === 0) {
+    return { n: 0, meanX: null, meanY: null, sdX: null, sdY: null, r: null, r2: null };
+  }
+  const meanX = points.reduce((sum, point) => sum + point.x, 0) / n;
+  const meanY = points.reduce((sum, point) => sum + point.y, 0) / n;
+  if (n < 2) {
+    return { n, meanX, meanY, sdX: 0, sdY: 0, r: null, r2: null };
+  }
+  const sums = points.reduce(
+    (acc, point) => {
+      const dx = point.x - meanX;
+      const dy = point.y - meanY;
+      acc.xx += dx * dx;
+      acc.yy += dy * dy;
+      acc.xy += dx * dy;
+      return acc;
+    },
+    { xx: 0, yy: 0, xy: 0 }
+  );
+  const sdX = Math.sqrt(sums.xx / (n - 1));
+  const sdY = Math.sqrt(sums.yy / (n - 1));
+  const r = sums.xx > 0 && sums.yy > 0 ? sums.xy / Math.sqrt(sums.xx * sums.yy) : null;
+  return {
+    n,
+    meanX,
+    meanY,
+    sdX,
+    sdY,
+    r,
+    r2: Number.isFinite(r) ? r * r : null,
+  };
+}
+
+function getMeasureScatterStatsRows(model) {
+  if (model.mode === "groups") {
+    return model.groups
+      .filter((group) => group.points.length > 0)
+      .map((group) => ({
+        set: group.groupName,
+        ...summarizeScatterPoints(group.points),
+      }));
+  }
+  return [
+    {
+      set: "Combined",
+      ...summarizeScatterPoints(model.points),
+    },
+  ].filter((row) => row.n > 0);
+}
+
+function updateMeasureScatterStatsHeaders(model) {
+  if (measureScatterMeanXHeader) {
+    measureScatterMeanXHeader.textContent = `Mean ${model.xLabel}`;
+  }
+  if (measureScatterMeanYHeader) {
+    measureScatterMeanYHeader.textContent = `Mean ${model.yLabel}`;
+  }
+  if (measureScatterSdXHeader) {
+    measureScatterSdXHeader.textContent = `SD ${model.xLabel}`;
+  }
+  if (measureScatterSdYHeader) {
+    measureScatterSdYHeader.textContent = `SD ${model.yLabel}`;
+  }
+}
+
+function renderMeasureScatterStats(model) {
+  if (!measureScatterStatsBody) return;
+  updateMeasureScatterStatsHeaders(model);
+  const rows = getMeasureScatterStatsRows(model);
+  measureScatterStatsBody.innerHTML = "";
+  if (rows.length === 0) {
+    const row = document.createElement("tr");
+    const cell = document.createElement("td");
+    cell.colSpan = 8;
+    cell.textContent = "No plottable measurements";
+    row.appendChild(cell);
+    measureScatterStatsBody.appendChild(row);
+    if (exportMeasureScatterStatsButton) {
+      exportMeasureScatterStatsButton.disabled = true;
+    }
+    return;
+  }
+  rows.forEach((stats) => {
+    const row = document.createElement("tr");
+    [
+      stats.set,
+      stats.n,
+      formatSummaryStat(stats.meanX),
+      formatSummaryStat(stats.meanY),
+      formatSummaryStat(stats.sdX),
+      formatSummaryStat(stats.sdY),
+      formatSummaryStat(stats.r),
+      formatSummaryStat(stats.r2),
+    ].forEach((value) => {
+      const cell = document.createElement("td");
+      cell.textContent = value;
+      row.appendChild(cell);
+    });
+    measureScatterStatsBody.appendChild(row);
+  });
+  if (exportMeasureScatterStatsButton) {
+    exportMeasureScatterStatsButton.disabled = false;
+  }
+}
+
+function exportMeasureScatterStatsCSV() {
+  const model = buildMeasureScatterModel();
+  const rows = getMeasureScatterStatsRows(model);
+  if (rows.length === 0) {
+    alert("No scatterplot statistics to export.");
+    return;
+  }
+  const headers = [
+    "set",
+    "n",
+    `mean_${model.xLabel}`,
+    `mean_${model.yLabel}`,
+    `sd_${model.xLabel}`,
+    `sd_${model.yLabel}`,
+    "r",
+    "r2",
+  ];
+  const csvRows = rows.map((row) => [
+    row.set,
+    row.n,
+    row.meanX ?? "",
+    row.meanY ?? "",
+    row.sdX ?? "",
+    row.sdY ?? "",
+    row.r ?? "",
+    row.r2 ?? "",
+  ]);
+  const csv = [headers, ...csvRows]
+    .map((row) => row.map(csvEscape).join(","))
+    .join("\n");
+  saveAs(
+    new Blob([csv], { type: "text/csv;charset=utf-8" }),
+    "scatterplot-statistics.csv"
+  );
+}
+
+function drawMeasureScatter() {
+  if (!measureScatterCanvas || measureScatterMenu?.hidden) return null;
+  const model = buildMeasureScatterModel();
+  const rect = measureScatterCanvas.getBoundingClientRect();
+  const ratio = window.devicePixelRatio || 1;
+  const width = Math.max(320, Math.round(rect.width));
+  const height = Math.max(200, Math.round(rect.height));
+  measureScatterCanvas.width = Math.round(width * ratio);
+  measureScatterCanvas.height = Math.round(height * ratio);
+  const ctx = measureScatterCanvas.getContext("2d");
+  ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+  drawScatterToCanvas(ctx, model, width, height);
+  renderMeasureScatterStats(model);
+  if (exportMeasureScatterButton) {
+    exportMeasureScatterButton.disabled = model.points.length === 0;
+  }
+  return model;
+}
+
+function renderMeasureScatterMenu() {
+  if (!measureScatterMenu || measureScatterMenu.hidden) return;
+  renderMeasureScatterParameters();
+  renderMeasureScatterGroupControls();
+  drawMeasureScatter();
+}
+
+function updateMeasureScatterAvailability() {
+  if (!measureScatterButton) return;
+  measureScatterButton.disabled = measureResults.length === 0;
+}
+
+function positionFixedAnalysisMenu(menu, button) {
+  if (!menu || !button) return;
+  const buttonRect = button.getBoundingClientRect();
+  const menuRect = menu.getBoundingClientRect();
+  const margin = 8;
+  const left = Math.min(
+    Math.max(buttonRect.left, margin),
+    window.innerWidth - menuRect.width - margin
+  );
+  const spaceAbove = buttonRect.top - margin;
+  const top =
+    spaceAbove >= menuRect.height
+      ? buttonRect.top - menuRect.height - 4
+      : Math.min(
+          buttonRect.bottom + 4,
+          window.innerHeight - menuRect.height - margin
+        );
+  menu.style.left = `${left}px`;
+  menu.style.top = `${Math.max(margin, top)}px`;
+}
+
+function clampFixedAnalysisMenuToViewport(menu) {
+  if (!menu || menu.hidden) return;
+  const rect = menu.getBoundingClientRect();
+  const margin = 8;
+  const maxLeft = Math.max(margin, window.innerWidth - rect.width - margin);
+  const maxTop = Math.max(margin, window.innerHeight - rect.height - margin);
+  const left = Math.min(Math.max(rect.left, margin), maxLeft);
+  const top = Math.min(Math.max(rect.top, margin), maxTop);
+  menu.style.left = `${left}px`;
+  menu.style.top = `${top}px`;
+}
+
+function refreshOpenMeasureAnalysisMenus() {
+  clampFixedAnalysisMenuToViewport(measureHistogramMenu);
+  clampFixedAnalysisMenuToViewport(measureScatterMenu);
+  clampFixedAnalysisMenuToViewport(measureRoseMenu);
+  clampFixedAnalysisMenuToViewport(measureParticleSizeMenu);
+  drawMeasureHistogram();
+  drawMeasureScatter();
+  drawMeasureRose();
+  drawMeasureParticleSize();
+}
+
+function observeMeasureAnalysisMenuResize(menu) {
+  if (!window.ResizeObserver || !menu) return;
+  const observer = new ResizeObserver(() => {
+    if (menu.hidden) return;
+    requestAnimationFrame(refreshOpenMeasureAnalysisMenus);
+  });
+  observer.observe(menu);
+}
+
+[
+  measureHistogramMenu,
+  measureScatterMenu,
+  measureRoseMenu,
+  measureParticleSizeMenu,
+].forEach(observeMeasureAnalysisMenuResize);
+
+function openMeasureScatterMenu(button) {
+  if (!measureScatterMenu || !button) return;
+  if (measureScatterMenu.parentElement !== document.body) {
+    document.body.appendChild(measureScatterMenu);
+  }
+  measureScatterRangeEdited = false;
+  renderMeasureScatterParameters();
+  renderMeasureScatterGroupControls();
+  measureScatterMenu.hidden = false;
+  measureScatterButton?.setAttribute("aria-expanded", "true");
+  positionFixedAnalysisMenu(measureScatterMenu, button);
+  drawMeasureScatter();
+}
+
+function closeMeasureScatterMenu() {
+  if (!measureScatterMenu) return;
+  measureScatterMenu.hidden = true;
+  measureScatterButton?.setAttribute("aria-expanded", "false");
+}
+
+function createMeasureScatterPdf(model) {
+  const width = 612;
+  const height = 432;
+  const padding = { left: 72, top: 54, right: 34, bottom: 76 };
+  const plotWidth = width - padding.left - padding.right;
+  const plotHeight = height - padding.top - padding.bottom;
+  const commands = [];
+  const pdfY = (y) => height - y;
+  const text = (label, x, y, size = 10) => {
+    commands.push(`BT /F1 ${size} Tf ${x.toFixed(2)} ${pdfY(y).toFixed(2)} Td (${escapePdfString(label)}) Tj ET`);
+  };
+  const square = (x, y, size, color) => {
+    commands.push(
+      `${hexToPdfRgb(color)} rg ${(x - size / 2).toFixed(2)} ${pdfY(y + size / 2).toFixed(2)} ${size.toFixed(2)} ${size.toFixed(2)} re f`
+    );
+  };
+  const xScale = (value) =>
+    padding.left + ((value - model.xMin) / (model.xMax - model.xMin)) * plotWidth;
+  const yScale = (value) =>
+    padding.top + plotHeight - ((value - model.yMin) / (model.yMax - model.yMin)) * plotHeight;
+
+  commands.push("1 1 1 rg 0 0 612 432 re f");
+  commands.push("0.15 0.15 0.15 RG 1 w");
+  commands.push(`${padding.left} ${pdfY(padding.top)} m ${padding.left} ${pdfY(padding.top + plotHeight)} l ${padding.left + plotWidth} ${pdfY(padding.top + plotHeight)} l S`);
+  text(`${model.yLabel} vs ${model.xLabel}`, padding.left + plotWidth / 2 - 80, 24, 13);
+
+  const drawPoint = (point, color) => {
+    if (
+      point.x < model.xMin ||
+      point.x > model.xMax ||
+      point.y < model.yMin ||
+      point.y > model.yMax
+    ) {
+      return;
+    }
+    square(xScale(point.x), yScale(point.y), 4.8, color);
+  };
+  if (model.mode === "groups") {
+    model.groups.forEach((group) => {
+      group.points.forEach((point) => drawPoint(point, group.groupColor));
+    });
+  } else {
+    model.points.forEach((point) => drawPoint(point, model.defaultColor));
+  }
+
+  text(formatHistogramAxisNumber(model.xMin), padding.left, padding.top + plotHeight + 18, 9);
+  text(formatHistogramAxisNumber(model.xMax), padding.left + plotWidth - 44, padding.top + plotHeight + 18, 9);
+  text(formatHistogramAxisNumber(model.yMax), padding.left - 40, padding.top + 4, 9);
+  text(formatHistogramAxisNumber(model.yMin), padding.left - 40, padding.top + plotHeight + 3, 9);
+  text(model.xLabel, padding.left + plotWidth / 2 - 45, height - 42, 10);
+  addPdfRotatedText(
+    commands,
+    model.yLabel,
+    22,
+    padding.top + plotHeight / 2 + 45,
+    10,
+    height
+  );
+  text(`n = ${model.points.length}; x ${formatHistogramAxisNumber(model.xDataMin)}-${formatHistogramAxisNumber(model.xDataMax)}; y ${formatHistogramAxisNumber(model.yDataMin)}-${formatHistogramAxisNumber(model.yDataMax)}`, padding.left, height - 24, 10);
+
+  if (model.mode === "groups") {
+    let legendX = padding.left;
+    const legendY = height - 48;
+    model.groups
+      .filter((group) => group.points.length > 0)
+      .forEach((group) => {
+        commands.push(`${hexToPdfRgb(group.groupColor)} rg ${legendX.toFixed(2)} ${pdfY(legendY).toFixed(2)} 8 8 re f`);
+        text(group.groupName, legendX + 12, legendY + 8, 8);
+        legendX += Math.min(110, 18 + group.groupName.length * 5);
+      });
+  }
+
+  const stream = commands.join("\n");
+  const objects = [
+    "<< /Type /Catalog /Pages 2 0 R >>",
+    "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+    `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${width} ${height}] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>`,
+    "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+    `<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`,
+  ];
+  let pdf = "%PDF-1.4\n";
+  const offsets = [0];
+  objects.forEach((object, index) => {
+    offsets[index + 1] = pdf.length;
+    pdf += `${index + 1} 0 obj\n${object}\nendobj\n`;
+  });
+  const xrefOffset = pdf.length;
+  pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
+  for (let index = 1; index <= objects.length; index++) {
+    pdf += `${String(offsets[index]).padStart(10, "0")} 00000 n \n`;
+  }
+  pdf += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
+  return new Blob([pdf], { type: "application/pdf" });
+}
+
+function exportMeasureScatterPDF() {
+  const model = buildMeasureScatterModel();
+  if (model.points.length === 0) {
+    alert("No plottable measurements to export.");
+    return;
+  }
+  saveAs(createMeasureScatterPdf(model), "measurement-scatterplot.pdf");
+}
+
+const MEASURE_ROSE_DEFAULT_BIN_SIZE = 10;
+
+function getMeasureRoseParameters() {
+  return MEASURE_HISTOGRAM_PARAMETERS.filter(
+    (parameter) => parameter.unit === "degrees"
+  );
+}
+
+function renderMeasureRoseParameters() {
+  if (!measureRoseParameter) return;
+  const parameters = getMeasureRoseParameters();
+  const previous = measureRoseParameter.value || parameters[0]?.id || "";
+  measureRoseParameter.innerHTML = "";
+  parameters.forEach((parameter) => {
+    const option = document.createElement("option");
+    option.value = parameter.id;
+    option.textContent = parameter.label;
+    measureRoseParameter.appendChild(option);
+  });
+  measureRoseParameter.value = parameters.some(
+    (parameter) => parameter.id === previous
+  )
+    ? previous
+    : parameters[0]?.id || "";
+}
+
+function getMeasureRoseParameter() {
+  const parameters = getMeasureRoseParameters();
+  const parameterId = measureRoseParameter?.value;
+  return (
+    parameters.find((parameter) => parameter.id === parameterId) ||
+    parameters[0] ||
+    null
+  );
+}
+
+function getMeasureRoseMode() {
+  return measureRoseMode?.value === "groups" ? "groups" : "combined";
+}
+
+function getMeasureRoseDefaultColor() {
+  const color = measureRoseColorInput?.value || "#8a8f94";
+  return /^#[0-9a-f]{6}$/i.test(color) ? color : "#8a8f94";
+}
+
+function getMeasureRoseBinSize() {
+  const value = Number(measureRoseBinSizeInput?.value);
+  if (!Number.isFinite(value) || value <= 0) return MEASURE_ROSE_DEFAULT_BIN_SIZE;
+  return Math.min(90, Math.max(1, value));
+}
+
+function isMeasureRoseBidirectional() {
+  return measureRoseBidirectionalInput?.checked !== false;
+}
+
+function shouldStackMeasureRoseGroups() {
+  return Boolean(measureRoseStackedInput?.checked);
+}
+
+function normalizeDegrees(value, range = 360) {
+  if (!Number.isFinite(value) || range <= 0) return null;
+  return ((value % range) + range) % range;
+}
+
+function syncMeasureRoseGroupSelection(groups) {
+  const groupIds = new Set(groups.map((group) => group.groupId));
+  groupIds.forEach((groupId) => {
+    if (!measureRoseKnownGroupIds.has(groupId)) {
+      measureRoseSelectedGroupIds.add(groupId);
+    }
+  });
+  measureRoseKnownGroupIds = groupIds;
+  measureRoseSelectedGroupIds = new Set(
+    [...measureRoseSelectedGroupIds].filter((groupId) => groupIds.has(groupId))
+  );
+}
+
+function renderMeasureRoseGroupControls() {
+  if (!measureRoseGroups) return;
+  const groups = getMeasureHistogramGroupsInUse();
+  syncMeasureRoseGroupSelection(groups);
+  measureRoseGroups.innerHTML = "";
+  if (groups.length === 0) {
+    measureRoseGroups.textContent = "No groups";
+    return;
+  }
+
+  groups.forEach((group) => {
+    const label = document.createElement("label");
+    label.className = "measure-histogram-group";
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.checked = measureRoseSelectedGroupIds.has(group.groupId);
+    checkbox.addEventListener("change", () => {
+      if (checkbox.checked) {
+        measureRoseSelectedGroupIds.add(group.groupId);
+      } else {
+        measureRoseSelectedGroupIds.delete(group.groupId);
+      }
+      drawMeasureRose();
+    });
+    const swatch = createMeasureGroupColor(group);
+    const name = document.createElement("span");
+    name.textContent = group.groupName;
+    label.append(checkbox, swatch, name);
+    measureRoseGroups.appendChild(label);
+  });
+}
+
+function getMeasureRoseAngles(parameter) {
+  const groups = getMeasureHistogramGroupsInUse();
+  syncMeasureRoseGroupSelection(groups);
+  const groupedAngles = new Map(
+    groups.map((group) => [
+      group.groupId,
+      {
+        ...group,
+        angles: [],
+      },
+    ])
+  );
+
+  if (!parameter) return { groups: [...groupedAngles.values()], angles: [] };
+
+  measureResults.forEach((result) => {
+    const group = getMeasureGroupForResult(result);
+    if (!measureRoseSelectedGroupIds.has(group.groupId)) return;
+    const angle = getMeasureParameterValue(result, parameter);
+    if (!Number.isFinite(angle)) return;
+    const normalized = normalizeDegrees(angle);
+    if (!Number.isFinite(normalized)) return;
+    groupedAngles.get(group.groupId)?.angles.push(normalized);
+  });
+
+  const enabledGroups = [...groupedAngles.values()].filter((group) =>
+    measureRoseSelectedGroupIds.has(group.groupId)
+  );
+  const angles = enabledGroups.flatMap((group) => group.angles);
+  return { groups: enabledGroups, angles };
+}
+
+function createRoseBins(binSize) {
+  const binCount = Math.max(1, Math.ceil(360 / binSize));
+  const adjustedBinSize = 360 / binCount;
+  return Array.from({ length: binCount }, (_, index) => {
+    const min = index * adjustedBinSize;
+    const max = min + adjustedBinSize;
+    return {
+      min,
+      max,
+      center: min + adjustedBinSize / 2,
+      count: 0,
+    };
+  });
+}
+
+function addAngleToRoseBins(bins, angle, weight = 1) {
+  const normalized = normalizeDegrees(angle);
+  if (!Number.isFinite(normalized) || bins.length === 0) return;
+  const binSize = 360 / bins.length;
+  const index = Math.min(bins.length - 1, Math.floor(normalized / binSize));
+  bins[index].count += weight;
+}
+
+function buildRoseDistribution(angles, binSize, bidirectional) {
+  const bins = createRoseBins(binSize);
+  angles.forEach((angle) => {
+    if (bidirectional) {
+      const orientation = normalizeDegrees(angle, 180);
+      addAngleToRoseBins(bins, orientation, 0.5);
+      addAngleToRoseBins(bins, orientation + 180, 0.5);
+    } else {
+      addAngleToRoseBins(bins, angle, 1);
+    }
+  });
+  return bins;
+}
+
+function summarizeRoseAngles(angles, bidirectional) {
+  const n = angles.length;
+  if (n === 0) {
+    return {
+      n: 0,
+      meanDeg: null,
+      resultantLength: null,
+      circularSdDeg: null,
+    };
+  }
+  const multiplier = bidirectional ? 2 : 1;
+  let sinSum = 0;
+  let cosSum = 0;
+  angles.forEach((angle) => {
+    const radians = ((angle * multiplier) / 180) * Math.PI;
+    sinSum += Math.sin(radians);
+    cosSum += Math.cos(radians);
+  });
+  const meanRadians = Math.atan2(sinSum, cosSum) / multiplier;
+  const meanRange = bidirectional ? 180 : 360;
+  const meanDeg = normalizeDegrees((meanRadians * 180) / Math.PI, meanRange);
+  const resultantLength = Math.min(
+    1,
+    Math.max(0, Math.sqrt(sinSum ** 2 + cosSum ** 2) / n)
+  );
+  const circularSdDeg =
+    resultantLength > 0
+      ? (Math.sqrt(-2 * Math.log(resultantLength)) * 180) /
+        Math.PI /
+        multiplier
+      : null;
+  return { n, meanDeg, resultantLength, circularSdDeg };
+}
+
+function buildMeasureRoseModel() {
+  const parameter = getMeasureRoseParameter();
+  const binSize = getMeasureRoseBinSize();
+  const mode = getMeasureRoseMode();
+  const bidirectional = isMeasureRoseBidirectional();
+  const stacked = shouldStackMeasureRoseGroups();
+  const { groups, angles } = getMeasureRoseAngles(parameter);
+  const groupDistributions = groups.map((group) => ({
+    ...group,
+    bins: buildRoseDistribution(group.angles, binSize, bidirectional),
+    stats: summarizeRoseAngles(group.angles, bidirectional),
+  }));
+  const combinedBins = buildRoseDistribution(angles, binSize, bidirectional);
+  const combinedStats = summarizeRoseAngles(angles, bidirectional);
+  let maxCount = Math.max(1, ...combinedBins.map((bin) => bin.count));
+  if (mode === "groups") {
+    if (stacked) {
+      maxCount = Math.max(
+        1,
+        ...combinedBins.map((_, binIndex) =>
+          groupDistributions.reduce(
+            (sum, group) => sum + (group.bins[binIndex]?.count || 0),
+            0
+          )
+        )
+      );
+    } else {
+      maxCount = Math.max(
+        1,
+        ...groupDistributions.flatMap((group) =>
+          group.bins.map((bin) => bin.count)
+        )
+      );
+    }
+  }
+
+  return {
+    parameter,
+    parameterLabel: parameter ? getMeasureHistogramLabel(parameter) : "Azimuth (°)",
+    mode,
+    bidirectional,
+    stacked,
+    binSize: 360 / Math.max(1, Math.ceil(360 / binSize)),
+    defaultColor: getMeasureRoseDefaultColor(),
+    groups: groupDistributions,
+    angles,
+    bins: combinedBins,
+    stats: combinedStats,
+    maxCount,
+  };
+}
+
+function getMeasureRoseStatsRows(model = buildMeasureRoseModel()) {
+  if (model.mode === "groups") {
+    return model.groups
+      .filter((group) => group.stats.n > 0)
+      .map((group) => ({ set: group.groupName, ...group.stats }));
+  }
+  return model.stats.n > 0 ? [{ set: "Combined", ...model.stats }] : [];
+}
+
+function formatRoseStat(value, digits = 2) {
+  return Number.isFinite(value) ? value.toFixed(digits) : "";
+}
+
+function renderMeasureRoseStats(model) {
+  if (!measureRoseStatsBody) return;
+  const rows = getMeasureRoseStatsRows(model);
+  measureRoseStatsBody.innerHTML = "";
+  if (rows.length === 0) {
+    const row = document.createElement("tr");
+    const cell = document.createElement("td");
+    cell.colSpan = 5;
+    cell.textContent = "No results";
+    row.appendChild(cell);
+    measureRoseStatsBody.appendChild(row);
+    if (exportMeasureRoseStatsButton) exportMeasureRoseStatsButton.disabled = true;
+    return;
+  }
+  rows.forEach((stats) => {
+    const row = document.createElement("tr");
+    [
+      stats.set,
+      stats.n,
+      formatRoseStat(stats.meanDeg),
+      formatRoseStat(stats.resultantLength, 3),
+      formatRoseStat(stats.circularSdDeg),
+    ].forEach((value) => {
+      const cell = document.createElement("td");
+      cell.textContent = value;
+      row.appendChild(cell);
+    });
+    measureRoseStatsBody.appendChild(row);
+  });
+  if (exportMeasureRoseStatsButton) exportMeasureRoseStatsButton.disabled = false;
+}
+
+function drawRoseWedge(ctx, cx, cy, innerRadius, outerRadius, startDeg, endDeg, color) {
+  if (outerRadius <= innerRadius) return;
+  const start = ((startDeg - 90) * Math.PI) / 180;
+  const end = ((endDeg - 90) * Math.PI) / 180;
+  ctx.beginPath();
+  ctx.arc(cx, cy, outerRadius, start, end);
+  if (innerRadius > 0) {
+    ctx.arc(cx, cy, innerRadius, end, start, true);
+  } else {
+    ctx.lineTo(cx, cy);
+  }
+  ctx.closePath();
+  ctx.fillStyle = color;
+  ctx.fill();
+  ctx.strokeStyle = "#ffffff";
+  ctx.lineWidth = 0.75;
+  ctx.stroke();
+}
+
+function drawRoseDistribution(ctx, model, cx, cy, radius) {
+  const groupsWithAngles = model.groups.filter((group) => group.angles.length > 0);
+  if (model.mode === "groups" && groupsWithAngles.length > 0) {
+    model.bins.forEach((_, binIndex) => {
+      const binMin = binIndex * model.binSize;
+      const binMax = binMin + model.binSize;
+      if (model.stacked) {
+        let innerRadius = 0;
+        groupsWithAngles.forEach((group) => {
+          const count = group.bins[binIndex]?.count || 0;
+          const outerRadius = innerRadius + (count / model.maxCount) * radius;
+          drawRoseWedge(
+            ctx,
+            cx,
+            cy,
+            innerRadius,
+            Math.min(radius, outerRadius),
+            binMin,
+            binMax,
+            getSafeMeasureGroupColor(group.groupColor)
+          );
+          innerRadius = outerRadius;
+        });
+      } else {
+        const sliceSize = model.binSize / groupsWithAngles.length;
+        groupsWithAngles.forEach((group, groupIndex) => {
+          const count = group.bins[binIndex]?.count || 0;
+          const outerRadius = (count / model.maxCount) * radius;
+          drawRoseWedge(
+            ctx,
+            cx,
+            cy,
+            0,
+            outerRadius,
+            binMin + groupIndex * sliceSize,
+            binMin + (groupIndex + 1) * sliceSize,
+            getSafeMeasureGroupColor(group.groupColor)
+          );
+        });
+      }
+    });
+    return;
+  }
+
+  model.bins.forEach((bin) => {
+    const outerRadius = (bin.count / model.maxCount) * radius;
+    drawRoseWedge(
+      ctx,
+      cx,
+      cy,
+      0,
+      outerRadius,
+      bin.min,
+      bin.max,
+      model.defaultColor
+    );
+  });
+}
+
+function drawRoseToCanvas(ctx, model, width, height) {
+  ctx.clearRect(0, 0, width, height);
+  ctx.fillStyle = "#fff";
+  ctx.fillRect(0, 0, width, height);
+  const cx = width / 2;
+  const cy = height / 2 + 8;
+  const radius = Math.max(40, Math.min(width - 90, height - 62) / 2);
+
+  ctx.fillStyle = "#222";
+  ctx.font = "12px sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText(`${model.parameterLabel} Rose Diagram`, cx, 17);
+
+  ctx.strokeStyle = "#d8d8d8";
+  ctx.lineWidth = 1;
+  [0.25, 0.5, 0.75, 1].forEach((fraction) => {
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius * fraction, 0, Math.PI * 2);
+    ctx.stroke();
+  });
+  for (let angle = 0; angle < 360; angle += 45) {
+    const radians = ((angle - 90) * Math.PI) / 180;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + Math.cos(radians) * radius, cy + Math.sin(radians) * radius);
+    ctx.stroke();
+  }
+
+  if (model.angles.length === 0) {
+    ctx.fillStyle = "#777";
+    ctx.font = "12px sans-serif";
+    ctx.fillText("No plottable azimuth measurements", cx, cy);
+  } else {
+    drawRoseDistribution(ctx, model, cx, cy, radius);
+  }
+
+  ctx.fillStyle = "#333";
+  ctx.font = "10px sans-serif";
+  ctx.fillText("0°", cx, cy - radius - 7);
+  ctx.fillText("90°", cx + radius + 17, cy + 3);
+  ctx.fillText("180°", cx, cy + radius + 15);
+  ctx.fillText("270°", cx - radius - 19, cy + 3);
+  ctx.textAlign = "left";
+  ctx.fillText(`Bin ${formatHistogramAxisNumber(model.binSize)}°`, 10, height - 10);
+  ctx.textAlign = "right";
+  ctx.fillText(
+    model.bidirectional ? "Bidirectional" : "Directional",
+    width - 10,
+    height - 10
+  );
+}
+
+function drawMeasureRose() {
+  if (!measureRoseCanvas || measureRoseMenu?.hidden) return null;
+  const model = buildMeasureRoseModel();
+  const rect = measureRoseCanvas.getBoundingClientRect();
+  const ratio = window.devicePixelRatio || 1;
+  const width = Math.max(320, Math.round(rect.width));
+  const height = Math.max(200, Math.round(rect.height));
+  measureRoseCanvas.width = Math.round(width * ratio);
+  measureRoseCanvas.height = Math.round(height * ratio);
+  const ctx = measureRoseCanvas.getContext("2d");
+  ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+  drawRoseToCanvas(ctx, model, width, height);
+  renderMeasureRoseStats(model);
+  if (exportMeasureRoseButton) {
+    exportMeasureRoseButton.disabled = model.angles.length === 0;
+  }
+  return model;
+}
+
+function renderMeasureRoseMenu() {
+  if (!measureRoseMenu || measureRoseMenu.hidden) return;
+  renderMeasureRoseParameters();
+  renderMeasureRoseGroupControls();
+  updateMeasureRoseControlState();
+  drawMeasureRose();
+}
+
+function updateMeasureRoseControlState() {
+  if (measureRoseStackedInput) {
+    measureRoseStackedInput.disabled = getMeasureRoseMode() !== "groups";
+  }
+}
+
+function updateMeasureRoseAvailability() {
+  if (!measureRoseButton) return;
+  const parameter = getMeasureRoseParameters()[0];
+  const hasAngles = measureResults.some((result) => {
+    const rawValue = result?.[parameter?.id];
+    return Number.isFinite(rawValue);
+  });
+  measureRoseButton.disabled = !parameter || !hasAngles;
+}
+
+function openMeasureRoseMenu(button) {
+  if (!measureRoseMenu || !button) return;
+  if (measureRoseMenu.parentElement !== document.body) {
+    document.body.appendChild(measureRoseMenu);
+  }
+  renderMeasureRoseParameters();
+  renderMeasureRoseGroupControls();
+  updateMeasureRoseControlState();
+  measureRoseMenu.hidden = false;
+  measureRoseButton?.setAttribute("aria-expanded", "true");
+  positionFixedAnalysisMenu(measureRoseMenu, button);
+  drawMeasureRose();
+}
+
+function closeMeasureRoseMenu() {
+  if (!measureRoseMenu) return;
+  measureRoseMenu.hidden = true;
+  measureRoseButton?.setAttribute("aria-expanded", "false");
+}
+
+function exportMeasureRoseStatsCSV() {
+  const model = buildMeasureRoseModel();
+  const rows = getMeasureRoseStatsRows(model);
+  if (rows.length === 0) {
+    alert("No rose diagram statistics to export.");
+    return;
+  }
+  const headers = [
+    "set",
+    "n",
+    "parameter",
+    "bidirectional",
+    "bin_deg",
+    "mean_deg",
+    "resultant_length",
+    "circular_sd_deg",
+  ];
+  const csvRows = rows.map((row) => [
+    row.set,
+    row.n,
+    model.parameter?.label || "",
+    model.bidirectional ? "true" : "false",
+    model.binSize,
+    row.meanDeg ?? "",
+    row.resultantLength ?? "",
+    row.circularSdDeg ?? "",
+  ]);
+  const csv = [headers, ...csvRows]
+    .map((row) => row.map(csvEscape).join(","))
+    .join("\n");
+  saveAs(
+    new Blob([csv], { type: "text/csv;charset=utf-8" }),
+    "rose-diagram-statistics.csv"
+  );
+}
+
+function addPdfPolygon(commands, points, color) {
+  if (points.length < 3) return;
+  commands.push(`${hexToPdfRgb(color)} rg`);
+  commands.push(
+    `${points[0].x.toFixed(2)} ${points[0].y.toFixed(2)} m ` +
+      points
+        .slice(1)
+        .map((point) => `${point.x.toFixed(2)} ${point.y.toFixed(2)} l`)
+        .join(" ") +
+      " h f"
+  );
+}
+
+function addPdfRoseWedge(commands, pageHeight, cx, cy, innerRadius, outerRadius, startDeg, endDeg, color) {
+  if (outerRadius <= innerRadius) return;
+  const steps = Math.max(3, Math.ceil(Math.abs(endDeg - startDeg) / 5));
+  const points = [];
+  for (let index = 0; index <= steps; index += 1) {
+    const angle = startDeg + ((endDeg - startDeg) * index) / steps;
+    const radians = ((angle - 90) * Math.PI) / 180;
+    points.push({
+      x: cx + Math.cos(radians) * outerRadius,
+      y: pageHeight - (cy + Math.sin(radians) * outerRadius),
+    });
+  }
+  if (innerRadius > 0) {
+    for (let index = steps; index >= 0; index -= 1) {
+      const angle = startDeg + ((endDeg - startDeg) * index) / steps;
+      const radians = ((angle - 90) * Math.PI) / 180;
+      points.push({
+        x: cx + Math.cos(radians) * innerRadius,
+        y: pageHeight - (cy + Math.sin(radians) * innerRadius),
+      });
+    }
+  } else {
+    points.push({ x: cx, y: pageHeight - cy });
+  }
+  addPdfPolygon(commands, points, color);
+}
+
+function addPdfCircleApprox(commands, pageHeight, cx, cy, radius) {
+  const points = [];
+  for (let index = 0; index <= 72; index += 1) {
+    const radians = (index / 72) * Math.PI * 2;
+    points.push({
+      x: cx + Math.cos(radians) * radius,
+      y: pageHeight - (cy + Math.sin(radians) * radius),
+    });
+  }
+  if (points.length === 0) return;
+  commands.push(
+    `${points[0].x.toFixed(2)} ${points[0].y.toFixed(2)} m ` +
+      points
+        .slice(1)
+        .map((point) => `${point.x.toFixed(2)} ${point.y.toFixed(2)} l`)
+        .join(" ") +
+      " S"
+  );
+}
+
+function createMeasureRosePdf(model) {
+  const width = 612;
+  const height = 432;
+  const commands = [];
+  const cx = width / 2;
+  const cy = 178;
+  const radius = 118;
+  commands.push("1 1 1 rg 0 0 612 432 re f");
+  addPdfText(commands, `${model.parameterLabel} Rose Diagram`, 226, 28, 13, height);
+  commands.push("0.82 0.82 0.82 RG 1 w");
+  [0.25, 0.5, 0.75, 1].forEach((fraction) => {
+    addPdfCircleApprox(commands, height, cx, cy, radius * fraction);
+  });
+  for (let angle = 0; angle < 360; angle += 45) {
+    const radians = ((angle - 90) * Math.PI) / 180;
+    const x = cx + Math.cos(radians) * radius;
+    const y = cy + Math.sin(radians) * radius;
+    commands.push(
+      `${cx.toFixed(2)} ${(height - cy).toFixed(2)} m ${x.toFixed(2)} ${(height - y).toFixed(2)} l S`
+    );
+  }
+  if (model.angles.length > 0) {
+    const groupsWithAngles = model.groups.filter((group) => group.angles.length > 0);
+    if (model.mode === "groups" && groupsWithAngles.length > 0) {
+      model.bins.forEach((_, binIndex) => {
+        const binMin = binIndex * model.binSize;
+        const binMax = binMin + model.binSize;
+        if (model.stacked) {
+          let innerRadius = 0;
+          groupsWithAngles.forEach((group) => {
+            const count = group.bins[binIndex]?.count || 0;
+            const outerRadius = Math.min(
+              radius,
+              innerRadius + (count / model.maxCount) * radius
+            );
+            addPdfRoseWedge(
+              commands,
+              height,
+              cx,
+              cy,
+              innerRadius,
+              outerRadius,
+              binMin,
+              binMax,
+              getSafeMeasureGroupColor(group.groupColor)
+            );
+            innerRadius = outerRadius;
+          });
+        } else {
+          const sliceSize = model.binSize / groupsWithAngles.length;
+          groupsWithAngles.forEach((group, groupIndex) => {
+            const count = group.bins[binIndex]?.count || 0;
+            addPdfRoseWedge(
+              commands,
+              height,
+              cx,
+              cy,
+              0,
+              (count / model.maxCount) * radius,
+              binMin + groupIndex * sliceSize,
+              binMin + (groupIndex + 1) * sliceSize,
+              getSafeMeasureGroupColor(group.groupColor)
+            );
+          });
+        }
+      });
+    } else {
+      model.bins.forEach((bin) => {
+        addPdfRoseWedge(
+          commands,
+          height,
+          cx,
+          cy,
+          0,
+          (bin.count / model.maxCount) * radius,
+          bin.min,
+          bin.max,
+          model.defaultColor
+        );
+      });
+    }
+  } else {
+    addPdfText(commands, "No plottable azimuth measurements", 228, cy, 11, height);
+  }
+  addPdfText(commands, "0 deg", cx - 12, cy - radius - 12, 9, height);
+  addPdfText(commands, "90 deg", cx + radius + 10, cy + 3, 9, height);
+  addPdfText(commands, "180 deg", cx - 16, cy + radius + 18, 9, height);
+  addPdfText(commands, "270 deg", cx - radius - 40, cy + 3, 9, height);
+  addPdfText(
+    commands,
+    `Bin ${formatHistogramAxisNumber(model.binSize)} deg; ${model.bidirectional ? "Bidirectional" : "Directional"}`,
+    42,
+    332,
+    10,
+    height
+  );
+  addPdfText(commands, "Set", 42, 356, 9, height);
+  addPdfText(commands, "n", 190, 356, 9, height);
+  addPdfText(commands, "Mean deg", 232, 356, 9, height);
+  addPdfText(commands, "R", 316, 356, 9, height);
+  addPdfText(commands, "Circular SD deg", 370, 356, 9, height);
+  getMeasureRoseStatsRows(model).slice(0, 5).forEach((row, index) => {
+    const y = 374 + index * 14;
+    addPdfText(commands, row.set.slice(0, 24), 42, y, 9, height);
+    addPdfText(commands, String(row.n), 190, y, 9, height);
+    addPdfText(commands, formatRoseStat(row.meanDeg), 232, y, 9, height);
+    addPdfText(commands, formatRoseStat(row.resultantLength, 3), 316, y, 9, height);
+    addPdfText(commands, formatRoseStat(row.circularSdDeg), 370, y, 9, height);
+  });
+
+  const stream = commands.join("\n");
+  const objects = [
+    "<< /Type /Catalog /Pages 2 0 R >>",
+    "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+    `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${width} ${height}] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>`,
+    "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+    `<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`,
+  ];
+  let pdf = "%PDF-1.4\n";
+  const offsets = [0];
+  objects.forEach((object, index) => {
+    offsets[index + 1] = pdf.length;
+    pdf += `${index + 1} 0 obj\n${object}\nendobj\n`;
+  });
+  const xrefOffset = pdf.length;
+  pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
+  for (let index = 1; index <= objects.length; index++) {
+    pdf += `${String(offsets[index]).padStart(10, "0")} 00000 n \n`;
+  }
+  pdf += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
+  return new Blob([pdf], { type: "application/pdf" });
+}
+
+function exportMeasureRosePDF() {
+  const model = buildMeasureRoseModel();
+  if (model.angles.length === 0) {
+    alert("No plottable azimuth measurements to export.");
+    return;
+  }
+  saveAs(createMeasureRosePdf(model), "measurement-rose-diagram.pdf");
+}
+
+function getParticleSizeParameterInfo() {
+  const parameterId = measureParticleSizeParameter?.value || "ecdM";
+  if (parameterId === "lengthM") {
+    return { id: "lengthM", label: "Length" };
+  }
+  if (parameterId === "widthM") {
+    return { id: "widthM", label: "Width" };
+  }
+  return { id: "ecdM", label: "ECD" };
+}
+
+function getParticleSizeWeightMode() {
+  return measureParticleSizeWeight?.value === "none" ? "none" : "area";
+}
+
+function getParticleSizeMode() {
+  return measureParticleSizeMode?.value === "groups" ? "groups" : "combined";
+}
+
+function shouldShowParticleHistogram() {
+  return measureParticleShowHistogram?.checked !== false;
+}
+
+function shouldShowParticleCumulative() {
+  return measureParticleShowCumulative?.checked !== false;
+}
+
+function shouldStackParticleHistograms() {
+  return Boolean(measureParticleStacked?.checked);
+}
+
+function getParticleSizeDefaultColor() {
+  const color = measureParticleColorInput?.value || "#8a8f94";
+  return /^#[0-9a-f]{6}$/i.test(color) ? color : "#8a8f94";
+}
+
+function getParticleSizeMeasurements() {
+  const parameter = getParticleSizeParameterInfo();
+  return measureResults
+    .map((result) => {
+      const sizeMm = Number.isFinite(result[parameter.id])
+        ? result[parameter.id] * 1000
+        : null;
+      const areaMm2 = Number.isFinite(result.areaM2) ? result.areaM2 * 1e6 : null;
+      if (
+        !Number.isFinite(sizeMm) ||
+        sizeMm <= 0 ||
+        result.validGeometry === false
+      ) {
+        return null;
+      }
+      return {
+        sizeMm,
+        sizeMicrons: sizeMm * 1000,
+        phi: -Math.log2(sizeMm),
+        areaMm2: Number.isFinite(areaMm2) && areaMm2 > 0 ? areaMm2 : 0,
+        group: getMeasureGroupForResult(result),
+      };
+    })
+    .filter(Boolean);
+}
+
+function getParticleSizeGroupsInUse(measurements) {
+  const groups = new Map();
+  measurements.forEach((measurement) => {
+    groups.set(measurement.group.groupId, measurement.group);
+  });
+  return [...groups.values()].sort((a, b) =>
+    a.groupName.localeCompare(b.groupName)
+  );
+}
+
+function syncParticleSizeGroupSelection(groups) {
+  const groupIds = new Set(groups.map((group) => group.groupId));
+  groupIds.forEach((groupId) => {
+    if (!measureParticleSizeKnownGroupIds.has(groupId)) {
+      measureParticleSizeSelectedGroupIds.add(groupId);
+    }
+  });
+  measureParticleSizeKnownGroupIds = groupIds;
+  measureParticleSizeSelectedGroupIds = new Set(
+    [...measureParticleSizeSelectedGroupIds].filter((groupId) =>
+      groupIds.has(groupId)
+    )
+  );
+}
+
+function renderParticleSizeGroupControls(measurements = getParticleSizeMeasurements()) {
+  if (!measureParticleSizeGroups) return;
+  const groups = getParticleSizeGroupsInUse(measurements);
+  syncParticleSizeGroupSelection(groups);
+  measureParticleSizeGroups.innerHTML = "";
+  if (groups.length === 0) {
+    measureParticleSizeGroups.textContent = "No groups";
+    return;
+  }
+  groups.forEach((group) => {
+    const label = document.createElement("label");
+    label.className = "measure-histogram-group";
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.checked = measureParticleSizeSelectedGroupIds.has(group.groupId);
+    checkbox.addEventListener("change", () => {
+      if (checkbox.checked) {
+        measureParticleSizeSelectedGroupIds.add(group.groupId);
+      } else {
+        measureParticleSizeSelectedGroupIds.delete(group.groupId);
+      }
+      drawMeasureParticleSize();
+    });
+    const swatch = createMeasureGroupColor(group);
+    const name = document.createElement("span");
+    name.textContent = group.groupName;
+    label.append(checkbox, swatch, name);
+    measureParticleSizeGroups.appendChild(label);
+  });
+}
+
+function getParticleSizeCategory(phi) {
+  if (!Number.isFinite(phi)) return "";
+  if (phi < -11) return "Very large boulders";
+  if (phi < -10) return "Large boulders";
+  if (phi < -9) return "Medium boulders";
+  if (phi < -8) return "Small boulders";
+  if (phi < -7) return "Large cobbles";
+  if (phi < -6) return "Small cobbles";
+  if (phi < -5) return "Very coarse pebbles";
+  if (phi < -4) return "Coarse pebbles";
+  if (phi < -3) return "Medium pebbles";
+  if (phi < -2) return "Fine pebbles";
+  if (phi < -1) return "Very fine pebbles";
+  if (phi < -0.5) return "Upper very coarse sand";
+  if (phi < 0) return "Lower very coarse sand";
+  if (phi < 0.5) return "Upper coarse sand";
+  if (phi < 1) return "Lower coarse sand";
+  if (phi < 1.5) return "Upper medium sand";
+  if (phi < 2) return "Lower medium sand";
+  if (phi < 2.5) return "Upper fine sand";
+  if (phi < 3) return "Lower fine sand";
+  if (phi < 3.5) return "Upper very fine sand";
+  if (phi < 4) return "Lower very fine sand";
+  if (phi < 5) return "Very coarse silt";
+  if (phi < 6) return "Coarse silt";
+  if (phi < 7) return "Medium silt";
+  if (phi < 8) return "Fine silt";
+  if (phi < 9) return "Very fine silt";
+  return "Clay";
+}
+
+function getParticleSortingCategory(value) {
+  if (!Number.isFinite(value)) return "";
+  if (value < 0.35) return "Very well sorted";
+  if (value < 0.5) return "Well sorted";
+  if (value < 0.7) return "Moderately well sorted";
+  if (value < 1) return "Moderately sorted";
+  if (value < 2) return "Poorly sorted";
+  if (value < 4) return "Very poorly sorted";
+  return "Extremely poorly sorted";
+}
+
+function getParticleSkewnessCategory(value) {
+  if (!Number.isFinite(value)) return "";
+  if (value >= 1.3) return "Very fine skewed";
+  if (value >= 0.43) return "Fine skewed";
+  if (value >= -0.43) return "Symmetrical";
+  if (value >= -1.3) return "Coarse skewed";
+  return "Very coarse skewed";
+}
+
+function updateParticleSizeRangeInputs(defaults) {
+  if (
+    !measureParticlePhiMinInput ||
+    !measureParticlePhiMaxInput ||
+    !measureParticlePhiBinInput ||
+    measureParticleSizeRangeEdited
+  ) {
+    return;
+  }
+  measureParticlePhiMinInput.value = formatHistogramInputValue(defaults.phiMin);
+  measureParticlePhiMaxInput.value = formatHistogramInputValue(defaults.phiMax);
+  measureParticlePhiBinInput.value = formatHistogramInputValue(defaults.binSize);
+}
+
+function buildParticleDistribution(measurements, weightMode, phiMin, phiMax, binSize) {
+  const binCount = Math.min(200, Math.max(1, Math.ceil((phiMax - phiMin) / binSize)));
+  const adjustedPhiMax = phiMin + binCount * binSize;
+  const bins = Array.from({ length: binCount }, (_, index) => {
+    const min = phiMin + index * binSize;
+    const max = min + binSize;
+    return {
+      min,
+      max,
+      center: min + binSize / 2,
+      areaMm2: 0,
+      count: 0,
+      weight: 0,
+    };
+  });
+
+  let totalWeight = 0;
+  measurements.forEach((measurement) => {
+    const weight = weightMode === "area" ? measurement.areaMm2 : 1;
+    if (!Number.isFinite(weight) || weight <= 0) return;
+    totalWeight += weight;
+    if (measurement.phi < phiMin || measurement.phi > adjustedPhiMax) return;
+    const index = Math.min(
+      binCount - 1,
+      Math.max(0, Math.floor((measurement.phi - phiMin) / binSize))
+    );
+    bins[index].areaMm2 += measurement.areaMm2;
+    bins[index].count += 1;
+    bins[index].weight += weight;
+  });
+  const binnedWeight = bins.reduce((sum, bin) => sum + bin.weight, 0);
+  const meanPhi =
+    binnedWeight > 0
+      ? bins.reduce((sum, bin) => sum + bin.center * (bin.weight / binnedWeight), 0)
+      : null;
+  const sortingPhi =
+    binnedWeight > 0 && Number.isFinite(meanPhi)
+      ? Math.sqrt(
+          bins.reduce(
+            (sum, bin) =>
+              sum + (bin.weight / binnedWeight) * (bin.center - meanPhi) ** 2,
+            0
+          )
+        )
+      : null;
+  const skewnessPhi =
+    Number.isFinite(sortingPhi) && sortingPhi > 0
+      ? bins.reduce(
+          (sum, bin) =>
+            sum + (bin.weight / binnedWeight) * (bin.center - meanPhi) ** 3,
+          0
+        ) /
+        sortingPhi ** 3
+      : null;
+  const sorted = [...measurements].sort((a, b) => a.phi - b.phi);
+  let cumulativeWeight = 0;
+  const cumulative = [];
+  if (sorted.length > 0 && totalWeight > 0) {
+    cumulative.push({ phi: sorted[0].phi, fraction: 0 });
+    sorted.forEach((measurement) => {
+      const weight = weightMode === "area" ? measurement.areaMm2 : 1;
+      cumulativeWeight += Number.isFinite(weight) && weight > 0 ? weight : 0;
+      cumulative.push({
+        phi: measurement.phi,
+        fraction: cumulativeWeight / totalWeight,
+      });
+    });
+  }
+
+  return {
+    measurements,
+    bins,
+    cumulative,
+    totalWeight,
+    binnedWeight,
+    phiMin,
+    phiMax: adjustedPhiMax,
+    binSize,
+    meanPhi,
+    sortingPhi,
+    skewnessPhi,
+  };
+}
+
+function buildParticleSizeModel() {
+  const parameter = getParticleSizeParameterInfo();
+  const weightMode = getParticleSizeWeightMode();
+  const allMeasurements = getParticleSizeMeasurements();
+  const groupsInUse = getParticleSizeGroupsInUse(allMeasurements);
+  syncParticleSizeGroupSelection(groupsInUse);
+  const measurements = allMeasurements.filter((measurement) =>
+    measureParticleSizeSelectedGroupIds.has(measurement.group.groupId)
+  );
+  const phiValues = measurements.map((measurement) => measurement.phi);
+  const defaultPhiMin =
+    phiValues.length > 0 ? Math.floor(Math.min(...phiValues)) : -6;
+  const defaultPhiMax =
+    phiValues.length > 0 ? Math.ceil(Math.max(...phiValues)) : 8;
+  const defaultBinSize = 0.25;
+  updateParticleSizeRangeInputs({
+    phiMin: defaultPhiMin,
+    phiMax: defaultPhiMax,
+    binSize: defaultBinSize,
+  });
+  let phiMin = measureParticleSizeRangeEdited
+    ? getMeasureHistogramNumberInputValue(measureParticlePhiMinInput)
+    : null;
+  let phiMax = measureParticleSizeRangeEdited
+    ? getMeasureHistogramNumberInputValue(measureParticlePhiMaxInput)
+    : null;
+  let binSize = measureParticleSizeRangeEdited
+    ? getMeasureHistogramNumberInputValue(measureParticlePhiBinInput)
+    : null;
+  phiMin = Number.isFinite(phiMin) ? phiMin : defaultPhiMin;
+  phiMax = Number.isFinite(phiMax) ? phiMax : defaultPhiMax;
+  binSize = Number.isFinite(binSize) && binSize > 0 ? binSize : defaultBinSize;
+  if (phiMax <= phiMin) {
+    phiMin = defaultPhiMin;
+    phiMax = defaultPhiMax;
+  }
+  const combined = buildParticleDistribution(
+    measurements,
+    weightMode,
+    phiMin,
+    phiMax,
+    binSize
+  );
+  phiMax = combined.phiMax;
+  const groupDistributions = groupsInUse
+    .filter((group) => measureParticleSizeSelectedGroupIds.has(group.groupId))
+    .map((group) => ({
+      ...group,
+      ...buildParticleDistribution(
+        measurements.filter(
+          (measurement) => measurement.group.groupId === group.groupId
+        ),
+        weightMode,
+        phiMin,
+        phiMax,
+        binSize
+      ),
+    }));
+
+  return {
+    parameter,
+    weightMode,
+    mode: getParticleSizeMode(),
+    defaultColor: getParticleSizeDefaultColor(),
+    showHistogram: shouldShowParticleHistogram(),
+    showCumulative: shouldShowParticleCumulative(),
+    stacked: shouldStackParticleHistograms(),
+    yAxisLabel: weightMode === "area" ? "% total area" : "Count",
+    allMeasurements,
+    measurements,
+    groups: groupDistributions,
+    bins: combined.bins,
+    cumulative: combined.cumulative,
+    totalWeight: combined.totalWeight,
+    binnedWeight: combined.binnedWeight,
+    phiMin,
+    phiMax,
+    binSize,
+    meanPhi: combined.meanPhi,
+    sortingPhi: combined.sortingPhi,
+    skewnessPhi: combined.skewnessPhi,
+    meanCategory: getParticleSizeCategory(combined.meanPhi),
+    sortingCategory: getParticleSortingCategory(combined.sortingPhi),
+    skewnessCategory: getParticleSkewnessCategory(combined.skewnessPhi),
+  };
+}
+
+function drawParticleSizeToCanvas(ctx, model, width, height) {
+  const padding = { left: 46, top: 22, right: 46, bottom: 44 };
+  const plotWidth = width - padding.left - padding.right;
+  const plotHeight = height - padding.top - padding.bottom;
+  const xScale = (phi) =>
+    padding.left + ((phi - model.phiMin) / (model.phiMax - model.phiMin)) * plotWidth;
+  const yScale = (fraction) => padding.top + plotHeight - fraction * plotHeight;
+  const getBinDisplayValue = (bin) =>
+    model.weightMode === "area" && model.totalWeight > 0
+      ? (bin.weight / model.totalWeight) * 100
+      : bin.weight;
+  const activeGroups = model.groups.filter((group) => group.binnedWeight > 0);
+  const yMax = model.showHistogram
+    ? Math.max(
+        1,
+        ...model.bins.map((bin, binIndex) => {
+          if (model.mode !== "groups") return getBinDisplayValue(bin);
+          if (model.stacked) {
+            return activeGroups.reduce(
+              (sum, group) => sum + getBinDisplayValue(group.bins[binIndex]),
+              0
+            );
+          }
+          return Math.max(
+            0,
+            ...activeGroups.map((group) => getBinDisplayValue(group.bins[binIndex]))
+          );
+        })
+      )
+    : 1;
+
+  ctx.clearRect(0, 0, width, height);
+  ctx.fillStyle = "#fff";
+  ctx.fillRect(0, 0, width, height);
+  ctx.strokeStyle = "#bdbdbd";
+  ctx.strokeRect(0.5, 0.5, width - 1, height - 1);
+  ctx.strokeStyle = "#444";
+  ctx.beginPath();
+  ctx.moveTo(padding.left, padding.top);
+  ctx.lineTo(padding.left, padding.top + plotHeight);
+  ctx.lineTo(padding.left + plotWidth, padding.top + plotHeight);
+  ctx.stroke();
+  if (model.showCumulative) {
+    ctx.beginPath();
+    ctx.moveTo(padding.left + plotWidth, padding.top);
+    ctx.lineTo(padding.left + plotWidth, padding.top + plotHeight);
+    ctx.stroke();
+  }
+
+  ctx.fillStyle = "#222";
+  ctx.font = "12px sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText(`${model.weightMode === "area" ? "Area-weighted" : "Unweighted"} ${model.parameter.label} grain size`, padding.left + plotWidth / 2, 15);
+
+  if (model.measurements.length === 0 || model.binnedWeight <= 0) {
+    ctx.fillStyle = "#666";
+    ctx.fillText(`No valid ${model.parameter.label} measurements`, width / 2, height / 2);
+    return;
+  }
+
+  if (!model.showHistogram && !model.showCumulative) {
+    ctx.fillStyle = "#666";
+    ctx.fillText("Select histogram or cumulative", width / 2, height / 2);
+    return;
+  }
+
+  if (model.showHistogram) {
+    model.bins.forEach((bin, binIndex) => {
+      const x = xScale(bin.min);
+      const nextX = xScale(bin.max);
+      const fullBarWidth = Math.max(1, nextX - x - 1);
+      if (model.mode === "groups") {
+        if (model.stacked) {
+          let stackedOffset = 0;
+          activeGroups.forEach((group) => {
+            const barHeight =
+              (getBinDisplayValue(group.bins[binIndex]) / yMax) * plotHeight;
+            ctx.fillStyle = getSafeMeasureGroupColor(group.groupColor);
+            ctx.globalAlpha = 0.78;
+            ctx.fillRect(
+              x,
+              padding.top + plotHeight - stackedOffset - barHeight,
+              fullBarWidth,
+              barHeight
+            );
+            stackedOffset += barHeight;
+          });
+        } else {
+          const groupWidth = fullBarWidth / Math.max(1, activeGroups.length);
+          activeGroups.forEach((group, groupIndex) => {
+            const barHeight =
+              (getBinDisplayValue(group.bins[binIndex]) / yMax) * plotHeight;
+            ctx.fillStyle = getSafeMeasureGroupColor(group.groupColor);
+            ctx.globalAlpha = 0.72;
+            ctx.fillRect(
+              x + groupIndex * groupWidth,
+              padding.top + plotHeight - barHeight,
+              Math.max(1, groupWidth - 1),
+              barHeight
+            );
+          });
+        }
+        ctx.globalAlpha = 1;
+      } else {
+        const barHeight = (getBinDisplayValue(bin) / yMax) * plotHeight;
+        ctx.fillStyle = model.defaultColor;
+        ctx.fillRect(x, padding.top + plotHeight - barHeight, fullBarWidth, barHeight);
+      }
+    });
+  }
+
+  if (model.showCumulative) {
+    const drawCumulative = (cumulative, color) => {
+      if (cumulative.length === 0) return;
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1.7;
+      ctx.beginPath();
+      cumulative.forEach((point, index) => {
+        const x = xScale(point.phi);
+        const y = yScale(point.fraction);
+        if (index === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+    };
+    if (model.mode === "groups") {
+      activeGroups.forEach((group) =>
+        drawCumulative(group.cumulative, getSafeMeasureGroupColor(group.groupColor))
+      );
+    } else {
+      drawCumulative(model.cumulative, model.defaultColor);
+    }
+  }
+
+  if (Number.isFinite(model.meanPhi)) {
+    const x = xScale(model.meanPhi);
+    ctx.strokeStyle = "#d12f2f";
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([4, 3]);
+    ctx.beginPath();
+    ctx.moveTo(x, padding.top);
+    ctx.lineTo(x, padding.top + plotHeight);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  ctx.fillStyle = "#333";
+  ctx.font = "10px sans-serif";
+  if (model.showHistogram) {
+    ctx.save();
+    ctx.translate(12, padding.top + plotHeight / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.textAlign = "center";
+    ctx.fillText(model.yAxisLabel, 0, 0);
+    ctx.restore();
+  }
+  if (model.showHistogram) {
+    ctx.fillText(
+      model.weightMode === "area"
+        ? `${formatHistogramAxisNumber(yMax)}%`
+        : formatHistogramAxisNumber(yMax),
+      padding.left - 5,
+      padding.top + 4
+    );
+    ctx.fillText("0", padding.left - 5, padding.top + plotHeight + 3);
+  }
+  if (model.showCumulative) {
+    ctx.textAlign = "left";
+    ctx.fillText("100%", padding.left + plotWidth + 5, padding.top + 4);
+    ctx.fillText("0", padding.left + plotWidth + 5, padding.top + plotHeight + 3);
+  }
+  ctx.textAlign = "center";
+  ctx.fillText(`${model.parameter.label} (ɸ)`, padding.left + plotWidth / 2, height - 10);
+
+  const firstTick = Math.ceil(model.phiMin);
+  const lastTick = Math.floor(model.phiMax);
+  ctx.strokeStyle = "#777";
+  ctx.fillStyle = "#333";
+  ctx.textAlign = "center";
+  for (let tick = firstTick; tick <= lastTick; tick += 1) {
+    const x = xScale(tick);
+    ctx.beginPath();
+    ctx.moveTo(x, padding.top + plotHeight);
+    ctx.lineTo(x, padding.top + plotHeight + 4);
+    ctx.stroke();
+    ctx.fillText(String(tick), x, padding.top + plotHeight + 28);
+  }
+}
+
+function getParticleSizeStatsRows(model) {
+  const makeRow = (set, distribution) => ({
+    set,
+    n: distribution.measurements.length,
+    meanPhi: distribution.meanPhi,
+    meanCategory: getParticleSizeCategory(distribution.meanPhi),
+    sortingPhi: distribution.sortingPhi,
+    sortingCategory: getParticleSortingCategory(distribution.sortingPhi),
+    skewnessPhi: distribution.skewnessPhi,
+    skewnessCategory: getParticleSkewnessCategory(distribution.skewnessPhi),
+  });
+  if (model.mode === "groups") {
+    return model.groups
+      .filter((group) => group.binnedWeight > 0)
+      .map((group) => makeRow(group.groupName, group));
+  }
+  return [makeRow("Combined", model)].filter((row) => row.n > 0);
+}
+
+function getParticleMeasurementWeight(measurement, weightMode) {
+  return weightMode === "area" ? measurement.areaMm2 : 1;
+}
+
+function getWeightedParticlePhiPercentile(measurements, weightMode, probability) {
+  const weighted = measurements
+    .map((measurement) => ({
+      phi: measurement.phi,
+      weight: getParticleMeasurementWeight(measurement, weightMode),
+    }))
+    .filter(
+      (entry) =>
+        Number.isFinite(entry.phi) &&
+        Number.isFinite(entry.weight) &&
+        entry.weight > 0
+    )
+    .sort((a, b) => a.phi - b.phi);
+  if (weighted.length === 0) return null;
+  if (probability <= 0) return weighted[0].phi;
+  if (probability >= 1) return weighted[weighted.length - 1].phi;
+  const totalWeight = weighted.reduce((sum, entry) => sum + entry.weight, 0);
+  const targetWeight = probability * totalWeight;
+  let cumulativeWeight = 0;
+  let previousPhi = weighted[0].phi;
+  for (const entry of weighted) {
+    const nextCumulativeWeight = cumulativeWeight + entry.weight;
+    if (targetWeight <= nextCumulativeWeight) {
+      const span = nextCumulativeWeight - cumulativeWeight;
+      const fraction = span > 0 ? (targetWeight - cumulativeWeight) / span : 0;
+      return previousPhi + (entry.phi - previousPhi) * fraction;
+    }
+    cumulativeWeight = nextCumulativeWeight;
+    previousPhi = entry.phi;
+  }
+  return weighted[weighted.length - 1].phi;
+}
+
+function getParticleSizeExportRows(model) {
+  const statsRows = getParticleSizeStatsRows(model);
+  const distributions =
+    model.mode === "groups"
+      ? model.groups
+          .filter((group) => group.binnedWeight > 0)
+          .map((group) => [group.groupName, group])
+      : [["Combined", model]];
+  const distributionMap = new Map(distributions);
+  const allPercentiles = Array.from({ length: 99 }, (_, index) => index + 1);
+  return statsRows.map((stats) => {
+    const distribution = distributionMap.get(stats.set);
+    const row = {
+      set: stats.set,
+      n: stats.n,
+      size_parameter: model.parameter.label,
+      weight_mode: model.weightMode,
+      mean_phi: stats.meanPhi,
+      mean_class: stats.meanCategory,
+      sorting_phi: stats.sortingPhi,
+      sorting_class: stats.sortingCategory,
+      skewness: stats.skewnessPhi,
+      skewness_class: stats.skewnessCategory,
+    };
+    allPercentiles.forEach((percentileValue) => {
+      const phi = getWeightedParticlePhiPercentile(
+        distribution?.measurements || [],
+        model.weightMode,
+        percentileValue / 100
+      );
+      const key = `d${String(percentileValue).padStart(2, "0")}`;
+      row[`${key}_phi`] = phi;
+    });
+    return row;
+  });
+}
+
+function renderMeasureParticleSizeStats(model) {
+  if (!measureParticleSizeStatsBody) return;
+  const rows = getParticleSizeStatsRows(model);
+  measureParticleSizeStatsBody.innerHTML = "";
+  if (rows.length === 0) {
+    const row = document.createElement("tr");
+    const cell = document.createElement("td");
+    cell.colSpan = 8;
+    cell.textContent = "No valid particle size measurements";
+    row.appendChild(cell);
+    measureParticleSizeStatsBody.appendChild(row);
+    if (exportMeasureParticleSizeStatsButton) {
+      exportMeasureParticleSizeStatsButton.disabled = true;
+    }
+    return;
+  }
+  rows.forEach((stats) => {
+    const row = document.createElement("tr");
+    [
+      stats.set,
+      stats.n,
+      formatSummaryStat(stats.meanPhi),
+      stats.meanCategory,
+      formatSummaryStat(stats.sortingPhi),
+      stats.sortingCategory,
+      formatSummaryStat(stats.skewnessPhi),
+      stats.skewnessCategory,
+    ].forEach((value) => {
+      const cell = document.createElement("td");
+      cell.textContent = value;
+      row.appendChild(cell);
+    });
+    measureParticleSizeStatsBody.appendChild(row);
+  });
+  if (exportMeasureParticleSizeStatsButton) {
+    exportMeasureParticleSizeStatsButton.disabled = false;
+  }
+}
+
+function exportMeasureParticleSizeStatsCSV() {
+  const model = buildParticleSizeModel();
+  const rows = getParticleSizeExportRows(model);
+  if (rows.length === 0) {
+    alert("No particle size statistics to export.");
+    return;
+  }
+  const allPercentiles = Array.from({ length: 99 }, (_, index) => index + 1);
+  const headers = [
+    "set",
+    "n",
+    "size_parameter",
+    "weight_mode",
+    "mean_phi",
+    "mean_class",
+    "sorting_phi",
+    "sorting_class",
+    "skewness",
+    "skewness_class",
+    ...allPercentiles.map((percentileValue) => {
+      const key = `d${String(percentileValue).padStart(2, "0")}`;
+      return `${key}_phi`;
+    }),
+  ];
+  const csvRows = rows.map((row) => headers.map((header) => row[header] ?? ""));
+  const csv = [headers, ...csvRows]
+    .map((row) => row.map(csvEscape).join(","))
+    .join("\n");
+  saveAs(
+    new Blob([csv], { type: "text/csv;charset=utf-8" }),
+    "particle-size-statistics.csv"
+  );
+}
+
+function drawMeasureParticleSize() {
+  if (!measureParticleSizeCanvas || measureParticleSizeMenu?.hidden) return null;
+  const model = buildParticleSizeModel();
+  const rect = measureParticleSizeCanvas.getBoundingClientRect();
+  const ratio = window.devicePixelRatio || 1;
+  const width = Math.max(320, Math.round(rect.width));
+  const height = Math.max(200, Math.round(rect.height));
+  measureParticleSizeCanvas.width = Math.round(width * ratio);
+  measureParticleSizeCanvas.height = Math.round(height * ratio);
+  const ctx = measureParticleSizeCanvas.getContext("2d");
+  ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+  drawParticleSizeToCanvas(ctx, model, width, height);
+  renderMeasureParticleSizeStats(model);
+  if (exportMeasureParticleSizeButton) {
+    exportMeasureParticleSizeButton.disabled =
+      model.measurements.length === 0 || model.binnedWeight <= 0;
+    exportMeasureParticleSizeButton.title = "Export particle size analysis as PDF";
+  }
+  return model;
+}
+
+function renderMeasureParticleSizeMenu() {
+  if (!measureParticleSizeMenu || measureParticleSizeMenu.hidden) return;
+  renderParticleSizeGroupControls();
+  updateParticleSizeControlState();
+  drawMeasureParticleSize();
+}
+
+function updateParticleSizeControlState() {
+  if (measureParticleStacked && measureParticleSizeMode) {
+    measureParticleStacked.disabled =
+      measureParticleSizeMode.value !== "groups" || !shouldShowParticleHistogram();
+  }
+}
+
+function updateMeasureParticleSizeAvailability() {
+  if (!measureParticleSizeButton) return;
+  measureParticleSizeButton.disabled = getParticleSizeMeasurements().length === 0;
+}
+
+function openMeasureParticleSizeMenu(button) {
+  if (!measureParticleSizeMenu || !button) return;
+  if (measureParticleSizeMenu.parentElement !== document.body) {
+    document.body.appendChild(measureParticleSizeMenu);
+  }
+  measureParticleSizeRangeEdited = false;
+  renderParticleSizeGroupControls();
+  updateParticleSizeControlState();
+  measureParticleSizeMenu.hidden = false;
+  measureParticleSizeButton?.setAttribute("aria-expanded", "true");
+  positionFixedAnalysisMenu(measureParticleSizeMenu, button);
+  drawMeasureParticleSize();
+}
+
+function closeMeasureParticleSizeMenu() {
+  if (!measureParticleSizeMenu) return;
+  measureParticleSizeMenu.hidden = true;
+  measureParticleSizeButton?.setAttribute("aria-expanded", "false");
+}
+
+function createMeasureParticleSizePdf(model) {
+  const width = 612;
+  const height = 432;
+  const padding = { left: 64, top: 54, right: 64, bottom: 76 };
+  const plotWidth = width - padding.left - padding.right;
+  const plotHeight = height - padding.top - padding.bottom;
+  const commands = [];
+  const pdfY = (y) => height - y;
+  const xScale = (phi) =>
+    padding.left + ((phi - model.phiMin) / (model.phiMax - model.phiMin)) * plotWidth;
+  const yScale = (fraction) => padding.top + plotHeight - fraction * plotHeight;
+  const getBinDisplayValue = (bin) =>
+    model.weightMode === "area" && model.totalWeight > 0
+      ? (bin.weight / model.totalWeight) * 100
+      : bin.weight;
+  const yMax = Math.max(1, ...model.bins.map(getBinDisplayValue));
+
+  commands.push("1 1 1 rg 0 0 612 432 re f");
+  commands.push("0.15 0.15 0.15 RG 1 w");
+  commands.push(`${padding.left} ${pdfY(padding.top)} m ${padding.left} ${pdfY(padding.top + plotHeight)} l ${padding.left + plotWidth} ${pdfY(padding.top + plotHeight)} l S`);
+  commands.push(`${padding.left + plotWidth} ${pdfY(padding.top)} m ${padding.left + plotWidth} ${pdfY(padding.top + plotHeight)} l S`);
+  addPdfText(
+    commands,
+    `${model.weightMode === "area" ? "Area-weighted" : "Unweighted"} ${model.parameter.label} grain size`,
+    padding.left + plotWidth / 2 - 100,
+    24,
+    13,
+    height
+  );
+
+  if (model.measurements.length > 0 && model.binnedWeight > 0) {
+    model.bins.forEach((bin) => {
+      const x = xScale(bin.min);
+      const nextX = xScale(bin.max);
+      const barHeight = (getBinDisplayValue(bin) / yMax) * plotHeight;
+      commands.push(`${hexToPdfRgb(model.defaultColor)} rg ${x.toFixed(2)} ${pdfY(padding.top + plotHeight).toFixed(2)} ${Math.max(1, nextX - x - 1).toFixed(2)} ${barHeight.toFixed(2)} re f`);
+    });
+    commands.push("0 0 0 RG 1.5 w");
+    model.cumulative.forEach((point, index) => {
+      const operator = index === 0 ? "m" : "l";
+      commands.push(`${xScale(point.phi).toFixed(2)} ${pdfY(yScale(point.fraction)).toFixed(2)} ${operator}`);
+    });
+    commands.push("S");
+    if (Number.isFinite(model.meanPhi)) {
+      const x = xScale(model.meanPhi);
+      commands.push("0.820 0.184 0.184 RG 1.5 w");
+      commands.push(`${x.toFixed(2)} ${pdfY(padding.top).toFixed(2)} m ${x.toFixed(2)} ${pdfY(padding.top + plotHeight).toFixed(2)} l S`);
+    }
+  }
+
+  for (let tick = Math.ceil(model.phiMin); tick <= Math.floor(model.phiMax); tick += 1) {
+    const x = xScale(tick);
+    commands.push(`0.45 0.45 0.45 RG 0.8 w ${x.toFixed(2)} ${pdfY(padding.top + plotHeight).toFixed(2)} m ${x.toFixed(2)} ${pdfY(padding.top + plotHeight + 4).toFixed(2)} l S`);
+    addPdfText(commands, String(tick), x - 3, padding.top + plotHeight + 30, 8, height);
+  }
+  addPdfText(commands, `${model.parameter.label} (phi)`, padding.left + plotWidth / 2 - 30, height - 42, 10, height);
+  addPdfRotatedText(commands, model.yAxisLabel, 24, padding.top + plotHeight / 2 + 28, 10, height);
+  addPdfText(
+    commands,
+    model.weightMode === "area"
+      ? `${formatHistogramAxisNumber(yMax)}%`
+      : formatHistogramAxisNumber(yMax),
+    padding.left - 36,
+    padding.top + 4,
+    9,
+    height
+  );
+  addPdfText(commands, "100%", padding.left + plotWidth + 8, padding.top + 4, 9, height);
+  addPdfText(commands, `n = ${model.measurements.length}; mean = ${formatHistogramAxisNumber(model.meanPhi)} phi (${model.meanCategory}); sorting = ${formatHistogramAxisNumber(model.sortingPhi)} phi (${model.sortingCategory}); skewness = ${formatHistogramAxisNumber(model.skewnessPhi)} (${model.skewnessCategory})`, padding.left, height - 24, 9, height);
+
+  const stream = commands.join("\n");
+  const objects = [
+    "<< /Type /Catalog /Pages 2 0 R >>",
+    "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+    `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${width} ${height}] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>`,
+    "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+    `<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`,
+  ];
+  let pdf = "%PDF-1.4\n";
+  const offsets = [0];
+  objects.forEach((object, index) => {
+    offsets[index + 1] = pdf.length;
+    pdf += `${index + 1} 0 obj\n${object}\nendobj\n`;
+  });
+  const xrefOffset = pdf.length;
+  pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
+  for (let index = 1; index <= objects.length; index++) {
+    pdf += `${String(offsets[index]).padStart(10, "0")} 00000 n \n`;
+  }
+  pdf += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
+  return new Blob([pdf], { type: "application/pdf" });
+}
+
+function exportMeasureParticleSizePDF() {
+  const model = buildParticleSizeModel();
+  if (model.measurements.length === 0 || model.binnedWeight <= 0) {
+    alert("No valid particle size measurements to export.");
+    return;
+  }
+  saveAs(createMeasureParticleSizePdf(model), "particle-size-analysis.pdf");
+}
+
+measureSelectedAnnotationsButton?.addEventListener("click", measureSelectedAnnotations);
+measureGroupSelect?.addEventListener("change", function (event) {
+  activeMeasureGroupId = event.target.value;
+  const group = getMeasureGroupById(activeMeasureGroupId);
+  if (selectedMeasurementUuids.size > 0) {
+    assignSelectedMeasurementsToGroup(group);
+  } else {
+    updateMeasureGroupControls();
+  }
 });
+measureGroupColorInput?.addEventListener("change", function (event) {
+  updateMeasureGroupProperties(activeMeasureGroupId, {
+    groupColor: event.target.value,
+  });
+});
+renameMeasureGroupButton?.addEventListener("click", function () {
+  const group = getMeasureGroupById(activeMeasureGroupId);
+  if (!group) return;
+  showPrompt("Rename group:", (value) => {
+    renameMeasureGroup(group.groupId, value);
+  }, group.groupName);
+});
+newMeasureGroupButton?.addEventListener("click", function () {
+  showPrompt("Enter the group name:", createMeasureGroup);
+});
+exportMeasurementsButton?.addEventListener("click", exportMeasurementsCSV);
+measureColumnsButton?.addEventListener("click", function (event) {
+  event.stopPropagation();
+  if (!measureColumnsMenu) return;
+  if (measureColumnsMenu.hidden) {
+    closeMeasureHistogramMenu();
+    closeMeasureScatterMenu();
+    closeMeasureRoseMenu();
+    closeMeasureParticleSizeMenu();
+    openMeasureColumnsMenu(event.currentTarget);
+  } else {
+    closeMeasureColumnsMenu();
+  }
+});
+measureColumnsMenu?.addEventListener("click", function (event) {
+  event.stopPropagation();
+});
+restoreMeasureColumnsButton?.addEventListener("click", function () {
+  measureColumnState = getDefaultMeasureColumnState();
+  saveMeasureColumnState();
+  renderMeasureResults();
+});
+measureHistogramButton?.addEventListener("click", function (event) {
+  event.stopPropagation();
+  if (!measureHistogramMenu) return;
+  if (measureHistogramMenu.hidden) {
+    closeMeasureColumnsMenu();
+    closeMeasureScatterMenu();
+    closeMeasureRoseMenu();
+    closeMeasureParticleSizeMenu();
+    openMeasureHistogramMenu(event.currentTarget);
+  } else {
+    closeMeasureHistogramMenu();
+  }
+});
+measureHistogramMenu?.addEventListener("click", function (event) {
+  event.stopPropagation();
+});
+makeFixedElementDraggable(measureHistogramMenu, measureHistogramHeader);
+closeMeasureHistogramButton?.addEventListener("click", closeMeasureHistogramMenu);
+measureHistogramParameter?.addEventListener("change", function () {
+  measureHistogramRangeEdited = false;
+  drawMeasureHistogram();
+});
+measureHistogramPlotType?.addEventListener("change", function () {
+  updateMeasureHistogramControlState();
+  drawMeasureHistogram();
+});
+measureHistogramMode?.addEventListener("change", function () {
+  updateMeasureHistogramControlState();
+  drawMeasureHistogram();
+});
+[
+  measureHistogramMinInput,
+  measureHistogramMaxInput,
+  measureHistogramBinSizeInput,
+].forEach((input) => {
+  input?.addEventListener("input", function () {
+    measureHistogramRangeEdited = true;
+    drawMeasureHistogram();
+  });
+});
+measureHistogramStackedInput?.addEventListener("change", drawMeasureHistogram);
+measureHistogramColorInput?.addEventListener("input", drawMeasureHistogram);
+exportMeasureHistogramButton?.addEventListener("click", exportMeasureHistogramPDF);
+exportMeasureHistogramStatsButton?.addEventListener(
+  "click",
+  exportMeasureHistogramStatsCSV
+);
+measureScatterButton?.addEventListener("click", function (event) {
+  event.stopPropagation();
+  if (!measureScatterMenu) return;
+  if (measureScatterMenu.hidden) {
+    closeMeasureColumnsMenu();
+    closeMeasureHistogramMenu();
+    closeMeasureRoseMenu();
+    closeMeasureParticleSizeMenu();
+    openMeasureScatterMenu(event.currentTarget);
+  } else {
+    closeMeasureScatterMenu();
+  }
+});
+measureScatterMenu?.addEventListener("click", function (event) {
+  event.stopPropagation();
+});
+makeFixedElementDraggable(measureScatterMenu, measureScatterHeader);
+closeMeasureScatterButton?.addEventListener("click", closeMeasureScatterMenu);
+measureScatterXParameter?.addEventListener("change", function () {
+  measureScatterRangeEdited = false;
+  drawMeasureScatter();
+});
+measureScatterYParameter?.addEventListener("change", function () {
+  measureScatterRangeEdited = false;
+  drawMeasureScatter();
+});
+measureScatterMode?.addEventListener("change", drawMeasureScatter);
+measureScatterColorInput?.addEventListener("input", drawMeasureScatter);
+[
+  measureScatterXMinInput,
+  measureScatterXMaxInput,
+  measureScatterYMinInput,
+  measureScatterYMaxInput,
+].forEach((input) => {
+  input?.addEventListener("input", function () {
+    measureScatterRangeEdited = true;
+    drawMeasureScatter();
+  });
+});
+exportMeasureScatterButton?.addEventListener("click", exportMeasureScatterPDF);
+exportMeasureScatterStatsButton?.addEventListener(
+  "click",
+  exportMeasureScatterStatsCSV
+);
+measureRoseButton?.addEventListener("click", function (event) {
+  event.stopPropagation();
+  if (!measureRoseMenu) return;
+  if (measureRoseMenu.hidden) {
+    closeMeasureColumnsMenu();
+    closeMeasureHistogramMenu();
+    closeMeasureScatterMenu();
+    closeMeasureParticleSizeMenu();
+    openMeasureRoseMenu(event.currentTarget);
+  } else {
+    closeMeasureRoseMenu();
+  }
+});
+measureRoseMenu?.addEventListener("click", function (event) {
+  event.stopPropagation();
+});
+makeFixedElementDraggable(measureRoseMenu, measureRoseHeader);
+closeMeasureRoseButton?.addEventListener("click", closeMeasureRoseMenu);
+measureRoseParameter?.addEventListener("change", drawMeasureRose);
+measureRoseMode?.addEventListener("change", function () {
+  updateMeasureRoseControlState();
+  drawMeasureRose();
+});
+measureRoseColorInput?.addEventListener("input", drawMeasureRose);
+measureRoseBinSizeInput?.addEventListener("input", drawMeasureRose);
+measureRoseBidirectionalInput?.addEventListener("change", drawMeasureRose);
+measureRoseStackedInput?.addEventListener("change", drawMeasureRose);
+exportMeasureRoseButton?.addEventListener("click", exportMeasureRosePDF);
+exportMeasureRoseStatsButton?.addEventListener(
+  "click",
+  exportMeasureRoseStatsCSV
+);
+measureParticleSizeButton?.addEventListener("click", function (event) {
+  event.stopPropagation();
+  if (!measureParticleSizeMenu) return;
+  if (measureParticleSizeMenu.hidden) {
+    closeMeasureColumnsMenu();
+    closeMeasureHistogramMenu();
+    closeMeasureScatterMenu();
+    closeMeasureRoseMenu();
+    openMeasureParticleSizeMenu(event.currentTarget);
+  } else {
+    closeMeasureParticleSizeMenu();
+  }
+});
+measureParticleSizeMenu?.addEventListener("click", function (event) {
+  event.stopPropagation();
+});
+makeFixedElementDraggable(measureParticleSizeMenu, measureParticleSizeHeader);
+closeMeasureParticleSizeButton?.addEventListener(
+  "click",
+  closeMeasureParticleSizeMenu
+);
+measureParticleSizeParameter?.addEventListener("change", function () {
+  measureParticleSizeRangeEdited = false;
+  updateMeasureParticleSizeAvailability();
+  renderParticleSizeGroupControls();
+  drawMeasureParticleSize();
+});
+measureParticleSizeWeight?.addEventListener("change", function () {
+  measureParticleSizeRangeEdited = false;
+  renderParticleSizeGroupControls();
+  updateParticleSizeControlState();
+  drawMeasureParticleSize();
+});
+measureParticleSizeMode?.addEventListener("change", function () {
+  updateParticleSizeControlState();
+  drawMeasureParticleSize();
+});
+measureParticleShowHistogram?.addEventListener("change", function () {
+  updateParticleSizeControlState();
+  drawMeasureParticleSize();
+});
+measureParticleShowCumulative?.addEventListener("change", drawMeasureParticleSize);
+measureParticleStacked?.addEventListener("change", drawMeasureParticleSize);
+measureParticleColorInput?.addEventListener("input", drawMeasureParticleSize);
+[
+  measureParticlePhiMinInput,
+  measureParticlePhiMaxInput,
+  measureParticlePhiBinInput,
+].forEach((input) => {
+  input?.addEventListener("input", function () {
+    measureParticleSizeRangeEdited = true;
+    drawMeasureParticleSize();
+  });
+});
+exportMeasureParticleSizeButton?.addEventListener(
+  "click",
+  exportMeasureParticleSizePDF
+);
+exportMeasureParticleSizeStatsButton?.addEventListener(
+  "click",
+  exportMeasureParticleSizeStatsCSV
+);
+window.addEventListener("click", function (event) {
+  if (
+    !event.target.closest("#measureColumnsButton") &&
+    !event.target.closest("#measureColumnsMenu")
+  ) {
+    closeMeasureColumnsMenu();
+  }
+});
+document.addEventListener(
+  "keydown",
+  function (event) {
+    if (
+      event.key !== "Escape" ||
+      (measureHistogramMenu?.hidden &&
+        measureScatterMenu?.hidden &&
+        measureRoseMenu?.hidden &&
+        measureParticleSizeMenu?.hidden)
+    ) {
+      return;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+    closeMeasureHistogramMenu();
+    closeMeasureScatterMenu();
+    closeMeasureRoseMenu();
+    closeMeasureParticleSizeMenu();
+  },
+  true
+);
+window.addEventListener("resize", refreshOpenMeasureAnalysisMenus);
+clearMeasurementsButton?.addEventListener("click", function () {
+  resetMeasurements(true);
+});
+deleteMeasurementButton?.addEventListener("click", deleteSelectedMeasurement);
+renderMeasureResults();
 
 ///////////////////////////////////////////
 //// Floating elements when annotating ////
@@ -15817,6 +21544,16 @@ document.addEventListener("mousemove", (event) => {
 });
 
 function refreshAnnotationFloaters(event = {}) {
+  const isMeasureLineFloater =
+    measurementModeActive && activeMeasureTool === "line";
+  const isMeasurePolygonFloater =
+    measurementModeActive && activeMeasureTool === "polygon";
+  polylineFloater.classList.toggle("measure-floater-active", isMeasureLineFloater);
+  polygonFloater.classList.toggle(
+    "measure-floater-active",
+    isMeasurePolygonFloater
+  );
+
   if (isQPressed || isPointMode) {
     // crosshairFloater.style.display = "block";
     // document.body.style.cursor = "default"; // Hide system cursor when crosshair is active
@@ -15833,6 +21570,12 @@ function refreshAnnotationFloaters(event = {}) {
     toggleEllipseFloaterOn(true);
   } else if (isVPressed || isCircleAnnotationMode) {
     toggleCircleAnnotationFloaterOn(true);
+  } else if (isMeasureLineFloater) {
+    togglePolylineFloaterOn(true);
+    togglePolygonFloaterOn(false);
+  } else if (isMeasurePolygonFloater) {
+    togglePolylineFloaterOn(false);
+    togglePolygonFloaterOn(true);
   } else {
     toggleCrosshairFloaterOn(false);
     togglePolylineFloaterOn(false);
@@ -15977,50 +21720,13 @@ document.addEventListener("keydown", function (event) {
 
 // Function to check if a polygon is self-intersecting
 function isSelfIntersecting(coords) {
-  // Ensure the polygon is closed
-  const points = coords.slice();
-  if (
-    points.length > 2 &&
-    (points[0][0] !== points[points.length - 1][0] ||
-      points[0][1] !== points[points.length - 1][1])
-  ) {
-    points.push(points[0]);
-  }
-
-  function segmentsIntersect(p1, p2, q1, q2) {
-    function ccw(a, b, c) {
-      return (c[1] - a[1]) * (b[0] - a[0]) > (b[1] - a[1]) * (c[0] - a[0]);
-    }
-
-    return (
-      ccw(p1, q1, q2) !== ccw(p2, q1, q2) && ccw(p1, p2, q1) !== ccw(p1, p2, q2)
-    );
-  }
-
-  const n = points.length - 1;
-  for (let i = 0; i < n; i++) {
-    const a1 = points[i];
-    const a2 = points[i + 1];
-
-    for (let j = i + 1; j < n; j++) {
-      // Skip adjacent edges and wrap-around neighbors
-      if (Math.abs(i - j) <= 1 || (i === 0 && j === n - 1)) continue;
-
-      const b1 = points[j];
-      const b2 = points[j + 1];
-
-      if (segmentsIntersect(a1, a2, b1, b2)) {
-        return true;
-      }
-    }
-  }
-
-  return false;
+  return getPolygonSelfIntersectionStatus(coords).validGeometry === false;
 }
 
 function updateSelfIntersectionWarning(coords) {
   const isIntersecting = isSelfIntersecting(coords);
   const banner = document.getElementById("selfIntersectWarning");
+  if (!banner) return;
 
   if (isIntersecting) {
     banner.style.display = "block";
@@ -16295,21 +22001,32 @@ function updateStageRotationCheck() {
     (tileSet) => "periodDegrees" in tileSet
   );
 
+  const stageSlider = document.getElementById("stageRotation");
   const stageSliderValue = document.getElementById("stageRotationValue");
   const stageSliderUnit = document.getElementById("stageRotationUnit");
   const stageLabel = document.getElementById("stageRotationLabel");
   const lockCheckbox = document.getElementById("rotateWithStage");
   const lockCheckboxLabel = document.getElementById("rotateWithStageLabel");
+  if (
+    !stageSlider ||
+    !stageSliderValue ||
+    !stageSliderUnit ||
+    !stageLabel ||
+    !lockCheckbox ||
+    !lockCheckboxLabel
+  ) {
+    return;
+  }
 
   if (enableStageRotation) {
-    stageRotater.style.display = "block"; // Show the slider
+    stageSlider.style.display = "block"; // Show the slider
     stageSliderValue.style.display = "block"; // Show the value
     stageSliderUnit.style.display = "block"; // Show the unit
     stageLabel.style.display = "block"; // Show the label
     lockCheckbox.style.display = "block"; // Show the checkbox
     lockCheckboxLabel.style.display = "block"; // Show the checkbox label
   } else {
-    stageRotater.style.display = "none"; // Hide it
+    stageSlider.style.display = "none"; // Hide it
     stageSliderValue.style.display = "none"; // Hide it
     stageSliderUnit.style.display = "none"; // Hide the unit
     stageLabel.style.display = "none"; // Hide the label

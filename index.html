@@ -259,7 +259,7 @@
         </button>
         <button
           id="viewerToolsButton"
-          class="electron-only viewer-corner-button viewer-action-button viewer-tools-button"
+          class="viewer-corner-button viewer-action-button viewer-tools-button"
           type="button"
           title="Tools"
           aria-label="Tools"
@@ -303,27 +303,8 @@
               </svg>
             </span>
             <span>
-              <span class="electron-action-title">Grid and Point Count</span>
+              <span class="electron-action-title">Grid &amp; Count</span>
               <span class="electron-action-description">Create grids and point counts</span>
-            </span>
-          </button>
-          <button
-            id="openAnnotatePaletteButton"
-            class="electron-action-item"
-            type="button"
-            role="menuitem"
-            hidden
-          >
-            <span class="electron-action-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24">
-                <path d="M5 17.5 6.5 22l4.5-1.5L20 7l-6-4z" />
-                <path d="M12.5 5.5 18.5 9.5" />
-                <path d="M6.5 18.5 9.5 21.5" />
-              </svg>
-            </span>
-            <span>
-              <span class="electron-action-title">Annotate</span>
-              <span class="electron-action-description">Draw and edit annotations</span>
             </span>
           </button>
           <button
@@ -346,6 +327,25 @@
             <span>
               <span class="electron-action-title">Measure</span>
               <span class="electron-action-description">Calculate length and area</span>
+            </span>
+          </button>
+          <button
+            id="openAnnotatePaletteButton"
+            class="electron-action-item"
+            type="button"
+            role="menuitem"
+            hidden
+          >
+            <span class="electron-action-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <path d="M5 17.5 6.5 22l4.5-1.5L20 7l-6-4z" />
+                <path d="M12.5 5.5 18.5 9.5" />
+                <path d="M6.5 18.5 9.5 21.5" />
+              </svg>
+            </span>
+            <span>
+              <span class="electron-action-title">Annotate</span>
+              <span class="electron-action-description">Draw and edit annotations</span>
             </span>
           </button>
           <button
@@ -393,7 +393,7 @@
         </button>
         <button
           id="electronActionButton"
-          class="electron-only viewer-corner-button viewer-action-button"
+          class="viewer-corner-button viewer-action-button"
           type="button"
           title="Actions"
           aria-label="Actions"
@@ -511,7 +511,7 @@
       </div>
       <div
         id="gridCountPalette"
-        class="tool-palette grid-count-palette electron-only"
+        class="tool-palette grid-count-palette"
         data-default-position="bottom-right"
         role="dialog"
         aria-labelledby="gridCountPaletteTitle"
@@ -550,7 +550,7 @@
       </div>
       <div
         id="annotatePalette"
-        class="tool-palette annotate-palette electron-only"
+        class="tool-palette annotate-palette"
         data-default-position="bottom-left"
         data-default-bottom-offset="52"
         role="dialog"
@@ -590,7 +590,7 @@
       </div>
       <div
         id="measurePalette"
-        class="tool-palette measure-palette electron-only"
+        class="tool-palette measure-palette"
         data-default-position="bottom-right"
         data-default-bottom-offset="52"
         role="dialog"
@@ -946,6 +946,7 @@
         r="6"
       />
     </svg>
+    <div id="measure-live-readout" class="measure-live-readout" hidden></div>
     <!--Controls-->
     <div class="controls">
       <div class="controls-header">
@@ -3121,29 +3122,20 @@
         </details>
         <details id="measureDetails" closed>
           <summary>Measure</summary>
-          <div>
+          <div class="measure-show-row">
             <input
               type="checkbox"
               id="show-measure"
               checked
               onclick="toggleMeasurement(this)"
             />
-            <label for="show-measure">Show measurement</label>
-          </div>
-          <div class="dropdown-container">
-            <button
-              id="toggleMeasurementButton"
-              class="custom-button"
-              style="width: 110px"
-              onclick="toggleMeasurementMode(this)"
-              title="Start/stop measuring"
-            >
-              Start Measuring
-            </button>
+            <label for="show-measure">Show measurements</label>
             <button
               class="custom-button"
-              id="circleGearButton"
-              title="Annotation Settings"
+              id="measureGearButton"
+              type="button"
+              title="Measurement drawing properties"
+              aria-label="Measurement drawing properties"
             >
               <svg
                 class="gear-icon"
@@ -3178,14 +3170,49 @@
               </svg>
             </button>
           </div>
-          <div class="dropdown-container">
-            <label for="distance">Length</label>
-            <div>
-              <select id="distanceUnits" style="width: 45px">
-                <option value="0">m</option>
-                <option value="1" selected>mm</option>
-                <option value="2">µm</option>
-              </select>
+          <div id="measureToolButtons" class="measure-tool-grid">
+            <div class="measure-tool-row">
+              <button
+                type="button"
+                class="custom-button"
+                data-measure-tool="line"
+                title="Measure a line or polyline"
+              >
+                <svg class="annotation-icon" viewBox="0 0 24 24" aria-hidden="true">
+                  <polyline points="4,18 9,10 15,14 20,5" />
+                </svg>
+              </button>
+              <label class="measure-unit-control" title="Length units">
+                <select id="distanceUnits" style="width: 45px">
+                  <option value="0">m</option>
+                  <option value="1" selected>mm</option>
+                  <option value="2">µm</option>
+                </select>
+              </label>
+            </div>
+            <div class="measure-tool-row">
+              <button
+                type="button"
+                class="custom-button"
+                data-measure-tool="polygon"
+                title="Measure a polygon"
+              >
+                <svg class="annotation-icon" viewBox="0 0 24 24" aria-hidden="true">
+                  <polygon points="12 4 19 9 16.5 18 7.5 18 5 9" />
+                  <circle class="annotation-icon-fill" cx="12" cy="4" r="1.2" />
+                  <circle class="annotation-icon-fill" cx="19" cy="9" r="1.2" />
+                  <circle class="annotation-icon-fill" cx="16.5" cy="18" r="1.2" />
+                  <circle class="annotation-icon-fill" cx="7.5" cy="18" r="1.2" />
+                  <circle class="annotation-icon-fill" cx="5" cy="9" r="1.2" />
+                </svg>
+              </button>
+              <label class="measure-unit-control" title="Area units">
+                <select id="areaUnits" style="width: 50px">
+                  <option value="0">m²</option>
+                  <option value="1" selected>mm²</option>
+                  <option value="2">µm²</option>
+                </select>
+              </label>
             </div>
             <input
               type="number"
@@ -3193,55 +3220,755 @@
               readonly
               value="0.0"
               style="width: 55px"
+              hidden
             />
-          </div>
-          <div class="dropdown-container">
-            <label for="area">Area</label>
-            <div>
-              <select id="areaUnits" style="width: 50px">
-                <option value="0">m²</option>
-                <option value="1" selected>mm²</option>
-                <option value="2">µm²</option>
-              </select>
-            </div>
             <input
               type="number"
               id="area"
               readonly
               value="0.0"
               style="width: 64px"
+              hidden
             />
           </div>
-          <div class="dropdown-container">
-            <label for="ECD">ECD</label>
-            <div>
-              <select id="ECDUnits" style="width: 50px">
-                <option value="0">m</option>
-                <option value="1" selected>mm</option>
-                <option value="2">µm</option>
-              </select>
-            </div>
-            <input
-              type="number"
-              id="ECD"
-              readonly
-              value="0.0"
-              style="width: 64px"
-            />
-          </div>
-          <div class="dropdown-container">
+          <div class="measure-table-toolbar">
             <button
-              id="toggleCircleButton"
+              id="measureSelectedAnnotationsButton"
               class="custom-button"
-              style="width: 92px"
-              onclick="toggleCircleMode(this)"
-              title="Start/stop measuring"
+              type="button"
+              title="Add the selected annotations to the measurement table"
             >
-              Draw Circle
+              Add Selected Annotations
             </button>
           </div>
+          <div class="annotation-group-controls measure-group-controls">
+            <select id="measureGroupSelect" title="Measurement Group"></select>
+            <input
+              type="color"
+              id="measureGroupColorInput"
+              class="annotation-group-color-input"
+              title="Group Color"
+              aria-label="Group Color"
+            />
+            <button
+              class="custom-button annotation-group-icon-button"
+              id="renameMeasureGroupButton"
+              type="button"
+              title="Rename Group"
+              aria-label="Rename Group"
+            >
+              <svg class="annotation-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M5 18.5 6.5 14 16.8 3.7a2.1 2.1 0 0 1 3 3L9.5 17 5 18.5z" />
+                <path d="M14.8 5.7 17.8 8.7" />
+                <path d="M5 21h14" />
+              </svg>
+            </button>
+            <button
+              class="custom-button"
+              id="newMeasureGroupButton"
+              type="button"
+              title="New Group"
+            >
+              <span>+</span>
+            </button>
+          </div>
+          <div class="measure-results-wrapper">
+            <table id="measureResultsTable" class="measure-results-table">
+              <thead>
+                <tr id="measureResultsHeader">
+                  <th aria-label="Group"></th>
+                  <th aria-label="Type"></th>
+                  <th id="measureLengthHeader">Length<br />(mm)</th>
+                  <th id="measureWidthHeader">Width<br />(mm)</th>
+                  <th id="measureAreaHeader">Area<br />(mm²)</th>
+                  <th id="measurePerimeterHeader">Perimeter<br />(mm)</th>
+                  <th id="measureECDHeader">ECD<br />(mm)</th>
+                  <th>W/L</th>
+                  <th>Azimuth<br />(°)</th>
+                  <th>Solidity</th>
+                  <th>Circularity</th>
+                </tr>
+              </thead>
+              <tbody id="measureResultsBody">
+                <tr>
+                  <td colspan="11" class="measure-results-empty">No results</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="measure-actions">
+            <button
+              id="exportMeasurementsButton"
+              class="custom-button"
+              type="button"
+              title="Export measurement results as CSV"
+            >
+              Export CSV
+            </button>
+            <button
+              id="clearMeasurementsButton"
+              class="custom-button"
+              type="button"
+              title="Clear temporary measurements and results"
+            >
+              Clear
+            </button>
+            <button
+              id="deleteMeasurementButton"
+              class="custom-button"
+              type="button"
+              title="Delete selected measurement"
+              disabled
+            >
+              <svg
+                class="trash-icon"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M9 3h6v2H9V3zm1 0v2h4V3h-4zM5 6h14v2H5V6zm2 3h10v11H7V9zm2 2v7h2v-7H9zm4 0v7h2v-7h-2z"
+                />
+              </svg>
+            </button>
+            <button
+              id="measureColumnsButton"
+              class="custom-button"
+              type="button"
+              title="Choose measurement table and CSV fields"
+              aria-label="Choose measurement fields"
+              aria-expanded="false"
+            >
+              <svg class="annotation-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <rect x="4" y="5" width="16" height="14" />
+                <path d="M9 5v14" />
+                <path d="M15 5v14" />
+                <path d="M4 10h16" />
+              </svg>
+            </button>
+            <div
+              id="measureColumnsMenu"
+              class="measure-columns-menu"
+              role="dialog"
+              aria-label="Measurement fields"
+              hidden
+            >
+              <div class="measure-columns-header">
+                <span>Property</span>
+                <span>Table</span>
+                <span>CSV</span>
+              </div>
+              <div id="measureColumnsList" class="measure-columns-list"></div>
+              <button
+                id="restoreMeasureColumnsButton"
+                class="custom-button"
+                type="button"
+              >
+                Restore Defaults
+              </button>
+            </div>
+          </div>
+          <div class="measure-analysis-actions">
+            <button
+              id="measureHistogramButton"
+              class="custom-button"
+              type="button"
+              title="Measurement histogram"
+              aria-label="Measurement histogram"
+              aria-expanded="false"
+            >
+              <svg class="annotation-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 20h16" />
+                <path d="M5 20V11h3v9" />
+                <path d="M10.5 20V6h3v14" />
+                <path d="M16 20v-7h3v7" />
+              </svg>
+            </button>
+            <button
+              id="measureScatterButton"
+              class="custom-button"
+              type="button"
+              title="Measurement scatterplot"
+              aria-label="Measurement scatterplot"
+              aria-expanded="false"
+            >
+              <svg class="annotation-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 20h16" />
+                <path d="M4 20V4" />
+                <circle class="annotation-icon-fill" cx="8" cy="15" r="1.3" />
+                <circle class="annotation-icon-fill" cx="11" cy="11" r="1.3" />
+                <circle class="annotation-icon-fill" cx="15" cy="13" r="1.3" />
+                <circle class="annotation-icon-fill" cx="18" cy="7" r="1.3" />
+              </svg>
+            </button>
+            <button
+              id="measureRoseButton"
+              class="custom-button"
+              type="button"
+              title="Measurement rose diagram"
+              aria-label="Measurement rose diagram"
+              aria-expanded="false"
+            >
+              <svg class="annotation-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 12 12 4" />
+                <path d="M12 12 19 8" />
+                <path d="M12 12 18 17" />
+                <path d="M12 12 6 17" />
+                <path d="M12 12 5 8" />
+                <path d="M12 4a4 4 0 0 1 3.4 5.9L12 12z" />
+                <path d="M19 8a4 4 0 0 1-.9 6.1L12 12z" />
+              </svg>
+            </button>
+            <button
+              id="measureParticleSizeButton"
+              class="custom-button"
+              type="button"
+              title="Particle size analysis"
+              aria-label="Particle size analysis"
+              aria-expanded="false"
+            >
+              <svg class="annotation-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 20h16" />
+                <path d="M4 20V4" />
+                <path d="M5 18c3.5 0 3.5-11 7-11s3.5 11 7 11" />
+              </svg>
+            </button>
+            <div
+              id="measureHistogramMenu"
+              class="measure-histogram-menu"
+              role="dialog"
+              aria-label="Measurement histogram"
+              hidden
+            >
+              <div id="measureHistogramHeader" class="measure-histogram-header">
+                <span>Histogram</span>
+                <button
+                  id="closeMeasureHistogramButton"
+                  class="custom-button"
+                  type="button"
+                  title="Close histogram"
+                  aria-label="Close histogram"
+                >
+                  ×
+                </button>
+              </div>
+              <div class="measure-histogram-controls">
+                <label>
+                  <span>Plot</span>
+                  <select id="measureHistogramPlotType">
+                    <option value="histogram" selected>Histogram</option>
+                    <option value="box">Box</option>
+                    <option value="violin">Violin</option>
+                  </select>
+                </label>
+                <label>
+                  <span>Parameter</span>
+                  <select id="measureHistogramParameter"></select>
+                </label>
+                <label>
+                  <span>Display</span>
+                  <select id="measureHistogramMode">
+                    <option value="combined">Combined</option>
+                    <option value="groups">By group</option>
+                  </select>
+                </label>
+              </div>
+              <div class="measure-histogram-range-controls">
+                <label>
+                  <span>Min</span>
+                  <input id="measureHistogramMin" type="number" step="any" />
+                </label>
+                <label>
+                  <span>Max</span>
+                  <input id="measureHistogramMax" type="number" step="any" />
+                </label>
+                <label>
+                  <span>Bin</span>
+                  <input id="measureHistogramBinSize" type="number" step="any" />
+                </label>
+                <label class="measure-histogram-color-control" title="Default plot color">
+                  <span>Color</span>
+                  <input id="measureHistogramColor" type="color" value="#8a8f94" />
+                </label>
+              </div>
+              <label class="measure-histogram-stacked-control">
+                <input id="measureHistogramStacked" type="checkbox" />
+                <span>Stack groups</span>
+              </label>
+              <div id="measureHistogramGroups" class="measure-histogram-groups"></div>
+              <canvas
+                id="measureHistogramCanvas"
+                class="measure-histogram-canvas"
+                width="360"
+                height="220"
+              ></canvas>
+              <div class="measure-summary-table-wrapper measure-histogram-stats-wrapper">
+                <table class="measure-summary-table measure-histogram-stats-table">
+                  <thead>
+                    <tr>
+                      <th>Set</th>
+                      <th>n</th>
+                      <th id="measureHistogramStatsMeanHeader">Mean</th>
+                      <th id="measureHistogramStatsMedianHeader">Median</th>
+                      <th id="measureHistogramStatsSdHeader">SD</th>
+                      <th id="measureHistogramStatsMinHeader">Min</th>
+                      <th id="measureHistogramStatsMaxHeader">Max</th>
+                    </tr>
+                  </thead>
+                  <tbody id="measureHistogramStatsBody">
+                    <tr>
+                      <td colspan="7">No results</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <div class="measure-histogram-export-row">
+                <button
+                  id="exportMeasureHistogramStatsButton"
+                  class="custom-button"
+                  type="button"
+                >
+                  Export Stats CSV
+                </button>
+                <button
+                  id="exportMeasureHistogramButton"
+                  class="custom-button"
+                  type="button"
+                >
+                  Export PDF
+                </button>
+              </div>
+            </div>
+            <div
+              id="measureRoseMenu"
+              class="measure-rose-menu"
+              role="dialog"
+              aria-label="Measurement rose diagram"
+              hidden
+            >
+              <div id="measureRoseHeader" class="measure-histogram-header">
+                <span>Rose Diagram</span>
+                <button
+                  id="closeMeasureRoseButton"
+                  class="custom-button"
+                  type="button"
+                  title="Close rose diagram"
+                  aria-label="Close rose diagram"
+                >
+                  ×
+                </button>
+              </div>
+              <div class="measure-histogram-controls">
+                <label>
+                  <span>Parameter</span>
+                  <select id="measureRoseParameter"></select>
+                </label>
+                <label>
+                  <span>Display</span>
+                  <select id="measureRoseMode">
+                    <option value="combined">Combined</option>
+                    <option value="groups">By group</option>
+                  </select>
+                </label>
+                <label class="measure-histogram-color-control" title="Combined plot color">
+                  <span>Color</span>
+                  <input id="measureRoseColor" type="color" value="#8a8f94" />
+                </label>
+              </div>
+              <div class="measure-rose-options">
+                <label>
+                  <span>Bin</span>
+                  <input id="measureRoseBinSize" type="number" step="any" value="10" />
+                </label>
+                <label>
+                  <input id="measureRoseBidirectional" type="checkbox" checked />
+                  <span>Bidirectional</span>
+                </label>
+                <label>
+                  <input id="measureRoseStacked" type="checkbox" />
+                  <span>Stack groups</span>
+                </label>
+              </div>
+              <div id="measureRoseGroups" class="measure-histogram-groups"></div>
+              <canvas
+                id="measureRoseCanvas"
+                class="measure-histogram-canvas"
+                width="360"
+                height="220"
+              ></canvas>
+              <div class="measure-summary-table-wrapper measure-rose-stats-wrapper">
+                <table class="measure-summary-table measure-rose-stats-table">
+                  <thead>
+                    <tr>
+                      <th>Set</th>
+                      <th>n</th>
+                      <th>Mean (°)</th>
+                      <th>R</th>
+                      <th>Circular SD (°)</th>
+                    </tr>
+                  </thead>
+                  <tbody id="measureRoseStatsBody">
+                    <tr>
+                      <td colspan="5">No results</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <div class="measure-histogram-export-row">
+                <button
+                  id="exportMeasureRoseStatsButton"
+                  class="custom-button"
+                  type="button"
+                >
+                  Export Stats CSV
+                </button>
+                <button
+                  id="exportMeasureRoseButton"
+                  class="custom-button"
+                  type="button"
+                >
+                  Export PDF
+                </button>
+              </div>
+            </div>
+            <div
+              id="measureParticleSizeMenu"
+              class="measure-particle-size-menu"
+              role="dialog"
+              aria-label="Particle size analysis"
+              hidden
+            >
+              <div id="measureParticleSizeHeader" class="measure-histogram-header">
+                <span>Particle Size Analysis</span>
+                <button
+                  id="closeMeasureParticleSizeButton"
+                  class="custom-button"
+                  type="button"
+                  title="Close particle size analysis"
+                  aria-label="Close particle size analysis"
+                >
+                  ×
+                </button>
+              </div>
+              <div class="measure-histogram-controls">
+                <label>
+                  <span>Size</span>
+                  <select id="measureParticleSizeParameter">
+                    <option value="ecdM" selected>ECD</option>
+                    <option value="lengthM">Length</option>
+                    <option value="widthM">Width</option>
+                  </select>
+                </label>
+                <label>
+                  <span>Weight</span>
+                  <select id="measureParticleSizeWeight">
+                    <option value="area" selected>Area</option>
+                    <option value="none">None</option>
+                  </select>
+                </label>
+                <label>
+                  <span>Display</span>
+                  <select id="measureParticleSizeMode">
+                    <option value="combined">Combined</option>
+                    <option value="groups">By group</option>
+                  </select>
+                </label>
+              </div>
+              <div class="measure-histogram-range-controls">
+                <label>
+                  <span>ɸ Min</span>
+                  <input id="measureParticlePhiMin" type="number" step="any" />
+                </label>
+                <label>
+                  <span>ɸ Max</span>
+                  <input id="measureParticlePhiMax" type="number" step="any" />
+                </label>
+                <label>
+                  <span>Bin</span>
+                  <input id="measureParticlePhiBin" type="number" step="any" />
+                </label>
+                <label class="measure-histogram-color-control" title="Combined plot color">
+                  <span>Color</span>
+                  <input id="measureParticleColor" type="color" value="#8a8f94" />
+                </label>
+              </div>
+              <div class="measure-particle-display-options">
+                <label>
+                  <input id="measureParticleShowHistogram" type="checkbox" checked />
+                  <span>Histogram</span>
+                </label>
+                <label>
+                  <input id="measureParticleShowCumulative" type="checkbox" checked />
+                  <span>Cumulative</span>
+                </label>
+                <label>
+                  <input id="measureParticleStacked" type="checkbox" />
+                  <span>Stack groups</span>
+                </label>
+              </div>
+              <div id="measureParticleSizeGroups" class="measure-histogram-groups"></div>
+              <canvas
+                id="measureParticleSizeCanvas"
+                class="measure-histogram-canvas"
+                width="360"
+                height="220"
+              ></canvas>
+              <div class="measure-summary-table-wrapper measure-particle-stats-wrapper">
+                <table class="measure-summary-table measure-particle-stats-table">
+                  <thead>
+                    <tr>
+                      <th>Set</th>
+                      <th>n</th>
+                      <th>Mean ɸ</th>
+                      <th>Mean Class</th>
+                      <th>Sorting ɸ</th>
+                      <th>Sorting Class</th>
+                      <th>Skewness</th>
+                      <th>Skewness Class</th>
+                    </tr>
+                  </thead>
+                  <tbody id="measureParticleSizeStatsBody">
+                    <tr>
+                      <td colspan="8">No results</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <div class="measure-histogram-export-row">
+                <button
+                  id="exportMeasureParticleSizeStatsButton"
+                  class="custom-button"
+                  type="button"
+                >
+                  Export Stats CSV
+                </button>
+                <button
+                  id="exportMeasureParticleSizeButton"
+                  class="custom-button"
+                  type="button"
+                >
+                  Export PDF
+                </button>
+              </div>
+            </div>
+            <div
+              id="measureScatterMenu"
+              class="measure-scatter-menu"
+              role="dialog"
+              aria-label="Measurement scatterplot"
+              hidden
+            >
+              <div id="measureScatterHeader" class="measure-histogram-header">
+                <span>Scatterplot</span>
+                <button
+                  id="closeMeasureScatterButton"
+                  class="custom-button"
+                  type="button"
+                  title="Close scatterplot"
+                  aria-label="Close scatterplot"
+                >
+                  ×
+                </button>
+              </div>
+              <div class="measure-scatter-controls">
+                <label>
+                  <span>X</span>
+                  <select id="measureScatterXParameter"></select>
+                </label>
+                <label>
+                  <span>Y</span>
+                  <select id="measureScatterYParameter"></select>
+                </label>
+                <label>
+                  <span>Display</span>
+                  <select id="measureScatterMode">
+                    <option value="combined">Combined</option>
+                    <option value="groups">By group</option>
+                  </select>
+                </label>
+              </div>
+              <div class="measure-scatter-range-controls">
+                <label>
+                  <span>X Min</span>
+                  <input id="measureScatterXMin" type="number" step="any" />
+                </label>
+                <label>
+                  <span>X Max</span>
+                  <input id="measureScatterXMax" type="number" step="any" />
+                </label>
+                <label>
+                  <span>Y Min</span>
+                  <input id="measureScatterYMin" type="number" step="any" />
+                </label>
+                <label>
+                  <span>Y Max</span>
+                  <input id="measureScatterYMax" type="number" step="any" />
+                </label>
+                <label class="measure-histogram-color-control" title="Combined plot color">
+                  <span>Color</span>
+                  <input id="measureScatterColor" type="color" value="#8a8f94" />
+                </label>
+              </div>
+              <div id="measureScatterGroups" class="measure-histogram-groups"></div>
+              <canvas
+                id="measureScatterCanvas"
+                class="measure-histogram-canvas"
+                width="360"
+                height="220"
+              ></canvas>
+              <div class="measure-summary-table-wrapper measure-scatter-stats-wrapper">
+                <table class="measure-summary-table measure-scatter-stats-table">
+                  <thead>
+                    <tr>
+                      <th>Set</th>
+                      <th>n</th>
+                      <th id="measureScatterMeanXHeader">Mean X</th>
+                      <th id="measureScatterMeanYHeader">Mean Y</th>
+                      <th id="measureScatterSdXHeader">SD X</th>
+                      <th id="measureScatterSdYHeader">SD Y</th>
+                      <th>r</th>
+                      <th>r²</th>
+                    </tr>
+                  </thead>
+                  <tbody id="measureScatterStatsBody">
+                    <tr>
+                      <td colspan="8">No results</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <div class="measure-histogram-export-row">
+                <button
+                  id="exportMeasureScatterStatsButton"
+                  class="custom-button"
+                  type="button"
+                >
+                  Export Stats CSV
+                </button>
+                <button
+                  id="exportMeasureScatterButton"
+                  class="custom-button"
+                  type="button"
+                >
+                  Export PDF
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="measure-circle-section">
+            <div class="measure-circle-button-row">
+              <button
+                id="toggleCircleButton"
+                class="custom-button"
+                onclick="toggleCircleMode(this)"
+                title="Start/stop measuring"
+              >
+                Draw Reference Circle
+              </button>
+              <button
+                class="custom-button"
+                id="referenceCircleGearButton"
+                type="button"
+                title="Reference circle drawing properties"
+                aria-label="Reference circle drawing properties"
+              >
+                <svg
+                  class="gear-icon"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 64 64"
+                >
+                  <g>
+                    <polygon
+                      fill="#444"
+                      stroke="#000000"
+                      stroke-width="2"
+                      stroke-miterlimit="10"
+                      points="32,1 26,1 26,10 20,12 14,6 6,14 12,20 
+                    10,26 1,26 1,38 10,38 12,44 6,50 14,58 20,52 26,54 26,63 32,63 38,63 38,54 44,52 50,58 58,50 52,44 54,38 63,38 63,26 54,26 
+                    52,20 58,14 50,6 44,12 38,10 38,1 	"
+                    />
+                    <circle
+                      fill="#FFFFFF"
+                      stroke="#000000"
+                      stroke-width="2"
+                      stroke-miterlimit="10"
+                      cx="32"
+                      cy="32"
+                      r="6"
+                    />
+                  </g>
+                </svg>
+              </button>
+            </div>
+            <div class="dropdown-container measure-circle-row">
+              <label for="circle">Diameter</label>
+              <input type="number" id="circle" value="100" style="width: 50px" />
+              <div>
+                <select id="circleUnits" style="width: 45px">
+                  <option value="0">m</option>
+                  <option value="1">mm</option>
+                  <option value="2" selected>µm</option>
+                </select>
+              </div>
+            </div>
+          </div>
           <!-- Hidden Settings Menu -->
-          <div id="circleSettingsMenu" class="hiddenSettingsMenu">
+          <div id="measureSettingsMenu" class="hiddenSettingsMenu">
+            <div>
+              <input
+                type="number"
+                id="measureLineWeight"
+                placeholder="2"
+                maxlength="3"
+                value="2"
+                min="1"
+                max="10"
+              />
+              <label for="measureLineWeight">Line Weight</label>
+            </div>
+            <div>
+              <input
+                type="number"
+                class="wide-number-input"
+                id="measureLineOpacity"
+                placeholder="1"
+                maxlength="3"
+                value="1"
+                min="0"
+                max="1"
+              />
+              <label for="measureLineOpacity">Line Opacity</label>
+            </div>
+            <div>
+              <input type="color" id="measureLineColor" value="#00b4ff" />
+              <label for="measureLineColor">Line Color</label>
+            </div>
+            <div>
+              <select id="measureLineStyle">
+                <option value="solid">Solid</option>
+                <option value="dashed" selected>Dashed</option>
+                <option value="dotted">Dotted</option>
+              </select>
+              <label for="measureLineStyle">Line Style</label>
+            </div>
+            <div>
+              <input type="color" id="measureFillColor" value="#FFFFFF" />
+              <label for="measureFillColor">Fill Color</label>
+            </div>
+            <div>
+              <input
+                type="number"
+                class="wide-number-input"
+                id="measureFillOpacity"
+                placeholder="1"
+                maxlength="3"
+                value="0"
+                min="0"
+                max="1"
+              />
+              <label for="measureFillOpacity">Fill Opacity</label>
+            </div>
+          </div>
+          <div id="referenceCircleSettingsMenu" class="hiddenSettingsMenu">
             <div>
               <input
                 type="number"
@@ -3273,7 +4000,7 @@
             </div>
             <div>
               <select id="circleLineStyle">
-                <option value="solid">Solid</option>
+                <option value="solid" selected>Solid</option>
                 <option value="dashed">Dashed</option>
                 <option value="dotted">Dotted</option>
               </select>
@@ -3298,17 +4025,6 @@
             </div>
           </div>
 
-          <div class="dropdown-container">
-            <label for="circle">Diameter</label>
-            <div>
-              <select id="circleUnits" style="width: 45px">
-                <option value="0">m</option>
-                <option value="1">mm</option>
-                <option value="2" selected>µm</option>
-              </select>
-            </div>
-            <input type="number" id="circle" value="100" style="width: 50px" />
-          </div>
           <!-- <div>
             <label for="distance">Distance:</label>
             <output id="distance">0.00</output>

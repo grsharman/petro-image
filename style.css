@@ -38,7 +38,7 @@ body.import-wizard-page {
   display: flex;
   gap: 6px;
   align-items: flex-start;
-  z-index: 3000;
+  z-index: 3200;
 }
 
 .viewer-corner-button {
@@ -135,6 +135,7 @@ body.import-wizard-page {
   position: absolute;
   top: 40px;
   right: 0;
+  z-index: 3210;
   width: min(260px, calc(100vw - 16px));
   padding: 6px;
   border: 1px solid rgba(20, 20, 20, 0.28);
@@ -545,6 +546,10 @@ body.import-wizard-page {
   align-items: center;
 }
 
+.measure-group-controls {
+  grid-template-columns: minmax(0, 1fr) 20px 20px 20px;
+}
+
 .annotation-group-controls select {
   min-width: 0;
   height: 22px;
@@ -606,7 +611,7 @@ body.import-wizard-page {
 
 .annotation-list-row {
   display: grid;
-  grid-template-columns: 24px 20px minmax(0, 1fr) 16px 20px 20px;
+  grid-template-columns: 16px 24px 20px minmax(0, 1fr) 20px 20px;
   align-items: center;
   gap: 3px;
   min-height: 21px;
@@ -1920,6 +1925,622 @@ input[type="range"] {
 
 .measure-settings-popover select {
   width: 74px;
+}
+
+.measure-show-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.measure-show-row #measureGearButton {
+  margin-left: auto;
+}
+
+.measure-tool-grid {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 6px 0;
+  flex-wrap: nowrap;
+}
+
+.measure-tool-row {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+.measure-unit-control {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 1px;
+  padding-left: 1px;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.measure-tool-row + .measure-tool-row {
+  margin-left: 3px;
+  padding-left: 7px;
+  border-left: 1px solid #c9c9c9;
+}
+
+.measure-unit-control span {
+  line-height: 1;
+}
+
+.measure-tool-grid input[hidden] {
+  display: none;
+}
+
+.measure-circle-section {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #c8c8c8;
+}
+
+.measure-circle-button-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+
+.measure-circle-button-row #toggleCircleButton {
+  --button-width: 150px;
+}
+
+.measure-circle-button-row #referenceCircleGearButton {
+  width: 24px;
+  min-width: 24px;
+}
+
+.measure-circle-row {
+  display: grid;
+  grid-template-columns: auto auto minmax(48px, 1fr);
+  align-items: center;
+  gap: 5px;
+}
+
+.measure-actions {
+  display: grid;
+  position: relative;
+  grid-template-columns: minmax(0, 1fr) 42px 24px 24px;
+  gap: 4px;
+  margin: 6px 0;
+}
+
+.measure-table-toolbar {
+  display: flex;
+  margin-top: 6px;
+}
+
+.measure-table-toolbar #measureSelectedAnnotationsButton {
+  width: 100%;
+  min-width: 0;
+  height: 24px;
+  padding: 3px 6px;
+  font-size: 11px;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.measure-actions .custom-button {
+  width: 100%;
+  min-width: 0;
+  padding: 4px 5px;
+  font-size: 11px;
+}
+
+#deleteMeasurementButton {
+  width: 20px;
+  min-width: 20px;
+  padding: 2px;
+}
+
+#measureColumnsButton {
+  width: 20px;
+  min-width: 20px;
+  padding: 2px;
+}
+
+.measure-columns-menu {
+  position: fixed;
+  z-index: 4300;
+  width: 190px;
+  max-height: 260px;
+  overflow: auto;
+  padding: 6px;
+  border: 1px solid rgba(20, 20, 20, 0.32);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.18);
+}
+
+.measure-columns-header,
+.measure-columns-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 38px 32px;
+  align-items: center;
+  gap: 4px;
+}
+
+.measure-columns-header {
+  margin-bottom: 4px;
+  color: #444;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.measure-columns-row {
+  min-height: 22px;
+  font-size: 11px;
+}
+
+.measure-columns-row span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.measure-columns-row input {
+  justify-self: center;
+}
+
+.measure-columns-unavailable {
+  justify-self: center;
+  color: #888;
+  font-size: 11px;
+}
+
+#restoreMeasureColumnsButton {
+  width: 100%;
+  margin: 6px 0 0;
+  font-size: 11px;
+}
+
+.measure-analysis-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: -2px 0 6px;
+}
+
+.measure-analysis-actions #measureHistogramButton,
+.measure-analysis-actions #measureScatterButton,
+.measure-analysis-actions #measureRoseButton,
+.measure-analysis-actions #measureParticleSizeButton {
+  width: 24px;
+  min-width: 24px;
+  padding: 2px;
+}
+
+.measure-histogram-menu,
+.measure-scatter-menu,
+.measure-rose-menu,
+.measure-particle-size-menu {
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  z-index: 4300;
+  width: 410px;
+  min-width: 410px;
+  min-height: 330px;
+  max-width: calc(100vw - 16px);
+  max-height: calc(100vh - 16px);
+  padding: 8px;
+  overflow: auto;
+  resize: both;
+  border: 1px solid rgba(20, 20, 20, 0.32);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.97);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.18);
+}
+
+.measure-histogram-menu[hidden],
+.measure-scatter-menu[hidden],
+.measure-rose-menu[hidden],
+.measure-particle-size-menu[hidden] {
+  display: none;
+}
+
+.measure-histogram-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 7px;
+  color: #222;
+  cursor: move;
+  user-select: none;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.measure-histogram-header #closeMeasureHistogramButton,
+.measure-histogram-header #closeMeasureScatterButton,
+.measure-histogram-header #closeMeasureRoseButton,
+.measure-histogram-header #closeMeasureParticleSizeButton {
+  width: 22px;
+  min-width: 22px;
+  height: 22px;
+  margin-left: auto;
+  padding: 0;
+  line-height: 1;
+}
+
+.measure-histogram-controls,
+.measure-scatter-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.measure-histogram-controls {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.measure-histogram-controls label,
+.measure-histogram-range-controls label,
+.measure-scatter-controls label,
+.measure-scatter-range-controls label {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+}
+
+.measure-histogram-controls select,
+.measure-histogram-controls input[type="color"],
+.measure-histogram-range-controls input,
+.measure-scatter-controls select,
+.measure-scatter-controls input[type="color"],
+.measure-scatter-range-controls input {
+  box-sizing: border-box;
+  min-width: 0;
+  height: 22px;
+  padding: 1px 3px;
+  font-size: 11px;
+  line-height: 18px;
+}
+
+.measure-histogram-range-controls {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  margin-bottom: 5px;
+}
+
+.measure-histogram-range-controls input[type="color"] {
+  width: 100%;
+  min-width: 0;
+  height: 22px;
+  padding: 1px 2px;
+}
+
+.measure-scatter-controls {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.measure-scatter-range-controls {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.measure-histogram-stacked-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 6px;
+  font-size: 11px;
+}
+
+.measure-histogram-stacked-control input {
+  margin: 0;
+}
+
+.measure-particle-display-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin-bottom: 6px;
+  font-size: 11px;
+}
+
+.measure-particle-display-options label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.measure-particle-display-options input {
+  margin: 0;
+}
+
+.measure-rose-options {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 6px 10px;
+  margin-bottom: 6px;
+  font-size: 11px;
+}
+
+.measure-rose-options label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.measure-rose-options label:first-child {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+}
+
+.measure-rose-options input {
+  box-sizing: border-box;
+  min-width: 0;
+  height: 22px;
+  margin: 0;
+  padding: 1px 3px;
+  font-size: 11px;
+}
+
+.measure-histogram-groups {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  max-height: 54px;
+  overflow: auto;
+  margin-bottom: 6px;
+  padding: 4px;
+  border: 1px solid #d4d4d4;
+  background: #fafafa;
+  font-size: 11px;
+}
+
+.measure-histogram-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  white-space: nowrap;
+}
+
+.measure-histogram-group input {
+  margin: 0;
+}
+
+.measure-histogram-canvas {
+  flex: 1 1 220px;
+  display: block;
+  width: 100%;
+  height: 220px;
+  min-height: 160px;
+  border: 1px solid #d1d1d1;
+  background: #fff;
+}
+
+.measure-histogram-summary {
+  min-height: 18px;
+  margin: 5px 0;
+  color: #333;
+  font-size: 11px;
+  line-height: 1.25;
+}
+
+#exportMeasureHistogramButton,
+#exportMeasureHistogramStatsButton,
+#exportMeasureScatterButton,
+#exportMeasureScatterStatsButton,
+#exportMeasureRoseButton,
+#exportMeasureRoseStatsButton,
+#exportMeasureParticleSizeStatsButton,
+#exportMeasureParticleSizeButton {
+  width: 100%;
+  font-size: 11px;
+}
+
+.measure-histogram-export-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 4px;
+}
+
+.measure-summary-table-wrapper {
+  max-height: 220px;
+  overflow: auto;
+  margin: 6px 0;
+  border: 1px solid #d1d1d1;
+  background: #fff;
+}
+
+.measure-summary-table {
+  width: 100%;
+  min-width: 600px;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+
+.measure-histogram-stats-wrapper {
+  max-height: 112px;
+}
+
+.measure-histogram-stats-table {
+  min-width: 0;
+}
+
+.measure-particle-stats-wrapper {
+  max-height: 112px;
+}
+
+.measure-particle-stats-table {
+  min-width: 760px;
+}
+
+.measure-scatter-stats-wrapper {
+  max-height: 112px;
+}
+
+.measure-scatter-stats-table {
+  min-width: 680px;
+}
+
+.measure-rose-stats-wrapper {
+  max-height: 112px;
+}
+
+.measure-rose-stats-table {
+  min-width: 0;
+}
+
+.measure-summary-table th,
+.measure-summary-table td {
+  padding: 3px 4px;
+  border-bottom: 1px solid #e3e3e3;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.measure-summary-table th {
+  position: sticky;
+  top: 0;
+  background: #efefef;
+  z-index: 1;
+}
+
+.measure-results-wrapper {
+  max-height: 150px;
+  overflow: auto;
+  margin-top: 6px;
+  margin-bottom: 6px;
+  border: 1px solid #c8c8c8;
+  background: #fff;
+}
+
+.measure-results-table {
+  width: 100%;
+  min-width: 650px;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+
+.measure-results-table th,
+.measure-results-table td {
+  padding: 2px 3px;
+  border-bottom: 1px solid #e3e3e3;
+  text-align: left;
+  white-space: normal;
+  line-height: 1.15;
+}
+
+.measure-results-table td {
+  white-space: nowrap;
+}
+
+.measure-results-table tbody tr:not(.measure-results-empty) {
+  cursor: pointer;
+}
+
+.measure-result-row-selected {
+  background: rgba(0, 180, 255, 0.16);
+}
+
+.measure-results-table tbody tr:focus {
+  outline: 1px solid rgba(0, 180, 255, 0.85);
+  outline-offset: -1px;
+}
+
+.measure-type-cell {
+  width: 20px;
+  text-align: center;
+}
+
+.measure-group-cell {
+  width: 18px;
+  text-align: center;
+}
+
+.measure-sticky-header-cell,
+.measure-sticky-group-cell {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: #fff;
+}
+
+.measure-sticky-header-cell {
+  z-index: 3;
+  background: #efefef;
+}
+
+.measure-result-row-selected .measure-sticky-group-cell {
+  background: rgb(214, 244, 255);
+}
+
+.measure-group-color {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border: 1px solid rgba(0, 0, 0, 0.35);
+  border-radius: 50%;
+  vertical-align: middle;
+}
+
+.measure-type-icon {
+  width: 16px;
+  height: 16px;
+  margin: 0 auto;
+}
+
+.measure-live-readout {
+  position: fixed;
+  z-index: 4300;
+  pointer-events: none;
+  padding: 3px 6px;
+  border: 1px solid rgba(0, 180, 255, 0.85);
+  border-radius: 4px;
+  background: rgba(18, 24, 28, 0.86);
+  color: #eafaff;
+  font-size: 12px;
+  line-height: 1.2;
+  white-space: nowrap;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.22);
+}
+
+.measure-live-readout-warning {
+  max-width: 260px;
+  border-color: rgba(206, 79, 61, 0.9);
+  background: rgba(45, 20, 18, 0.92);
+  color: #ffece8;
+  white-space: normal;
+}
+
+.measure-invalid-area {
+  color: #8a3a2d;
+  font-weight: 600;
+}
+
+.measure-floater-active {
+  stroke: #00b4ff !important;
+}
+
+.measure-results-table th {
+  position: sticky;
+  top: 0;
+  background: #efefef;
+  z-index: 1;
+}
+
+.measure-results-empty {
+  color: #666;
+  text-align: center;
 }
 
 /* Button for loading annotation from JSON */
