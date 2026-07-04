@@ -113,6 +113,7 @@ let annoJSONTemp = {
 let selectedAnnotationUuid = null;
 let selectedAnnotationUuids = new Set();
 let annotationListSelectionAnchorUuid = null;
+let pendingAnnotationTextEdit = null;
 let suppressNextAnnotationClick = false;
 let suppressNextAnnotationDoubleClick = false;
 
@@ -3316,6 +3317,17 @@ function getDraftCursorImagePoint() {
   return [imagePoint.x, imagePoint.y];
 }
 
+function getClosedDraftPolygonCoordinates(coordinates) {
+  const draftCoordinates = coordinates.map((coordinate) => [...coordinate]);
+  if (
+    draftCoordinates.length > 1 &&
+    !coordinatesMatch(draftCoordinates[0], draftCoordinates[draftCoordinates.length - 1])
+  ) {
+    draftCoordinates.push([...draftCoordinates[0]]);
+  }
+  return draftCoordinates;
+}
+
 function redrawAnnotationDraft() {
   annoJSONTemp = {
     type: "FeatureCollection",
@@ -3331,7 +3343,7 @@ function redrawAnnotationDraft() {
     const draftCoordinates = cursorImagePoint
       ? [...clickImageCoordinates, cursorImagePoint]
       : clickImageCoordinates;
-    addPolylineToGeoJSON(annoJSONTemp, draftCoordinates, {
+    const draftStyle = {
       labelFontSize: Number(document.getElementById("annoLabelFontSize").value),
       labelFontColor: currentPolyStyleColors.labelFontColor,
       labelBackgroundColor: currentPolyStyleColors.labelBackgroundColor,
@@ -3342,7 +3354,18 @@ function redrawAnnotationDraft() {
       lineWeight: Number(document.getElementById("lineWeight").value),
       lineColor: currentPolyStyleColors.lineColor,
       lineOpacity: getAnnotationOpacityValue("lineOpacity"),
-    });
+      fillColor: currentPolyStyleColors.fillColor,
+      fillOpacity: getAnnotationOpacityValue("fillOpacity"),
+    };
+    if (isPolygonMode || isXPressed) {
+      addPolygonToGeoJSON(
+        annoJSONTemp,
+        getClosedDraftPolygonCoordinates(draftCoordinates),
+        draftStyle
+      );
+    } else {
+      addPolylineToGeoJSON(annoJSONTemp, draftCoordinates, draftStyle);
+    }
   }
 
   if (
@@ -3649,6 +3672,7 @@ function restoreCountGridState(state) {
 function restoreAnnotationState(state) {
   suppressUnsavedAnnotationTracking = true;
   try {
+    pendingAnnotationTextEdit = null;
     exitAnnotationVertexEditMode();
     exitAnnotationShapeEditMode();
     removeAnnotationOverlays();
@@ -4670,6 +4694,8 @@ let moveAnnotationLabelButton = document.getElementById(
 let polygonButton = document.getElementById("polygonButton");
 let ellipseButton = document.getElementById("ellipseButton");
 let circleAnnotationButton = document.getElementById("circleAnnotationButton");
+let annotationBooleanButton = document.getElementById("annotationBooleanButton");
+let annotationBooleanMenu = document.getElementById("annotationBooleanMenu");
 
 // Flags to track modes
 let isPointMode = false;
@@ -5148,6 +5174,28 @@ function closeCircleAnnotationOptionsPopover() {
   menu.classList.remove("circle-annotation-options-popover");
 }
 
+function openAnnotationBooleanPopover(button) {
+  if (!annotationBooleanMenu || !button) return;
+
+  if (annotationBooleanMenu.parentElement !== document.body) {
+    document.body.appendChild(annotationBooleanMenu);
+  }
+
+  updateAnnotationBooleanControls();
+  annotationBooleanMenu.classList.add("annotation-boolean-popover");
+  annotationBooleanMenu.style.display = "block";
+  annotationBooleanButton?.setAttribute("aria-expanded", "true");
+  positionAnnotationSettingsPopover(annotationBooleanMenu, button);
+}
+
+function closeAnnotationBooleanPopover() {
+  if (!annotationBooleanMenu) return;
+
+  annotationBooleanMenu.style.display = "none";
+  annotationBooleanMenu.classList.remove("annotation-boolean-popover");
+  annotationBooleanButton?.setAttribute("aria-expanded", "false");
+}
+
 // Show or hide the annotations settings menu when the gear button is clicked
 document.getElementById("gearButton").addEventListener("click", function (event) {
   event.stopPropagation(); // Prevent click from reaching the window listener
@@ -5209,6 +5257,27 @@ document
     }
   });
 
+annotationBooleanButton?.addEventListener("click", function (event) {
+  event.stopPropagation();
+  if (annotationBooleanButton.disabled) return;
+  if (annotationBooleanMenu?.style.display === "block") {
+    closeAnnotationBooleanPopover();
+  } else {
+    openAnnotationBooleanPopover(event.currentTarget);
+  }
+});
+
+annotationBooleanMenu
+  ?.querySelectorAll("[data-boolean-operation]")
+  .forEach((button) => {
+    button.addEventListener("click", function (event) {
+      event.stopPropagation();
+      const operation = event.currentTarget.dataset.booleanOperation;
+      closeAnnotationBooleanPopover();
+      applyAnnotationBooleanOperation(operation);
+    });
+  });
+
 getCircleAnnotationOptionsElements().modeInputs.forEach((input) => {
   input.addEventListener("change", function (event) {
     if (event.target.value === "fixed" && !hasKnownScale()) {
@@ -5261,6 +5330,14 @@ window.addEventListener("click", function (event) {
     !event.target.closest("#circleAnnotationOptionsMenu")
   ) {
     closeCircleAnnotationOptionsPopover();
+  }
+
+  if (
+    annotationBooleanMenu?.style.display === "block" &&
+    !event.target.closest("#annotationBooleanButton") &&
+    !event.target.closest("#annotationBooleanMenu")
+  ) {
+    closeAnnotationBooleanPopover();
   }
 });
 
@@ -5401,6 +5478,7 @@ const disableAnnoButtons = () => {
   repeatButton.classList.remove("active");
   setAnnotationMoveMode(false);
   setAnnotationLabelMoveMode(false);
+  updateSelectedAnnotationGeometryWarning();
 };
 
 function updateSelectedAnnotationControls() {
@@ -5417,6 +5495,8 @@ function updateSelectedAnnotationControls() {
   document.getElementById("repeatButton").disabled = !hasSelection;
   document.getElementById("newAnnotationGroupButton").disabled =
     !hasUnlockedSelection;
+  updateSelectedAnnotationGeometryWarning();
+  updateAnnotationBooleanControls();
 
   if (!hasSelection || !hasUnlockedSelection) {
     isRepeatMode = false;
@@ -5494,6 +5574,595 @@ function getSelectedAnnotationUuid() {
   return getSelectedAnnotation()?.properties?.uuid || null;
 }
 
+const BOOLEAN_OPERATION_LABELS = {
+  union: "Union",
+  difference: "Subtract from Primary",
+  intersection: "Intersect",
+  xor: "Exclude Overlap",
+  split: "Split MultiPolygon",
+  repair: "Repair Polygon",
+};
+
+function getPolygonClippingLibrary() {
+  return window.polygonClipping || null;
+}
+
+function isBooleanPolygonFeature(feature) {
+  return (
+    feature?.properties?.uuid &&
+    !isAnnotationFeatureLocked(feature) &&
+    (feature.geometry?.type === "Polygon" || feature.geometry?.type === "MultiPolygon")
+  );
+}
+
+function isAnnotationPolygonGeometry(feature) {
+  return (
+    feature?.geometry?.type === "Polygon" ||
+    feature?.geometry?.type === "MultiPolygon"
+  );
+}
+
+function isCoordinateOnRingBoundary(coordinate, ring) {
+  const point = imagePointFromCoord(coordinate);
+  return getRingSegments(ring).some(([start, end]) =>
+    pointOnImageSegment(point, start, end)
+  );
+}
+
+function ringsIntersect(firstRing, secondRing) {
+  const firstSegments = getRingSegments(firstRing);
+  const secondSegments = getRingSegments(secondRing);
+  return firstSegments.some(([firstStart, firstEnd]) =>
+    secondSegments.some(([secondStart, secondEnd]) =>
+      imageSegmentsIntersect(firstStart, firstEnd, secondStart, secondEnd)
+    )
+  );
+}
+
+function getPolygonHoleGeometryWarnings(polygon) {
+  if (!Array.isArray(polygon) || polygon.length < 2) return [];
+
+  const exteriorRing = getCleanCoordinateRing(polygon[0] || []);
+  if (exteriorRing.length < 4) return [];
+
+  const warnings = [];
+  const interiorRings = polygon
+    .slice(1)
+    .map((ring) => getCleanCoordinateRing(ring || []));
+  interiorRings.forEach((holeRing) => {
+    if (holeRing.length < 4) return;
+    const holeCoordinates = getCoordinatesWithoutTrailingDuplicate(holeRing);
+    const holeLeavesExterior = holeCoordinates.some((coordinate) => {
+      const point = imagePointFromCoord(coordinate);
+      return (
+        !isImagePointInRing(point, exteriorRing) ||
+        isCoordinateOnRingBoundary(coordinate, exteriorRing)
+      );
+    });
+
+    if (holeLeavesExterior || ringsIntersect(holeRing, exteriorRing)) {
+      warnings.push(
+        "Invalid polygon hole; interior rings must stay inside the exterior ring."
+      );
+    }
+  });
+
+  interiorRings.forEach((holeRing, holeIndex) => {
+    if (holeRing.length < 4) return;
+    const holeCoordinates = getCoordinatesWithoutTrailingDuplicate(holeRing);
+    interiorRings.slice(holeIndex + 1).forEach((otherRing) => {
+      if (otherRing.length < 4) return;
+      const otherCoordinates = getCoordinatesWithoutTrailingDuplicate(otherRing);
+      const holesOverlap =
+        ringsIntersect(holeRing, otherRing) ||
+        holeCoordinates.some((coordinate) =>
+          isImagePointInRing(imagePointFromCoord(coordinate), otherRing)
+        ) ||
+        otherCoordinates.some((coordinate) =>
+          isImagePointInRing(imagePointFromCoord(coordinate), holeRing)
+        );
+
+      if (holesOverlap) {
+        warnings.push("Invalid polygon holes; interior rings must not overlap.");
+      }
+    });
+  });
+
+  return [...new Set(warnings)];
+}
+
+function getAnnotationGeometryStatus(feature) {
+  if (!isAnnotationPolygonGeometry(feature)) {
+    return { validGeometry: true, geometryWarning: "" };
+  }
+
+  const invalidWarnings = [];
+  const polygons = getGeometryPolygons(feature.geometry);
+  polygons.forEach((polygon) => {
+    if (!Array.isArray(polygon)) return;
+    polygon.forEach((ring) => {
+      const geometryStatus = getPolygonSelfIntersectionStatus(ring);
+      if (!geometryStatus.validGeometry && geometryStatus.geometryWarning) {
+        invalidWarnings.push(geometryStatus.geometryWarning);
+      }
+    });
+    invalidWarnings.push(...getPolygonHoleGeometryWarnings(polygon));
+  });
+
+  if (invalidWarnings.length > 0) {
+    return {
+      validGeometry: false,
+      geometryWarning: [...new Set(invalidWarnings)].join(" "),
+    };
+  }
+
+  return { validGeometry: true, geometryWarning: "" };
+}
+
+function updateAnnotationGeometryStatus(feature) {
+  if (!feature?.properties) return { validGeometry: true, geometryWarning: "" };
+
+  const geometryStatus = getAnnotationGeometryStatus(feature);
+  feature.properties.validGeometry = geometryStatus.validGeometry;
+  feature.properties.geometryWarning = geometryStatus.geometryWarning;
+  return geometryStatus;
+}
+
+function getSelectedBooleanFeatures() {
+  return getSelectedAnnotationUuids()
+    .map((uuid) => getAnnotationByUuid(uuid))
+    .filter(Boolean);
+}
+
+function getBooleanSelectionState() {
+  const selectedFeatures = getSelectedBooleanFeatures();
+  const polygonFeatures = selectedFeatures.filter(isBooleanPolygonFeature);
+  const primaryFeature = getSelectedAnnotation();
+  const primaryIsPolygon = isBooleanPolygonFeature(primaryFeature);
+  const hasOnlyPolygonSelection =
+    selectedFeatures.length > 0 && polygonFeatures.length === selectedFeatures.length;
+
+  return {
+    selectedFeatures,
+    polygonFeatures,
+    primaryFeature,
+    primaryIsPolygon,
+    hasOnlyPolygonSelection,
+    hasEnoughPolygons: hasOnlyPolygonSelection && polygonFeatures.length >= 2,
+  };
+}
+
+function getBooleanFeatureInvalidGeometryStatus(feature) {
+  if (!isBooleanPolygonFeature(feature)) return { validGeometry: true, geometryWarning: "" };
+  return updateAnnotationGeometryStatus(feature);
+}
+
+function isRepairableBooleanFeature(feature) {
+  if (!getPolygonClippingLibrary()) return false;
+  return getBooleanFeatureInvalidGeometryStatus(feature).validGeometry === false;
+}
+
+function getBooleanOperationEnabled(operation) {
+  const state = getBooleanSelectionState();
+  if (operation === "split") {
+    return (
+      state.primaryFeature?.geometry?.type === "MultiPolygon" &&
+      !isAnnotationFeatureLocked(state.primaryFeature) &&
+      Array.isArray(state.primaryFeature.geometry.coordinates) &&
+      state.primaryFeature.geometry.coordinates.length > 1
+    );
+  }
+  if (operation === "repair") {
+    return isRepairableBooleanFeature(state.primaryFeature);
+  }
+  if (!getPolygonClippingLibrary()) return false;
+  if (!state.hasEnoughPolygons) return false;
+  if (operation === "difference") return state.primaryIsPolygon;
+  return true;
+}
+
+function normalizeBooleanRing(ring) {
+  if (!Array.isArray(ring)) return null;
+  const cleaned = getCleanCoordinateRing(ring);
+  if (cleaned.length < 4) return null;
+  const uniquePoints = getCoordinatesWithoutTrailingDuplicate(cleaned);
+  if (uniquePoints.length < 3) return null;
+  if (calculateArea(cleaned) <= 0) return null;
+  return cleaned.map((coordinate) => [Number(coordinate[0]), Number(coordinate[1])]);
+}
+
+function normalizeBooleanPolygon(polygon) {
+  if (!Array.isArray(polygon)) return null;
+  const rings = polygon.map(normalizeBooleanRing).filter(Boolean);
+  return rings.length > 0 ? rings : null;
+}
+
+function featureToBooleanMultiPolygon(feature) {
+  if (feature.geometry?.type === "Polygon") {
+    const polygon = normalizeBooleanPolygon(feature.geometry.coordinates);
+    return polygon ? [polygon] : null;
+  }
+  if (feature.geometry?.type === "MultiPolygon") {
+    const polygons = feature.geometry.coordinates
+      .map(normalizeBooleanPolygon)
+      .filter(Boolean);
+    return polygons.length > 0 ? polygons : null;
+  }
+  return null;
+}
+
+function normalizeBooleanMultiPolygon(multiPolygon) {
+  if (!Array.isArray(multiPolygon)) return [];
+  return multiPolygon.map(normalizeBooleanPolygon).filter(Boolean);
+}
+
+function booleanMultiPolygonToGeometry(multiPolygon) {
+  const normalized = normalizeBooleanMultiPolygon(multiPolygon);
+  if (normalized.length === 0) return null;
+  if (normalized.length === 1) {
+    return {
+      type: "Polygon",
+      coordinates: normalized[0],
+    };
+  }
+  return {
+    type: "MultiPolygon",
+    coordinates: normalized,
+  };
+}
+
+function getGeometryPolygons(geometry) {
+  if (geometry?.type === "Polygon") return [geometry.coordinates];
+  if (geometry?.type === "MultiPolygon") return geometry.coordinates;
+  return [];
+}
+
+function calculateBooleanGeometryAreaPixels(geometry) {
+  return getGeometryPolygons(geometry).reduce(
+    (total, polygon) => total + calculatePolygonArea(polygon),
+    0
+  );
+}
+
+function calculateBooleanGeometryPerimeterPixels(geometry) {
+  return getGeometryPolygons(geometry).reduce(
+    (total, polygon) =>
+      total +
+      polygon.reduce((polygonTotal, ring) => {
+        return polygonTotal + calculatePerimeter(ring);
+      }, 0),
+    0
+  );
+}
+
+function getBooleanGeometryLabelPoint(geometry, fallbackFeature) {
+  const firstRing = getGeometryPolygons(geometry)[0]?.[0] || [];
+  const labelCoordinates = getCoordinatesWithoutTrailingDuplicate(firstRing);
+  const topPoint = labelCoordinates.length > 0 ? getTopmostPoint(labelCoordinates) : null;
+  if (
+    topPoint &&
+    Number.isFinite(Number(topPoint[0])) &&
+    Number.isFinite(Number(topPoint[1]))
+  ) {
+    return {
+      x: Number(topPoint[0]),
+      y: Number(topPoint[1]),
+    };
+  }
+  return {
+    x: Number(fallbackFeature?.properties?.xLabel) || 0,
+    y: Number(fallbackFeature?.properties?.yLabel) || 0,
+  };
+}
+
+function updateGeometryMeasurementProperties(feature) {
+  const areaPixels = calculateBooleanGeometryAreaPixels(feature.geometry);
+  const perimeterPixels = calculateBooleanGeometryPerimeterPixels(feature.geometry);
+
+  feature.properties.area_m2 = squareMetersFromSquarePixels(areaPixels);
+  feature.properties.perimeter_m = metersFromPixels(perimeterPixels);
+  feature.properties.validGeometry = true;
+  feature.properties.geometryWarning = "";
+}
+
+function updateBooleanResultProperties(feature, options = {}) {
+  const preserveLabelPosition = options.preserveLabelPosition === true;
+  const currentLabelPoint = {
+    x: Number(feature.properties?.xLabel),
+    y: Number(feature.properties?.yLabel),
+  };
+  const hasCurrentLabelPoint =
+    Number.isFinite(currentLabelPoint.x) && Number.isFinite(currentLabelPoint.y);
+  const labelPoint =
+    preserveLabelPosition && hasCurrentLabelPoint
+      ? currentLabelPoint
+      : getBooleanGeometryLabelPoint(feature.geometry, feature);
+
+  feature.properties.shapeType = "polygon";
+  feature.properties.xLabel = labelPoint.x;
+  feature.properties.yLabel = labelPoint.y;
+  updateGeometryMeasurementProperties(feature);
+}
+
+function cloneSplitPolygonProperties(sourceFeature, polygon, index) {
+  const properties = normalizeAnnotationProperties({
+    ...cloneData(sourceFeature.properties),
+    uuid: index === 0 ? sourceFeature.properties.uuid : generateUniqueId(12),
+    shapeType: "polygon",
+  });
+  const feature = {
+    type: "Feature",
+    geometry: {
+      type: "Polygon",
+      coordinates: cloneData(polygon),
+    },
+    properties,
+  };
+  updateBooleanResultProperties(feature);
+  return feature;
+}
+
+function getBooleanOperationResult(operation, polygonFeatures) {
+  const polygonClipping = getPolygonClippingLibrary();
+  if (!polygonClipping) {
+    alert("Polygon boolean operations are not available.");
+    return null;
+  }
+
+  const operands = polygonFeatures.map(featureToBooleanMultiPolygon);
+  if (operands.some((operand) => !operand)) {
+    alert("The selected polygons include invalid geometry.");
+    return null;
+  }
+
+  try {
+    if (operation === "union") return polygonClipping.union(...operands);
+    if (operation === "intersection") return polygonClipping.intersection(...operands);
+    if (operation === "xor") return polygonClipping.xor(...operands);
+    if (operation === "repair") return polygonClipping.union(...operands);
+    if (operation === "difference") {
+      return polygonClipping.difference(operands[0], ...operands.slice(1));
+    }
+  } catch (error) {
+    console.error("Boolean polygon operation failed:", error);
+    alert("The selected polygons could not be combined. Check for invalid geometry.");
+    return null;
+  }
+  return null;
+}
+
+function showBooleanOperationEmptyMessage(operation) {
+  const label = BOOLEAN_OPERATION_LABELS[operation] || "Boolean operation";
+  alert(`${label} did not produce any polygon area.`);
+}
+
+function applyAnnotationBooleanOperation(operation) {
+  const state = getBooleanSelectionState();
+  if (operation === "split") {
+    splitPrimaryMultiPolygon();
+    return;
+  }
+  if (operation === "repair") {
+    repairPrimaryPolygon();
+    return;
+  }
+  if (!getBooleanOperationEnabled(operation)) {
+    alert("Select at least two unlocked polygon annotations.");
+    return;
+  }
+
+  const primaryFeature = state.primaryFeature;
+  const polygonFeatures =
+    operation === "difference"
+      ? [
+          primaryFeature,
+          ...state.polygonFeatures.filter(
+            (feature) => feature.properties.uuid !== primaryFeature.properties.uuid
+          ),
+        ]
+      : state.polygonFeatures;
+  const result = getBooleanOperationResult(operation, polygonFeatures);
+  const geometry = booleanMultiPolygonToGeometry(result);
+  if (!geometry) {
+    showBooleanOperationEmptyMessage(operation);
+    return;
+  }
+
+  annotationHistory.push(BOOLEAN_OPERATION_LABELS[operation]);
+  pendingAnnotationTextEdit = null;
+  exitAnnotationVertexEditMode();
+  exitAnnotationShapeEditMode();
+
+  const primaryUuid = primaryFeature.properties.uuid;
+  const selectedPolygonUuids = new Set(
+    state.polygonFeatures.map((feature) => feature.properties.uuid)
+  );
+  state.polygonFeatures.forEach((feature) => {
+    if (feature.properties.uuid !== primaryUuid) {
+      removeAnnotationFeatureOverlays(feature);
+    }
+  });
+
+  primaryFeature.geometry = geometry;
+  updateBooleanResultProperties(primaryFeature, {
+    preserveLabelPosition: operation !== "intersection",
+  });
+  updateAnnotationLabelOverlayPosition(primaryUuid);
+  updateText(primaryUuid, "anno", primaryFeature.properties.label || "");
+
+  annoJSON.features = annoJSON.features.filter(
+    (feature) =>
+      feature.properties?.uuid === primaryUuid ||
+      !selectedPolygonUuids.has(feature.properties?.uuid)
+  );
+
+  selectedAnnotationUuids = new Set([primaryUuid]);
+  selectedAnnotationUuid = primaryUuid;
+  annotationListSelectionAnchorUuid = primaryUuid;
+  drawShape(polyCanvas, [annoJSON, annoJSONTemp]);
+  renderAnnotationList();
+  setAnnotationSelection([primaryUuid], primaryUuid, {
+    redraw: false,
+    scroll: true,
+    pan: false,
+  });
+  unsavedAnnotations(true);
+}
+
+function repairPrimaryPolygon() {
+  const feature = getSelectedAnnotation();
+  if (!getBooleanOperationEnabled("repair")) {
+    alert("Select a polygon annotation with invalid geometry to repair.");
+    return;
+  }
+
+  const result = getBooleanOperationResult("repair", [feature]);
+  const geometry = booleanMultiPolygonToGeometry(result);
+  if (!geometry) {
+    showBooleanOperationEmptyMessage("repair");
+    return;
+  }
+
+  annotationHistory.push(BOOLEAN_OPERATION_LABELS.repair);
+  pendingAnnotationTextEdit = null;
+  exitAnnotationVertexEditMode();
+  exitAnnotationShapeEditMode();
+
+  feature.geometry = geometry;
+  updateBooleanResultProperties(feature, { preserveLabelPosition: true });
+  updateAnnotationLabelOverlayPosition(feature.properties.uuid);
+  updateText(feature.properties.uuid, "anno", feature.properties.label || "");
+  drawShape(polyCanvas, [annoJSON, annoJSONTemp]);
+  renderAnnotationList();
+  setAnnotationSelection([feature.properties.uuid], feature.properties.uuid, {
+    redraw: false,
+    scroll: true,
+    pan: false,
+  });
+  unsavedAnnotations(true);
+}
+
+function splitPrimaryMultiPolygon() {
+  const feature = getSelectedAnnotation();
+  if (!getBooleanOperationEnabled("split")) {
+    alert("Select a MultiPolygon annotation to split.");
+    return;
+  }
+
+  const normalizedPolygons = (feature.geometry.coordinates || [])
+    .map(normalizeBooleanPolygon)
+    .filter(Boolean);
+  if (normalizedPolygons.length <= 1) {
+    alert("This MultiPolygon does not contain multiple valid polygon parts.");
+    return;
+  }
+
+  annotationHistory.push(BOOLEAN_OPERATION_LABELS.split);
+  pendingAnnotationTextEdit = null;
+  exitAnnotationVertexEditMode();
+  exitAnnotationShapeEditMode();
+  removeAnnotationFeatureOverlays(feature);
+
+  const originalIndex = getAnnotationIndexByUuid(feature.properties.uuid);
+  const splitFeatures = normalizedPolygons.map((polygon, index) =>
+    cloneSplitPolygonProperties(feature, polygon, index)
+  );
+  annoJSON.features.splice(originalIndex, 1, ...splitFeatures);
+
+  splitFeatures.forEach((splitFeature) => {
+    const image = viewer.world.getItemAt(0);
+    if (!image) return;
+    const props = splitFeature.properties;
+    const viewportPoint = image.imageToViewportCoordinates(
+      new OpenSeadragon.Point(props.xLabel, props.yLabel)
+    );
+    addText(
+      props.uuid,
+      props.label || "",
+      viewportPoint,
+      "anno",
+      props.labelFontColor,
+      Number(props.labelFontSize),
+      props.labelBackgroundColor,
+      Number(props.labelBackgroundOpacity)
+    );
+  });
+
+  const splitUuids = splitFeatures.map((splitFeature) => splitFeature.properties.uuid);
+  selectedAnnotationUuids = new Set(splitUuids);
+  selectedAnnotationUuid = splitUuids[0];
+  annotationListSelectionAnchorUuid = splitUuids[0];
+  drawShape(polyCanvas, [annoJSON, annoJSONTemp]);
+  renderAnnotationList();
+  setAnnotationSelection(splitUuids, splitUuids[0], {
+    redraw: false,
+    scroll: true,
+    pan: false,
+  });
+  unsavedAnnotations(true);
+}
+
+function updateAnnotationBooleanControls() {
+  if (!annotationBooleanButton) return;
+
+  const polygonClipping = getPolygonClippingLibrary();
+  const state = getBooleanSelectionState();
+  const canSplit = getBooleanOperationEnabled("split");
+  const canRepair = getBooleanOperationEnabled("repair");
+  const canOpen = Boolean(
+    (polygonClipping && state.hasEnoughPolygons) || canSplit || canRepair
+  );
+  annotationBooleanButton.disabled = !canOpen;
+  annotationBooleanButton.title = polygonClipping || canSplit
+    ? "Boolean Operations"
+    : "Boolean Operations unavailable";
+  if (!canOpen) {
+    closeAnnotationBooleanPopover();
+  }
+
+  if (!annotationBooleanMenu) return;
+  annotationBooleanMenu
+    .querySelectorAll("[data-boolean-operation]")
+    .forEach((button) => {
+      const operation = button.dataset.booleanOperation;
+      const isEnabled = getBooleanOperationEnabled(operation);
+      button.disabled = !isEnabled;
+      button.setAttribute("aria-disabled", String(!isEnabled));
+    });
+}
+
+function updateAnnotationListLabel(uuid, label) {
+  if (!uuid) return;
+  const row = document.querySelector(
+    `.annotation-list-row[data-annotation-uuid="${CSS.escape(uuid)}"]`
+  );
+  if (!row) return;
+
+  const displayLabel = label || "(no label)";
+  const labelCell = row.querySelector(".annotation-list-label");
+  if (labelCell) labelCell.textContent = displayLabel;
+
+  const indexText = row.querySelector(".annotation-list-index")?.textContent;
+  const geometryWarning = getAnnotationGeometryWarning(getAnnotationByUuid(uuid));
+  const titlePrefix = indexText ? `${indexText}. ${displayLabel}` : displayLabel;
+  row.title = geometryWarning ? `${titlePrefix} - ${geometryWarning}` : titlePrefix;
+}
+
+function beginPendingAnnotationTextEdit(feature) {
+  if (!feature?.properties?.uuid) return null;
+
+  if (pendingAnnotationTextEdit?.uuid !== feature.properties.uuid) {
+    pendingAnnotationTextEdit = {
+      uuid: feature.properties.uuid,
+      undoState: cloneAnnotationState(),
+      label: feature.properties.label ?? "",
+      notes: feature.properties.notes ?? "",
+    };
+  }
+
+  return pendingAnnotationTextEdit;
+}
+
 function setAnnotationTextInputs(feature) {
   const annoLabel = document.getElementById("anno-label");
   const annoNotes = document.getElementById("anno-notes");
@@ -5513,6 +6182,9 @@ function scrollSelectedAnnotationRowIntoView() {
 
 function setAnnotationSelection(uuids, primaryUuid = null, options = {}) {
   const { pan = false, redraw = true, scroll = true } = options;
+  if (selectedAnnotationUuid && selectedAnnotationUuid !== primaryUuid) {
+    commitPendingAnnotationTextEdit("Edit annotation text");
+  }
   const validUuids = uuids.filter(
     (uuid) => getAnnotationIndexByUuid(uuid) >= 0 && !isAnnotationUuidLocked(uuid)
   );
@@ -5592,7 +6264,37 @@ function normalizeAnnotationProperties(properties = {}) {
 function normalizeAnnotationFeature(feature) {
   if (!feature?.properties) return feature;
   feature.properties = normalizeAnnotationProperties(feature.properties);
+  if (isAnnotationPolygonGeometry(feature)) {
+    updateAnnotationGeometryStatus(feature);
+  }
   return feature;
+}
+
+function getAnnotationGeometryWarning(feature) {
+  if (!isAnnotationPolygonGeometry(feature)) return "";
+  const geometryStatus = updateAnnotationGeometryStatus(feature);
+  return geometryStatus.validGeometry ? "" : geometryStatus.geometryWarning;
+}
+
+function createAnnotationGeometryWarningIcon(message) {
+  const icon = document.createElement("span");
+  icon.className = "annotation-geometry-warning-icon";
+  icon.textContent = "!";
+  icon.title = message;
+  icon.setAttribute("aria-label", message);
+  return icon;
+}
+
+function updateSelectedAnnotationGeometryWarning() {
+  const warning = document.getElementById("annotationGeometryWarning");
+  if (!warning) return;
+
+  const feature = getSelectedAnnotation();
+  const message = feature ? getAnnotationGeometryWarning(feature) : "";
+  warning.textContent = message
+    ? `${message} Repair Polygon is available from Boolean Operations.`
+    : "";
+  warning.hidden = !message;
 }
 
 function getAnnotationGroups() {
@@ -6161,13 +6863,16 @@ function renderAnnotationList() {
     const isVisible = isAnnotationFeatureVisible(feature);
     const isLocked = isAnnotationFeatureLocked(feature);
     const isGroupLocked = props.groupLocked === true;
+    const geometryWarning = getAnnotationGeometryWarning(feature);
     const row = document.createElement("div");
     row.className = "annotation-list-row";
     row.tabIndex = 0;
     row.setAttribute("role", "option");
     row.dataset.annotationUuid = props.uuid;
     row.setAttribute("aria-selected", "false");
-    row.title = `${index + 1}. ${props.label || "(no label)"}`;
+    row.title = geometryWarning
+      ? `${index + 1}. ${props.label || "(no label)"} - ${geometryWarning}`
+      : `${index + 1}. ${props.label || "(no label)"}`;
     row.addEventListener("click", function (event) {
       handleAnnotationListRowClick(event, props.uuid);
     });
@@ -6195,6 +6900,12 @@ function renderAnnotationList() {
     typeCell.appendChild(
       createGeometryTypeIcon(feature.geometry?.type, props.shapeType)
     );
+
+    const warningCell = document.createElement("span");
+    warningCell.className = "annotation-list-warning";
+    if (geometryWarning) {
+      warningCell.appendChild(createAnnotationGeometryWarningIcon(geometryWarning));
+    }
 
     const labelCell = document.createElement("span");
     labelCell.className = "annotation-list-label";
@@ -6246,6 +6957,7 @@ function renderAnnotationList() {
       groupCell,
       indexCell,
       typeCell,
+      warningCell,
       labelCell,
       visibilityButton,
       lockButton
@@ -6776,6 +7488,43 @@ function annoTextToLabel() {
   }
 }
 
+function previewAnnotationLabelInput() {
+  const feature = getSelectedAnnotation();
+  const annoLabel = document.getElementById("anno-label");
+  if (!feature || !annoLabel) return;
+  if (isAnnotationFeatureLocked(feature)) {
+    setAnnotationTextInputs(feature);
+    return;
+  }
+
+  beginPendingAnnotationTextEdit(feature);
+  feature.properties.label = annoLabel.value;
+  updateText(feature.properties.uuid, "anno", annoLabel.value);
+  updateAnnotationListLabel(feature.properties.uuid, annoLabel.value);
+}
+
+function commitPendingAnnotationTextEdit(historyLabel) {
+  if (!pendingAnnotationTextEdit) return false;
+
+  const { uuid, undoState, label, notes } = pendingAnnotationTextEdit;
+  const feature = getAnnotationByUuid(uuid);
+  pendingAnnotationTextEdit = null;
+
+  if (!feature) return false;
+  if (isAnnotationFeatureLocked(feature)) {
+    setAnnotationTextInputs(feature);
+    return false;
+  }
+
+  const currentLabel = feature.properties.label ?? "";
+  const currentNotes = feature.properties.notes ?? "";
+  if (currentLabel === label && currentNotes === notes) return false;
+
+  annotationHistory.push(historyLabel, undoState);
+  unsavedAnnotations(true);
+  return true;
+}
+
 function commitAnnotationTextInput(historyLabel) {
   const feature = getSelectedAnnotation();
   if (!feature) return;
@@ -6786,6 +7535,16 @@ function commitAnnotationTextInput(historyLabel) {
 
   const annoLabel = document.getElementById("anno-label");
   const annoNotes = document.getElementById("anno-notes");
+  if (pendingAnnotationTextEdit?.uuid === feature.properties.uuid) {
+    const notesChanged = feature.properties.notes !== annoNotes.value;
+    if (notesChanged) {
+      feature.properties.notes = annoNotes.value;
+    }
+    updateAnnotationListLabel(feature.properties.uuid, annoLabel.value);
+    commitPendingAnnotationTextEdit(historyLabel);
+    return;
+  }
+
   const labelChanged = feature.properties.label !== annoLabel.value;
   const notesChanged = feature.properties.notes !== annoNotes.value;
   if (!labelChanged && !notesChanged) return;
@@ -6793,7 +7552,7 @@ function commitAnnotationTextInput(historyLabel) {
   annotationHistory.push(historyLabel);
   annoTextToLabel();
   updateText(feature.properties.uuid, "anno", annoLabel.value);
-  renderAnnotationList();
+  updateAnnotationListLabel(feature.properties.uuid, annoLabel.value);
 }
 
 // When Enter is pressed in the anno-label text box
@@ -6821,6 +7580,10 @@ document.addEventListener("keydown", function (event) {
     textInput.blur();
   }
 });
+
+document
+  .getElementById("anno-label")
+  ?.addEventListener("input", previewAnnotationLabelInput);
 
 document
   .getElementById("anno-label")
@@ -7343,7 +8106,12 @@ function finishAnnotationLabelMoveDrag() {
 function isVertexEditableAnnotation(feature) {
   if (!feature?.geometry || !feature.properties?.uuid) return false;
   if (feature.geometry.type === "LineString") return true;
-  if (feature.geometry.type !== "Polygon") return false;
+  if (
+    feature.geometry.type !== "Polygon" &&
+    feature.geometry.type !== "MultiPolygon"
+  ) {
+    return false;
+  }
 
   return !["rectangle", "ellipse", "circle"].includes(feature.properties.shapeType);
 }
@@ -7359,19 +8127,99 @@ function isShapeEditableAnnotation(feature) {
 function isRotationEditableAnnotation(feature) {
   if (!feature?.geometry || !feature.properties?.uuid) return false;
   if (feature.geometry.type === "LineString") return true;
-  if (feature.geometry.type !== "Polygon") return false;
+  if (
+    feature.geometry.type !== "Polygon" &&
+    feature.geometry.type !== "MultiPolygon"
+  ) {
+    return false;
+  }
 
   const shapeType = feature.properties?.shapeType;
   return shapeType !== "circle";
 }
 
-function getEditableVertexCoordinates(feature) {
+function getEditableVertexEntries(feature) {
   if (!isVertexEditableAnnotation(feature)) return [];
-  if (feature.geometry.type === "LineString") return feature.geometry.coordinates;
+  if (feature.geometry.type === "LineString") {
+    return (feature.geometry.coordinates || []).map((coordinate, vertexIndex) => ({
+      coordinate,
+      vertexIndex,
+      polygonIndex: null,
+      ringIndex: null,
+    }));
+  }
 
-  const ring = feature.geometry.coordinates?.[0] || [];
-  const isClosed = ring.length > 1 && coordinatesMatch(ring[0], ring[ring.length - 1]);
-  return isClosed ? ring.slice(0, -1) : ring;
+  const polygons =
+    feature.geometry.type === "Polygon"
+      ? [feature.geometry.coordinates || []]
+      : feature.geometry.coordinates || [];
+  const entries = [];
+  polygons.forEach((polygon, polygonIndex) => {
+    (polygon || []).forEach((ring, ringIndex) => {
+      const isClosed =
+        ring.length > 1 && coordinatesMatch(ring[0], ring[ring.length - 1]);
+      const coordinates = isClosed ? ring.slice(0, -1) : ring;
+      coordinates.forEach((coordinate, vertexIndex) => {
+        entries.push({
+          coordinate,
+          vertexIndex,
+          polygonIndex:
+            feature.geometry.type === "MultiPolygon" ? polygonIndex : null,
+          ringIndex,
+        });
+      });
+    });
+  });
+  return entries;
+}
+
+function getEditableVertexCoordinates(feature) {
+  return getEditableVertexEntries(feature).map((entry) => entry.coordinate);
+}
+
+function getVertexRing(feature, vertexContext = {}) {
+  if (!isVertexEditableAnnotation(feature)) return null;
+  if (feature.geometry.type === "LineString") return feature.geometry.coordinates;
+  if (feature.geometry.type === "Polygon") {
+    return feature.geometry.coordinates?.[Number(vertexContext.ringIndex) || 0] || null;
+  }
+  if (feature.geometry.type === "MultiPolygon") {
+    return (
+      feature.geometry.coordinates?.[Number(vertexContext.polygonIndex) || 0]?.[
+        Number(vertexContext.ringIndex) || 0
+      ] || null
+    );
+  }
+  return null;
+}
+
+function getVertexContextFromHandle(handle) {
+  return {
+    vertexIndex: Number(handle.dataset.vertexIndex),
+    polygonIndex:
+      handle.dataset.polygonIndex === undefined
+        ? null
+        : Number(handle.dataset.polygonIndex),
+    ringIndex:
+      handle.dataset.ringIndex === undefined ? null : Number(handle.dataset.ringIndex),
+  };
+}
+
+function getVertexContextSelector(uuid, vertexContext) {
+  const parts = [
+    `.annotation-vertex-handle[data-annotation-uuid="${CSS.escape(uuid)}"]`,
+    `[data-vertex-index="${vertexContext.vertexIndex}"]`,
+  ];
+  if (vertexContext.ringIndex !== null && vertexContext.ringIndex !== undefined) {
+    parts.push(`[data-ring-index="${vertexContext.ringIndex}"]`);
+  }
+  if (
+    vertexContext.polygonIndex !== null &&
+    vertexContext.polygonIndex !== undefined
+  ) {
+    parts.push(`[data-polygon-index="${vertexContext.polygonIndex}"]`);
+  }
+  return parts.join("");
 }
 
 function removeAnnotationVertexHandles() {
@@ -7452,10 +8300,14 @@ function renderAnnotationVertexHandles() {
     });
   }
 
-  getEditableVertexCoordinates(feature).forEach((coordinate, vertexIndex) => {
+  getEditableVertexEntries(feature).forEach((entry) => {
+    const { coordinate, vertexIndex, polygonIndex, ringIndex } = entry;
     const handle = document.createElement("button");
     handle.type = "button";
-    handle.className = "annotation-vertex-handle";
+    handle.className =
+      ringIndex > 0
+        ? "annotation-vertex-handle annotation-hole-vertex-handle"
+        : "annotation-vertex-handle";
     handle.title = "Drag vertex. Option-click to delete.";
     handle.setAttribute(
       "aria-label",
@@ -7463,8 +8315,18 @@ function renderAnnotationVertexHandles() {
     );
     handle.dataset.annotationUuid = activeVertexEditUuid;
     handle.dataset.vertexIndex = String(vertexIndex);
+    if (ringIndex !== null && ringIndex !== undefined) {
+      handle.dataset.ringIndex = String(ringIndex);
+    }
+    if (polygonIndex !== null && polygonIndex !== undefined) {
+      handle.dataset.polygonIndex = String(polygonIndex);
+    }
     handle.addEventListener("pointerdown", function (event) {
-      handleAnnotationVertexPointerDown(event, activeVertexEditUuid, vertexIndex);
+      handleAnnotationVertexPointerDown(event, activeVertexEditUuid, {
+        vertexIndex,
+        polygonIndex,
+        ringIndex,
+      });
     });
 
     viewer.addOverlay({
@@ -7531,8 +8393,11 @@ function getCoordinatesWithoutTrailingDuplicate(coordinates) {
   return cleanedCoordinates;
 }
 
-function setAnnotationVertexCoordinate(feature, vertexIndex, imagePoint) {
+function setAnnotationVertexCoordinate(feature, vertexContext, imagePoint) {
   if (!isVertexEditableAnnotation(feature) || !imagePoint) return;
+
+  const vertexIndex = Number(vertexContext?.vertexIndex);
+  if (!Number.isInteger(vertexIndex)) return;
 
   const nextCoordinate = [imagePoint.x, imagePoint.y];
   let oldCoordinate = null;
@@ -7540,8 +8405,11 @@ function setAnnotationVertexCoordinate(feature, vertexIndex, imagePoint) {
   if (feature.geometry.type === "LineString") {
     oldCoordinate = [...feature.geometry.coordinates[vertexIndex]];
     feature.geometry.coordinates[vertexIndex] = nextCoordinate;
-  } else if (feature.geometry.type === "Polygon") {
-    const ring = feature.geometry.coordinates?.[0];
+  } else if (
+    feature.geometry.type === "Polygon" ||
+    feature.geometry.type === "MultiPolygon"
+  ) {
+    const ring = getVertexRing(feature, vertexContext);
     if (!ring?.[vertexIndex]) return;
     const closingIndex = ring.length - 1;
     const isClosed = ring.length > 1 && coordinatesMatch(ring[0], ring[closingIndex]);
@@ -7568,12 +8436,17 @@ function setAnnotationVertexCoordinate(feature, vertexIndex, imagePoint) {
 }
 
 function getMinimumEditableVertexCount(feature) {
-  if (feature?.geometry?.type === "Polygon") return 3;
+  if (
+    feature?.geometry?.type === "Polygon" ||
+    feature?.geometry?.type === "MultiPolygon"
+  ) {
+    return 3;
+  }
   if (feature?.geometry?.type === "LineString") return 2;
   return 0;
 }
 
-function setEditableVertexCoordinates(feature, coordinates) {
+function setEditableVertexCoordinates(feature, coordinates, vertexContext = {}) {
   if (!isVertexEditableAnnotation(feature)) return false;
 
   if (feature.geometry.type === "LineString") {
@@ -7581,7 +8454,10 @@ function setEditableVertexCoordinates(feature, coordinates) {
     return true;
   }
 
-  if (feature.geometry.type === "Polygon") {
+  if (
+    feature.geometry.type === "Polygon" ||
+    feature.geometry.type === "MultiPolygon"
+  ) {
     const ring = coordinates.map((coordinate) => [...coordinate]);
     if (
       ring.length > 0 &&
@@ -7589,7 +8465,14 @@ function setEditableVertexCoordinates(feature, coordinates) {
     ) {
       ring.push([...ring[0]]);
     }
-    feature.geometry.coordinates[0] = ring;
+    if (feature.geometry.type === "Polygon") {
+      feature.geometry.coordinates[Number(vertexContext.ringIndex) || 0] = ring;
+    } else {
+      const polygonIndex = Number(vertexContext.polygonIndex) || 0;
+      const ringIndex = Number(vertexContext.ringIndex) || 0;
+      if (!feature.geometry.coordinates[polygonIndex]) return false;
+      feature.geometry.coordinates[polygonIndex][ringIndex] = ring;
+    }
     return true;
   }
 
@@ -7597,6 +8480,7 @@ function setEditableVertexCoordinates(feature, coordinates) {
 }
 
 function finishAnnotationVertexGeometryEdit(uuid, historyLabel, undoState) {
+  updateAnnotationGeometryStatus(getAnnotationByUuid(uuid));
   annotationHistory.push(historyLabel, undoState);
   drawShape(polyCanvas, [annoJSON, annoJSONTemp]);
   renderAnnotationVertexHandles();
@@ -7696,6 +8580,10 @@ function getFeatureEditMoveCoordinate(feature) {
     }
     return getCoordinateCenter(getVisiblePolygonRing(feature));
   }
+  if (feature.geometry.type === "MultiPolygon") {
+    const coordinates = getEditableVertexCoordinates(feature);
+    return getCoordinateCenter(coordinates);
+  }
   return null;
 }
 
@@ -7706,6 +8594,9 @@ function getFeatureRotationCoordinates(feature) {
   }
   if (feature.geometry.type === "Polygon") {
     return getVisiblePolygonRing(feature);
+  }
+  if (feature.geometry.type === "MultiPolygon") {
+    return getEditableVertexCoordinates(feature);
   }
   return [];
 }
@@ -8086,6 +8977,9 @@ function getDefaultShapeLabelPoint(feature) {
   const shapeType = feature.properties?.shapeType;
   if (feature.geometry?.type === "Point") return feature.geometry.coordinates;
   if (feature.geometry?.type === "LineString") return feature.geometry.coordinates?.[0];
+  if (feature.geometry?.type === "MultiPolygon") {
+    return feature.geometry.coordinates?.[0]?.[0]?.[0];
+  }
 
   const ring = getVisiblePolygonRing(feature);
   if (shapeType === "rectangle") return ring[0];
@@ -8276,13 +9170,39 @@ function rotateLineStringFeature(feature, startCoordinates, center, angleRadians
 }
 
 function rotatePolygonFeature(feature, startCoordinates, center, angleRadians) {
-  const ring = startCoordinates?.[0];
-  if (!Array.isArray(ring)) return false;
-
-  const coordinates = getCoordinatesWithoutTrailingDuplicate(ring).map((coordinate) =>
-    rotatePointAroundCenter(coordinate, center, angleRadians)
+  if (!Array.isArray(startCoordinates)) return false;
+  feature.geometry.coordinates = rotateCoordinateTree(
+    startCoordinates,
+    center,
+    angleRadians
   );
-  updatePolygonFeatureCoordinates(feature, coordinates);
+  updateGeometryMeasurementProperties(feature);
+  return true;
+}
+
+function rotateCoordinateTree(coordinates, center, angleRadians) {
+  if (
+    Array.isArray(coordinates) &&
+    coordinates.length >= 2 &&
+    typeof coordinates[0] === "number" &&
+    typeof coordinates[1] === "number"
+  ) {
+    return rotatePointAroundCenter(coordinates, center, angleRadians);
+  }
+  if (!Array.isArray(coordinates)) return coordinates;
+  return coordinates.map((coordinate) =>
+    rotateCoordinateTree(coordinate, center, angleRadians)
+  );
+}
+
+function rotateMultiPolygonFeature(feature, startCoordinates, center, angleRadians) {
+  if (!Array.isArray(startCoordinates)) return false;
+  feature.geometry.coordinates = rotateCoordinateTree(
+    startCoordinates,
+    center,
+    angleRadians
+  );
+  updateGeometryMeasurementProperties(feature);
   return true;
 }
 
@@ -8328,6 +9248,17 @@ function rotateAnnotationFeatureFromDrag(feature, imagePoint, options = {}) {
   } else if (feature.geometry.type === "Polygon") {
     if (
       !rotatePolygonFeature(
+        feature,
+        rotationState.coordinates,
+        rotationState.center,
+        angleDelta
+      )
+    ) {
+      return false;
+    }
+  } else if (feature.geometry.type === "MultiPolygon") {
+    if (
+      !rotateMultiPolygonFeature(
         feature,
         rotationState.coordinates,
         rotationState.center,
@@ -8455,12 +9386,14 @@ function finishAnnotationShapeDrag() {
   if (!annotationShapeDragState) return false;
 
   const moved = annotationShapeDragState.moved;
+  const uuid = annotationShapeDragState.uuid;
   annotationShapeDragState = null;
   viewerContainer?.classList.remove("annotation-shape-dragging");
   window.removeEventListener("pointermove", handleAnnotationShapeWindowPointerMove);
   window.removeEventListener("pointerup", handleAnnotationShapeWindowPointerUp);
   window.removeEventListener("pointercancel", handleAnnotationShapeWindowPointerUp);
   if (moved) {
+    updateAnnotationGeometryStatus(getAnnotationByUuid(uuid));
     unsavedAnnotations(true);
     renderAnnotationList();
     syncSelectedAnnotationVisuals();
@@ -8494,20 +9427,21 @@ function handleAnnotationShapeWindowPointerUp(event) {
   finishAnnotationShapeDrag();
 }
 
-function deleteAnnotationVertex(uuid, vertexIndex) {
+function deleteAnnotationVertex(uuid, vertexContext) {
   const feature = getAnnotationByUuid(uuid);
   if (!isVertexEditableAnnotation(feature)) return false;
   if (isAnnotationFeatureLocked(feature)) return false;
 
-  const coordinates = getEditableVertexCoordinates(feature).map((coordinate) => [
-    ...coordinate,
-  ]);
+  const ring = getVertexRing(feature, vertexContext);
+  if (!ring) return false;
+  const coordinates = getCoordinatesWithoutTrailingDuplicate(ring);
+  const vertexIndex = Number(vertexContext?.vertexIndex);
   if (coordinates.length <= getMinimumEditableVertexCount(feature)) return false;
   if (!coordinates[vertexIndex]) return false;
 
   const undoState = cloneAnnotationState();
   coordinates.splice(vertexIndex, 1);
-  setEditableVertexCoordinates(feature, coordinates);
+  if (!setEditableVertexCoordinates(feature, coordinates, vertexContext)) return false;
   finishAnnotationVertexGeometryEdit(uuid, "Delete annotation vertex", undoState);
   return true;
 }
@@ -8518,34 +9452,49 @@ function getNearestEditableSegmentAtViewerPoint(feature, viewerPoint, tolerance 
   const image = viewer.world.getItemAt(0);
   if (!image) return null;
 
-  const coordinates = getEditableVertexCoordinates(feature);
-  const segmentCount =
-    feature.geometry.type === "Polygon"
-      ? coordinates.length
-      : Math.max(0, coordinates.length - 1);
+  const entries = getEditableVertexEntries(feature);
+  const lineEntries =
+    feature.geometry.type === "LineString"
+      ? [entries]
+      : Object.values(
+          entries.reduce((groups, entry) => {
+            const key = `${entry.polygonIndex ?? "p"}:${entry.ringIndex ?? "r"}`;
+            groups[key] ||= [];
+            groups[key].push(entry);
+            return groups;
+          }, {})
+        );
   let nearestSegment = null;
 
-  for (let i = 0; i < segmentCount; i++) {
-    const startCoordinate = coordinates[i];
-    const endCoordinate =
-      feature.geometry.type === "Polygon"
-        ? coordinates[(i + 1) % coordinates.length]
-        : coordinates[i + 1];
-    if (!startCoordinate || !endCoordinate) continue;
+  lineEntries.forEach((ringEntries) => {
+    const segmentCount =
+      feature.geometry.type === "LineString"
+        ? Math.max(0, ringEntries.length - 1)
+        : ringEntries.length;
+    for (let i = 0; i < segmentCount; i++) {
+      const startEntry = ringEntries[i];
+      const endEntry =
+        feature.geometry.type === "LineString"
+          ? ringEntries[i + 1]
+          : ringEntries[(i + 1) % ringEntries.length];
+      if (!startEntry?.coordinate || !endEntry?.coordinate) continue;
 
-    const distance = distanceToSegment(
-      viewerPoint,
-      imageCoordToViewerPixel(image, startCoordinate),
-      imageCoordToViewerPixel(image, endCoordinate)
-    );
+      const distance = distanceToSegment(
+        viewerPoint,
+        imageCoordToViewerPixel(image, startEntry.coordinate),
+        imageCoordToViewerPixel(image, endEntry.coordinate)
+      );
 
-    if (distance <= tolerance && (!nearestSegment || distance < nearestSegment.distance)) {
-      nearestSegment = {
-        distance,
-        insertIndex: i + 1,
-      };
+      if (distance <= tolerance && (!nearestSegment || distance < nearestSegment.distance)) {
+        nearestSegment = {
+          distance,
+          insertIndex: startEntry.vertexIndex + 1,
+          polygonIndex: startEntry.polygonIndex,
+          ringIndex: startEntry.ringIndex,
+        };
+      }
     }
-  }
+  });
 
   return nearestSegment;
 }
@@ -8565,24 +9514,21 @@ function insertAnnotationVertexAtViewerPoint(uuid, viewerPoint) {
   const imagePoint = getImagePointFromViewerPixel(viewerPoint);
   if (!imagePoint) return false;
 
-  const coordinates = getEditableVertexCoordinates(feature).map((coordinate) => [
-    ...coordinate,
-  ]);
+  const ring = getVertexRing(feature, nearestSegment);
+  if (!ring) return false;
+  const coordinates = getCoordinatesWithoutTrailingDuplicate(ring);
   const undoState = cloneAnnotationState();
   coordinates.splice(nearestSegment.insertIndex, 0, [imagePoint.x, imagePoint.y]);
-  setEditableVertexCoordinates(feature, coordinates);
+  setEditableVertexCoordinates(feature, coordinates, nearestSegment);
   finishAnnotationVertexGeometryEdit(uuid, "Add annotation vertex", undoState);
   return true;
 }
 
-function updateAnnotationVertexHandlePosition(uuid, vertexIndex) {
+function updateAnnotationVertexHandlePosition(uuid, vertexContext) {
   const feature = getAnnotationByUuid(uuid);
-  const coordinate = getEditableVertexCoordinates(feature)[vertexIndex];
-  const handle = document.querySelector(
-    `.annotation-vertex-handle[data-annotation-uuid="${CSS.escape(
-      uuid
-    )}"][data-vertex-index="${vertexIndex}"]`
-  );
+  const ring = getVertexRing(feature, vertexContext);
+  const coordinate = ring?.[Number(vertexContext?.vertexIndex)];
+  const handle = document.querySelector(getVertexContextSelector(uuid, vertexContext));
   const image = viewer.world.getItemAt(0);
   if (!coordinate || !handle || !image) return;
 
@@ -8611,19 +9557,23 @@ function updateAnnotationEditMoveHandlePosition(uuid) {
   );
 }
 
-function startAnnotationVertexDrag(event, uuid, vertexIndex) {
+function startAnnotationVertexDrag(event, uuid, vertexContext) {
   const feature = getAnnotationByUuid(uuid);
   if (!isVertexEditableAnnotation(feature)) return false;
   if (isAnnotationFeatureLocked(feature)) return false;
 
   const imagePoint = getImagePointFromPointerEvent(event);
   if (!imagePoint) return false;
-  const coordinate = getEditableVertexCoordinates(feature)[vertexIndex];
+  const coordinate = getVertexRing(feature, vertexContext)?.[
+    Number(vertexContext?.vertexIndex)
+  ];
   if (!coordinate) return false;
 
   annotationVertexDragState = {
     uuid,
-    vertexIndex,
+    vertexIndex: Number(vertexContext.vertexIndex),
+    polygonIndex: vertexContext.polygonIndex,
+    ringIndex: vertexContext.ringIndex,
     offsetX: imagePoint.x - coordinate[0],
     offsetY: imagePoint.y - coordinate[1],
     undoState: cloneAnnotationState(),
@@ -8639,9 +9589,10 @@ function startAnnotationVertexDrag(event, uuid, vertexIndex) {
 function moveAnnotationVertexToImagePoint(imagePoint) {
   if (!annotationVertexDragState || !imagePoint) return false;
 
-  const { uuid, vertexIndex } = annotationVertexDragState;
+  const { uuid, vertexIndex, polygonIndex, ringIndex } = annotationVertexDragState;
   const feature = getAnnotationByUuid(uuid);
   if (!isVertexEditableAnnotation(feature)) return false;
+  const vertexContext = { vertexIndex, polygonIndex, ringIndex };
 
   const adjustedImagePoint = {
     x: imagePoint.x - annotationVertexDragState.offsetX,
@@ -8653,10 +9604,10 @@ function moveAnnotationVertexToImagePoint(imagePoint) {
       annotationVertexDragState.undoState
     );
   }
-  setAnnotationVertexCoordinate(feature, vertexIndex, adjustedImagePoint);
+  setAnnotationVertexCoordinate(feature, vertexContext, adjustedImagePoint);
   annotationVertexDragState.moved = true;
   drawShape(polyCanvas, [annoJSON, annoJSONTemp]);
-  updateAnnotationVertexHandlePosition(uuid, vertexIndex);
+  updateAnnotationVertexHandlePosition(uuid, vertexContext);
   updateAnnotationEditMoveHandlePosition(uuid);
   return true;
 }
@@ -8678,15 +9629,15 @@ function finishAnnotationVertexDrag() {
   return true;
 }
 
-function handleAnnotationVertexPointerDown(event, uuid, vertexIndex) {
+function handleAnnotationVertexPointerDown(event, uuid, vertexContext) {
   if (event.altKey) {
     event.preventDefault();
     event.stopPropagation();
-    deleteAnnotationVertex(uuid, vertexIndex);
+    deleteAnnotationVertex(uuid, vertexContext);
     return;
   }
 
-  if (!startAnnotationVertexDrag(event, uuid, vertexIndex)) return;
+  if (!startAnnotationVertexDrag(event, uuid, vertexContext)) return;
 
   event.preventDefault();
   event.stopPropagation();
@@ -8822,6 +9773,7 @@ function addPolygonToGeoJSON(JSON, coordinates, metadata) {
     },
     properties: properties, // metadata like label, description, etc.
   };
+  updateAnnotationGeometryStatus(polygonFeature);
   // Add the point feature to the annoJSON under the provided id
   JSON.features.push(polygonFeature);
   if (JSON === annoJSON) {
@@ -11352,7 +12304,7 @@ function drawShape(canvas, JSONArray) {
         drawPolygon(ctx, coordinates, image, feature);
       } else if (type === "MultiPolygon") {
         coordinates.forEach((polygon) => {
-          drawPolygon(ctx, [polygon], image, feature);
+          drawPolygon(ctx, polygon, image, feature);
         });
       } else if (type === "LineString") {
         drawLineString(ctx, coordinates, image, feature);
@@ -13480,6 +14432,7 @@ document.getElementById("save-counts").addEventListener("click", function () {
 });
 
 const clearAnnotations = () => {
+  pendingAnnotationTextEdit = null;
   exitAnnotationVertexEditMode();
   exitAnnotationShapeEditMode();
   const annoIds = Array.from(
@@ -16468,6 +17421,146 @@ function calculateMeasurementProperties(type, coordinates) {
   return properties;
 }
 
+function getGeometryLineCoordinates(geometry) {
+  if (geometry?.type === "LineString") return [geometry.coordinates || []];
+  if (geometry?.type === "MultiLineString") return geometry.coordinates || [];
+  return [];
+}
+
+function getGeometryPolygonCoordinates(geometry) {
+  if (geometry?.type === "Polygon") return [geometry.coordinates || []];
+  if (geometry?.type === "MultiPolygon") return geometry.coordinates || [];
+  return [];
+}
+
+function getGeometryCoordinatePoints(geometry) {
+  const points = [];
+  const visit = (value) => {
+    if (
+      Array.isArray(value) &&
+      value.length >= 2 &&
+      typeof value[0] === "number" &&
+      typeof value[1] === "number"
+    ) {
+      points.push(value);
+      return;
+    }
+    if (Array.isArray(value)) value.forEach(visit);
+  };
+  visit(geometry?.coordinates);
+  return points;
+}
+
+function calculateGeometryMeasurementProperties(type, geometry) {
+  if (geometry?.type === "LineString" && Array.isArray(geometry.coordinates)) {
+    return calculateMeasurementProperties(
+      type,
+      geometry.coordinates
+    );
+  }
+
+  const properties = {
+    lengthM: null,
+    perimeterM: null,
+    areaM2: null,
+    ecdM: null,
+    radiusM: null,
+    diameterM: null,
+    widthM: null,
+    heightM: null,
+    majorAxisM: null,
+    minorAxisM: null,
+    aspectRatio: null,
+    azimuthDeg: null,
+    solidity: null,
+    circularity: null,
+    validGeometry: true,
+    geometryWarning: "",
+  };
+
+  if (type === "line") {
+    const lengthPixels = getGeometryLineCoordinates(geometry).reduce(
+      (total, line) => total + calculateLineStringLength(line || []),
+      0
+    );
+    properties.lengthM = metersFromPixels(lengthPixels);
+    return properties;
+  }
+
+  const polygons = getGeometryPolygonCoordinates(geometry);
+  let areaPixels = 0;
+  let perimeterPixels = 0;
+  let invalidWarnings = [];
+
+  polygons.forEach((polygon) => {
+    (polygon || []).forEach((ring, ringIndex) => {
+      const closed = closeCoordinates(ring || []);
+      if (closed.length < 4) return;
+      const geometryStatus = getPolygonSelfIntersectionStatus(closed);
+      if (!geometryStatus.validGeometry && geometryStatus.geometryWarning) {
+        invalidWarnings.push(geometryStatus.geometryWarning);
+      }
+      const ringArea = calculateArea(closed);
+      areaPixels += ringIndex === 0 ? ringArea : -ringArea;
+      perimeterPixels += calculatePerimeter(closed);
+    });
+  });
+
+  properties.validGeometry = invalidWarnings.length === 0;
+  properties.geometryWarning = [...new Set(invalidWarnings)].join(" ");
+  properties.areaM2 = properties.validGeometry
+    ? squareMetersFromSquarePixels(Math.max(0, areaPixels))
+    : null;
+  properties.perimeterM = metersFromPixels(perimeterPixels);
+  properties.ecdM =
+    properties.areaM2 === null
+      ? null
+      : 2 * Math.sqrt(properties.areaM2 / Math.PI);
+  properties.circularity =
+    properties.areaM2 === null || properties.perimeterM === 0
+      ? null
+      : (4 * Math.PI * properties.areaM2) /
+        (properties.perimeterM * properties.perimeterM);
+
+  const points = getGeometryCoordinatePoints(geometry);
+  if (points.length > 0) {
+    const { widthPx, heightPx } = getPolygonWidthHeight(points);
+    properties.widthM = metersFromPixels(widthPx);
+    properties.heightM = metersFromPixels(heightPx);
+    const axes = getOrientedAxisProperties(points);
+    if (axes.shortAxisPx !== null && axes.longAxisPx !== null) {
+      properties.lengthM = metersFromPixels(axes.longAxisPx);
+      properties.widthM = metersFromPixels(axes.shortAxisPx);
+      properties.heightM = metersFromPixels(axes.longAxisPx);
+      properties.aspectRatio = axes.aspectRatio;
+      properties.azimuthDeg = axes.longAxisAzimuthDeg;
+    }
+
+    if (type === "circle") {
+      const diameterPx = Math.max(widthPx, heightPx);
+      properties.diameterM = metersFromPixels(diameterPx);
+      properties.radiusM = properties.diameterM / 2;
+    }
+
+    if (type === "ellipse") {
+      const majorAxisPx = Math.max(widthPx, heightPx);
+      const minorAxisPx = Math.min(widthPx, heightPx);
+      properties.majorAxisM = metersFromPixels(majorAxisPx);
+      properties.minorAxisM = metersFromPixels(minorAxisPx);
+    }
+
+    const hull = getConvexHull(points);
+    const hullAreaPixels =
+      hull.length >= 3 ? calculateRingAreaFromCoordinates(hull) : 0;
+    properties.solidity =
+      properties.areaM2 === null || hullAreaPixels === 0
+        ? null
+        : areaPixels / hullAreaPixels;
+  }
+
+  return properties;
+}
+
 function updateMeasurementSummaryFields(
   result = measureResults[measureResults.length - 1]
 ) {
@@ -17417,6 +18510,63 @@ function addMeasureFeature(type, coordinates, source = "manual", sourceFeature =
   drawShape(measureCanvas, [measureJSON, measureAreaJSONTemp, measureJSONTemp]);
 }
 
+function addMeasureGeometry(type, geometry, source = "annotation", sourceFeature = null) {
+  const measurement = calculateGeometryMeasurementProperties(type, geometry);
+  const id = getNextMeasurementId(source);
+  const style = getMeasureStyle();
+  const measurementUuid = generateUniqueId(16);
+  const group =
+    source === "annotation"
+      ? getMeasureGroupForAnnotation(sourceFeature)
+      : getActiveMeasureGroup();
+  const properties = {
+    uuid: measurementUuid,
+    label: id,
+    shapeType: type,
+    source,
+    lineStyle: style.lineStyle,
+    lineWeight: style.lineWeight,
+    lineColor: style.lineColor,
+    lineOpacity: style.lineOpacity,
+    fillColor: style.fillColor,
+    fillOpacity: type === "line" ? 0 : style.fillOpacity,
+    groupId: group.groupId,
+    groupName: group.groupName,
+    groupColor: group.groupColor,
+    valid_geometry: measurement.validGeometry,
+    geometry_warning: measurement.geometryWarning,
+    ecd_m: measurement.ecdM,
+    width_m: measurement.widthM,
+    aspect_ratio: measurement.aspectRatio,
+    azimuth_deg: measurement.azimuthDeg,
+    solidity: measurement.solidity,
+    circularity: measurement.circularity,
+  };
+
+  measureJSON.features.push({
+    type: "Feature",
+    geometry: cloneData(geometry),
+    properties,
+  });
+
+  measureResults.push({
+    id,
+    measurementUuid,
+    source,
+    annotationUuid: sourceFeature?.properties?.uuid || "",
+    annotationLabel: sourceFeature?.properties?.label || "",
+    groupId: group.groupId,
+    groupName: group.groupName,
+    groupColor: group.groupColor,
+    type,
+    typeLabel: MEASURE_TOOL_LABELS[type] || type,
+    ...measurement,
+  });
+  selectedMeasurementUuids = new Set([measurementUuid]);
+  renderMeasureResults();
+  drawShape(measureCanvas, [measureJSON, measureAreaJSONTemp, measureJSONTemp]);
+}
+
 function previewMeasureFeature(type, coordinates) {
   measureJSONTemp = {
     type: "FeatureCollection",
@@ -17652,12 +18802,6 @@ function getMeasurementTypeForAnnotation(feature) {
   if (geometryType === "LineString" && isClosedCoordinateRing(feature.geometry.coordinates)) {
     return "polygon";
   }
-  if (
-    geometryType === "MultiLineString" &&
-    feature.geometry.coordinates?.some((line) => isClosedCoordinateRing(line))
-  ) {
-    return "polygon";
-  }
   if (geometryType === "LineString" || geometryType === "MultiLineString") {
     return "line";
   }
@@ -17687,6 +18831,49 @@ function getAnnotationMeasurementCoordinates(feature, measurementType = "") {
   }
   if (type === "MultiPolygon") return coordinates[0]?.[0] || [];
   return [];
+}
+
+function getAnnotationMeasurementGeometry(feature, measurementType = "") {
+  if (!feature?.geometry) return null;
+  const { type, coordinates } = feature.geometry;
+
+  if (measurementType === "line") {
+    if (type === "LineString" || type === "MultiLineString") {
+      return cloneData(feature.geometry);
+    }
+    return null;
+  }
+
+  if (measurementType === "polygon") {
+    if (type === "Polygon" || type === "MultiPolygon") {
+      return cloneData(feature.geometry);
+    }
+    if (type === "LineString" && isClosedCoordinateRing(coordinates)) {
+      return {
+        type: "Polygon",
+        coordinates: [closeCoordinates(coordinates)],
+      };
+    }
+    if (type === "MultiLineString") {
+      const polygons = (coordinates || [])
+        .filter((line) => isClosedCoordinateRing(line))
+        .map((line) => [closeCoordinates(line)]);
+      if (polygons.length === 1) {
+        return {
+          type: "Polygon",
+          coordinates: polygons[0],
+        };
+      }
+      if (polygons.length > 1) {
+        return {
+          type: "MultiPolygon",
+          coordinates: polygons,
+        };
+      }
+    }
+  }
+
+  return null;
 }
 
 function measureSelectedAnnotations() {
@@ -17723,9 +18910,14 @@ function measureSelectedAnnotations() {
       });
       return;
     }
-    const coordinates = getAnnotationMeasurementCoordinates(feature, type);
-    if (coordinates.length < 2) return;
-    addMeasureFeature(type, coordinates, "annotation", feature);
+    const geometry = getAnnotationMeasurementGeometry(feature, type);
+    if (!geometry) {
+      const coordinates = getAnnotationMeasurementCoordinates(feature, type);
+      if (coordinates.length < 2) return;
+      addMeasureFeature(type, coordinates, "annotation", feature);
+      return;
+    }
+    addMeasureGeometry(type, geometry, "annotation", feature);
   });
   renderMeasureResults();
 }
@@ -22141,21 +23333,29 @@ viewerContainer.addEventListener("mousemove", function (subevent) {
   const lineColor = currentPolyStyleColors.lineColor;
   const lineStyle = document.getElementById("lineStyle").value;
   const lineOpacity = getAnnotationOpacityValue("lineOpacity");
+  const draftCoordinates = [...clickImageCoordinates, [imagePoint.x, imagePoint.y]];
+  const draftStyle = {
+    labelFontSize,
+    labelFontColor,
+    labelBackgroundColor,
+    labelBackgroundOpacity,
+    lineStyle,
+    lineWeight,
+    lineColor,
+    lineOpacity,
+    fillColor: currentPolyStyleColors.fillColor,
+    fillOpacity: getAnnotationOpacityValue("fillOpacity"),
+  };
 
-  addPolylineToGeoJSON(
-    annoJSONTemp,
-    [...clickImageCoordinates, [imagePoint.x, imagePoint.y]],
-    {
-      labelFontSize,
-      labelFontColor,
-      labelBackgroundColor,
-      labelBackgroundOpacity,
-      lineStyle,
-      lineWeight,
-      lineColor,
-      lineOpacity,
-    }
-  );
+  if (isPolygonMode || isXPressed) {
+    addPolygonToGeoJSON(
+      annoJSONTemp,
+      getClosedDraftPolygonCoordinates(draftCoordinates),
+      draftStyle
+    );
+  } else {
+    addPolylineToGeoJSON(annoJSONTemp, draftCoordinates, draftStyle);
+  }
 
   drawShape(polyCanvas, [annoJSON, annoJSONTemp]);
 });

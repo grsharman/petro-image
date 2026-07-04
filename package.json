@@ -36,6 +36,7 @@
   },
   "dependencies": {
     "electron-squirrel-startup": "^1.0.1",
+    "polygon-clipping": "^0.15.7",
     "sharp": "^0.35.2"
   },
   "build": {
