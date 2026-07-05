@@ -188,6 +188,10 @@
           pointer-events: none;
         "
       ></canvas>
+      <div id="segment-reticle" class="segment-reticle" hidden>
+        <span class="segment-reticle-line segment-reticle-line-horizontal"></span>
+        <span class="segment-reticle-line segment-reticle-line-vertical"></span>
+      </div>
       <div id="annotation-marquee" class="annotation-marquee" hidden></div>
       <div id="snapshot-selection" class="snapshot-selection" hidden>
         <div
@@ -396,6 +400,27 @@
             <span>
               <span class="electron-action-title">Porosity Estimator</span>
               <span class="electron-action-description">Estimate pore-color area in an AOI</span>
+            </span>
+          </button>
+          <button
+            id="openSegmentPaletteButton"
+            class="electron-action-item electron-only"
+            type="button"
+            role="menuitem"
+            hidden
+          >
+            <span class="electron-action-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <path d="M5 8c2.5-4 11.5-4 14 0" />
+                <path d="M5 16c2.5 4 11.5 4 14 0" />
+                <path d="M5 8c-2 2.5-2 5.5 0 8" />
+                <path d="M19 8c2 2.5 2 5.5 0 8" />
+                <circle cx="12" cy="12" r="2" />
+              </svg>
+            </span>
+            <span>
+              <span class="electron-action-title">Segment</span>
+              <span class="electron-action-description">Automatically digitize features</span>
             </span>
           </button>
         </div>
@@ -1062,6 +1087,182 @@
               Apply and Close
             </button>
           </div>
+        </div>
+      </div>
+      <div
+        id="segmentPalette"
+        class="tool-palette segment-palette"
+        data-default-position="bottom-right"
+        data-default-bottom-offset="156"
+        role="dialog"
+        aria-labelledby="segmentPaletteTitle"
+        hidden
+      >
+        <div id="segmentPaletteHeader" class="tool-palette-header">
+          <h2 id="segmentPaletteTitle">Segment</h2>
+          <div class="tool-palette-header-actions">
+            <button
+              id="minimizeSegmentPaletteButton"
+              class="tool-palette-minimize"
+              type="button"
+              aria-label="Minimize Segment"
+              aria-pressed="false"
+              title="Minimize"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M6 12h12" />
+              </svg>
+            </button>
+            <button
+              id="closeSegmentPaletteButton"
+              class="tool-palette-close"
+              type="button"
+              aria-label="Close Segment"
+              title="Close"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M6 6l12 12" />
+                <path d="M18 6 6 18" />
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div class="tool-palette-body segment-palette-body">
+          <details class="segment-setup-details">
+            <summary>
+              <span>SAM 2.1 Setup</span>
+              <span
+                id="samSetupReadiness"
+                class="sam-readiness sam-readiness-untested"
+                role="img"
+                aria-label="SAM setup has not been tested"
+                title="SAM setup has not been tested"
+              >
+                ?
+              </span>
+            </summary>
+            <label class="segment-field">
+              <span>Python</span>
+              <input
+                id="samPythonPath"
+                type="text"
+                placeholder="/path/to/python"
+                spellcheck="false"
+              />
+            </label>
+            <button id="chooseSamPythonButton" type="button">Choose Python</button>
+            <label class="segment-field">
+              <span>Checkpoint</span>
+              <input
+                id="samCheckpointPath"
+                type="text"
+                placeholder="/path/to/sam2.1_hiera_base_plus.pt"
+                spellcheck="false"
+              />
+            </label>
+            <button id="chooseSamCheckpointButton" type="button">
+              Choose Checkpoint
+            </button>
+            <label class="segment-field">
+              <span>SAM 2.1 model</span>
+              <select id="samModelType">
+                <option value="tiny">tiny</option>
+                <option value="small">small</option>
+                <option value="base_plus" selected>base_plus</option>
+                <option value="large">large</option>
+              </select>
+            </label>
+            <div class="segment-actions">
+              <button id="saveSamSettingsButton" type="button">Save</button>
+              <button id="testSamSetupButton" type="button">Test SAM</button>
+            </div>
+            <div id="samSetupStatus" class="segment-status" role="status">Choose a Python environment and checkpoint.</div>
+          </details>
+          <hr />
+          <label class="segment-field">
+            <span>Tile set</span>
+            <select id="segmentTileSetSelect"></select>
+          </label>
+          <div class="segment-padding-row">
+            <label class="segment-field">
+              <span>Padding (%)</span>
+              <input
+                id="segmentPaddingPercent"
+                type="number"
+                min="0"
+                max="300"
+                step="10"
+                value="50"
+              />
+            </label>
+            <label class="segment-field segment-compact-number-field">
+              <span>Min px</span>
+              <input
+                id="segmentPaddingMin"
+                type="number"
+                min="0"
+                max="2048"
+                step="16"
+                value="256"
+              />
+            </label>
+            <label class="segment-field segment-compact-number-field">
+              <span>Max px</span>
+              <input
+                id="segmentPaddingMax"
+                type="number"
+                min="0"
+                max="4096"
+                step="16"
+                value="512"
+              />
+            </label>
+          </div>
+          <p id="segmentPaddingStatus" class="segment-inline-status">
+            Padding is based on the larger box dimension.
+          </p>
+          <div class="segment-simplify-row">
+            <label class="segment-option">
+              <input id="segmentSimplifyEnabled" type="checkbox" checked />
+              <span>Simplify polygons</span>
+            </label>
+            <input
+              id="segmentSimplifyEpsilon"
+              class="segment-compact-number-input"
+              type="number"
+              min="0"
+              max="100"
+              step="0.5"
+              value="2"
+              title="Higher values remove more vertices."
+            />
+          </div>
+          <label class="segment-field">
+            <span>Annotation group</span>
+            <input
+              id="segmentAnnotationGroup"
+              type="text"
+              list="segmentAnnotationGroupOptions"
+              placeholder="Current annotation group"
+            />
+            <datalist id="segmentAnnotationGroupOptions"></datalist>
+          </label>
+          <label class="segment-option">
+            <input id="segmentModeToggle" type="checkbox" />
+            <span>Segment mode</span>
+          </label>
+          <label class="segment-option">
+            <input id="segmentAutoAdd" type="checkbox" />
+            <span>Auto-add to annotations</span>
+          </label>
+          <div class="segment-actions">
+            <button id="segmentDrawBoxButton" type="button">Draw Box</button>
+            <button id="segmentClearButton" type="button" disabled>Clear</button>
+          </div>
+          <button id="segmentAddAnnotationButton" type="button" disabled>
+            Add Annotation
+          </button>
+          <div id="segmentStatus" class="segment-status" role="status">Draw a box around one feature.</div>
         </div>
       </div>
       <div

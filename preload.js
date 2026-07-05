@@ -8,6 +8,14 @@ contextBridge.exposeInMainWorld("electronAPI", {
   initializeProjectLibrary: () => ipcRenderer.invoke("initialize-project-library"),
   changeProjectLibrary: () => ipcRenderer.invoke("change-project-library"),
   getProjectSettings: () => ipcRenderer.invoke("get-project-settings"),
+  saveSamSettings: (samSettings) =>
+    ipcRenderer.invoke("save-sam-settings", samSettings),
+  selectSamPython: () => ipcRenderer.invoke("select-sam-python"),
+  selectSamCheckpoint: () => ipcRenderer.invoke("select-sam-checkpoint"),
+  validateSamSetup: (samSettings) =>
+    ipcRenderer.invoke("validate-sam-setup", samSettings),
+  runSamSegmentation: (request) =>
+    ipcRenderer.invoke("run-sam-segmentation", request),
   getLocalDziTileSource: (dziPath) =>
     ipcRenderer.invoke("get-local-dzi-tile-source", dziPath),
   validateSampleTiles: (tileSets) =>

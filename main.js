@@ -3,6 +3,7 @@ import { fileURLToPath } from "url";
 import path from "path";
 import fs from "fs/promises";
 import { createReadStream } from "fs";
+import { spawn } from "child_process";
 import http from "http";
 import { randomUUID } from "crypto";
 import { convertJpgToDzi } from "./dzi-converter.js";
@@ -15,6 +16,7 @@ let importWizardWindow;
 let hasUnsavedWork = false; // main process copy
 let localFileServer;
 let localFileServerPort;
+let samWorker = null;
 const localFileServerToken = randomUUID();
 const grantedLocalRoots = [];
 const APP_TITLE = "petro-image";
@@ -460,6 +462,527 @@ async function rememberLastLibraryPath(filePath) {
   setMainWindowTitle(projectDirectory, filePath);
 }
 
+function normalizeSamSettings(settings = {}) {
+  const sam = settings.sam || {};
+  const legacyModelTypeMap = {
+    vit_b: "base_plus",
+    vit_l: "large",
+    vit_h: "large",
+  };
+  const allowedModelTypes = new Set(["tiny", "small", "base_plus", "large"]);
+  const rawModelType =
+    typeof sam.modelType === "string" ? sam.modelType : "base_plus";
+  const modelType = legacyModelTypeMap[rawModelType] || rawModelType;
+  const normalizedSettings = {
+    pythonPath: typeof sam.pythonPath === "string" ? sam.pythonPath : "",
+    checkpointPath:
+      typeof sam.checkpointPath === "string" ? sam.checkpointPath : "",
+    modelType: allowedModelTypes.has(modelType) ? modelType : "base_plus",
+  };
+  const validation = normalizeSamValidation(sam.validation, normalizedSettings);
+  return {
+    ...normalizedSettings,
+    ...(validation ? { validation } : {}),
+  };
+}
+
+function getSamSettingsFingerprint(settings = {}) {
+  return JSON.stringify({
+    pythonPath: settings.pythonPath || "",
+    checkpointPath: settings.checkpointPath || "",
+    modelType: settings.modelType || "base_plus",
+  });
+}
+
+function normalizeSamValidation(validation, samSettings) {
+  if (!validation || typeof validation !== "object") return null;
+
+  const status = validation.status === "ready" ? "ready" : "error";
+  const fingerprint =
+    typeof validation.fingerprint === "string" ? validation.fingerprint : "";
+  if (!fingerprint) return null;
+
+  return {
+    status,
+    fingerprint,
+    matchesCurrentSettings:
+      fingerprint === getSamSettingsFingerprint(samSettings || {}),
+    validatedAt:
+      typeof validation.validatedAt === "string" ? validation.validatedAt : "",
+  };
+}
+
+async function writeSamSettings(nextSamSettings) {
+  const settings = await readProjectSettings();
+  const sam = normalizeSamSettings({
+    sam: {
+      ...settings.sam,
+      ...nextSamSettings,
+    },
+  });
+
+  await writeProjectSettings({
+    ...settings,
+    sam,
+  });
+
+  return sam;
+}
+
+function getOwnerWindow(event) {
+  return (
+    BrowserWindow.fromWebContents(event?.sender) ||
+    BrowserWindow.getFocusedWindow() ||
+    mainWindow
+  );
+}
+
+function runProcess(command, args, options = {}) {
+  const { timeoutMs = 120000 } = options;
+
+  return new Promise((resolve) => {
+    const child = spawn(command, args, {
+      windowsHide: true,
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    let stdout = "";
+    let stderr = "";
+    let settled = false;
+    const timer = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      child.kill();
+      resolve({
+        exitCode: null,
+        stdout,
+        stderr,
+        timedOut: true,
+      });
+    }, timeoutMs);
+
+    child.stdout.on("data", (chunk) => {
+      stdout += chunk.toString();
+    });
+    child.stderr.on("data", (chunk) => {
+      stderr += chunk.toString();
+    });
+    child.on("error", (error) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      resolve({
+        exitCode: null,
+        stdout,
+        stderr: stderr || error.message,
+        error: error.message,
+      });
+    });
+    child.on("close", (exitCode) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      resolve({
+        exitCode,
+        stdout,
+        stderr,
+        timedOut: false,
+      });
+    });
+  });
+}
+
+function parseJsonProcessOutput(stdout) {
+  const lines = String(stdout || "")
+    .trim()
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const jsonLine = [...lines].reverse().find((line) => line.startsWith("{"));
+  if (!jsonLine) {
+    throw new Error("Process did not write JSON.");
+  }
+  return JSON.parse(jsonLine);
+}
+
+const SAM_PROBE_SCRIPT = String.raw`
+import importlib.util
+import json
+import os
+import sys
+import traceback
+
+checkpoint_path = sys.argv[1] if len(sys.argv) > 1 else ""
+model_type = sys.argv[2] if len(sys.argv) > 2 else "base_plus"
+
+model_configs = {
+    "tiny": "configs/sam2.1/sam2.1_hiera_t.yaml",
+    "small": "configs/sam2.1/sam2.1_hiera_s.yaml",
+    "base_plus": "configs/sam2.1/sam2.1_hiera_b+.yaml",
+    "large": "configs/sam2.1/sam2.1_hiera_l.yaml",
+}
+
+checkpoint_name_hints = {
+    "tiny": ["tiny"],
+    "small": ["small"],
+    "base_plus": ["base_plus", "base-plus", "base"],
+    "large": ["large"],
+}
+
+result = {
+    "ok": False,
+    "pythonExecutable": sys.executable,
+    "pythonVersion": sys.version.split()[0],
+    "modelType": model_type,
+    "modelConfig": model_configs.get(model_type),
+    "checkpointPath": checkpoint_path,
+    "checkpointExists": False,
+    "checkpointSizeBytes": None,
+    "modules": {},
+    "torch": {},
+    "errors": [],
+    "warnings": [],
+}
+
+def add_module(name, import_name=None):
+    import_name = import_name or name
+    available = importlib.util.find_spec(import_name) is not None
+    result["modules"][name] = {"available": available}
+    return available
+
+try:
+    if checkpoint_path:
+        result["checkpointExists"] = os.path.isfile(checkpoint_path)
+        if result["checkpointExists"]:
+            result["checkpointSizeBytes"] = os.path.getsize(checkpoint_path)
+        else:
+            result["errors"].append("Checkpoint file was not found.")
+    else:
+        result["errors"].append("No checkpoint path was provided.")
+
+    torch_available = add_module("torch")
+    torchvision_available = add_module("torchvision")
+    sam2_available = add_module("sam2")
+    hydra_available = add_module("hydra-core", "hydra")
+    omegaconf_available = add_module("omegaconf")
+    cv2_available = add_module("opencv-python", "cv2")
+    skimage_available = add_module("scikit-image", "skimage")
+
+    result["availableModelTypes"] = list(model_configs.keys())
+    if model_type not in model_configs:
+        result["errors"].append(f"Model type '{model_type}' is not a supported SAM 2.1 model.")
+
+    checkpoint_basename = os.path.basename(checkpoint_path).lower()
+    expected_hints = checkpoint_name_hints.get(model_type, [])
+    if result["checkpointExists"] and expected_hints and not any(hint in checkpoint_basename for hint in expected_hints):
+        result["warnings"].append(
+            f"Checkpoint filename does not look like the selected '{model_type}' model."
+        )
+
+    if not cv2_available and not skimage_available:
+        result["warnings"].append(
+            "Neither cv2 nor scikit-image is importable; mask-to-polygon conversion will need one of them."
+        )
+
+    if torch_available:
+        import torch
+        result["modules"]["torch"]["version"] = getattr(torch, "__version__", "")
+        result["torch"]["cudaAvailable"] = bool(torch.cuda.is_available())
+        result["torch"]["mpsAvailable"] = bool(
+            hasattr(torch.backends, "mps") and torch.backends.mps.is_available()
+        )
+        result["torch"]["deviceRecommendation"] = (
+            "cuda" if result["torch"]["cudaAvailable"]
+            else "mps" if result["torch"]["mpsAvailable"]
+            else "cpu"
+        )
+    else:
+        result["errors"].append("torch is not importable.")
+
+    if torchvision_available:
+        import torchvision
+        result["modules"]["torchvision"]["version"] = getattr(torchvision, "__version__", "")
+    else:
+        result["errors"].append("torchvision is not importable.")
+
+    if sam2_available:
+        import sam2
+        result["modules"]["sam2"]["version"] = getattr(sam2, "__version__", "")
+        try:
+            from sam2.build_sam import build_sam2
+            result["modules"]["sam2.build_sam"] = {"available": True}
+        except Exception as error:
+            result["modules"]["sam2.build_sam"] = {"available": False}
+            result["errors"].append(f"sam2.build_sam import failed: {error}")
+        try:
+            from sam2.sam2_image_predictor import SAM2ImagePredictor
+            result["modules"]["sam2.sam2_image_predictor"] = {"available": True}
+        except Exception as error:
+            result["modules"]["sam2.sam2_image_predictor"] = {"available": False}
+            result["errors"].append(f"sam2.sam2_image_predictor import failed: {error}")
+    else:
+        result["errors"].append("sam2 is not importable.")
+
+    result["ok"] = (
+        result["checkpointExists"]
+        and torch_available
+        and torchvision_available
+        and sam2_available
+        and result["modules"].get("sam2.build_sam", {}).get("available", False)
+        and result["modules"].get("sam2.sam2_image_predictor", {}).get("available", False)
+        and model_type in model_configs
+    )
+except Exception:
+    result["errors"].append(traceback.format_exc())
+
+print(json.dumps(result))
+`;
+
+async function validateSamSetup(settings) {
+  const samSettings = normalizeSamSettings({ sam: settings });
+  if (!samSettings.pythonPath) {
+    return {
+      ok: false,
+      errors: ["Choose a Python executable."],
+      settings: samSettings,
+    };
+  }
+
+  const result = await runProcess(
+    samSettings.pythonPath,
+    ["-c", SAM_PROBE_SCRIPT, samSettings.checkpointPath, samSettings.modelType],
+    { timeoutMs: 120000 },
+  );
+
+  if (result.timedOut) {
+    return {
+      ok: false,
+      errors: ["SAM validation timed out."],
+      stderr: result.stderr,
+      settings: samSettings,
+    };
+  }
+
+  let parsed;
+  try {
+    parsed = parseJsonProcessOutput(result.stdout);
+  } catch (error) {
+    return {
+      ok: false,
+      errors: ["Python did not return valid SAM validation JSON."],
+      exitCode: result.exitCode,
+      stdout: result.stdout,
+      stderr: result.stderr,
+      settings: samSettings,
+    };
+  }
+
+  return {
+    ...parsed,
+    exitCode: result.exitCode,
+    stderr: result.stderr,
+    settings: samSettings,
+  };
+}
+
+function decodePngDataUrl(dataUrl) {
+  const match = /^data:image\/png;base64,(.+)$/i.exec(dataUrl || "");
+  if (!match) {
+    throw new Error("Segment crop was not a PNG data URL.");
+  }
+
+  return Buffer.from(match[1], "base64");
+}
+
+function getSamWorkerKey(settings, device = "auto") {
+  return JSON.stringify({
+    pythonPath: settings.pythonPath,
+    checkpointPath: settings.checkpointPath,
+    modelType: settings.modelType,
+    device,
+  });
+}
+
+function stopSamWorker() {
+  if (!samWorker) return;
+
+  const worker = samWorker;
+  samWorker = null;
+  for (const pending of worker.pending.values()) {
+    clearTimeout(pending.timer);
+    pending.resolve({
+      ok: false,
+      error: "SAM worker stopped.",
+      stderr: worker.stderr,
+    });
+  }
+  worker.pending.clear();
+  if (!worker.child.killed) {
+    try {
+      worker.child.stdin.write(JSON.stringify({ type: "shutdown" }) + "\n");
+      worker.child.stdin.end();
+    } catch {
+      worker.child.kill();
+    }
+  }
+}
+
+function rejectSamWorkerPending(worker, errorMessage) {
+  for (const pending of worker.pending.values()) {
+    clearTimeout(pending.timer);
+    pending.resolve({
+      ok: false,
+      error: errorMessage,
+      stderr: worker.stderr,
+    });
+  }
+  worker.pending.clear();
+}
+
+function handleSamWorkerLine(worker, line) {
+  let payload;
+  try {
+    payload = JSON.parse(line);
+  } catch {
+    worker.stderr += `${line}\n`;
+    return;
+  }
+
+  if (payload.type === "ready") {
+    if (payload.ok) {
+      worker.readyResolve(payload);
+    } else {
+      worker.readyReject(new Error(payload.error || "SAM worker failed to start."));
+    }
+    return;
+  }
+
+  const pending = worker.pending.get(payload.id);
+  if (!pending) return;
+  clearTimeout(pending.timer);
+  worker.pending.delete(payload.id);
+  pending.resolve({
+    ...payload,
+    stderr: worker.stderr,
+  });
+}
+
+async function getSamWorker(settings, device = "auto") {
+  const key = getSamWorkerKey(settings, device);
+  if (samWorker && samWorker.key === key && !samWorker.exited) {
+    await samWorker.ready;
+    return samWorker;
+  }
+
+  stopSamWorker();
+
+  const scriptPath = path.join(__dirname, "scripts", "sam2_worker.py");
+  const child = spawn(
+    settings.pythonPath,
+    [
+      scriptPath,
+      "--checkpoint",
+      settings.checkpointPath,
+      "--model-type",
+      settings.modelType,
+      "--device",
+      device,
+    ],
+    {
+      windowsHide: true,
+      stdio: ["pipe", "pipe", "pipe"],
+    },
+  );
+
+  let readyResolve;
+  let readyReject;
+  const worker = {
+    key,
+    child,
+    pending: new Map(),
+    nextId: 1,
+    stdoutBuffer: "",
+    stderr: "",
+    exited: false,
+    ready: new Promise((resolve, reject) => {
+      readyResolve = resolve;
+      readyReject = reject;
+    }),
+    readyResolve,
+    readyReject,
+  };
+  samWorker = worker;
+
+  child.stdout.on("data", (chunk) => {
+    worker.stdoutBuffer += chunk.toString();
+    const lines = worker.stdoutBuffer.split(/\r?\n/);
+    worker.stdoutBuffer = lines.pop() || "";
+    lines.map((line) => line.trim()).filter(Boolean).forEach((line) => {
+      handleSamWorkerLine(worker, line);
+    });
+  });
+  child.stderr.on("data", (chunk) => {
+    worker.stderr += chunk.toString();
+  });
+  child.on("error", (error) => {
+    worker.exited = true;
+    worker.readyReject(error);
+    rejectSamWorkerPending(worker, error.message);
+  });
+  child.on("close", (exitCode) => {
+    worker.exited = true;
+    const message = `SAM worker exited${exitCode === null ? "" : ` with code ${exitCode}`}.`;
+    worker.readyReject(new Error(message));
+    rejectSamWorkerPending(worker, message);
+    if (samWorker === worker) samWorker = null;
+  });
+
+  await worker.ready;
+  return worker;
+}
+
+function segmentWithSamWorker(worker, cropPath, box, options = {}) {
+  return new Promise((resolve) => {
+    const id = worker.nextId++;
+    const timer = setTimeout(() => {
+      worker.pending.delete(id);
+      resolve({
+        ok: false,
+        error: "SAM segmentation timed out.",
+        stderr: worker.stderr,
+      });
+    }, options.timeoutMs || 300000);
+    worker.pending.set(id, { resolve, timer });
+    worker.child.stdin.write(
+      JSON.stringify({
+        id,
+        image: cropPath,
+        box: [box.x0, box.y0, box.x1, box.y1],
+        simplifyEpsilon: options.simplifyEpsilon ?? 2,
+      }) + "\n",
+    );
+  });
+}
+
+async function runSamSegmentation(request = {}) {
+  const settings = await writeSamSettings(request.samSettings || {});
+  const tempDirectory = await fs.mkdtemp(
+    path.join(app.getPath("temp"), "petro-image-sam-"),
+  );
+  const cropPath = path.join(tempDirectory, "crop.png");
+
+  try {
+    await fs.writeFile(cropPath, decodePngDataUrl(request.cropPngDataUrl));
+    const box = request.box || {};
+    const worker = await getSamWorker(settings, request.device || "auto");
+    const result = await segmentWithSamWorker(worker, cropPath, box, {
+      simplifyEpsilon: request.simplifyEpsilon,
+    });
+    return result;
+  } finally {
+    await fs.rm(tempDirectory, { recursive: true, force: true });
+  }
+}
+
 async function startLocalFileServer() {
   if (localFileServerPort) return;
 
@@ -670,6 +1193,71 @@ ipcMain.handle("initialize-project-library", async () => initializeProjectLibrar
 ipcMain.handle("change-project-library", async () => changeProjectLibrary());
 
 ipcMain.handle("get-project-settings", async () => readProjectSettings());
+
+ipcMain.handle("save-sam-settings", async (event, samSettings) => {
+  return writeSamSettings(samSettings || {});
+});
+
+ipcMain.handle("select-sam-python", async (event) => {
+  const { canceled, filePaths } = await dialog.showOpenDialog(getOwnerWindow(event), {
+    title: "Select Python Executable",
+    properties: ["openFile"],
+  });
+
+  if (canceled || !filePaths.length) {
+    return { canceled: true };
+  }
+
+  const settings = await writeSamSettings({ pythonPath: filePaths[0] });
+  return {
+    canceled: false,
+    filePath: filePaths[0],
+    settings,
+  };
+});
+
+ipcMain.handle("select-sam-checkpoint", async (event) => {
+  const { canceled, filePaths } = await dialog.showOpenDialog(getOwnerWindow(event), {
+    title: "Select SAM Checkpoint",
+    properties: ["openFile"],
+    filters: [
+      { name: "SAM Checkpoints", extensions: ["pth", "pt"] },
+      { name: "All Files", extensions: ["*"] },
+    ],
+  });
+
+  if (canceled || !filePaths.length) {
+    return { canceled: true };
+  }
+
+  const settings = await writeSamSettings({ checkpointPath: filePaths[0] });
+  return {
+    canceled: false,
+    filePath: filePaths[0],
+    settings,
+  };
+});
+
+ipcMain.handle("validate-sam-setup", async (event, samSettings) => {
+  const savedSettings = await writeSamSettings(samSettings || {});
+  const result = await validateSamSetup(savedSettings);
+  const settingsWithValidation = await writeSamSettings({
+    ...savedSettings,
+    validation: {
+      status: result.ok ? "ready" : "error",
+      fingerprint: getSamSettingsFingerprint(result.settings || savedSettings),
+      validatedAt: new Date().toISOString(),
+    },
+  });
+  return {
+    ...result,
+    settings: settingsWithValidation,
+  };
+});
+
+ipcMain.handle("run-sam-segmentation", async (event, request) => {
+  return runSamSegmentation(request || {});
+});
 
 ipcMain.handle("select-existing-json-file", async () => {
   const ownerWindow = BrowserWindow.getFocusedWindow() || mainWindow;
@@ -1116,4 +1704,8 @@ ipcMain.handle("complete-sample-import", (event, { jsonData, selectedTitle }) =>
 app.whenReady().then(async () => {
   await startLocalFileServer();
   createWindow();
+});
+
+app.on("before-quit", () => {
+  stopSamWorker();
 });

@@ -304,6 +304,9 @@ const openSnapshotPaletteButton = document.getElementById(
 const openPorosityEstimatorButton = document.getElementById(
   "openPorosityEstimatorButton"
 );
+const openSegmentPaletteButton = document.getElementById(
+  "openSegmentPaletteButton"
+);
 const gridCountPalette = document.getElementById("gridCountPalette");
 const gridCountPaletteHeader = document.getElementById("gridCountPaletteHeader");
 const gridCountPaletteBody = document.getElementById("gridCountPaletteBody");
@@ -347,6 +350,53 @@ const closePorosityPaletteButton = document.getElementById(
 const minimizePorosityPaletteButton = document.getElementById(
   "minimizePorosityPaletteButton"
 );
+const segmentPalette = document.getElementById("segmentPalette");
+const segmentPaletteHeader = document.getElementById("segmentPaletteHeader");
+const closeSegmentPaletteButton = document.getElementById(
+  "closeSegmentPaletteButton"
+);
+const minimizeSegmentPaletteButton = document.getElementById(
+  "minimizeSegmentPaletteButton"
+);
+const samPythonPathInput = document.getElementById("samPythonPath");
+const samCheckpointPathInput = document.getElementById("samCheckpointPath");
+const samModelTypeSelect = document.getElementById("samModelType");
+const chooseSamPythonButton = document.getElementById("chooseSamPythonButton");
+const chooseSamCheckpointButton = document.getElementById(
+  "chooseSamCheckpointButton"
+);
+const saveSamSettingsButton = document.getElementById("saveSamSettingsButton");
+const testSamSetupButton = document.getElementById("testSamSetupButton");
+const samSetupStatus = document.getElementById("samSetupStatus");
+const samSetupReadiness = document.getElementById("samSetupReadiness");
+const segmentTileSetSelect = document.getElementById("segmentTileSetSelect");
+const segmentPaddingPercentInput = document.getElementById(
+  "segmentPaddingPercent"
+);
+const segmentPaddingMinInput = document.getElementById("segmentPaddingMin");
+const segmentPaddingMaxInput = document.getElementById("segmentPaddingMax");
+const segmentPaddingStatus = document.getElementById("segmentPaddingStatus");
+const segmentSimplifyEnabledInput = document.getElementById(
+  "segmentSimplifyEnabled"
+);
+const segmentSimplifyEpsilonInput = document.getElementById(
+  "segmentSimplifyEpsilon"
+);
+const segmentAnnotationGroupInput = document.getElementById(
+  "segmentAnnotationGroup"
+);
+const segmentAnnotationGroupOptions = document.getElementById(
+  "segmentAnnotationGroupOptions"
+);
+const segmentModeToggle = document.getElementById("segmentModeToggle");
+const segmentAutoAddCheckbox = document.getElementById("segmentAutoAdd");
+const segmentDrawBoxButton = document.getElementById("segmentDrawBoxButton");
+const segmentClearButton = document.getElementById("segmentClearButton");
+const segmentAddAnnotationButton = document.getElementById(
+  "segmentAddAnnotationButton"
+);
+const segmentStatus = document.getElementById("segmentStatus");
+const segmentReticle = document.getElementById("segment-reticle");
 const snapshotSelection = document.getElementById("snapshot-selection");
 const snapshotSelectionBody = document.getElementById("snapshotSelectionBody");
 const snapshotDrawButton = document.getElementById("snapshotDrawButton");
@@ -434,6 +484,18 @@ let porosityEstimateGeneration = 0;
 let porosityToleranceReestimateTimer = null;
 let porositySelectedTileSetIndices = [];
 let porosityAnalysisResolutionMode = "balanced";
+let samValidationState = {
+  status: "untested",
+  fingerprint: "",
+};
+let samAutoValidationStarted = false;
+let segmentBoxModeActive = false;
+let segmentBoxDragState = null;
+let segmentPromptBox = null;
+let segmentPreviewFeature = null;
+let segmentIsRunning = false;
+let segmentActiveRunCount = 0;
+let segmentModeActive = false;
 const SNAPSHOT_MAX_OUTPUT_DIMENSION = 16000;
 const SNAPSHOT_MAX_OUTPUT_PIXELS = 100000000;
 const POROSITY_MAX_ANALYSIS_DIMENSION = 12000;
@@ -952,6 +1014,7 @@ function clampOpenToolPalettes() {
     measurePalette,
     snapshotPalette,
     porosityPalette,
+    segmentPalette,
   ].forEach((palette) => {
       if (palette && !palette.hidden) {
         clampToolPaletteToViewer(palette);
@@ -1193,6 +1256,844 @@ function togglePorosityEstimator() {
   }
 
   closePorosityEstimator();
+}
+
+function getSamSettingsFromInputs() {
+  return {
+    pythonPath: samPythonPathInput?.value.trim() || "",
+    checkpointPath: samCheckpointPathInput?.value.trim() || "",
+    modelType: samModelTypeSelect?.value || "base_plus",
+  };
+}
+
+function getSamSettingsFingerprint(settings = getSamSettingsFromInputs()) {
+  return JSON.stringify({
+    pythonPath: settings.pythonPath || "",
+    checkpointPath: settings.checkpointPath || "",
+    modelType: settings.modelType || "base_plus",
+  });
+}
+
+function updateSamReadinessIndicator(status = samValidationState.status) {
+  if (!samSetupReadiness) return;
+
+  const settings = getSamSettingsFromInputs();
+  const currentFingerprint = getSamSettingsFingerprint(settings);
+  let effectiveStatus = status;
+  if (!settings.pythonPath || !settings.checkpointPath) {
+    effectiveStatus = "error";
+  } else if (
+    samValidationState.status === "ready" &&
+    samValidationState.fingerprint !== currentFingerprint
+  ) {
+    effectiveStatus = "changed";
+  } else if (
+    samValidationState.status === "error" &&
+    samValidationState.fingerprint !== currentFingerprint
+  ) {
+    effectiveStatus = "untested";
+  }
+
+  const readinessByStatus = {
+    ready: {
+      text: "✓",
+      label: "SAM setup ready",
+      className: "sam-readiness-ready",
+    },
+    error: {
+      text: "X",
+      label: "SAM setup needs attention",
+      className: "sam-readiness-error",
+    },
+    testing: {
+      text: "...",
+      label: "Testing SAM setup",
+      className: "sam-readiness-testing",
+    },
+    changed: {
+      text: "?",
+      label: "SAM settings changed. Test SAM again.",
+      className: "sam-readiness-untested",
+    },
+    untested: {
+      text: "?",
+      label: "SAM setup has not been tested",
+      className: "sam-readiness-untested",
+    },
+  };
+  const readiness =
+    readinessByStatus[effectiveStatus] || readinessByStatus.untested;
+
+  samSetupReadiness.textContent = readiness.text;
+  samSetupReadiness.setAttribute("aria-label", readiness.label);
+  samSetupReadiness.title = readiness.label;
+  samSetupReadiness.className = `sam-readiness ${readiness.className}`;
+}
+
+function shouldAutoValidateSamSetup() {
+  if (samAutoValidationStarted || !window.electronAPI?.validateSamSetup) {
+    return false;
+  }
+
+  const settings = getSamSettingsFromInputs();
+  if (!settings.pythonPath || !settings.checkpointPath) return false;
+
+  const currentFingerprint = getSamSettingsFingerprint(settings);
+  if (samValidationState.fingerprint === currentFingerprint) {
+    return samValidationState.status === "untested";
+  }
+
+  return true;
+}
+
+function normalizeSamModelTypeForUi(modelType) {
+  const legacyModelTypes = {
+    vit_b: "base_plus",
+    vit_l: "large",
+    vit_h: "large",
+  };
+  const normalizedModelType = legacyModelTypes[modelType] || modelType;
+  return ["tiny", "small", "base_plus", "large"].includes(normalizedModelType)
+    ? normalizedModelType
+    : "base_plus";
+}
+
+function getSamValidationStateFromSettings(settings = {}) {
+  const validation = settings.validation || {};
+  if (
+    !["ready", "error"].includes(validation.status) ||
+    typeof validation.fingerprint !== "string" ||
+    !validation.fingerprint
+  ) {
+    return {
+      status: "untested",
+      fingerprint: "",
+    };
+  }
+
+  return {
+    status: validation.status,
+    fingerprint: validation.fingerprint,
+  };
+}
+
+function setSamInputs(settings = {}) {
+  if (samPythonPathInput) samPythonPathInput.value = settings.pythonPath || "";
+  if (samCheckpointPathInput) {
+    samCheckpointPathInput.value = settings.checkpointPath || "";
+  }
+  if (samModelTypeSelect) {
+    samModelTypeSelect.value = normalizeSamModelTypeForUi(settings.modelType);
+  }
+  samValidationState = getSamValidationStateFromSettings(settings);
+  updateSamReadinessIndicator();
+}
+
+function setSamSetupStatus(message, state = "") {
+  if (!samSetupStatus) return;
+
+  samSetupStatus.textContent = message;
+  samSetupStatus.classList.toggle("segment-status-ok", state === "ok");
+  samSetupStatus.classList.toggle("segment-status-error", state === "error");
+}
+
+function formatSamProbeResult(result) {
+  const lines = [];
+  if (result.pythonExecutable) {
+    lines.push(`Python: ${result.pythonExecutable}`);
+  }
+  if (result.pythonVersion) lines.push(`Version: ${result.pythonVersion}`);
+  if (result.modelType) lines.push(`Model: ${result.modelType}`);
+  if (result.checkpointExists) {
+    const sizeMb = result.checkpointSizeBytes
+      ? `${(result.checkpointSizeBytes / 1024 / 1024).toFixed(1)} MB`
+      : "found";
+    lines.push(`Checkpoint: ${sizeMb}`);
+  }
+  const modules = result.modules || {};
+  if (result.modelConfig) lines.push(`Config: ${result.modelConfig}`);
+  [
+    "torch",
+    "torchvision",
+    "sam2",
+    "sam2.build_sam",
+    "sam2.sam2_image_predictor",
+    "hydra-core",
+    "omegaconf",
+    "opencv-python",
+    "scikit-image",
+  ].forEach((name) => {
+    const moduleResult = modules[name];
+    if (!moduleResult) return;
+    const version = moduleResult.version ? ` ${moduleResult.version}` : "";
+    lines.push(`${name}: ${moduleResult.available ? "ok" : "missing"}${version}`);
+  });
+  if (result.torch?.deviceRecommendation) {
+    lines.push(`Device: ${result.torch.deviceRecommendation}`);
+  }
+  if (Array.isArray(result.warnings) && result.warnings.length > 0) {
+    lines.push("", "Warnings:", ...result.warnings.map((warning) => `- ${warning}`));
+  }
+  if (Array.isArray(result.errors) && result.errors.length > 0) {
+    lines.push("", "Errors:", ...result.errors.map((error) => `- ${error}`));
+  }
+  if (result.stderr) {
+    lines.push("", "Python stderr:", result.stderr.trim());
+  }
+  return lines.join("\n");
+}
+
+async function loadSamSettings() {
+  if (!window.electronAPI?.getProjectSettings) return;
+
+  try {
+    const settings = await window.electronAPI.getProjectSettings();
+    setSamInputs(settings.sam || {});
+    if (shouldAutoValidateSamSetup()) {
+      samAutoValidationStarted = true;
+      testSamSetup({ automatic: true });
+    }
+  } catch (error) {
+    console.warn("Could not load SAM settings:", error);
+    setSamSetupStatus("Could not load SAM settings.", "error");
+  }
+}
+
+async function saveSamSettings(message = "SAM settings saved.") {
+  if (!window.electronAPI?.saveSamSettings) return null;
+
+  const settings = getSamSettingsFromInputs();
+  try {
+    const savedSettings = await window.electronAPI.saveSamSettings(settings);
+    setSamInputs(savedSettings);
+    updateSamReadinessIndicator();
+    setSamSetupStatus(message);
+    return savedSettings;
+  } catch (error) {
+    console.error("Could not save SAM settings:", error);
+    setSamSetupStatus(error.message || "Could not save SAM settings.", "error");
+    return null;
+  }
+}
+
+async function chooseSamPython() {
+  if (!window.electronAPI?.selectSamPython) return;
+
+  try {
+    const result = await window.electronAPI.selectSamPython();
+    if (result?.canceled) return;
+    setSamInputs(result.settings || { ...getSamSettingsFromInputs(), pythonPath: result.filePath });
+    updateSamReadinessIndicator();
+    setSamSetupStatus("Python executable selected.");
+  } catch (error) {
+    console.error("Could not choose SAM Python:", error);
+    setSamSetupStatus(error.message || "Could not choose Python.", "error");
+  }
+}
+
+async function chooseSamCheckpoint() {
+  if (!window.electronAPI?.selectSamCheckpoint) return;
+
+  try {
+    const result = await window.electronAPI.selectSamCheckpoint();
+    if (result?.canceled) return;
+    setSamInputs(
+      result.settings || { ...getSamSettingsFromInputs(), checkpointPath: result.filePath }
+    );
+    updateSamReadinessIndicator();
+    setSamSetupStatus("SAM checkpoint selected.");
+  } catch (error) {
+    console.error("Could not choose SAM checkpoint:", error);
+    setSamSetupStatus(error.message || "Could not choose checkpoint.", "error");
+  }
+}
+
+async function testSamSetup(options = {}) {
+  if (!window.electronAPI?.validateSamSetup) return;
+
+  const requestedSettings = getSamSettingsFromInputs();
+  const requestedFingerprint = getSamSettingsFingerprint(requestedSettings);
+  testSamSetupButton.disabled = true;
+  samValidationState = {
+    status: "testing",
+    fingerprint: requestedFingerprint,
+  };
+  updateSamReadinessIndicator("testing");
+  setSamSetupStatus(
+    options.automatic ? "Checking saved SAM setup..." : "Testing SAM setup..."
+  );
+  try {
+    const result = await window.electronAPI.validateSamSetup(requestedSettings);
+    const resultSettings = result.settings || requestedSettings;
+    const resultFingerprint = getSamSettingsFingerprint(resultSettings);
+    const currentFingerprint = getSamSettingsFingerprint();
+    const settingsStillCurrent = currentFingerprint === requestedFingerprint;
+    if (settingsStillCurrent) {
+      setSamInputs(resultSettings);
+    }
+    samValidationState = {
+      status: result.ok ? "ready" : "error",
+      fingerprint: resultFingerprint,
+    };
+    updateSamReadinessIndicator();
+    if (settingsStillCurrent) {
+      setSamSetupStatus(
+        `${result.ok ? "SAM setup looks ready." : "SAM setup needs attention."}\n\n${formatSamProbeResult(result)}`,
+        result.ok ? "ok" : "error"
+      );
+    } else {
+      setSamSetupStatus("SAM settings changed. Test SAM again.");
+    }
+  } catch (error) {
+    console.error("SAM setup test failed:", error);
+    samValidationState = {
+      status: "error",
+      fingerprint: getSamSettingsFingerprint(),
+    };
+    updateSamReadinessIndicator();
+    setSamSetupStatus(error.message || "SAM setup test failed.", "error");
+  } finally {
+    testSamSetupButton.disabled = false;
+  }
+}
+
+function setSegmentStatus(message, state = "") {
+  if (!segmentStatus) return;
+
+  segmentStatus.textContent = message;
+  segmentStatus.classList.toggle("segment-status-ok", state === "ok");
+  segmentStatus.classList.toggle("segment-status-error", state === "error");
+}
+
+function updateSegmentControls() {
+  if (segmentDrawBoxButton) {
+    segmentDrawBoxButton.disabled = segmentIsRunning;
+    segmentDrawBoxButton.textContent = segmentBoxModeActive ? "Drawing..." : "Draw Box";
+  }
+  if (segmentModeToggle) {
+    segmentModeToggle.checked = segmentModeActive;
+  }
+  if (segmentClearButton) {
+    segmentClearButton.disabled =
+      segmentIsRunning ||
+      (!segmentBoxModeActive && !segmentPreviewFeature && !segmentPromptBox);
+  }
+  if (segmentAddAnnotationButton) {
+    segmentAddAnnotationButton.disabled = segmentIsRunning || !segmentPreviewFeature;
+  }
+}
+
+function shouldAutoAddSegment() {
+  return Boolean(segmentAutoAddCheckbox?.checked);
+}
+
+function updateSegmentRunningState(delta) {
+  segmentActiveRunCount = Math.max(0, segmentActiveRunCount + delta);
+  segmentIsRunning = segmentActiveRunCount > 0;
+  updateSegmentControls();
+}
+
+function getSegmentNumberInput(input, fallback, min, max) {
+  const value = Number(input?.value);
+  if (!Number.isFinite(value)) return fallback;
+  return Math.min(max, Math.max(min, value));
+}
+
+function getSegmentPadding(promptRect) {
+  const percent = getSegmentNumberInput(segmentPaddingPercentInput, 50, 0, 300);
+  const minPadding = getSegmentNumberInput(segmentPaddingMinInput, 256, 0, 2048);
+  const maxPadding = Math.max(
+    minPadding,
+    getSegmentNumberInput(segmentPaddingMaxInput, 512, 0, 4096)
+  );
+  const boxSize = Math.max(promptRect?.width || 0, promptRect?.height || 0);
+  const relativePadding = boxSize * (percent / 100);
+  return Math.round(Math.min(maxPadding, Math.max(minPadding, relativePadding)));
+}
+
+function updateSegmentPaddingStatus(promptRect = segmentPromptBox) {
+  if (!segmentPaddingStatus) return;
+
+  if (promptRect) {
+    segmentPaddingStatus.textContent = `Current box padding: ${getSegmentPadding(
+      promptRect
+    )} px.`;
+  } else {
+    segmentPaddingStatus.textContent =
+      "Padding is based on the larger box dimension.";
+  }
+}
+
+function getSegmentSimplifyEpsilon() {
+  if (!segmentSimplifyEnabledInput?.checked) return 0;
+
+  const value = getSegmentNumberInput(segmentSimplifyEpsilonInput, 2, 0, 100);
+  return Number(value.toFixed(3));
+}
+
+function updateSegmentSimplifyControls() {
+  if (!segmentSimplifyEpsilonInput) return;
+  segmentSimplifyEpsilonInput.disabled = !segmentSimplifyEnabledInput?.checked;
+}
+
+function populateSegmentTileSetSelect() {
+  if (!segmentTileSetSelect) return;
+
+  const previousValue = segmentTileSetSelect.value;
+  segmentTileSetSelect.innerHTML = "";
+  tileSets().forEach((tileSet, index) => {
+    const option = document.createElement("option");
+    option.value = String(index);
+    option.textContent = getSnapshotTileSetLabel(tileSet, index);
+    segmentTileSetSelect.append(option);
+  });
+
+  const hasPrevious =
+    previousValue !== "" &&
+    Array.from(segmentTileSetSelect.options).some(
+      (option) => option.value === previousValue
+    );
+  if (hasPrevious) {
+    segmentTileSetSelect.value = previousValue;
+    return;
+  }
+
+  const checkedIndex = Array.from(
+    document.querySelectorAll(".image-checkbox")
+  ).findIndex((checkbox) => checkbox.checked);
+  segmentTileSetSelect.value = String(checkedIndex >= 0 ? checkedIndex : 0);
+}
+
+function getSegmentTileSetIndex() {
+  const rawIndex = Number.parseInt(segmentTileSetSelect?.value || "0", 10);
+  if (!Number.isFinite(rawIndex)) return 0;
+  return Math.min(Math.max(rawIndex, 0), Math.max(tileSets().length - 1, 0));
+}
+
+function populateSegmentAnnotationGroupOptions() {
+  if (!segmentAnnotationGroupOptions) return;
+
+  segmentAnnotationGroupOptions.innerHTML = "";
+  getAnnotationGroups().forEach((group) => {
+    const option = document.createElement("option");
+    option.value = group.groupName;
+    segmentAnnotationGroupOptions.append(option);
+  });
+}
+
+function getSegmentAnnotationGroup() {
+  const groupName = segmentAnnotationGroupInput?.value.trim() || "";
+  if (!groupName) return getSelectedGroupFromDropdown();
+
+  return getOrCreateAnnotationGroup(groupName);
+}
+
+function imageRectFromPixelBox(startPixel, endPixel) {
+  const image = viewer.world.getItemAt(0);
+  if (!image) return null;
+
+  const left = Math.min(startPixel.x, endPixel.x);
+  const top = Math.min(startPixel.y, endPixel.y);
+  const right = Math.max(startPixel.x, endPixel.x);
+  const bottom = Math.max(startPixel.y, endPixel.y);
+
+  const topLeft = image.viewportToImageCoordinates(
+    viewer.viewport.pointFromPixel(new OpenSeadragon.Point(left, top))
+  );
+  const bottomRight = image.viewportToImageCoordinates(
+    viewer.viewport.pointFromPixel(new OpenSeadragon.Point(right, bottom))
+  );
+  const x0 = Math.min(topLeft.x, bottomRight.x);
+  const y0 = Math.min(topLeft.y, bottomRight.y);
+  const x1 = Math.max(topLeft.x, bottomRight.x);
+  const y1 = Math.max(topLeft.y, bottomRight.y);
+  return {
+    x: x0,
+    y: y0,
+    width: x1 - x0,
+    height: y1 - y0,
+  };
+}
+
+function imageRectToPolygon(rect) {
+  return [
+    [rect.x, rect.y],
+    [rect.x + rect.width, rect.y],
+    [rect.x + rect.width, rect.y + rect.height],
+    [rect.x, rect.y + rect.height],
+    [rect.x, rect.y],
+  ];
+}
+
+function getPaddedSegmentCropRect(promptRect) {
+  const image = viewer.world.getItemAt(0);
+  if (!image || !promptRect) return null;
+
+  const imageSize = image.getContentSize();
+  const padding = getSegmentPadding(promptRect);
+  const x = Math.max(0, Math.floor(promptRect.x - padding));
+  const y = Math.max(0, Math.floor(promptRect.y - padding));
+  const right = Math.min(
+    imageSize.x,
+    Math.ceil(promptRect.x + promptRect.width + padding)
+  );
+  const bottom = Math.min(
+    imageSize.y,
+    Math.ceil(promptRect.y + promptRect.height + padding)
+  );
+  return {
+    x,
+    y,
+    width: Math.max(1, right - x),
+    height: Math.max(1, bottom - y),
+  };
+}
+
+function canvasToPngDataUrl(canvas) {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (!blob) {
+        reject(new Error("Could not encode the segmentation crop."));
+        return;
+      }
+      const reader = new FileReader();
+      reader.addEventListener("load", () => resolve(reader.result));
+      reader.addEventListener("error", () =>
+        reject(new Error("Could not read the segmentation crop."))
+      );
+      reader.readAsDataURL(blob);
+    }, "image/png");
+  });
+}
+
+function clearSegmentPreview(options = {}) {
+  const { message = "Draw a box around one feature.", keepMode = true } = options;
+  segmentBoxModeActive = false;
+  segmentBoxDragState = null;
+  segmentPromptBox = null;
+  segmentPreviewFeature = null;
+  if (!keepMode) {
+    segmentModeActive = false;
+  }
+  updateSegmentPaddingStatus(null);
+  annoJSONTemp = {
+    type: "FeatureCollection",
+    features: [],
+  };
+  drawShape(polyCanvas, [annoJSON, annoJSONTemp]);
+  setSegmentStatus(message);
+  updateSegmentControls();
+}
+
+function updateSegmentPromptPreview(promptRect) {
+  updateSegmentPaddingStatus(promptRect);
+  annoJSONTemp = {
+    type: "FeatureCollection",
+    features: [],
+  };
+  addPolygonToGeoJSON(annoJSONTemp, imageRectToPolygon(promptRect), {
+    uuid: "segment-prompt-box",
+    label: "SAM prompt",
+    shapeType: "segment-prompt",
+    lineStyle: "dashed",
+    lineWeight: 2,
+    lineColor: "#00a6d6",
+    lineOpacity: 0.95,
+    fillColor: "#00a6d6",
+    fillOpacity: 0.08,
+  });
+  if (segmentPreviewFeature) {
+    annoJSONTemp.features.push(segmentPreviewFeature);
+  }
+  drawShape(polyCanvas, [annoJSON, annoJSONTemp]);
+}
+
+function buildSegmentFeature(fullImagePolygon, result) {
+  const style = getCurrentAnnotationStyleColors();
+  const labelFontSize = Number(document.getElementById("annoLabelFontSize").value);
+  return {
+    type: "Feature",
+    geometry: {
+      type: "Polygon",
+      coordinates: [fullImagePolygon],
+    },
+    properties: {
+      uuid: "segment-preview",
+      label: "Segment preview",
+      shapeType: "segment",
+      labelFontSize,
+      labelFontColor: style.labelFontColor,
+      labelBackgroundColor: style.labelBackgroundColor,
+      labelBackgroundOpacity: getAnnotationOpacityValue("annoLabelBackgroundOpacity"),
+      lineStyle: "solid",
+      lineWeight: Math.max(2, Number(document.getElementById("lineWeight").value)),
+      lineColor: "#00d6d6",
+      lineOpacity: 0.95,
+      fillColor: "#00d6d6",
+      fillOpacity: 0.22,
+      segmentationBackend: "sam2",
+      segmentationModel: result.modelType || getSamSettingsFromInputs().modelType,
+      segmentationModelConfig: result.modelConfig || "",
+      segmentationPromptType: "box",
+      segmentationScore: result.score,
+    },
+  };
+}
+
+function previewSegmentPolygon(fullImagePolygon, result) {
+  const feature = buildSegmentFeature(fullImagePolygon, result);
+
+  segmentPreviewFeature = feature;
+  annoJSONTemp = {
+    type: "FeatureCollection",
+    features: [],
+  };
+  if (segmentPromptBox) {
+    addPolygonToGeoJSON(annoJSONTemp, imageRectToPolygon(segmentPromptBox), {
+      uuid: "segment-prompt-box",
+      label: "SAM prompt",
+      shapeType: "segment-prompt",
+      lineStyle: "dashed",
+      lineWeight: 2,
+      lineColor: "#00a6d6",
+      lineOpacity: 0.65,
+      fillColor: "#00a6d6",
+      fillOpacity: 0.04,
+    });
+  }
+  annoJSONTemp.features.push(feature);
+  drawShape(polyCanvas, [annoJSON, annoJSONTemp]);
+}
+
+function startSegmentBoxMode() {
+  if (segmentIsRunning) return;
+
+  clearSegmentPreview({ message: "Drag a box around one feature.", keepMode: true });
+  segmentBoxModeActive = true;
+  deactivateAnnotationModes();
+  stopSnapshotDrawMode({ clearSelection: false });
+  if (typeof stopMeasurementMode === "function") stopMeasurementMode();
+  setSegmentStatus("Drag a box around one feature.");
+  updateSegmentControls();
+}
+
+function setSegmentModeActive(active) {
+  segmentModeActive = Boolean(active);
+  if (segmentModeActive) {
+    deactivateAnnotationModes();
+    stopSnapshotDrawMode({ clearSelection: false });
+    if (typeof stopMeasurementMode === "function") stopMeasurementMode();
+    setSegmentStatus("Segment mode: Option-drag a box around one feature.");
+  } else {
+    segmentBoxModeActive = false;
+    segmentBoxDragState = null;
+    setSegmentStatus("Draw a box around one feature.");
+  }
+  updateSegmentReticleVisibility();
+  updateSegmentControls();
+}
+
+function updateSegmentReticleVisibility() {
+  if (!segmentReticle) return;
+
+  segmentReticle.hidden = true;
+  const container = document.getElementById("viewer-container");
+  container?.classList.toggle("segment-mode-active", segmentModeActive);
+}
+
+function updateSegmentReticlePosition(event) {
+  if (!segmentReticle || !segmentModeActive) return;
+
+  const rect = viewerContainer.getBoundingClientRect();
+  const x = event.clientX - rect.left;
+  const y = event.clientY - rect.top;
+  const isInside = x >= 0 && y >= 0 && x <= rect.width && y <= rect.height;
+  segmentReticle.hidden = !isInside;
+  if (!isInside) return;
+
+  segmentReticle.style.transform = `translate(${x}px, ${y}px)`;
+}
+
+function hideSegmentReticle() {
+  if (segmentReticle) segmentReticle.hidden = true;
+}
+
+async function runSegmentForPromptBox(promptRect) {
+  const cropRect = getPaddedSegmentCropRect(promptRect);
+  if (!cropRect) {
+    setSegmentStatus("Could not prepare the segmentation crop.", "error");
+    return;
+  }
+
+  const cropBox = {
+    x0: promptRect.x - cropRect.x,
+    y0: promptRect.y - cropRect.y,
+    x1: promptRect.x + promptRect.width - cropRect.x,
+    y1: promptRect.y + promptRect.height - cropRect.y,
+  };
+
+  updateSegmentRunningState(1);
+  setSegmentStatus("Rendering crop for SAM 2.1...");
+  try {
+    const cropCanvas = await renderFullResolutionImageRectCanvas(
+      cropRect,
+      getSegmentTileSetIndex()
+    );
+    const cropPngDataUrl = await canvasToPngDataUrl(cropCanvas);
+    setSegmentStatus("Running SAM 2.1 segmentation...");
+    const result = await window.electronAPI.runSamSegmentation({
+      samSettings: getSamSettingsFromInputs(),
+      cropPngDataUrl,
+      box: cropBox,
+      device: "auto",
+      simplifyEpsilon: getSegmentSimplifyEpsilon(),
+    });
+
+    if (!result?.ok) {
+      setSegmentStatus(
+        result?.error || result?.stderr || "SAM 2.1 could not segment the box.",
+        "error"
+      );
+      return;
+    }
+
+    const fullImagePolygon = result.polygon.map(([x, y]) => [
+      x + cropRect.x,
+      y + cropRect.y,
+    ]);
+    const scoreText =
+      Number.isFinite(Number(result.score))
+        ? ` Score: ${Number(result.score).toFixed(3)}.`
+        : "";
+    if (shouldAutoAddSegment()) {
+      const feature = buildSegmentFeature(fullImagePolygon, result);
+      commitSegmentFeature(feature, {
+        statusMessage: `Segment auto-added.${scoreText}`,
+        select: false,
+      });
+    } else {
+      previewSegmentPolygon(fullImagePolygon, result);
+      setSegmentStatus(`Segment preview ready.${scoreText}`, "ok");
+    }
+  } catch (error) {
+    console.error("SAM segmentation failed:", error);
+    setSegmentStatus(error.message || "SAM segmentation failed.", "error");
+  } finally {
+    updateSegmentRunningState(-1);
+  }
+}
+
+function commitSegmentPreview(options = {}) {
+  if (!segmentPreviewFeature) return;
+
+  const feature = segmentPreviewFeature;
+  segmentPreviewFeature = null;
+  segmentPromptBox = null;
+  annoJSONTemp = {
+    type: "FeatureCollection",
+    features: [],
+  };
+  commitSegmentFeature(feature, options);
+}
+
+function commitSegmentFeature(feature, options = {}) {
+  if (!feature) return;
+
+  const image = viewer.world.getItemAt(0);
+  const imageSize = image?.getContentSize() || { x: null, y: null };
+  const coordinates = feature.geometry.coordinates[0];
+  const areaPixels2 = calculatePolygonArea([coordinates]);
+  const perimeterPixels = calculatePolygonExteriorPerimeter([coordinates]);
+  const areaM2 = squareMetersFromSquarePixels(areaPixels2);
+  const perimeterM = metersFromPixels(perimeterPixels);
+  const style = getCurrentAnnotationStyleColors();
+  const segmentGroup = getSegmentAnnotationGroup();
+  const segmentProperties = {
+    ...feature.properties,
+    uuid: generateUniqueId(8),
+    label: document.getElementById("anno-label")?.value || "",
+    imageTitle: title(),
+    pixelsPerMeter: pixelsPerMeter(),
+    imageWidth: imageSize.x,
+    imageHeight: imageSize.y,
+    xLabel: coordinates[0][0],
+    yLabel: coordinates[0][1],
+    labelFontColor: style.labelFontColor,
+    labelBackgroundColor: style.labelBackgroundColor,
+    lineColor: style.lineColor,
+    fillColor: style.fillColor,
+    fillOpacity: getAnnotationOpacityValue("fillOpacity"),
+    area_m2: areaM2,
+    perimeter_m: perimeterM,
+  };
+  const properties = normalizeAnnotationProperties(
+    segmentGroup
+      ? applyAnnotationGroupToProperties(segmentProperties, segmentGroup)
+      : applyActiveAnnotationGroup(segmentProperties)
+  );
+
+  annotationHistory.push("Add segmented annotation");
+  annoJSON.features.push({
+    type: "Feature",
+    geometry: {
+      type: "Polygon",
+      coordinates: [coordinates],
+    },
+    properties,
+  });
+  drawShape(polyCanvas, [annoJSON, annoJSONTemp]);
+  renderAnnotationList();
+  renderAnnotationGroupOptions();
+  if (options.select === false) {
+    clearAnnotationSelection({ redraw: false, scroll: false });
+  } else {
+    selectAnnotationByUuid(properties.uuid, { redraw: false });
+  }
+  addText(
+    properties.uuid,
+    properties.label,
+    image.imageToViewportCoordinates(properties.xLabel, properties.yLabel),
+    "anno",
+    properties.labelFontColor,
+    properties.labelFontSize,
+    properties.labelBackgroundColor,
+    properties.labelBackgroundOpacity
+  );
+  enableAnnoButtons();
+  populateSegmentAnnotationGroupOptions();
+  unsavedAnnotations(true);
+  setSegmentStatus(options.statusMessage || "Segment added as an annotation.", "ok");
+  updateSegmentControls();
+}
+
+function openSegmentPalette() {
+  if (!segmentPalette) return;
+
+  segmentPalette.hidden = false;
+  populateSegmentTileSetSelect();
+  populateSegmentAnnotationGroupOptions();
+  updateSegmentSimplifyControls();
+  restoreToolPalettePosition(segmentPalette, "petroImage.segmentPalette");
+  openSegmentPaletteButton?.setAttribute("aria-pressed", "true");
+  clampToolPaletteToViewer(segmentPalette);
+  loadSamSettings();
+}
+
+function closeSegmentPalette() {
+  if (!segmentPalette) return;
+
+  clearSegmentPreview({ keepMode: false });
+  segmentPalette.hidden = true;
+  openSegmentPaletteButton?.setAttribute("aria-pressed", "false");
+}
+
+function toggleSegmentPalette() {
+  if (!segmentPalette || segmentPalette.hidden) {
+    openSegmentPalette();
+    return;
+  }
+
+  closeSegmentPalette();
 }
 
 function updateSnapshotScalebarAvailability() {
@@ -3812,7 +4713,11 @@ function getSnapshotContentMode() {
 }
 
 function getSnapshotTileSetLabel(tileSet, index) {
-  return tileSet?.label?.trim() || `Img ${index + 1}`;
+  const tileSetLabel = tileSet?.label?.trim();
+  if (tileSetLabel) return tileSetLabel;
+
+  const firstTileLabel = tileSet?.tiles?.[0]?.label?.trim();
+  return firstTileLabel || `Img ${index + 1}`;
 }
 
 function populateSnapshotTileSetSelect() {
@@ -4406,6 +5311,134 @@ async function renderFullResolutionSnapshotBaseCanvas(exportSize) {
   }
 }
 
+function getViewportBoundsForImageRect(imageRect) {
+  const image = viewer.world.getItemAt(0);
+  if (!image || !imageRect) return null;
+
+  const topLeft = image.imageToViewportCoordinates(imageRect.x, imageRect.y);
+  const bottomRight = image.imageToViewportCoordinates(
+    imageRect.x + imageRect.width,
+    imageRect.y + imageRect.height
+  );
+  return new OpenSeadragon.Rect(
+    Math.min(topLeft.x, bottomRight.x),
+    Math.min(topLeft.y, bottomRight.y),
+    Math.abs(bottomRight.x - topLeft.x),
+    Math.abs(bottomRight.y - topLeft.y)
+  );
+}
+
+async function renderFullResolutionImageRectCanvas(imageRect, tileSetIndex = 0) {
+  const exportSize = {
+    width: Math.max(1, Math.round(imageRect.width)),
+    height: Math.max(1, Math.round(imageRect.height)),
+  };
+  const pixelDensity =
+    OpenSeadragon.pixelDensityRatio || window.devicePixelRatio || 1;
+  const containerWidth = Math.max(1, Math.ceil(exportSize.width / pixelDensity));
+  const containerHeight = Math.max(1, Math.ceil(exportSize.height / pixelDensity));
+  const imageViewportBounds = getViewportBoundsForImageRect(imageRect);
+  const selectedTileSet = tileSets()[tileSetIndex] || tileSets()[0] || null;
+  const selectedTileSetOpacity = 1;
+
+  if (!imageViewportBounds || !selectedTileSet) {
+    throw new Error("Could not determine the image crop source.");
+  }
+
+  const exportContainer = document.createElement("div");
+  exportContainer.id = `segment-export-${Date.now()}`;
+  exportContainer.style.position = "fixed";
+  exportContainer.style.left = "-100000px";
+  exportContainer.style.top = "0";
+  exportContainer.style.width = `${containerWidth}px`;
+  exportContainer.style.height = `${containerHeight}px`;
+  exportContainer.style.pointerEvents = "none";
+  document.body.append(exportContainer);
+
+  const exportViewer = OpenSeadragon({
+    id: exportContainer.id,
+    prefixUrl: "js/images/",
+    showNavigationControl: false,
+    mouseNavEnabled: false,
+    animationTime: 0,
+    blendTime: 0,
+    immediateRender: true,
+    minZoomImageRatio: 0,
+    maxZoomPixelRatio: 100,
+    visibilityRatio: 0,
+    constrainDuringPan: false,
+    crossOriginPolicy: "Anonymous",
+  });
+
+  const exportTileSet = {
+    ...selectedTileSet,
+    tiles: selectedTileSet.tiles.map((tile) => ({
+      ...tile,
+      image: null,
+    })),
+  };
+
+  try {
+    for (const tile of exportTileSet.tiles) {
+      const tileSource = await getTileSource(tile.uri);
+      await new Promise((resolve, reject) => {
+        exportViewer.addTiledImage({
+          tileSource,
+          success: (event) => {
+            tile.image = event.item;
+            resolve();
+          },
+          error: (event) => {
+            reject(
+              new Error(event?.message || `Could not load tile source: ${tile.uri}`)
+            );
+          },
+        });
+      });
+    }
+
+    if (typeof exportViewer.viewport.setFlip === "function") {
+      exportViewer.viewport.setFlip(viewer.viewport.getFlip());
+    }
+    exportViewer.viewport.setRotation(viewer.viewport.getRotation(true), true);
+    exportViewer.viewport.fitBounds(imageViewportBounds, true);
+
+    const activeTileImages = applySnapshotTileSetComposition(
+      exportViewer,
+      exportTileSet,
+      selectedTileSetOpacity
+    );
+    await waitForExportViewerReady(exportViewer, activeTileImages);
+    const sourceCanvas = getOpenSeadragonImageCanvas(exportViewer);
+    if (!sourceCanvas) {
+      throw new Error("Could not render the segmentation crop.");
+    }
+
+    const outputCanvas = document.createElement("canvas");
+    outputCanvas.width = exportSize.width;
+    outputCanvas.height = exportSize.height;
+    const ctx = outputCanvas.getContext("2d");
+    if (!ctx) {
+      throw new Error("Could not create the segmentation crop canvas.");
+    }
+    ctx.drawImage(
+      sourceCanvas,
+      0,
+      0,
+      sourceCanvas.width,
+      sourceCanvas.height,
+      0,
+      0,
+      outputCanvas.width,
+      outputCanvas.height
+    );
+    return outputCanvas;
+  } finally {
+    exportViewer.destroy();
+    exportContainer.remove();
+  }
+}
+
 async function exportSnapshotSelection() {
   if (!snapshotSelectionRect) {
     updateSnapshotStatus("Draw a rectangle before exporting.");
@@ -4569,6 +5602,7 @@ if (hasSharedViewerMenus) {
       closeMeasurePalette();
       closeSnapshotPalette();
       closePorosityEstimator();
+      closeSegmentPalette();
       closeScaleWizard();
       if (tileSetEditor && !tileSetEditor.hidden) {
         closeTileSetEditor();
@@ -4976,6 +6010,94 @@ if (hasSharedViewerMenus && openPorosityEstimatorButton && porosityPalette) {
     scheduleClampOpenToolPalettes();
     drawPorosityOverlay();
   });
+}
+
+if (
+  hasSharedViewerMenus &&
+  hasElectronActions &&
+  openSegmentPaletteButton &&
+  segmentPalette
+) {
+  openSegmentPaletteButton.hidden = false;
+  openSegmentPaletteButton.setAttribute("aria-pressed", "false");
+  openSegmentPaletteButton.addEventListener("click", function (event) {
+    event.preventDefault();
+    closeViewerToolsTray();
+    toggleSegmentPalette();
+  });
+  closeSegmentPaletteButton?.addEventListener("click", function () {
+    closeSegmentPalette();
+  });
+  minimizeSegmentPaletteButton?.addEventListener("click", function () {
+    toggleToolPaletteMinimized(segmentPalette, minimizeSegmentPaletteButton);
+  });
+  chooseSamPythonButton?.addEventListener("click", function () {
+    chooseSamPython();
+  });
+  chooseSamCheckpointButton?.addEventListener("click", function () {
+    chooseSamCheckpoint();
+  });
+  saveSamSettingsButton?.addEventListener("click", function () {
+    saveSamSettings();
+  });
+  testSamSetupButton?.addEventListener("click", function () {
+    testSamSetup();
+  });
+  segmentDrawBoxButton?.addEventListener("click", function () {
+    startSegmentBoxMode();
+  });
+  segmentClearButton?.addEventListener("click", function () {
+    clearSegmentPreview();
+  });
+  segmentAddAnnotationButton?.addEventListener("click", function () {
+    commitSegmentPreview();
+  });
+  segmentModeToggle?.addEventListener("change", function () {
+    setSegmentModeActive(segmentModeToggle.checked);
+  });
+  segmentAutoAddCheckbox?.addEventListener("change", function () {
+    updateSegmentControls();
+  });
+  segmentTileSetSelect?.addEventListener("change", function () {
+    updateSegmentControls();
+  });
+  segmentSimplifyEnabledInput?.addEventListener("change", function () {
+    updateSegmentSimplifyControls();
+  });
+  segmentAnnotationGroupInput?.addEventListener("change", function () {
+    populateSegmentAnnotationGroupOptions();
+  });
+  samModelTypeSelect?.addEventListener("change", function () {
+    updateSamReadinessIndicator();
+    saveSamSettings("SAM model type saved.");
+  });
+  [samPythonPathInput, samCheckpointPathInput].forEach((input) => {
+    input?.addEventListener("input", function () {
+      updateSamReadinessIndicator();
+    });
+    input?.addEventListener("change", function () {
+      updateSamReadinessIndicator();
+      saveSamSettings("SAM settings saved.");
+    });
+  });
+  [
+    segmentPaddingPercentInput,
+    segmentPaddingMinInput,
+    segmentPaddingMaxInput,
+  ].forEach((input) => {
+    input?.addEventListener("input", function () {
+      updateSegmentPaddingStatus();
+    });
+  });
+  makeToolPaletteDraggable(
+    segmentPalette,
+    segmentPaletteHeader,
+    "petroImage.segmentPalette"
+  );
+  window.addEventListener("resize", function () {
+    scheduleClampOpenToolPalettes();
+  });
+  loadSamSettings();
 }
 
 snapshotSelectionBody?.addEventListener("pointerdown", function (event) {
@@ -6926,6 +8048,7 @@ function buildImageCheckboxes() {
     container.appendChild(div);
   }
   populateSnapshotTileSetSelect();
+  populateSegmentTileSetSelect();
 }
 
 function buildOpacitySliders() {
@@ -14632,6 +15755,10 @@ viewerContainer.addEventListener("mousemove", () => {
   drawScaleWizardOverlay();
 });
 
+viewerContainer.addEventListener("pointermove", updateSegmentReticlePosition);
+viewerContainer.addEventListener("pointerenter", updateSegmentReticlePosition);
+viewerContainer.addEventListener("pointerleave", hideSegmentReticle);
+
 viewerContainer.addEventListener("mousemove", (event) => {
   if (!porosityAoiModeActive || porosityAoiComplete) return;
 
@@ -15002,7 +16129,12 @@ let isDrawingRectangle = false;
 let annotationMarqueeState = null;
 
 function isRectangleDrawGesture(event) {
+  if (segmentModeActive && event.originalEvent?.altKey) return false;
   return isRectangleMode || event.originalEvent?.altKey;
+}
+
+function isSegmentBoxDrawGesture(event) {
+  return segmentBoxModeActive || (segmentModeActive && event.originalEvent?.altKey);
 }
 
 function getImageMarqueePolygon(startPixel, endPixel) {
@@ -15079,6 +16211,28 @@ function toggleAnnotationsInMarquee(marqueePolygon) {
 }
 
 viewer.addHandler("canvas-drag", function (event) {
+  if (isSegmentBoxDrawGesture(event)) {
+    event.preventDefaultAction = true;
+    const delta = event.delta || new OpenSeadragon.Point(0, 0);
+    if (!segmentBoxDragState) {
+      segmentBoxDragState = {
+        startPixel: new OpenSeadragon.Point(
+          event.position.x - delta.x,
+          event.position.y - delta.y
+        ),
+      };
+    }
+    const promptRect = imageRectFromPixelBox(
+      segmentBoxDragState.startPixel,
+      event.position
+    );
+    if (promptRect && promptRect.width > 0 && promptRect.height > 0) {
+      segmentPromptBox = promptRect;
+      updateSegmentPromptPreview(promptRect);
+    }
+    return;
+  }
+
   if (snapshotModeActive) {
     event.preventDefaultAction = true;
     const delta = event.delta || new OpenSeadragon.Point(0, 0);
@@ -15223,6 +16377,35 @@ viewer.addHandler("canvas-drag", function (event) {
 
 // Finalize the rectangle on mouseup
 viewer.addHandler("canvas-release", function (event) {
+  if (isSegmentBoxDrawGesture(event)) {
+    event.preventDefaultAction = true;
+    const promptRect =
+      segmentBoxDragState
+        ? imageRectFromPixelBox(segmentBoxDragState.startPixel, event.position)
+        : null;
+    segmentBoxModeActive = false;
+    segmentBoxDragState = null;
+    updateSegmentControls();
+
+    if (!promptRect || promptRect.width < 4 || promptRect.height < 4) {
+      clearSegmentPreview({ message: "Draw a larger box around one feature." });
+      return;
+    }
+
+    segmentPromptBox = promptRect;
+    updateSegmentPromptPreview(promptRect);
+    if (segmentModeActive) {
+      segmentPromptBox = null;
+      annoJSONTemp = {
+        type: "FeatureCollection",
+        features: [],
+      };
+      drawShape(polyCanvas, [annoJSON, annoJSONTemp]);
+    }
+    runSegmentForPromptBox(promptRect);
+    return;
+  }
+
   if (snapshotModeActive) {
     event.preventDefaultAction = true;
     finishSnapshotSelection(event.position);
