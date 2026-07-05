@@ -397,6 +397,11 @@ body.import-wizard-page {
   font-weight: 600;
 }
 
+.segment-inline-field {
+  grid-template-columns: 48px minmax(0, 1fr);
+  align-items: center;
+}
+
 .segment-field input,
 .segment-field select {
   box-sizing: border-box;
@@ -422,6 +427,11 @@ body.import-wizard-page {
   outline: none;
 }
 
+.segment-palette-body button.active {
+  border-color: #006f7a;
+  background: #dff7f7;
+}
+
 .segment-palette-body button:disabled {
   cursor: not-allowed;
   opacity: 0.6;
@@ -431,6 +441,18 @@ body.import-wizard-page {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 6px;
+}
+
+.segment-prompt-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 4px;
+}
+
+.segment-commit-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 54px;
+  gap: 4px;
 }
 
 .segment-padding-row {
@@ -465,6 +487,10 @@ body.import-wizard-page {
 
 .segment-option input {
   margin: 0;
+}
+
+.segment-option:has(input:disabled) {
+  opacity: 0.6;
 }
 
 .segment-inline-status {

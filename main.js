@@ -956,7 +956,8 @@ function segmentWithSamWorker(worker, cropPath, box, options = {}) {
       JSON.stringify({
         id,
         image: cropPath,
-        box: [box.x0, box.y0, box.x1, box.y1],
+        box: box ? [box.x0, box.y0, box.x1, box.y1] : null,
+        points: options.points || [],
         simplifyEpsilon: options.simplifyEpsilon ?? 2,
       }) + "\n",
     );
@@ -972,9 +973,10 @@ async function runSamSegmentation(request = {}) {
 
   try {
     await fs.writeFile(cropPath, decodePngDataUrl(request.cropPngDataUrl));
-    const box = request.box || {};
+    const box = request.box || null;
     const worker = await getSamWorker(settings, request.device || "auto");
     const result = await segmentWithSamWorker(worker, cropPath, box, {
+      points: request.points || [],
       simplifyEpsilon: request.simplifyEpsilon,
     });
     return result;

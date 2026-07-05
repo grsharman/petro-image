@@ -1179,7 +1179,7 @@
             <div id="samSetupStatus" class="segment-status" role="status">Choose a Python environment and checkpoint.</div>
           </details>
           <hr />
-          <label class="segment-field">
+          <label class="segment-field segment-inline-field">
             <span>Tile set</span>
             <select id="segmentTileSetSelect"></select>
           </label>
@@ -1249,19 +1249,27 @@
           </label>
           <label class="segment-option">
             <input id="segmentModeToggle" type="checkbox" />
-            <span>Segment mode</span>
+            <span>Fast segmentation mode</span>
           </label>
           <label class="segment-option">
             <input id="segmentAutoAdd" type="checkbox" />
             <span>Auto-add to annotations</span>
           </label>
-          <div class="segment-actions">
-            <button id="segmentDrawBoxButton" type="button">Draw Box</button>
+          <div class="segment-prompt-actions">
+            <button id="segmentDrawBoxButton" type="button">+ Box</button>
+            <button id="segmentAddPositivePointButton" type="button">
+              + Point
+            </button>
+            <button id="segmentAddNegativePointButton" type="button">
+              - Point
+            </button>
+          </div>
+          <div class="segment-commit-actions">
+            <button id="segmentAddAnnotationButton" type="button" disabled>
+              Add Annotation
+            </button>
             <button id="segmentClearButton" type="button" disabled>Clear</button>
           </div>
-          <button id="segmentAddAnnotationButton" type="button" disabled>
-            Add Annotation
-          </button>
           <div id="segmentStatus" class="segment-status" role="status">Draw a box around one feature.</div>
         </div>
       </div>

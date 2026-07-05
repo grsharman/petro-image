@@ -392,6 +392,12 @@ const segmentModeToggle = document.getElementById("segmentModeToggle");
 const segmentAutoAddCheckbox = document.getElementById("segmentAutoAdd");
 const segmentDrawBoxButton = document.getElementById("segmentDrawBoxButton");
 const segmentClearButton = document.getElementById("segmentClearButton");
+const segmentAddPositivePointButton = document.getElementById(
+  "segmentAddPositivePointButton"
+);
+const segmentAddNegativePointButton = document.getElementById(
+  "segmentAddNegativePointButton"
+);
 const segmentAddAnnotationButton = document.getElementById(
   "segmentAddAnnotationButton"
 );
@@ -492,10 +498,13 @@ let samAutoValidationStarted = false;
 let segmentBoxModeActive = false;
 let segmentBoxDragState = null;
 let segmentPromptBox = null;
+let segmentPromptPoints = [];
+let segmentPointMode = null;
 let segmentPreviewFeature = null;
 let segmentIsRunning = false;
 let segmentActiveRunCount = 0;
 let segmentModeActive = false;
+let segmentAutoAddUserChecked = false;
 const SNAPSHOT_MAX_OUTPUT_DIMENSION = 16000;
 const SNAPSHOT_MAX_OUTPUT_PIXELS = 100000000;
 const POROSITY_MAX_ANALYSIS_DIMENSION = 12000;
@@ -1567,24 +1576,47 @@ function setSegmentStatus(message, state = "") {
 
 function updateSegmentControls() {
   if (segmentDrawBoxButton) {
-    segmentDrawBoxButton.disabled = segmentIsRunning;
-    segmentDrawBoxButton.textContent = segmentBoxModeActive ? "Drawing..." : "Draw Box";
+    segmentDrawBoxButton.disabled = segmentModeActive || segmentIsRunning;
+    segmentDrawBoxButton.textContent = segmentBoxModeActive ? "Drawing..." : "+ Box";
   }
   if (segmentModeToggle) {
     segmentModeToggle.checked = segmentModeActive;
   }
+  if (segmentAutoAddCheckbox) {
+    segmentAutoAddCheckbox.disabled = segmentModeActive;
+    segmentAutoAddCheckbox.checked = segmentModeActive || segmentAutoAddUserChecked;
+  }
   if (segmentClearButton) {
     segmentClearButton.disabled =
+      segmentModeActive ||
       segmentIsRunning ||
-      (!segmentBoxModeActive && !segmentPreviewFeature && !segmentPromptBox);
+      (!segmentBoxModeActive &&
+        !segmentPreviewFeature &&
+        !segmentPromptBox &&
+        segmentPromptPoints.length === 0);
+  }
+  if (segmentAddPositivePointButton) {
+    segmentAddPositivePointButton.disabled = segmentModeActive || segmentIsRunning;
+    segmentAddPositivePointButton.classList.toggle(
+      "active",
+      segmentPointMode === "positive"
+    );
+  }
+  if (segmentAddNegativePointButton) {
+    segmentAddNegativePointButton.disabled = segmentModeActive || segmentIsRunning;
+    segmentAddNegativePointButton.classList.toggle(
+      "active",
+      segmentPointMode === "negative"
+    );
   }
   if (segmentAddAnnotationButton) {
-    segmentAddAnnotationButton.disabled = segmentIsRunning || !segmentPreviewFeature;
+    segmentAddAnnotationButton.disabled =
+      segmentModeActive || segmentIsRunning || !segmentPreviewFeature;
   }
 }
 
 function shouldAutoAddSegment() {
-  return Boolean(segmentAutoAddCheckbox?.checked);
+  return segmentModeActive || segmentAutoAddUserChecked;
 }
 
 function updateSegmentRunningState(delta) {
@@ -1673,12 +1705,19 @@ function getSegmentTileSetIndex() {
 function populateSegmentAnnotationGroupOptions() {
   if (!segmentAnnotationGroupOptions) return;
 
+  const previousValue = segmentAnnotationGroupInput?.value.trim() || "";
+  const selectedGroupName = getSelectedGroupFromDropdown()?.groupName || "";
   segmentAnnotationGroupOptions.innerHTML = "";
   getAnnotationGroups().forEach((group) => {
     const option = document.createElement("option");
     option.value = group.groupName;
+    option.label = group.groupName;
     segmentAnnotationGroupOptions.append(option);
   });
+
+  if (segmentAnnotationGroupInput && !previousValue && selectedGroupName) {
+    segmentAnnotationGroupInput.value = selectedGroupName;
+  }
 }
 
 function getSegmentAnnotationGroup() {
@@ -1725,21 +1764,47 @@ function imageRectToPolygon(rect) {
   ];
 }
 
+function getSegmentPromptBounds(promptRect, promptPoints = segmentPromptPoints) {
+  const xs = [];
+  const ys = [];
+  if (promptRect) {
+    xs.push(promptRect.x, promptRect.x + promptRect.width);
+    ys.push(promptRect.y, promptRect.y + promptRect.height);
+  }
+  promptPoints.forEach((point) => {
+    xs.push(point.x);
+    ys.push(point.y);
+  });
+  if (xs.length === 0 || ys.length === 0) return null;
+
+  const minX = Math.min(...xs);
+  const maxX = Math.max(...xs);
+  const minY = Math.min(...ys);
+  const maxY = Math.max(...ys);
+  return {
+    x: minX,
+    y: minY,
+    width: Math.max(1, maxX - minX),
+    height: Math.max(1, maxY - minY),
+  };
+}
+
 function getPaddedSegmentCropRect(promptRect) {
   const image = viewer.world.getItemAt(0);
-  if (!image || !promptRect) return null;
+  const promptBounds = getSegmentPromptBounds(promptRect);
+  if (!image || !promptBounds) return null;
 
   const imageSize = image.getContentSize();
-  const padding = getSegmentPadding(promptRect);
-  const x = Math.max(0, Math.floor(promptRect.x - padding));
-  const y = Math.max(0, Math.floor(promptRect.y - padding));
+  const padding = getSegmentPadding(promptBounds);
+  const x = Math.max(0, Math.floor(promptBounds.x - padding));
+  const y = Math.max(0, Math.floor(promptBounds.y - padding));
   const right = Math.min(
     imageSize.x,
-    Math.ceil(promptRect.x + promptRect.width + padding)
+    Math.ceil(promptBounds.x + promptBounds.width + padding)
   );
   const bottom = Math.min(
     imageSize.y,
-    Math.ceil(promptRect.y + promptRect.height + padding)
+    Math.ceil(promptBounds.y + promptBounds.height + padding)
   );
   return {
     x,
@@ -1747,6 +1812,25 @@ function getPaddedSegmentCropRect(promptRect) {
     width: Math.max(1, right - x),
     height: Math.max(1, bottom - y),
   };
+}
+
+function addSegmentPromptPointFeatures() {
+  segmentPromptPoints.forEach((point, index) => {
+    annoJSONTemp.features.push({
+      type: "Feature",
+      geometry: {
+        type: "Point",
+        coordinates: [point.x, point.y],
+      },
+      properties: {
+        uuid: `segment-prompt-point-${index}`,
+        shapeType: "segment-prompt-point",
+        pointLabel: point.label,
+        lineColor: point.label === 1 ? "#0f9d58" : "#d93025",
+        fillColor: point.label === 1 ? "#0f9d58" : "#d93025",
+      },
+    });
+  });
 }
 
 function canvasToPngDataUrl(canvas) {
@@ -1771,6 +1855,8 @@ function clearSegmentPreview(options = {}) {
   segmentBoxModeActive = false;
   segmentBoxDragState = null;
   segmentPromptBox = null;
+  segmentPromptPoints = [];
+  segmentPointMode = null;
   segmentPreviewFeature = null;
   if (!keepMode) {
     segmentModeActive = false;
@@ -1785,26 +1871,29 @@ function clearSegmentPreview(options = {}) {
   updateSegmentControls();
 }
 
-function updateSegmentPromptPreview(promptRect) {
+function updateSegmentPromptPreview(promptRect = segmentPromptBox) {
   updateSegmentPaddingStatus(promptRect);
   annoJSONTemp = {
     type: "FeatureCollection",
     features: [],
   };
-  addPolygonToGeoJSON(annoJSONTemp, imageRectToPolygon(promptRect), {
-    uuid: "segment-prompt-box",
-    label: "SAM prompt",
-    shapeType: "segment-prompt",
-    lineStyle: "dashed",
-    lineWeight: 2,
-    lineColor: "#00a6d6",
-    lineOpacity: 0.95,
-    fillColor: "#00a6d6",
-    fillOpacity: 0.08,
-  });
+  if (promptRect) {
+    addPolygonToGeoJSON(annoJSONTemp, imageRectToPolygon(promptRect), {
+      uuid: "segment-prompt-box",
+      label: "SAM prompt",
+      shapeType: "segment-prompt",
+      lineStyle: "dashed",
+      lineWeight: 2,
+      lineColor: "#00a6d6",
+      lineOpacity: 0.95,
+      fillColor: "#00a6d6",
+      fillOpacity: 0.08,
+    });
+  }
   if (segmentPreviewFeature) {
     annoJSONTemp.features.push(segmentPreviewFeature);
   }
+  addSegmentPromptPointFeatures();
   drawShape(polyCanvas, [annoJSON, annoJSONTemp]);
 }
 
@@ -1862,7 +1951,18 @@ function previewSegmentPolygon(fullImagePolygon, result) {
     });
   }
   annoJSONTemp.features.push(feature);
+  addSegmentPromptPointFeatures();
   drawShape(polyCanvas, [annoJSON, annoJSONTemp]);
+}
+
+function getSegmentPromptSummary() {
+  const positiveCount = segmentPromptPoints.filter((point) => point.label === 1).length;
+  const negativeCount = segmentPromptPoints.filter((point) => point.label === 0).length;
+  const parts = [];
+  if (segmentPromptBox) parts.push("box");
+  if (positiveCount > 0) parts.push(`${positiveCount} + point${positiveCount === 1 ? "" : "s"}`);
+  if (negativeCount > 0) parts.push(`${negativeCount} - point${negativeCount === 1 ? "" : "s"}`);
+  return parts.length ? ` Prompts: ${parts.join(", ")}.` : "";
 }
 
 function startSegmentBoxMode() {
@@ -1877,13 +1977,68 @@ function startSegmentBoxMode() {
   updateSegmentControls();
 }
 
+function setSegmentPointMode(mode) {
+  if (segmentModeActive || segmentIsRunning) return;
+
+  segmentPointMode = segmentPointMode === mode ? null : mode;
+  if (segmentPointMode) {
+    deactivateAnnotationModes();
+    stopSnapshotDrawMode({ clearSelection: false });
+    if (typeof stopMeasurementMode === "function") stopMeasurementMode();
+    setSegmentStatus(
+      segmentPointMode === "positive"
+        ? "Click inside the feature to add a positive point."
+        : "Click outside the feature to add a negative point."
+    );
+  } else {
+    setSegmentStatus("Draw a box around one feature.");
+  }
+  updateSegmentControls();
+}
+
+function getSegmentImagePointFromCanvasEvent(event) {
+  const image = viewer.world.getItemAt(0);
+  if (!image) return null;
+
+  const viewportPoint = viewer.viewport.pointFromPixel(event.position);
+  const imagePoint = image.viewportToImageCoordinates(
+    viewportPoint.x,
+    viewportPoint.y
+  );
+  return {
+    x: imagePoint.x,
+    y: imagePoint.y,
+  };
+}
+
+function addSegmentPromptPoint(event) {
+  if (!segmentPointMode || segmentModeActive || segmentIsRunning) return false;
+
+  const imagePoint = getSegmentImagePointFromCanvasEvent(event);
+  if (!imagePoint) return false;
+
+  event.preventDefaultAction = true;
+  segmentPromptPoints.push({
+    ...imagePoint,
+    label: segmentPointMode === "positive" ? 1 : 0,
+  });
+  updateSegmentPromptPreview();
+  setSegmentStatus(`Running SAM 2.1 segmentation...${getSegmentPromptSummary()}`);
+  runSegmentForPromptBox(segmentPromptBox);
+  return true;
+}
+
 function setSegmentModeActive(active) {
   segmentModeActive = Boolean(active);
   if (segmentModeActive) {
     deactivateAnnotationModes();
     stopSnapshotDrawMode({ clearSelection: false });
     if (typeof stopMeasurementMode === "function") stopMeasurementMode();
-    setSegmentStatus("Segment mode: Option-drag a box around one feature.");
+    clearSegmentPreview({
+      message: "Fast mode: Option-drag to add annotations.",
+      keepMode: true,
+    });
+    segmentModeActive = true;
   } else {
     segmentBoxModeActive = false;
     segmentBoxDragState = null;
@@ -1925,26 +2080,34 @@ async function runSegmentForPromptBox(promptRect) {
     return;
   }
 
-  const cropBox = {
-    x0: promptRect.x - cropRect.x,
-    y0: promptRect.y - cropRect.y,
-    x1: promptRect.x + promptRect.width - cropRect.x,
-    y1: promptRect.y + promptRect.height - cropRect.y,
-  };
+  const cropBox = promptRect
+    ? {
+        x0: promptRect.x - cropRect.x,
+        y0: promptRect.y - cropRect.y,
+        x1: promptRect.x + promptRect.width - cropRect.x,
+        y1: promptRect.y + promptRect.height - cropRect.y,
+      }
+    : null;
+  const cropPoints = segmentPromptPoints.map((point) => ({
+    x: point.x - cropRect.x,
+    y: point.y - cropRect.y,
+    label: point.label,
+  }));
 
   updateSegmentRunningState(1);
-  setSegmentStatus("Rendering crop for SAM 2.1...");
+  setSegmentStatus(`Rendering crop for SAM 2.1...${getSegmentPromptSummary()}`);
   try {
     const cropCanvas = await renderFullResolutionImageRectCanvas(
       cropRect,
       getSegmentTileSetIndex()
     );
     const cropPngDataUrl = await canvasToPngDataUrl(cropCanvas);
-    setSegmentStatus("Running SAM 2.1 segmentation...");
+    setSegmentStatus(`Running SAM 2.1 segmentation...${getSegmentPromptSummary()}`);
     const result = await window.electronAPI.runSamSegmentation({
       samSettings: getSamSettingsFromInputs(),
       cropPngDataUrl,
       box: cropBox,
+      points: cropPoints,
       device: "auto",
       simplifyEpsilon: getSegmentSimplifyEpsilon(),
     });
@@ -1970,10 +2133,14 @@ async function runSegmentForPromptBox(promptRect) {
       commitSegmentFeature(feature, {
         statusMessage: `Segment auto-added.${scoreText}`,
         select: false,
+        clearPrompts: true,
       });
     } else {
       previewSegmentPolygon(fullImagePolygon, result);
-      setSegmentStatus(`Segment preview ready.${scoreText}`, "ok");
+      setSegmentStatus(
+        `Segment preview ready.${scoreText}${getSegmentPromptSummary()}`,
+        "ok"
+      );
     }
   } catch (error) {
     console.error("SAM segmentation failed:", error);
@@ -1989,6 +2156,8 @@ function commitSegmentPreview(options = {}) {
   const feature = segmentPreviewFeature;
   segmentPreviewFeature = null;
   segmentPromptBox = null;
+  segmentPromptPoints = [];
+  segmentPointMode = null;
   annoJSONTemp = {
     type: "FeatureCollection",
     features: [],
@@ -2041,6 +2210,15 @@ function commitSegmentFeature(feature, options = {}) {
     },
     properties,
   });
+  if (options.clearPrompts) {
+    segmentPromptBox = null;
+    segmentPromptPoints = [];
+    segmentPointMode = null;
+    annoJSONTemp = {
+      type: "FeatureCollection",
+      features: [],
+    };
+  }
   drawShape(polyCanvas, [annoJSON, annoJSONTemp]);
   renderAnnotationList();
   renderAnnotationGroupOptions();
@@ -6049,6 +6227,12 @@ if (
   segmentClearButton?.addEventListener("click", function () {
     clearSegmentPreview();
   });
+  segmentAddPositivePointButton?.addEventListener("click", function () {
+    setSegmentPointMode("positive");
+  });
+  segmentAddNegativePointButton?.addEventListener("click", function () {
+    setSegmentPointMode("negative");
+  });
   segmentAddAnnotationButton?.addEventListener("click", function () {
     commitSegmentPreview();
   });
@@ -6056,6 +6240,9 @@ if (
     setSegmentModeActive(segmentModeToggle.checked);
   });
   segmentAutoAddCheckbox?.addEventListener("change", function () {
+    if (!segmentModeActive) {
+      segmentAutoAddUserChecked = segmentAutoAddCheckbox.checked;
+    }
     updateSegmentControls();
   });
   segmentTileSetSelect?.addEventListener("change", function () {
@@ -10009,6 +10196,7 @@ function renderAnnotationGroupOptions() {
   if (newGroupButton) {
     newGroupButton.disabled = getUnlockedSelectedAnnotationUuids().length === 0;
   }
+  populateSegmentAnnotationGroupOptions();
   updateSelectedAnnotationControls();
 }
 
@@ -13538,6 +13726,10 @@ viewer.addHandler("canvas-click", function (event) {
 });
 
 viewer.addHandler("canvas-click", function (event) {
+  if (addSegmentPromptPoint(event)) return;
+});
+
+viewer.addHandler("canvas-click", function (event) {
   if (suppressNextAnnotationClick) {
     suppressNextAnnotationClick = false;
     event.preventDefaultAction = true;
@@ -15911,9 +16103,44 @@ function drawShape(canvas, JSONArray) {
         coordinates.forEach((line) => {
           drawLineString(ctx, line, image, feature);
         });
+      } else if (
+        type === "Point" &&
+        feature.properties.shapeType === "segment-prompt-point"
+      ) {
+        drawSegmentPromptPoint(ctx, coordinates, image, feature);
       }
     }
   });
+}
+
+function drawSegmentPromptPoint(ctx, coordinates, image, feature) {
+  if (!image) return;
+
+  const viewportPoint = image.imageToViewportCoordinates(
+    coordinates[0],
+    coordinates[1]
+  );
+  const screenPoint =
+    viewer.viewport.viewportToViewerElementCoordinates(viewportPoint);
+  const color = feature.properties.lineColor || "#0f9d58";
+  ctx.save();
+  ctx.setLineDash([]);
+  ctx.strokeStyle = "#ffffff";
+  ctx.fillStyle = color;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(screenPoint.x, screenPoint.y, 5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(screenPoint.x - 8, screenPoint.y);
+  ctx.lineTo(screenPoint.x + 8, screenPoint.y);
+  ctx.moveTo(screenPoint.x, screenPoint.y - 8);
+  ctx.lineTo(screenPoint.x, screenPoint.y + 8);
+  ctx.stroke();
+  ctx.restore();
 }
 
 function drawPolygon(ctx, coordinates, image, feature) {

@@ -71,15 +71,30 @@ def segment_image(predictor, request, model_type, model_config, device):
     import torch
 
     image_path = request["image"]
-    box = np.array(request["box"], dtype=np.float32)
+    box = request.get("box")
+    box = np.array(box, dtype=np.float32) if box else None
+    points = request.get("points") or []
+    point_coords = None
+    point_labels = None
+    if points:
+        point_coords = np.array(
+            [[point["x"], point["y"]] for point in points],
+            dtype=np.float32,
+        )
+        point_labels = np.array(
+            [int(point.get("label", 1)) for point in points],
+            dtype=np.int32,
+        )
+    if box is None and point_coords is None:
+        raise RuntimeError("SAM 2.1 needs a box or point prompt.")
     simplify_epsilon = float(request.get("simplifyEpsilon", 2))
     image = np.array(Image.open(image_path).convert("RGB"))
     predictor.set_image(image)
 
     with torch.inference_mode():
         masks, scores, _ = predictor.predict(
-            point_coords=None,
-            point_labels=None,
+            point_coords=point_coords,
+            point_labels=point_labels,
             box=box,
             multimask_output=True,
         )
