@@ -178,6 +178,16 @@
           pointer-events: none;
         "
       ></canvas>
+      <canvas
+        id="porosity-overlay"
+        style="
+          position: absolute;
+          top: 0;
+          left: 0;
+          z-index: 1003;
+          pointer-events: none;
+        "
+      ></canvas>
       <div id="annotation-marquee" class="annotation-marquee" hidden></div>
       <div id="snapshot-selection" class="snapshot-selection" hidden>
         <div
@@ -364,6 +374,28 @@
             <span>
               <span class="electron-action-title">Snapshot</span>
               <span class="electron-action-description">Export an image crop</span>
+            </span>
+          </button>
+          <button
+            id="openPorosityEstimatorButton"
+            class="electron-action-item"
+            type="button"
+            role="menuitem"
+            hidden
+          >
+            <span class="electron-action-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <rect x="4" y="5" width="16" height="14" rx="1.5" />
+                <circle cx="9" cy="10" r="1.5" />
+                <circle cx="14.5" cy="12.5" r="1.75" />
+                <circle cx="10.5" cy="16" r="1.25" />
+                <path d="M17 7.5h1.5" />
+                <path d="M17 16.5h1.5" />
+              </svg>
+            </span>
+            <span>
+              <span class="electron-action-title">Porosity Estimator</span>
+              <span class="electron-action-description">Estimate pore-color area in an AOI</span>
             </span>
           </button>
         </div>
@@ -630,7 +662,7 @@
       </div>
       <div
         id="snapshotPalette"
-        class="tool-palette snapshot-palette electron-only"
+        class="tool-palette snapshot-palette"
         data-default-position="bottom-right"
         data-default-bottom-offset="104"
         role="dialog"
@@ -712,6 +744,222 @@
           <p id="snapshotStatus" class="snapshot-status">
             Set options, then draw a rectangle.
           </p>
+        </div>
+      </div>
+      <div
+        id="porosityPalette"
+        class="tool-palette porosity-palette"
+        data-default-position="bottom-right"
+        data-default-bottom-offset="104"
+        role="dialog"
+        aria-labelledby="porosityPaletteTitle"
+        hidden
+      >
+        <div id="porosityPaletteHeader" class="tool-palette-header">
+          <h2 id="porosityPaletteTitle">Porosity Estimator</h2>
+          <div class="tool-palette-header-actions">
+            <button
+              id="minimizePorosityPaletteButton"
+              class="tool-palette-minimize"
+              type="button"
+              aria-label="Minimize Porosity Estimator"
+              aria-pressed="false"
+              title="Minimize"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M6 12h12" />
+              </svg>
+            </button>
+            <button
+              id="closePorosityPaletteButton"
+              class="tool-palette-close"
+              type="button"
+              aria-label="Close Porosity Estimator"
+              title="Close"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M6 6l12 12" />
+                <path d="M18 6 6 18" />
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div class="tool-palette-body porosity-palette-body">
+          <div class="porosity-start-row">
+            <button id="porosityDrawAoiButton" type="button">Draw AOI</button>
+            <button id="porosityClearButton" type="button" disabled>
+              Reset
+            </button>
+            <button
+              id="porosityToggleAoiButton"
+              class="porosity-icon-button"
+              type="button"
+              title="Hide AOI"
+              aria-label="Hide AOI"
+              aria-pressed="true"
+              disabled
+            >
+              <svg class="annotation-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+            </button>
+          </div>
+          <details class="porosity-resolution-panel">
+            <summary>Resolution</summary>
+            <label class="snapshot-field">
+              <span>Analysis</span>
+              <select id="porosityResolutionMode">
+                <option value="preview">Fast preview</option>
+                <option value="balanced" selected>Balanced</option>
+                <option value="high">High detail</option>
+                <option value="maximum">Maximum available</option>
+              </select>
+            </label>
+            <p id="porosityResolutionStatus" class="porosity-resolution-status">
+              Balanced analysis resolution.
+            </p>
+          </details>
+          <div class="porosity-type-row">
+            <label class="snapshot-field porosity-type-field">
+              <select id="porosityTypeSelect"></select>
+            </label>
+            <button
+              id="porosityAddTypeButton"
+              class="porosity-icon-button"
+              type="button"
+              title="Add porosity type"
+              aria-label="Add porosity type"
+            >
+              +
+            </button>
+            <button
+              id="porosityRenameTypeButton"
+              class="porosity-icon-button porosity-rename-button"
+              type="button"
+              title="Rename porosity type"
+              aria-label="Rename porosity type"
+            >
+              <svg class="annotation-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M5 18.5 6.5 14 16.8 3.7a2.1 2.1 0 0 1 3 3L9.5 17 5 18.5z" />
+                <path d="M14.8 5.7 17.8 8.7" />
+                <path d="M5 21h14" />
+              </svg>
+            </button>
+            <input
+              id="porosityOverlayColor"
+              class="porosity-inline-color"
+              type="color"
+              value="#ff0000"
+              title="Porosity overlay color"
+              aria-label="Porosity overlay color"
+            />
+            <button
+              id="porosityDeleteTypeButton"
+              class="porosity-icon-button porosity-delete-button"
+              type="button"
+              title="Delete porosity type"
+              aria-label="Delete porosity type"
+            >
+              <svg
+                class="trash-icon"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <path
+                  d="M9 3h6v2H9V3zm1 0v2h4V3h-4zM5 6h14v2H5V6zm2 3h10v11H7V9zm2 2v7h2v-7H9zm4 0v7h2v-7h-2z"
+                />
+              </svg>
+            </button>
+          </div>
+          <label class="snapshot-field porosity-tile-set-field">
+            <span>Select tile set(s) for estimation</span>
+            <select id="porosityTileSetSelect" multiple size="2"></select>
+          </label>
+          <div class="porosity-actions">
+            <button id="porosityPickColorButton" type="button" disabled>
+              Pick Porosity
+            </button>
+            <button id="porosityUndoColorButton" type="button" disabled>
+              Undo
+            </button>
+          </div>
+          <label class="snapshot-field">
+            <span>Opacity (%)</span>
+            <span class="porosity-opacity-controls">
+              <input
+                id="porosityOverlayOpacity"
+                type="range"
+                min="5"
+                max="100"
+                step="1"
+                value="100"
+              />
+              <input
+                id="porosityOverlayOpacityValue"
+                class="porosity-opacity-value"
+                type="number"
+                min="5"
+                max="100"
+                step="1"
+                value="100"
+                aria-label="Porosity overlay opacity percentage"
+              />
+            </span>
+          </label>
+          <div id="porositySamples" class="porosity-samples"></div>
+          <div class="porosity-estimate-row">
+            <button id="porosityEstimateViewButton" type="button" disabled>
+              Estimate View
+            </button>
+            <button id="porosityEstimateButton" type="button" disabled>
+              Estimate AOI
+            </button>
+          </div>
+          <label class="snapshot-field porosity-tolerance-field">
+            <span>Tolerance</span>
+            <input
+              id="porosityTolerance"
+              type="range"
+              min="5"
+              max="100"
+              step="1"
+              value="35"
+            />
+            <input
+              id="porosityToleranceValue"
+              class="porosity-tolerance-value"
+              type="number"
+              min="5"
+              max="100"
+              step="1"
+              value="35"
+              aria-label="Porosity tolerance value"
+            />
+          </label>
+          <div
+            id="porosityResults"
+            class="porosity-results"
+            aria-label="Porosity results summary"
+          ></div>
+          <div
+            id="porosityProgress"
+            class="porosity-progress"
+            aria-live="polite"
+            hidden
+          >
+            <span id="porosityProgressLabel">Estimating porosity...</span>
+            <div class="porosity-progress-track" aria-hidden="true">
+              <span id="porosityProgressBar" class="porosity-progress-bar"></span>
+            </div>
+          </div>
+          <p
+            id="porosityActivityStatus"
+            class="porosity-activity-status"
+            aria-live="polite"
+            hidden
+          ></p>
         </div>
       </div>
       <div

@@ -20,7 +20,7 @@ let tileLoadFailureWarningInFlight = false;
 
 // Accessors for attributes of the current sample
 const title = () => samples[currentIndex].title;
-const tileSets = () => samples[currentIndex].tileSets;
+const tileSets = () => samples[currentIndex]?.tileSets || [];
 const normalizePixelsPerMeter = (value) => {
   const numericValue = Number(value);
   return Number.isFinite(numericValue) && numericValue > 0 ? numericValue : null;
@@ -301,6 +301,9 @@ const openMeasurePaletteButton = document.getElementById(
 const openSnapshotPaletteButton = document.getElementById(
   "openSnapshotPaletteButton"
 );
+const openPorosityEstimatorButton = document.getElementById(
+  "openPorosityEstimatorButton"
+);
 const gridCountPalette = document.getElementById("gridCountPalette");
 const gridCountPaletteHeader = document.getElementById("gridCountPaletteHeader");
 const gridCountPaletteBody = document.getElementById("gridCountPaletteBody");
@@ -336,6 +339,14 @@ const closeSnapshotPaletteButton = document.getElementById(
 const minimizeSnapshotPaletteButton = document.getElementById(
   "minimizeSnapshotPaletteButton"
 );
+const porosityPalette = document.getElementById("porosityPalette");
+const porosityPaletteHeader = document.getElementById("porosityPaletteHeader");
+const closePorosityPaletteButton = document.getElementById(
+  "closePorosityPaletteButton"
+);
+const minimizePorosityPaletteButton = document.getElementById(
+  "minimizePorosityPaletteButton"
+);
 const snapshotSelection = document.getElementById("snapshot-selection");
 const snapshotSelectionBody = document.getElementById("snapshotSelectionBody");
 const snapshotDrawButton = document.getElementById("snapshotDrawButton");
@@ -349,6 +360,45 @@ const snapshotTileSetSelect = document.getElementById("snapshotTileSetSelect");
 const snapshotContentMode = document.getElementById("snapshotContentMode");
 const snapshotResolutionMode = document.getElementById("snapshotResolutionMode");
 const snapshotJpegQuality = document.getElementById("snapshotJpegQuality");
+const porosityOverlay = document.getElementById("porosity-overlay");
+const porosityTypeSelect = document.getElementById("porosityTypeSelect");
+const porosityAddTypeButton = document.getElementById("porosityAddTypeButton");
+const porosityRenameTypeButton = document.getElementById(
+  "porosityRenameTypeButton"
+);
+const porosityDeleteTypeButton = document.getElementById(
+  "porosityDeleteTypeButton"
+);
+const porosityTileSetSelect = document.getElementById("porosityTileSetSelect");
+const porosityDrawAoiButton = document.getElementById("porosityDrawAoiButton");
+const porosityToggleAoiButton = document.getElementById(
+  "porosityToggleAoiButton"
+);
+const porosityPickColorButton = document.getElementById("porosityPickColorButton");
+const porosityUndoColorButton = document.getElementById("porosityUndoColorButton");
+const porosityEstimateViewButton = document.getElementById(
+  "porosityEstimateViewButton"
+);
+const porosityEstimateButton = document.getElementById("porosityEstimateButton");
+const porosityResolutionMode = document.getElementById("porosityResolutionMode");
+const porosityResolutionStatus = document.getElementById(
+  "porosityResolutionStatus"
+);
+const porosityClearButton = document.getElementById("porosityClearButton");
+const porosityTolerance = document.getElementById("porosityTolerance");
+const porosityToleranceValue = document.getElementById("porosityToleranceValue");
+const porosityOverlayColor = document.getElementById("porosityOverlayColor");
+const porosityOverlayOpacity = document.getElementById("porosityOverlayOpacity");
+const porosityOverlayOpacityValue = document.getElementById(
+  "porosityOverlayOpacityValue"
+);
+const porositySamples = document.getElementById("porositySamples");
+const porosityResults = document.getElementById("porosityResults");
+const porosityStatus = document.getElementById("porosityStatus");
+const porosityProgress = document.getElementById("porosityProgress");
+const porosityProgressLabel = document.getElementById("porosityProgressLabel");
+const porosityProgressBar = document.getElementById("porosityProgressBar");
+const porosityActivityStatus = document.getElementById("porosityActivityStatus");
 const openScaleWizardButton = document.getElementById("openScaleWizardButton");
 const openLibraryEditorButton = document.getElementById("openLibraryEditorButton");
 const hasElectronActions = Boolean(window.electronAPI);
@@ -365,8 +415,55 @@ let snapshotModeActive = false;
 let snapshotDragState = null;
 let snapshotSelectionRect = null;
 let snapshotAdjustState = null;
+let porosityAoiModeActive = false;
+let porosityPickModeActive = false;
+let porosityAoiImagePoints = [];
+let porosityAoiComplete = false;
+let porosityAoiMousePoint = null;
+let porosityAoiSelectedVertexIndex = null;
+let porosityAoiDragState = null;
+let porosityAoiVisible = true;
+let porosityAoiConstrainSegment = false;
+let porosityTypes = [];
+let activePorosityTypeId = "";
+let porosityRecolorFrame = null;
+let porosityActivityClearTimer = null;
+let porosityProgressClearTimer = null;
+let porosityUndoState = null;
+let porosityEstimateGeneration = 0;
+let porosityToleranceReestimateTimer = null;
+let porositySelectedTileSetIndices = [];
+let porosityAnalysisResolutionMode = "balanced";
 const SNAPSHOT_MAX_OUTPUT_DIMENSION = 16000;
 const SNAPSHOT_MAX_OUTPUT_PIXELS = 100000000;
+const POROSITY_MAX_ANALYSIS_DIMENSION = 12000;
+const POROSITY_MAX_ANALYSIS_PIXELS = 36000000;
+const POROSITY_ANALYSIS_RESOLUTION_MODES = {
+  preview: {
+    label: "Fast preview",
+    targetScale: 0.25,
+    maxDimension: 3000,
+    maxPixels: 4000000,
+  },
+  balanced: {
+    label: "Balanced",
+    targetScale: 0.5,
+    maxDimension: 6000,
+    maxPixels: 12000000,
+  },
+  high: {
+    label: "High detail",
+    targetScale: 0.75,
+    maxDimension: 9000,
+    maxPixels: 24000000,
+  },
+  maximum: {
+    label: "Maximum available",
+    targetScale: 1,
+    maxDimension: POROSITY_MAX_ANALYSIS_DIMENSION,
+    maxPixels: POROSITY_MAX_ANALYSIS_PIXELS,
+  },
+};
 const TOOL_PALETTE_EDGE_MARGIN = 5;
 const TOOL_PALETTE_MIN_VISIBLE_WIDTH = 80;
 const TOOL_PALETTE_MIN_VISIBLE_HEIGHT = 32;
@@ -849,13 +946,17 @@ function restoreToolPaletteFromMinimized(palette, button) {
 }
 
 function clampOpenToolPalettes() {
-  [gridCountPalette, annotatePalette, measurePalette, snapshotPalette].forEach(
-    (palette) => {
+  [
+    gridCountPalette,
+    annotatePalette,
+    measurePalette,
+    snapshotPalette,
+    porosityPalette,
+  ].forEach((palette) => {
       if (palette && !palette.hidden) {
         clampToolPaletteToViewer(palette);
       }
-    }
-  );
+    });
 }
 
 function scheduleClampOpenToolPalettes() {
@@ -1062,6 +1163,38 @@ function toggleSnapshotPalette() {
   closeSnapshotPalette();
 }
 
+function openPorosityEstimator() {
+  if (!porosityPalette) return;
+
+  porosityPalette.hidden = false;
+  restoreToolPalettePosition(porosityPalette, "petroImage.porosityPalette");
+  openPorosityEstimatorButton?.setAttribute("aria-pressed", "true");
+  restoreToolPaletteFromMinimized(
+    porosityPalette,
+    minimizePorosityPaletteButton
+  );
+  clampToolPaletteToViewer(porosityPalette);
+  updatePorosityControls();
+}
+
+function closePorosityEstimator() {
+  if (!porosityPalette) return;
+
+  stopPorosityAoiMode();
+  stopPorosityPickMode();
+  porosityPalette.hidden = true;
+  openPorosityEstimatorButton?.setAttribute("aria-pressed", "false");
+}
+
+function togglePorosityEstimator() {
+  if (!porosityPalette || porosityPalette.hidden) {
+    openPorosityEstimator();
+    return;
+  }
+
+  closePorosityEstimator();
+}
+
 function updateSnapshotScalebarAvailability() {
   if (!snapshotIncludeScalebar) return;
 
@@ -1228,7 +1361,6 @@ function finishSnapshotSelection(endPixel) {
 
   snapshotSelectionRect = rect;
   renderSnapshotSelection(rect);
-  updateSnapshotStatus();
 }
 
 function renderSnapshotSelection(rect = snapshotSelectionRect) {
@@ -1352,6 +1484,7 @@ function getOpenSeadragonImageCanvas(targetViewer = viewer) {
     "measurement-overlay",
     "circle-overlay",
     "scale-overlay",
+    "porosity-overlay",
   ]);
   return Array.from(targetViewer.container.querySelectorAll("canvas")).find(
     (canvas) => !ignoredCanvasIds.has(canvas.id)
@@ -1380,6 +1513,2021 @@ function getSnapshotSourceRect(sourceCanvas, selectionRect) {
     width: Math.max(0, right - left),
     height: Math.max(0, bottom - top),
   };
+}
+
+function resizePorosityOverlay() {
+  const container = document.getElementById("viewer-container");
+  if (!porosityOverlay || !container) return;
+
+  const width = container.clientWidth;
+  const height = container.clientHeight;
+  if (porosityOverlay.width !== width || porosityOverlay.height !== height) {
+    porosityOverlay.width = width;
+    porosityOverlay.height = height;
+  }
+  porosityOverlay.style.width = `${width}px`;
+  porosityOverlay.style.height = `${height}px`;
+}
+
+function clearPorosityOverlay() {
+  if (!porosityOverlay) return;
+
+  resizePorosityOverlay();
+  const ctx = porosityOverlay.getContext("2d");
+  ctx?.clearRect(0, 0, porosityOverlay.width, porosityOverlay.height);
+}
+
+function createPorosityType(name, options = {}) {
+  return {
+    id: `porosity-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    name,
+    colorSamples: [],
+    result: null,
+    tolerance: options.tolerance ?? 35,
+    overlayColor: options.overlayColor || "#ff0000",
+    overlayOpacity: options.overlayOpacity ?? 100,
+    visible: options.visible ?? true,
+  };
+}
+
+function ensurePorosityTypes() {
+  if (porosityTypes.length === 0) {
+    const defaultType = createPorosityType("Porosity");
+    porosityTypes.push(defaultType);
+    activePorosityTypeId = defaultType.id;
+  }
+  if (!porosityTypes.some((type) => type.id === activePorosityTypeId)) {
+    activePorosityTypeId = porosityTypes[0]?.id || "";
+  }
+}
+
+function getActivePorosityType() {
+  ensurePorosityTypes();
+  return porosityTypes.find((type) => type.id === activePorosityTypeId) || null;
+}
+
+function clonePorosityMask(mask) {
+  if (!mask?.canvas) return null;
+
+  const canvas = document.createElement("canvas");
+  canvas.width = mask.canvas.width;
+  canvas.height = mask.canvas.height;
+  const ctx = canvas.getContext("2d");
+  ctx?.drawImage(mask.canvas, 0, 0);
+  return {
+    canvas,
+    rect: mask.rect ? { ...mask.rect } : null,
+    imageCorners: mask.imageCorners
+      ? {
+          topLeft: { ...mask.imageCorners.topLeft },
+          topRight: { ...mask.imageCorners.topRight },
+          bottomLeft: { ...mask.imageCorners.bottomLeft },
+        }
+      : null,
+    alphaData: mask.alphaData ? new Uint8Array(mask.alphaData) : null,
+  };
+}
+
+function clonePorosityResult(result) {
+  if (!result) return null;
+
+  return {
+    mask: clonePorosityMask(result.mask),
+    porePixels: result.porePixels,
+    totalPixels: result.totalPixels,
+    percent: result.percent,
+    analysisScale: result.analysisScale,
+    analysisWidth: result.analysisWidth,
+    analysisHeight: result.analysisHeight,
+    analysisResolutionMode: result.analysisResolutionMode || "balanced",
+    analysisResolutionLabel: result.analysisResolutionLabel || "",
+    tileSetIndices: result.tileSetIndices ? [...result.tileSetIndices] : null,
+    scope: result.scope || "aoi",
+  };
+}
+
+function clonePorosityState() {
+  return {
+    aoiModeActive: porosityAoiModeActive,
+    pickModeActive: porosityPickModeActive,
+    aoiImagePoints: porosityAoiImagePoints.map((point) => ({ ...point })),
+    aoiComplete: porosityAoiComplete,
+    aoiVisible: porosityAoiVisible,
+    activeTypeId: activePorosityTypeId,
+    selectedTileSetIndices: [...getPorositySelectedTileSetIndices()],
+    analysisResolutionMode: getPorosityAnalysisResolutionMode(),
+    types: porosityTypes.map((type) => ({
+      id: type.id,
+      name: type.name,
+      colorSamples: type.colorSamples.map((sample) => ({ ...sample })),
+      result: clonePorosityResult(type.result),
+      tolerance: type.tolerance,
+      overlayColor: type.overlayColor,
+      overlayOpacity: type.overlayOpacity,
+      visible: type.visible !== false,
+    })),
+  };
+}
+
+function restorePorosityState(state, message = "") {
+  if (!state) return;
+
+  porosityAoiModeActive = state.aoiModeActive;
+  porosityPickModeActive = state.pickModeActive;
+  porosityAoiMousePoint = null;
+  porosityAoiImagePoints = state.aoiImagePoints.map((point) => ({ ...point }));
+  porosityAoiComplete = state.aoiComplete;
+  porosityAoiVisible = state.aoiVisible !== false;
+  porositySelectedTileSetIndices = [...(state.selectedTileSetIndices || [])];
+  porosityAnalysisResolutionMode =
+    POROSITY_ANALYSIS_RESOLUTION_MODES[state.analysisResolutionMode]
+      ? state.analysisResolutionMode
+      : getPorosityAnalysisResolutionMode();
+  if (porosityResolutionMode) {
+    porosityResolutionMode.value = porosityAnalysisResolutionMode;
+  }
+  porosityTypes = state.types.map((type) => ({
+    ...type,
+    colorSamples: type.colorSamples.map((sample) => ({ ...sample })),
+    result: clonePorosityResult(type.result),
+  }));
+  activePorosityTypeId = state.activeTypeId;
+  ensurePorosityTypes();
+  renderPorosityTileSetSelect();
+  renderPorositySamples();
+  syncPorosityControlsFromActiveType();
+  drawPorosityOverlay();
+  updatePorosityResolutionStatus();
+  updatePorosityControls(message);
+}
+
+function renderPorosityTypeSelect(preferredValue = activePorosityTypeId) {
+  if (!porosityTypeSelect) return;
+
+  ensurePorosityTypes();
+  const targetValue = preferredValue || activePorosityTypeId;
+  porosityTypeSelect.innerHTML = "";
+  porosityTypes.forEach((type) => {
+    const option = document.createElement("option");
+    option.value = type.id;
+    option.textContent = type.name;
+    porosityTypeSelect.append(option);
+  });
+  porosityTypeSelect.value = porosityTypes.some(
+    (type) => type.id === targetValue
+  )
+    ? targetValue
+    : activePorosityTypeId;
+}
+
+function normalizePorosityTileSetIndex(index) {
+  const parsedIndex = Number(index);
+  if (!Number.isInteger(parsedIndex)) return null;
+  if (parsedIndex < 0 || parsedIndex >= tileSets().length) return null;
+  return parsedIndex;
+}
+
+function getDefaultPorosityTileSetIndices() {
+  return tileSets().length > 0 ? [getSnapshotTileSetIndex()] : [];
+}
+
+function getPorositySelectedTileSetIndices() {
+  let selectedIndices;
+  if (porosityTileSetSelect && porosityTileSetSelect.options.length > 0) {
+    selectedIndices = Array.from(porosityTileSetSelect.selectedOptions)
+      .map((option) => normalizePorosityTileSetIndex(option.value))
+      .filter((index) => index !== null);
+    porositySelectedTileSetIndices = [...new Set(selectedIndices)];
+    return porositySelectedTileSetIndices;
+  }
+
+  selectedIndices = porositySelectedTileSetIndices
+    .map(normalizePorosityTileSetIndex)
+    .filter((index) => index !== null);
+  porositySelectedTileSetIndices =
+    selectedIndices.length > 0
+      ? [...new Set(selectedIndices)]
+      : getDefaultPorosityTileSetIndices();
+  return porositySelectedTileSetIndices;
+}
+
+function renderPorosityTileSetSelect() {
+  if (!porosityTileSetSelect) return;
+
+  const selectedIndices = new Set(getPorositySelectedTileSetIndices());
+  porosityTileSetSelect.innerHTML = "";
+  tileSets().forEach((tileSet, index) => {
+    const option = document.createElement("option");
+    option.value = String(index);
+    option.textContent = tileSet.label || `Tile set ${index + 1}`;
+    option.selected = selectedIndices.has(index);
+    porosityTileSetSelect.append(option);
+  });
+  porosityTileSetSelect.size = Math.max(
+    1,
+    Math.min(3, Math.max(tileSets().length, 1))
+  );
+}
+
+function getPorosityTileSetLabel(index) {
+  const tileSet = tileSets()[index];
+  return tileSet?.label || `Tile set ${Number(index) + 1}`;
+}
+
+function normalizePorosityTypeSamples(type) {
+  if (!type) return;
+
+  const defaultTileSetIndex = getPorositySelectedTileSetIndices()[0] ?? 0;
+  type.colorSamples = (type.colorSamples || [])
+    .map((sample, index) => {
+      const tileSetIndex =
+        normalizePorosityTileSetIndex(sample.tileSetIndex) ?? defaultTileSetIndex;
+      return {
+        ...sample,
+        sampleSetId: sample.sampleSetId || `legacy-sample-${index}`,
+        tileSetIndex,
+      };
+    })
+    .filter((sample) => normalizePorosityTileSetIndex(sample.tileSetIndex) !== null);
+}
+
+function getPorosityAnalysisResolutionMode() {
+  const mode = porosityResolutionMode?.value || porosityAnalysisResolutionMode;
+  return POROSITY_ANALYSIS_RESOLUTION_MODES[mode] ? mode : "balanced";
+}
+
+function getPorosityAnalysisResolutionSettings() {
+  const mode = getPorosityAnalysisResolutionMode();
+  return {
+    mode,
+    ...POROSITY_ANALYSIS_RESOLUTION_MODES[mode],
+  };
+}
+
+function formatPorosityResolutionPercent(scale) {
+  if (!Number.isFinite(scale)) return "";
+  return `${Math.max(1, Math.round(scale * 100))}%`;
+}
+
+function updatePorosityResolutionStatus(exportSize = null) {
+  if (!porosityResolutionStatus) return;
+
+  const exportMode = exportSize?.mode;
+  const settings = exportMode && POROSITY_ANALYSIS_RESOLUTION_MODES[exportMode]
+    ? { mode: exportMode, ...POROSITY_ANALYSIS_RESOLUTION_MODES[exportMode] }
+    : getPorosityAnalysisResolutionSettings();
+  if (!exportSize) {
+    porosityResolutionStatus.textContent = `${settings.label} analysis resolution.`;
+    return;
+  }
+
+  const requestedScale = formatPorosityResolutionPercent(settings.targetScale);
+  const effectiveScale = formatPorosityResolutionPercent(exportSize.scale);
+  const dimensions = `${exportSize.width.toLocaleString()} x ${exportSize.height.toLocaleString()} px`;
+  porosityResolutionStatus.textContent =
+    effectiveScale === requestedScale
+      ? `${settings.label}: ${effectiveScale} source resolution (${dimensions}).`
+      : `${settings.label}: ${effectiveScale} source resolution after safety caps (${dimensions}).`;
+}
+
+function getPorosityResultExportSize(result) {
+  if (!result?.analysisWidth || !result?.analysisHeight) return null;
+
+  return {
+    width: result.analysisWidth,
+    height: result.analysisHeight,
+    scale: result.analysisScale,
+    mode: result.analysisResolutionMode || getPorosityAnalysisResolutionMode(),
+    label: result.analysisResolutionLabel || "",
+  };
+}
+
+function showPorosityActivityStatus(message) {
+  if (!porosityActivityStatus) return;
+
+  if (porosityActivityClearTimer !== null) {
+    window.clearTimeout(porosityActivityClearTimer);
+    porosityActivityClearTimer = null;
+  }
+  porosityActivityStatus.textContent = message;
+  porosityActivityStatus.hidden = !message;
+}
+
+function clearPorosityActivityStatus(delayMs = 600) {
+  if (!porosityActivityStatus) return;
+
+  if (porosityActivityClearTimer !== null) {
+    window.clearTimeout(porosityActivityClearTimer);
+  }
+  porosityActivityClearTimer = window.setTimeout(() => {
+    porosityActivityClearTimer = null;
+    porosityActivityStatus.textContent = "";
+    porosityActivityStatus.hidden = true;
+  }, delayMs);
+}
+
+function setPorosityProgress(message, percent = null) {
+  if (!porosityProgress) return;
+
+  if (porosityProgressClearTimer !== null) {
+    window.clearTimeout(porosityProgressClearTimer);
+    porosityProgressClearTimer = null;
+  }
+  porosityProgress.hidden = false;
+  if (porosityProgressLabel) {
+    porosityProgressLabel.textContent = message || "";
+  }
+  if (porosityProgressBar) {
+    const width = Number.isFinite(percent)
+      ? Math.max(0, Math.min(100, percent))
+      : 100;
+    porosityProgressBar.style.width = `${width}%`;
+    porosityProgressBar.classList.toggle(
+      "porosity-progress-bar-indeterminate",
+      !Number.isFinite(percent)
+    );
+  }
+}
+
+function clearPorosityProgress(delayMs = 600) {
+  if (!porosityProgress) return;
+
+  if (porosityProgressClearTimer !== null) {
+    window.clearTimeout(porosityProgressClearTimer);
+  }
+  porosityProgressClearTimer = window.setTimeout(() => {
+    porosityProgressClearTimer = null;
+    porosityProgress.hidden = true;
+    if (porosityProgressLabel) porosityProgressLabel.textContent = "";
+    if (porosityProgressBar) {
+      porosityProgressBar.style.width = "0%";
+      porosityProgressBar.classList.remove("porosity-progress-bar-indeterminate");
+    }
+  }, delayMs);
+}
+
+function syncPorosityControlsFromActiveType() {
+  const type = getActivePorosityType();
+  if (!type) return;
+
+  renderPorosityTileSetSelect();
+  normalizePorosityTypeSamples(type);
+  if (porosityTolerance) {
+    const min = Number(porosityTolerance.min || 5);
+    const max = Number(porosityTolerance.max || 100);
+    type.tolerance = Math.max(min, Math.min(max, Number(type.tolerance) || 35));
+    porosityTolerance.value = String(type.tolerance);
+  }
+  if (porosityToleranceValue) {
+    porosityToleranceValue.value = String(type.tolerance);
+  }
+  if (porosityOverlayColor) porosityOverlayColor.value = type.overlayColor;
+  setPorosityOverlayOpacityControlValue(type.overlayOpacity);
+  renderPorositySamples();
+  updatePorosityControls();
+}
+
+function clampPorosityOverlayOpacity(value) {
+  const min = Number(porosityOverlayOpacity?.min || 5);
+  const max = Number(porosityOverlayOpacity?.max || 100);
+  const numericValue = Number(value);
+  if (!Number.isFinite(numericValue)) return max;
+  return Math.max(min, Math.min(max, Math.round(numericValue)));
+}
+
+function setPorosityOverlayOpacityControlValue(value) {
+  const opacity = clampPorosityOverlayOpacity(value);
+  if (porosityOverlayOpacity) porosityOverlayOpacity.value = String(opacity);
+  if (porosityOverlayOpacityValue) {
+    porosityOverlayOpacityValue.value = String(opacity);
+  }
+  return opacity;
+}
+
+function syncActivePorosityTypeFromControls() {
+  const type = getActivePorosityType();
+  if (!type) return null;
+
+  type.tolerance = Number(porosityTolerance?.value || type.tolerance);
+  if (porosityToleranceValue) {
+    porosityToleranceValue.value = String(type.tolerance);
+  }
+  type.overlayColor = porosityOverlayColor?.value || type.overlayColor;
+  type.overlayOpacity = clampPorosityOverlayOpacity(
+    porosityOverlayOpacity?.value || type.overlayOpacity
+  );
+  setPorosityOverlayOpacityControlValue(type.overlayOpacity);
+  return type;
+}
+
+function setPorosityToleranceControlValue(value) {
+  const min = Number(porosityTolerance?.min || 5);
+  const max = Number(porosityTolerance?.max || 100);
+  const numericValue = Number(value);
+  const tolerance = Number.isFinite(numericValue)
+    ? Math.max(min, Math.min(max, Math.round(numericValue)))
+    : 35;
+  if (porosityTolerance) porosityTolerance.value = String(tolerance);
+  if (porosityToleranceValue) porosityToleranceValue.value = String(tolerance);
+  const activeType = getActivePorosityType();
+  if (activeType) activeType.tolerance = tolerance;
+  return activeType;
+}
+
+function addPorosityType(name) {
+  const trimmedName = (name || "").trim();
+  if (!trimmedName) return;
+
+  const type = createPorosityType(trimmedName, {
+    overlayColor: porosityTypes.length === 0 ? "#ff0000" : "#00d46a",
+    overlayOpacity: 100,
+  });
+  porosityTypes.push(type);
+  activePorosityTypeId = type.id;
+  renderPorosityTypeSelect(type.id);
+  syncPorosityControlsFromActiveType();
+  drawPorosityOverlay();
+}
+
+function renamePorosityType(typeId, name) {
+  const trimmedName = (name || "").trim();
+  if (!trimmedName) return;
+
+  const duplicateType = porosityTypes.find(
+    (type) =>
+      type.id !== typeId &&
+      type.name.toLowerCase() === trimmedName.toLowerCase()
+  );
+  if (duplicateType) {
+    alert("A porosity type with that name already exists.");
+    return;
+  }
+
+  const type = porosityTypes.find((candidate) => candidate.id === typeId);
+  if (!type) return;
+  type.name = trimmedName;
+  renderPorosityTypeSelect(type.id);
+  updatePorosityControls(`${type.name} renamed.`);
+}
+
+function deletePorosityType(typeId = activePorosityTypeId) {
+  if (porosityTypes.length <= 1) {
+    updatePorosityControls("At least one porosity type is required.");
+    return;
+  }
+
+  const typeIndex = porosityTypes.findIndex((type) => type.id === typeId);
+  if (typeIndex < 0) return;
+
+  const [removedType] = porosityTypes.splice(typeIndex, 1);
+  if (activePorosityTypeId === typeId) {
+    const nextType = porosityTypes[Math.min(typeIndex, porosityTypes.length - 1)];
+    activePorosityTypeId = nextType?.id || "";
+  }
+  porosityPickModeActive = false;
+  renderPorosityTypeSelect(activePorosityTypeId);
+  syncPorosityControlsFromActiveType();
+  drawPorosityOverlay();
+  updatePorosityControls(`${removedType.name} deleted.`);
+}
+
+function drawPorosityMask(ctx, mask) {
+  if (!ctx || !mask?.canvas) return;
+
+  ctx.imageSmoothingEnabled = false;
+  if (mask.imageCorners) {
+    const topLeft = getPorosityScreenPointFromImagePoint(
+      mask.imageCorners.topLeft
+    );
+    const topRight = getPorosityScreenPointFromImagePoint(
+      mask.imageCorners.topRight
+    );
+    const bottomLeft = getPorosityScreenPointFromImagePoint(
+      mask.imageCorners.bottomLeft
+    );
+    if (topLeft && topRight && bottomLeft) {
+      ctx.save();
+      ctx.setTransform(
+        (topRight.x - topLeft.x) / mask.canvas.width,
+        (topRight.y - topLeft.y) / mask.canvas.width,
+        (bottomLeft.x - topLeft.x) / mask.canvas.height,
+        (bottomLeft.y - topLeft.y) / mask.canvas.height,
+        topLeft.x,
+        topLeft.y
+      );
+      ctx.drawImage(mask.canvas, 0, 0);
+      ctx.restore();
+    }
+    return;
+  }
+
+  if (mask.rect) {
+    ctx.drawImage(mask.canvas, mask.rect.left, mask.rect.top);
+  }
+}
+
+function drawPorosityOverlay() {
+  if (!porosityOverlay) return;
+
+  clearPorosityOverlay();
+  const ctx = porosityOverlay.getContext("2d");
+  if (!ctx) return;
+
+  porosityTypes.forEach((type) => {
+    if (type.visible !== false) drawPorosityMask(ctx, type.result?.mask);
+  });
+
+  if (!porosityAoiVisible && !porosityAoiModeActive) return;
+
+  const points = getPorosityAoiScreenPoints();
+  if (points.length === 0) return;
+
+  ctx.save();
+  ctx.beginPath();
+  points.forEach((point, index) => {
+    if (index === 0) {
+      ctx.moveTo(point.x, point.y);
+    } else {
+      ctx.lineTo(point.x, point.y);
+    }
+  });
+  if (
+    porosityAoiModeActive &&
+    !porosityAoiComplete &&
+    porosityAoiMousePoint &&
+    points.length > 0
+  ) {
+    ctx.lineTo(porosityAoiMousePoint.x, porosityAoiMousePoint.y);
+  }
+  if (porosityAoiComplete && points.length >= 3) {
+    ctx.closePath();
+  }
+  ctx.lineJoin = "round";
+  ctx.lineCap = "round";
+  ctx.lineWidth = porosityAoiComplete ? 5 : 4;
+  ctx.strokeStyle = "#111111";
+  ctx.stroke();
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = porosityAoiComplete ? "#ffcc00" : "#2f80ed";
+  ctx.stroke();
+
+  points.forEach((point, index) => {
+    ctx.beginPath();
+    ctx.arc(
+      point.x,
+      point.y,
+      index === porosityAoiSelectedVertexIndex ? 5.5 : 4,
+      0,
+      Math.PI * 2
+    );
+    ctx.fillStyle =
+      index === porosityAoiSelectedVertexIndex ? "#2f80ed" : "#ffffff";
+    ctx.fill();
+    ctx.strokeStyle = "#111111";
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+  });
+  ctx.restore();
+}
+
+function removeDuplicatePorosityAoiFinishPoint() {
+  if (porosityAoiImagePoints.length < 2) return;
+
+  const points = getPorosityAoiScreenPoints();
+  const lastPoint = points[points.length - 1];
+  const previousPoint = points[points.length - 2];
+  if (!lastPoint || !previousPoint) return;
+  if (Math.hypot(lastPoint.x - previousPoint.x, lastPoint.y - previousPoint.y) <= 3) {
+    porosityAoiImagePoints.pop();
+  }
+}
+
+function getPorosityToleranceValue() {
+  const activeType = syncActivePorosityTypeFromControls();
+  return getPorosityToleranceValueForType(activeType);
+}
+
+function getPorosityToleranceValueForType(type) {
+  const value = Number(type?.tolerance ?? 35);
+  return Number.isFinite(value) ? value : 35;
+}
+
+function getPorosityOverlayColorRgb() {
+  const activeType = syncActivePorosityTypeFromControls();
+  return getPorosityOverlayColorRgbForType(activeType);
+}
+
+function getPorosityOverlayColorRgbForType(type) {
+  const rgba = hexToRgba(type?.overlayColor || "#ff0000", 1);
+  const match = rgba.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+  if (!match) return { r: 255, g: 112, b: 36 };
+  return {
+    r: Number(match[1]),
+    g: Number(match[2]),
+    b: Number(match[3]),
+  };
+}
+
+function getPorosityOverlayAlpha() {
+  const activeType = syncActivePorosityTypeFromControls();
+  return getPorosityOverlayAlphaForType(activeType);
+}
+
+function getPorosityOverlayAlphaForType(type) {
+  const value = Number(type?.overlayOpacity ?? 100);
+  const percent = Number.isFinite(value) ? value : 100;
+  return Math.max(0, Math.min(255, Math.round((percent / 100) * 255)));
+}
+
+function recolorPorosityMask() {
+  const activeType = getActivePorosityType();
+  const mask = activeType?.result?.mask;
+  if (!mask?.canvas) return false;
+
+  const ctx = mask.canvas.getContext("2d", { willReadFrequently: true });
+  if (!ctx) return false;
+
+  const imageData = ctx.getImageData(0, 0, mask.canvas.width, mask.canvas.height);
+  const overlayColor = getPorosityOverlayColorRgb();
+  const overlayAlpha = getPorosityOverlayAlpha();
+
+  for (let index = 0; index < imageData.data.length; index += 4) {
+    if (imageData.data[index + 3] === 0) continue;
+    imageData.data[index] = overlayColor.r;
+    imageData.data[index + 1] = overlayColor.g;
+    imageData.data[index + 2] = overlayColor.b;
+    imageData.data[index + 3] = overlayAlpha;
+  }
+
+  ctx.putImageData(imageData, 0, 0);
+  drawPorosityOverlay();
+  renderPorosityResults();
+  return true;
+}
+
+function schedulePorosityMaskRecolor() {
+  if (!getActivePorosityType()?.result) {
+    drawPorosityOverlay();
+    return;
+  }
+
+  if (porosityRecolorFrame !== null) {
+    cancelAnimationFrame(porosityRecolorFrame);
+  }
+  porosityRecolorFrame = requestAnimationFrame(() => {
+    porosityRecolorFrame = null;
+    recolorPorosityMask();
+  });
+}
+
+function formatPorosityColorSample(sample) {
+  return `rgb(${sample.r}, ${sample.g}, ${sample.b})`;
+}
+
+function renderPorositySamples() {
+  if (!porositySamples) return;
+
+  const activeType = getActivePorosityType();
+  normalizePorosityTypeSamples(activeType);
+  const samples = activeType?.colorSamples || [];
+  const selectedTileSetIndices = getPorositySelectedTileSetIndices();
+  porositySamples.innerHTML = "";
+
+  selectedTileSetIndices.forEach((tileSetIndex) => {
+    const row = document.createElement("div");
+    row.className = "porosity-sample-row";
+    const label = document.createElement("span");
+    label.className = "porosity-sample-label";
+    label.textContent = getPorosityTileSetLabel(tileSetIndex);
+    row.append(label);
+
+    const swatches = document.createElement("span");
+    swatches.className = "porosity-sample-swatches";
+    samples
+      .filter((sample) => sample.tileSetIndex === tileSetIndex)
+      .forEach((sample, index) => {
+        const swatch = document.createElement("span");
+        swatch.className = "porosity-sample";
+        swatch.style.backgroundColor = formatPorosityColorSample(sample);
+        swatch.title = `${getPorosityTileSetLabel(tileSetIndex)} sample ${
+          index + 1
+        }: ${formatPorosityColorSample(sample)}`;
+        swatches.append(swatch);
+      });
+    row.append(swatches);
+    porositySamples.append(row);
+  });
+}
+
+function formatPorosityResultPercent(result) {
+  return result ? `${result.percent.toFixed(1)}%` : "Not estimated";
+}
+
+function createPorosityResultBar(percent, color) {
+  const bar = document.createElement("span");
+  bar.className = "porosity-result-bar";
+  const fill = document.createElement("span");
+  fill.className = "porosity-result-bar-fill";
+  fill.style.width = `${Math.max(0, Math.min(100, percent || 0))}%`;
+  fill.style.backgroundColor = color || "#ff0000";
+  bar.append(fill);
+  return bar;
+}
+
+function renderPorosityResults() {
+  if (!porosityResults) return;
+
+  ensurePorosityTypes();
+  porosityResults.innerHTML = "";
+
+  const estimatedResults = porosityTypes
+    .map((type) => type.result)
+    .filter(Boolean);
+  const resultScopes = new Set(
+    estimatedResults.map((result) => result.scope || "aoi")
+  );
+  const hasMixedResultScopes = resultScopes.size > 1;
+  let totalPorePixels = 0;
+  let totalPixels = 0;
+  porosityTypes.forEach((type) => {
+    const row = document.createElement("div");
+    row.className = "porosity-result-row";
+    if (type.id === activePorosityTypeId) row.classList.add("is-active");
+    if (type.visible === false) row.classList.add("is-hidden-type");
+    row.tabIndex = 0;
+    row.setAttribute("role", "button");
+    row.title = `Select ${type.name}`;
+    row.addEventListener("click", () => {
+      activePorosityTypeId = type.id;
+      porosityPickModeActive = false;
+      syncPorosityControlsFromActiveType();
+      drawPorosityOverlay();
+    });
+    row.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      event.preventDefault();
+      row.click();
+    });
+
+    const visibilityButton = document.createElement("button");
+    visibilityButton.type = "button";
+    visibilityButton.className = "annotation-visibility-button";
+    const isVisible = type.visible !== false;
+    visibilityButton.title = isVisible
+      ? `Hide ${type.name} overlay`
+      : `Show ${type.name} overlay`;
+    visibilityButton.setAttribute(
+      "aria-label",
+      isVisible ? `Hide ${type.name} overlay` : `Show ${type.name} overlay`
+    );
+    visibilityButton.appendChild(createVisibilityIcon(isVisible));
+    visibilityButton.addEventListener("click", (event) => {
+      event.stopPropagation();
+      type.visible = !isVisible;
+      drawPorosityOverlay();
+      updatePorosityControls(
+        `${type.name} overlay ${type.visible ? "shown" : "hidden"}.`
+      );
+    });
+
+    const nameCell = document.createElement("span");
+    nameCell.className = "porosity-result-name-cell";
+    const swatch = document.createElement("span");
+    swatch.className = "porosity-result-swatch";
+    swatch.style.backgroundColor = type.overlayColor || "#ff0000";
+    const name = document.createElement("span");
+    name.className = "porosity-result-name";
+    name.textContent = type.name;
+    nameCell.append(swatch, name);
+    if (type.result) {
+      const scopeBadge = document.createElement("span");
+      scopeBadge.className = "porosity-result-scope";
+      scopeBadge.textContent = type.result.scope === "view" ? "View" : "AOI";
+      nameCell.append(scopeBadge);
+    }
+
+    const areaCell = document.createElement("span");
+    areaCell.className = "porosity-result-area-cell";
+    const percentText = document.createElement("span");
+    percentText.textContent = formatPorosityResultPercent(type.result);
+    areaCell.append(percentText);
+    if (type.result && !hasMixedResultScopes) {
+      areaCell.append(createPorosityResultBar(type.result.percent, type.overlayColor));
+      totalPorePixels += type.result.porePixels;
+      totalPixels = Math.max(totalPixels, type.result.totalPixels || 0);
+    } else if (type.result) {
+      areaCell.append(createPorosityResultBar(type.result.percent, type.overlayColor));
+    }
+
+    row.append(visibilityButton, nameCell, areaCell);
+    porosityResults.append(row);
+  });
+
+  const totalRow = document.createElement("div");
+  totalRow.className = "porosity-result-total-row";
+  const totalSpacer = document.createElement("span");
+  const totalNameCell = document.createElement("span");
+  totalNameCell.textContent = "Total";
+  const totalAreaCell = document.createElement("span");
+  totalAreaCell.className = "porosity-result-area-cell";
+  const totalPercent =
+    !hasMixedResultScopes && totalPixels > 0
+      ? (totalPorePixels / totalPixels) * 100
+      : null;
+  const totalPercentText = document.createElement("span");
+  totalPercentText.textContent = hasMixedResultScopes
+    ? "Mixed scopes"
+    : totalPercent === null
+      ? "Not estimated"
+      : `${totalPercent.toFixed(1)}%`;
+  totalAreaCell.append(totalPercentText);
+  if (totalPercent !== null) {
+    totalAreaCell.append(createPorosityResultBar(totalPercent, "#333333"));
+  }
+  totalRow.append(totalSpacer, totalNameCell, totalAreaCell);
+  porosityResults.append(totalRow);
+}
+
+function updatePorosityControls(message) {
+  if (porosityResolutionMode) {
+    porosityResolutionMode.value = getPorosityAnalysisResolutionMode();
+  }
+  renderPorosityTypeSelect(activePorosityTypeId);
+  renderPorosityResults();
+  const activeType = getActivePorosityType();
+  const hasAoi = porosityAoiComplete && porosityAoiImagePoints.length >= 3;
+  const hasDraftAoi = porosityAoiImagePoints.length > 0;
+  const hasSelectedTileSets = getPorositySelectedTileSetIndices().length > 0;
+  const hasAnySamples = (activeType?.colorSamples || []).length > 0;
+  const hasSamples = hasPorositySamplesForSelectedTileSets(activeType);
+  const canAnalyze = hasAoi && hasSamples;
+  const workflowEnabled = hasAoi;
+  const porosityViewerContainer = document.getElementById("viewer-container");
+
+  porosityPalette?.classList.toggle("porosity-workflow-disabled", !workflowEnabled);
+  porosityViewerContainer?.classList.toggle(
+    "porosity-pick-cursor",
+    porosityPickModeActive
+  );
+  porosityViewerContainer?.classList.toggle(
+    "porosity-aoi-editing",
+    hasAoi && !porosityPickModeActive && !porosityAoiModeActive
+  );
+
+  if (porosityDrawAoiButton) {
+    porosityDrawAoiButton.classList.toggle(
+      "porosity-pick-active",
+      porosityAoiModeActive
+    );
+    porosityDrawAoiButton.textContent = porosityAoiModeActive
+      ? "Drawing..."
+      : "Draw AOI";
+  }
+  if (porosityRenameTypeButton) {
+    porosityRenameTypeButton.disabled = !workflowEnabled || !activeType;
+    porosityRenameTypeButton.title = activeType
+      ? `Rename ${activeType.name}`
+      : "Rename porosity type";
+  }
+  if (porosityDeleteTypeButton) {
+    porosityDeleteTypeButton.disabled = !workflowEnabled || porosityTypes.length <= 1;
+    porosityDeleteTypeButton.title =
+      porosityTypes.length <= 1
+        ? "At least one porosity type is required"
+        : `Delete ${activeType?.name || "porosity type"}`;
+  }
+  if (porosityToggleAoiButton) {
+    porosityToggleAoiButton.disabled = !hasAoi;
+    porosityToggleAoiButton.setAttribute(
+      "aria-pressed",
+      porosityAoiVisible ? "true" : "false"
+    );
+    porosityToggleAoiButton.title = porosityAoiVisible ? "Hide AOI" : "Show AOI";
+    porosityToggleAoiButton.setAttribute(
+      "aria-label",
+      porosityAoiVisible ? "Hide AOI" : "Show AOI"
+    );
+    porosityToggleAoiButton.classList.toggle(
+      "is-off",
+      !porosityAoiVisible
+    );
+  }
+
+  if (porosityPickColorButton) {
+    porosityPickColorButton.disabled = !hasAoi || !hasSelectedTileSets;
+    porosityPickColorButton.classList.toggle(
+      "porosity-pick-active",
+      porosityPickModeActive
+    );
+    porosityPickColorButton.textContent = porosityPickModeActive
+      ? "Picking..."
+      : "Pick Porosity";
+  }
+  if (porosityTypeSelect) porosityTypeSelect.disabled = !workflowEnabled;
+  if (porosityAddTypeButton) porosityAddTypeButton.disabled = !workflowEnabled;
+  if (porosityTileSetSelect) porosityTileSetSelect.disabled = !workflowEnabled;
+  if (porosityEstimateButton) {
+    porosityEstimateButton.disabled = !canAnalyze;
+  }
+  if (porosityEstimateViewButton) {
+    porosityEstimateViewButton.disabled = !canAnalyze;
+  }
+  const activeResultExportSize = getPorosityResultExportSize(activeType?.result);
+  updatePorosityResolutionStatus(activeResultExportSize);
+  if (porosityUndoColorButton) {
+    porosityUndoColorButton.disabled = !hasAnySamples && !porosityUndoState;
+    porosityUndoColorButton.textContent =
+      !hasAnySamples && porosityUndoState ? "Undo Reset" : "Undo";
+  }
+  if (porosityClearButton) {
+    porosityClearButton.disabled =
+      !hasDraftAoi &&
+      porosityTypes.every(
+        (type) => type.colorSamples.length === 0 && !type.result
+      ) &&
+      !porosityPickModeActive &&
+      !porosityAoiModeActive;
+  }
+  [
+    porosityTolerance,
+    porosityToleranceValue,
+    porosityOverlayColor,
+    porosityOverlayOpacity,
+    porosityOverlayOpacityValue,
+  ].forEach((control) => {
+    if (control) control.disabled = !workflowEnabled;
+  });
+
+  if (!porosityStatus) return;
+  if (message) {
+    porosityStatus.textContent = message;
+  } else if (activeType?.result) {
+    porosityStatus.textContent = `${activeType.name}: ${activeType.result.percent.toFixed(
+      1
+    )}% (${activeType.result.porePixels.toLocaleString()} of ${activeType.result.totalPixels.toLocaleString()} pixels).`;
+  } else if (porosityAoiModeActive) {
+    porosityStatus.textContent =
+      porosityAoiImagePoints.length < 3
+        ? "Click at least three AOI vertices. Drag to pan and scroll to zoom."
+        : "Double-click to finish the AOI, or keep adding vertices.";
+  } else if (!hasAoi) {
+    porosityStatus.textContent = "Draw a polygon AOI, then pick pore colors.";
+  } else if (!hasSelectedTileSets) {
+    porosityStatus.textContent = "Select at least one tile set.";
+  } else if (!hasSamples) {
+    porosityStatus.textContent =
+      "Pick pore colors for each selected tile set.";
+  } else {
+    const sampleCount = activeType?.colorSamples.length || 0;
+    porosityStatus.textContent = `${activeType?.name || "Porosity"}: ${sampleCount} color sample${
+      sampleCount === 1 ? "" : "s"
+    }. Estimate when ready.`;
+  }
+}
+
+function resetPorosityAnalysis(options = {}) {
+  const {
+    keepAoi = false,
+    keepSamples = false,
+    message = "",
+    undoable = false,
+  } = options;
+  if (undoable) {
+    porosityUndoState = clonePorosityState();
+  } else {
+    porosityUndoState = null;
+  }
+  porosityAoiModeActive = false;
+  porosityPickModeActive = false;
+  porosityAoiMousePoint = null;
+  porosityAoiSelectedVertexIndex = null;
+  porosityAoiDragState = null;
+  porosityAoiVisible = true;
+  porosityEstimateGeneration += 1;
+  if (porosityToleranceReestimateTimer !== null) {
+    window.clearTimeout(porosityToleranceReestimateTimer);
+    porosityToleranceReestimateTimer = null;
+  }
+  if (porosityActivityClearTimer !== null) {
+    window.clearTimeout(porosityActivityClearTimer);
+    porosityActivityClearTimer = null;
+  }
+  if (porosityActivityStatus) {
+    porosityActivityStatus.textContent = "";
+    porosityActivityStatus.hidden = true;
+  }
+  if (porosityProgress) {
+    if (porosityProgressClearTimer !== null) {
+      window.clearTimeout(porosityProgressClearTimer);
+      porosityProgressClearTimer = null;
+    }
+    porosityProgress.hidden = true;
+  }
+  if (porosityRecolorFrame !== null) {
+    cancelAnimationFrame(porosityRecolorFrame);
+    porosityRecolorFrame = null;
+  }
+  if (!keepAoi) {
+    porosityAoiImagePoints = [];
+    porosityAoiComplete = false;
+  }
+  if (!keepSamples) {
+    porosityTypes.forEach((type) => {
+      type.colorSamples = [];
+      type.result = null;
+    });
+    renderPorositySamples();
+  } else {
+    porosityTypes.forEach((type) => {
+      type.result = null;
+    });
+  }
+  clearPorosityOverlay();
+  drawPorosityOverlay();
+  updatePorosityControls(message);
+}
+
+function undoPorosityReset() {
+  if (!porosityUndoState) return false;
+
+  const state = porosityUndoState;
+  porosityUndoState = null;
+  restorePorosityState(state, "Reset undone.");
+  return true;
+}
+
+function stopPorosityAoiMode() {
+  porosityAoiModeActive = false;
+  porosityAoiDragState = null;
+  updatePorosityControls();
+}
+
+function stopPorosityPickMode() {
+  porosityPickModeActive = false;
+  updatePorosityControls();
+}
+
+function refreshPorosityOverlayForViewportChange() {
+  drawPorosityOverlay();
+}
+
+function invalidatePorosityResultsForAoiEdit() {
+  porosityEstimateGeneration += 1;
+  porosityTypes.forEach((type) => {
+    type.result = null;
+  });
+}
+
+function getPorosityViewerPixelFromClientPoint(clientX, clientY) {
+  if (!viewerContainer) return null;
+
+  const rect = viewerContainer.getBoundingClientRect();
+  return new OpenSeadragon.Point(clientX - rect.left, clientY - rect.top);
+}
+
+function getPorosityImagePointFromClientPoint(clientX, clientY) {
+  const viewerPixel = getPorosityViewerPixelFromClientPoint(clientX, clientY);
+  return viewerPixel ? getPorosityImagePointFromViewerPixel(viewerPixel) : null;
+}
+
+function getPorosityAoiVertexHit(viewerPixel, maxDistance = 9) {
+  if (!porosityAoiComplete || !viewerPixel) return null;
+
+  const points = getPorosityAoiScreenPoints();
+  let bestHit = null;
+  points.forEach((point, index) => {
+    const distance = Math.hypot(point.x - viewerPixel.x, point.y - viewerPixel.y);
+    if (distance <= maxDistance && (!bestHit || distance < bestHit.distance)) {
+      bestHit = { index, distance };
+    }
+  });
+  return bestHit;
+}
+
+function getPointToSegmentDistance(point, start, end) {
+  const dx = end.x - start.x;
+  const dy = end.y - start.y;
+  const lengthSquared = dx * dx + dy * dy;
+  if (lengthSquared === 0) return Math.hypot(point.x - start.x, point.y - start.y);
+
+  const t = Math.max(
+    0,
+    Math.min(1, ((point.x - start.x) * dx + (point.y - start.y) * dy) / lengthSquared)
+  );
+  const projection = {
+    x: start.x + t * dx,
+    y: start.y + t * dy,
+  };
+  return Math.hypot(point.x - projection.x, point.y - projection.y);
+}
+
+function getPorosityAoiEdgeHit(viewerPixel, maxDistance = 8) {
+  if (!porosityAoiComplete || !viewerPixel || porosityAoiImagePoints.length < 3) {
+    return null;
+  }
+
+  const points = getPorosityAoiScreenPoints();
+  let bestHit = null;
+  points.forEach((point, index) => {
+    const nextIndex = (index + 1) % points.length;
+    const distance = getPointToSegmentDistance(
+      viewerPixel,
+      point,
+      points[nextIndex]
+    );
+    if (distance <= maxDistance && (!bestHit || distance < bestHit.distance)) {
+      bestHit = {
+        insertIndex: nextIndex,
+        distance,
+      };
+    }
+  });
+  return bestHit;
+}
+
+function deletePorosityAoiVertex(index) {
+  if (
+    !porosityAoiComplete ||
+    index === null ||
+    index < 0 ||
+    index >= porosityAoiImagePoints.length ||
+    porosityAoiImagePoints.length <= 3
+  ) {
+    updatePorosityControls("AOI needs at least three vertices.");
+    return false;
+  }
+
+  porosityAoiImagePoints.splice(index, 1);
+  porosityAoiSelectedVertexIndex = null;
+  invalidatePorosityResultsForAoiEdit();
+  drawPorosityOverlay();
+  updatePorosityControls("AOI vertex deleted. Estimate again when ready.");
+  return true;
+}
+
+function insertPorosityAoiVertex(viewerPixel) {
+  const edgeHit = getPorosityAoiEdgeHit(viewerPixel);
+  if (!edgeHit) return false;
+
+  const imagePoint = getPorosityImagePointFromViewerPixel(viewerPixel);
+  if (!imagePoint) return false;
+
+  porosityAoiImagePoints.splice(edgeHit.insertIndex, 0, imagePoint);
+  porosityAoiSelectedVertexIndex = edgeHit.insertIndex;
+  invalidatePorosityResultsForAoiEdit();
+  drawPorosityOverlay();
+  updatePorosityControls("AOI vertex added. Estimate again when ready.");
+  return true;
+}
+
+function constrainPorosityAoiPointToPrevious(imagePoint) {
+  const previousPoint = porosityAoiImagePoints[porosityAoiImagePoints.length - 1];
+  if (!imagePoint || !previousPoint) return imagePoint;
+
+  const dx = Math.abs(imagePoint.x - previousPoint.x);
+  const dy = Math.abs(imagePoint.y - previousPoint.y);
+  return dx >= dy
+    ? { x: imagePoint.x, y: previousPoint.y }
+    : { x: previousPoint.x, y: imagePoint.y };
+}
+
+function startPorosityAoiVertexDrag(event) {
+  if (!porosityAoiComplete || porosityPickModeActive || porosityAoiModeActive) {
+    return false;
+  }
+
+  const viewerPixel = getPorosityViewerPixelFromClientPoint(
+    event.clientX,
+    event.clientY
+  );
+  const vertexHit = getPorosityAoiVertexHit(viewerPixel);
+  if (!vertexHit) return false;
+
+  event.preventDefault();
+  event.stopPropagation();
+  if (event.altKey) {
+    deletePorosityAoiVertex(vertexHit.index);
+    return true;
+  }
+
+  porosityAoiSelectedVertexIndex = vertexHit.index;
+  porosityAoiDragState = {
+    pointerId: event.pointerId,
+    vertexIndex: vertexHit.index,
+    moved: false,
+  };
+  viewerContainer?.setPointerCapture?.(event.pointerId);
+  drawPorosityOverlay();
+  updatePorosityControls("Drag AOI vertex, or press Delete to remove it.");
+  return true;
+}
+
+function updatePorosityAoiVertexDrag(event) {
+  if (!porosityAoiDragState) return;
+
+  event.preventDefault();
+  event.stopPropagation();
+  const imagePoint = getPorosityImagePointFromClientPoint(
+    event.clientX,
+    event.clientY
+  );
+  if (!imagePoint) return;
+
+  porosityAoiImagePoints[porosityAoiDragState.vertexIndex] = imagePoint;
+  porosityAoiDragState.moved = true;
+  invalidatePorosityResultsForAoiEdit();
+  drawPorosityOverlay();
+}
+
+function finishPorosityAoiVertexDrag(event) {
+  if (!porosityAoiDragState) return;
+
+  event.preventDefault();
+  event.stopPropagation();
+  viewerContainer?.releasePointerCapture?.(porosityAoiDragState.pointerId);
+  const moved = porosityAoiDragState.moved;
+  porosityAoiDragState = null;
+  updatePorosityControls(
+    moved ? "AOI vertex moved. Estimate again when ready." : undefined
+  );
+}
+
+async function reestimatePorosityTypesWithResults(options = {}) {
+  showPorosityActivityStatus("Updating porosity estimation...");
+  const estimateGeneration = options.estimateGeneration ?? porosityEstimateGeneration;
+  const typesToEstimate = porosityTypes.filter(
+    (type) => type.result || type.id === activePorosityTypeId
+  );
+  const nextResults = new Map();
+  for (const type of typesToEstimate) {
+    if (type.colorSamples.length > 0) {
+      const result = await estimatePorosity({
+        ...options,
+        dryRun: true,
+        typeId: type.id,
+        resultOverrides: nextResults,
+        estimateGeneration,
+        scope: options.scope || type.result?.scope || "aoi",
+      });
+      if (estimateGeneration !== porosityEstimateGeneration) return;
+      if (result) {
+        nextResults.set(type.id, result);
+      }
+    }
+  }
+  nextResults.forEach((result, typeId) => {
+    const type = porosityTypes.find((candidate) => candidate.id === typeId);
+    if (type) type.result = result;
+  });
+  drawPorosityOverlay();
+  renderPorosityResults();
+  if (!options.preserveStatus) {
+    updatePorosityControls();
+  }
+  clearPorosityActivityStatus();
+}
+
+function startPorosityAoiMode() {
+  deactivateAnnotationModes();
+  closeAnnotationSettingsPopover();
+  closeCircleAnnotationOptionsPopover();
+  closeReferenceCircleSettingsPopover();
+  closeScaleWizard();
+  if (typeof stopMeasurementMode === "function") {
+    stopMeasurementMode();
+  }
+
+  porosityAoiModeActive = true;
+  porosityPickModeActive = false;
+  porosityAoiSelectedVertexIndex = null;
+  porosityAoiDragState = null;
+  porosityAoiVisible = true;
+  porosityAoiImagePoints = [];
+  porosityAoiComplete = false;
+  porosityTypes.forEach((type) => {
+    type.result = null;
+  });
+  if (porosityToleranceReestimateTimer !== null) {
+    window.clearTimeout(porosityToleranceReestimateTimer);
+    porosityToleranceReestimateTimer = null;
+  }
+  if (porosityRecolorFrame !== null) {
+    cancelAnimationFrame(porosityRecolorFrame);
+    porosityRecolorFrame = null;
+  }
+  drawPorosityOverlay();
+  updatePorosityControls();
+}
+
+function finishPorosityAoi() {
+  removeDuplicatePorosityAoiFinishPoint();
+  if (porosityAoiImagePoints.length < 3) {
+    updatePorosityControls("Add at least three AOI vertices.");
+    return;
+  }
+
+  porosityAoiModeActive = false;
+  porosityAoiComplete = true;
+  porosityAoiSelectedVertexIndex = null;
+  porosityTypes.forEach((type) => {
+    type.result = null;
+  });
+  drawPorosityOverlay();
+  updatePorosityControls("AOI ready. Pick pore colors inside it.");
+}
+
+function getPorosityImagePointFromViewerPixel(viewerPixel) {
+  const image = viewer.world.getItemAt(0);
+  if (!image) return null;
+
+  const viewportPoint = viewer.viewport.pointFromPixel(viewerPixel);
+  const imagePoint = image.viewportToImageCoordinates(viewportPoint);
+  return { x: imagePoint.x, y: imagePoint.y };
+}
+
+function getPorosityScreenPointFromImagePoint(imagePoint) {
+  const image = viewer.world.getItemAt(0);
+  if (!image || !imagePoint) return null;
+
+  const viewportPoint = image.imageToViewportCoordinates(imagePoint.x, imagePoint.y);
+  return viewer.viewport.viewportToViewerElementCoordinates(viewportPoint);
+}
+
+function getPorosityAoiScreenPoints() {
+  return porosityAoiImagePoints
+    .map(getPorosityScreenPointFromImagePoint)
+    .filter(Boolean);
+}
+
+function getPorosityAoiImageBounds() {
+  if (porosityAoiImagePoints.length < 3) return null;
+
+  const minX = Math.floor(Math.min(...porosityAoiImagePoints.map((point) => point.x)));
+  const minY = Math.floor(Math.min(...porosityAoiImagePoints.map((point) => point.y)));
+  const maxX = Math.ceil(Math.max(...porosityAoiImagePoints.map((point) => point.x)));
+  const maxY = Math.ceil(Math.max(...porosityAoiImagePoints.map((point) => point.y)));
+  const width = maxX - minX;
+  const height = maxY - minY;
+  if (width < 1 || height < 1) return null;
+  return { minX, minY, maxX, maxY, width, height };
+}
+
+function getPorosityCurrentViewImagePolygon() {
+  const container = viewer?.container;
+  if (!container) return [];
+
+  return [
+    new OpenSeadragon.Point(0, 0),
+    new OpenSeadragon.Point(container.clientWidth, 0),
+    new OpenSeadragon.Point(container.clientWidth, container.clientHeight),
+    new OpenSeadragon.Point(0, container.clientHeight),
+  ]
+    .map(getPorosityImagePointFromViewerPixel)
+    .filter(Boolean);
+}
+
+function getPorosityImageBoundsForPoints(points) {
+  if (!points?.length) return null;
+
+  const minX = Math.floor(Math.min(...points.map((point) => point.x)));
+  const minY = Math.floor(Math.min(...points.map((point) => point.y)));
+  const maxX = Math.ceil(Math.max(...points.map((point) => point.x)));
+  const maxY = Math.ceil(Math.max(...points.map((point) => point.y)));
+  const width = maxX - minX;
+  const height = maxY - minY;
+  if (width < 1 || height < 1) return null;
+  return { minX, minY, maxX, maxY, width, height };
+}
+
+function getPorosityViewImageBounds(aoiBounds, viewPolygon) {
+  const viewBounds = getPorosityImageBoundsForPoints(viewPolygon);
+  if (!aoiBounds || !viewBounds) return null;
+
+  const minX = Math.max(aoiBounds.minX, viewBounds.minX);
+  const minY = Math.max(aoiBounds.minY, viewBounds.minY);
+  const maxX = Math.min(aoiBounds.maxX, viewBounds.maxX);
+  const maxY = Math.min(aoiBounds.maxY, viewBounds.maxY);
+  const width = maxX - minX;
+  const height = maxY - minY;
+  if (width < 1 || height < 1) return null;
+  return { minX, minY, maxX, maxY, width, height };
+}
+
+function getPorosityAoiViewportBounds(imageBounds) {
+  const image = viewer.world.getItemAt(0);
+  if (!image || !imageBounds) return null;
+
+  const topLeft = image.imageToViewportCoordinates(
+    new OpenSeadragon.Point(imageBounds.minX, imageBounds.minY)
+  );
+  const bottomRight = image.imageToViewportCoordinates(
+    new OpenSeadragon.Point(imageBounds.maxX, imageBounds.maxY)
+  );
+  return new OpenSeadragon.Rect(
+    Math.min(topLeft.x, bottomRight.x),
+    Math.min(topLeft.y, bottomRight.y),
+    Math.abs(bottomRight.x - topLeft.x),
+    Math.abs(bottomRight.y - topLeft.y)
+  );
+}
+
+function getPorosityAnalysisExportSize(imageBounds) {
+  if (!imageBounds) return null;
+
+  const settings = getPorosityAnalysisResolutionSettings();
+  const sourceWidth = Math.max(1, Math.round(imageBounds.width));
+  const sourceHeight = Math.max(1, Math.round(imageBounds.height));
+  let width = Math.max(1, Math.round(sourceWidth * settings.targetScale));
+  let height = Math.max(1, Math.round(sourceHeight * settings.targetScale));
+  const sideScale = Math.min(
+    1,
+    settings.maxDimension / width,
+    settings.maxDimension / height
+  );
+  const areaScale = Math.min(
+    1,
+    Math.sqrt(settings.maxPixels / (width * height))
+  );
+  const capScale = Math.min(sideScale, areaScale);
+  if (capScale < 1) {
+    width = Math.max(1, Math.round(width * capScale));
+    height = Math.max(1, Math.round(height * capScale));
+  }
+  return {
+    width,
+    height,
+    scale: Math.min(1, width / sourceWidth, height / sourceHeight),
+    requestedScale: settings.targetScale,
+    mode: settings.mode,
+    label: settings.label,
+  };
+}
+
+async function renderPorosityAnalysisCanvas(imageBounds, exportSize, tileSetIndex) {
+  const pixelDensity =
+    OpenSeadragon.pixelDensityRatio || window.devicePixelRatio || 1;
+  const containerWidth = Math.max(1, Math.ceil(exportSize.width / pixelDensity));
+  const containerHeight = Math.max(1, Math.ceil(exportSize.height / pixelDensity));
+  const viewportBounds = getPorosityAoiViewportBounds(imageBounds);
+  const selectedTileSet = tileSets()[tileSetIndex];
+
+  if (!viewportBounds || !selectedTileSet) {
+    throw new Error("No tile set is available for porosity estimation.");
+  }
+
+  const exportContainer = document.createElement("div");
+  exportContainer.id = `porosity-export-${Date.now()}`;
+  exportContainer.style.position = "fixed";
+  exportContainer.style.left = "-100000px";
+  exportContainer.style.top = "0";
+  exportContainer.style.width = `${containerWidth}px`;
+  exportContainer.style.height = `${containerHeight}px`;
+  exportContainer.style.pointerEvents = "none";
+  document.body.append(exportContainer);
+
+  const exportViewer = OpenSeadragon({
+    id: exportContainer.id,
+    prefixUrl: "js/images/",
+    showNavigationControl: false,
+    mouseNavEnabled: false,
+    animationTime: 0,
+    blendTime: 0,
+    immediateRender: true,
+    minZoomImageRatio: 0,
+    maxZoomPixelRatio: 100,
+    visibilityRatio: 0,
+    constrainDuringPan: false,
+    crossOriginPolicy: "Anonymous",
+  });
+
+  const exportTileSet = {
+    ...selectedTileSet,
+    tiles: selectedTileSet.tiles.map((tile) => ({ ...tile, image: null })),
+  };
+
+  try {
+    for (const tile of exportTileSet.tiles) {
+      const tileSource = await getTileSource(tile.uri);
+      await new Promise((resolve, reject) => {
+        exportViewer.addTiledImage({
+          tileSource,
+          success: (event) => {
+            tile.image = event.item;
+            resolve();
+          },
+          error: (event) => {
+            reject(
+              new Error(event?.message || `Could not load tile source: ${tile.uri}`)
+            );
+          },
+        });
+      });
+    }
+
+    if (typeof exportViewer.viewport.setFlip === "function") {
+      exportViewer.viewport.setFlip(viewer.viewport.getFlip());
+    }
+    exportViewer.viewport.setRotation(viewer.viewport.getRotation(true), true);
+    exportViewer.viewport.fitBounds(viewportBounds, true);
+
+    const activeTileImages = applySnapshotTileSetComposition(
+      exportViewer,
+      exportTileSet,
+      1
+    );
+    await waitForExportViewerReady(exportViewer, activeTileImages);
+    const sourceCanvas = getOpenSeadragonImageCanvas(exportViewer);
+    if (!sourceCanvas) {
+      throw new Error("Could not render porosity analysis canvas.");
+    }
+
+    const outputCanvas = document.createElement("canvas");
+    outputCanvas.width = exportSize.width;
+    outputCanvas.height = exportSize.height;
+    const ctx = outputCanvas.getContext("2d", { willReadFrequently: true });
+    if (!ctx) {
+      throw new Error("Could not create porosity analysis canvas.");
+    }
+    ctx.drawImage(
+      sourceCanvas,
+      0,
+      0,
+      sourceCanvas.width,
+      sourceCanvas.height,
+      0,
+      0,
+      outputCanvas.width,
+      outputCanvas.height
+    );
+    return outputCanvas;
+  } finally {
+    exportViewer.destroy();
+    exportContainer.remove();
+  }
+}
+
+function isPointInPolygon(point, polygon) {
+  if (!point || polygon.length < 3) return false;
+
+  let inside = false;
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    const xi = polygon[i].x;
+    const yi = polygon[i].y;
+    const xj = polygon[j].x;
+    const yj = polygon[j].y;
+    const intersects =
+      yi > point.y !== yj > point.y &&
+      point.x < ((xj - xi) * (point.y - yi)) / (yj - yi || 1e-12) + xi;
+    if (intersects) inside = !inside;
+  }
+  return inside;
+}
+
+function addPorosityAoiPoint(event) {
+  let imagePoint = getPorosityImagePointFromViewerPixel(event.position);
+  if (!imagePoint) return;
+  if (event.originalEvent?.shiftKey) {
+    imagePoint = constrainPorosityAoiPointToPrevious(imagePoint);
+  }
+
+  porosityAoiImagePoints.push(imagePoint);
+  porosityTypes.forEach((type) => {
+    type.result = null;
+  });
+  drawPorosityOverlay();
+  updatePorosityControls();
+}
+
+function getPorosityCanvasPointFromViewerPixel(sourceCanvas, viewerPixel) {
+  const canvasBounds = sourceCanvas.getBoundingClientRect();
+  const viewerBounds = viewer.container.getBoundingClientRect();
+  const scaleX = sourceCanvas.width / canvasBounds.width;
+  const scaleY = sourceCanvas.height / canvasBounds.height;
+  const pageX = viewerBounds.left + viewerPixel.x;
+  const pageY = viewerBounds.top + viewerPixel.y;
+
+  return {
+    x: Math.floor((pageX - canvasBounds.left) * scaleX),
+    y: Math.floor((pageY - canvasBounds.top) * scaleY),
+  };
+}
+
+function getPorosityColorDistanceSquared(pixel, sample) {
+  const dr = pixel.r - sample.r;
+  const dg = pixel.g - sample.g;
+  const db = pixel.b - sample.b;
+  return dr * dr + dg * dg + db * db;
+}
+
+function isPorosityPixel(pixel, toleranceSquared) {
+  const activeType = getActivePorosityType();
+  return isPorosityPixelForType(pixel, activeType, toleranceSquared);
+}
+
+function isPorosityPixelForType(pixel, type, toleranceSquared) {
+  return (type?.colorSamples || []).some(
+    (sample) => getPorosityColorDistanceSquared(pixel, sample) <= toleranceSquared
+  );
+}
+
+function isPorosityPixelForTileSet(pixel, type, tileSetIndex, toleranceSquared) {
+  return (type?.colorSamples || []).some(
+    (sample) =>
+      sample.tileSetIndex === tileSetIndex &&
+      getPorosityColorDistanceSquared(pixel, sample) <= toleranceSquared
+  );
+}
+
+function getPorosityLinkedSampleSetsForTileSets(type, tileSetIndices) {
+  normalizePorosityTypeSamples(type);
+  const requiredTileSetIndices = [...new Set(tileSetIndices || [])];
+  const groups = new Map();
+  (type?.colorSamples || []).forEach((sample) => {
+    if (!requiredTileSetIndices.includes(sample.tileSetIndex)) return;
+    const sampleSetId = sample.sampleSetId || `legacy-${sample.tileSetIndex}`;
+    if (!groups.has(sampleSetId)) {
+      groups.set(sampleSetId, new Map());
+    }
+    groups.get(sampleSetId).set(sample.tileSetIndex, sample);
+  });
+
+  return Array.from(groups.values())
+    .filter((samplesByTileSet) =>
+      requiredTileSetIndices.every((tileSetIndex) =>
+        samplesByTileSet.has(tileSetIndex)
+      )
+    )
+    .map((samplesByTileSet) => ({
+      samplesByTileSet,
+    }));
+}
+
+function doesPixelMatchPorositySampleSet(
+  pixelsByTileSet,
+  sampleSet,
+  tileSetIndices,
+  toleranceSquared
+) {
+  return tileSetIndices.every((tileSetIndex) => {
+    const pixel = pixelsByTileSet.get(tileSetIndex);
+    const sample = sampleSet.samplesByTileSet.get(tileSetIndex);
+    return (
+      pixel &&
+      sample &&
+      getPorosityColorDistanceSquared(pixel, sample) <= toleranceSquared
+    );
+  });
+}
+
+function doesPixelMatchLinkedPorositySamples(
+  pixelsByTileSet,
+  sampleSets,
+  tileSetIndices,
+  toleranceSquared
+) {
+  return sampleSets.some((sampleSet) =>
+    doesPixelMatchPorositySampleSet(
+      pixelsByTileSet,
+      sampleSet,
+      tileSetIndices,
+      toleranceSquared
+    )
+  );
+}
+
+function hasPorositySamplesForSelectedTileSets(type) {
+  const selectedTileSetIndices = getPorositySelectedTileSetIndices();
+  return (
+    selectedTileSetIndices.length > 0 &&
+    getPorosityLinkedSampleSetsForTileSets(type, selectedTileSetIndices).length > 0
+  );
+}
+
+function isPorosityImagePointInMask(imagePoint, mask) {
+  if (!imagePoint || !mask?.canvas || !mask.imageCorners) return false;
+
+  const topLeft = mask.imageCorners.topLeft;
+  const topRight = mask.imageCorners.topRight;
+  const bottomLeft = mask.imageCorners.bottomLeft;
+  if (!topLeft || !topRight || !bottomLeft) return false;
+
+  const ax = (topRight.x - topLeft.x) / mask.canvas.width;
+  const ay = (topRight.y - topLeft.y) / mask.canvas.width;
+  const bx = (bottomLeft.x - topLeft.x) / mask.canvas.height;
+  const by = (bottomLeft.y - topLeft.y) / mask.canvas.height;
+  const det = ax * by - ay * bx;
+  if (Math.abs(det) < 1e-12) return false;
+
+  const dx = imagePoint.x - topLeft.x;
+  const dy = imagePoint.y - topLeft.y;
+  const x = Math.floor((dx * by - dy * bx) / det);
+  const y = Math.floor((ax * dy - ay * dx) / det);
+  if (x < 0 || y < 0 || x >= mask.canvas.width || y >= mask.canvas.height) {
+    return false;
+  }
+
+  if (mask.alphaData) {
+    return mask.alphaData[y * mask.canvas.width + x] > 0;
+  }
+
+  const ctx = mask.canvas.getContext("2d", { willReadFrequently: true });
+  if (!ctx) return false;
+  return ctx.getImageData(x, y, 1, 1).data[3] > 0;
+}
+
+function isPorosityImagePointClaimedByOtherType(
+  imagePoint,
+  targetTypeId,
+  resultOverrides = null
+) {
+  return porosityTypes.some((type) => {
+    if (type.id === targetTypeId) return false;
+    const overrideResult = resultOverrides?.get(type.id);
+    const result = overrideResult || type.result;
+    return isPorosityImagePointInMask(imagePoint, result?.mask);
+  });
+}
+
+async function addPorosityColorSample(event) {
+  const imagePoint = getPorosityImagePointFromViewerPixel(event.position);
+  if (!imagePoint) return;
+  const selectedTileSetIndices = getPorositySelectedTileSetIndices();
+  if (selectedTileSetIndices.length === 0) {
+    updatePorosityControls("Select at least one tile set first.");
+    return;
+  }
+
+  try {
+    const activeType = getActivePorosityType();
+    if (!activeType) return;
+    showPorosityActivityStatus("Sampling selected tile sets...");
+    const imageBounds = {
+      minX: Math.floor(imagePoint.x),
+      minY: Math.floor(imagePoint.y),
+      maxX: Math.floor(imagePoint.x) + 1,
+      maxY: Math.floor(imagePoint.y) + 1,
+      width: 1,
+      height: 1,
+    };
+    const exportSize = { width: 1, height: 1, scale: 1 };
+    const sampleSetId = `sample-${Date.now()}-${Math.random()
+      .toString(36)
+      .slice(2, 8)}`;
+    const pickedSamples = [];
+    for (const tileSetIndex of selectedTileSetIndices) {
+      const sampleCanvas = await renderPorosityAnalysisCanvas(
+        imageBounds,
+        exportSize,
+        tileSetIndex
+      );
+      const data = sampleCanvas
+        .getContext("2d", { willReadFrequently: true })
+        .getImageData(0, 0, 1, 1).data;
+      if (data[3] === 0) continue;
+      pickedSamples.push({
+        sampleSetId,
+        tileSetIndex,
+        r: data[0],
+        g: data[1],
+        b: data[2],
+      });
+    }
+    if (pickedSamples.length === 0) {
+      updatePorosityControls("Could not sample a color at that point.");
+      clearPorosityActivityStatus();
+      return;
+    }
+    if (pickedSamples.length !== selectedTileSetIndices.length) {
+      updatePorosityControls("Could not sample every selected tile set.");
+      clearPorosityActivityStatus();
+      return;
+    }
+    activeType.colorSamples.push(...pickedSamples);
+    activeType.result = null;
+    drawPorosityOverlay();
+    renderPorositySamples();
+    updatePorosityControls();
+    clearPorosityActivityStatus();
+  } catch (error) {
+    console.error("Porosity color pick failed:", error);
+    updatePorosityControls("Could not sample selected tile sets.");
+    clearPorosityActivityStatus();
+  }
+}
+
+async function estimatePorosity(options = {}) {
+  const {
+    dryRun = false,
+    preserveStatus = false,
+    resultOverrides = null,
+    typeId = activePorosityTypeId,
+    estimateGeneration = porosityEstimateGeneration,
+    scope = "aoi",
+  } = options;
+  const targetType =
+    porosityTypes.find((type) => type.id === typeId) || getActivePorosityType();
+  const aoiBounds = getPorosityAoiImageBounds();
+  const viewPolygon = scope === "view" ? getPorosityCurrentViewImagePolygon() : [];
+  const imageBounds =
+    scope === "view" ? getPorosityViewImageBounds(aoiBounds, viewPolygon) : aoiBounds;
+  if (!porosityAoiComplete || !imageBounds) {
+    updatePorosityControls("Draw a polygon AOI before estimating.");
+    return;
+  }
+  if (!targetType || targetType.colorSamples.length === 0) {
+    updatePorosityControls("Pick at least one pore color first.");
+    return;
+  }
+  normalizePorosityTypeSamples(targetType);
+  const selectedTileSetIndices = getPorositySelectedTileSetIndices();
+  if (!hasPorositySamplesForSelectedTileSets(targetType)) {
+    updatePorosityControls("Pick pore colors for each selected tile set first.");
+    return;
+  }
+
+  const exportSize = getPorosityAnalysisExportSize(imageBounds);
+  if (!exportSize) {
+    updatePorosityControls("Could not determine the AOI resolution.");
+    return;
+  }
+  updatePorosityResolutionStatus(exportSize);
+  const imageCorners = {
+    topLeft: { x: imageBounds.minX, y: imageBounds.minY },
+    topRight: { x: imageBounds.maxX, y: imageBounds.minY },
+    bottomLeft: { x: imageBounds.minX, y: imageBounds.maxY },
+  };
+  const previousResult = targetType.result;
+
+  try {
+    const analysisImages = [];
+    setPorosityProgress(
+      scope === "view"
+        ? "Rendering selected tile sets for view..."
+        : "Rendering selected tile sets for AOI..."
+    );
+    for (const tileSetIndex of selectedTileSetIndices) {
+      const canvas = await renderPorosityAnalysisCanvas(
+        imageBounds,
+        exportSize,
+        tileSetIndex
+      );
+      const ctx = canvas.getContext("2d", { willReadFrequently: true });
+      analysisImages.push({
+        tileSetIndex,
+        canvas,
+        imageData: ctx.getImageData(0, 0, canvas.width, canvas.height),
+      });
+    }
+    const sourceCanvas = analysisImages[0]?.canvas;
+    if (!sourceCanvas) {
+      throw new Error("Could not render selected tile sets for porosity estimation.");
+    }
+    const maskCanvas = document.createElement("canvas");
+    maskCanvas.width = sourceCanvas.width;
+    maskCanvas.height = sourceCanvas.height;
+    const maskCtx = maskCanvas.getContext("2d", { willReadFrequently: true });
+    const mask = maskCtx.createImageData(maskCanvas.width, maskCanvas.height);
+    const alphaData = new Uint8Array(maskCanvas.width * maskCanvas.height);
+    if (targetType.id === activePorosityTypeId) {
+      syncActivePorosityTypeFromControls();
+    }
+    if (!dryRun) {
+      targetType.result = null;
+    }
+    const overlayColor = getPorosityOverlayColorRgbForType(targetType);
+    const overlayAlpha = getPorosityOverlayAlphaForType(targetType);
+    const imageScaleX = imageBounds.width / sourceCanvas.width;
+    const imageScaleY = imageBounds.height / sourceCanvas.height;
+    const toleranceSquared = getPorosityToleranceValueForType(targetType) ** 2;
+    const linkedSampleSets = getPorosityLinkedSampleSetsForTileSets(
+      targetType,
+      selectedTileSetIndices
+    );
+    let porePixels = 0;
+    let totalPixels = 0;
+    let lastProgressUpdate = 0;
+
+    for (let y = 0; y < sourceCanvas.height; y += 1) {
+      if (y - lastProgressUpdate >= 24 || y === 0) {
+        const percent = (y / sourceCanvas.height) * 100;
+        setPorosityProgress(
+          scope === "view"
+            ? `Estimating visible AOI... ${Math.round(percent)}%`
+            : `Estimating full AOI... ${Math.round(percent)}%`,
+          percent
+        );
+        lastProgressUpdate = y;
+        await wait(0);
+        if (estimateGeneration !== porosityEstimateGeneration) {
+          clearPorosityProgress();
+          return previousResult || null;
+        }
+      }
+      for (let x = 0; x < sourceCanvas.width; x += 1) {
+        const imagePoint = {
+          x: imageBounds.minX + (x + 0.5) * imageScaleX,
+          y: imageBounds.minY + (y + 0.5) * imageScaleY,
+        };
+        if (!isPointInPolygon(imagePoint, porosityAoiImagePoints)) continue;
+        if (scope === "view" && !isPointInPolygon(imagePoint, viewPolygon)) {
+          continue;
+        }
+
+        const sourceIndex = (y * sourceCanvas.width + x) * 4;
+
+        totalPixels += 1;
+        const pixelsByTileSet = new Map();
+        let hasPixelForEveryTileSet = true;
+        for (const analysisImage of analysisImages) {
+          const data = analysisImage.imageData.data;
+          if (data[sourceIndex + 3] === 0) {
+            hasPixelForEveryTileSet = false;
+            break;
+          }
+          pixelsByTileSet.set(analysisImage.tileSetIndex, {
+            r: data[sourceIndex],
+            g: data[sourceIndex + 1],
+            b: data[sourceIndex + 2],
+          });
+        }
+        const matchesSelectedTileSets =
+          hasPixelForEveryTileSet &&
+          doesPixelMatchLinkedPorositySamples(
+            pixelsByTileSet,
+            linkedSampleSets,
+            selectedTileSetIndices,
+            toleranceSquared
+          );
+        if (
+          matchesSelectedTileSets &&
+          !isPorosityImagePointClaimedByOtherType(
+            imagePoint,
+            targetType.id,
+            resultOverrides
+          )
+        ) {
+          const maskIndex = (y * sourceCanvas.width + x) * 4;
+          const alphaIndex = y * sourceCanvas.width + x;
+          porePixels += 1;
+          mask.data[maskIndex] = overlayColor.r;
+          mask.data[maskIndex + 1] = overlayColor.g;
+          mask.data[maskIndex + 2] = overlayColor.b;
+          mask.data[maskIndex + 3] = overlayAlpha;
+          alphaData[alphaIndex] = overlayAlpha;
+        }
+      }
+    }
+
+    if (preserveStatus && previousResult && porePixels === 0) {
+      if (!dryRun) {
+        targetType.result = previousResult;
+        drawPorosityOverlay();
+      }
+      return previousResult;
+    }
+
+    maskCtx.putImageData(mask, 0, 0);
+    setPorosityProgress("Porosity estimation complete.", 100);
+    const nextResult = {
+      mask: {
+        canvas: maskCanvas,
+        rect: null,
+        imageCorners,
+        alphaData,
+      },
+      porePixels,
+      totalPixels,
+      percent: totalPixels > 0 ? (porePixels / totalPixels) * 100 : 0,
+      analysisScale: exportSize.scale,
+      analysisWidth: exportSize.width,
+      analysisHeight: exportSize.height,
+      analysisResolutionMode: exportSize.mode,
+      analysisResolutionLabel: exportSize.label,
+      tileSetIndices: [...selectedTileSetIndices],
+      scope,
+    };
+    if (!dryRun) {
+      if (estimateGeneration !== porosityEstimateGeneration) {
+        clearPorosityProgress();
+        return previousResult || null;
+      }
+      targetType.result = nextResult;
+      drawPorosityOverlay();
+      if (!preserveStatus) {
+        updatePorosityControls();
+      }
+    }
+    return nextResult;
+  } catch (error) {
+    console.error("Porosity estimate failed:", error);
+    if (!dryRun) {
+      if (targetType) targetType.result = previousResult || null;
+      drawPorosityOverlay();
+      updatePorosityControls("Could not render the AOI for porosity estimation.");
+      clearPorosityProgress();
+    }
+    return previousResult || null;
+  }
 }
 
 function renderVisibleSnapshotBaseCanvas(sourceCanvas, sourceRect, exportSize) {
@@ -2420,6 +4568,7 @@ if (hasSharedViewerMenus) {
       closeGridCountPalette();
       closeMeasurePalette();
       closeSnapshotPalette();
+      closePorosityEstimator();
       closeScaleWizard();
       if (tileSetEditor && !tileSetEditor.hidden) {
         closeTileSetEditor();
@@ -2567,7 +4716,7 @@ if (hasSharedViewerMenus && openMeasurePaletteButton && measurePalette) {
   });
 }
 
-if (hasElectronActions && openSnapshotPaletteButton && snapshotPalette) {
+if (hasSharedViewerMenus && openSnapshotPaletteButton && snapshotPalette) {
   openSnapshotPaletteButton.hidden = false;
   openSnapshotPaletteButton.setAttribute("aria-pressed", "false");
   openSnapshotPaletteButton.addEventListener("click", function (event) {
@@ -2605,6 +4754,227 @@ if (hasElectronActions && openSnapshotPaletteButton && snapshotPalette) {
       clearSnapshotSelection();
       updateSnapshotStatus("Draw a new area after resizing the viewer.");
     }
+  });
+}
+
+if (hasSharedViewerMenus && openPorosityEstimatorButton && porosityPalette) {
+  ensurePorosityTypes();
+  renderPorosityTileSetSelect();
+  renderPorosityTypeSelect();
+  syncPorosityControlsFromActiveType();
+  openPorosityEstimatorButton.hidden = false;
+  openPorosityEstimatorButton.setAttribute("aria-pressed", "false");
+  openPorosityEstimatorButton.addEventListener("click", function (event) {
+    event.preventDefault();
+    closeViewerToolsTray();
+    togglePorosityEstimator();
+  });
+  closePorosityPaletteButton?.addEventListener("click", function () {
+    closePorosityEstimator();
+  });
+  minimizePorosityPaletteButton?.addEventListener("click", function () {
+    toggleToolPaletteMinimized(
+      porosityPalette,
+      minimizePorosityPaletteButton
+    );
+  });
+  porosityTypeSelect?.addEventListener("change", function () {
+    activePorosityTypeId = porosityTypeSelect.value;
+    porosityPickModeActive = false;
+    syncPorosityControlsFromActiveType();
+    drawPorosityOverlay();
+  });
+  porosityTileSetSelect?.addEventListener("change", function () {
+    porositySelectedTileSetIndices = Array.from(
+      porosityTileSetSelect.selectedOptions
+    )
+      .map((option) => normalizePorosityTileSetIndex(option.value))
+      .filter((index) => index !== null);
+    porosityTypes.forEach((type) => {
+      normalizePorosityTypeSamples(type);
+      type.result = null;
+    });
+    drawPorosityOverlay();
+    renderPorositySamples();
+    updatePorosityControls("Estimate again after changing tile sets.");
+  });
+  porosityResolutionMode?.addEventListener("change", function () {
+    porosityAnalysisResolutionMode = getPorosityAnalysisResolutionMode();
+    porosityTypes.forEach((type) => {
+      type.result = null;
+    });
+    drawPorosityOverlay();
+    updatePorosityResolutionStatus();
+    updatePorosityControls("Estimate again after changing analysis resolution.");
+  });
+  porosityAddTypeButton?.addEventListener("click", function () {
+    showPrompt(
+      "Enter porosity type name:",
+      (value) => addPorosityType(value),
+      `Porosity ${porosityTypes.length + 1}`
+    );
+  });
+  porosityRenameTypeButton?.addEventListener("click", function () {
+    const activeType = getActivePorosityType();
+    if (!activeType) return;
+
+    showPrompt(
+      "Rename porosity type:",
+      (value) => renamePorosityType(activeType.id, value),
+      activeType.name
+    );
+  });
+  porosityDeleteTypeButton?.addEventListener("click", function () {
+    deletePorosityType(activePorosityTypeId);
+  });
+  porosityDrawAoiButton?.addEventListener("click", function () {
+    restoreToolPaletteFromMinimized(
+      porosityPalette,
+      minimizePorosityPaletteButton
+    );
+    startPorosityAoiMode();
+  });
+  porosityToggleAoiButton?.addEventListener("click", function () {
+    porosityAoiVisible = !porosityAoiVisible;
+    drawPorosityOverlay();
+    updatePorosityControls(porosityAoiVisible ? "AOI shown." : "AOI hidden.");
+  });
+  porosityPickColorButton?.addEventListener("click", function () {
+    if (!porosityAoiComplete) {
+      updatePorosityControls("Draw an AOI before picking colors.");
+      return;
+    }
+    porosityAoiModeActive = false;
+    porosityPickModeActive = !porosityPickModeActive;
+    if (porosityPickModeActive) {
+      deactivateAnnotationModes();
+      closeAnnotationSettingsPopover();
+      closeCircleAnnotationOptionsPopover();
+      closeReferenceCircleSettingsPopover();
+      closeScaleWizard();
+      if (typeof stopMeasurementMode === "function") {
+        stopMeasurementMode();
+      }
+    }
+    updatePorosityControls(
+      porosityPickModeActive
+        ? "Click pore-colored pixels anywhere in the image."
+        : "Color picking stopped."
+    );
+  });
+  porosityEstimateViewButton?.addEventListener("click", async function () {
+    porosityPickModeActive = false;
+    porosityEstimateGeneration += 1;
+    const estimateGeneration = porosityEstimateGeneration;
+    showPorosityActivityStatus("Estimating visible AOI...");
+    await estimatePorosity({ estimateGeneration, scope: "view" });
+    clearPorosityActivityStatus();
+    clearPorosityProgress();
+  });
+  porosityEstimateButton?.addEventListener("click", async function () {
+    porosityPickModeActive = false;
+    porosityEstimateGeneration += 1;
+    const estimateGeneration = porosityEstimateGeneration;
+    showPorosityActivityStatus("Estimating full AOI...");
+    await estimatePorosity({ estimateGeneration, scope: "aoi" });
+    clearPorosityActivityStatus();
+    clearPorosityProgress();
+  });
+  porosityClearButton?.addEventListener("click", function () {
+    resetPorosityAnalysis({
+      undoable: true,
+      message: "Porosity analysis reset. Use Undo Reset to restore it.",
+    });
+  });
+  porosityUndoColorButton?.addEventListener("click", function () {
+    const activeType = getActivePorosityType();
+    if (!activeType) return;
+    if (activeType.colorSamples.length === 0) {
+      undoPorosityReset();
+      return;
+    }
+
+    const lastSample = activeType.colorSamples[activeType.colorSamples.length - 1];
+    if (lastSample?.sampleSetId) {
+      activeType.colorSamples = activeType.colorSamples.filter(
+        (sample) => sample.sampleSetId !== lastSample.sampleSetId
+      );
+    } else {
+      activeType.colorSamples.pop();
+    }
+    activeType.result = null;
+    renderPorositySamples();
+    drawPorosityOverlay();
+    updatePorosityControls("Removed the last picked color.");
+  });
+  porosityTolerance?.addEventListener("input", function () {
+    const activeType = syncActivePorosityTypeFromControls();
+    if (activeType?.result) {
+      porosityEstimateGeneration += 1;
+      const estimateGeneration = porosityEstimateGeneration;
+      showPorosityActivityStatus("Updating porosity estimation...");
+      if (porosityToleranceReestimateTimer !== null) {
+        window.clearTimeout(porosityToleranceReestimateTimer);
+      }
+      porosityToleranceReestimateTimer = window.setTimeout(async () => {
+        porosityToleranceReestimateTimer = null;
+        if (estimateGeneration !== porosityEstimateGeneration) return;
+        await reestimatePorosityTypesWithResults({
+          estimateGeneration,
+          scope: activeType.result?.scope || "aoi",
+        });
+        clearPorosityProgress();
+      }, 250);
+    } else {
+      updatePorosityControls();
+    }
+  });
+  porosityToleranceValue?.addEventListener("change", function () {
+    const activeType = setPorosityToleranceControlValue(porosityToleranceValue.value);
+    if (activeType?.result) {
+      porosityEstimateGeneration += 1;
+      const estimateGeneration = porosityEstimateGeneration;
+      showPorosityActivityStatus("Updating porosity estimation...");
+      if (porosityToleranceReestimateTimer !== null) {
+        window.clearTimeout(porosityToleranceReestimateTimer);
+      }
+      porosityToleranceReestimateTimer = window.setTimeout(async () => {
+        porosityToleranceReestimateTimer = null;
+        if (estimateGeneration !== porosityEstimateGeneration) return;
+        await reestimatePorosityTypesWithResults({
+          estimateGeneration,
+          scope: activeType.result?.scope || "aoi",
+        });
+        clearPorosityProgress();
+      }, 250);
+    } else {
+      updatePorosityControls();
+    }
+  });
+  porosityOverlayColor?.addEventListener("input", function () {
+    syncActivePorosityTypeFromControls();
+    schedulePorosityMaskRecolor();
+  });
+  porosityOverlayOpacity?.addEventListener("input", function () {
+    if (porosityOverlayOpacityValue) {
+      porosityOverlayOpacityValue.value = porosityOverlayOpacity.value;
+    }
+    syncActivePorosityTypeFromControls();
+    schedulePorosityMaskRecolor();
+  });
+  porosityOverlayOpacityValue?.addEventListener("change", function () {
+    setPorosityOverlayOpacityControlValue(porosityOverlayOpacityValue.value);
+    syncActivePorosityTypeFromControls();
+    schedulePorosityMaskRecolor();
+  });
+  makeToolPaletteDraggable(
+    porosityPalette,
+    porosityPaletteHeader,
+    "petroImage.porosityPalette"
+  );
+  window.addEventListener("resize", function () {
+    scheduleClampOpenToolPalettes();
+    drawPorosityOverlay();
   });
 }
 
@@ -2768,6 +5138,35 @@ const viewer = OpenSeadragon({
   crossOriginPolicy: "Anonymous",
 });
 
+viewer.addHandler("canvas-click", function (event) {
+  if (event.quick === false) return;
+
+  if (porosityAoiModeActive) {
+    event.preventDefaultAction = true;
+    addPorosityAoiPoint(event);
+    return;
+  }
+
+  if (!porosityPickModeActive) return;
+
+  event.preventDefaultAction = true;
+  addPorosityColorSample(event);
+});
+
+viewer.addHandler("canvas-double-click", function (event) {
+  if (porosityAoiComplete && !porosityPickModeActive) {
+    const inserted = insertPorosityAoiVertex(event.position);
+    if (inserted) {
+      event.preventDefaultAction = true;
+      return;
+    }
+  }
+  if (!porosityAoiModeActive) return;
+
+  event.preventDefaultAction = true;
+  finishPorosityAoi();
+});
+
 viewer.addHandler("tile-load-failed", handleTileLoadFailed);
 
 async function handleTileLoadFailed(event) {
@@ -2817,6 +5216,10 @@ document
       currentIndex = Number(this.value);
       closeScaleWizard();
       stopSnapshotDrawMode({ clearSelection: true });
+      porositySelectedTileSetIndices = [];
+      if (porosityTileSetSelect) porosityTileSetSelect.innerHTML = "";
+      resetPorosityAnalysis();
+      renderPorosityTileSetSelect();
       buildImageCheckboxes();
       buildOpacitySliders();
       clearAnnotations();
@@ -12214,6 +14617,11 @@ viewer.addHandler("viewport-change", () => {
   drawShape(circleCanvas, [circleJSON]);
   drawShape(measureCanvas, [measureJSONTemp, measureAreaJSONTemp, measureJSON]);
   drawScaleWizardOverlay();
+  refreshPorosityOverlayForViewportChange();
+});
+
+viewer.addHandler("animation-finish", () => {
+  refreshPorosityOverlayForViewportChange();
 });
 
 // TOOD: Is this necessary? Could be partially redundant with the above function
@@ -12222,6 +14630,70 @@ viewerContainer.addEventListener("mousemove", () => {
   drawShape(circleCanvas, [circleJSON]);
   drawShape(measureCanvas, [measureJSONTemp, measureAreaJSONTemp, measureJSON]);
   drawScaleWizardOverlay();
+});
+
+viewerContainer.addEventListener("mousemove", (event) => {
+  if (!porosityAoiModeActive || porosityAoiComplete) return;
+
+  const rect = viewerContainer.getBoundingClientRect();
+  porosityAoiConstrainSegment = event.shiftKey;
+  if (event.shiftKey && porosityAoiImagePoints.length > 0) {
+    const imagePoint = getPorosityImagePointFromClientPoint(
+      event.clientX,
+      event.clientY
+    );
+    const constrainedPoint = constrainPorosityAoiPointToPrevious(imagePoint);
+    porosityAoiMousePoint =
+      getPorosityScreenPointFromImagePoint(constrainedPoint) || {
+        x: event.clientX - rect.left,
+        y: event.clientY - rect.top,
+      };
+  } else {
+    porosityAoiMousePoint = {
+      x: event.clientX - rect.left,
+      y: event.clientY - rect.top,
+    };
+  }
+  drawPorosityOverlay();
+});
+
+viewerContainer.addEventListener(
+  "pointerdown",
+  (event) => {
+    startPorosityAoiVertexDrag(event);
+  },
+  true
+);
+
+viewerContainer.addEventListener(
+  "pointermove",
+  (event) => {
+    updatePorosityAoiVertexDrag(event);
+  },
+  true
+);
+
+viewerContainer.addEventListener(
+  "pointerup",
+  (event) => {
+    finishPorosityAoiVertexDrag(event);
+  },
+  true
+);
+
+viewerContainer.addEventListener(
+  "pointercancel",
+  (event) => {
+    finishPorosityAoiVertexDrag(event);
+  },
+  true
+);
+
+viewerContainer.addEventListener("mouseleave", () => {
+  if (!porosityAoiModeActive) return;
+
+  porosityAoiMousePoint = null;
+  drawPorosityOverlay();
 });
 
 // Event listener for double-click to edit existing vertices or end collection
@@ -14507,10 +16979,25 @@ document.addEventListener("keydown", (event) => {
       annotationHistory.redo();
     }
   } else {
+    if (porosityPalette && !porosityPalette.hidden && undoPorosityReset()) {
+      return;
+    }
     if (!undoAnnotationDraftPoint()) {
       annotationHistory.undo();
     }
   }
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key !== "Delete" && event.key !== "Backspace") return;
+  if (!porosityPalette || porosityPalette.hidden) return;
+  if (porosityAoiSelectedVertexIndex === null) return;
+
+  const tag = event.target.tagName;
+  if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+
+  event.preventDefault();
+  deletePorosityAoiVertex(porosityAoiSelectedVertexIndex);
 });
 
 // Keyboard shortcut handler to toggle checkboxes
@@ -18324,9 +20811,12 @@ function renderMeasureColumnsMenu() {
 }
 
 function closeMeasureColumnsMenu() {
-  if (!measureColumnsMenu) return;
-  measureColumnsMenu.hidden = true;
-  measureColumnsButton?.setAttribute("aria-expanded", "false");
+  const menu = document.getElementById("measureColumnsMenu");
+  if (!menu) return;
+  menu.hidden = true;
+  document
+    .getElementById("measureColumnsButton")
+    ?.setAttribute("aria-expanded", "false");
 }
 
 function openMeasureColumnsMenu(button) {

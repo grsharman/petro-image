@@ -2793,6 +2793,23 @@ input[type="range"] {
   height: 100%;
 }
 
+#porosity-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+#viewer-container.porosity-pick-cursor,
+#viewer-container.porosity-pick-cursor canvas {
+  cursor: crosshair;
+}
+
+#viewer-container.porosity-aoi-editing {
+  cursor: default;
+}
+
 .scale-wizard {
   position: absolute;
   right: 8px;
@@ -2864,6 +2881,430 @@ input[type="range"] {
   color: rgba(17, 17, 17, 0.9);
   font: inherit;
   line-height: 1.2;
+}
+
+.porosity-palette-body {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.porosity-type-row {
+  display: flex;
+  align-items: end;
+  gap: 4px;
+}
+
+.porosity-type-field {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.porosity-type-field select {
+  min-width: 0;
+}
+
+.porosity-tile-set-field {
+  display: grid;
+  gap: 4px;
+  align-items: start;
+}
+
+.porosity-palette-body .porosity-tile-set-field > span {
+  font-size: 12px;
+  white-space: normal;
+  line-height: 1.2;
+}
+
+.porosity-tile-set-field select {
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+}
+
+.porosity-icon-button {
+  flex: 0 0 20px;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  font: 700 13px/1 system-ui, sans-serif;
+}
+
+.porosity-inline-color {
+  flex: 0 0 20px;
+  width: 20px;
+  height: 20px;
+  min-width: 20px;
+  padding: 1px;
+}
+
+.porosity-delete-button svg {
+  stroke: #8a1f1f;
+}
+
+.porosity-icon-button.is-off {
+  opacity: 0.55;
+}
+
+.porosity-start-row {
+  display: flex;
+  gap: 4px;
+}
+
+.porosity-start-row button {
+  flex: 0 0 auto;
+  padding: 2px 6px;
+  font: inherit;
+}
+
+.porosity-start-row .porosity-icon-button {
+  width: 20px;
+  padding: 0;
+}
+
+.porosity-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+  gap: 4px;
+}
+
+.porosity-estimate-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.porosity-estimate-row button {
+  width: 100%;
+  min-width: 0;
+  padding: 2px 6px;
+  font: inherit;
+}
+
+.porosity-resolution-panel {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.porosity-palette-body .porosity-resolution-panel {
+  margin: 0;
+}
+
+.porosity-resolution-panel summary {
+  cursor: pointer;
+  color: rgba(17, 17, 17, 0.72);
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+.porosity-resolution-panel .snapshot-field {
+  margin-top: 2px;
+}
+
+.porosity-resolution-panel select {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.porosity-resolution-status {
+  margin: 0;
+  color: rgba(17, 17, 17, 0.66);
+  font-size: 11px;
+  line-height: 1.25;
+}
+
+.porosity-actions button,
+.porosity-start-row button {
+  min-width: 0;
+  padding: 2px 6px;
+  font: inherit;
+  white-space: nowrap;
+}
+
+.porosity-actions button {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.porosity-actions button:disabled {
+  opacity: 0.45;
+}
+
+.porosity-workflow-disabled .porosity-type-row,
+.porosity-workflow-disabled .porosity-tile-set-field,
+.porosity-workflow-disabled .porosity-actions,
+.porosity-workflow-disabled .porosity-opacity-controls,
+.porosity-workflow-disabled .porosity-samples,
+.porosity-workflow-disabled .porosity-estimate-row,
+.porosity-workflow-disabled .porosity-tolerance-field,
+.porosity-workflow-disabled .porosity-results {
+  opacity: 0.48;
+}
+
+.porosity-palette-body .snapshot-field {
+  min-width: 0;
+}
+
+.porosity-palette-body .snapshot-field > span {
+  flex: 0 0 auto;
+  min-width: 0;
+}
+
+.porosity-palette-body .snapshot-field input[type="range"] {
+  flex: 1 1 78px;
+  min-width: 58px;
+  width: auto;
+}
+
+.porosity-tolerance-field {
+  gap: 4px;
+}
+
+.porosity-tolerance-field > span {
+  flex-basis: 58px;
+}
+
+.porosity-tolerance-value {
+  flex: 0 0 36px;
+  width: 36px;
+  padding: 2px 4px;
+  font: inherit;
+}
+
+.porosity-palette-body .snapshot-field input[type="color"]:not(.porosity-inline-color) {
+  flex: 0 0 42px;
+  width: 42px;
+  min-height: 24px;
+  padding: 1px;
+}
+
+.porosity-palette-body input.porosity-inline-color {
+  flex: 0 0 20px;
+  width: 20px;
+  height: 20px;
+  min-height: 20px;
+}
+
+.porosity-opacity-controls {
+  display: flex;
+  align-items: center;
+  flex: 1 1 auto;
+  min-width: 0;
+  gap: 4px;
+}
+
+.porosity-opacity-controls input[type="range"] {
+  flex: 1 1 84px;
+  min-width: 64px;
+}
+
+.porosity-opacity-value {
+  flex: 0 0 36px;
+  width: 36px;
+  padding: 2px 4px;
+  font: inherit;
+}
+
+.porosity-pick-active {
+  background: #fff0c2;
+  border-color: #b87900;
+}
+
+.porosity-samples {
+  display: grid;
+  min-height: 18px;
+  gap: 3px;
+}
+
+.porosity-sample-row {
+  display: grid;
+  grid-template-columns: minmax(54px, 0.35fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.porosity-sample-label {
+  overflow: hidden;
+  color: rgba(17, 17, 17, 0.7);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.porosity-sample-swatches {
+  display: flex;
+  flex-wrap: nowrap;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  gap: 4px;
+  padding-bottom: 2px;
+}
+
+.porosity-sample {
+  box-sizing: border-box;
+  flex: 0 0 18px;
+  width: 18px;
+  height: 18px;
+  border: 1px solid rgba(17, 17, 17, 0.5);
+  border-radius: 3px;
+}
+
+.porosity-results {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+  max-height: 150px;
+  overflow-y: auto;
+  margin: 3px 0 0;
+  padding: 1px;
+  border: 1px solid rgba(68, 68, 68, 0.35);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.62);
+}
+
+.porosity-result-row,
+.porosity-result-total-row {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) minmax(54px, 0.42fr);
+  align-items: center;
+  gap: 3px;
+  min-height: 22px;
+  padding: 1px 3px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: #1f1f1f;
+  font: 12px/1.2 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  text-align: left;
+}
+
+.porosity-result-row {
+  cursor: pointer;
+}
+
+.porosity-result-row:hover,
+.porosity-result-row:focus-visible {
+  border-color: rgba(0, 0, 0, 0.25);
+  background: rgba(255, 255, 255, 0.86);
+  outline: none;
+}
+
+.porosity-result-row.is-active {
+  border-color: rgba(255, 180, 0, 0.95);
+  background: rgba(255, 230, 150, 0.78);
+}
+
+.porosity-result-row.is-hidden-type {
+  opacity: 0.48;
+}
+
+.porosity-result-total-row {
+  font-weight: 700;
+  cursor: default;
+}
+
+.porosity-result-name-cell {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 4px;
+}
+
+.porosity-result-swatch {
+  flex: 0 0 10px;
+  width: 10px;
+  height: 10px;
+  border: 1px solid rgba(17, 17, 17, 0.35);
+  border-radius: 2px;
+}
+
+.porosity-result-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.porosity-result-scope {
+  flex: 0 0 auto;
+  padding: 1px 3px;
+  border-radius: 3px;
+  background: rgba(17, 17, 17, 0.1);
+  color: rgba(17, 17, 17, 0.68);
+  font-size: 10px;
+  line-height: 1.1;
+}
+
+.porosity-result-area-cell {
+  min-width: 56px;
+}
+
+.porosity-result-bar {
+  display: block;
+  width: 100%;
+  height: 4px;
+  margin-top: 2px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: rgba(17, 17, 17, 0.12);
+}
+
+.porosity-result-bar-fill {
+  display: block;
+  height: 100%;
+}
+
+.porosity-progress {
+  display: grid;
+  gap: 3px;
+  color: rgba(17, 17, 17, 0.72);
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+.porosity-progress[hidden] {
+  display: none;
+}
+
+.porosity-progress-track {
+  width: 100%;
+  height: 5px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(17, 17, 17, 0.13);
+}
+
+.porosity-progress-bar {
+  display: block;
+  width: 0%;
+  height: 100%;
+  border-radius: inherit;
+  background: #2f80ed;
+  transition: width 120ms linear;
+}
+
+.porosity-progress-bar-indeterminate {
+  background: linear-gradient(
+    90deg,
+    rgba(47, 128, 237, 0.25),
+    #2f80ed,
+    rgba(47, 128, 237, 0.25)
+  );
+}
+
+.porosity-activity-status {
+  min-height: 1.2em;
+  margin: -2px 0 0;
+  color: rgba(17, 17, 17, 0.7);
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+.porosity-activity-status[hidden] {
+  display: none;
 }
 
 .scale-wizard-panel {
