@@ -17,12 +17,14 @@ let hasUnsavedWork = false; // main process copy
 let localFileServer;
 let localFileServerPort;
 let samWorker = null;
+let activeSegmenteverygrainChild = null;
 const localFileServerToken = randomUUID();
 const grantedLocalRoots = [];
 const APP_TITLE = "petro-image";
 const WELCOME_LIBRARY_FILE_NAME = "welcome_library.json";
 const USER_LIBRARY_FILE_NAME = "library.json";
 const DZI_FOLDER_NAME = "dzi";
+const SEGMENTEVERYGRAIN_MODEL_EXTENSIONS = new Set([".h5", ".keras"]);
 
 function setMainWindowTitle(projectDirectory, libraryPath = "") {
   if (!mainWindow || mainWindow.isDestroyed()) return;
@@ -494,6 +496,22 @@ function getSamSettingsFingerprint(settings = {}) {
   });
 }
 
+function getSegmenteverygrainModelPathError(modelPath, pythonPath = "") {
+  if (!modelPath) return "Choose a segmenteverygrain model file.";
+
+  const normalizedModelPath = path.resolve(modelPath);
+  if (pythonPath && normalizedModelPath === path.resolve(pythonPath)) {
+    return "The segmenteverygrain model path is set to the Python executable. Choose a trained .h5 or .keras model file instead.";
+  }
+
+  const extension = path.extname(modelPath).toLowerCase();
+  if (!SEGMENTEVERYGRAIN_MODEL_EXTENSIONS.has(extension)) {
+    return "Choose a segmenteverygrain model file with a .h5 or .keras extension.";
+  }
+
+  return "";
+}
+
 function normalizeSamValidation(validation, samSettings) {
   if (!validation || typeof validation !== "object") return null;
 
@@ -507,6 +525,45 @@ function normalizeSamValidation(validation, samSettings) {
     fingerprint,
     matchesCurrentSettings:
       fingerprint === getSamSettingsFingerprint(samSettings || {}),
+    validatedAt:
+      typeof validation.validatedAt === "string" ? validation.validatedAt : "",
+  };
+}
+
+function normalizeSegmenteverygrainSettings(settings = {}) {
+  const source = settings.segmenteverygrain || settings;
+  const normalizedSettings = {
+    modelPath: typeof source.modelPath === "string" ? source.modelPath : "",
+  };
+  const validation = normalizeSegmenteverygrainValidation(
+    source.validation,
+    normalizedSettings,
+  );
+  return {
+    ...normalizedSettings,
+    ...(validation ? { validation } : {}),
+  };
+}
+
+function getSegmenteverygrainSettingsFingerprint(settings = {}) {
+  return JSON.stringify({
+    modelPath: settings.modelPath || "",
+  });
+}
+
+function normalizeSegmenteverygrainValidation(validation, settings) {
+  if (!validation || typeof validation !== "object") return null;
+
+  const status = validation.status === "ready" ? "ready" : "error";
+  const fingerprint =
+    typeof validation.fingerprint === "string" ? validation.fingerprint : "";
+  if (!fingerprint) return null;
+
+  return {
+    status,
+    fingerprint,
+    matchesCurrentSettings:
+      fingerprint === getSegmenteverygrainSettingsFingerprint(settings || {}),
     validatedAt:
       typeof validation.validatedAt === "string" ? validation.validatedAt : "",
   };
@@ -529,6 +586,23 @@ async function writeSamSettings(nextSamSettings) {
   return sam;
 }
 
+async function writeSegmenteverygrainSettings(nextSettings) {
+  const settings = await readProjectSettings();
+  const segmenteverygrain = normalizeSegmenteverygrainSettings({
+    segmenteverygrain: {
+      ...settings.segmenteverygrain,
+      ...nextSettings,
+    },
+  });
+
+  await writeProjectSettings({
+    ...settings,
+    segmenteverygrain,
+  });
+
+  return segmenteverygrain;
+}
+
 function getOwnerWindow(event) {
   return (
     BrowserWindow.fromWebContents(event?.sender) ||
@@ -538,12 +612,13 @@ function getOwnerWindow(event) {
 }
 
 function runProcess(command, args, options = {}) {
-  const { timeoutMs = 120000 } = options;
+  const { timeoutMs = 120000, env = null } = options;
 
   return new Promise((resolve) => {
     const child = spawn(command, args, {
       windowsHide: true,
       stdio: ["ignore", "pipe", "pipe"],
+      env: env ? { ...process.env, ...env } : process.env,
     });
     let stdout = "";
     let stderr = "";
@@ -602,6 +677,127 @@ function parseJsonProcessOutput(stdout) {
     throw new Error("Process did not write JSON.");
   }
   return JSON.parse(jsonLine);
+}
+
+function tryParseJsonLine(line) {
+  try {
+    return JSON.parse(line);
+  } catch {
+    return null;
+  }
+}
+
+function parseSegmenteverygrainTextProgress(line) {
+  const text = String(line || "");
+  const tqdmMatch = text.match(/(\d{1,3})%\|/);
+  const labelMatch = text.match(/([^:\r\n]*):\s*(\d{1,3})%/);
+  const countMatch = text.match(/(\d+)\s*\/\s*(\d+)/);
+  if (!tqdmMatch && !labelMatch) return null;
+
+  const label = labelMatch
+    ? labelMatch[1].trim().toLowerCase()
+    : text.toLowerCase();
+  const percent = Math.max(
+    0,
+    Math.min(100, Number(tqdmMatch?.[1] ?? labelMatch?.[2])),
+  );
+  if (!Number.isFinite(percent)) return null;
+
+  const stage = label.includes("creating masks")
+    ? "SAM refinement"
+    : "Patch prediction";
+  const base = stage === "SAM refinement" ? 55 : 20;
+  const span = 35;
+  const message = countMatch
+    ? `${stage}: ${stage === "SAM refinement" ? "mask" : "patch"} ${countMatch[1]} of ${countMatch[2]} (${percent}%)`
+    : `${stage}: ${percent}%`;
+  return {
+    type: "progress",
+    stage,
+    message,
+    percent: base + (percent / 100) * span,
+  };
+}
+
+function runProcessWithProgress(command, args, options = {}) {
+  const {
+    timeoutMs = 120000,
+    env = null,
+    onStdoutLine = null,
+    onStderrLine = null,
+    onChild = null,
+  } = options;
+
+  return new Promise((resolve) => {
+    const child = spawn(command, args, {
+      windowsHide: true,
+      stdio: ["ignore", "pipe", "pipe"],
+      env: env ? { ...process.env, ...env } : process.env,
+    });
+    onChild?.(child);
+    let stdout = "";
+    let stderr = "";
+    let stdoutBuffer = "";
+    let stderrBuffer = "";
+    let settled = false;
+    const timer = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      child.kill();
+      resolve({
+        exitCode: null,
+        stdout,
+        stderr,
+        timedOut: true,
+      });
+    }, timeoutMs);
+
+    child.stdout.on("data", (chunk) => {
+      const text = chunk.toString();
+      stdout += text;
+      stdoutBuffer += text;
+      const lines = stdoutBuffer.split(/\r|\n/);
+      stdoutBuffer = lines.pop() || "";
+      lines.forEach((line) => {
+        if (line.trim()) onStdoutLine?.(line.trim());
+      });
+    });
+    child.stderr.on("data", (chunk) => {
+      const text = chunk.toString();
+      stderr += text;
+      stderrBuffer += text;
+      const lines = stderrBuffer.split(/\r|\n/);
+      stderrBuffer = lines.pop() || "";
+      lines.forEach((line) => {
+        if (line.trim()) onStderrLine?.(line.trim());
+      });
+    });
+    child.on("error", (error) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      resolve({
+        exitCode: null,
+        stdout,
+        stderr: stderr || error.message,
+        error: error.message,
+      });
+    });
+    child.on("close", (exitCode) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      if (stdoutBuffer.trim()) onStdoutLine?.(stdoutBuffer.trim());
+      if (stderrBuffer.trim()) onStderrLine?.(stderrBuffer.trim());
+      resolve({
+        exitCode,
+        stdout,
+        stderr,
+        timedOut: false,
+        canceled: child.killed || Boolean(child._petroImageCanceled),
+      });
+    });
+  });
 }
 
 const SAM_PROBE_SCRIPT = String.raw`
@@ -737,6 +933,78 @@ except Exception:
 print(json.dumps(result))
 `;
 
+const SEGMENTEVERYGRAIN_PROBE_SCRIPT = String.raw`
+import importlib
+import importlib.util
+import json
+import os
+import sys
+import traceback
+
+model_path = sys.argv[1] if len(sys.argv) > 1 else ""
+
+result = {
+    "ok": False,
+    "pythonExecutable": sys.executable,
+    "pythonVersion": sys.version.split()[0],
+    "modelPath": model_path,
+    "modelExists": False,
+    "modelSizeBytes": None,
+    "modules": {},
+    "errors": [],
+    "warnings": [],
+}
+
+def add_module(name, import_name=None, required=False):
+    import_name = import_name or name
+    available = importlib.util.find_spec(import_name) is not None
+    module_result = {"available": available}
+    result["modules"][name] = module_result
+    if available:
+        try:
+            module = importlib.import_module(import_name)
+            version = getattr(module, "__version__", "")
+            if version:
+                module_result["version"] = version
+        except Exception as error:
+            module_result["available"] = False
+            module_result["importError"] = str(error)
+            if required:
+                result["errors"].append(f"{name} import failed: {error}")
+            else:
+                result["warnings"].append(f"{name} import failed: {error}")
+            return False
+    elif required:
+        result["errors"].append(f"{name} is not importable.")
+    return available and module_result.get("available", False)
+
+try:
+    if model_path:
+        result["modelExists"] = os.path.isfile(model_path)
+        if result["modelExists"]:
+            result["modelSizeBytes"] = os.path.getsize(model_path)
+        else:
+            result["errors"].append("segmenteverygrain model file was not found.")
+    else:
+        result["errors"].append("No segmenteverygrain model path was provided.")
+    if model_path and os.path.splitext(model_path)[1].lower() not in [".h5", ".keras"]:
+        result["errors"].append("segmenteverygrain model must be a .h5 or .keras file.")
+    seg_available = add_module("segmenteverygrain", required=True)
+    add_module("tensorflow")
+    add_module("torch")
+    add_module("opencv-python", "cv2")
+    add_module("scikit-image", "skimage")
+    result["ok"] = (
+        seg_available
+        and result["modelExists"]
+        and os.path.splitext(model_path)[1].lower() in [".h5", ".keras"]
+    )
+except Exception:
+    result["errors"].append(traceback.format_exc())
+
+print(json.dumps(result))
+`;
+
 async function validateSamSetup(settings) {
   const samSettings = normalizeSamSettings({ sam: settings });
   if (!samSettings.pythonPath) {
@@ -781,6 +1049,72 @@ async function validateSamSetup(settings) {
     exitCode: result.exitCode,
     stderr: result.stderr,
     settings: samSettings,
+  };
+}
+
+async function validateSegmenteverygrainSetup(settings = {}) {
+  const samSettings = normalizeSamSettings({ sam: settings.sam || settings });
+  const segSettings = normalizeSegmenteverygrainSettings(
+    settings.segmenteverygrain || {},
+  );
+  if (!samSettings.pythonPath) {
+    return {
+      ok: false,
+      errors: ["Choose a Python executable."],
+      settings: samSettings,
+      segmenteverygrainSettings: segSettings,
+    };
+  }
+  const modelPathError = getSegmenteverygrainModelPathError(
+    segSettings.modelPath,
+    samSettings.pythonPath,
+  );
+  if (modelPathError) {
+    return {
+      ok: false,
+      errors: [modelPathError],
+      settings: samSettings,
+      segmenteverygrainSettings: segSettings,
+    };
+  }
+
+  const result = await runProcess(
+    samSettings.pythonPath,
+    ["-c", SEGMENTEVERYGRAIN_PROBE_SCRIPT, segSettings.modelPath],
+    { timeoutMs: 60000 },
+  );
+
+  if (result.timedOut) {
+    return {
+      ok: false,
+      errors: ["segmenteverygrain validation timed out."],
+      stderr: result.stderr,
+      settings: samSettings,
+      segmenteverygrainSettings: segSettings,
+    };
+  }
+
+  let parsed;
+  try {
+    parsed = parseJsonProcessOutput(result.stdout);
+  } catch (error) {
+    return {
+      ok: false,
+      errors: ["Python did not return valid segmenteverygrain validation JSON."],
+      exitCode: result.exitCode,
+      stdout: result.stdout,
+      stderr: result.stderr,
+      settings: samSettings,
+      segmenteverygrainSettings: segSettings,
+    };
+  }
+
+  return {
+    ...parsed,
+    exitCode: result.exitCode,
+    stderr: result.stderr,
+    settings: samSettings,
+    segmenteverygrainSettings: segSettings,
   };
 }
 
@@ -980,6 +1314,184 @@ async function runSamSegmentation(request = {}) {
       simplifyEpsilon: request.simplifyEpsilon,
     });
     return result;
+  } finally {
+    await fs.rm(tempDirectory, { recursive: true, force: true });
+  }
+}
+
+async function runSegmenteverygrainSegmentation(request = {}, event = null) {
+  const samSettings = await writeSamSettings(request.samSettings || {});
+  const segSettings = await writeSegmenteverygrainSettings(
+    request.segmenteverygrainSettings || {},
+  );
+  if (!samSettings.pythonPath) {
+    return { ok: false, error: "Choose a Python executable." };
+  }
+  const modelPathError = getSegmenteverygrainModelPathError(
+    segSettings.modelPath,
+    samSettings.pythonPath,
+  );
+  if (modelPathError) {
+    return { ok: false, error: modelPathError };
+  }
+  if (request.useSam !== false) {
+    if (!samSettings.checkpointPath) {
+      return { ok: false, error: "Choose a SAM 2.1 checkpoint for refinement." };
+    }
+    if (!(await pathExists(samSettings.checkpointPath))) {
+      return { ok: false, error: "SAM 2.1 checkpoint file was not found." };
+    }
+  }
+
+  const tempDirectory = await fs.mkdtemp(
+    path.join(app.getPath("temp"), "petro-image-seg-"),
+  );
+  const cropPath = path.join(tempDirectory, "aoi.png");
+  const scriptPath = path.join(__dirname, "scripts", "segmenteverygrain_segment.py");
+
+  try {
+    let tileJobPath = "";
+    if (request.tileJob) {
+      let tileJob;
+      try {
+        tileJob = await buildSegmenteverygrainTileJob(event, request.tileJob);
+      } catch (error) {
+        return {
+          ok: false,
+          error: error.message || "Could not prepare DZI tiles for segmentation.",
+        };
+      }
+      if (!tileJob.tiles.length) {
+        return { ok: false, error: "No visible local DZI tile source is available." };
+      }
+      tileJobPath = path.join(tempDirectory, "tile-job.json");
+      await fs.writeFile(tileJobPath, JSON.stringify(tileJob), "utf8");
+    } else {
+      await fs.writeFile(cropPath, decodePngDataUrl(request.cropPngDataUrl));
+    }
+    const args = [
+      scriptPath,
+      "--model",
+      segSettings.modelPath,
+      "--simplify-epsilon",
+      String(Number(request.simplifyEpsilon) || 0),
+      "--min-area",
+      String(Number(request.minArea) || 50),
+      "--patch-size",
+      String(Number(request.patchSize) || 2000),
+      "--overlap",
+      String(Number(request.overlap) || 300),
+      "--dilation",
+      String(Number(request.dilation) || 0),
+    ];
+    if (tileJobPath) {
+      args.push("--tile-job", tileJobPath, "--stitch-output", cropPath);
+    } else {
+      args.push("--image", cropPath);
+    }
+    if (request.useSam !== false) {
+      args.push(
+        "--use-sam",
+        "--sam-checkpoint",
+        samSettings.checkpointPath,
+        "--sam-model-type",
+        samSettings.modelType || "base_plus",
+        "--device",
+        request.device || "auto",
+      );
+    }
+    if (request.removeEdgeGrains) {
+      args.push("--remove-edge-grains");
+    }
+
+    let lastSegmenteverygrainProgressAt = Date.now();
+    const sendProgress = (payload, options = {}) => {
+      if (!options.heartbeat) {
+        lastSegmenteverygrainProgressAt = Date.now();
+      }
+      const webContents = event?.sender || mainWindow?.webContents;
+      if (!webContents || webContents.isDestroyed()) return;
+      webContents.send("segmenteverygrain-progress", payload);
+    };
+    sendProgress({
+      type: "progress",
+      stage: "Starting",
+      message: "Starting segmenteverygrain...",
+      percent: 1,
+    });
+    const heartbeatStartedAt = Date.now();
+    const heartbeat = setInterval(() => {
+      if (Date.now() - lastSegmenteverygrainProgressAt < 20000) return;
+      const elapsedSeconds = Math.max(
+        1,
+        Math.round((Date.now() - heartbeatStartedAt) / 1000),
+      );
+      const elapsedLabel =
+        elapsedSeconds >= 60
+          ? `${Math.floor(elapsedSeconds / 60)}m ${elapsedSeconds % 60}s`
+          : `${elapsedSeconds}s`;
+      sendProgress(
+        {
+          type: "progress",
+          stage: "Running",
+          message: `segmenteverygrain is still running... ${elapsedLabel} elapsed`,
+        },
+        { heartbeat: true },
+      );
+    }, 5000);
+    let result;
+    try {
+      result = await runProcessWithProgress(samSettings.pythonPath, args, {
+        timeoutMs: 30 * 60 * 1000,
+        env: {
+          MPLCONFIGDIR: tempDirectory,
+          TF_CPP_MIN_LOG_LEVEL: "2",
+        },
+        onStdoutLine: (line) => {
+          const parsed = tryParseJsonLine(line);
+          if (parsed?.type === "progress") {
+            sendProgress(parsed);
+          }
+        },
+        onStderrLine: (line) => {
+          const progress = parseSegmenteverygrainTextProgress(line);
+          if (progress) sendProgress(progress);
+        },
+        onChild: (child) => {
+          activeSegmenteverygrainChild = child;
+        },
+      });
+    } finally {
+      clearInterval(heartbeat);
+      activeSegmenteverygrainChild = null;
+    }
+
+    if (result.canceled) {
+      return {
+        ok: false,
+        canceled: true,
+        error: "segmenteverygrain canceled.",
+      };
+    }
+
+    let parsed;
+    try {
+      parsed = parseJsonProcessOutput(result.stdout);
+    } catch (error) {
+      return {
+        ok: false,
+        error: "Python did not return valid segmenteverygrain JSON.",
+        exitCode: result.exitCode,
+        stdout: result.stdout,
+        stderr: result.stderr,
+      };
+    }
+
+    return {
+      ...parsed,
+      exitCode: result.exitCode,
+      stderr: result.stderr,
+    };
   } finally {
     await fs.rm(tempDirectory, { recursive: true, force: true });
   }
@@ -1200,6 +1712,10 @@ ipcMain.handle("save-sam-settings", async (event, samSettings) => {
   return writeSamSettings(samSettings || {});
 });
 
+ipcMain.handle("save-segmenteverygrain-settings", async (event, settings) => {
+  return writeSegmenteverygrainSettings(settings || {});
+});
+
 ipcMain.handle("select-sam-python", async (event) => {
   const { canceled, filePaths } = await dialog.showOpenDialog(getOwnerWindow(event), {
     title: "Select Python Executable",
@@ -1240,6 +1756,44 @@ ipcMain.handle("select-sam-checkpoint", async (event) => {
   };
 });
 
+ipcMain.handle("select-segmenteverygrain-model", async (event) => {
+  const { canceled, filePaths } = await dialog.showOpenDialog(getOwnerWindow(event), {
+    title: "Select segmenteverygrain Model",
+    properties: ["openFile"],
+    filters: [
+      { name: "Keras Model Files", extensions: ["h5", "keras"] },
+      { name: "All Files", extensions: ["*"] },
+    ],
+  });
+
+  if (canceled || !filePaths.length) {
+    return { canceled: true };
+  }
+
+  const samSettings = normalizeSamSettings(await readProjectSettings());
+  const modelPathError = getSegmenteverygrainModelPathError(
+    filePaths[0],
+    samSettings.pythonPath,
+  );
+  if (modelPathError) {
+    return {
+      canceled: false,
+      filePath: filePaths[0],
+      error: modelPathError,
+      settings: await writeSegmenteverygrainSettings({}),
+    };
+  }
+
+  const settings = await writeSegmenteverygrainSettings({
+    modelPath: filePaths[0],
+  });
+  return {
+    canceled: false,
+    filePath: filePaths[0],
+    settings,
+  };
+});
+
 ipcMain.handle("validate-sam-setup", async (event, samSettings) => {
   const savedSettings = await writeSamSettings(samSettings || {});
   const result = await validateSamSetup(savedSettings);
@@ -1257,8 +1811,48 @@ ipcMain.handle("validate-sam-setup", async (event, samSettings) => {
   };
 });
 
+ipcMain.handle("validate-segmenteverygrain-setup", async (event, samSettings) => {
+  const savedSamSettings = await writeSamSettings(samSettings?.sam || samSettings || {});
+  const savedSegSettings = await writeSegmenteverygrainSettings(
+    samSettings?.segmenteverygrain || {},
+  );
+  const result = await validateSegmenteverygrainSetup({
+    sam: savedSamSettings,
+    segmenteverygrain: savedSegSettings,
+  });
+  const settingsWithValidation = await writeSegmenteverygrainSettings({
+    ...savedSegSettings,
+    validation: {
+      status: result.ok ? "ready" : "error",
+      fingerprint: JSON.stringify({
+        pythonPath: savedSamSettings.pythonPath || "",
+        modelPath:
+          (result.segmenteverygrainSettings || savedSegSettings).modelPath || "",
+      }),
+      validatedAt: new Date().toISOString(),
+    },
+  });
+  return {
+    ...result,
+    segmenteverygrainSettings: settingsWithValidation,
+  };
+});
+
 ipcMain.handle("run-sam-segmentation", async (event, request) => {
   return runSamSegmentation(request || {});
+});
+
+ipcMain.handle("run-segmenteverygrain-segmentation", async (event, request) => {
+  return runSegmenteverygrainSegmentation(request || {}, event);
+});
+
+ipcMain.handle("cancel-segmenteverygrain-segmentation", async () => {
+  if (!activeSegmenteverygrainChild || activeSegmenteverygrainChild.killed) {
+    return { ok: true, canceled: false };
+  }
+  activeSegmenteverygrainChild._petroImageCanceled = true;
+  activeSegmenteverygrainChild.kill();
+  return { ok: true, canceled: true };
 });
 
 ipcMain.handle("select-existing-json-file", async () => {
@@ -1378,20 +1972,68 @@ ipcMain.handle("confirm-slow-tiles", async (event, validationResult) => {
 });
 
 ipcMain.handle("show-tile-load-warning", async (event, failure) => {
+  const settings = await readProjectSettings();
+  if (settings.suppressTileLoadWarning) {
+    return { suppressed: true };
+  }
   const ownerWindow =
     BrowserWindow.fromWebContents(event.sender) ||
     BrowserWindow.getFocusedWindow() ||
     mainWindow;
-  await dialog.showMessageBox(ownerWindow, {
-    type: "warning",
-    buttons: ["OK"],
+  const context = getTileLoadFailureContext(failure);
+  const result = await dialog.showMessageBox(ownerWindow, {
+    type: "info",
+    buttons: ["OK", "Do Not Show Again"],
     defaultId: 0,
     cancelId: 0,
-    message: "Image Tiles Are Not Loading",
-    detail:
-      `OpenSeadragon could not load one or more DZI image tiles for ${failure?.sampleTitle || "the selected sample"}.\n\n${failure?.tilePath || failure?.tileUrl || ""}\n\n${failure?.message || "The tile request failed."}\n\nThis often happens when a project is stored in a cloud-synced folder and tile files are not available offline. Move the Project Folder to local storage or mark the full project folder as always available offline.`,
+    message: context.message,
+    detail: context.detail,
   });
+  if (result.response === 1) {
+    await writeProjectSettings({
+      ...settings,
+      suppressTileLoadWarning: true,
+    });
+  }
+  return { suppressed: false, dontShowAgain: result.response === 1 };
 });
+
+function getTileLoadFailureContext(failure = {}) {
+  const location = failure.tilePath || failure.tileUrl || "";
+  const sample = failure.sampleTitle || "the selected sample";
+  const requestMessage = failure.message || "One tile request failed.";
+  const isRemote =
+    typeof failure.tileUrl === "string" &&
+    /^[a-z][a-z0-9+.-]*:\/\//i.test(failure.tileUrl) &&
+    !/^https?:\/\/(127\.0\.0\.1|localhost|\[?::1\]?)([:/]|$)/i.test(
+      failure.tileUrl
+    );
+  const cloudProvider = failure.tilePath
+    ? getCloudProjectProvider(failure.tilePath)
+    : "";
+
+  if (isRemote) {
+    return {
+      message: "Some Web Image Tiles Did Not Load",
+      detail:
+        `petro-image could not load one or more web-hosted DZI image tiles for ${sample}.\n\n${location}\n\n${requestMessage}\n\nThis is usually a temporary network or hosting issue. The app can continue working, although parts of the image may appear blank until tiles load successfully.`,
+    };
+  }
+
+  if (cloudProvider) {
+    return {
+      message: "Some Local Image Tiles Did Not Load",
+      detail:
+        `petro-image could not load one or more local DZI image tiles for ${sample}.\n\n${location}\n\n${requestMessage}\n\nThis path appears to be inside ${cloudProvider}. If tiles are stored in a cloud-synced folder, mark the project folder as available offline or move the project to local storage for more reliable loading.`,
+    };
+  }
+
+  return {
+    message: "Some Image Tiles Did Not Load",
+    detail:
+      `petro-image could not load one or more DZI image tiles for ${sample}.\n\n${location}\n\n${requestMessage}\n\nThe app can continue working, although parts of the image may appear blank until the missing tiles load successfully.`,
+  };
+}
 
 ipcMain.handle("read-local-json-file", async (event, filePath) => {
   const resolvedPath = await resolveLibraryFilePath(filePath);
@@ -1516,6 +2158,65 @@ function parseDziInfo(dziPath, dziXml) {
     width: parseInt(getXmlAttribute(sizeTag[1], "Width"), 10),
     height: parseInt(getXmlAttribute(sizeTag[1], "Height"), 10),
   };
+}
+
+async function buildSegmenteverygrainTileJob(event, tileJob = {}) {
+  if (!Array.isArray(tileJob.tiles) || tileJob.tiles.length === 0) {
+    throw new Error("No local DZI tile source is available for segmentation.");
+  }
+
+  const resolvedTiles = [];
+  for (const tile of tileJob.tiles) {
+    const resolvedUri = getLocalPathFromTileUri(tile?.uri || "");
+    if (!resolvedUri || !/\.dzi$/i.test(resolvedUri)) {
+      throw new Error("Python segmentation currently requires local DZI tile sources.");
+    }
+    const dziPath = await resolveLibraryFilePath(resolvedUri);
+    if (/^[a-z][a-z0-9+.-]*:\/\//i.test(dziPath)) {
+      throw new Error("Python segmentation cannot read remote tile sources.");
+    }
+    const result = await readDziXmlWithPermissionFallback(event, dziPath);
+    const info = parseDziInfo(result.dziPath, result.dziXml);
+    resolvedTiles.push({
+      dziPath: result.dziPath,
+      opacity: Math.max(0, Math.min(1, Number(tile.opacity) || 0)),
+      ...info,
+    });
+  }
+
+  return {
+    imageRect: tileJob.imageRect || {},
+    outputScale: Math.max(0.05, Math.min(1, Number(tileJob.outputScale) || 1)),
+    tiles: resolvedTiles.filter((tile) => tile.opacity > 0),
+  };
+}
+
+function getLocalPathFromTileUri(uri) {
+  if (typeof uri !== "string" || !uri) return "";
+  if (/^file:\/\//i.test(uri)) {
+    try {
+      return decodeURIComponent(new URL(uri).pathname);
+    } catch {
+      return "";
+    }
+  }
+  if (/^https?:\/\//i.test(uri)) {
+    try {
+      const parsed = new URL(uri);
+      if (
+        parsed.hostname !== "127.0.0.1" &&
+        parsed.hostname !== "localhost" &&
+        parsed.hostname !== "::1"
+      ) {
+        return "";
+      }
+      if (parsed.pathname !== "/local-file") return "";
+      return parsed.searchParams.get("path") || "";
+    } catch {
+      return "";
+    }
+  }
+  return uri;
 }
 
 async function validateSampleTiles(event, tileSets) {

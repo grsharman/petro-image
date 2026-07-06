@@ -10,10 +10,26 @@ contextBridge.exposeInMainWorld("electronAPI", {
   getProjectSettings: () => ipcRenderer.invoke("get-project-settings"),
   saveSamSettings: (samSettings) =>
     ipcRenderer.invoke("save-sam-settings", samSettings),
+  saveSegmenteverygrainSettings: (settings) =>
+    ipcRenderer.invoke("save-segmenteverygrain-settings", settings),
   selectSamPython: () => ipcRenderer.invoke("select-sam-python"),
   selectSamCheckpoint: () => ipcRenderer.invoke("select-sam-checkpoint"),
+  selectSegmenteverygrainModel: () =>
+    ipcRenderer.invoke("select-segmenteverygrain-model"),
   validateSamSetup: (samSettings) =>
     ipcRenderer.invoke("validate-sam-setup", samSettings),
+  validateSegmenteverygrainSetup: (samSettings) =>
+    ipcRenderer.invoke("validate-segmenteverygrain-setup", samSettings),
+  runSegmenteverygrainSegmentation: (request) =>
+    ipcRenderer.invoke("run-segmenteverygrain-segmentation", request),
+  cancelSegmenteverygrainSegmentation: () =>
+    ipcRenderer.invoke("cancel-segmenteverygrain-segmentation"),
+  onSegmenteverygrainProgress: (callback) => {
+    const listener = (event, payload) => callback(payload);
+    ipcRenderer.on("segmenteverygrain-progress", listener);
+    return () =>
+      ipcRenderer.removeListener("segmenteverygrain-progress", listener);
+  },
   runSamSegmentation: (request) =>
     ipcRenderer.invoke("run-sam-segmentation", request),
   getLocalDziTileSource: (dziPath) =>

@@ -369,7 +369,26 @@ const saveSamSettingsButton = document.getElementById("saveSamSettingsButton");
 const testSamSetupButton = document.getElementById("testSamSetupButton");
 const samSetupStatus = document.getElementById("samSetupStatus");
 const samSetupReadiness = document.getElementById("samSetupReadiness");
+const testSegmenteverygrainSetupButton = document.getElementById(
+  "testSegmenteverygrainSetupButton"
+);
+const segmenteverygrainSetupStatus = document.getElementById(
+  "segmenteverygrainSetupStatus"
+);
+const segmenteverygrainSetupReadiness = document.getElementById(
+  "segmenteverygrainSetupReadiness"
+);
+const segmenteverygrainModelPathInput = document.getElementById(
+  "segmenteverygrainModelPath"
+);
+const chooseSegmenteverygrainModelButton = document.getElementById(
+  "chooseSegmenteverygrainModelButton"
+);
 const segmentTileSetSelect = document.getElementById("segmentTileSetSelect");
+const segmentResolutionSelect = document.getElementById("segmentResolutionSelect");
+const unsupervisedSegmentTileSetSelect = document.getElementById(
+  "unsupervisedSegmentTileSetSelect"
+);
 const segmentPaddingPercentInput = document.getElementById(
   "segmentPaddingPercent"
 );
@@ -400,6 +419,62 @@ const segmentAddNegativePointButton = document.getElementById(
 );
 const segmentAddAnnotationButton = document.getElementById(
   "segmentAddAnnotationButton"
+);
+const unsupervisedSimplifyEnabledInput = document.getElementById(
+  "unsupervisedSimplifyEnabled"
+);
+const unsupervisedSimplifyEpsilonInput = document.getElementById(
+  "unsupervisedSimplifyEpsilon"
+);
+const unsupervisedUseSamRefinementInput = document.getElementById(
+  "unsupervisedUseSamRefinement"
+);
+const unsupervisedMinAreaInput = document.getElementById("unsupervisedMinArea");
+const unsupervisedPatchSizeInput = document.getElementById(
+  "unsupervisedPatchSize"
+);
+const unsupervisedOverlapInput = document.getElementById("unsupervisedOverlap");
+const unsupervisedDilationInput = document.getElementById(
+  "unsupervisedDilation"
+);
+const unsupervisedShowPatchGridInput = document.getElementById(
+  "unsupervisedShowPatchGrid"
+);
+const unsupervisedRemoveEdgeGrainsInput = document.getElementById(
+  "unsupervisedRemoveEdgeGrains"
+);
+const unsupervisedResolutionSelect = document.getElementById(
+  "unsupervisedResolutionSelect"
+);
+const unsupervisedAoiSourcePixels = document.getElementById(
+  "unsupervisedAoiSourcePixels"
+);
+const unsupervisedAoiProcessedPixels = document.getElementById(
+  "unsupervisedAoiProcessedPixels"
+);
+const unsupervisedAoiPixelCount = document.getElementById(
+  "unsupervisedAoiPixelCount"
+);
+const unsupervisedSegmentStatus = document.getElementById(
+  "unsupervisedSegmentStatus"
+);
+const unsupervisedSegmentProgress = document.getElementById(
+  "unsupervisedSegmentProgress"
+);
+const unsupervisedSegmentProgressBar = document.getElementById(
+  "unsupervisedSegmentProgressBar"
+);
+const unsupervisedDrawAoiButton = document.getElementById(
+  "unsupervisedDrawAoiButton"
+);
+const unsupervisedClearAoiButton = document.getElementById(
+  "unsupervisedClearAoiButton"
+);
+const runUnsupervisedSegmentationButton = document.getElementById(
+  "runUnsupervisedSegmentationButton"
+);
+const cancelUnsupervisedSegmentationButton = document.getElementById(
+  "cancelUnsupervisedSegmentationButton"
 );
 const segmentStatus = document.getElementById("segmentStatus");
 const segmentReticle = document.getElementById("segment-reticle");
@@ -495,6 +570,17 @@ let samValidationState = {
   fingerprint: "",
 };
 let samAutoValidationStarted = false;
+let segmenteverygrainValidationState = {
+  status: "untested",
+  fingerprint: "",
+};
+let unsupervisedAoiModeActive = false;
+let unsupervisedAoiDragState = null;
+let unsupervisedAoiRect = null;
+let unsupervisedSegmentIsRunning = false;
+let unsupervisedSegmentCancelRequested = false;
+let unsupervisedSegmentRunId = 0;
+let unsupervisedSegmentLastProgressPercent = 0;
 let segmentBoxModeActive = false;
 let segmentBoxDragState = null;
 let segmentPromptBox = null;
@@ -1275,6 +1361,12 @@ function getSamSettingsFromInputs() {
   };
 }
 
+function getSegmenteverygrainSettingsFromInputs() {
+  return {
+    modelPath: segmenteverygrainModelPathInput?.value.trim() || "",
+  };
+}
+
 function getSamSettingsFingerprint(settings = getSamSettingsFromInputs()) {
   return JSON.stringify({
     pythonPath: settings.pythonPath || "",
@@ -1339,6 +1431,62 @@ function updateSamReadinessIndicator(status = samValidationState.status) {
   samSetupReadiness.className = `sam-readiness ${readiness.className}`;
 }
 
+function getSegmenteverygrainSettingsFingerprint() {
+  const settings = getSegmenteverygrainSettingsFromInputs();
+  return JSON.stringify({
+    pythonPath: getSamSettingsFromInputs().pythonPath || "",
+    modelPath: settings.modelPath || "",
+  });
+}
+
+function updateSegmenteverygrainReadinessIndicator(
+  status = segmenteverygrainValidationState.status
+) {
+  if (!segmenteverygrainSetupReadiness) return;
+
+  const settings = getSamSettingsFromInputs();
+  const currentFingerprint = getSegmenteverygrainSettingsFingerprint();
+  let effectiveStatus = status;
+  if (!settings.pythonPath) {
+    effectiveStatus = "error";
+  } else if (
+    ["ready", "error"].includes(segmenteverygrainValidationState.status) &&
+    segmenteverygrainValidationState.fingerprint !== currentFingerprint
+  ) {
+    effectiveStatus = "untested";
+  }
+
+  const readinessByStatus = {
+    ready: {
+      text: "✓",
+      label: "segmenteverygrain setup ready",
+      className: "sam-readiness-ready",
+    },
+    error: {
+      text: "X",
+      label: "segmenteverygrain setup needs attention",
+      className: "sam-readiness-error",
+    },
+    testing: {
+      text: "...",
+      label: "Testing segmenteverygrain setup",
+      className: "sam-readiness-testing",
+    },
+    untested: {
+      text: "?",
+      label: "segmenteverygrain setup has not been tested",
+      className: "sam-readiness-untested",
+    },
+  };
+  const readiness =
+    readinessByStatus[effectiveStatus] || readinessByStatus.untested;
+
+  segmenteverygrainSetupReadiness.textContent = readiness.text;
+  segmenteverygrainSetupReadiness.setAttribute("aria-label", readiness.label);
+  segmenteverygrainSetupReadiness.title = readiness.label;
+  segmenteverygrainSetupReadiness.className = `sam-readiness ${readiness.className}`;
+}
+
 function shouldAutoValidateSamSetup() {
   if (samAutoValidationStarted || !window.electronAPI?.validateSamSetup) {
     return false;
@@ -1386,6 +1534,25 @@ function getSamValidationStateFromSettings(settings = {}) {
   };
 }
 
+function getSegmenteverygrainValidationStateFromSettings(settings = {}) {
+  const validation = settings.validation || {};
+  if (
+    !["ready", "error"].includes(validation.status) ||
+    typeof validation.fingerprint !== "string" ||
+    !validation.fingerprint
+  ) {
+    return {
+      status: "untested",
+      fingerprint: "",
+    };
+  }
+
+  return {
+    status: validation.status,
+    fingerprint: validation.fingerprint,
+  };
+}
+
 function setSamInputs(settings = {}) {
   if (samPythonPathInput) samPythonPathInput.value = settings.pythonPath || "";
   if (samCheckpointPathInput) {
@@ -1396,6 +1563,17 @@ function setSamInputs(settings = {}) {
   }
   samValidationState = getSamValidationStateFromSettings(settings);
   updateSamReadinessIndicator();
+  updateSegmenteverygrainReadinessIndicator();
+}
+
+function setSegmenteverygrainInputs(settings = {}) {
+  if (segmenteverygrainModelPathInput) {
+    segmenteverygrainModelPathInput.value = settings.modelPath || "";
+  }
+  segmenteverygrainValidationState =
+    getSegmenteverygrainValidationStateFromSettings(settings);
+  updateSegmenteverygrainReadinessIndicator();
+  updateUnsupervisedSegmentControls();
 }
 
 function setSamSetupStatus(message, state = "") {
@@ -1452,12 +1630,110 @@ function formatSamProbeResult(result) {
   return lines.join("\n");
 }
 
+function setSegmenteverygrainSetupStatus(message, state = "") {
+  if (!segmenteverygrainSetupStatus) return;
+
+  segmenteverygrainSetupStatus.textContent = message;
+  segmenteverygrainSetupStatus.classList.toggle(
+    "segment-status-ok",
+    state === "ok"
+  );
+  segmenteverygrainSetupStatus.classList.toggle(
+    "segment-status-error",
+    state === "error"
+  );
+}
+
+function formatSegmenteverygrainProbeResult(result) {
+  const lines = [];
+  if (result.pythonExecutable) {
+    lines.push(`Python: ${result.pythonExecutable}`);
+  }
+  if (result.pythonVersion) lines.push(`Version: ${result.pythonVersion}`);
+  if (result.modelExists) {
+    const sizeMb = result.modelSizeBytes
+      ? `${(result.modelSizeBytes / 1024 / 1024).toFixed(1)} MB`
+      : "found";
+    lines.push(`Model: ${sizeMb}`);
+  }
+  const modules = result.modules || {};
+  ["segmenteverygrain", "tensorflow", "torch", "opencv-python", "scikit-image"].forEach(
+    (name) => {
+      const moduleResult = modules[name];
+      if (!moduleResult) return;
+      const version = moduleResult.version ? ` ${moduleResult.version}` : "";
+      lines.push(`${name}: ${moduleResult.available ? "ok" : "missing"}${version}`);
+    }
+  );
+  if (Array.isArray(result.warnings) && result.warnings.length > 0) {
+    lines.push("", "Warnings:", ...result.warnings.map((warning) => `- ${warning}`));
+  }
+  if (Array.isArray(result.errors) && result.errors.length > 0) {
+    lines.push("", "Errors:", ...result.errors.map((error) => `- ${error}`));
+  }
+  if (result.stderr) {
+    lines.push("", "Python stderr:", result.stderr.trim());
+  }
+  return lines.join("\n");
+}
+
+async function testSegmenteverygrainSetup() {
+  if (!window.electronAPI?.validateSegmenteverygrainSetup) return;
+
+  const requestedSettings = getSamSettingsFromInputs();
+  const requestedFingerprint = getSegmenteverygrainSettingsFingerprint();
+  if (testSegmenteverygrainSetupButton) {
+    testSegmenteverygrainSetupButton.disabled = true;
+  }
+  segmenteverygrainValidationState = {
+    status: "testing",
+    fingerprint: requestedFingerprint,
+  };
+  updateSegmenteverygrainReadinessIndicator("testing");
+  setSegmenteverygrainSetupStatus("Testing segmenteverygrain setup...");
+  try {
+    const result =
+      await window.electronAPI.validateSegmenteverygrainSetup({
+        sam: requestedSettings,
+        segmenteverygrain: getSegmenteverygrainSettingsFromInputs(),
+      });
+    if (result.segmenteverygrainSettings) {
+      setSegmenteverygrainInputs(result.segmenteverygrainSettings);
+    }
+    segmenteverygrainValidationState = {
+      status: result.ok ? "ready" : "error",
+      fingerprint: requestedFingerprint,
+    };
+    updateSegmenteverygrainReadinessIndicator();
+    setSegmenteverygrainSetupStatus(
+      `${result.ok ? "segmenteverygrain looks ready." : "segmenteverygrain needs attention."}\n\n${formatSegmenteverygrainProbeResult(result)}`,
+      result.ok ? "ok" : "error"
+    );
+  } catch (error) {
+    console.error("segmenteverygrain setup test failed:", error);
+    segmenteverygrainValidationState = {
+      status: "error",
+      fingerprint: requestedFingerprint,
+    };
+    updateSegmenteverygrainReadinessIndicator();
+    setSegmenteverygrainSetupStatus(
+      error.message || "segmenteverygrain setup test failed.",
+      "error"
+    );
+  } finally {
+    if (testSegmenteverygrainSetupButton) {
+      testSegmenteverygrainSetupButton.disabled = false;
+    }
+  }
+}
+
 async function loadSamSettings() {
   if (!window.electronAPI?.getProjectSettings) return;
 
   try {
     const settings = await window.electronAPI.getProjectSettings();
     setSamInputs(settings.sam || {});
+    setSegmenteverygrainInputs(settings.segmenteverygrain || {});
     if (shouldAutoValidateSamSetup()) {
       samAutoValidationStarted = true;
       testSamSetup({ automatic: true });
@@ -1465,6 +1741,28 @@ async function loadSamSettings() {
   } catch (error) {
     console.warn("Could not load SAM settings:", error);
     setSamSetupStatus("Could not load SAM settings.", "error");
+  }
+}
+
+async function saveSegmenteverygrainSettings(
+  message = "segmenteverygrain settings saved."
+) {
+  if (!window.electronAPI?.saveSegmenteverygrainSettings) return null;
+
+  const settings = getSegmenteverygrainSettingsFromInputs();
+  try {
+    const savedSettings =
+      await window.electronAPI.saveSegmenteverygrainSettings(settings);
+    setSegmenteverygrainInputs(savedSettings);
+    setSegmenteverygrainSetupStatus(message);
+    return savedSettings;
+  } catch (error) {
+    console.error("Could not save segmenteverygrain settings:", error);
+    setSegmenteverygrainSetupStatus(
+      error.message || "Could not save segmenteverygrain settings.",
+      "error"
+    );
+    return null;
   }
 }
 
@@ -1482,6 +1780,32 @@ async function saveSamSettings(message = "SAM settings saved.") {
     console.error("Could not save SAM settings:", error);
     setSamSetupStatus(error.message || "Could not save SAM settings.", "error");
     return null;
+  }
+}
+
+async function chooseSegmenteverygrainModel() {
+  if (!window.electronAPI?.selectSegmenteverygrainModel) return;
+
+  try {
+    const result = await window.electronAPI.selectSegmenteverygrainModel();
+    if (result?.canceled) return;
+    if (result?.error) {
+      setSegmenteverygrainSetupStatus(result.error, "error");
+      return;
+    }
+    setSegmenteverygrainInputs(
+      result.settings || {
+        ...getSegmenteverygrainSettingsFromInputs(),
+        modelPath: result.filePath,
+      }
+    );
+    setSegmenteverygrainSetupStatus("segmenteverygrain model selected.");
+  } catch (error) {
+    console.error("Could not choose segmenteverygrain model:", error);
+    setSegmenteverygrainSetupStatus(
+      error.message || "Could not choose segmenteverygrain model.",
+      "error"
+    );
   }
 }
 
@@ -1574,6 +1898,62 @@ function setSegmentStatus(message, state = "") {
   segmentStatus.classList.toggle("segment-status-error", state === "error");
 }
 
+function setUnsupervisedSegmentStatus(message, state = "") {
+  if (!unsupervisedSegmentStatus) return;
+
+  unsupervisedSegmentStatus.textContent = message;
+  unsupervisedSegmentStatus.classList.toggle(
+    "segment-status-ok",
+    state === "ok"
+  );
+  unsupervisedSegmentStatus.classList.toggle(
+    "segment-status-error",
+    state === "error"
+  );
+}
+
+function setUnsupervisedSegmentProgress(percent, options = {}) {
+  if (!unsupervisedSegmentProgress || !unsupervisedSegmentProgressBar) return;
+
+  const { indeterminate = false } = options;
+  unsupervisedSegmentProgress.hidden = false;
+  unsupervisedSegmentProgress.classList.toggle(
+    "segment-progress-indeterminate",
+    indeterminate
+  );
+  if (!indeterminate) {
+    const clampedPercent = Math.max(0, Math.min(100, Number(percent) || 0));
+    unsupervisedSegmentProgressBar.style.width = `${clampedPercent}%`;
+  }
+}
+
+function hideUnsupervisedSegmentProgress() {
+  if (!unsupervisedSegmentProgress || !unsupervisedSegmentProgressBar) return;
+  unsupervisedSegmentProgress.hidden = true;
+  unsupervisedSegmentProgress.classList.remove("segment-progress-indeterminate");
+  unsupervisedSegmentProgressBar.style.width = "0%";
+  unsupervisedSegmentLastProgressPercent = 0;
+}
+
+function handleSegmenteverygrainProgress(payload = {}) {
+  if (!unsupervisedSegmentIsRunning) return;
+
+  const percent = Number(payload.percent);
+  const hasPercent = Number.isFinite(percent);
+  const nextPercent = hasPercent
+    ? Math.max(unsupervisedSegmentLastProgressPercent, percent)
+    : 0;
+  if (hasPercent) {
+    unsupervisedSegmentLastProgressPercent = nextPercent;
+  }
+  setUnsupervisedSegmentProgress(nextPercent, {
+    indeterminate: !hasPercent,
+  });
+  if (payload.message) {
+    setUnsupervisedSegmentStatus(payload.message);
+  }
+}
+
 function updateSegmentControls() {
   if (segmentDrawBoxButton) {
     segmentDrawBoxButton.disabled = segmentModeActive || segmentIsRunning;
@@ -1612,6 +1992,61 @@ function updateSegmentControls() {
   if (segmentAddAnnotationButton) {
     segmentAddAnnotationButton.disabled =
       segmentModeActive || segmentIsRunning || !segmentPreviewFeature;
+  }
+  updateUnsupervisedSegmentControls();
+}
+
+function updateUnsupervisedSegmentControls() {
+  const setupReady = segmenteverygrainValidationState.status === "ready";
+  const hasAoi = Boolean(unsupervisedAoiRect);
+  updateUnsupervisedAoiStats();
+  if (unsupervisedDrawAoiButton) {
+    unsupervisedDrawAoiButton.disabled = unsupervisedSegmentIsRunning;
+    unsupervisedDrawAoiButton.textContent = unsupervisedAoiModeActive
+      ? "Drawing..."
+      : "Draw AOI";
+  }
+  if (unsupervisedClearAoiButton) {
+    unsupervisedClearAoiButton.disabled =
+      unsupervisedSegmentIsRunning || (!hasAoi && !unsupervisedAoiModeActive);
+  }
+  if (runUnsupervisedSegmentationButton) {
+    runUnsupervisedSegmentationButton.disabled =
+      unsupervisedSegmentIsRunning || !setupReady || !hasAoi;
+  }
+  if (cancelUnsupervisedSegmentationButton) {
+    cancelUnsupervisedSegmentationButton.hidden = !unsupervisedSegmentIsRunning;
+    cancelUnsupervisedSegmentationButton.disabled =
+      !unsupervisedSegmentIsRunning || unsupervisedSegmentCancelRequested;
+  }
+}
+
+function refreshUnsupervisedAoiPreviewAndControls() {
+  if (unsupervisedAoiRect) {
+    updateUnsupervisedAoiPreview();
+  } else {
+    updateUnsupervisedSegmentControls();
+  }
+}
+
+async function cancelUnsupervisedSegmentation() {
+  if (!unsupervisedSegmentIsRunning || unsupervisedSegmentCancelRequested) return;
+  unsupervisedSegmentCancelRequested = true;
+  setUnsupervisedSegmentStatus("Canceling segmenteverygrain...");
+  updateUnsupervisedSegmentControls();
+  try {
+    await window.electronAPI?.cancelSegmenteverygrainSegmentation?.();
+  } catch (error) {
+    console.error("Could not cancel segmenteverygrain:", error);
+  }
+}
+
+function throwIfUnsupervisedSegmentationCanceled(runId) {
+  if (
+    unsupervisedSegmentCancelRequested ||
+    runId !== unsupervisedSegmentRunId
+  ) {
+    throw new Error("segmenteverygrain canceled.");
   }
 }
 
@@ -1666,40 +2101,358 @@ function getSegmentSimplifyEpsilon() {
 function updateSegmentSimplifyControls() {
   if (!segmentSimplifyEpsilonInput) return;
   segmentSimplifyEpsilonInput.disabled = !segmentSimplifyEnabledInput?.checked;
+  if (unsupervisedSimplifyEpsilonInput) {
+    unsupervisedSimplifyEpsilonInput.disabled =
+      !unsupervisedSimplifyEnabledInput?.checked;
+  }
 }
 
 function populateSegmentTileSetSelect() {
-  if (!segmentTileSetSelect) return;
+  if (!segmentTileSetSelect && !unsupervisedSegmentTileSetSelect) return;
 
-  const previousValue = segmentTileSetSelect.value;
-  segmentTileSetSelect.innerHTML = "";
-  tileSets().forEach((tileSet, index) => {
-    const option = document.createElement("option");
-    option.value = String(index);
-    option.textContent = getSnapshotTileSetLabel(tileSet, index);
-    segmentTileSetSelect.append(option);
+  const selects = [
+    segmentTileSetSelect,
+    unsupervisedSegmentTileSetSelect,
+  ].filter(Boolean);
+  const previousValues = new Map(
+    selects.map((select) => [select, select.value])
+  );
+  selects.forEach((select) => {
+    select.innerHTML = "";
+    tileSets().forEach((tileSet, index) => {
+      const option = document.createElement("option");
+      option.value = String(index);
+      option.textContent = getSnapshotTileSetLabel(tileSet, index);
+      select.append(option);
+    });
   });
-
-  const hasPrevious =
-    previousValue !== "" &&
-    Array.from(segmentTileSetSelect.options).some(
-      (option) => option.value === previousValue
-    );
-  if (hasPrevious) {
-    segmentTileSetSelect.value = previousValue;
-    return;
-  }
 
   const checkedIndex = Array.from(
     document.querySelectorAll(".image-checkbox")
   ).findIndex((checkbox) => checkbox.checked);
-  segmentTileSetSelect.value = String(checkedIndex >= 0 ? checkedIndex : 0);
+  const fallbackValue = String(checkedIndex >= 0 ? checkedIndex : 0);
+
+  selects.forEach((select) => {
+    const previousValue = previousValues.get(select);
+    const hasPrevious =
+      previousValue !== "" &&
+      Array.from(select.options).some((option) => option.value === previousValue);
+    select.value = hasPrevious ? previousValue : fallbackValue;
+  });
 }
 
 function getSegmentTileSetIndex() {
   const rawIndex = Number.parseInt(segmentTileSetSelect?.value || "0", 10);
   if (!Number.isFinite(rawIndex)) return 0;
   return Math.min(Math.max(rawIndex, 0), Math.max(tileSets().length - 1, 0));
+}
+
+function getUnsupervisedSegmentTileSetIndex() {
+  const rawIndex = Number.parseInt(
+    unsupervisedSegmentTileSetSelect?.value || "0",
+    10
+  );
+  if (!Number.isFinite(rawIndex)) return 0;
+  return Math.min(Math.max(rawIndex, 0), Math.max(tileSets().length - 1, 0));
+}
+
+function getViewerResolutionScaleForImageRect(imageRect) {
+  const image = viewer.world.getItemAt(0);
+  if (!image || !imageRect) return 1;
+
+  const topLeft = image.imageToViewportCoordinates(imageRect.x, imageRect.y);
+  const bottomRight = image.imageToViewportCoordinates(
+    imageRect.x + imageRect.width,
+    imageRect.y + imageRect.height
+  );
+  const screenTopLeft =
+    viewer.viewport.viewportToViewerElementCoordinates(topLeft);
+  const screenBottomRight =
+    viewer.viewport.viewportToViewerElementCoordinates(bottomRight);
+  const screenWidth = Math.abs(screenBottomRight.x - screenTopLeft.x);
+  const screenHeight = Math.abs(screenBottomRight.y - screenTopLeft.y);
+  const scaleX = screenWidth / Math.max(1, imageRect.width);
+  const scaleY = screenHeight / Math.max(1, imageRect.height);
+  const scale = Math.min(scaleX, scaleY);
+  return Math.max(0.05, Math.min(1, scale || 1));
+}
+
+function getResolutionScaleFromSelect(select, imageRect) {
+  const value = select?.value || "1";
+  if (value === "viewer") return getViewerResolutionScaleForImageRect(imageRect);
+  const scale = Number(value);
+  return Number.isFinite(scale) ? Math.max(0.05, Math.min(1, scale)) : 1;
+}
+
+function getSegmentResolutionScale(imageRect) {
+  return getResolutionScaleFromSelect(segmentResolutionSelect, imageRect);
+}
+
+function getUnsupervisedSimplifyEpsilon() {
+  if (!unsupervisedSimplifyEnabledInput?.checked) return 0;
+
+  const value = getSegmentNumberInput(
+    unsupervisedSimplifyEpsilonInput,
+    2,
+    0,
+    100
+  );
+  return Number(value.toFixed(3));
+}
+
+function getUnsupervisedViewerResolutionScale() {
+  if (!unsupervisedAoiRect) return 1;
+  return getViewerResolutionScaleForImageRect(unsupervisedAoiRect);
+}
+
+function getUnsupervisedResolutionScale() {
+  return getResolutionScaleFromSelect(unsupervisedResolutionSelect, unsupervisedAoiRect);
+}
+
+function getUnsupervisedProcessingSize() {
+  if (!unsupervisedAoiRect) {
+    return {
+      sourceWidth: 0,
+      sourceHeight: 0,
+      processedWidth: 0,
+      processedHeight: 0,
+      pixelCount: 0,
+      scale: getUnsupervisedResolutionScale(),
+    };
+  }
+  const scale = getUnsupervisedResolutionScale();
+  const sourceWidth = Math.max(1, Math.round(unsupervisedAoiRect.width));
+  const sourceHeight = Math.max(1, Math.round(unsupervisedAoiRect.height));
+  const processedWidth = Math.max(1, Math.round(sourceWidth * scale));
+  const processedHeight = Math.max(1, Math.round(sourceHeight * scale));
+  return {
+    sourceWidth,
+    sourceHeight,
+    processedWidth,
+    processedHeight,
+    pixelCount: processedWidth * processedHeight,
+    scale,
+  };
+}
+
+function formatSegmentPixels(value) {
+  const number = Number(value) || 0;
+  if (number >= 1000000) return `${(number / 1000000).toFixed(1)} MP`;
+  return number.toLocaleString();
+}
+
+function getSegmentProcessingLoadClass(pixelCount) {
+  const megapixels = (Number(pixelCount) || 0) / 1000000;
+  if (megapixels > 100) return "segment-load-high";
+  if (megapixels >= 20) return "segment-load-medium";
+  return "segment-load-low";
+}
+
+function setSegmentProcessingLoadClass(elements, className = "") {
+  elements.forEach((element) => {
+    if (!element) return;
+    element.classList.remove(
+      "segment-load-low",
+      "segment-load-medium",
+      "segment-load-high"
+    );
+    if (className) element.classList.add(className);
+  });
+}
+
+function updateUnsupervisedAoiStats() {
+  if (
+    !unsupervisedAoiSourcePixels ||
+    !unsupervisedAoiProcessedPixels ||
+    !unsupervisedAoiPixelCount
+  ) {
+    return;
+  }
+
+  if (!unsupervisedAoiRect) {
+    unsupervisedAoiSourcePixels.textContent = "Draw AOI";
+    unsupervisedAoiProcessedPixels.textContent = "-";
+    unsupervisedAoiPixelCount.textContent = "-";
+    setSegmentProcessingLoadClass([
+      unsupervisedAoiProcessedPixels,
+      unsupervisedAoiPixelCount,
+    ]);
+    return;
+  }
+
+  const size = getUnsupervisedProcessingSize();
+  unsupervisedAoiSourcePixels.textContent = `${size.sourceWidth} x ${size.sourceHeight}`;
+  unsupervisedAoiProcessedPixels.textContent = `${size.processedWidth} x ${size.processedHeight}`;
+  unsupervisedAoiPixelCount.textContent = formatSegmentPixels(size.pixelCount);
+  setSegmentProcessingLoadClass(
+    [unsupervisedAoiProcessedPixels, unsupervisedAoiPixelCount],
+    getSegmentProcessingLoadClass(size.pixelCount)
+  );
+}
+
+function getUnsupervisedSegmentationOptions() {
+  const patchSize = Math.round(
+    getSegmentNumberInput(unsupervisedPatchSizeInput, 2000, 256, 8000)
+  );
+  const overlap = Math.round(
+    getSegmentNumberInput(
+      unsupervisedOverlapInput,
+      300,
+      0,
+      Math.max(0, patchSize - 1)
+    )
+  );
+  const minArea = getSegmentNumberInput(
+    unsupervisedMinAreaInput,
+    50,
+    0,
+    1000000
+  );
+  const dilation = Math.round(
+    getSegmentNumberInput(unsupervisedDilationInput, 0, 0, 25)
+  );
+
+  return {
+    useSam: unsupervisedUseSamRefinementInput?.checked !== false,
+    minArea,
+    patchSize,
+    overlap,
+    dilation,
+    removeEdgeGrains: Boolean(unsupervisedRemoveEdgeGrainsInput?.checked),
+  };
+}
+
+const UNSUPERVISED_PATCH_PREVIEW_MAX_PATCHES = 600;
+
+function getPatchStartPositions(size, patchSize, stepSize) {
+  const starts = [];
+  for (let position = 0; position < size; position += stepSize) {
+    starts.push(position);
+    if (starts.length > UNSUPERVISED_PATCH_PREVIEW_MAX_PATCHES) break;
+  }
+  return starts;
+}
+
+function addUnsupervisedPatchGridPreview() {
+  if (!unsupervisedShowPatchGridInput?.checked || !unsupervisedAoiRect) return;
+
+  const size = getUnsupervisedProcessingSize();
+  const options = getUnsupervisedSegmentationOptions();
+  const scale = Math.max(0.05, size.scale || 1);
+  const patchSize = Math.max(1, options.patchSize);
+  const stepSize = Math.max(1, patchSize - options.overlap);
+  const xStarts = getPatchStartPositions(size.processedWidth, patchSize, stepSize);
+  const yStarts = getPatchStartPositions(size.processedHeight, patchSize, stepSize);
+  const patchCount = xStarts.length * yStarts.length;
+
+  if (patchCount > UNSUPERVISED_PATCH_PREVIEW_MAX_PATCHES) {
+    return;
+  }
+
+  let patchIndex = 0;
+  yStarts.forEach((processedY) => {
+    xStarts.forEach((processedX) => {
+      const processedWidth = Math.min(patchSize, size.processedWidth - processedX);
+      const processedHeight = Math.min(patchSize, size.processedHeight - processedY);
+      if (processedWidth <= 0 || processedHeight <= 0) return;
+      patchIndex += 1;
+      addPolygonToGeoJSON(
+        annoJSONTemp,
+        imageRectToPolygon({
+          x: unsupervisedAoiRect.x + processedX / scale,
+          y: unsupervisedAoiRect.y + processedY / scale,
+          width: processedWidth / scale,
+          height: processedHeight / scale,
+        }),
+        {
+          uuid: `segmenteverygrain-patch-${patchIndex}`,
+          label: "segmenteverygrain patch",
+          shapeType: "segment-patch-preview",
+          lineStyle: "solid",
+          lineWeight: 1,
+          lineColor: "#555555",
+          lineOpacity: 0.32,
+          fillColor: "#777777",
+          fillOpacity: 0.075,
+        }
+      );
+    });
+  });
+}
+
+function getSegmentTileSetActiveTileDescriptors(tileSet) {
+  if (!tileSet?.tiles?.length) return [];
+  const tiles = tileSet.tiles;
+  const periodDegrees = tileSet.periodDegrees;
+
+  if (!periodDegrees) {
+    const index = scrollIndex % tiles.length;
+    const tile = tiles[index];
+    return tile?.uri ? [{ uri: tile.uri, opacity: 1 }] : [];
+  }
+
+  const stageRotationInput = document.getElementById("stageRotation");
+  const rawRotation = rotateWithStage?.checked
+    ? viewer.viewport.getRotation(true)
+    : Number(stageRotationInput?.value || 0);
+  const rotation = ((rawRotation % periodDegrees) + periodDegrees) % periodDegrees;
+  let supremumIndex = 0;
+  for (let index = 0; index < tiles.length; index += 1) {
+    if (Number(tiles[index].angleDegrees || 0) > rotation) {
+      supremumIndex = index;
+      break;
+    }
+  }
+  const infimumIndex = supremumIndex === 0 ? tiles.length - 1 : supremumIndex - 1;
+  const supremum = Number(tiles[supremumIndex]?.angleDegrees || 0) +
+    (supremumIndex === 0 ? periodDegrees : 0);
+  const infimum = Number(tiles[infimumIndex]?.angleDegrees || 0);
+  const t = (rotation - infimum) / Math.max(1, supremum - infimum);
+
+  return [
+    { tile: tiles[infimumIndex], opacity: 1 - t },
+    { tile: tiles[supremumIndex], opacity: t },
+  ]
+    .filter(({ tile, opacity }) => tile?.uri && opacity > 0)
+    .map(({ tile, opacity }) => ({ uri: tile.uri, opacity }));
+}
+
+function getUnsupervisedTileJob(resolutionScale) {
+  const tileSet = tileSets()[getUnsupervisedSegmentTileSetIndex()] || null;
+  return {
+    imageRect: {
+      x: unsupervisedAoiRect.x,
+      y: unsupervisedAoiRect.y,
+      width: unsupervisedAoiRect.width,
+      height: unsupervisedAoiRect.height,
+    },
+    outputScale: resolutionScale,
+    tiles: getSegmentTileSetActiveTileDescriptors(tileSet),
+  };
+}
+
+function canUsePythonTileStitching(tileJob) {
+  return (
+    tileJob?.tiles?.length > 0 &&
+    tileJob.tiles.every((tile) => isPythonStitchableTileUri(tile.uri))
+  );
+}
+
+function isPythonStitchableTileUri(uri) {
+  if (isLocalTileSourcePath(uri)) return true;
+  if (typeof uri !== "string") return false;
+  if (/^file:\/\//i.test(uri)) return /\.dzi$/i.test(uri);
+  if (!/^https?:\/\//i.test(uri)) return false;
+  try {
+    const parsed = new URL(uri);
+    const isLocalHost =
+      parsed.hostname === "127.0.0.1" ||
+      parsed.hostname === "localhost" ||
+      parsed.hostname === "::1";
+    return isLocalHost && parsed.pathname === "/local-file";
+  } catch {
+    return false;
+  }
 }
 
 function populateSegmentAnnotationGroupOptions() {
@@ -2073,6 +2826,309 @@ function hideSegmentReticle() {
   if (segmentReticle) segmentReticle.hidden = true;
 }
 
+function updateUnsupervisedAoiPreview(rect = unsupervisedAoiRect) {
+  annoJSONTemp = {
+    type: "FeatureCollection",
+    features: [],
+  };
+  if (rect) {
+    addUnsupervisedPatchGridPreview();
+    addPolygonToGeoJSON(annoJSONTemp, imageRectToPolygon(rect), {
+      uuid: "segmenteverygrain-aoi",
+      label: "segmenteverygrain AOI",
+      shapeType: "segment-prompt",
+      lineStyle: "dashed",
+      lineWeight: 2,
+      lineColor: "#9c27b0",
+      lineOpacity: 0.95,
+      fillColor: "#9c27b0",
+      fillOpacity: 0.08,
+    });
+  }
+  drawShape(polyCanvas, [annoJSON, annoJSONTemp]);
+  updateUnsupervisedAoiStats();
+}
+
+function startUnsupervisedAoiMode() {
+  if (unsupervisedSegmentIsRunning) return;
+
+  clearSegmentPreview({
+    message: "Draw a box around one feature.",
+    keepMode: true,
+  });
+  unsupervisedAoiModeActive = true;
+  unsupervisedAoiDragState = null;
+  unsupervisedAoiRect = null;
+  deactivateAnnotationModes();
+  stopSnapshotDrawMode({ clearSelection: false });
+  if (typeof stopMeasurementMode === "function") stopMeasurementMode();
+  setUnsupervisedSegmentStatus("Drag an AOI around the grains to segment.");
+  updateUnsupervisedSegmentControls();
+}
+
+function clearUnsupervisedAoi(message = "Draw an AOI before running segmentation.") {
+  unsupervisedAoiModeActive = false;
+  unsupervisedAoiDragState = null;
+  unsupervisedAoiRect = null;
+  annoJSONTemp = {
+    type: "FeatureCollection",
+    features: [],
+  };
+  drawShape(polyCanvas, [annoJSON, annoJSONTemp]);
+  setUnsupervisedSegmentStatus(message);
+  updateUnsupervisedSegmentControls();
+}
+
+function clearUnsupervisedAoiForSampleChange() {
+  const hasAoiPreview =
+    annoJSONTemp?.features?.some(
+      (feature) => feature?.properties?.uuid === "segmenteverygrain-aoi"
+    ) || false;
+
+  if (!unsupervisedAoiModeActive && !unsupervisedAoiRect && !hasAoiPreview) {
+    return;
+  }
+
+  clearUnsupervisedAoi("AOI cleared after sample change.");
+}
+
+function buildUnsupervisedSegmentFeature(fullImagePolygon, result = {}) {
+  const style = getCurrentAnnotationStyleColors();
+  const labelFontSize = Number(document.getElementById("annoLabelFontSize").value);
+  return {
+    type: "Feature",
+    geometry: {
+      type: "Polygon",
+      coordinates: [fullImagePolygon],
+    },
+    properties: {
+      uuid: "segmenteverygrain-preview",
+      label: "segmenteverygrain segment",
+      shapeType: "segment",
+      labelFontSize,
+      labelFontColor: style.labelFontColor,
+      labelBackgroundColor: style.labelBackgroundColor,
+      labelBackgroundOpacity: getAnnotationOpacityValue("annoLabelBackgroundOpacity"),
+      lineStyle: "solid",
+      lineWeight: Math.max(2, Number(document.getElementById("lineWeight").value)),
+      segmentationBackend: "segmenteverygrain",
+      segmentationModel: result.modelPath || "",
+      segmentationSamRefined: Boolean(result.useSam),
+      segmentationSamModel: result.samModelType || "",
+      segmentationPromptType: "aoi",
+    },
+  };
+}
+
+function commitUnsupervisedSegmentFeatures(features, statusMessage) {
+  if (!Array.isArray(features) || features.length === 0) return;
+
+  const image = viewer.world.getItemAt(0);
+  const imageSize = image?.getContentSize() || { x: null, y: null };
+  const segmentGroup = getSegmentAnnotationGroup();
+  const label = document.getElementById("anno-label")?.value || "";
+
+  annotationHistory.push("Add segmenteverygrain annotations");
+  const usedUuids = new Set(
+    annoJSON.features
+      .map((existingFeature) => existingFeature.properties?.uuid)
+      .filter(Boolean)
+  );
+  const getUniqueAnnotationUuid = () => {
+    let uuid = generateUniqueId(12);
+    while (usedUuids.has(uuid)) {
+      uuid = generateUniqueId(12);
+    }
+    usedUuids.add(uuid);
+    return uuid;
+  };
+  features.forEach((feature) => {
+    const style = getCurrentAnnotationStyleColors();
+    const coordinates = roundCoordinateTree(feature.geometry.coordinates[0]);
+    const areaPixels2 = calculatePolygonArea([coordinates]);
+    const perimeterPixels = calculatePolygonExteriorPerimeter([coordinates]);
+    const segmentProperties = {
+      ...feature.properties,
+      uuid: getUniqueAnnotationUuid(),
+      label,
+      imageTitle: title(),
+      pixelsPerMeter: pixelsPerMeter(),
+      imageWidth: imageSize.x,
+      imageHeight: imageSize.y,
+      xLabel: coordinates[0][0],
+      yLabel: coordinates[0][1],
+      labelFontColor: style.labelFontColor,
+      labelBackgroundColor: style.labelBackgroundColor,
+      lineColor: style.lineColor,
+      fillColor: style.fillColor,
+      fillOpacity: getAnnotationOpacityValue("fillOpacity"),
+      area_m2: squareMetersFromSquarePixels(areaPixels2),
+      perimeter_m: metersFromPixels(perimeterPixels),
+    };
+    const properties = normalizeAnnotationProperties(
+      segmentGroup
+        ? applyAnnotationGroupToProperties(segmentProperties, segmentGroup)
+        : applyActiveAnnotationGroup(segmentProperties)
+    );
+    annoJSON.features.push({
+      type: "Feature",
+      geometry: {
+        type: "Polygon",
+        coordinates: [coordinates],
+      },
+      properties,
+    });
+  });
+
+  annoJSONTemp = {
+    type: "FeatureCollection",
+    features: [],
+  };
+  unsupervisedAoiModeActive = false;
+  unsupervisedAoiDragState = null;
+  unsupervisedAoiRect = null;
+  drawShape(polyCanvas, [annoJSON, annoJSONTemp]);
+  renderAnnotationList();
+  renderAnnotationGroupOptions();
+  clearAnnotationSelection({ redraw: false, scroll: false });
+  enableAnnoButtons();
+  populateSegmentAnnotationGroupOptions();
+  unsavedAnnotations(true);
+  setUnsupervisedSegmentStatus(statusMessage, "ok");
+  updateUnsupervisedSegmentControls();
+}
+
+async function runUnsupervisedSegmentation() {
+  if (unsupervisedSegmentIsRunning || !unsupervisedAoiRect) return;
+  if (!window.electronAPI?.runSegmenteverygrainSegmentation) {
+    setUnsupervisedSegmentStatus(
+      "segmenteverygrain segmentation is only available in the Electron app.",
+      "error"
+    );
+    return;
+  }
+
+  unsupervisedSegmentIsRunning = true;
+  unsupervisedSegmentCancelRequested = false;
+  const runId = ++unsupervisedSegmentRunId;
+  unsupervisedSegmentLastProgressPercent = 0;
+  updateUnsupervisedSegmentControls();
+  setUnsupervisedSegmentStatus("Rendering AOI for segmenteverygrain...");
+  setUnsupervisedSegmentProgress(0, { indeterminate: true });
+  try {
+    const resolutionScale = getUnsupervisedResolutionScale();
+    const options = getUnsupervisedSegmentationOptions();
+    const tileJob = getUnsupervisedTileJob(resolutionScale);
+    const usePythonTileStitching = canUsePythonTileStitching(tileJob);
+    let requestImage = { tileJob };
+    let fallbackScaleX = resolutionScale;
+    let fallbackScaleY = resolutionScale;
+    if (!usePythonTileStitching) {
+      const cropCanvas = await renderFullResolutionImageRectCanvas(
+        unsupervisedAoiRect,
+        getUnsupervisedSegmentTileSetIndex(),
+        resolutionScale
+      );
+      fallbackScaleX = cropCanvas.width / Math.max(1, unsupervisedAoiRect.width);
+      fallbackScaleY = cropCanvas.height / Math.max(1, unsupervisedAoiRect.height);
+      requestImage = {
+        cropPngDataUrl: await canvasToPngDataUrl(cropCanvas),
+      };
+    }
+    throwIfUnsupervisedSegmentationCanceled(runId);
+    setUnsupervisedSegmentProgress(1);
+    setUnsupervisedSegmentStatus(
+      options.useSam
+        ? "Running segmenteverygrain with SAM refinement..."
+        : "Running segmenteverygrain U-Net pass..."
+    );
+    const result = await window.electronAPI.runSegmenteverygrainSegmentation({
+      samSettings: getSamSettingsFromInputs(),
+      segmenteverygrainSettings: getSegmenteverygrainSettingsFromInputs(),
+      ...requestImage,
+      simplifyEpsilon: getUnsupervisedSimplifyEpsilon(),
+      minArea: options.minArea,
+      patchSize: options.patchSize,
+      overlap: options.overlap,
+      dilation: options.dilation,
+      removeEdgeGrains: options.removeEdgeGrains,
+      useSam: options.useSam,
+      device: "auto",
+    });
+    throwIfUnsupervisedSegmentationCanceled(runId);
+
+    if (!result?.ok) {
+      if (result?.canceled) {
+        setUnsupervisedSegmentStatus("segmenteverygrain canceled.");
+        return;
+      }
+      setUnsupervisedSegmentStatus(
+        result?.error || result?.stderr || "segmenteverygrain could not segment the AOI.",
+        "error"
+      );
+      return;
+    }
+
+    const features = (result.polygons || [])
+      .map((polygon) =>
+        polygon.coordinates.map(([x, y]) => [
+          x /
+            (usePythonTileStitching && Number.isFinite(Number(result.scaleX))
+              ? Number(result.scaleX)
+              : fallbackScaleX) +
+            unsupervisedAoiRect.x,
+          y /
+            (usePythonTileStitching && Number.isFinite(Number(result.scaleY))
+              ? Number(result.scaleY)
+              : fallbackScaleY) +
+            unsupervisedAoiRect.y,
+        ])
+      )
+      .filter((coordinates) => coordinates.length >= 4)
+      .map((coordinates) =>
+        buildUnsupervisedSegmentFeature(coordinates, {
+          modelPath: getSegmenteverygrainSettingsFromInputs().modelPath,
+          useSam: result.useSam,
+          samModelType: result.samModelType,
+        })
+      );
+
+    if (features.length === 0) {
+      setUnsupervisedSegmentStatus(
+        "segmenteverygrain did not return any polygons for this AOI.",
+        "error"
+      );
+      return;
+    }
+
+    setUnsupervisedSegmentProgress(100);
+    commitUnsupervisedSegmentFeatures(
+      features,
+      `Added ${features.length} segmenteverygrain annotation${features.length === 1 ? "" : "s"}.`
+    );
+  } catch (error) {
+    if (
+      unsupervisedSegmentCancelRequested ||
+      error.message === "segmenteverygrain canceled."
+    ) {
+      setUnsupervisedSegmentStatus("segmenteverygrain canceled.");
+      return;
+    }
+    console.error("segmenteverygrain segmentation failed:", error);
+    setUnsupervisedSegmentStatus(
+      error.message || "segmenteverygrain segmentation failed.",
+      "error"
+    );
+  } finally {
+    if (runId === unsupervisedSegmentRunId) {
+      unsupervisedSegmentIsRunning = false;
+      unsupervisedSegmentCancelRequested = false;
+      window.setTimeout(hideUnsupervisedSegmentProgress, 900);
+      updateUnsupervisedSegmentControls();
+    }
+  }
+}
+
 async function runSegmentForPromptBox(promptRect) {
   const cropRect = getPaddedSegmentCropRect(promptRect);
   if (!cropRect) {
@@ -2080,27 +3136,30 @@ async function runSegmentForPromptBox(promptRect) {
     return;
   }
 
-  const cropBox = promptRect
-    ? {
-        x0: promptRect.x - cropRect.x,
-        y0: promptRect.y - cropRect.y,
-        x1: promptRect.x + promptRect.width - cropRect.x,
-        y1: promptRect.y + promptRect.height - cropRect.y,
-      }
-    : null;
-  const cropPoints = segmentPromptPoints.map((point) => ({
-    x: point.x - cropRect.x,
-    y: point.y - cropRect.y,
-    label: point.label,
-  }));
-
   updateSegmentRunningState(1);
   setSegmentStatus(`Rendering crop for SAM 2.1...${getSegmentPromptSummary()}`);
   try {
+    const resolutionScale = getSegmentResolutionScale(cropRect);
     const cropCanvas = await renderFullResolutionImageRectCanvas(
       cropRect,
-      getSegmentTileSetIndex()
+      getSegmentTileSetIndex(),
+      resolutionScale
     );
+    const scaleX = cropCanvas.width / Math.max(1, cropRect.width);
+    const scaleY = cropCanvas.height / Math.max(1, cropRect.height);
+    const cropBox = promptRect
+      ? {
+          x0: (promptRect.x - cropRect.x) * scaleX,
+          y0: (promptRect.y - cropRect.y) * scaleY,
+          x1: (promptRect.x + promptRect.width - cropRect.x) * scaleX,
+          y1: (promptRect.y + promptRect.height - cropRect.y) * scaleY,
+        }
+      : null;
+    const cropPoints = segmentPromptPoints.map((point) => ({
+      x: (point.x - cropRect.x) * scaleX,
+      y: (point.y - cropRect.y) * scaleY,
+      label: point.label,
+    }));
     const cropPngDataUrl = await canvasToPngDataUrl(cropCanvas);
     setSegmentStatus(`Running SAM 2.1 segmentation...${getSegmentPromptSummary()}`);
     const result = await window.electronAPI.runSamSegmentation({
@@ -2121,8 +3180,8 @@ async function runSegmentForPromptBox(promptRect) {
     }
 
     const fullImagePolygon = result.polygon.map(([x, y]) => [
-      x + cropRect.x,
-      y + cropRect.y,
+      x / scaleX + cropRect.x,
+      y / scaleY + cropRect.y,
     ]);
     const scoreText =
       Number.isFinite(Number(result.score))
@@ -2170,7 +3229,7 @@ function commitSegmentFeature(feature, options = {}) {
 
   const image = viewer.world.getItemAt(0);
   const imageSize = image?.getContentSize() || { x: null, y: null };
-  const coordinates = feature.geometry.coordinates[0];
+  const coordinates = roundCoordinateTree(feature.geometry.coordinates[0]);
   const areaPixels2 = calculatePolygonArea([coordinates]);
   const perimeterPixels = calculatePolygonExteriorPerimeter([coordinates]);
   const areaM2 = squareMetersFromSquarePixels(areaPixels2);
@@ -2244,13 +3303,35 @@ function commitSegmentFeature(feature, options = {}) {
   updateSegmentControls();
 }
 
+function initializeSegmentPrimaryAccordion() {
+  if (!segmentPalette) return;
+  const details = [
+    ...segmentPalette.querySelectorAll(".segment-primary-details"),
+  ];
+  details.forEach((detail) => {
+    if (detail.dataset.accordionInitialized === "true") return;
+    detail.dataset.accordionInitialized = "true";
+    detail.addEventListener("toggle", function (event) {
+      if (event.target !== detail) return;
+      if (!detail.open) return;
+      details.forEach((otherDetail) => {
+        if (otherDetail !== detail) {
+          otherDetail.open = false;
+        }
+      });
+    });
+  });
+}
+
 function openSegmentPalette() {
   if (!segmentPalette) return;
 
   segmentPalette.hidden = false;
+  initializeSegmentPrimaryAccordion();
   populateSegmentTileSetSelect();
   populateSegmentAnnotationGroupOptions();
   updateSegmentSimplifyControls();
+  updateUnsupervisedSegmentControls();
   restoreToolPalettePosition(segmentPalette, "petroImage.segmentPalette");
   openSegmentPaletteButton?.setAttribute("aria-pressed", "true");
   clampToolPaletteToViewer(segmentPalette);
@@ -4086,7 +5167,7 @@ async function renderPorosityAnalysisCanvas(imageBounds, exportSize, tileSetInde
 
   try {
     for (const tile of exportTileSet.tiles) {
-      const tileSource = await getTileSource(tile.uri);
+      const tileSource = await getTileSourceForExport(tile);
       await new Promise((resolve, reject) => {
         exportViewer.addTiledImage({
           tileSource,
@@ -4114,7 +5195,9 @@ async function renderPorosityAnalysisCanvas(imageBounds, exportSize, tileSetInde
       exportTileSet,
       1
     );
-    await waitForExportViewerReady(exportViewer, activeTileImages);
+    await waitForExportViewerReady(exportViewer, activeTileImages, {
+      outputPixels: exportSize.width * exportSize.height,
+    });
     const sourceCanvas = getOpenSeadragonImageCanvas(exportViewer);
     if (!sourceCanvas) {
       throw new Error("Could not render porosity analysis canvas.");
@@ -5343,9 +6426,19 @@ function wait(ms) {
   return new Promise((resolve) => window.setTimeout(resolve, ms));
 }
 
-async function waitForExportViewerReady(exportViewer, activeTileImages) {
+function getExportViewerReadyTimeoutMs(outputPixels = 0) {
+  const megapixels = Math.max(0, Number(outputPixels) || 0) / 1000000;
+  return Math.min(300000, Math.max(120000, 120000 + megapixels * 3000));
+}
+
+async function waitForExportViewerReady(
+  exportViewer,
+  activeTileImages,
+  options = {}
+) {
   const startTime = Date.now();
   let lastActivity = Date.now();
+  const timeoutMs = getExportViewerReadyTimeoutMs(options.outputPixels);
   const markActivity = () => {
     lastActivity = Date.now();
   };
@@ -5356,7 +6449,7 @@ async function waitForExportViewerReady(exportViewer, activeTileImages) {
   exportViewer.addHandler("animation-finish", markActivity);
 
   try {
-    while (Date.now() - startTime < 30000) {
+    while (Date.now() - startTime < timeoutMs) {
       const relevantTilesLoaded = activeTileImages.every((image) =>
         image && typeof image.getFullyLoaded === "function"
           ? image.getFullyLoaded()
@@ -5371,7 +6464,11 @@ async function waitForExportViewerReady(exportViewer, activeTileImages) {
       }
       await wait(100);
     }
-    throw new Error("Timed out while loading full-resolution tiles.");
+    throw new Error(
+      `Timed out while loading image tiles after ${Math.round(
+        timeoutMs / 1000
+      )} seconds. Try a lower segmentation resolution or a smaller AOI.`
+    );
   } finally {
     exportViewer.removeHandler("tile-loaded", markActivity);
     exportViewer.removeHandler("tile-drawn", markActivity);
@@ -5430,7 +6527,7 @@ async function renderFullResolutionSnapshotBaseCanvas(exportSize) {
     }
 
     for (const tile of exportTileSet.tiles) {
-        const tileSource = await getTileSource(tile.uri);
+        const tileSource = await getTileSourceForExport(tile);
         await new Promise((resolve, reject) => {
           exportViewer.addTiledImage({
             tileSource,
@@ -5458,7 +6555,9 @@ async function renderFullResolutionSnapshotBaseCanvas(exportSize) {
       exportTileSet,
       selectedTileSetOpacity
     );
-    await waitForExportViewerReady(exportViewer, activeTileImages);
+    await waitForExportViewerReady(exportViewer, activeTileImages, {
+      outputPixels: exportSize.width * exportSize.height,
+    });
     const sourceCanvas = getOpenSeadragonImageCanvas(exportViewer);
     if (!sourceCanvas) {
       throw new Error("Could not render the full-resolution snapshot.");
@@ -5506,10 +6605,15 @@ function getViewportBoundsForImageRect(imageRect) {
   );
 }
 
-async function renderFullResolutionImageRectCanvas(imageRect, tileSetIndex = 0) {
+async function renderFullResolutionImageRectCanvas(
+  imageRect,
+  tileSetIndex = 0,
+  outputScale = 1
+) {
+  const renderScale = Math.max(0.05, Math.min(1, Number(outputScale) || 1));
   const exportSize = {
-    width: Math.max(1, Math.round(imageRect.width)),
-    height: Math.max(1, Math.round(imageRect.height)),
+    width: Math.max(1, Math.round(imageRect.width * renderScale)),
+    height: Math.max(1, Math.round(imageRect.height * renderScale)),
   };
   const pixelDensity =
     OpenSeadragon.pixelDensityRatio || window.devicePixelRatio || 1;
@@ -5558,7 +6662,7 @@ async function renderFullResolutionImageRectCanvas(imageRect, tileSetIndex = 0) 
 
   try {
     for (const tile of exportTileSet.tiles) {
-      const tileSource = await getTileSource(tile.uri);
+      const tileSource = await getTileSourceForExport(tile);
       await new Promise((resolve, reject) => {
         exportViewer.addTiledImage({
           tileSource,
@@ -5586,7 +6690,9 @@ async function renderFullResolutionImageRectCanvas(imageRect, tileSetIndex = 0) 
       exportTileSet,
       selectedTileSetOpacity
     );
-    await waitForExportViewerReady(exportViewer, activeTileImages);
+    await waitForExportViewerReady(exportViewer, activeTileImages, {
+      outputPixels: exportSize.width * exportSize.height,
+    });
     const sourceCanvas = getOpenSeadragonImageCanvas(exportViewer);
     if (!sourceCanvas) {
       throw new Error("Could not render the segmentation crop.");
@@ -6215,11 +7321,17 @@ if (
   chooseSamCheckpointButton?.addEventListener("click", function () {
     chooseSamCheckpoint();
   });
+  chooseSegmenteverygrainModelButton?.addEventListener("click", function () {
+    chooseSegmenteverygrainModel();
+  });
   saveSamSettingsButton?.addEventListener("click", function () {
     saveSamSettings();
   });
   testSamSetupButton?.addEventListener("click", function () {
     testSamSetup();
+  });
+  testSegmenteverygrainSetupButton?.addEventListener("click", function () {
+    testSegmenteverygrainSetup();
   });
   segmentDrawBoxButton?.addEventListener("click", function () {
     startSegmentBoxMode();
@@ -6236,6 +7348,18 @@ if (
   segmentAddAnnotationButton?.addEventListener("click", function () {
     commitSegmentPreview();
   });
+  unsupervisedDrawAoiButton?.addEventListener("click", function () {
+    startUnsupervisedAoiMode();
+  });
+  unsupervisedClearAoiButton?.addEventListener("click", function () {
+    clearUnsupervisedAoi();
+  });
+  runUnsupervisedSegmentationButton?.addEventListener("click", function () {
+    runUnsupervisedSegmentation();
+  });
+  cancelUnsupervisedSegmentationButton?.addEventListener("click", function () {
+    cancelUnsupervisedSegmentation();
+  });
   segmentModeToggle?.addEventListener("change", function () {
     setSegmentModeActive(segmentModeToggle.checked);
   });
@@ -6248,8 +7372,36 @@ if (
   segmentTileSetSelect?.addEventListener("change", function () {
     updateSegmentControls();
   });
+  segmentResolutionSelect?.addEventListener("change", function () {
+    updateSegmentControls();
+  });
   segmentSimplifyEnabledInput?.addEventListener("change", function () {
     updateSegmentSimplifyControls();
+  });
+  unsupervisedSimplifyEnabledInput?.addEventListener("change", function () {
+    updateSegmentSimplifyControls();
+  });
+  unsupervisedSegmentTileSetSelect?.addEventListener("change", function () {
+    updateUnsupervisedSegmentControls();
+  });
+  unsupervisedResolutionSelect?.addEventListener("change", function () {
+    refreshUnsupervisedAoiPreviewAndControls();
+  });
+  [
+    unsupervisedUseSamRefinementInput,
+    unsupervisedMinAreaInput,
+    unsupervisedPatchSizeInput,
+    unsupervisedOverlapInput,
+    unsupervisedDilationInput,
+    unsupervisedShowPatchGridInput,
+    unsupervisedRemoveEdgeGrainsInput,
+  ].forEach((input) => {
+    input?.addEventListener("input", function () {
+      refreshUnsupervisedAoiPreviewAndControls();
+    });
+    input?.addEventListener("change", function () {
+      refreshUnsupervisedAoiPreviewAndControls();
+    });
   });
   segmentAnnotationGroupInput?.addEventListener("change", function () {
     populateSegmentAnnotationGroupOptions();
@@ -6261,11 +7413,25 @@ if (
   [samPythonPathInput, samCheckpointPathInput].forEach((input) => {
     input?.addEventListener("input", function () {
       updateSamReadinessIndicator();
+      if (input === samPythonPathInput) {
+        updateSegmenteverygrainReadinessIndicator();
+      }
     });
     input?.addEventListener("change", function () {
       updateSamReadinessIndicator();
+      if (input === samPythonPathInput) {
+        updateSegmenteverygrainReadinessIndicator();
+      }
       saveSamSettings("SAM settings saved.");
     });
+  });
+  segmenteverygrainModelPathInput?.addEventListener("input", function () {
+    updateSegmenteverygrainReadinessIndicator();
+    updateUnsupervisedSegmentControls();
+  });
+  segmenteverygrainModelPathInput?.addEventListener("change", function () {
+    updateSegmenteverygrainReadinessIndicator();
+    saveSegmenteverygrainSettings("segmenteverygrain settings saved.");
   });
   [
     segmentPaddingPercentInput,
@@ -6477,6 +7643,7 @@ viewer.addHandler("canvas-double-click", function (event) {
 });
 
 viewer.addHandler("tile-load-failed", handleTileLoadFailed);
+viewer.addHandler("open", clearUnsupervisedAoiForSampleChange);
 
 async function handleTileLoadFailed(event) {
   if (!window.electronAPI?.showTileLoadWarning) {
@@ -7817,6 +8984,7 @@ async function loadTileSet() {
           }
 
           tile.image = event.item;
+          tile.tileSource = event.item?.source || tileSource;
           displayImages();
         },
       });
@@ -7834,6 +9002,10 @@ async function getTileSource(uri) {
   }
 
   return uri;
+}
+
+async function getTileSourceForExport(tile) {
+  return tile?.tileSource || tile?.image?.source || getTileSource(tile?.uri);
 }
 
 function isLocalTileSourcePath(uri) {
@@ -9273,10 +10445,29 @@ function getAnnotationByUuid(uuid) {
   return index >= 0 ? annoJSON.features[index] : null;
 }
 
-function getSelectedAnnotationUuids() {
-  return [...selectedAnnotationUuids].filter(
-    (uuid) => getAnnotationIndexByUuid(uuid) >= 0
+function getAnnotationFeatureByUuidMap() {
+  return new Map(
+    annoJSON.features
+      .filter((feature) => feature?.properties?.uuid)
+      .map((feature) => [feature.properties.uuid, feature])
   );
+}
+
+function getAnnotationIdByUuidMap() {
+  return new Map(
+    annoJSON.features
+      .map((feature, index) => [feature?.properties?.uuid, index + 1])
+      .filter(([uuid]) => Boolean(uuid))
+  );
+}
+
+function getSelectedAnnotationUuids() {
+  const existingUuids = new Set(
+    annoJSON.features
+      .map((feature) => feature.properties?.uuid)
+      .filter(Boolean)
+  );
+  return [...selectedAnnotationUuids].filter((uuid) => existingUuids.has(uuid));
 }
 
 function getSelectedAnnotation() {
@@ -9742,6 +10933,7 @@ function repairPrimaryPolygon() {
   exitAnnotationShapeEditMode();
 
   feature.geometry = geometry;
+  invalidateFeatureImageBounds(feature);
   updateBooleanResultProperties(feature, { preserveLabelPosition: true });
   updateAnnotationLabelOverlayPosition(feature.properties.uuid);
   updateText(feature.properties.uuid, "anno", feature.properties.label || "");
@@ -9898,16 +11090,22 @@ function setAnnotationSelection(uuids, primaryUuid = null, options = {}) {
   if (selectedAnnotationUuid && selectedAnnotationUuid !== primaryUuid) {
     commitPendingAnnotationTextEdit("Edit annotation text");
   }
-  const validUuids = uuids.filter(
-    (uuid) => getAnnotationIndexByUuid(uuid) >= 0 && !isAnnotationUuidLocked(uuid)
+  const featureByUuid = new Map(
+    annoJSON.features
+      .filter((feature) => feature?.properties?.uuid)
+      .map((feature) => [feature.properties.uuid, feature])
   );
+  const validUuids = uuids.filter((uuid) => {
+    const feature = featureByUuid.get(uuid);
+    return feature && !isAnnotationFeatureLocked(feature);
+  });
   selectedAnnotationUuids = new Set(validUuids);
 
   const primaryIsValid =
     primaryUuid &&
     selectedAnnotationUuids.has(primaryUuid) &&
-    getAnnotationIndexByUuid(primaryUuid) >= 0 &&
-    !isAnnotationUuidLocked(primaryUuid);
+    featureByUuid.has(primaryUuid) &&
+    !isAnnotationFeatureLocked(featureByUuid.get(primaryUuid));
   selectedAnnotationUuid = primaryIsValid
     ? primaryUuid
     : validUuids[validUuids.length - 1] || null;
@@ -10048,7 +11246,15 @@ function isAnnotationUuidLocked(uuid) {
 }
 
 function getUnlockedSelectedAnnotationUuids() {
-  return getSelectedAnnotationUuids().filter((uuid) => !isAnnotationUuidLocked(uuid));
+  const featureByUuid = new Map(
+    annoJSON.features
+      .filter((feature) => feature?.properties?.uuid)
+      .map((feature) => [feature.properties.uuid, feature])
+  );
+  return [...selectedAnnotationUuids].filter((uuid) => {
+    const feature = featureByUuid.get(uuid);
+    return feature && !isAnnotationFeatureLocked(feature);
+  });
 }
 
 function getUnlockedAnnotationUuids() {
@@ -10570,6 +11776,8 @@ function renderAnnotationList() {
     return;
   }
 
+  const fragment = document.createDocumentFragment();
+
   annoJSON.features.forEach((feature, index) => {
     normalizeAnnotationFeature(feature);
 
@@ -10676,9 +11884,10 @@ function renderAnnotationList() {
       visibilityButton,
       lockButton
     );
-    list.appendChild(row);
+    fragment.appendChild(row);
   });
 
+  list.appendChild(fragment);
   syncAnnotationListSelection();
   renderAnnotationGroupOptions();
   updateSelectedAnnotationControls();
@@ -10815,10 +12024,9 @@ document
 
 renderAnnotationList();
 
-// When the delete annotation button is clicked
-document.getElementById("deleteButton").addEventListener("click", function () {
+function deleteSelectedAnnotations() {
   const selectedUuids = getUnlockedSelectedAnnotationUuids();
-  if (selectedUuids.length === 0) return;
+  if (selectedUuids.length === 0) return false;
 
   if (
     selectedUuids.length === annoJSON.features.length &&
@@ -10828,7 +12036,7 @@ document.getElementById("deleteButton").addEventListener("click", function () {
     clearAnnotations();
     unsavedAnnotations(true);
     disableAnnoButtons();
-    return;
+    return true;
   }
 
   annotationHistory.push(
@@ -10850,10 +12058,17 @@ document.getElementById("deleteButton").addEventListener("click", function () {
   if (annoJSON.features.length === 0) {
     disableAnnoButtons();
   }
+  return true;
+}
+
+// When the delete annotation button is clicked
+document.getElementById("deleteButton").addEventListener("click", function () {
+  deleteSelectedAnnotations();
 });
 
 // labels could be changed without affecting the underlying color of the shapes
-function applyCurrentAnno(id, changeLabel = false) {
+function applyCurrentAnno(id, changeLabel = false, options = {}) {
+  const { deferDraw = false } = options;
   const feature = annoJSON.features[id - 1];
   if (!feature || isAnnotationFeatureLocked(feature)) return;
 
@@ -10921,7 +12136,9 @@ function applyCurrentAnno(id, changeLabel = false) {
       annoJSON.features[id - 1].properties.lineOpacity = lineOpacity;
       annoJSON.features[id - 1].properties.fillColor = fillColor;
       annoJSON.features[id - 1].properties.fillOpacity = fillOpacity;
-      drawShape(polyCanvas, [annoJSON]);
+      if (!deferDraw) {
+        drawShape(polyCanvas, [annoJSON]);
+      }
     }
   }
   if ((type === "LineString") | (type === "MultiLineString")) {
@@ -10946,9 +12163,20 @@ function applyCurrentAnno(id, changeLabel = false) {
       annoJSON.features[id - 1].properties.lineWeight = lineWeight;
       annoJSON.features[id - 1].properties.lineColor = lineColor;
       annoJSON.features[id - 1].properties.lineOpacity = lineOpacity;
-      drawShape(polyCanvas, [annoJSON]);
+      if (!deferDraw) {
+        drawShape(polyCanvas, [annoJSON]);
+      }
     }
   }
+}
+
+function finishAnnotationStyleBatch(redraw = false) {
+  if (redraw) {
+    drawShape(polyCanvas, [annoJSON, annoJSONTemp]);
+  }
+  unsavedAnnotations(true);
+  updateRepeatButton();
+  syncSelectedAnnotationVisuals();
 }
 
 function applyCurrentGrid(id, changeLabel = false) {
@@ -11030,10 +12258,12 @@ document
     const selectedUuids = getUnlockedSelectedAnnotationUuids();
     if (selectedUuids.length > 0) {
       annotationHistory.push("Style annotation label");
+      const annotationIdByUuid = getAnnotationIdByUuidMap();
       selectedUuids.forEach((uuid) => {
-        const id = getAnnotationIndexByUuid(uuid) + 1;
-        if (id > 0) applyCurrentAnno(id, true);
+        const id = annotationIdByUuid.get(uuid) || 0;
+        if (id > 0) applyCurrentAnno(id, true, { deferDraw: true });
       });
+      finishAnnotationStyleBatch(false);
     }
   });
 
@@ -11047,7 +12277,10 @@ document
       annotationHistory.push("Style annotation group labels");
     }
     for (let i = 0; i < annoIds.length; i++) {
-      applyCurrentAnno(annoIds[i], true);
+      applyCurrentAnno(annoIds[i], true, { deferDraw: true });
+    }
+    if (annoIds.length > 0) {
+      finishAnnotationStyleBatch(false);
     }
   });
 
@@ -11073,7 +12306,10 @@ document
       annotationHistory.push("Style annotation labels");
     }
     for (let i = 0; i < annoIds.length; i++) {
-      applyCurrentAnno(annoIds[i], true);
+      applyCurrentAnno(annoIds[i], true, { deferDraw: true });
+    }
+    if (annoIds.length > 0) {
+      finishAnnotationStyleBatch(false);
     }
   });
 
@@ -11102,10 +12338,12 @@ document
     const selectedUuids = getUnlockedSelectedAnnotationUuids();
     if (selectedUuids.length > 0) {
       annotationHistory.push("Style annotation");
+      const annotationIdByUuid = getAnnotationIdByUuidMap();
       selectedUuids.forEach((uuid) => {
-        const id = getAnnotationIndexByUuid(uuid) + 1;
-        if (id > 0) applyCurrentAnno(id, false);
+        const id = annotationIdByUuid.get(uuid) || 0;
+        if (id > 0) applyCurrentAnno(id, false, { deferDraw: true });
       });
+      finishAnnotationStyleBatch(true);
     }
   });
 
@@ -11119,7 +12357,10 @@ document
       annotationHistory.push("Style annotation group");
     }
     for (let i = 0; i < annoIds.length; i++) {
-      applyCurrentAnno(annoIds[i], false);
+      applyCurrentAnno(annoIds[i], false, { deferDraw: true });
+    }
+    if (annoIds.length > 0) {
+      finishAnnotationStyleBatch(true);
     }
   });
 
@@ -11143,7 +12384,10 @@ document.getElementById("applyAllAnno").addEventListener("click", function () {
     annotationHistory.push("Style annotations");
   }
   for (let i = 0; i < annoIds.length; i++) {
-    applyCurrentAnno(annoIds[i], false);
+    applyCurrentAnno(annoIds[i], false, { deferDraw: true });
+  }
+  if (annoIds.length > 0) {
+    finishAnnotationStyleBatch(true);
   }
 });
 
@@ -11651,6 +12895,7 @@ function translateAnnotationFeature(feature, dx, dy) {
   if (!feature?.geometry?.coordinates || !feature.properties) return;
 
   translateCoordinateArray(feature.geometry.coordinates, dx, dy);
+  invalidateFeatureImageBounds(feature);
 
   ["xLabel", "circleCenterX"].forEach((property) => {
     if (typeof feature.properties[property] === "number") {
@@ -12147,6 +13392,7 @@ function setAnnotationVertexCoordinate(feature, vertexContext, imagePoint) {
     feature.properties.yLabel = nextCoordinate[1];
     updateAnnotationLabelOverlayPosition(feature.properties.uuid);
   }
+  invalidateFeatureImageBounds(feature);
 }
 
 function getMinimumEditableVertexCount(feature) {
@@ -12165,6 +13411,7 @@ function setEditableVertexCoordinates(feature, coordinates, vertexContext = {}) 
 
   if (feature.geometry.type === "LineString") {
     feature.geometry.coordinates = coordinates.map((coordinate) => [...coordinate]);
+    invalidateFeatureImageBounds(feature);
     return true;
   }
 
@@ -12187,6 +13434,7 @@ function setEditableVertexCoordinates(feature, coordinates, vertexContext = {}) 
       if (!feature.geometry.coordinates[polygonIndex]) return false;
       feature.geometry.coordinates[polygonIndex][ringIndex] = ring;
     }
+    invalidateFeatureImageBounds(feature);
     return true;
   }
 
@@ -12881,6 +14129,7 @@ function rotateLineStringFeature(feature, startCoordinates, center, angleRadians
   feature.geometry.coordinates = startCoordinates.map((coordinate) =>
     rotatePointAroundCenter(coordinate, center, angleRadians)
   );
+  invalidateFeatureImageBounds(feature);
 }
 
 function rotatePolygonFeature(feature, startCoordinates, center, angleRadians) {
@@ -12890,6 +14139,7 @@ function rotatePolygonFeature(feature, startCoordinates, center, angleRadians) {
     center,
     angleRadians
   );
+  invalidateFeatureImageBounds(feature);
   updateGeometryMeasurementProperties(feature);
   return true;
 }
@@ -12916,6 +14166,7 @@ function rotateMultiPolygonFeature(feature, startCoordinates, center, angleRadia
     center,
     angleRadians
   );
+  invalidateFeatureImageBounds(feature);
   updateGeometryMeasurementProperties(feature);
   return true;
 }
@@ -13412,6 +14663,43 @@ function resolveNewAnnotationLabel(callback) {
   callback("");
 }
 
+const ANNOTATION_COORDINATE_DECIMALS = 2;
+
+function roundCoordinateNumber(value, decimals = ANNOTATION_COORDINATE_DECIMALS) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return value;
+  const factor = 10 ** decimals;
+  return Math.round(number * factor) / factor;
+}
+
+function roundCoordinateTree(coordinates, decimals = ANNOTATION_COORDINATE_DECIMALS) {
+  if (!Array.isArray(coordinates)) return coordinates;
+  if (
+    coordinates.length >= 2 &&
+    typeof coordinates[0] === "number" &&
+    typeof coordinates[1] === "number"
+  ) {
+    return coordinates.map((value) => roundCoordinateNumber(value, decimals));
+  }
+  return coordinates.map((coordinate) =>
+    roundCoordinateTree(coordinate, decimals)
+  );
+}
+
+function roundFeatureCoordinates(feature, decimals = ANNOTATION_COORDINATE_DECIMALS) {
+  if (!feature?.geometry?.coordinates) return feature;
+  feature.geometry.coordinates = roundCoordinateTree(
+    feature.geometry.coordinates,
+    decimals
+  );
+  invalidateFeatureImageBounds(feature);
+  return feature;
+}
+
+function cloneFeaturesWithRoundedCoordinates(features) {
+  return cloneData(features).map((feature) => roundFeatureCoordinates(feature));
+}
+
 // Function to add a point to the annoJSON
 function addPointToGeoJSON(x, y, metadata) {
   annotationHistory.push("Add annotation");
@@ -13426,7 +14714,7 @@ function addPointToGeoJSON(x, y, metadata) {
     type: "Feature",
     geometry: {
       type: "Point",
-      coordinates: [x, y], // [x, y] format for coordinates
+      coordinates: roundCoordinateTree([x, y]), // [x, y] format for coordinates
     },
     properties: properties, // metadata like label, description, etc.
   };
@@ -13454,7 +14742,7 @@ function addPolylineToGeoJSON(JSON, coordinates, metadata) {
     type: "Feature",
     geometry: {
       type: "LineString",
-      coordinates: coordinates, // [[x0, y0],[x1,y1]] format for coordinates
+      coordinates: roundCoordinateTree(coordinates), // [[x0, y0],[x1,y1]] format for coordinates
     },
     properties: properties, // metadata like label, description, etc.
   };
@@ -13483,7 +14771,7 @@ function addPolygonToGeoJSON(JSON, coordinates, metadata) {
     type: "Feature",
     geometry: {
       type: "Polygon",
-      coordinates: [coordinates], // [[[x0, y0],[x1,y1]]] format for coordinates
+      coordinates: roundCoordinateTree([coordinates]), // [[[x0, y0],[x1,y1]]] format for coordinates
     },
     properties: properties, // metadata like label, description, etc.
   };
@@ -13507,13 +14795,12 @@ function deleteFromGeoJSON(id) {
 function generateUniqueId(length = 8) {
   const chars =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-  let result = "";
+  const timestamp = Date.now().toString(36);
+  let result = timestamp;
 
-  // Add a timestamp for uniqueness
-  result += Date.now().toString(36);
-
-  // Add random characters to meet the desired length
-  for (let i = result.length; i < length; i++) {
+  // Always add randomness. Timestamp-only IDs collide during batch imports.
+  const randomLength = Math.max(6, length - timestamp.length);
+  for (let i = 0; i < randomLength; i++) {
     const randomIndex = Math.floor(Math.random() * chars.length);
     result += chars.charAt(randomIndex);
   }
@@ -14365,6 +15652,7 @@ const libraryEditorSummary = document.getElementById("libraryEditorSummary");
 const libraryEditorRows = document.getElementById("libraryEditorRows");
 const libraryEditorSearch = document.getElementById("libraryEditorSearch");
 const libraryEditorForm = document.getElementById("libraryEditorForm");
+let overlayRedrawFrame = null;
 const libraryEditorTitleInput = document.getElementById("libraryEditorTitleInput");
 const libraryEditorDescriptionInput = document.getElementById(
   "libraryEditorDescriptionInput"
@@ -15314,6 +16602,10 @@ if (window.electronAPI?.onDziConversionProgress) {
   );
 }
 
+if (window.electronAPI?.onSegmenteverygrainProgress) {
+  window.electronAPI.onSegmenteverygrainProgress(handleSegmenteverygrainProgress);
+}
+
 tileSetEditorRows?.addEventListener("change", function (event) {
   const typeSelect = event.target.closest(".tile-set-editor-type");
   if (typeSelect) {
@@ -15926,25 +17218,161 @@ function updateViewerElementCoordinates(canvas, viewportPoint) {
   }
 }
 
-// Update previously draw lines
-viewer.addHandler("viewport-change", () => {
+function isLiveOverlayInteractionActive() {
+  return Boolean(
+    isAnnotationDraftActive() ||
+      isAnnotationDrawingActive() ||
+      annotationMoveDragState ||
+      annotationLabelMoveDragState ||
+      activeVertexEditUuid ||
+      activeShapeEditUuid ||
+      measurementModeActive ||
+      circleModeActive ||
+      segmentBoxModeActive ||
+      unsupervisedAoiModeActive
+  );
+}
+
+function drawViewerOverlays() {
   drawShape(polyCanvas, [annoJSONTemp, annoJSON]);
   drawShape(circleCanvas, [circleJSON]);
   drawShape(measureCanvas, [measureJSONTemp, measureAreaJSONTemp, measureJSON]);
   drawScaleWizardOverlay();
+}
+
+function requestViewerOverlayRedraw() {
+  if (overlayRedrawFrame !== null) return;
+  overlayRedrawFrame = requestAnimationFrame(() => {
+    overlayRedrawFrame = null;
+    drawViewerOverlays();
+  });
+}
+
+function getVisibleImageBounds(marginRatio = 0.15) {
+  const image = viewer.world.getItemAt(0);
+  if (!image) return null;
+
+  const width = viewer.container.clientWidth;
+  const height = viewer.container.clientHeight;
+  const imageCorners = [
+    new OpenSeadragon.Point(0, 0),
+    new OpenSeadragon.Point(width, 0),
+    new OpenSeadragon.Point(width, height),
+    new OpenSeadragon.Point(0, height),
+  ].map((pixelPoint) => {
+    const viewportPoint = viewer.viewport.pointFromPixel(pixelPoint, true);
+    return image.viewportToImageCoordinates(viewportPoint);
+  });
+  const xs = imageCorners.map((point) => point.x);
+  const ys = imageCorners.map((point) => point.y);
+  const minX = Math.min(...xs);
+  const maxX = Math.max(...xs);
+  const minY = Math.min(...ys);
+  const maxY = Math.max(...ys);
+  const marginX = Math.max((maxX - minX) * marginRatio, 64);
+  const marginY = Math.max((maxY - minY) * marginRatio, 64);
+
+  return {
+    minX: minX - marginX,
+    minY: minY - marginY,
+    maxX: maxX + marginX,
+    maxY: maxY + marginY,
+  };
+}
+
+function expandCoordinateBounds(coordinates, bounds) {
+  if (!Array.isArray(coordinates)) return bounds;
+  if (
+    coordinates.length >= 2 &&
+    Number.isFinite(Number(coordinates[0])) &&
+    Number.isFinite(Number(coordinates[1]))
+  ) {
+    const x = Number(coordinates[0]);
+    const y = Number(coordinates[1]);
+    bounds.minX = Math.min(bounds.minX, x);
+    bounds.minY = Math.min(bounds.minY, y);
+    bounds.maxX = Math.max(bounds.maxX, x);
+    bounds.maxY = Math.max(bounds.maxY, y);
+    return bounds;
+  }
+
+  coordinates.forEach((coordinate) => expandCoordinateBounds(coordinate, bounds));
+  return bounds;
+}
+
+function getFeatureImageBounds(feature) {
+  const coordinates = feature?.geometry?.coordinates;
+  if (!coordinates) return null;
+  if (feature._imageBounds?.coordinates === coordinates) {
+    return feature._imageBounds.bounds;
+  }
+
+  const bounds = expandCoordinateBounds(coordinates, {
+    minX: Infinity,
+    minY: Infinity,
+    maxX: -Infinity,
+    maxY: -Infinity,
+  });
+  if (
+    !Number.isFinite(bounds.minX) ||
+    !Number.isFinite(bounds.minY) ||
+    !Number.isFinite(bounds.maxX) ||
+    !Number.isFinite(bounds.maxY)
+  ) {
+    return null;
+  }
+
+  feature._imageBounds = { coordinates, bounds };
+  return bounds;
+}
+
+function invalidateFeatureImageBounds(feature) {
+  if (feature) delete feature._imageBounds;
+}
+
+function boundsIntersect(a, b) {
+  if (!a || !b) return true;
+  return !(
+    a.maxX < b.minX ||
+    a.minX > b.maxX ||
+    a.maxY < b.minY ||
+    a.minY > b.maxY
+  );
+}
+
+// Update previously drawn lines.
+viewer.addHandler("animation", () => {
+  drawViewerOverlays();
   refreshPorosityOverlayForViewportChange();
+  if (unsupervisedResolutionSelect?.value === "viewer") {
+    updateUnsupervisedAoiStats();
+  }
 });
 
 viewer.addHandler("animation-finish", () => {
+  drawViewerOverlays();
   refreshPorosityOverlayForViewportChange();
+  if (unsupervisedResolutionSelect?.value === "viewer") {
+    refreshUnsupervisedAoiPreviewAndControls();
+  }
 });
 
-// TOOD: Is this necessary? Could be partially redundant with the above function
+if (window.ResizeObserver && viewerContainer) {
+  const overlayResizeObserver = new ResizeObserver(() => {
+    drawViewerOverlays();
+    refreshPorosityOverlayForViewportChange();
+  });
+  overlayResizeObserver.observe(viewerContainer);
+} else {
+  window.addEventListener("resize", () => {
+    drawViewerOverlays();
+    refreshPorosityOverlayForViewportChange();
+  });
+}
+
 viewerContainer.addEventListener("mousemove", () => {
-  drawShape(polyCanvas, [annoJSONTemp, annoJSON]);
-  drawShape(circleCanvas, [circleJSON]);
-  drawShape(measureCanvas, [measureJSONTemp, measureAreaJSONTemp, measureJSON]);
-  drawScaleWizardOverlay();
+  if (!isLiveOverlayInteractionActive()) return;
+  requestViewerOverlayRedraw();
 });
 
 viewerContainer.addEventListener("pointermove", updateSegmentReticlePosition);
@@ -16080,6 +17508,7 @@ function drawShape(canvas, JSONArray) {
   ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear the canvas
 
   const image = viewer.world.getItemAt(0); // Get image to use for drawing
+  const visibleImageBounds = getVisibleImageBounds();
 
   // Flatten the geoJSON array into a single array of features
   const allFeatures = JSONArray.flatMap((geoJSON) => geoJSON.features);
@@ -16088,6 +17517,9 @@ function drawShape(canvas, JSONArray) {
     // Only process features that have geometry and properties
     if (feature.geometry && feature.properties) {
       if (!isAnnotationFeatureVisible(feature)) return;
+      if (!boundsIntersect(getFeatureImageBounds(feature), visibleImageBounds)) {
+        return;
+      }
       const coordinates = feature.geometry.coordinates;
       const type = feature.geometry.type;
 
@@ -16364,6 +17796,10 @@ function isSegmentBoxDrawGesture(event) {
   return segmentBoxModeActive || (segmentModeActive && event.originalEvent?.altKey);
 }
 
+function isUnsupervisedAoiDrawGesture() {
+  return unsupervisedAoiModeActive;
+}
+
 function getImageMarqueePolygon(startPixel, endPixel) {
   const image = viewer.world.getItemAt(0);
   if (!image) return null;
@@ -16438,6 +17874,28 @@ function toggleAnnotationsInMarquee(marqueePolygon) {
 }
 
 viewer.addHandler("canvas-drag", function (event) {
+  if (isUnsupervisedAoiDrawGesture(event)) {
+    event.preventDefaultAction = true;
+    const delta = event.delta || new OpenSeadragon.Point(0, 0);
+    if (!unsupervisedAoiDragState) {
+      unsupervisedAoiDragState = {
+        startPixel: new OpenSeadragon.Point(
+          event.position.x - delta.x,
+          event.position.y - delta.y
+        ),
+      };
+    }
+    const aoiRect = imageRectFromPixelBox(
+      unsupervisedAoiDragState.startPixel,
+      event.position
+    );
+    if (aoiRect && aoiRect.width > 0 && aoiRect.height > 0) {
+      unsupervisedAoiRect = aoiRect;
+      updateUnsupervisedAoiPreview(aoiRect);
+    }
+    return;
+  }
+
   if (isSegmentBoxDrawGesture(event)) {
     event.preventDefaultAction = true;
     const delta = event.delta || new OpenSeadragon.Point(0, 0);
@@ -16604,6 +18062,29 @@ viewer.addHandler("canvas-drag", function (event) {
 
 // Finalize the rectangle on mouseup
 viewer.addHandler("canvas-release", function (event) {
+  if (isUnsupervisedAoiDrawGesture(event)) {
+    event.preventDefaultAction = true;
+    const aoiRect =
+      unsupervisedAoiDragState
+        ? imageRectFromPixelBox(unsupervisedAoiDragState.startPixel, event.position)
+        : null;
+    unsupervisedAoiModeActive = false;
+    unsupervisedAoiDragState = null;
+
+    if (!aoiRect || aoiRect.width < 4 || aoiRect.height < 4) {
+      clearUnsupervisedAoi("Draw a larger AOI.");
+      return;
+    }
+
+    unsupervisedAoiRect = aoiRect;
+    updateUnsupervisedAoiPreview(aoiRect);
+    setUnsupervisedSegmentStatus(
+      "AOI ready. Run segmenteverygrain to add annotations."
+    );
+    updateUnsupervisedSegmentControls();
+    return;
+  }
+
   if (isSegmentBoxDrawGesture(event)) {
     event.preventDefaultAction = true;
     const promptRect =
@@ -16863,9 +18344,6 @@ function addText(
 ) {
   const labelText = label === undefined || label === null ? "" : String(label);
   if (type === "anno" && labelText.trim() === "") {
-    unsavedAnnotations(true);
-    updateRepeatButton();
-    syncSelectedAnnotationVisuals();
     return;
   }
 
@@ -17316,7 +18794,7 @@ function handleCount(coords, properties) {
 function saveCountToJSON(type, coordinates, properties) {
   const geoJSONFeature = {
     type: "Feature",
-    geometry: { type, coordinates },
+    geometry: { type, coordinates: roundCoordinateTree(coordinates) },
     properties: {
       ...properties,
     },
@@ -17483,6 +18961,8 @@ function showAnnotationImportDialog(geoJSONData, options = {}) {
 
   document.getElementById("annotationImportSelectAfter").checked =
     selectImportedAnnotationsPreference;
+  resetAnnotationImportProgress();
+  setAnnotationImportBusy(false);
   document.getElementById("annotationImportDialog").classList.remove(
     "modal-prompt-hidden"
   );
@@ -17493,6 +18973,8 @@ function showAnnotationImportDialog(geoJSONData, options = {}) {
 
 function hideAnnotationImportDialog() {
   pendingAnnotationImport = null;
+  resetAnnotationImportProgress();
+  setAnnotationImportBusy(false);
   document.getElementById("annotationImportDialog").classList.remove(
     "modal-prompt-visible"
   );
@@ -17501,7 +18983,7 @@ function hideAnnotationImportDialog() {
     .classList.add("modal-prompt-hidden");
 }
 
-function confirmAnnotationImport() {
+async function confirmAnnotationImport() {
   if (!pendingAnnotationImport) return;
 
   const mode =
@@ -17533,9 +19015,21 @@ function confirmAnnotationImport() {
   }
 
   const importData = pendingAnnotationImport.geoJSONData;
-  hideAnnotationImportDialog();
-  loadAnnotations(importData, loadOptions);
-  updateRepeatButton();
+  setAnnotationImportBusy(true);
+  setAnnotationImportProgress(0, "Preparing annotation import...");
+  try {
+    await loadAnnotations(importData, loadOptions);
+    updateRepeatButton();
+    window.setTimeout(() => {
+      hideAnnotationImportDialog();
+      resetAnnotationImportProgress();
+      setAnnotationImportBusy(false);
+    }, 450);
+  } catch (error) {
+    console.error("Annotation import failed:", error);
+    setAnnotationImportProgress(100, error.message || "Annotation import failed.");
+    setAnnotationImportBusy(false);
+  }
 }
 
 function promptForAnnotationImportGroupName() {
@@ -17585,8 +19079,53 @@ function updateAnnotationImportGroupInputs() {
   }
 }
 
+function setAnnotationImportProgress(percent, message = "") {
+  const progress = document.getElementById("annotationImportProgress");
+  const progressBar = document.getElementById("annotationImportProgressBar");
+  const progressText = document.getElementById("annotationImportProgressText");
+  if (!progress || !progressBar || !progressText) return;
+
+  progress.hidden = false;
+  const clampedPercent = Math.max(0, Math.min(100, Number(percent) || 0));
+  progressBar.style.transform = `scaleX(${clampedPercent / 100})`;
+  progressBar.setAttribute("aria-valuenow", String(Math.round(clampedPercent)));
+  progressText.textContent =
+    message || `Importing annotations... ${Math.round(clampedPercent)}%`;
+}
+
+function resetAnnotationImportProgress() {
+  const progress = document.getElementById("annotationImportProgress");
+  const progressBar = document.getElementById("annotationImportProgressBar");
+  const progressText = document.getElementById("annotationImportProgressText");
+  if (!progress || !progressBar || !progressText) return;
+
+  progress.hidden = true;
+  progressBar.style.transform = "scaleX(0)";
+  progressBar.setAttribute("aria-valuenow", "0");
+  progressText.textContent = "";
+}
+
+function setAnnotationImportBusy(isBusy) {
+  document.getElementById("annotationImportConfirmButton").disabled = isBusy;
+  document.getElementById("annotationImportCancelButton").disabled = isBusy;
+  document.getElementById("annotationImportGroupSelect").disabled = isBusy;
+  document.getElementById("annotationImportSelectAfter").disabled = isBusy;
+  [...document.getElementsByName("annotationImportMode")].forEach((input) => {
+    input.disabled = isBusy;
+  });
+  if (!isBusy) {
+    updateAnnotationImportGroupInputs();
+  }
+}
+
+function waitForAnnotationImportPaint() {
+  return new Promise((resolve) => {
+    requestAnimationFrame(() => requestAnimationFrame(resolve));
+  });
+}
+
 // New loadAnnotations() for testing
-function loadAnnotations(geoJSONData, options = {}) {
+async function loadAnnotations(geoJSONData, options = {}) {
   const features = getAnnotationFeaturesFromGeoJSON(geoJSONData);
   const assignedGroup =
     options.groupMode === "assign" && options.group
@@ -17600,8 +19139,10 @@ function loadAnnotations(geoJSONData, options = {}) {
   annotationHistory.push("Import annotations");
   annotationHistoryPaused = true;
   try {
-    features.forEach((feature) => {
-      if (!feature) return;
+    const chunkSize = Math.max(25, Number(options.chunkSize) || 100);
+    for (let index = 0; index < features.length; index += 1) {
+      const feature = features[index];
+      if (!feature) continue;
 
       const geometry = feature.geometry;
       const sourceProperties = feature.properties || {};
@@ -17617,13 +19158,13 @@ function loadAnnotations(geoJSONData, options = {}) {
       );
       if (!geometry || !properties) {
         // Invalid feature, skipping
-        return;
+        continue;
       }
 
       // Skip duplicate UUIDs
       if (existingUuids.has(properties.uuid)) {
         // Annotation already exists, skipping
-        return;
+        continue;
       }
 
       const { type, coordinates } = geometry;
@@ -17649,14 +19190,21 @@ function loadAnnotations(geoJSONData, options = {}) {
         existingUuids.add(addedFeature.properties.uuid);
         addedUuids.push(addedFeature.properties.uuid);
       });
-
-      // Redraw the shapes and enable annotation features
-      drawShape(polyCanvas, [annoJSON]);
-      enableAnnoButtons();
-      annoLabelToText();
-    });
+      if ((index + 1) % chunkSize === 0 || index === features.length - 1) {
+        const percent = Math.round(((index + 1) / features.length) * 90);
+        setAnnotationImportProgress(
+          percent,
+          `Importing annotations... ${index + 1} of ${features.length}`
+        );
+        await waitForAnnotationImportPaint();
+      }
+    }
+    setAnnotationImportProgress(94, "Rendering annotation list...");
+    await waitForAnnotationImportPaint();
     renderAnnotationList();
-  if (addedUuids.length > 0 && options.selectImported !== false) {
+    setAnnotationImportProgress(98, "Updating annotation selection...");
+    await waitForAnnotationImportPaint();
+    if (addedUuids.length > 0 && options.selectImported !== false) {
       setAnnotationSelection(addedUuids, addedUuids[addedUuids.length - 1]);
     } else if (addedUuids.length > 0 && options.selectImported === false) {
       clearAnnotationSelection({ redraw: true, scroll: false });
@@ -17666,6 +19214,8 @@ function loadAnnotations(geoJSONData, options = {}) {
     ) {
       selectAnnotationByUuid(annoJSON.features[0].properties.uuid);
     }
+    annoLabelToText();
+    setAnnotationImportProgress(100, `Imported ${addedUuids.length} annotation${addedUuids.length === 1 ? "" : "s"}.`);
   } finally {
     annotationHistoryPaused = false;
     updateAnnotationHistoryControls();
@@ -17845,7 +19395,7 @@ function saveAnnotationToJSON(type, coordinates, properties) {
 
   const geoJSONFeature = {
     type: "Feature",
-    geometry: { type, coordinates },
+    geometry: { type, coordinates: roundCoordinateTree(coordinates) },
     properties: {
       ...normalizedProperties,
       pixelsPerMeter: normalizePixelsPerMeter(normalizedProperties.pixelsPerMeter),
@@ -18029,7 +19579,7 @@ function exportAnnotations(features) {
   const isFullExport = features.length === annoJSON.features.length;
   const geoJSON = {
     type: "FeatureCollection",
-    features: cloneData(features),
+    features: cloneFeaturesWithRoundedCoordinates(features),
   };
   const geoJSONBlob = new Blob([JSON.stringify(geoJSON, null, 2)], {
     type: "application/geo+json",
@@ -18408,6 +19958,29 @@ document.addEventListener("keydown", (event) => {
 
   event.preventDefault();
   deletePorosityAoiVertex(porosityAoiSelectedVertexIndex);
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key !== "Delete" && event.key !== "Backspace") return;
+  if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey) {
+    return;
+  }
+
+  const target = event.target;
+  const tag = target?.tagName;
+  if (
+    tag === "INPUT" ||
+    tag === "TEXTAREA" ||
+    tag === "SELECT" ||
+    target?.isContentEditable
+  ) {
+    return;
+  }
+  if (porosityAoiSelectedVertexIndex !== null) return;
+
+  if (deleteSelectedAnnotations()) {
+    event.preventDefault();
+  }
 });
 
 // Keyboard shortcut handler to toggle checkboxes
@@ -19044,7 +20617,13 @@ function applyAllAnnoLabel(idBase) {
     annotationHistory.push("Style annotation labels");
   }
 
-  unlockedUuids.forEach((uuid) => applyAnnoLabel(idBase, uuid));
+  const featureByUuid = getAnnotationFeatureByUuidMap();
+  unlockedUuids.forEach((uuid) =>
+    applyAnnoLabel(idBase, uuid, { feature: featureByUuid.get(uuid) })
+  );
+  if (unlockedUuids.length > 0) {
+    finishAnnotationStyleBatch(false);
+  }
 }
 
 // Functionality for applying specific formatting for annotations
@@ -19054,7 +20633,21 @@ function applyAllAnnoFeature(idBase) {
     annotationHistory.push("Style annotations");
   }
 
-  unlockedUuids.forEach((uuid) => applyAnnoFeature(idBase, uuid));
+  const featureByUuid = getAnnotationFeatureByUuidMap();
+  let needsRedraw = false;
+  unlockedUuids.forEach((uuid) => {
+    if (
+      applyAnnoFeature(idBase, uuid, {
+        feature: featureByUuid.get(uuid),
+        deferDraw: true,
+      })
+    ) {
+      needsRedraw = true;
+    }
+  });
+  if (unlockedUuids.length > 0) {
+    finishAnnotationStyleBatch(needsRedraw);
+  }
 }
 
 function applyCurrentAnnoLabel(idBase) {
@@ -19063,7 +20656,11 @@ function applyCurrentAnnoLabel(idBase) {
     return;
   }
   annotationHistory.push("Style annotation label");
-  selectedUuids.forEach((uuid) => applyAnnoLabel(idBase, uuid));
+  const featureByUuid = getAnnotationFeatureByUuidMap();
+  selectedUuids.forEach((uuid) =>
+    applyAnnoLabel(idBase, uuid, { feature: featureByUuid.get(uuid) })
+  );
+  finishAnnotationStyleBatch(false);
 }
 
 function applyCurrentAnnoFeature(idBase) {
@@ -19072,10 +20669,22 @@ function applyCurrentAnnoFeature(idBase) {
     return;
   }
   annotationHistory.push("Style annotation");
-  selectedUuids.forEach((uuid) => applyAnnoFeature(idBase, uuid));
+  const featureByUuid = getAnnotationFeatureByUuidMap();
+  let needsRedraw = false;
+  selectedUuids.forEach((uuid) => {
+    if (
+      applyAnnoFeature(idBase, uuid, {
+        feature: featureByUuid.get(uuid),
+        deferDraw: true,
+      })
+    ) {
+      needsRedraw = true;
+    }
+  });
+  finishAnnotationStyleBatch(needsRedraw);
 }
 
-function applyAnnoLabel(idBase, uuid) {
+function applyAnnoLabel(idBase, uuid, options = {}) {
   const formattingMap = {
     annoLabelFontSize: "labelFontSize",
     annoLabelFontColor: "labelFontColor",
@@ -19083,7 +20692,8 @@ function applyAnnoLabel(idBase, uuid) {
     annoLabelBackgroundOpacity: "labelBackgroundOpacity",
   };
 
-  const feature = annoJSON.features.find((f) => f.properties.uuid === uuid);
+  const feature =
+    options.feature || annoJSON.features.find((f) => f.properties.uuid === uuid);
   if (!feature || isAnnotationFeatureLocked(feature)) return;
   const props = feature.properties;
   const input = document.getElementById(idBase);
@@ -19155,8 +20765,9 @@ function applyAnnoLabel(idBase, uuid) {
   }
 }
 
-function applyAnnoFeature(idBase, uuid) {
-  const feature = annoJSON.features.find((f) => f.properties.uuid === uuid);
+function applyAnnoFeature(idBase, uuid, options = {}) {
+  const feature =
+    options.feature || annoJSON.features.find((f) => f.properties.uuid === uuid);
   if (!feature || isAnnotationFeatureLocked(feature)) return;
   const props = feature.properties;
   const input = document.getElementById(idBase);
@@ -19173,8 +20784,12 @@ function applyAnnoFeature(idBase, uuid) {
     const lineOpacity = props.lineOpacity;
     updateCrosshair(uuid, "anno", lineColor, lineWeight, lineOpacity);
   } else {
-    drawShape(polyCanvas, [annoJSON, annoJSONTemp]);
+    if (!options.deferDraw) {
+      drawShape(polyCanvas, [annoJSON, annoJSONTemp]);
+    }
+    return true;
   }
+  return false;
 }
 
 // Functionality for applying specific formatting for grid attributes
@@ -22349,13 +23964,19 @@ function renderMeasureResults() {
   renderMeasureParticleSizeMenu();
 }
 
-function addMeasureFeature(type, coordinates, source = "manual", sourceFeature = null) {
+function addMeasureFeature(
+  type,
+  coordinates,
+  source = "manual",
+  sourceFeature = null,
+  options = {}
+) {
   const normalizedCoordinates =
     type === "line"
       ? getCoordinatesWithoutTrailingDuplicate(coordinates)
       : closeCoordinates(coordinates);
   const measurement = calculateMeasurementProperties(type, normalizedCoordinates);
-  const id = getNextMeasurementId(source);
+  const id = options.id || getNextMeasurementId(source);
   const style = getMeasureStyle();
   const measurementUuid = generateUniqueId(16);
   const group =
@@ -22406,13 +24027,22 @@ function addMeasureFeature(type, coordinates, source = "manual", sourceFeature =
     ...measurement,
   });
   selectedMeasurementUuids = new Set([measurementUuid]);
-  renderMeasureResults();
-  drawShape(measureCanvas, [measureJSON, measureAreaJSONTemp, measureJSONTemp]);
+  if (!options.deferRender) {
+    renderMeasureResults();
+    drawShape(measureCanvas, [measureJSON, measureAreaJSONTemp, measureJSONTemp]);
+  }
+  return measurementUuid;
 }
 
-function addMeasureGeometry(type, geometry, source = "annotation", sourceFeature = null) {
+function addMeasureGeometry(
+  type,
+  geometry,
+  source = "annotation",
+  sourceFeature = null,
+  options = {}
+) {
   const measurement = calculateGeometryMeasurementProperties(type, geometry);
-  const id = getNextMeasurementId(source);
+  const id = options.id || getNextMeasurementId(source);
   const style = getMeasureStyle();
   const measurementUuid = generateUniqueId(16);
   const group =
@@ -22463,8 +24093,11 @@ function addMeasureGeometry(type, geometry, source = "annotation", sourceFeature
     ...measurement,
   });
   selectedMeasurementUuids = new Set([measurementUuid]);
-  renderMeasureResults();
-  drawShape(measureCanvas, [measureJSON, measureAreaJSONTemp, measureJSONTemp]);
+  if (!options.deferRender) {
+    renderMeasureResults();
+    drawShape(measureCanvas, [measureJSON, measureAreaJSONTemp, measureJSONTemp]);
+  }
+  return measurementUuid;
 }
 
 function previewMeasureFeature(type, coordinates) {
@@ -22784,12 +24417,16 @@ function measureSelectedAnnotations() {
     return;
   }
 
+  const addedMeasurementUuids = [];
+  let nextAnnotationMeasureIndex =
+    measureResults.filter((result) => String(result.id || "").startsWith("A"))
+      .length + 1;
   selected.forEach((uuid) => {
     const feature = getAnnotationByUuid(uuid);
     if (!feature?.geometry) return;
     const type = getMeasurementTypeForAnnotation(feature);
     if (type === "point") {
-      const id = getNextMeasurementId("annotation");
+      const id = `A${nextAnnotationMeasureIndex++}`;
       const group = getMeasureGroupForAnnotation(feature);
       const measurementUuid = generateUniqueId(16);
       measureResults.push({
@@ -22808,18 +24445,43 @@ function measureSelectedAnnotations() {
         x: feature.geometry.coordinates?.[0] ?? "",
         y: feature.geometry.coordinates?.[1] ?? "",
       });
+      addedMeasurementUuids.push(measurementUuid);
       return;
     }
     const geometry = getAnnotationMeasurementGeometry(feature, type);
     if (!geometry) {
       const coordinates = getAnnotationMeasurementCoordinates(feature, type);
       if (coordinates.length < 2) return;
-      addMeasureFeature(type, coordinates, "annotation", feature);
+      const measurementUuid = addMeasureFeature(
+        type,
+        coordinates,
+        "annotation",
+        feature,
+        {
+          deferRender: true,
+          id: `A${nextAnnotationMeasureIndex++}`,
+        }
+      );
+      if (measurementUuid) addedMeasurementUuids.push(measurementUuid);
       return;
     }
-    addMeasureGeometry(type, geometry, "annotation", feature);
+    const measurementUuid = addMeasureGeometry(
+      type,
+      geometry,
+      "annotation",
+      feature,
+      {
+        deferRender: true,
+        id: `A${nextAnnotationMeasureIndex++}`,
+      }
+    );
+    if (measurementUuid) addedMeasurementUuids.push(measurementUuid);
   });
+  selectedMeasurementUuids = new Set(addedMeasurementUuids);
+  measurementSelectionAnchorUuid =
+    addedMeasurementUuids[addedMeasurementUuids.length - 1] || null;
   renderMeasureResults();
+  drawShape(measureCanvas, [measureJSON, measureAreaJSONTemp, measureJSONTemp]);
 }
 
 function csvEscape(value) {

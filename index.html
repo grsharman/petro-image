@@ -76,6 +76,27 @@
           <input type="checkbox" id="annotationImportSelectAfter" checked />
           Select imported annotations after import
         </label>
+        <div
+          id="annotationImportProgress"
+          class="annotation-import-progress import-progress"
+          hidden
+          aria-live="polite"
+        >
+          <div class="import-progress-track" aria-hidden="true">
+            <div
+              id="annotationImportProgressBar"
+              class="import-progress-bar"
+              role="progressbar"
+              aria-valuemin="0"
+              aria-valuemax="100"
+              aria-valuenow="0"
+            ></div>
+          </div>
+          <div
+            id="annotationImportProgressText"
+            class="import-progress-text"
+          ></div>
+        </div>
         <div class="annotation-dialog-actions">
           <button id="annotationImportConfirmButton">Import</button>
           <button id="annotationImportCancelButton">Cancel</button>
@@ -1128,18 +1149,33 @@
           </div>
         </div>
         <div class="tool-palette-body segment-palette-body">
-          <details class="segment-setup-details">
+          <details class="segment-primary-details segment-python-details">
+            <summary>
+              <span>Python Setup</span>
+              <span class="segment-readiness-pair">
+                <span
+                  id="samSetupReadiness"
+                  class="sam-readiness sam-readiness-untested"
+                  role="img"
+                  aria-label="SAM setup has not been tested"
+                  title="SAM setup has not been tested"
+                >
+                  ?
+                </span>
+                <span
+                  id="segmenteverygrainSetupReadiness"
+                  class="sam-readiness sam-readiness-untested"
+                  role="img"
+                  aria-label="segmenteverygrain setup has not been tested"
+                  title="segmenteverygrain setup has not been tested"
+                >
+                  ?
+                </span>
+              </span>
+            </summary>
+            <details class="segment-setup-details">
             <summary>
               <span>SAM 2.1 Setup</span>
-              <span
-                id="samSetupReadiness"
-                class="sam-readiness sam-readiness-untested"
-                role="img"
-                aria-label="SAM setup has not been tested"
-                title="SAM setup has not been tested"
-              >
-                ?
-              </span>
             </summary>
             <label class="segment-field">
               <span>Python</span>
@@ -1178,99 +1214,270 @@
             </div>
             <div id="samSetupStatus" class="segment-status" role="status">Choose a Python environment and checkpoint.</div>
           </details>
-          <hr />
-          <label class="segment-field segment-inline-field">
-            <span>Tile set</span>
-            <select id="segmentTileSetSelect"></select>
-          </label>
-          <div class="segment-padding-row">
+          <details class="segment-setup-details">
+            <summary>
+              <span>segmenteverygrain Setup</span>
+            </summary>
+            <p class="segment-inline-status">
+              Uses the selected SAM Python environment.
+            </p>
             <label class="segment-field">
-              <span>Padding (%)</span>
+              <span>Model</span>
               <input
-                id="segmentPaddingPercent"
-                type="number"
-                min="0"
-                max="300"
-                step="10"
-                value="50"
+                id="segmenteverygrainModelPath"
+                type="text"
+                placeholder="/path/to/segmenteverygrain model.h5"
+                spellcheck="false"
               />
             </label>
-            <label class="segment-field segment-compact-number-field">
-              <span>Min px</span>
+            <button id="chooseSegmenteverygrainModelButton" type="button">
+              Choose Model
+            </button>
+            <button id="testSegmenteverygrainSetupButton" type="button">
+              Test segmenteverygrain
+            </button>
+            <div id="segmenteverygrainSetupStatus" class="segment-status" role="status">Choose a Python environment and model file.</div>
+          </details>
+          </details>
+          <details class="segment-primary-details segment-workflow-details" open>
+            <summary>Supervised Segmentation</summary>
+            <label class="segment-field segment-inline-field">
+              <span>Tile set</span>
+              <select id="segmentTileSetSelect"></select>
+            </label>
+            <label class="segment-field segment-inline-field segment-resolution-field">
+              <span>Resolution</span>
+              <select id="segmentResolutionSelect">
+                <option value="1">Full resolution</option>
+                <option value="0.5">1/2 resolution</option>
+                <option value="0.25">1/4 resolution</option>
+                <option value="viewer">Current viewer resolution</option>
+              </select>
+            </label>
+            <div class="segment-padding-row">
+              <label class="segment-field">
+                <span>Padding (%)</span>
+                <input
+                  id="segmentPaddingPercent"
+                  type="number"
+                  min="0"
+                  max="300"
+                  step="10"
+                  value="50"
+                />
+              </label>
+              <label class="segment-field segment-compact-number-field">
+                <span>Min px</span>
+                <input
+                  id="segmentPaddingMin"
+                  type="number"
+                  min="0"
+                  max="2048"
+                  step="16"
+                  value="256"
+                />
+              </label>
+              <label class="segment-field segment-compact-number-field">
+                <span>Max px</span>
+                <input
+                  id="segmentPaddingMax"
+                  type="number"
+                  min="0"
+                  max="4096"
+                  step="16"
+                  value="512"
+                />
+              </label>
+            </div>
+            <p id="segmentPaddingStatus" class="segment-inline-status">
+              Padding is based on the larger box dimension.
+            </p>
+            <div class="segment-simplify-row">
+              <label class="segment-option">
+                <input id="segmentSimplifyEnabled" type="checkbox" checked />
+                <span>Simplify polygons</span>
+              </label>
               <input
-                id="segmentPaddingMin"
+                id="segmentSimplifyEpsilon"
+                class="segment-compact-number-input"
                 type="number"
                 min="0"
-                max="2048"
-                step="16"
-                value="256"
+                max="100"
+                step="0.5"
+                value="2"
+                title="Higher values remove more vertices."
               />
-            </label>
-            <label class="segment-field segment-compact-number-field">
-              <span>Max px</span>
+            </div>
+            <label class="segment-field">
+              <span>Annotation group</span>
               <input
-                id="segmentPaddingMax"
-                type="number"
-                min="0"
-                max="4096"
-                step="16"
-                value="512"
+                id="segmentAnnotationGroup"
+                type="text"
+                list="segmentAnnotationGroupOptions"
+                placeholder="Current annotation group"
               />
+              <datalist id="segmentAnnotationGroupOptions"></datalist>
             </label>
-          </div>
-          <p id="segmentPaddingStatus" class="segment-inline-status">
-            Padding is based on the larger box dimension.
-          </p>
-          <div class="segment-simplify-row">
             <label class="segment-option">
-              <input id="segmentSimplifyEnabled" type="checkbox" checked />
-              <span>Simplify polygons</span>
+              <input id="segmentModeToggle" type="checkbox" />
+              <span>Fast segmentation mode</span>
             </label>
-            <input
-              id="segmentSimplifyEpsilon"
-              class="segment-compact-number-input"
-              type="number"
-              min="0"
-              max="100"
-              step="0.5"
-              value="2"
-              title="Higher values remove more vertices."
-            />
-          </div>
-          <label class="segment-field">
-            <span>Annotation group</span>
-            <input
-              id="segmentAnnotationGroup"
-              type="text"
-              list="segmentAnnotationGroupOptions"
-              placeholder="Current annotation group"
-            />
-            <datalist id="segmentAnnotationGroupOptions"></datalist>
-          </label>
-          <label class="segment-option">
-            <input id="segmentModeToggle" type="checkbox" />
-            <span>Fast segmentation mode</span>
-          </label>
-          <label class="segment-option">
-            <input id="segmentAutoAdd" type="checkbox" />
-            <span>Auto-add to annotations</span>
-          </label>
-          <div class="segment-prompt-actions">
-            <button id="segmentDrawBoxButton" type="button">+ Box</button>
-            <button id="segmentAddPositivePointButton" type="button">
-              + Point
-            </button>
-            <button id="segmentAddNegativePointButton" type="button">
-              - Point
-            </button>
-          </div>
-          <div class="segment-commit-actions">
-            <button id="segmentAddAnnotationButton" type="button" disabled>
-              Add Annotation
-            </button>
-            <button id="segmentClearButton" type="button" disabled>Clear</button>
-          </div>
-          <div id="segmentStatus" class="segment-status" role="status">Draw a box around one feature.</div>
+            <label class="segment-option">
+              <input id="segmentAutoAdd" type="checkbox" />
+              <span>Auto-add to annotations</span>
+            </label>
+            <div class="segment-prompt-actions">
+              <button id="segmentDrawBoxButton" type="button">+ Box</button>
+              <button id="segmentAddPositivePointButton" type="button">
+                + Point
+              </button>
+              <button id="segmentAddNegativePointButton" type="button">
+                - Point
+              </button>
+            </div>
+            <div class="segment-commit-actions">
+              <button id="segmentAddAnnotationButton" type="button" disabled>
+                Add Annotation
+              </button>
+              <button id="segmentClearButton" type="button" disabled>Clear</button>
+            </div>
+            <div id="segmentStatus" class="segment-status" role="status">Draw a box around one feature.</div>
+          </details>
+          <details class="segment-primary-details segment-workflow-details">
+            <summary>segmenteverygrain</summary>
+            <label class="segment-field segment-inline-field">
+              <span>Tile set</span>
+              <select id="unsupervisedSegmentTileSetSelect"></select>
+            </label>
+            <div class="segment-actions segment-aoi-actions">
+              <button id="unsupervisedDrawAoiButton" type="button" disabled>
+                Draw AOI
+              </button>
+              <button id="unsupervisedClearAoiButton" type="button" disabled>
+                Clear
+              </button>
+            </div>
+            <label class="segment-field segment-inline-field segment-resolution-field">
+              <span>Resolution</span>
+              <select id="unsupervisedResolutionSelect">
+                <option value="1">Full resolution</option>
+                <option value="0.5">1/2 resolution</option>
+                <option value="0.25">1/4 resolution</option>
+                <option value="viewer">Current viewer resolution</option>
+              </select>
+            </label>
+            <div
+              id="unsupervisedAoiStats"
+              class="segment-info-table"
+              aria-live="polite"
+            >
+              <div>
+                <span>AOI</span>
+                <strong id="unsupervisedAoiSourcePixels">Draw AOI</strong>
+              </div>
+              <div>
+                <span>Processed</span>
+                <strong id="unsupervisedAoiProcessedPixels">-</strong>
+              </div>
+              <div>
+                <span>Pixels</span>
+                <strong id="unsupervisedAoiPixelCount">-</strong>
+              </div>
+            </div>
+            <div class="segment-simplify-row">
+              <label class="segment-option">
+                <input id="unsupervisedSimplifyEnabled" type="checkbox" checked />
+                <span>Simplify polygons</span>
+              </label>
+              <input
+                id="unsupervisedSimplifyEpsilon"
+                class="segment-compact-number-input"
+                type="number"
+                min="0"
+                max="100"
+                step="0.5"
+                value="2"
+                title="Higher values remove more vertices before adding annotations."
+              />
+            </div>
+            <label class="segment-option">
+              <input id="unsupervisedUseSamRefinement" type="checkbox" checked />
+              <span>SAM refinement</span>
+            </label>
+            <div class="segment-parameter-grid">
+              <label class="segment-field segment-compact-number-field">
+                <span>Patch (px)</span>
+                <input
+                  id="unsupervisedPatchSize"
+                  type="number"
+                  min="256"
+                  max="8000"
+                  step="128"
+                  value="2000"
+                />
+              </label>
+              <label class="segment-field segment-compact-number-field">
+                <span>Overlap (px)</span>
+                <input
+                  id="unsupervisedOverlap"
+                  type="number"
+                  min="0"
+                  max="4000"
+                  step="50"
+                  value="300"
+                />
+              </label>
+              <label class="segment-field segment-compact-number-field">
+                <span>Min area</span>
+                <input
+                  id="unsupervisedMinArea"
+                  type="number"
+                  min="0"
+                  max="1000000"
+                  step="10"
+                  value="50"
+                />
+              </label>
+              <label class="segment-field segment-compact-number-field">
+                <span>Dilation</span>
+                <input
+                  id="unsupervisedDilation"
+                  type="number"
+                  min="0"
+                  max="25"
+                  step="1"
+                  value="0"
+                />
+              </label>
+            </div>
+            <label class="segment-option">
+              <input id="unsupervisedShowPatchGrid" type="checkbox" />
+              <span>Show patch grid</span>
+            </label>
+            <label class="segment-option">
+              <input id="unsupervisedRemoveEdgeGrains" type="checkbox" checked />
+              <span>Remove edge grains</span>
+            </label>
+            <div class="segment-run-actions">
+              <button id="runUnsupervisedSegmentationButton" type="button" disabled>
+                Run segmenteverygrain
+              </button>
+              <button id="cancelUnsupervisedSegmentationButton" type="button" disabled hidden>
+                Cancel
+              </button>
+            </div>
+            <div
+              id="unsupervisedSegmentProgress"
+              class="segment-progress"
+              hidden
+            >
+              <div
+                id="unsupervisedSegmentProgressBar"
+                class="segment-progress-bar"
+              ></div>
+            </div>
+            <div id="unsupervisedSegmentStatus" class="segment-status" role="status">Draw an AOI and test segmenteverygrain setup before running segmentation.</div>
+          </details>
         </div>
       </div>
       <div
