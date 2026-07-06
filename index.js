@@ -39,11 +39,13 @@ const pixelsPerMicron = () => {
 };
 const metersFromPixels = (pixels) => {
   const scale = pixelsPerMeter();
-  return scale === null ? null : pixels / scale;
+  return scale === null || pixels === null || pixels === undefined ? null : pixels / scale;
 };
 const squareMetersFromSquarePixels = (pixels2) => {
   const scale = pixelsPerMeter();
-  return scale === null ? null : pixels2 / scale ** 2;
+  return scale === null || pixels2 === null || pixels2 === undefined
+    ? null
+    : pixels2 / scale ** 2;
 };
 
 function serializeTileSetForLibrary(tileSet) {
@@ -7686,6 +7688,7 @@ viewer.addHandler("canvas-double-click", function (event) {
 
 viewer.addHandler("tile-load-failed", handleTileLoadFailed);
 viewer.addHandler("open", clearUnsupervisedAoiForSampleChange);
+viewer.addHandler("open", scheduleScalebarRefresh);
 
 async function handleTileLoadFailed(event) {
   if (!window.electronAPI?.showTileLoadWarning) {
@@ -8966,6 +8969,18 @@ function removeScalebar() {
   updateSnapshotStatus();
 }
 
+function scheduleScalebarRefresh() {
+  const refresh = () => {
+    viewer.scalebarInstance?.refresh();
+    viewer.forceRedraw();
+  };
+  if (typeof requestAnimationFrame === "function") {
+    requestAnimationFrame(refresh);
+  } else {
+    setTimeout(refresh, 0);
+  }
+}
+
 function addScalebar() {
   const scale = pixelsPerMeter();
   if (scale === null) {
@@ -9046,6 +9061,7 @@ function addScalebar() {
     barThickness: parseInt(scalebarBarThickness),
     pixelsPerMeter: scale,
   });
+  scheduleScalebarRefresh();
   updateSnapshotStatus();
 }
 
@@ -10777,6 +10793,7 @@ const BOOLEAN_OPERATION_LABELS = {
   difference: "Subtract from Primary",
   intersection: "Intersect",
   xor: "Exclude Overlap",
+  simplify: "Simplify polygon(s)",
   split: "Split MultiPolygon",
   repair: "Repair Polygon",
 };
@@ -10953,10 +10970,168 @@ function getBooleanOperationEnabled(operation) {
   if (operation === "repair") {
     return isRepairableBooleanFeature(state.primaryFeature);
   }
+  if (operation === "simplify") {
+    return state.hasOnlyPolygonSelection;
+  }
   if (!getPolygonClippingLibrary()) return false;
   if (!state.hasEnoughPolygons) return false;
   if (operation === "difference") return state.primaryIsPolygon;
   return true;
+}
+
+function getCoordinateToSegmentDistance(point, start, end) {
+  const px = Number(point?.[0]);
+  const py = Number(point?.[1]);
+  const x1 = Number(start?.[0]);
+  const y1 = Number(start?.[1]);
+  const x2 = Number(end?.[0]);
+  const y2 = Number(end?.[1]);
+  if (
+    !Number.isFinite(px) ||
+    !Number.isFinite(py) ||
+    !Number.isFinite(x1) ||
+    !Number.isFinite(y1) ||
+    !Number.isFinite(x2) ||
+    !Number.isFinite(y2)
+  ) {
+    return 0;
+  }
+
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+  if (dx === 0 && dy === 0) return Math.hypot(px - x1, py - y1);
+
+  const t = Math.max(
+    0,
+    Math.min(1, ((px - x1) * dx + (py - y1) * dy) / (dx * dx + dy * dy))
+  );
+  return Math.hypot(px - (x1 + t * dx), py - (y1 + t * dy));
+}
+
+function simplifyCoordinatePathDouglasPeucker(points, tolerancePx) {
+  if (!Array.isArray(points) || points.length <= 2 || tolerancePx <= 0) {
+    return points.map((point) => [...point]);
+  }
+
+  let maxDistance = 0;
+  let splitIndex = -1;
+  const start = points[0];
+  const end = points[points.length - 1];
+  for (let i = 1; i < points.length - 1; i++) {
+    const distance = getCoordinateToSegmentDistance(points[i], start, end);
+    if (distance > maxDistance) {
+      maxDistance = distance;
+      splitIndex = i;
+    }
+  }
+
+  if (maxDistance <= tolerancePx || splitIndex < 0) {
+    return [[...start], [...end]];
+  }
+
+  const first = simplifyCoordinatePathDouglasPeucker(
+    points.slice(0, splitIndex + 1),
+    tolerancePx
+  );
+  const second = simplifyCoordinatePathDouglasPeucker(
+    points.slice(splitIndex),
+    tolerancePx
+  );
+  return first.slice(0, -1).concat(second);
+}
+
+function getCyclicCoordinatePath(points, startIndex, endIndex) {
+  const path = [];
+  let index = startIndex;
+  while (true) {
+    path.push(points[index]);
+    if (index === endIndex) break;
+    index = (index + 1) % points.length;
+  }
+  return path;
+}
+
+function getFarthestCoordinatePairIndices(points) {
+  let firstIndex = 0;
+  let secondIndex = Math.min(1, points.length - 1);
+  let maxDistance = -1;
+  for (let i = 0; i < points.length; i++) {
+    for (let j = i + 1; j < points.length; j++) {
+      const distance = calculateDistance(points[i], points[j]);
+      if (distance > maxDistance) {
+        maxDistance = distance;
+        firstIndex = i;
+        secondIndex = j;
+      }
+    }
+  }
+  return [firstIndex, secondIndex];
+}
+
+function simplifyPolygonRing(ring, tolerancePx) {
+  const cleaned = getCleanCoordinateRing(ring || []);
+  const points = getCoordinatesWithoutTrailingDuplicate(cleaned);
+  if (points.length <= 3 || tolerancePx <= 0) return cleaned;
+
+  const [firstIndex, secondIndex] = getFarthestCoordinatePairIndices(points);
+  const firstPath = getCyclicCoordinatePath(points, firstIndex, secondIndex);
+  const secondPath = getCyclicCoordinatePath(points, secondIndex, firstIndex);
+  const simplified = simplifyCoordinatePathDouglasPeucker(firstPath, tolerancePx)
+    .slice(0, -1)
+    .concat(simplifyCoordinatePathDouglasPeucker(secondPath, tolerancePx));
+  const simplifiedRing = getCleanCoordinateRing(simplified);
+  return getCoordinatesWithoutTrailingDuplicate(simplifiedRing).length >= 3
+    ? simplifiedRing
+    : cleaned;
+}
+
+function simplifyPolygonCoordinates(polygon, tolerancePx) {
+  if (!Array.isArray(polygon) || polygon.length === 0) return null;
+  const rings = polygon.map((ring) => simplifyPolygonRing(ring, tolerancePx));
+  return normalizeBooleanPolygon(rings);
+}
+
+function simplifyAnnotationGeometry(geometry, tolerancePx) {
+  if (geometry?.type === "Polygon") {
+    const polygon = simplifyPolygonCoordinates(geometry.coordinates, tolerancePx);
+    return polygon
+      ? {
+          type: "Polygon",
+          coordinates: polygon,
+        }
+      : null;
+  }
+
+  if (geometry?.type === "MultiPolygon") {
+    const polygons = (geometry.coordinates || [])
+      .map((polygon) => simplifyPolygonCoordinates(polygon, tolerancePx))
+      .filter(Boolean);
+    if (polygons.length === 0) return null;
+    return polygons.length === 1
+      ? {
+          type: "Polygon",
+          coordinates: polygons[0],
+        }
+      : {
+          type: "MultiPolygon",
+          coordinates: polygons,
+        };
+  }
+
+  return null;
+}
+
+function countGeometryCoordinates(geometry) {
+  return getGeometryPolygons(geometry).reduce(
+    (total, polygon) =>
+      total +
+      polygon.reduce(
+        (polygonTotal, ring) =>
+          polygonTotal + getCoordinatesWithoutTrailingDuplicate(ring || []).length,
+        0
+      ),
+    0
+  );
 }
 
 function normalizeBooleanRing(ring) {
@@ -11144,6 +11319,10 @@ function applyAnnotationBooleanOperation(operation) {
     repairPrimaryPolygon();
     return;
   }
+  if (operation === "simplify") {
+    promptSimplifySelectedPolygons();
+    return;
+  }
   if (!getBooleanOperationEnabled(operation)) {
     alert("Select at least two unlocked polygon annotations.");
     return;
@@ -11205,6 +11384,84 @@ function applyAnnotationBooleanOperation(operation) {
     pan: false,
   });
   unsavedAnnotations(true);
+}
+
+function promptSimplifySelectedPolygons() {
+  if (!getBooleanOperationEnabled("simplify")) {
+    alert("Select one or more unlocked polygon annotations.");
+    return;
+  }
+
+  showPrompt("Maximum displacement in pixels:", (value) => {
+    const tolerancePx = Number(value);
+    if (!Number.isFinite(tolerancePx) || tolerancePx < 0) {
+      alert("Enter a non-negative pixel tolerance.");
+      return;
+    }
+    simplifySelectedPolygons(tolerancePx);
+  }, "2");
+}
+
+function simplifySelectedPolygons(tolerancePx) {
+  const state = getBooleanSelectionState();
+  const polygonFeatures = state.polygonFeatures;
+  if (polygonFeatures.length === 0) {
+    alert("Select one or more unlocked polygon annotations.");
+    return;
+  }
+
+  let changedCount = 0;
+  let totalBefore = 0;
+  let totalAfter = 0;
+  const simplifiedGeometries = new Map();
+  polygonFeatures.forEach((feature) => {
+    const beforeCount = countGeometryCoordinates(feature.geometry);
+    const geometry = simplifyAnnotationGeometry(feature.geometry, tolerancePx);
+    if (!geometry) return;
+    const afterCount = countGeometryCoordinates(geometry);
+    totalBefore += beforeCount;
+    totalAfter += afterCount;
+    if (afterCount !== beforeCount) changedCount++;
+    simplifiedGeometries.set(feature.properties.uuid, geometry);
+  });
+
+  if (simplifiedGeometries.size === 0) {
+    alert("The selected polygons could not be simplified.");
+    return;
+  }
+
+  annotationHistory.push(BOOLEAN_OPERATION_LABELS.simplify);
+  pendingAnnotationTextEdit = null;
+  exitAnnotationVertexEditMode();
+  exitAnnotationShapeEditMode();
+
+  polygonFeatures.forEach((feature) => {
+    const geometry = simplifiedGeometries.get(feature.properties.uuid);
+    if (!geometry) return;
+    feature.geometry = geometry;
+    invalidateFeatureImageBounds(feature);
+    updateBooleanResultProperties(feature, { preserveLabelPosition: true });
+    updateAnnotationGeometryStatus(feature);
+    updateAnnotationLabelOverlayPosition(feature.properties.uuid);
+    updateText(feature.properties.uuid, "anno", feature.properties.label || "");
+  });
+
+  const selectedUuids = polygonFeatures.map((feature) => feature.properties.uuid);
+  selectedAnnotationUuids = new Set(selectedUuids);
+  selectedAnnotationUuid = state.primaryFeature?.properties?.uuid || selectedUuids[0];
+  annotationListSelectionAnchorUuid = selectedAnnotationUuid;
+  drawShape(polyCanvas, [annoJSON, annoJSONTemp]);
+  renderAnnotationList();
+  setAnnotationSelection(selectedUuids, selectedAnnotationUuid, {
+    redraw: false,
+    scroll: true,
+    pan: false,
+  });
+  unsavedAnnotations(true);
+
+  if (changedCount === 0 && totalBefore === totalAfter) {
+    alert("No vertices were removed at that tolerance.");
+  }
 }
 
 function repairPrimaryPolygon() {
@@ -11308,13 +11565,17 @@ function updateAnnotationBooleanControls() {
   const state = getBooleanSelectionState();
   const canSplit = getBooleanOperationEnabled("split");
   const canRepair = getBooleanOperationEnabled("repair");
+  const canSimplify = getBooleanOperationEnabled("simplify");
   const canOpen = Boolean(
-    (polygonClipping && state.hasEnoughPolygons) || canSplit || canRepair
+    (polygonClipping && state.hasEnoughPolygons) ||
+      canSplit ||
+      canRepair ||
+      canSimplify
   );
   annotationBooleanButton.disabled = !canOpen;
-  annotationBooleanButton.title = polygonClipping || canSplit
-    ? "Boolean Operations"
-    : "Boolean Operations unavailable";
+  annotationBooleanButton.title = polygonClipping || canSplit || canSimplify
+    ? "Polygon Operations"
+    : "Polygon Operations unavailable";
   if (!canOpen) {
     closeAnnotationBooleanPopover();
   }
@@ -11497,7 +11758,7 @@ function updateSelectedAnnotationGeometryWarning() {
   const feature = getSelectedAnnotation();
   const message = feature ? getAnnotationGeometryWarning(feature) : "";
   warning.textContent = message
-    ? `${message} Repair Polygon is available from Boolean Operations.`
+    ? `${message} Repair Polygon is available from Polygon Operations.`
     : "";
   warning.hidden = !message;
 }
@@ -17138,6 +17399,7 @@ async function applyScaleWizard() {
   try {
     samples[currentIndex].pixelsPerMeter = scale;
     updateScaleDependentControls();
+    updateMeasureScaleAudit();
     addScalebar();
     closeScaleWizard();
     window.electronAPI?.setUnsavedState?.(true);
@@ -17145,6 +17407,7 @@ async function applyScaleWizard() {
   } catch (error) {
     samples[currentIndex].pixelsPerMeter = previousPixelsPerMeter;
     updateScaleDependentControls();
+    updateMeasureScaleAudit();
     addScalebar();
     console.error("Could not save scale:", error);
     openScaleWizard();
@@ -22466,6 +22729,8 @@ const measureGroupSelect = document.getElementById("measureGroupSelect");
 const measureGroupColorInput = document.getElementById("measureGroupColorInput");
 const renameMeasureGroupButton = document.getElementById("renameMeasureGroupButton");
 const newMeasureGroupButton = document.getElementById("newMeasureGroupButton");
+const measureScaleAuditButton = document.getElementById("measureScaleAuditButton");
+const measureScaleAuditPopover = document.getElementById("measureScaleAuditPopover");
 const exportMeasurementsButton = document.getElementById(
   "exportMeasurementsButton"
 );
@@ -22481,6 +22746,10 @@ const measureColumnsList = document.getElementById("measureColumnsList");
 const restoreMeasureColumnsButton = document.getElementById(
   "restoreMeasureColumnsButton"
 );
+const measureHelpButton = document.getElementById("measureHelpButton");
+const measureHelpDialog = document.getElementById("measureHelpDialog");
+const measureHelpHeader = document.getElementById("measureHelpHeader");
+const closeMeasureHelpButton = document.getElementById("closeMeasureHelpButton");
 const measureHistogramButton = document.getElementById("measureHistogramButton");
 const measureHistogramMenu = document.getElementById("measureHistogramMenu");
 const measureHistogramHeader = document.getElementById("measureHistogramHeader");
@@ -22531,6 +22800,10 @@ const measureScatterXMaxInput = document.getElementById("measureScatterXMax");
 const measureScatterYMinInput = document.getElementById("measureScatterYMin");
 const measureScatterYMaxInput = document.getElementById("measureScatterYMax");
 const measureScatterColorInput = document.getElementById("measureScatterColor");
+const measureScatterOpacityRange = document.getElementById(
+  "measureScatterOpacityRange"
+);
+const measureScatterOpacityInput = document.getElementById("measureScatterOpacity");
 const measureScatterCanvas = document.getElementById("measureScatterCanvas");
 const measureScatterStatsBody = document.getElementById("measureScatterStatsBody");
 const measureScatterMeanXHeader = document.getElementById(
@@ -22704,6 +22977,119 @@ function getECDUnitInfo() {
   return (
     units[parseInt(ECDUnits.value, 10)] || units[1]
   );
+}
+
+function formatCompactNumber(value, maximumFractionDigits = 3) {
+  if (!Number.isFinite(value)) return "";
+  return value.toLocaleString(undefined, {
+    maximumFractionDigits,
+  });
+}
+
+function getMeasureScaleAuditInfo() {
+  const scale = pixelsPerMeter();
+  const linearUnit = getLinearUnitInfo();
+  const areaUnit = getAreaUnitInfo();
+  const ecdUnit = getECDUnitInfo();
+  const calibrated = scale !== null;
+  const micronsPerPixel = calibrated ? 1e6 / scale : null;
+  const pixelsPerMillimeter = calibrated ? scale / 1000 : null;
+  return {
+    calibrated,
+    scale,
+    micronsPerPixel,
+    pixelsPerMillimeter,
+    linearUnit,
+    areaUnit,
+    ecdUnit,
+  };
+}
+
+function renderMeasureScaleAuditPopover(info = getMeasureScaleAuditInfo()) {
+  if (!measureScaleAuditPopover) return;
+  measureScaleAuditPopover.innerHTML = "";
+
+  const rows = [
+    ["Status", info.calibrated ? "Sample calibrated" : "No scale set"],
+    [
+      "Scale",
+      info.calibrated
+        ? `${formatCompactNumber(info.micronsPerPixel, 4)} µm/px`
+        : "Measurements unavailable",
+    ],
+    [
+      "Pixels",
+      info.calibrated
+        ? `${formatCompactNumber(info.pixelsPerMillimeter, 2)} px/mm`
+        : "--",
+    ],
+    ["Linear", info.linearUnit.label],
+    ["Area", info.areaUnit.label],
+    ["ECD", info.ecdUnit.label],
+  ];
+
+  rows.forEach(([label, value]) => {
+    const row = document.createElement("div");
+    row.className = "measure-scale-audit-row-detail";
+    const labelElement = document.createElement("span");
+    labelElement.textContent = label;
+    const valueElement = document.createElement("strong");
+    valueElement.textContent = value;
+    row.append(labelElement, valueElement);
+    measureScaleAuditPopover.appendChild(row);
+  });
+}
+
+function updateMeasureScaleAudit() {
+  if (!measureScaleAuditButton) return;
+  const info = getMeasureScaleAuditInfo();
+  const summary = info.calibrated
+    ? `Scale: ${formatCompactNumber(info.micronsPerPixel, 3)} µm/px · ${info.linearUnit.label}, ${info.areaUnit.label}`
+    : "Scale: not set";
+  measureScaleAuditButton.textContent = summary;
+  measureScaleAuditButton.classList.toggle("missing", !info.calibrated);
+  measureScaleAuditButton.title = info.calibrated
+    ? `Measurements use ${info.linearUnit.label} and ${info.areaUnit.label}; ${formatCompactNumber(info.pixelsPerMillimeter, 2)} px/mm`
+    : "Set an image scale before measuring.";
+  renderMeasureScaleAuditPopover(info);
+}
+
+function closeMeasureScaleAuditPopover() {
+  if (!measureScaleAuditPopover) return;
+  measureScaleAuditPopover.hidden = true;
+  measureScaleAuditButton?.setAttribute("aria-expanded", "false");
+}
+
+function openMeasureScaleAuditPopover() {
+  if (!measureScaleAuditButton || !measureScaleAuditPopover) return;
+  updateMeasureScaleAudit();
+  if (measureScaleAuditPopover.parentElement !== document.body) {
+    document.body.appendChild(measureScaleAuditPopover);
+  }
+  measureScaleAuditPopover.hidden = false;
+  measureScaleAuditButton.setAttribute("aria-expanded", "true");
+
+  const buttonRect = measureScaleAuditButton.getBoundingClientRect();
+  const menuRect = measureScaleAuditPopover.getBoundingClientRect();
+  const margin = 8;
+  const left = Math.min(
+    Math.max(buttonRect.left, margin),
+    window.innerWidth - menuRect.width - margin
+  );
+  const top = Math.min(
+    buttonRect.bottom + 4,
+    window.innerHeight - menuRect.height - margin
+  );
+  measureScaleAuditPopover.style.left = `${Math.max(margin, left)}px`;
+  measureScaleAuditPopover.style.top = `${Math.max(margin, top)}px`;
+}
+
+function toggleMeasureScaleAuditPopover() {
+  if (!measureScaleAuditPopover || measureScaleAuditPopover.hidden) {
+    openMeasureScaleAuditPopover();
+  } else {
+    closeMeasureScaleAuditPopover();
+  }
 }
 
 function getMeasureStyle() {
@@ -23147,6 +23533,64 @@ function getOrientedAxisProperties(coordinates) {
   };
 }
 
+function getFeretDiameterProperties(coordinates) {
+  const points = getCoordinatesWithoutTrailingDuplicate(coordinates);
+  const hull = getConvexHull(points);
+  if (hull.length < 2) {
+    return {
+      maxFeretPx: null,
+      minFeretPx: null,
+      maxFeretAzimuthDeg: null,
+    };
+  }
+
+  if (hull.length === 2) {
+    const dx = hull[1][0] - hull[0][0];
+    const dy = hull[1][1] - hull[0][1];
+    const diameter = calculateDistance(hull[0], hull[1]);
+    return {
+      maxFeretPx: diameter,
+      minFeretPx: 0,
+      maxFeretAzimuthDeg: normalizeAxisAzimuthDegrees(dx, dy),
+    };
+  }
+
+  let maxFeretPx = 0;
+  let maxFeretAzimuthDeg = null;
+  for (let i = 0; i < hull.length; i++) {
+    for (let j = i + 1; j < hull.length; j++) {
+      const dx = hull[j][0] - hull[i][0];
+      const dy = hull[j][1] - hull[i][1];
+      const distance = Math.hypot(dx, dy);
+      if (distance > maxFeretPx) {
+        maxFeretPx = distance;
+        maxFeretAzimuthDeg = normalizeAxisAzimuthDegrees(dx, dy);
+      }
+    }
+  }
+
+  let minFeretPx = null;
+  for (let i = 0; i < hull.length; i++) {
+    const start = hull[i];
+    const end = hull[(i + 1) % hull.length];
+    const dx = end[0] - start[0];
+    const dy = end[1] - start[1];
+    const edgeLength = Math.hypot(dx, dy);
+    if (edgeLength === 0) continue;
+    const nx = -dy / edgeLength;
+    const ny = dx / edgeLength;
+    const projections = hull.map(([x, y]) => x * nx + y * ny);
+    const width = Math.max(...projections) - Math.min(...projections);
+    minFeretPx = minFeretPx === null ? width : Math.min(minFeretPx, width);
+  }
+
+  return {
+    maxFeretPx,
+    minFeretPx,
+    maxFeretAzimuthDeg,
+  };
+}
+
 function calculateMeasurementProperties(type, coordinates) {
   const properties = {
     lengthM: null,
@@ -23157,6 +23601,11 @@ function calculateMeasurementProperties(type, coordinates) {
     diameterM: null,
     widthM: null,
     heightM: null,
+    longAxisM: null,
+    shortAxisM: null,
+    maxFeretM: null,
+    minFeretM: null,
+    maxFeretAzimuthDeg: null,
     majorAxisM: null,
     minorAxisM: null,
     aspectRatio: null,
@@ -23204,12 +23653,17 @@ function calculateMeasurementProperties(type, coordinates) {
   properties.heightM = metersFromPixels(heightPx);
   const axes = getOrientedAxisProperties(closed);
   if (axes.shortAxisPx !== null && axes.longAxisPx !== null) {
-    properties.lengthM = metersFromPixels(axes.longAxisPx);
-    properties.widthM = metersFromPixels(axes.shortAxisPx);
+    properties.longAxisM = metersFromPixels(axes.longAxisPx);
+    properties.shortAxisM = metersFromPixels(axes.shortAxisPx);
+    properties.widthM = properties.shortAxisM;
     properties.heightM = metersFromPixels(axes.longAxisPx);
     properties.aspectRatio = axes.aspectRatio;
     properties.azimuthDeg = axes.longAxisAzimuthDeg;
   }
+  const feret = getFeretDiameterProperties(closed);
+  properties.maxFeretM = metersFromPixels(feret.maxFeretPx);
+  properties.minFeretM = metersFromPixels(feret.minFeretPx);
+  properties.maxFeretAzimuthDeg = feret.maxFeretAzimuthDeg;
 
   if (type === "circle") {
     const diameterPx = Math.max(widthPx, heightPx);
@@ -23274,6 +23728,11 @@ function calculateGeometryMeasurementProperties(type, geometry) {
     diameterM: null,
     widthM: null,
     heightM: null,
+    longAxisM: null,
+    shortAxisM: null,
+    maxFeretM: null,
+    minFeretM: null,
+    maxFeretAzimuthDeg: null,
     majorAxisM: null,
     minorAxisM: null,
     aspectRatio: null,
@@ -23335,12 +23794,17 @@ function calculateGeometryMeasurementProperties(type, geometry) {
     properties.heightM = metersFromPixels(heightPx);
     const axes = getOrientedAxisProperties(points);
     if (axes.shortAxisPx !== null && axes.longAxisPx !== null) {
-      properties.lengthM = metersFromPixels(axes.longAxisPx);
-      properties.widthM = metersFromPixels(axes.shortAxisPx);
+      properties.longAxisM = metersFromPixels(axes.longAxisPx);
+      properties.shortAxisM = metersFromPixels(axes.shortAxisPx);
+      properties.widthM = properties.shortAxisM;
       properties.heightM = metersFromPixels(axes.longAxisPx);
       properties.aspectRatio = axes.aspectRatio;
       properties.azimuthDeg = axes.longAxisAzimuthDeg;
     }
+    const feret = getFeretDiameterProperties(points);
+    properties.maxFeretM = metersFromPixels(feret.maxFeretPx);
+    properties.minFeretM = metersFromPixels(feret.minFeretPx);
+    properties.maxFeretAzimuthDeg = feret.maxFeretAzimuthDeg;
 
     if (type === "circle") {
       const diameterPx = Math.max(widthPx, heightPx);
@@ -23416,7 +23880,7 @@ function updateMeasureTableHeaders() {
     measureECDHeader.innerHTML = `ECD<br>(${linearUnit.label})`;
   }
   if (measureWidthHeader) {
-    measureWidthHeader.innerHTML = `Width<br>(${linearUnit.label})`;
+    measureWidthHeader.innerHTML = `Long axis<br>(${linearUnit.label})`;
   }
 }
 
@@ -23541,7 +24005,9 @@ function getSelectableMeasurementUuids() {
 }
 
 function getMeasurementResultIndexByUuid(uuid) {
-  return measureResults.findIndex((result) => result.measurementUuid === uuid);
+  return getDisplayedMeasureResults().findIndex(
+    (result) => result.measurementUuid === uuid
+  );
 }
 
 function focusMeasurementRow(uuid) {
@@ -23630,9 +24096,10 @@ function handleMeasureResultRowClick(event, uuid) {
       measurementSelectionAnchorUuid
     );
     if (anchorIndex >= 0) {
+      const displayedResults = getDisplayedMeasureResults();
       const start = Math.min(anchorIndex, clickedIndex);
       const end = Math.max(anchorIndex, clickedIndex);
-      const rangeUuids = measureResults
+      const rangeUuids = displayedResults
         .slice(start, end + 1)
         .map((result) => result.measurementUuid)
         .filter(Boolean);
@@ -23785,6 +24252,18 @@ function getInvalidMeasurementText(result, value) {
   return result.validGeometry === false ? "--" : value;
 }
 
+function getLineLengthM(result) {
+  return result?.type === "line" ? result.lengthM : null;
+}
+
+function getLongAxisM(result) {
+  return result?.longAxisM ?? (result?.type !== "line" ? result?.lengthM : null);
+}
+
+function getShortAxisM(result) {
+  return result?.shortAxisM ?? (result?.type !== "line" ? result?.widthM : null);
+}
+
 const MEASURE_COLUMN_DEFINITIONS = [
   {
     id: "group",
@@ -23863,18 +24342,53 @@ const MEASURE_COLUMN_DEFINITIONS = [
     unit: "linear",
     defaultTable: true,
     defaultCsv: true,
-    tableValue: (result, units) => formatMeasurementNumber(result.lengthM, units.linear),
-    csvValue: (result) => result.lengthM ?? "",
+    tableValue: (result, units) =>
+      formatMeasurementNumber(getLineLengthM(result), units.linear),
+    csvValue: (result) => getLineLengthM(result) ?? "",
   },
   {
-    id: "widthM",
-    label: "Width",
-    csvHeader: "width_m",
+    id: "longAxisM",
+    label: "Long axis",
+    csvHeader: "long_axis_m",
     unit: "linear",
     defaultTable: true,
     defaultCsv: true,
-    tableValue: (result, units) => formatMeasurementNumber(result.widthM, units.linear),
-    csvValue: (result) => result.widthM ?? "",
+    tableValue: (result, units) =>
+      formatMeasurementNumber(getLongAxisM(result), units.linear),
+    csvValue: (result) => getLongAxisM(result) ?? "",
+  },
+  {
+    id: "shortAxisM",
+    label: "Short axis",
+    csvHeader: "short_axis_m",
+    unit: "linear",
+    defaultTable: true,
+    defaultCsv: true,
+    tableValue: (result, units) =>
+      formatMeasurementNumber(getShortAxisM(result), units.linear),
+    csvValue: (result) => getShortAxisM(result) ?? "",
+  },
+  {
+    id: "maxFeretM",
+    label: "Max Feret",
+    csvHeader: "max_feret_m",
+    unit: "linear",
+    defaultTable: false,
+    defaultCsv: true,
+    tableValue: (result, units) =>
+      formatMeasurementNumber(result.maxFeretM, units.linear),
+    csvValue: (result) => result.maxFeretM ?? "",
+  },
+  {
+    id: "minFeretM",
+    label: "Min Feret",
+    csvHeader: "min_feret_m",
+    unit: "linear",
+    defaultTable: false,
+    defaultCsv: true,
+    tableValue: (result, units) =>
+      formatMeasurementNumber(result.minFeretM, units.linear),
+    csvValue: (result) => result.minFeretM ?? "",
   },
   {
     id: "areaM2",
@@ -23919,7 +24433,7 @@ const MEASURE_COLUMN_DEFINITIONS = [
   },
   {
     id: "aspectRatio",
-    label: "W/L",
+    label: "Short/Long",
     csvHeader: "aspect_ratio",
     defaultTable: true,
     defaultCsv: true,
@@ -23928,8 +24442,8 @@ const MEASURE_COLUMN_DEFINITIONS = [
   },
   {
     id: "azimuthDeg",
-    label: "Azimuth",
-    csvHeader: "azimuth_deg",
+    label: "Long axis azimuth",
+    csvHeader: "long_axis_azimuth_deg",
     unit: "degrees",
     defaultTable: true,
     defaultCsv: true,
@@ -23960,7 +24474,6 @@ const MEASURE_COLUMN_DEFINITIONS = [
     csvHeader: "valid_geometry",
     defaultTable: false,
     defaultCsv: true,
-    tableEligible: false,
     tableValue: (result) =>
       result.validGeometry === undefined ? "" : String(result.validGeometry),
     csvValue: (result) =>
@@ -23987,6 +24500,164 @@ const MEASURE_COLUMN_DEFINITIONS = [
     csvValue: () => title(),
   },
 ];
+
+function getMeasureNumericFilterParameters() {
+  return [
+    { id: "lengthM", label: "Length", unit: "linear" },
+    { id: "longAxisM", label: "Long axis", unit: "linear" },
+    { id: "shortAxisM", label: "Short axis", unit: "linear" },
+    { id: "maxFeretM", label: "Max Feret", unit: "linear" },
+    { id: "minFeretM", label: "Min Feret", unit: "linear" },
+    { id: "areaM2", label: "Area", unit: "area" },
+    { id: "perimeterM", label: "Perimeter", unit: "linear" },
+    { id: "ecdM", label: "ECD", unit: "linear" },
+    { id: "aspectRatio", label: "Short/Long", unit: "none" },
+    { id: "azimuthDeg", label: "Long axis azimuth", unit: "degrees" },
+    { id: "solidity", label: "Solidity", unit: "none" },
+    { id: "circularity", label: "Circularity", unit: "none" },
+  ];
+}
+
+let measureFilterState = {
+  groupId: "",
+  type: "",
+  validity: "",
+  parameterId: "",
+  min: null,
+  max: null,
+  sortParameterId: "",
+  sortDirection: "asc",
+};
+let measureHeaderMenuColumnId = null;
+let measureHeaderMenuElement = null;
+
+function getMeasureParameterById(parameterId) {
+  return getMeasureNumericFilterParameters().find(
+    (parameter) => parameter.id === parameterId
+  );
+}
+
+function getMeasureDisplayParameterValue(result, parameter) {
+  if (!parameter) return null;
+  const rawValue =
+    parameter.id === "lengthM"
+      ? getLineLengthM(result)
+      : parameter.id === "longAxisM"
+        ? getLongAxisM(result)
+        : parameter.id === "shortAxisM"
+          ? getShortAxisM(result)
+          : result?.[parameter.id];
+  if (!Number.isFinite(rawValue)) return null;
+  if (
+    result.validGeometry === false &&
+    (parameter.id === "areaM2" || parameter.id === "ecdM")
+  ) {
+    return null;
+  }
+  return rawValue * getMeasureHistogramUnitInfo(parameter).factor;
+}
+
+function getMeasureSortValue(result, parameterId) {
+  if (parameterId === "group") return getMeasureGroupForResult(result).groupName || "";
+  if (parameterId === "type") return result.typeLabel || result.type || "";
+  if (parameterId === "id") return result.id || "";
+  if (parameterId === "validGeometry") {
+    return result.validGeometry === false ? "Invalid" : "Valid";
+  }
+  return getMeasureDisplayParameterValue(result, getMeasureParameterById(parameterId));
+}
+
+function compareMeasureResults(a, b, parameterId, direction = "asc") {
+  const multiplier = direction === "desc" ? -1 : 1;
+  const aValue = getMeasureSortValue(a, parameterId);
+  const bValue = getMeasureSortValue(b, parameterId);
+  const aMissing = aValue === null || aValue === undefined || aValue === "";
+  const bMissing = bValue === null || bValue === undefined || bValue === "";
+  if (aMissing && bMissing) return 0;
+  if (aMissing) return 1;
+  if (bMissing) return -1;
+  if (typeof aValue === "number" && typeof bValue === "number") {
+    return (aValue - bValue) * multiplier;
+  }
+  return String(aValue).localeCompare(String(bValue), undefined, {
+    numeric: true,
+    sensitivity: "base",
+  }) * multiplier;
+}
+
+function getMeasureFilterState() {
+  return measureFilterState;
+}
+
+function measureResultPassesFilters(result, state = getMeasureFilterState()) {
+  if (state.groupId && result.groupId !== state.groupId) return false;
+  if (state.type && result.type !== state.type) return false;
+  if (state.validity === "valid" && result.validGeometry === false) return false;
+  if (state.validity === "invalid" && result.validGeometry !== false) return false;
+
+  if (state.parameterId && (state.min !== null || state.max !== null)) {
+    const value = getMeasureDisplayParameterValue(
+      result,
+      getMeasureParameterById(state.parameterId)
+    );
+    if (!Number.isFinite(value)) return false;
+    if (state.min !== null && value < state.min) return false;
+    if (state.max !== null && value > state.max) return false;
+  }
+
+  return true;
+}
+
+function getFilteredMeasureResults() {
+  const state = getMeasureFilterState();
+  return measureResults.filter((result) => measureResultPassesFilters(result, state));
+}
+
+function hasFilteredMeasureResults() {
+  return getFilteredMeasureResults().length > 0;
+}
+
+function getDisplayedMeasureResults() {
+  const state = getMeasureFilterState();
+  const results = measureResults.filter((result) =>
+    measureResultPassesFilters(result, state)
+  );
+  if (state.sortParameterId) {
+    results.sort((a, b) =>
+      compareMeasureResults(a, b, state.sortParameterId, state.sortDirection)
+    );
+  }
+  return results;
+}
+
+function setSelectOptions(select, options, value) {
+  if (!select) return;
+  select.innerHTML = "";
+  options.forEach((option) => {
+    const element = document.createElement("option");
+    element.value = option.value;
+    element.textContent = option.label;
+    select.appendChild(element);
+  });
+  select.value = options.some((option) => option.value === value)
+    ? value
+    : options[0]?.value || "";
+}
+
+function resetMeasureFilters() {
+  measureFilterState = {
+    groupId: "",
+    type: "",
+    validity: "",
+    parameterId: "",
+    min: null,
+    max: null,
+    sortParameterId: "",
+    sortDirection: "asc",
+  };
+  closeMeasureHeaderMenu();
+  renderMeasureResults();
+}
 
 let measureColumnState = loadMeasureColumnState();
 
@@ -24068,10 +24739,346 @@ function getMeasureColumnUnits() {
 
 function getMeasureColumnHeader(column, units) {
   if (column.id === "group") return "";
+  if (column.id === "azimuthDeg") return "Long axis<br>azimuth (°)";
   if (column.unit === "linear") return `${column.label}<br>(${units.linear.label})`;
   if (column.unit === "area") return `${column.label}<br>(${units.area.label})`;
   if (column.unit === "degrees") return `${column.label}<br>(°)`;
   return column.label;
+}
+
+function getMeasureColumnSortLabel(column, direction) {
+  const parameter = getMeasureParameterById(column.id);
+  if (parameter) {
+    return direction === "asc" ? "Sort smallest first" : "Sort largest first";
+  }
+  return direction === "asc" ? "Sort A to Z" : "Sort Z to A";
+}
+
+function getMeasureColumnFilterValue(columnId) {
+  if (columnId === "group") return measureFilterState.groupId;
+  if (columnId === "type") return measureFilterState.type;
+  if (columnId === "validGeometry") return measureFilterState.validity;
+  if (measureFilterState.parameterId === columnId) {
+    return measureFilterState.min !== null || measureFilterState.max !== null;
+  }
+  return "";
+}
+
+function isMeasureColumnFiltered(columnId) {
+  return Boolean(getMeasureColumnFilterValue(columnId));
+}
+
+function isMeasureColumnSorted(columnId) {
+  return measureFilterState.sortParameterId === columnId;
+}
+
+function isMeasureColumnMenuActive(columnId) {
+  return (
+    measureHeaderMenuColumnId === columnId ||
+    isMeasureColumnFiltered(columnId) ||
+    isMeasureColumnSorted(columnId)
+  );
+}
+
+function ensureMeasureHeaderMenu() {
+  if (measureHeaderMenuElement) return measureHeaderMenuElement;
+  measureHeaderMenuElement = document.createElement("div");
+  measureHeaderMenuElement.className = "measure-header-menu";
+  measureHeaderMenuElement.hidden = true;
+  measureHeaderMenuElement.addEventListener("click", (event) => {
+    event.stopPropagation();
+  });
+  document.body.appendChild(measureHeaderMenuElement);
+  return measureHeaderMenuElement;
+}
+
+function closeMeasureHeaderMenu() {
+  if (!measureHeaderMenuElement) return;
+  measureHeaderMenuElement.hidden = true;
+  measureHeaderMenuColumnId = null;
+  document
+    .querySelectorAll(".measure-sortable-header[aria-expanded='true']")
+    .forEach((header) => header.setAttribute("aria-expanded", "false"));
+}
+
+function closeMeasureHelpDialog() {
+  if (!measureHelpDialog) return;
+  measureHelpDialog.hidden = true;
+  measureHelpButton?.setAttribute("aria-expanded", "false");
+}
+
+function openMeasureHelpDialog(button = measureHelpButton) {
+  if (!measureHelpDialog || !button) return;
+  if (measureHelpDialog.parentElement !== document.body) {
+    document.body.appendChild(measureHelpDialog);
+  }
+  closeMeasureHeaderMenu();
+  closeMeasureScaleAuditPopover();
+  closeMeasureColumnsMenu();
+  closeMeasureHistogramMenu();
+  closeMeasureScatterMenu();
+  closeMeasureRoseMenu();
+  closeMeasureParticleSizeMenu();
+  measureHelpDialog.hidden = false;
+  measureHelpButton?.setAttribute("aria-expanded", "true");
+  const buttonRect = button.getBoundingClientRect();
+  const dialogRect = measureHelpDialog.getBoundingClientRect();
+  const margin = 8;
+  const left = Math.min(
+    Math.max(buttonRect.right - dialogRect.width, margin),
+    window.innerWidth - dialogRect.width - margin
+  );
+  const top = Math.min(
+    Math.max(buttonRect.bottom + 4, margin),
+    window.innerHeight - dialogRect.height - margin
+  );
+  measureHelpDialog.style.left = `${Math.max(margin, left)}px`;
+  measureHelpDialog.style.top = `${Math.max(margin, top)}px`;
+}
+
+function toggleMeasureHelpDialog(button = measureHelpButton) {
+  if (!measureHelpDialog || measureHelpDialog.hidden) {
+    openMeasureHelpDialog(button);
+  } else {
+    closeMeasureHelpDialog();
+  }
+}
+
+function applyMeasureSort(columnId, direction) {
+  measureFilterState = {
+    ...measureFilterState,
+    sortParameterId: columnId,
+    sortDirection: direction,
+  };
+  closeMeasureHeaderMenu();
+  renderMeasureResults();
+}
+
+function clearMeasureSort() {
+  measureFilterState = {
+    ...measureFilterState,
+    sortParameterId: "",
+    sortDirection: "asc",
+  };
+  closeMeasureHeaderMenu();
+  renderMeasureResults();
+}
+
+function clearMeasureColumnFilter(columnId) {
+  if (columnId === "group") {
+    measureFilterState = { ...measureFilterState, groupId: "" };
+  } else if (columnId === "type") {
+    measureFilterState = { ...measureFilterState, type: "" };
+  } else if (columnId === "validGeometry") {
+    measureFilterState = { ...measureFilterState, validity: "" };
+  } else if (measureFilterState.parameterId === columnId) {
+    measureFilterState = {
+      ...measureFilterState,
+      parameterId: "",
+      min: null,
+      max: null,
+    };
+  }
+}
+
+function appendMeasureHeaderMenuButton(menu, label, handler, options = {}) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.textContent = label;
+  if (options.disabled) button.disabled = true;
+  button.addEventListener("click", handler);
+  menu.appendChild(button);
+  return button;
+}
+
+function appendMeasureHeaderMenuSeparator(menu) {
+  const separator = document.createElement("div");
+  separator.className = "measure-header-menu-separator";
+  menu.appendChild(separator);
+}
+
+function appendMeasureHeaderSelect(menu, label, options, value, onChange) {
+  const wrapper = document.createElement("label");
+  wrapper.className = "measure-header-menu-field";
+  const text = document.createElement("span");
+  text.textContent = label;
+  const select = document.createElement("select");
+  setSelectOptions(select, options, value);
+  select.addEventListener("change", () => onChange(select.value));
+  wrapper.append(text, select);
+  menu.appendChild(wrapper);
+}
+
+function appendMeasureHeaderNumericFilter(menu, column) {
+  const current = measureFilterState.parameterId === column.id ? measureFilterState : {};
+  const minInput = document.createElement("input");
+  minInput.type = "number";
+  minInput.step = "any";
+  minInput.placeholder = "Min";
+  minInput.value = current.min ?? "";
+
+  const maxInput = document.createElement("input");
+  maxInput.type = "number";
+  maxInput.step = "any";
+  maxInput.placeholder = "Max";
+  maxInput.value = current.max ?? "";
+
+  const fields = document.createElement("div");
+  fields.className = "measure-header-menu-range";
+  fields.append(minInput, maxInput);
+  menu.appendChild(fields);
+
+  appendMeasureHeaderMenuButton(menu, "Apply range", () => {
+    const min = minInput.value.trim() === "" ? null : Number(minInput.value);
+    const max = maxInput.value.trim() === "" ? null : Number(maxInput.value);
+    if (
+      (min !== null && !Number.isFinite(min)) ||
+      (max !== null && !Number.isFinite(max))
+    ) {
+      alert("Enter valid numeric filter values.");
+      return;
+    }
+    measureFilterState = {
+      ...measureFilterState,
+      parameterId: min === null && max === null ? "" : column.id,
+      min,
+      max,
+    };
+    closeMeasureHeaderMenu();
+    renderMeasureResults();
+  });
+}
+
+function renderMeasureHeaderMenu(column) {
+  const menu = ensureMeasureHeaderMenu();
+  menu.innerHTML = "";
+
+  appendMeasureHeaderMenuButton(menu, getMeasureColumnSortLabel(column, "asc"), () =>
+    applyMeasureSort(column.id, "asc")
+  );
+  appendMeasureHeaderMenuButton(menu, getMeasureColumnSortLabel(column, "desc"), () =>
+    applyMeasureSort(column.id, "desc")
+  );
+  appendMeasureHeaderMenuButton(menu, "Clear sort", clearMeasureSort, {
+    disabled: !isMeasureColumnSorted(column.id),
+  });
+
+  appendMeasureHeaderMenuSeparator(menu);
+
+  if (column.id === "group") {
+    appendMeasureHeaderSelect(
+      menu,
+      "Group",
+      [
+        { value: "", label: "All" },
+        ...measureGroups
+          .map((group) => ({ value: group.groupId, label: group.groupName }))
+          .sort((a, b) => a.label.localeCompare(b.label)),
+      ],
+      measureFilterState.groupId,
+      (value) => {
+        measureFilterState = { ...measureFilterState, groupId: value };
+        closeMeasureHeaderMenu();
+        renderMeasureResults();
+      }
+    );
+  } else if (column.id === "type") {
+    appendMeasureHeaderSelect(
+      menu,
+      "Type",
+      [
+        { value: "", label: "All" },
+        { value: "line", label: "Line" },
+        { value: "polygon", label: "Polygon" },
+        { value: "rectangle", label: "Rectangle" },
+        { value: "ellipse", label: "Ellipse" },
+        { value: "circle", label: "Circle" },
+        { value: "point", label: "Point" },
+      ],
+      measureFilterState.type,
+      (value) => {
+        measureFilterState = { ...measureFilterState, type: value };
+        closeMeasureHeaderMenu();
+        renderMeasureResults();
+      }
+    );
+  } else if (column.id === "validGeometry") {
+    appendMeasureHeaderSelect(
+      menu,
+      "Valid",
+      [
+        { value: "", label: "All" },
+        { value: "valid", label: "Valid" },
+        { value: "invalid", label: "Invalid" },
+      ],
+      measureFilterState.validity,
+      (value) => {
+        measureFilterState = { ...measureFilterState, validity: value };
+        closeMeasureHeaderMenu();
+        renderMeasureResults();
+      }
+    );
+  } else if (getMeasureParameterById(column.id)) {
+    appendMeasureHeaderNumericFilter(menu, column);
+  } else {
+    const message = document.createElement("div");
+    message.className = "measure-header-menu-note";
+    message.textContent = "No filter for this column";
+    menu.appendChild(message);
+  }
+
+  appendMeasureHeaderMenuSeparator(menu);
+  appendMeasureHeaderMenuButton(
+    menu,
+    "Clear this filter",
+    () => {
+      clearMeasureColumnFilter(column.id);
+      closeMeasureHeaderMenu();
+      renderMeasureResults();
+    },
+    { disabled: !isMeasureColumnFiltered(column.id) }
+  );
+  appendMeasureHeaderMenuButton(menu, "Clear all", resetMeasureFilters, {
+    disabled:
+      !measureFilterState.groupId &&
+      !measureFilterState.type &&
+      !measureFilterState.validity &&
+      !measureFilterState.parameterId &&
+      !measureFilterState.sortParameterId,
+  });
+}
+
+function openMeasureHeaderMenu(column, header) {
+  if (!header) return;
+  if (measureHeaderMenuColumnId === column.id && !measureHeaderMenuElement?.hidden) {
+    closeMeasureHeaderMenu();
+    return;
+  }
+  closeMeasureColumnsMenu();
+  closeMeasureHistogramMenu();
+  closeMeasureScatterMenu();
+  closeMeasureRoseMenu();
+  closeMeasureParticleSizeMenu();
+  closeMeasureHeaderMenu();
+  renderMeasureHeaderMenu(column);
+  const menu = ensureMeasureHeaderMenu();
+  measureHeaderMenuColumnId = column.id;
+  header.setAttribute("aria-expanded", "true");
+  menu.hidden = false;
+
+  const buttonRect = header.getBoundingClientRect();
+  const menuRect = menu.getBoundingClientRect();
+  const margin = 8;
+  const left = Math.min(
+    Math.max(buttonRect.right - menuRect.width, margin),
+    window.innerWidth - menuRect.width - margin
+  );
+  const top = Math.min(
+    buttonRect.bottom + 4,
+    window.innerHeight - menuRect.height - margin
+  );
+  menu.style.left = `${Math.max(margin, left)}px`;
+  menu.style.top = `${Math.max(margin, top)}px`;
 }
 
 function renderMeasureTableHeader(columns, units) {
@@ -24079,7 +25086,25 @@ function renderMeasureTableHeader(columns, units) {
   measureResultsHeader.innerHTML = "";
   columns.forEach((column) => {
     const th = document.createElement("th");
-    th.innerHTML = getMeasureColumnHeader(column, units);
+    const label = document.createElement("span");
+    label.className = "measure-header-label";
+    label.innerHTML = getMeasureColumnHeader(column, units);
+    th.appendChild(label);
+    th.classList.add("measure-sortable-header");
+    th.tabIndex = 0;
+    th.title = `${column.label} sort and filter`;
+    th.setAttribute("aria-expanded", "false");
+    th.classList.toggle("active", isMeasureColumnMenuActive(column.id));
+    th.addEventListener("click", (event) => {
+      event.stopPropagation();
+      openMeasureHeaderMenu(column, event.currentTarget);
+    });
+    th.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      event.preventDefault();
+      event.stopPropagation();
+      openMeasureHeaderMenu(column, event.currentTarget);
+    });
     if (column.id === "group") {
       th.className = "measure-sticky-header-cell";
     }
@@ -24172,9 +25197,11 @@ function renderMeasureResults() {
   if (!measureResultsBody) return;
   const units = getMeasureColumnUnits();
   const visibleColumns = getVisibleMeasureTableColumns();
+  updateMeasureScaleAudit();
   renderMeasureGroupOptions();
   renderMeasureTableHeader(visibleColumns, units);
   renderMeasureColumnsMenu();
+  const displayedResults = getDisplayedMeasureResults();
   if (measureResultsTable) {
     measureResultsTable.style.minWidth = `${Math.max(
       240,
@@ -24183,15 +25210,16 @@ function renderMeasureResults() {
   }
   measureResultsBody.innerHTML = "";
 
-  if (measureResults.length === 0) {
+  if (measureResults.length === 0 || displayedResults.length === 0) {
     const row = document.createElement("tr");
     const cell = document.createElement("td");
     cell.colSpan = visibleColumns.length;
     cell.className = "measure-results-empty";
-    cell.textContent = "No results";
+    cell.textContent =
+      measureResults.length === 0 ? "No results" : "No measurements match filters";
     row.appendChild(cell);
     measureResultsBody.appendChild(row);
-    updateMeasurementSummaryFields(null);
+    updateMeasurementSummaryFields(displayedResults[displayedResults.length - 1] || null);
     updateDeleteMeasurementButton();
     updateMeasureHistogramAvailability();
     renderMeasureHistogramMenu();
@@ -24204,7 +25232,7 @@ function renderMeasureResults() {
     return;
   }
 
-  measureResults.forEach((result) => {
+  displayedResults.forEach((result) => {
     const row = document.createElement("tr");
     row.dataset.measurementUuid = result.measurementUuid || "";
     if (result.measurementUuid) row.tabIndex = 0;
@@ -24213,6 +25241,7 @@ function renderMeasureResults() {
       selectedMeasurementUuids.has(result.measurementUuid)
     );
     row.addEventListener("click", (event) => {
+      event.stopPropagation();
       handleMeasureResultRowClick(event, result.measurementUuid);
     });
     row.addEventListener("contextmenu", (event) => {
@@ -24246,7 +25275,7 @@ function renderMeasureResults() {
     });
     measureResultsBody.appendChild(row);
   });
-  updateMeasurementSummaryFields();
+  updateMeasurementSummaryFields(displayedResults[displayedResults.length - 1]);
   updateDeleteMeasurementButton();
   updateMeasureHistogramAvailability();
   renderMeasureHistogramMenu();
@@ -24293,9 +25322,16 @@ function addMeasureFeature(
     groupColor: group.groupColor,
     valid_geometry: measurement.validGeometry,
     geometry_warning: measurement.geometryWarning,
+    length_m: measurement.lengthM,
     ecd_m: measurement.ecdM,
+    long_axis_m: measurement.longAxisM,
+    short_axis_m: measurement.shortAxisM,
+    max_feret_m: measurement.maxFeretM,
+    min_feret_m: measurement.minFeretM,
+    max_feret_azimuth_deg: measurement.maxFeretAzimuthDeg,
     width_m: measurement.widthM,
     aspect_ratio: measurement.aspectRatio,
+    long_axis_azimuth_deg: measurement.azimuthDeg,
     azimuth_deg: measurement.azimuthDeg,
     solidity: measurement.solidity,
     circularity: measurement.circularity,
@@ -24359,9 +25395,16 @@ function addMeasureGeometry(
     groupColor: group.groupColor,
     valid_geometry: measurement.validGeometry,
     geometry_warning: measurement.geometryWarning,
+    length_m: measurement.lengthM,
     ecd_m: measurement.ecdM,
+    long_axis_m: measurement.longAxisM,
+    short_axis_m: measurement.shortAxisM,
+    max_feret_m: measurement.maxFeretM,
+    min_feret_m: measurement.minFeretM,
+    max_feret_azimuth_deg: measurement.maxFeretAzimuthDeg,
     width_m: measurement.widthM,
     aspect_ratio: measurement.aspectRatio,
+    long_axis_azimuth_deg: measurement.azimuthDeg,
     azimuth_deg: measurement.azimuthDeg,
     solidity: measurement.solidity,
     circularity: measurement.circularity,
@@ -24510,6 +25553,36 @@ function finishClickMeasurement() {
   drawShape(measureCanvas, [measureJSON, measureAreaJSONTemp, measureJSONTemp]);
 }
 
+function handleMeasurementSelectionClick(viewerPoint, originalEvent = null) {
+  if (!hasKnownScale()) return false;
+  if (measurementModeActive || isAnnotationDrawingActive()) return false;
+  const showMeasure = document.getElementById("show-measure");
+  if (showMeasure && !showMeasure.checked) {
+    if (selectedMeasurementUuids.size > 0) {
+      selectMeasurement(null);
+      return true;
+    }
+    return false;
+  }
+
+  const uuid = findMeasurementUuidAtViewerPoint(viewerPoint, {
+    lineTolerance: 14,
+  });
+  if (uuid) {
+    selectMeasurement(uuid, {
+      toggle: originalEvent?.ctrlKey || originalEvent?.metaKey,
+    });
+    return true;
+  }
+
+  if (selectedMeasurementUuids.size > 0) {
+    selectMeasurement(null);
+    return true;
+  }
+
+  return false;
+}
+
 viewer.addHandler("canvas-click", function (event) {
   if (scaleWizardState.active) return;
   if (!hasKnownScale()) {
@@ -24536,19 +25609,26 @@ viewer.addHandler("canvas-click", function (event) {
 
   if (isAnnotationDrawingActive() || event.quick === false) return;
 
-  const showMeasure = document.getElementById("show-measure");
-  if (showMeasure && !showMeasure.checked) return;
-
-  const uuid = findMeasurementUuidAtViewerPoint(event.position, {
-    lineTolerance: 14,
-  });
-  if (uuid) {
-    selectMeasurement(uuid, {
-      toggle: event.originalEvent?.ctrlKey || event.originalEvent?.metaKey,
-    });
+  if (handleMeasurementSelectionClick(event.position, event.originalEvent)) {
     event.preventDefaultAction = true;
-  } else {
-    selectMeasurement(null);
+  }
+});
+
+viewerContainer.addEventListener("click", function (event) {
+  if (scaleWizardState.active || event.defaultPrevented) return;
+  if (measurementModeActive || isAnnotationDrawingActive()) return;
+  if (isTextEntryElement(event.target)) return;
+  if (event.target.closest("button, input, select, textarea, [role='menu']")) {
+    return;
+  }
+
+  const rect = viewerContainer.getBoundingClientRect();
+  const viewerPoint = new OpenSeadragon.Point(
+    event.clientX - rect.left,
+    event.clientY - rect.top
+  );
+  if (handleMeasurementSelectionClick(viewerPoint, event)) {
+    event.preventDefault();
   }
 });
 
@@ -24789,9 +25869,15 @@ function exportMeasurementsCSV() {
     return;
   }
 
+  const results = getDisplayedMeasureResults();
+  if (results.length === 0) {
+    alert("No measurement results match the current filters.");
+    return;
+  }
+
   const columns = getVisibleMeasureCsvColumns();
   const headers = columns.map((column) => column.csvHeader);
-  const rows = measureResults.map((result) =>
+  const rows = results.map((result) =>
     columns.map((column) => column.csvValue(result))
   );
 
@@ -24803,22 +25889,30 @@ function exportMeasurementsCSV() {
 
 const MEASURE_HISTOGRAM_PARAMETERS = [
   { id: "lengthM", label: "Length", unit: "linear" },
-  { id: "widthM", label: "Width", unit: "linear" },
+  { id: "longAxisM", label: "Long axis", unit: "linear" },
+  { id: "shortAxisM", label: "Short axis", unit: "linear" },
+  { id: "maxFeretM", label: "Max Feret", unit: "linear" },
+  { id: "minFeretM", label: "Min Feret", unit: "linear" },
   { id: "areaM2", label: "Area", unit: "area" },
   { id: "perimeterM", label: "Perimeter", unit: "linear" },
   { id: "ecdM", label: "ECD", unit: "linear" },
-  { id: "aspectRatio", label: "W/L", unit: "none" },
-  { id: "azimuthDeg", label: "Azimuth", unit: "degrees" },
+  { id: "aspectRatio", label: "Short/Long", unit: "none" },
+  { id: "azimuthDeg", label: "Long axis azimuth", unit: "degrees" },
   { id: "solidity", label: "Solidity", unit: "none" },
   { id: "circularity", label: "Circularity", unit: "none" },
 ];
+const DEFAULT_MEASURE_HISTOGRAM_PARAMETER_ID = "longAxisM";
 
 function getMeasureHistogramParameter() {
   const parameterId = measureHistogramParameter?.value;
   return (
     MEASURE_HISTOGRAM_PARAMETERS.find(
       (parameter) => parameter.id === parameterId
-    ) || MEASURE_HISTOGRAM_PARAMETERS[0]
+    ) ||
+    MEASURE_HISTOGRAM_PARAMETERS.find(
+      (parameter) => parameter.id === DEFAULT_MEASURE_HISTOGRAM_PARAMETER_ID
+    ) ||
+    MEASURE_HISTOGRAM_PARAMETERS[0]
   );
 }
 
@@ -24844,8 +25938,8 @@ function getMeasureHistogramPlotType() {
 }
 
 function getMeasureHistogramDefaultColor() {
-  const color = measureHistogramColorInput?.value || "#8a8f94";
-  return /^#[0-9a-f]{6}$/i.test(color) ? color : "#8a8f94";
+  const color = measureHistogramColorInput?.value || "#d9d9d9";
+  return /^#[0-9a-f]{6}$/i.test(color) ? color : "#d9d9d9";
 }
 
 function getMeasureSummaryValues(parameter, mode = "combined") {
@@ -24856,7 +25950,7 @@ function getMeasureSummaryValues(parameter, mode = "combined") {
     groups.get(groupName).push(value);
   };
 
-  measureResults.forEach((result) => {
+  getFilteredMeasureResults().forEach((result) => {
     const value = getMeasureParameterValue(result, parameter);
     if (!Number.isFinite(value)) return;
     const group = getMeasureGroupForResult(result);
@@ -25031,7 +26125,7 @@ function exportMeasureHistogramStatsCSV() {
 
 function getMeasureHistogramGroupsInUse() {
   const groups = new Map();
-  measureResults.forEach((result) => {
+  getFilteredMeasureResults().forEach((result) => {
     const group = getMeasureGroupForResult(result);
     groups.set(group.groupId, group);
   });
@@ -25056,7 +26150,6 @@ function syncMeasureHistogramGroupSelection(groups) {
 }
 
 function getMeasureHistogramValues(parameter) {
-  const unit = getMeasureHistogramUnitInfo(parameter);
   const groups = getMeasureHistogramGroupsInUse();
   syncMeasureHistogramGroupSelection(groups);
   const groupedValues = new Map(
@@ -25069,20 +26162,14 @@ function getMeasureHistogramValues(parameter) {
     ])
   );
 
-  measureResults.forEach((result) => {
-    const rawValue = result[parameter.id];
-    if (!Number.isFinite(rawValue)) return;
-    if (
-      result.validGeometry === false &&
-      (parameter.id === "areaM2" || parameter.id === "ecdM")
-    ) {
-      return;
-    }
+  getFilteredMeasureResults().forEach((result) => {
+    const value = getMeasureParameterValue(result, parameter);
+    if (!Number.isFinite(value)) return;
     const group = getMeasureGroupForResult(result);
     if (!measureHistogramSelectedGroupIds.has(group.groupId)) return;
     const entry = groupedValues.get(group.groupId);
     if (!entry) return;
-    entry.values.push(rawValue * unit.factor);
+    entry.values.push(value);
   });
 
   const enabledGroups = [...groupedValues.values()].filter((group) =>
@@ -25175,6 +26262,57 @@ function getMeasureHistogramNumberInputValue(input) {
   return Number.isFinite(value) ? value : null;
 }
 
+function getMeasureHistogramBinSizeInputValue() {
+  const value = getMeasureHistogramNumberInputValue(measureHistogramBinSizeInput);
+  return Number.isFinite(value) && value > 0 ? value : null;
+}
+
+function getDefaultMeasureHistogramBinWidth() {
+  const parameter = getMeasureHistogramParameter();
+  const { values } = getMeasureHistogramValues(parameter);
+  const binWidth = getDefaultHistogramExtent(values).binWidth;
+  return Number.isFinite(binWidth) && binWidth > 0 ? binWidth : 1;
+}
+
+function validateMeasureHistogramBinSizeInput() {
+  if (!measureHistogramBinSizeInput) return;
+  const value = getMeasureHistogramNumberInputValue(measureHistogramBinSizeInput);
+  const invalid =
+    measureHistogramBinSizeInput.value.trim() !== "" &&
+    (!Number.isFinite(value) || value <= 0);
+  measureHistogramBinSizeInput.setCustomValidity(
+    invalid ? "Bin size must be greater than 0." : ""
+  );
+}
+
+function normalizeMeasureHistogramBinSizeInput() {
+  if (!measureHistogramBinSizeInput) return;
+  const value = getMeasureHistogramNumberInputValue(measureHistogramBinSizeInput);
+  if (measureHistogramBinSizeInput.value.trim() === "") return;
+  if (Number.isFinite(value) && value > 0) return;
+  measureHistogramBinSizeInput.value = formatHistogramInputValue(
+    getDefaultMeasureHistogramBinWidth()
+  );
+  measureHistogramBinSizeInput.setCustomValidity("");
+}
+
+function validatePositiveNumberInput(input, message = "Value must be greater than 0.") {
+  if (!input) return;
+  const value = getMeasureHistogramNumberInputValue(input);
+  const invalid =
+    input.value.trim() !== "" && (!Number.isFinite(value) || value <= 0);
+  input.setCustomValidity(invalid ? message : "");
+}
+
+function normalizePositiveNumberInput(input, fallbackValue) {
+  if (!input) return;
+  const value = getMeasureHistogramNumberInputValue(input);
+  if (input.value.trim() === "") return;
+  if (Number.isFinite(value) && value > 0) return;
+  input.value = formatHistogramInputValue(fallbackValue);
+  input.setCustomValidity("");
+}
+
 function formatHistogramInputValue(value) {
   if (!Number.isFinite(value)) return "";
   return Number(value.toPrecision(4)).toString();
@@ -25253,7 +26391,7 @@ function buildMeasureHistogramModel() {
     ? {
         min: getMeasureHistogramNumberInputValue(measureHistogramMinInput),
         max: getMeasureHistogramNumberInputValue(measureHistogramMaxInput),
-        binWidth: getMeasureHistogramNumberInputValue(measureHistogramBinSizeInput),
+        binWidth: getMeasureHistogramBinSizeInputValue(),
       }
     : {};
   const histogram = createHistogramBins(values, rangeOptions);
@@ -25323,7 +26461,8 @@ function formatHistogramAxisNumber(value) {
 
 function renderMeasureHistogramParameters() {
   if (!measureHistogramParameter) return;
-  const previous = measureHistogramParameter.value || MEASURE_HISTOGRAM_PARAMETERS[0].id;
+  const previous =
+    measureHistogramParameter.value || DEFAULT_MEASURE_HISTOGRAM_PARAMETER_ID;
   measureHistogramParameter.innerHTML = "";
   MEASURE_HISTOGRAM_PARAMETERS.forEach((parameter) => {
     const option = document.createElement("option");
@@ -25335,7 +26474,7 @@ function renderMeasureHistogramParameters() {
     (parameter) => parameter.id === previous
   )
     ? previous
-    : MEASURE_HISTOGRAM_PARAMETERS[0].id;
+    : DEFAULT_MEASURE_HISTOGRAM_PARAMETER_ID;
 }
 
 function renderMeasureHistogramGroupControls() {
@@ -25480,6 +26619,14 @@ function drawHistogramBars(ctx, model, padding, plotWidth, plotHeight) {
             fullBarWidth,
             barHeight
           );
+          ctx.globalAlpha = 1;
+          ctx.strokeStyle = "#000";
+          ctx.strokeRect(
+            x,
+            padding.top + plotHeight - stackedOffset - barHeight,
+            fullBarWidth,
+            barHeight
+          );
           stackedOffset += barHeight;
         });
       } else {
@@ -25495,6 +26642,14 @@ function drawHistogramBars(ctx, model, padding, plotWidth, plotHeight) {
             Math.max(1, groupWidth - 1),
             barHeight
           );
+          ctx.globalAlpha = 1;
+          ctx.strokeStyle = "#000";
+          ctx.strokeRect(
+            x + groupIndex * groupWidth,
+            padding.top + plotHeight - barHeight,
+            Math.max(1, groupWidth - 1),
+            barHeight
+          );
         });
       }
       ctx.globalAlpha = 1;
@@ -25502,6 +26657,13 @@ function drawHistogramBars(ctx, model, padding, plotWidth, plotHeight) {
       const barHeight = (bin.count / model.yMax) * plotHeight;
       ctx.fillStyle = model.defaultColor;
       ctx.fillRect(
+        x,
+        padding.top + plotHeight - barHeight,
+        fullBarWidth,
+        barHeight
+      );
+      ctx.strokeStyle = "#000";
+      ctx.strokeRect(
         x,
         padding.top + plotHeight - barHeight,
         fullBarWidth,
@@ -25736,7 +26898,7 @@ function updateMeasureHistogramControlState() {
 
 function updateMeasureHistogramAvailability() {
   if (!measureHistogramButton) return;
-  measureHistogramButton.disabled = measureResults.length === 0;
+  measureHistogramButton.disabled = !hasFilteredMeasureResults();
 }
 
 function positionMeasureHistogramMenu(button) {
@@ -25878,7 +27040,10 @@ function createMeasureHistogramPdf(model) {
     if (w <= 0 || h <= 0) return;
     commands.push(`${hexToPdfRgb(color)} rg ${x.toFixed(2)} ${pdfY(y + h).toFixed(2)} ${w.toFixed(2)} ${h.toFixed(2)} re f`);
   };
-
+  const strokedRect = (x, y, w, h, color) => {
+    if (w <= 0 || h <= 0) return;
+    commands.push(`${hexToPdfRgb(color)} rg 0 0 0 RG ${x.toFixed(2)} ${pdfY(y + h).toFixed(2)} ${w.toFixed(2)} ${h.toFixed(2)} re B`);
+  };
   commands.push("1 1 1 rg 0 0 612 432 re f");
   commands.push("0.15 0.15 0.15 RG 1 w");
   commands.push(`${padding.left} ${pdfY(padding.top)} m ${padding.left} ${pdfY(padding.top + plotHeight)} l ${padding.left + plotWidth} ${pdfY(padding.top + plotHeight)} l S`);
@@ -25899,7 +27064,7 @@ function createMeasureHistogramPdf(model) {
           activeGroups.forEach((group) => {
             const count = bin.groupCounts.get(group.groupId) || 0;
             const barHeight = (count / model.yMax) * plotHeight;
-            rect(
+            strokedRect(
               x,
               padding.top + plotHeight - stackedOffset - barHeight,
               fullBarWidth,
@@ -25913,7 +27078,7 @@ function createMeasureHistogramPdf(model) {
           activeGroups.forEach((group, groupIndex) => {
             const count = bin.groupCounts.get(group.groupId) || 0;
             const barHeight = (count / model.yMax) * plotHeight;
-            rect(
+            strokedRect(
               x + groupIndex * groupWidth,
               padding.top + plotHeight - barHeight,
               Math.max(1, groupWidth - 1),
@@ -25924,7 +27089,7 @@ function createMeasureHistogramPdf(model) {
         }
       } else {
         const barHeight = (bin.count / model.yMax) * plotHeight;
-        rect(
+        strokedRect(
           x,
           padding.top + plotHeight - barHeight,
           fullBarWidth,
@@ -25996,7 +27161,14 @@ function exportMeasureHistogramPDF() {
 }
 
 function getMeasureParameterValue(result, parameter) {
-  const rawValue = result?.[parameter.id];
+  const rawValue =
+    parameter.id === "lengthM"
+      ? getLineLengthM(result)
+      : parameter.id === "longAxisM"
+        ? getLongAxisM(result)
+        : parameter.id === "shortAxisM"
+          ? getShortAxisM(result)
+          : result?.[parameter.id];
   if (!Number.isFinite(rawValue)) return null;
   if (
     result.validGeometry === false &&
@@ -26038,6 +27210,32 @@ function getMeasureScatterDefaultColor() {
   return /^#[0-9a-f]{6}$/i.test(color) ? color : "#8a8f94";
 }
 
+function getMeasureScatterOpacity() {
+  const value = Number(measureScatterOpacityInput?.value);
+  return Number.isFinite(value)
+    ? Math.min(1, Math.max(0.01, value / 100))
+    : 0.78;
+}
+
+function clampMeasureScatterOpacity(value) {
+  const numericValue = Number(value);
+  return Number.isFinite(numericValue)
+    ? Math.min(100, Math.max(1, Math.round(numericValue)))
+    : 78;
+}
+
+function setMeasureScatterOpacityControlValue(value) {
+  const opacity = clampMeasureScatterOpacity(value);
+  if (measureScatterOpacityInput) {
+    measureScatterOpacityInput.value = String(opacity);
+  }
+  if (measureScatterOpacityRange) {
+    measureScatterOpacityRange.value = String(opacity);
+  }
+  return opacity;
+}
+
+
 function syncMeasureScatterGroupSelection(groups) {
   const groupIds = new Set(groups.map((group) => group.groupId));
   groupIds.forEach((groupId) => {
@@ -26064,7 +27262,7 @@ function getMeasureScatterPoints(xParameter, yParameter) {
     ])
   );
 
-  measureResults.forEach((result) => {
+  getFilteredMeasureResults().forEach((result) => {
     const group = getMeasureGroupForResult(result);
     if (!measureScatterSelectedGroupIds.has(group.groupId)) return;
     const x = getMeasureParameterValue(result, xParameter);
@@ -26118,7 +27316,7 @@ function updateMeasureScatterRangeInputs(xExtent, yExtent) {
 }
 
 function renderMeasureScatterParameters() {
-  renderMeasureParameterOptions(measureScatterXParameter, "lengthM");
+  renderMeasureParameterOptions(measureScatterXParameter, "longAxisM");
   renderMeasureParameterOptions(measureScatterYParameter, "areaM2");
 }
 
@@ -26154,8 +27352,8 @@ function renderMeasureScatterGroupControls() {
 }
 
 function buildMeasureScatterModel() {
-  const xParameter = getMeasureScatterParameter(measureScatterXParameter, 0);
-  const yParameter = getMeasureScatterParameter(measureScatterYParameter, 2);
+  const xParameter = getMeasureScatterParameter(measureScatterXParameter, 1);
+  const yParameter = getMeasureScatterParameter(measureScatterYParameter, 5);
   const { groups, points } = getMeasureScatterPoints(xParameter, yParameter);
   const xExtent = getDefaultScatterExtent(points.map((point) => point.x));
   const yExtent = getDefaultScatterExtent(points.map((point) => point.y));
@@ -26193,6 +27391,7 @@ function buildMeasureScatterModel() {
     yLabel: getMeasureHistogramLabel(yParameter),
     mode: measureScatterMode?.value || "combined",
     defaultColor: getMeasureScatterDefaultColor(),
+    pointOpacity: getMeasureScatterOpacity(),
     groups,
     points,
     xMin,
@@ -26221,6 +27420,7 @@ function drawScatterToCanvas(ctx, model, width, height) {
   ctx.strokeStyle = "#bdbdbd";
   ctx.strokeRect(0.5, 0.5, width - 1, height - 1);
   ctx.strokeStyle = "#444";
+  ctx.lineWidth = 1;
   ctx.beginPath();
   ctx.moveTo(padding.left, padding.top);
   ctx.lineTo(padding.left, padding.top + plotHeight);
@@ -26234,6 +27434,7 @@ function drawScatterToCanvas(ctx, model, width, height) {
   ctx.save();
   ctx.translate(12, padding.top + plotHeight / 2);
   ctx.rotate(-Math.PI / 2);
+  ctx.font = "11px sans-serif";
   ctx.fillText(model.yLabel, 0, 0);
   ctx.restore();
 
@@ -26254,7 +27455,7 @@ function drawScatterToCanvas(ctx, model, width, height) {
     }
     ctx.beginPath();
     ctx.fillStyle = color;
-    ctx.globalAlpha = 0.78;
+    ctx.globalAlpha = model.pointOpacity;
     ctx.arc(xScale(point.x), yScale(point.y), 3.2, 0, Math.PI * 2);
     ctx.fill();
   };
@@ -26272,13 +27473,31 @@ function drawScatterToCanvas(ctx, model, width, height) {
 
   ctx.fillStyle = "#333";
   ctx.font = "10px sans-serif";
-  ctx.textAlign = "left";
-  ctx.fillText(formatHistogramAxisNumber(model.xMin), padding.left, padding.top + plotHeight + 16);
-  ctx.textAlign = "right";
-  ctx.fillText(formatHistogramAxisNumber(model.xMax), padding.left + plotWidth, padding.top + plotHeight + 16);
-  ctx.fillText(formatHistogramAxisNumber(model.yMax), padding.left - 5, padding.top + 4);
-  ctx.fillText(formatHistogramAxisNumber(model.yMin), padding.left - 5, padding.top + plotHeight + 3);
+  createHistogramTicks(model.xMin, model.xMax, 6).forEach((tick) => {
+    const x = xScale(tick);
+    ctx.strokeStyle = "#444";
+    ctx.beginPath();
+    ctx.moveTo(x, padding.top + plotHeight);
+    ctx.lineTo(x, padding.top + plotHeight + 4);
+    ctx.stroke();
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+    ctx.fillText(formatHistogramAxisNumber(tick), x, padding.top + plotHeight + 8);
+  });
+  createHistogramTicks(model.yMin, model.yMax, 6).forEach((tick) => {
+    const y = yScale(tick);
+    ctx.strokeStyle = "#444";
+    ctx.beginPath();
+    ctx.moveTo(padding.left - 4, y);
+    ctx.lineTo(padding.left, y);
+    ctx.stroke();
+    ctx.textAlign = "right";
+    ctx.textBaseline = "middle";
+    ctx.fillText(formatHistogramAxisNumber(tick), padding.left - 7, y);
+  });
+  ctx.textBaseline = "alphabetic";
   ctx.textAlign = "center";
+  ctx.font = "11px sans-serif";
   ctx.fillText(model.xLabel, padding.left + plotWidth / 2, height - 10);
 }
 
@@ -26453,7 +27672,7 @@ function renderMeasureScatterMenu() {
 
 function updateMeasureScatterAvailability() {
   if (!measureScatterButton) return;
-  measureScatterButton.disabled = measureResults.length === 0;
+  measureScatterButton.disabled = !hasFilteredMeasureResults();
 }
 
 function positionFixedAnalysisMenu(menu, button) {
@@ -26581,10 +27800,16 @@ function createMeasureScatterPdf(model) {
     model.points.forEach((point) => drawPoint(point, model.defaultColor));
   }
 
-  text(formatHistogramAxisNumber(model.xMin), padding.left, padding.top + plotHeight + 18, 9);
-  text(formatHistogramAxisNumber(model.xMax), padding.left + plotWidth - 44, padding.top + plotHeight + 18, 9);
-  text(formatHistogramAxisNumber(model.yMax), padding.left - 40, padding.top + 4, 9);
-  text(formatHistogramAxisNumber(model.yMin), padding.left - 40, padding.top + plotHeight + 3, 9);
+  createHistogramTicks(model.xMin, model.xMax, 6).forEach((tick) => {
+    const x = xScale(tick);
+    commands.push(`0.25 0.25 0.25 RG 0.8 w ${x.toFixed(2)} ${pdfY(padding.top + plotHeight).toFixed(2)} m ${x.toFixed(2)} ${pdfY(padding.top + plotHeight + 4).toFixed(2)} l S`);
+    text(formatHistogramAxisNumber(tick), x - 8, padding.top + plotHeight + 18, 8);
+  });
+  createHistogramTicks(model.yMin, model.yMax, 6).forEach((tick) => {
+    const y = yScale(tick);
+    commands.push(`0.25 0.25 0.25 RG 0.8 w ${(padding.left - 4).toFixed(2)} ${pdfY(y).toFixed(2)} m ${padding.left.toFixed(2)} ${pdfY(y).toFixed(2)} l S`);
+    text(formatHistogramAxisNumber(tick), padding.left - 46, y + 3, 8);
+  });
   text(model.xLabel, padding.left + plotWidth / 2 - 45, height - 42, 10);
   addPdfRotatedText(
     commands,
@@ -26688,7 +27913,7 @@ function getMeasureRoseDefaultColor() {
 function getMeasureRoseBinSize() {
   const value = Number(measureRoseBinSizeInput?.value);
   if (!Number.isFinite(value) || value <= 0) return MEASURE_ROSE_DEFAULT_BIN_SIZE;
-  return Math.min(90, Math.max(1, value));
+  return Math.min(90, value);
 }
 
 function isMeasureRoseBidirectional() {
@@ -26764,7 +27989,7 @@ function getMeasureRoseAngles(parameter) {
 
   if (!parameter) return { groups: [...groupedAngles.values()], angles: [] };
 
-  measureResults.forEach((result) => {
+  getFilteredMeasureResults().forEach((result) => {
     const group = getMeasureGroupForResult(result);
     if (!measureRoseSelectedGroupIds.has(group.groupId)) return;
     const angle = getMeasureParameterValue(result, parameter);
@@ -26890,7 +28115,9 @@ function buildMeasureRoseModel() {
 
   return {
     parameter,
-    parameterLabel: parameter ? getMeasureHistogramLabel(parameter) : "Azimuth (°)",
+    parameterLabel: parameter
+      ? getMeasureHistogramLabel(parameter)
+      : "Long axis azimuth (°)",
     mode,
     bidirectional,
     stacked,
@@ -27115,9 +28342,9 @@ function updateMeasureRoseControlState() {
 function updateMeasureRoseAvailability() {
   if (!measureRoseButton) return;
   const parameter = getMeasureRoseParameters()[0];
-  const hasAngles = measureResults.some((result) => {
-    const rawValue = result?.[parameter?.id];
-    return Number.isFinite(rawValue);
+  const hasAngles = getFilteredMeasureResults().some((result) => {
+    const value = getMeasureParameterValue(result, parameter);
+    return Number.isFinite(value);
   });
   measureRoseButton.disabled = !parameter || !hasAngles;
 }
@@ -27382,11 +28609,17 @@ function exportMeasureRosePDF() {
 
 function getParticleSizeParameterInfo() {
   const parameterId = measureParticleSizeParameter?.value || "ecdM";
-  if (parameterId === "lengthM") {
-    return { id: "lengthM", label: "Length" };
+  if (parameterId === "longAxisM") {
+    return { id: "longAxisM", label: "Long axis" };
   }
-  if (parameterId === "widthM") {
-    return { id: "widthM", label: "Width" };
+  if (parameterId === "shortAxisM") {
+    return { id: "shortAxisM", label: "Short axis" };
+  }
+  if (parameterId === "maxFeretM") {
+    return { id: "maxFeretM", label: "Max Feret" };
+  }
+  if (parameterId === "minFeretM") {
+    return { id: "minFeretM", label: "Min Feret" };
   }
   return { id: "ecdM", label: "ECD" };
 }
@@ -27418,10 +28651,16 @@ function getParticleSizeDefaultColor() {
 
 function getParticleSizeMeasurements() {
   const parameter = getParticleSizeParameterInfo();
-  return measureResults
+  return getFilteredMeasureResults()
     .map((result) => {
-      const sizeMm = Number.isFinite(result[parameter.id])
-        ? result[parameter.id] * 1000
+      const sizeM =
+        parameter.id === "longAxisM"
+          ? getLongAxisM(result)
+          : parameter.id === "shortAxisM"
+            ? getShortAxisM(result)
+            : result[parameter.id];
+      const sizeMm = Number.isFinite(sizeM)
+        ? sizeM * 1000
         : null;
       const areaMm2 = Number.isFinite(result.areaM2) ? result.areaM2 * 1e6 : null;
       if (
@@ -27621,7 +28860,6 @@ function buildParticleDistribution(measurements, weightMode, phiMin, phiMax, bin
   let cumulativeWeight = 0;
   const cumulative = [];
   if (sorted.length > 0 && totalWeight > 0) {
-    cumulative.push({ phi: sorted[0].phi, fraction: 0 });
     sorted.forEach((measurement) => {
       const weight = weightMode === "area" ? measurement.areaMm2 : 1;
       cumulativeWeight += Number.isFinite(weight) && weight > 0 ? weight : 0;
@@ -27734,6 +28972,27 @@ function buildParticleSizeModel() {
   };
 }
 
+function traceParticleCumulativeStepPath(ctx, cumulative, model, xScale, yScale) {
+  if (cumulative.length === 0) return false;
+  const startFraction = cumulative.reduce(
+    (fraction, point) => (point.phi < model.phiMin ? point.fraction : fraction),
+    0
+  );
+  let currentFraction = startFraction;
+  ctx.beginPath();
+  ctx.moveTo(xScale(model.phiMin), yScale(currentFraction));
+  cumulative.forEach((point) => {
+    if (point.phi < model.phiMin) return;
+    if (point.phi > model.phiMax) return;
+    const x = xScale(point.phi);
+    ctx.lineTo(x, yScale(currentFraction));
+    ctx.lineTo(x, yScale(point.fraction));
+    currentFraction = point.fraction;
+  });
+  ctx.lineTo(xScale(model.phiMax), yScale(currentFraction));
+  return true;
+}
+
 function drawParticleSizeToCanvas(ctx, model, width, height) {
   const padding = { left: 46, top: 22, right: 46, bottom: 44 };
   const plotWidth = width - padding.left - padding.right;
@@ -27819,6 +29078,14 @@ function drawParticleSizeToCanvas(ctx, model, width, height) {
               fullBarWidth,
               barHeight
             );
+            ctx.globalAlpha = 1;
+            ctx.strokeStyle = "#000";
+            ctx.strokeRect(
+              x,
+              padding.top + plotHeight - stackedOffset - barHeight,
+              fullBarWidth,
+              barHeight
+            );
             stackedOffset += barHeight;
           });
         } else {
@@ -27834,6 +29101,14 @@ function drawParticleSizeToCanvas(ctx, model, width, height) {
               Math.max(1, groupWidth - 1),
               barHeight
             );
+            ctx.globalAlpha = 1;
+            ctx.strokeStyle = "#000";
+            ctx.strokeRect(
+              x + groupIndex * groupWidth,
+              padding.top + plotHeight - barHeight,
+              Math.max(1, groupWidth - 1),
+              barHeight
+            );
           });
         }
         ctx.globalAlpha = 1;
@@ -27841,6 +29116,8 @@ function drawParticleSizeToCanvas(ctx, model, width, height) {
         const barHeight = (getBinDisplayValue(bin) / yMax) * plotHeight;
         ctx.fillStyle = model.defaultColor;
         ctx.fillRect(x, padding.top + plotHeight - barHeight, fullBarWidth, barHeight);
+        ctx.strokeStyle = "#000";
+        ctx.strokeRect(x, padding.top + plotHeight - barHeight, fullBarWidth, barHeight);
       }
     });
   }
@@ -27848,16 +29125,19 @@ function drawParticleSizeToCanvas(ctx, model, width, height) {
   if (model.showCumulative) {
     const drawCumulative = (cumulative, color) => {
       if (cumulative.length === 0) return;
+      ctx.lineJoin = "round";
+      if (traceParticleCumulativeStepPath(ctx, cumulative, model, xScale, yScale)) {
+        ctx.strokeStyle = "#fff";
+        ctx.lineWidth = 3.6;
+        ctx.stroke();
+      }
+      if (!traceParticleCumulativeStepPath(ctx, cumulative, model, xScale, yScale)) {
+        return;
+      }
       ctx.strokeStyle = color;
       ctx.lineWidth = 1.7;
-      ctx.beginPath();
-      cumulative.forEach((point, index) => {
-        const x = xScale(point.phi);
-        const y = yScale(point.fraction);
-        if (index === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      });
       ctx.stroke();
+      ctx.lineJoin = "miter";
     };
     if (model.mode === "groups") {
       activeGroups.forEach((group) =>
@@ -28165,6 +29445,28 @@ function createMeasureParticleSizePdf(model) {
       ? (bin.weight / model.totalWeight) * 100
       : bin.weight;
   const yMax = Math.max(1, ...model.bins.map(getBinDisplayValue));
+  const getCumulativePdfPath = (cumulative) => {
+    if (cumulative.length === 0) return "";
+    const startFraction = cumulative.reduce(
+      (fraction, point) => (point.phi < model.phiMin ? point.fraction : fraction),
+      0
+    );
+    let currentFraction = startFraction;
+    const parts = [
+      `${xScale(model.phiMin).toFixed(2)} ${pdfY(yScale(currentFraction)).toFixed(2)} m`,
+    ];
+    cumulative.forEach((point) => {
+      if (point.phi < model.phiMin || point.phi > model.phiMax) return;
+      const x = xScale(point.phi).toFixed(2);
+      parts.push(`${x} ${pdfY(yScale(currentFraction)).toFixed(2)} l`);
+      parts.push(`${x} ${pdfY(yScale(point.fraction)).toFixed(2)} l`);
+      currentFraction = point.fraction;
+    });
+    parts.push(
+      `${xScale(model.phiMax).toFixed(2)} ${pdfY(yScale(currentFraction)).toFixed(2)} l`
+    );
+    return parts.join(" ");
+  };
 
   commands.push("1 1 1 rg 0 0 612 432 re f");
   commands.push("0.15 0.15 0.15 RG 1 w");
@@ -28180,18 +29482,21 @@ function createMeasureParticleSizePdf(model) {
   );
 
   if (model.measurements.length > 0 && model.binnedWeight > 0) {
-    model.bins.forEach((bin) => {
-      const x = xScale(bin.min);
-      const nextX = xScale(bin.max);
-      const barHeight = (getBinDisplayValue(bin) / yMax) * plotHeight;
-      commands.push(`${hexToPdfRgb(model.defaultColor)} rg ${x.toFixed(2)} ${pdfY(padding.top + plotHeight).toFixed(2)} ${Math.max(1, nextX - x - 1).toFixed(2)} ${barHeight.toFixed(2)} re f`);
-    });
-    commands.push("0 0 0 RG 1.5 w");
-    model.cumulative.forEach((point, index) => {
-      const operator = index === 0 ? "m" : "l";
-      commands.push(`${xScale(point.phi).toFixed(2)} ${pdfY(yScale(point.fraction)).toFixed(2)} ${operator}`);
-    });
-    commands.push("S");
+    if (model.showHistogram) {
+      model.bins.forEach((bin) => {
+        const x = xScale(bin.min);
+        const nextX = xScale(bin.max);
+        const barHeight = (getBinDisplayValue(bin) / yMax) * plotHeight;
+        commands.push(`${hexToPdfRgb(model.defaultColor)} rg 0 0 0 RG ${x.toFixed(2)} ${pdfY(padding.top + plotHeight).toFixed(2)} ${Math.max(1, nextX - x - 1).toFixed(2)} ${barHeight.toFixed(2)} re B`);
+      });
+    }
+    if (model.showCumulative) {
+      const cumulativePath = getCumulativePdfPath(model.cumulative);
+      if (cumulativePath) {
+        commands.push(`1 1 1 RG 3.6 w ${cumulativePath} S`);
+        commands.push(`${hexToPdfRgb(model.defaultColor)} RG 1.5 w ${cumulativePath} S`);
+      }
+    }
     if (Number.isFinite(model.meanPhi)) {
       const x = xScale(model.meanPhi);
       commands.push("0.820 0.184 0.184 RG 1.5 w");
@@ -28252,6 +29557,13 @@ function exportMeasureParticleSizePDF() {
 }
 
 measureSelectedAnnotationsButton?.addEventListener("click", measureSelectedAnnotations);
+measureScaleAuditButton?.addEventListener("click", function (event) {
+  event.stopPropagation();
+  toggleMeasureScaleAuditPopover();
+});
+measureScaleAuditPopover?.addEventListener("click", function (event) {
+  event.stopPropagation();
+});
 measureGroupSelect?.addEventListener("change", function (event) {
   activeMeasureGroupId = event.target.value;
   const group = getMeasureGroupById(activeMeasureGroupId);
@@ -28281,6 +29593,9 @@ measureColumnsButton?.addEventListener("click", function (event) {
   event.stopPropagation();
   if (!measureColumnsMenu) return;
   if (measureColumnsMenu.hidden) {
+    closeMeasureHeaderMenu();
+    closeMeasureScaleAuditPopover();
+    closeMeasureHelpDialog();
     closeMeasureHistogramMenu();
     closeMeasureScatterMenu();
     closeMeasureRoseMenu();
@@ -28298,10 +29613,22 @@ restoreMeasureColumnsButton?.addEventListener("click", function () {
   saveMeasureColumnState();
   renderMeasureResults();
 });
+measureHelpButton?.addEventListener("click", function (event) {
+  event.stopPropagation();
+  toggleMeasureHelpDialog(event.currentTarget);
+});
+measureHelpDialog?.addEventListener("click", function (event) {
+  event.stopPropagation();
+});
+makeFixedElementDraggable(measureHelpDialog, measureHelpHeader);
+closeMeasureHelpButton?.addEventListener("click", closeMeasureHelpDialog);
 measureHistogramButton?.addEventListener("click", function (event) {
   event.stopPropagation();
   if (!measureHistogramMenu) return;
   if (measureHistogramMenu.hidden) {
+    closeMeasureHeaderMenu();
+    closeMeasureScaleAuditPopover();
+    closeMeasureHelpDialog();
     closeMeasureColumnsMenu();
     closeMeasureScatterMenu();
     closeMeasureRoseMenu();
@@ -28335,8 +29662,16 @@ measureHistogramMode?.addEventListener("change", function () {
 ].forEach((input) => {
   input?.addEventListener("input", function () {
     measureHistogramRangeEdited = true;
+    if (input === measureHistogramBinSizeInput) {
+      validateMeasureHistogramBinSizeInput();
+    }
     drawMeasureHistogram();
   });
+});
+measureHistogramBinSizeInput?.addEventListener("change", function () {
+  normalizeMeasureHistogramBinSizeInput();
+  measureHistogramRangeEdited = true;
+  drawMeasureHistogram();
 });
 measureHistogramStackedInput?.addEventListener("change", drawMeasureHistogram);
 measureHistogramColorInput?.addEventListener("input", drawMeasureHistogram);
@@ -28349,6 +29684,9 @@ measureScatterButton?.addEventListener("click", function (event) {
   event.stopPropagation();
   if (!measureScatterMenu) return;
   if (measureScatterMenu.hidden) {
+    closeMeasureHeaderMenu();
+    closeMeasureScaleAuditPopover();
+    closeMeasureHelpDialog();
     closeMeasureColumnsMenu();
     closeMeasureHistogramMenu();
     closeMeasureRoseMenu();
@@ -28373,6 +29711,20 @@ measureScatterYParameter?.addEventListener("change", function () {
 });
 measureScatterMode?.addEventListener("change", drawMeasureScatter);
 measureScatterColorInput?.addEventListener("input", drawMeasureScatter);
+measureScatterOpacityRange?.addEventListener("input", function () {
+  setMeasureScatterOpacityControlValue(measureScatterOpacityRange.value);
+  drawMeasureScatter();
+});
+measureScatterOpacityInput?.addEventListener("input", function () {
+  if (measureScatterOpacityRange) {
+    measureScatterOpacityRange.value = measureScatterOpacityInput.value;
+  }
+  drawMeasureScatter();
+});
+measureScatterOpacityInput?.addEventListener("change", function () {
+  setMeasureScatterOpacityControlValue(measureScatterOpacityInput.value);
+  drawMeasureScatter();
+});
 [
   measureScatterXMinInput,
   measureScatterXMaxInput,
@@ -28393,6 +29745,9 @@ measureRoseButton?.addEventListener("click", function (event) {
   event.stopPropagation();
   if (!measureRoseMenu) return;
   if (measureRoseMenu.hidden) {
+    closeMeasureHeaderMenu();
+    closeMeasureScaleAuditPopover();
+    closeMeasureHelpDialog();
     closeMeasureColumnsMenu();
     closeMeasureHistogramMenu();
     closeMeasureScatterMenu();
@@ -28413,7 +29768,20 @@ measureRoseMode?.addEventListener("change", function () {
   drawMeasureRose();
 });
 measureRoseColorInput?.addEventListener("input", drawMeasureRose);
-measureRoseBinSizeInput?.addEventListener("input", drawMeasureRose);
+measureRoseBinSizeInput?.addEventListener("input", function () {
+  validatePositiveNumberInput(
+    measureRoseBinSizeInput,
+    "Rose bin size must be greater than 0."
+  );
+  drawMeasureRose();
+});
+measureRoseBinSizeInput?.addEventListener("change", function () {
+  normalizePositiveNumberInput(
+    measureRoseBinSizeInput,
+    MEASURE_ROSE_DEFAULT_BIN_SIZE
+  );
+  drawMeasureRose();
+});
 measureRoseBidirectionalInput?.addEventListener("change", drawMeasureRose);
 measureRoseStackedInput?.addEventListener("change", drawMeasureRose);
 exportMeasureRoseButton?.addEventListener("click", exportMeasureRosePDF);
@@ -28425,6 +29793,9 @@ measureParticleSizeButton?.addEventListener("click", function (event) {
   event.stopPropagation();
   if (!measureParticleSizeMenu) return;
   if (measureParticleSizeMenu.hidden) {
+    closeMeasureHeaderMenu();
+    closeMeasureScaleAuditPopover();
+    closeMeasureHelpDialog();
     closeMeasureColumnsMenu();
     closeMeasureHistogramMenu();
     closeMeasureScatterMenu();
@@ -28472,8 +29843,19 @@ measureParticleColorInput?.addEventListener("input", drawMeasureParticleSize);
 ].forEach((input) => {
   input?.addEventListener("input", function () {
     measureParticleSizeRangeEdited = true;
+    if (input === measureParticlePhiBinInput) {
+      validatePositiveNumberInput(
+        measureParticlePhiBinInput,
+        "Particle size bin size must be greater than 0."
+      );
+    }
     drawMeasureParticleSize();
   });
+});
+measureParticlePhiBinInput?.addEventListener("change", function () {
+  normalizePositiveNumberInput(measureParticlePhiBinInput, 0.25);
+  measureParticleSizeRangeEdited = true;
+  drawMeasureParticleSize();
 });
 exportMeasureParticleSizeButton?.addEventListener(
   "click",
@@ -28490,13 +29872,34 @@ window.addEventListener("click", function (event) {
   ) {
     closeMeasureColumnsMenu();
   }
+  if (
+    !event.target.closest(".measure-sortable-header") &&
+    !event.target.closest(".measure-header-menu")
+  ) {
+    closeMeasureHeaderMenu();
+  }
+  if (
+    !event.target.closest("#measureScaleAuditButton") &&
+    !event.target.closest("#measureScaleAuditPopover")
+  ) {
+    closeMeasureScaleAuditPopover();
+  }
+  if (
+    !event.target.closest("#measureHelpButton") &&
+    !event.target.closest("#measureHelpDialog")
+  ) {
+    closeMeasureHelpDialog();
+  }
 });
 document.addEventListener(
   "keydown",
   function (event) {
     if (
       event.key !== "Escape" ||
-      (measureHistogramMenu?.hidden &&
+      ((measureHeaderMenuElement?.hidden ?? true) &&
+        (measureScaleAuditPopover?.hidden ?? true) &&
+        (measureHelpDialog?.hidden ?? true) &&
+        measureHistogramMenu?.hidden &&
         measureScatterMenu?.hidden &&
         measureRoseMenu?.hidden &&
         measureParticleSizeMenu?.hidden)
@@ -28505,6 +29908,9 @@ document.addEventListener(
     }
     event.preventDefault();
     event.stopPropagation();
+    closeMeasureHeaderMenu();
+    closeMeasureScaleAuditPopover();
+    closeMeasureHelpDialog();
     closeMeasureHistogramMenu();
     closeMeasureScatterMenu();
     closeMeasureRoseMenu();

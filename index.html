@@ -2841,8 +2841,8 @@
               class="custom-button"
               id="annotationBooleanButton"
               disabled
-              title="Boolean Operations"
-              aria-label="Boolean Operations"
+              title="Polygon Operations"
+              aria-label="Polygon Operations"
               aria-haspopup="true"
               aria-expanded="false"
             >
@@ -3082,7 +3082,7 @@
             id="annotationBooleanMenu"
             class="hiddenSettingsMenu annotation-boolean-menu"
             role="menu"
-            aria-label="Boolean Operations"
+            aria-label="Polygon Operations"
           >
             <button
               type="button"
@@ -3123,6 +3123,16 @@
             >
               <span>Exclude Overlap</span>
               <small>Remove shared overlap</small>
+            </button>
+            <button
+              type="button"
+              class="annotation-boolean-menu-item"
+              data-boolean-operation="simplify"
+              role="menuitem"
+              title="Simplify selected polygons with a pixel tolerance"
+            >
+              <span>Simplify polygon(s)</span>
+              <small>Reduce vertices by pixel tolerance</small>
             </button>
             <div class="annotation-boolean-menu-separator" role="separator"></div>
             <button
@@ -3923,6 +3933,16 @@
                 </g>
               </svg>
             </button>
+            <button
+              id="measureHelpButton"
+              class="custom-button"
+              type="button"
+              title="Measure help"
+              aria-label="Measure help"
+              aria-expanded="false"
+            >
+              ?
+            </button>
           </div>
           <div id="measureToolButtons" class="measure-tool-grid">
             <div class="measure-tool-row">
@@ -4033,19 +4053,20 @@
                   <th aria-label="Group"></th>
                   <th aria-label="Type"></th>
                   <th id="measureLengthHeader">Length<br />(mm)</th>
-                  <th id="measureWidthHeader">Width<br />(mm)</th>
+                  <th id="measureWidthHeader">Long axis<br />(mm)</th>
+                  <th>Short axis<br />(mm)</th>
                   <th id="measureAreaHeader">Area<br />(mm²)</th>
                   <th id="measurePerimeterHeader">Perimeter<br />(mm)</th>
                   <th id="measureECDHeader">ECD<br />(mm)</th>
-                  <th>W/L</th>
-                  <th>Azimuth<br />(°)</th>
+                  <th>Short/Long</th>
+                  <th>Long axis azimuth<br />(°)</th>
                   <th>Solidity</th>
                   <th>Circularity</th>
                 </tr>
               </thead>
               <tbody id="measureResultsBody">
                 <tr>
-                  <td colspan="11" class="measure-results-empty">No results</td>
+                  <td colspan="12" class="measure-results-empty">No results</td>
                 </tr>
               </tbody>
             </table>
@@ -4119,6 +4140,42 @@
               >
                 Restore Defaults
               </button>
+            </div>
+            <div
+              id="measureHelpDialog"
+              class="measure-help-dialog"
+              role="dialog"
+              aria-label="Measure help"
+              hidden
+            >
+              <div id="measureHelpHeader" class="measure-help-header">
+                <span>Measure Help</span>
+                <button
+                  id="closeMeasureHelpButton"
+                  class="custom-button"
+                  type="button"
+                  title="Close help"
+                  aria-label="Close help"
+                >
+                  ×
+                </button>
+              </div>
+              <div class="measure-help-content">
+                <h4>Scale and units</h4>
+                <p>Measurements require a known image scale. The scale audit chip at the bottom of the window shows the current calibration and displays units used in the table, plots, and CSV exports.</p>
+                <h4>Line measurements</h4>
+                <p>Length is reserved for polylines and is calculated as the sum of segment lengths.</p>
+                <h4>Polygon measurements</h4>
+                <p>Area and perimeter use the polygon exterior and any interior rings. Invalid self-intersecting polygons are flagged because area and equivalent circular diameter (ECD) may be unreliable. Area and perimeter for MultiPolygons are calculated as the sum of the areas and perimeters of the constituent polygons.</p>
+                <h4>Axes and orientation</h4>
+                <p>Long axis and short axis describe the oriented bounding axes of the geometry (i.e., the minimum enclosing rectangle). Long axis azimuth is reported in degrees.</p>
+                <h4>Feret diameters</h4>
+                <p>Max Feret is the greatest caliper distance across the polygon. Min Feret is the smallest caliper width across the convex hull.</p>
+                <h4>Shape metrics</h4>
+                <p>ECD (equivalent circular diameter) is the diameter of a circle with the same area. Short/Long is the axis ratio. Solidity compares polygon area to convex hull area. Circularity summarizes compactness from area and perimeter.</p>
+                <h4>Filtering and plots</h4>
+                <p>Table header filters affect the table, CSV export, and Measure plots. Histogram, scatterplot, rose diagram, and particle-size analysis use the currently filtered measurement set.</p>
+              </div>
             </div>
           </div>
           <div class="measure-analysis-actions">
@@ -4237,11 +4294,16 @@
                 </label>
                 <label>
                   <span>Bin</span>
-                  <input id="measureHistogramBinSize" type="number" step="any" />
+                  <input
+                    id="measureHistogramBinSize"
+                    type="number"
+                    step="any"
+                    min="0.000001"
+                  />
                 </label>
                 <label class="measure-histogram-color-control" title="Default plot color">
                   <span>Color</span>
-                  <input id="measureHistogramColor" type="color" value="#8a8f94" />
+                  <input id="measureHistogramColor" type="color" value="#d9d9d9" />
                 </label>
               </div>
               <label class="measure-histogram-stacked-control">
@@ -4331,7 +4393,13 @@
               <div class="measure-rose-options">
                 <label>
                   <span>Bin</span>
-                  <input id="measureRoseBinSize" type="number" step="any" value="10" />
+                  <input
+                    id="measureRoseBinSize"
+                    type="number"
+                    step="any"
+                    min="0.000001"
+                    value="10"
+                  />
                 </label>
                 <label>
                   <input id="measureRoseBidirectional" type="checkbox" checked />
@@ -4408,8 +4476,10 @@
                   <span>Size</span>
                   <select id="measureParticleSizeParameter">
                     <option value="ecdM" selected>ECD</option>
-                    <option value="lengthM">Length</option>
-                    <option value="widthM">Width</option>
+                    <option value="maxFeretM">Max Feret</option>
+                    <option value="minFeretM">Min Feret</option>
+                    <option value="longAxisM">Long axis</option>
+                    <option value="shortAxisM">Short axis</option>
                   </select>
                 </label>
                 <label>
@@ -4438,7 +4508,12 @@
                 </label>
                 <label>
                   <span>Bin</span>
-                  <input id="measureParticlePhiBin" type="number" step="any" />
+                  <input
+                    id="measureParticlePhiBin"
+                    type="number"
+                    step="any"
+                    min="0.000001"
+                  />
                 </label>
                 <label class="measure-histogram-color-control" title="Combined plot color">
                   <span>Color</span>
@@ -4557,9 +4632,34 @@
                   <span>Y Max</span>
                   <input id="measureScatterYMax" type="number" step="any" />
                 </label>
+              </div>
+              <div class="measure-scatter-style-controls">
                 <label class="measure-histogram-color-control" title="Combined plot color">
                   <span>Color</span>
                   <input id="measureScatterColor" type="color" value="#8a8f94" />
+                </label>
+                <label class="measure-scatter-opacity-control">
+                  <span>Opacity</span>
+                  <span class="measure-scatter-opacity-inputs">
+                    <input
+                      id="measureScatterOpacityRange"
+                      type="range"
+                      min="1"
+                      max="100"
+                      step="1"
+                      value="78"
+                      title="Point opacity (%)"
+                    />
+                    <input
+                      id="measureScatterOpacity"
+                      type="number"
+                      min="1"
+                      max="100"
+                      step="1"
+                      value="78"
+                      title="Point opacity (%)"
+                    />
+                  </span>
                 </label>
               </div>
               <div id="measureScatterGroups" class="measure-histogram-groups"></div>
@@ -4665,6 +4765,24 @@
               </div>
             </div>
           </div>
+          <div class="measure-scale-audit-row">
+            <button
+              id="measureScaleAuditButton"
+              class="measure-scale-audit-chip"
+              type="button"
+              title="Measurement scale and units"
+              aria-label="Measurement scale and units"
+              aria-haspopup="true"
+              aria-expanded="false"
+            >
+              Scale: --
+            </button>
+          </div>
+          <div
+            id="measureScaleAuditPopover"
+            class="measure-scale-audit-popover"
+            hidden
+          ></div>
           <!-- Hidden Settings Menu -->
           <div id="measureSettingsMenu" class="hiddenSettingsMenu">
             <div>

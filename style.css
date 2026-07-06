@@ -2425,7 +2425,8 @@ input[type="range"] {
 .hiddenSettingsMenu.measure-settings-popover {
   position: fixed;
   box-sizing: border-box;
-  width: min(220px, calc(100vw - 16px));
+  width: max-content;
+  max-width: calc(100vw - 16px);
   max-height: min(300px, calc(100vh - 24px));
   overflow: auto;
   z-index: 4200;
@@ -2527,7 +2528,7 @@ input[type="range"] {
 
 .measure-settings-popover > div {
   display: grid;
-  grid-template-columns: 54px 1fr;
+  grid-template-columns: 78px max-content;
   align-items: center;
   gap: 5px;
   margin-bottom: 4px;
@@ -2558,6 +2559,17 @@ input[type="range"] {
 
 .measure-show-row #measureGearButton {
   margin-left: auto;
+}
+
+.measure-show-row #measureGearButton,
+.measure-show-row #measureHelpButton {
+  width: 22px;
+  min-width: 22px;
+  padding: 2px;
+}
+
+.measure-show-row #measureHelpButton {
+  margin-left: -2px;
 }
 
 .measure-tool-grid {
@@ -2650,6 +2662,84 @@ input[type="range"] {
   white-space: nowrap;
 }
 
+.measure-scale-audit-row {
+  display: flex;
+  margin: 8px 0 2px;
+  padding-top: 6px;
+  border-top: 1px solid #d8d8d8;
+}
+
+.measure-scale-audit-chip {
+  box-sizing: border-box;
+  max-width: 100%;
+  min-width: 0;
+  height: 22px;
+  padding: 2px 6px;
+  overflow: hidden;
+  border: 1px solid #b8c4ce;
+  border-radius: 3px;
+  background: #f5f7f8;
+  color: #37424a;
+  font-size: 10px;
+  line-height: 16px;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.measure-scale-audit-chip:hover,
+.measure-scale-audit-chip[aria-expanded="true"] {
+  border-color: #8fb0d0;
+  background: #e8f2ff;
+  color: #1f5d9e;
+}
+
+.measure-scale-audit-chip.missing {
+  border-color: #d0a64b;
+  background: #fff7df;
+  color: #6f4b00;
+}
+
+.measure-scale-audit-popover {
+  position: fixed;
+  z-index: 4300;
+  display: grid;
+  gap: 4px;
+  box-sizing: border-box;
+  width: 190px;
+  padding: 7px;
+  border: 1px solid #aeb8c4;
+  border-radius: 4px;
+  background: #fff;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.22);
+  font-size: 11px;
+}
+
+.measure-scale-audit-popover[hidden] {
+  display: none;
+}
+
+.measure-scale-audit-row-detail {
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr);
+  gap: 6px;
+  align-items: baseline;
+}
+
+.measure-scale-audit-row-detail span {
+  color: #666;
+}
+
+.measure-scale-audit-row-detail strong {
+  min-width: 0;
+  overflow: hidden;
+  color: #222;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .measure-actions .custom-button {
   width: 100%;
   min-width: 0;
@@ -2667,6 +2757,69 @@ input[type="range"] {
   width: 20px;
   min-width: 20px;
   padding: 2px;
+}
+
+#measureHelpButton {
+  width: 20px;
+  min-width: 20px;
+  padding: 2px;
+  font-weight: 700;
+}
+
+.measure-help-dialog {
+  position: fixed;
+  z-index: 4300;
+  box-sizing: border-box;
+  width: min(340px, calc(100vw - 16px));
+  max-height: min(460px, calc(100vh - 16px));
+  overflow: auto;
+  padding: 8px;
+  border: 1px solid rgba(20, 20, 20, 0.32);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.18);
+}
+
+.measure-help-dialog[hidden] {
+  display: none;
+}
+
+.measure-help-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 7px;
+  color: #222;
+  cursor: move;
+  user-select: none;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.measure-help-header #closeMeasureHelpButton {
+  width: 22px;
+  min-width: 22px;
+  height: 22px;
+  padding: 0;
+  line-height: 1;
+}
+
+.measure-help-content {
+  display: grid;
+  gap: 7px;
+  color: #333;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.measure-help-content h4 {
+  margin: 0;
+  font-size: 11px;
+}
+
+.measure-help-content p {
+  margin: -4px 0 0;
 }
 
 .measure-columns-menu {
@@ -2794,7 +2947,8 @@ input[type="range"] {
 }
 
 .measure-histogram-controls,
-.measure-scatter-controls {
+.measure-scatter-controls,
+.measure-scatter-style-controls {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 6px;
@@ -2808,6 +2962,7 @@ input[type="range"] {
 .measure-histogram-controls label,
 .measure-histogram-range-controls label,
 .measure-scatter-controls label,
+.measure-scatter-style-controls label,
 .measure-scatter-range-controls label {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
@@ -2820,6 +2975,7 @@ input[type="range"] {
 .measure-histogram-controls input[type="color"],
 .measure-histogram-range-controls input,
 .measure-scatter-controls select,
+.measure-scatter-style-controls input,
 .measure-scatter-controls input[type="color"],
 .measure-scatter-range-controls input {
   box-sizing: border-box;
@@ -2844,15 +3000,48 @@ input[type="range"] {
   padding: 1px 2px;
 }
 
+.measure-histogram-range-controls input:invalid,
+.measure-rose-options input:invalid {
+  border-color: #c84d3a;
+}
+
 .measure-scatter-controls {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .measure-scatter-range-controls {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 6px;
   margin-bottom: 6px;
+}
+
+.measure-scatter-style-controls {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.measure-scatter-opacity-control {
+  min-width: 0;
+}
+
+.measure-scatter-opacity-inputs {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 4px;
+}
+
+.measure-scatter-opacity-inputs input[type="range"] {
+  flex: 1 1 70px;
+  min-width: 52px;
+  height: 22px;
+}
+
+.measure-scatter-opacity-inputs input[type="number"] {
+  flex: 0 0 38px;
+  width: 38px;
+  height: 22px;
+  padding: 1px 3px;
 }
 
 .measure-histogram-stacked-control {
@@ -3067,12 +3256,101 @@ input[type="range"] {
   white-space: nowrap;
 }
 
+.measure-header-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.measure-sortable-header {
+  cursor: pointer;
+}
+
+.measure-sortable-header:hover,
+.measure-sortable-header.active,
+.measure-sortable-header[aria-expanded="true"] {
+  background: #dcecff;
+  color: #1f5d9e;
+}
+
+.measure-sortable-header:focus {
+  outline: 1px solid rgba(0, 136, 255, 0.7);
+  outline-offset: -1px;
+}
+
+.measure-header-menu {
+  position: fixed;
+  z-index: 4300;
+  display: grid;
+  gap: 4px;
+  box-sizing: border-box;
+  width: 154px;
+  padding: 6px;
+  border: 1px solid #aeb8c4;
+  border-radius: 4px;
+  background: #fff;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.22);
+  font-size: 11px;
+}
+
+.measure-header-menu[hidden] {
+  display: none;
+}
+
+.measure-header-menu button,
+.measure-header-menu select,
+.measure-header-menu input {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  height: 22px;
+  padding: 2px 4px;
+  font-size: 11px;
+}
+
+.measure-header-menu button {
+  border: 1px solid #c7cdd4;
+  border-radius: 3px;
+  background: #f6f7f8;
+  text-align: left;
+  cursor: pointer;
+}
+
+.measure-header-menu button:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+
+.measure-header-menu-field {
+  display: grid;
+  gap: 2px;
+}
+
+.measure-header-menu-range {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+}
+
+.measure-header-menu-separator {
+  height: 1px;
+  background: #e2e5e8;
+}
+
+.measure-header-menu-note {
+  color: #666;
+  font-size: 11px;
+}
+
 .measure-results-table tbody tr:not(.measure-results-empty) {
   cursor: pointer;
 }
 
 .measure-result-row-selected {
-  background: rgba(0, 180, 255, 0.16);
+  background: rgba(0, 136, 255, 0.24);
+}
+
+.measure-results-table tbody tr.measure-result-row-selected > td {
+  background: rgba(0, 136, 255, 0.24);
 }
 
 .measure-results-table tbody tr:focus {
@@ -3099,12 +3377,12 @@ input[type="range"] {
 }
 
 .measure-sticky-header-cell {
-  z-index: 3;
+  z-index: 4;
   background: #efefef;
 }
 
 .measure-result-row-selected .measure-sticky-group-cell {
-  background: rgb(214, 244, 255);
+  background: rgb(193, 226, 255);
 }
 
 .measure-group-color {
@@ -3158,7 +3436,11 @@ input[type="range"] {
   position: sticky;
   top: 0;
   background: #efefef;
-  z-index: 1;
+  z-index: 3;
+}
+
+.measure-results-table th.measure-sticky-header-cell {
+  z-index: 4;
 }
 
 .measure-results-empty {
