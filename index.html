@@ -2752,14 +2752,73 @@
         </details>
         <details id="annotateDetails" closed>
           <summary>Annotate</summary>
-          <div>
+          <div class="annotate-show-row">
             <input
               type="checkbox"
               id="show-annotations"
               checked
               onclick="toggleAnnotation(this)"
             />
-            <label for="show-annotation">Show annotations</label>
+            <label for="show-annotations">Show annotations</label>
+            <button
+              id="annotateHelpButton"
+              class="custom-button"
+              type="button"
+              title="Annotate help"
+              aria-label="Annotate help"
+              aria-expanded="false"
+            >
+              ?
+            </button>
+            <div
+              id="annotateHelpDialog"
+              class="measure-help-dialog annotate-help-dialog"
+              role="dialog"
+              aria-label="Annotate help"
+              hidden
+            >
+              <div id="annotateHelpHeader" class="measure-help-header">
+                <span>Annotate Help</span>
+                <button
+                  id="closeAnnotateHelpButton"
+                  class="custom-button"
+                  type="button"
+                  title="Close help"
+                  aria-label="Close help"
+                >
+                  ×
+                </button>
+              </div>
+              <div class="measure-help-content annotate-help-content">
+                <h4>Drawing annotations</h4>
+                <p>Choose a drawing tool by clicking on it in the toolbar or using the keyboard shortcut, then click in the image to create points, lines, polygons, rectangles, ellipses, or circles. For line and polygon tools, complete the shape with a double-click.</p>
+                <h4>Annotation drawing shortcuts</h4>
+                <p>Use the following shortcuts to draw annotations:</p>
+                <ul>
+                  <li><strong>Point:</strong> Q+click in the image to create a point.</li>
+                  <li><strong>Line:</strong> Hold Z+click to create line vertices, then double-click to complete the shape.</li>
+                  <li><strong>Polygon:</strong> Hold X+click to create polygon vertices, then double-click to complete the shape.</li>
+                  <li><strong>Rectangle:</strong> Hold Alt/Option while dragging to create a rectangle.</li>
+                  <li><strong>Ellipse:</strong> Hold C+click to create an ellipse. The first click sets the center, the second click sets the longaxis, and final click sets the short axis.</li>
+                  <li><strong>Circle:</strong> Hold V+click to create a circle. The first click sets the center, and the second click sets the radius. A set radius can be defined under "Circle Controls" button if image scale is defined. In this case, the circle is created upon V+click.</li>
+                  <li><strong>Label:</strong> Press l to open the Label dialog when an annotation is selected.</li>
+                </ul>
+                <h4>Selecting annotations</h4>
+                <p>Click an annotation in the image or table to select it. Holding shift while clicking and dragging will select multiple annotations, while deselecting any that are already selected. Ctrl/Command-click annotations or rows in the table to add or remove individual annotations from the selection. Shift-click selects a range in the current filtered/sorted list. Ctrl/Command+A selects all shown, unlocked rows when the annotation table is active.</p>
+                <h4>List sorting and filtering</h4>
+                <p>The grey annotation-list header allows filtering and sorting. Click the group, number, type, geometry warning, label, visibility, or lock header to sort, filter, clear filters, or select all shown annotations. Active filters and sorts are highlighted in yellow.</p>
+                <h4>Groups, visibility, and locks</h4>
+                <p>The group row assigns selected annotations to groups, changes group color, toggles group visibility, and locks or unlocks a group. Row eye and lock buttons affect individual annotations. Locked annotations cannot be selected for editing until unlocked.</p>
+                <h4>Editing geometry</h4>
+                <p>Double click an annotation to enable editing. Individual vertices can be moved. Double click the shape margin to add a vertex. Ctrl/Command-click on a vertext to delete it. Dragging the white circle moves the annotation, whereas the yellow circle can be used to rotate the annotation. Use Move Annotation Label to reposition the selected label. </p>
+                <h4>Text and appearance</h4>
+                <p>The Label and Notes fields allow information to be stored with each annotation. Annotation Appearance controls label style, line style, fill style, and opacity. Apply Current updates the selected annotation, while Apply All updates compatible annotations together.</p>
+                <h4>Import and export</h4>
+                <p>GeoJSON import supports points, multipoints, lines, multilines, polygons, and multipolygons. Imported annotations can be assigned to a chosen group or keep groups from the file. Export writes visible annotation geometry and annotation properties to GeoJSON.</p>
+                <h4>Useful shortcuts</h4>
+                <p>Undo and redo use the standard system shortcuts. Escape closes open annotation popovers and cancels active drawing/editing states where applicable. Delete removes selected unlocked annotations. Ctrl-click or Command-click toggles row selection; Shift-click selects a row range; Ctrl+A or Command+A selects all shown rows when the annotation list is active.</p>
+              </div>
+            </div>
           </div>
           <div>
             <input
@@ -3366,15 +3425,26 @@
               </div>
             </div>
             <div class="setting-row">
-              <input
-                type="number"
-                class="wide-number-input"
-                id="annoLabelBackgroundOpacity"
-                value="50"
-                min="0"
-                max="100"
-                step="1"
-              />
+              <span class="annotation-opacity-inputs">
+                <input
+                  id="annoLabelBackgroundOpacityRange"
+                  type="range"
+                  value="50"
+                  min="0"
+                  max="100"
+                  step="1"
+                  title="Label background opacity (%)"
+                />
+                <input
+                  type="number"
+                  class="wide-number-input"
+                  id="annoLabelBackgroundOpacity"
+                  value="50"
+                  min="0"
+                  max="100"
+                  step="1"
+                />
+              </span>
               <label for="annoLabelBackgroundOpacity">Opacity (%)</label>
               <div class="button-group">
                 <button
@@ -3511,17 +3581,28 @@
               </div>
             </div>
             <div class="setting-row">
-              <input
-                type="number"
-                class="wide-number-input"
-                id="lineOpacity"
-                placeholder="100"
-                maxlength="3"
-                value="100"
-                min="0"
-                max="100"
-                step="1"
-              />
+              <span class="annotation-opacity-inputs">
+                <input
+                  id="lineOpacityRange"
+                  type="range"
+                  value="100"
+                  min="0"
+                  max="100"
+                  step="1"
+                  title="Line opacity (%)"
+                />
+                <input
+                  type="number"
+                  class="wide-number-input"
+                  id="lineOpacity"
+                  placeholder="100"
+                  maxlength="3"
+                  value="100"
+                  min="0"
+                  max="100"
+                  step="1"
+                />
+              </span>
               <label for="lineOpacity">Opacity (%)</label>
               <div class="button-group">
                 <button
@@ -3776,17 +3857,28 @@
               </div>
             </div>
             <div class="setting-row">
-              <input
-                type="number"
-                class="wide-number-input"
-                id="fillOpacity"
-                placeholder="0"
-                maxlength="3"
-                value="0"
-                min="0"
-                max="100"
-                step="1"
-              />
+              <span class="annotation-opacity-inputs">
+                <input
+                  id="fillOpacityRange"
+                  type="range"
+                  value="0"
+                  min="0"
+                  max="100"
+                  step="1"
+                  title="Fill opacity (%)"
+                />
+                <input
+                  type="number"
+                  class="wide-number-input"
+                  id="fillOpacity"
+                  placeholder="0"
+                  maxlength="3"
+                  value="0"
+                  min="0"
+                  max="100"
+                  step="1"
+                />
+              </span>
               <label for="fillOpacity">Opacity (%)</label>
               <div class="button-group">
                 <button

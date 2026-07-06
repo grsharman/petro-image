@@ -117,6 +117,18 @@ let annoJSONTemp = {
 let selectedAnnotationUuid = null;
 let selectedAnnotationUuids = new Set();
 let annotationListSelectionAnchorUuid = null;
+let annotationFilterState = {
+  groupId: "",
+  type: "",
+  visibility: "",
+  locked: "",
+  validity: "",
+  label: "",
+  sortParameterId: "",
+  sortDirection: "asc",
+};
+let annotationHeaderMenuColumnId = null;
+let annotationHeaderMenuElement = null;
 let pendingAnnotationTextEdit = null;
 let suppressNextAnnotationClick = false;
 let suppressNextAnnotationDoubleClick = false;
@@ -330,6 +342,12 @@ const closeAnnotatePaletteButton = document.getElementById(
 );
 const minimizeAnnotatePaletteButton = document.getElementById(
   "minimizeAnnotatePaletteButton"
+);
+const annotateHelpButton = document.getElementById("annotateHelpButton");
+const annotateHelpDialog = document.getElementById("annotateHelpDialog");
+const annotateHelpHeader = document.getElementById("annotateHelpHeader");
+const closeAnnotateHelpButton = document.getElementById(
+  "closeAnnotateHelpButton"
 );
 const measurePalette = document.getElementById("measurePalette");
 const measurePaletteHeader = document.getElementById("measurePaletteHeader");
@@ -1255,6 +1273,9 @@ function closeAnnotatePalette() {
   deactivateAnnotationModes();
   closeAnnotationSettingsPopover();
   closeCircleAnnotationOptionsPopover();
+  closeAnnotationBooleanPopover();
+  closeAnnotationHeaderMenu();
+  closeAnnotateHelpDialog();
   annotatePalette.hidden = true;
   openAnnotatePaletteButton?.setAttribute("aria-pressed", "false");
 }
@@ -10586,6 +10607,71 @@ function getAnnotationOpacityValue(inputId) {
   return Math.min(100, Math.max(0, percentValue)) / 100;
 }
 
+function clampAnnotationOpacityPercent(value) {
+  const numericValue = Number(value);
+  return Number.isFinite(numericValue)
+    ? Math.min(100, Math.max(0, Math.round(numericValue)))
+    : 0;
+}
+
+function setAnnotationOpacityControlValue(inputId, value) {
+  const opacity = clampAnnotationOpacityPercent(value);
+  const input = document.getElementById(inputId);
+  const range = document.getElementById(`${inputId}Range`);
+  if (input) input.value = String(opacity);
+  if (range) range.value = String(opacity);
+  return opacity;
+}
+
+function setupAnnotationOpacityControl(inputId) {
+  const input = document.getElementById(inputId);
+  const range = document.getElementById(`${inputId}Range`);
+  if (!input || !range) return;
+
+  range.addEventListener("input", function () {
+    setAnnotationOpacityControlValue(inputId, range.value);
+  });
+  input.addEventListener("input", function () {
+    range.value = input.value;
+  });
+  input.addEventListener("change", function () {
+    setAnnotationOpacityControlValue(inputId, input.value);
+  });
+  setAnnotationOpacityControlValue(inputId, input.value);
+}
+
+function setupAnnotationOpacityControls() {
+  [
+    "annoLabelBackgroundOpacity",
+    "lineOpacity",
+    "fillOpacity",
+  ].forEach(setupAnnotationOpacityControl);
+}
+
+setupAnnotationOpacityControls();
+
+function setupAnnotationApplyButtonTitles() {
+  const menu = document.getElementById("annoSettingsMenu");
+  if (!menu) return;
+
+  menu.querySelectorAll("button").forEach((button) => {
+    const action = `${button.getAttribute("onclick") || ""} ${button.id || ""}`;
+    let label = "";
+    if (action.includes("applyCurrentAnno")) {
+      label = "Apply to Selected";
+    } else if (action.includes("applyAllAnno")) {
+      label = "Apply to All";
+    } else if (action.includes("applyGroupAnno")) {
+      label = "Apply to Group";
+    }
+    if (!label) return;
+    button.title = label;
+    button.setAttribute("aria-label", label);
+  });
+}
+
+setupAnnotationApplyButtonTitles();
+
 function getCurrentAnnotationStyleColors(existingColors = {}) {
   existingColors = existingColors || {};
   return {
@@ -12066,6 +12152,518 @@ function syncAnnotationListSelection() {
   });
 }
 
+const ANNOTATION_LIST_COLUMNS = [
+  { id: "group", label: "Group" },
+  { id: "id", label: "Created order" },
+  { id: "type", label: "Feature type" },
+  { id: "validity", label: "Geometry" },
+  { id: "label", label: "Label" },
+  { id: "visibility", label: "Visibility" },
+  { id: "locked", label: "Lock" },
+];
+
+function getAnnotationFeatureTypeValue(feature) {
+  return getGeometryTypeLabel(feature.geometry?.type, feature.properties?.shapeType);
+}
+
+function getAnnotationSortValue(feature, parameterId) {
+  const props = normalizeAnnotationFeature(feature)?.properties || {};
+  if (parameterId === "group") return props.groupName || "";
+  if (parameterId === "id") return getAnnotationIndexByUuid(props.uuid) + 1;
+  if (parameterId === "type") return getAnnotationFeatureTypeValue(feature);
+  if (parameterId === "validity") {
+    return getAnnotationGeometryWarning(feature) ? "Invalid" : "Valid";
+  }
+  if (parameterId === "label") return props.label || "";
+  if (parameterId === "visibility") {
+    return isAnnotationFeatureVisible(feature) ? "Visible" : "Hidden";
+  }
+  if (parameterId === "locked") {
+    return isAnnotationFeatureLocked(feature) ? "Locked" : "Unlocked";
+  }
+  return "";
+}
+
+function compareAnnotationFeatures(a, b, parameterId, direction = "asc") {
+  const multiplier = direction === "desc" ? -1 : 1;
+  const aValue = getAnnotationSortValue(a, parameterId);
+  const bValue = getAnnotationSortValue(b, parameterId);
+  const aMissing = aValue === null || aValue === undefined || aValue === "";
+  const bMissing = bValue === null || bValue === undefined || bValue === "";
+  if (aMissing && bMissing) return 0;
+  if (aMissing) return 1;
+  if (bMissing) return -1;
+  if (typeof aValue === "number" && typeof bValue === "number") {
+    return (aValue - bValue) * multiplier;
+  }
+  return String(aValue).localeCompare(String(bValue), undefined, {
+    numeric: true,
+    sensitivity: "base",
+  }) * multiplier;
+}
+
+function annotationFeaturePassesFilters(feature, state = annotationFilterState) {
+  const props = normalizeAnnotationFeature(feature)?.properties || {};
+  if (state.groupId && props.groupId !== state.groupId) return false;
+  if (state.type && getAnnotationFeatureTypeValue(feature) !== state.type) {
+    return false;
+  }
+  if (state.visibility === "visible" && !isAnnotationFeatureVisible(feature)) {
+    return false;
+  }
+  if (state.visibility === "hidden" && isAnnotationFeatureVisible(feature)) {
+    return false;
+  }
+  if (state.locked === "locked" && !isAnnotationFeatureLocked(feature)) {
+    return false;
+  }
+  if (state.locked === "unlocked" && isAnnotationFeatureLocked(feature)) {
+    return false;
+  }
+  const hasWarning = Boolean(getAnnotationGeometryWarning(feature));
+  if (state.validity === "valid" && hasWarning) return false;
+  if (state.validity === "invalid" && !hasWarning) return false;
+  if (
+    state.label &&
+    !String(props.label || "")
+      .toLowerCase()
+      .includes(state.label.toLowerCase())
+  ) {
+    return false;
+  }
+  return true;
+}
+
+function getDisplayedAnnotationFeatures() {
+  const state = annotationFilterState;
+  const indexedFeatures = annoJSON.features
+    .map((feature, index) => ({ feature, index }))
+    .filter(({ feature }) => annotationFeaturePassesFilters(feature, state));
+  if (state.sortParameterId) {
+    indexedFeatures.sort((a, b) => {
+      const comparison = compareAnnotationFeatures(
+        a.feature,
+        b.feature,
+        state.sortParameterId,
+        state.sortDirection
+      );
+      return comparison || a.index - b.index;
+    });
+  }
+  return indexedFeatures.map(({ feature }) => feature);
+}
+
+function getDisplayedAnnotationIndexByUuid(uuid) {
+  return getDisplayedAnnotationFeatures().findIndex(
+    (feature) => feature.properties?.uuid === uuid
+  );
+}
+
+function getDisplayedAnnotationRangeUuids(anchorUuid, targetUuid) {
+  const displayedFeatures = getDisplayedAnnotationFeatures();
+  const anchorIndex = displayedFeatures.findIndex(
+    (feature) => feature.properties?.uuid === anchorUuid
+  );
+  const targetIndex = displayedFeatures.findIndex(
+    (feature) => feature.properties?.uuid === targetUuid
+  );
+  if (anchorIndex < 0 || targetIndex < 0) return [];
+  const start = Math.min(anchorIndex, targetIndex);
+  const end = Math.max(anchorIndex, targetIndex);
+  return displayedFeatures
+    .slice(start, end + 1)
+    .filter((feature) => !isAnnotationFeatureLocked(feature))
+    .map((feature) => feature.properties.uuid);
+}
+
+function isAnnotationColumnFiltered(columnId) {
+  if (columnId === "group") return Boolean(annotationFilterState.groupId);
+  if (columnId === "type") return Boolean(annotationFilterState.type);
+  if (columnId === "validity") return Boolean(annotationFilterState.validity);
+  if (columnId === "label") return Boolean(annotationFilterState.label);
+  if (columnId === "visibility") return Boolean(annotationFilterState.visibility);
+  if (columnId === "locked") return Boolean(annotationFilterState.locked);
+  return false;
+}
+
+function isAnnotationColumnSorted(columnId) {
+  return annotationFilterState.sortParameterId === columnId;
+}
+
+function isAnnotationColumnMenuActive(columnId) {
+  return (
+    annotationHeaderMenuColumnId === columnId ||
+    isAnnotationColumnFiltered(columnId) ||
+    isAnnotationColumnSorted(columnId)
+  );
+}
+
+function ensureAnnotationHeaderMenu() {
+  if (annotationHeaderMenuElement) return annotationHeaderMenuElement;
+  annotationHeaderMenuElement = document.createElement("div");
+  annotationHeaderMenuElement.className =
+    "measure-header-menu annotation-header-menu";
+  annotationHeaderMenuElement.hidden = true;
+  annotationHeaderMenuElement.addEventListener("click", (event) => {
+    event.stopPropagation();
+  });
+  document.body.appendChild(annotationHeaderMenuElement);
+  return annotationHeaderMenuElement;
+}
+
+function closeAnnotationHeaderMenu() {
+  if (!annotationHeaderMenuElement) return;
+  annotationHeaderMenuElement.hidden = true;
+  annotationHeaderMenuColumnId = null;
+  document
+    .querySelectorAll(".annotation-list-header-cell[aria-expanded='true']")
+    .forEach((header) => header.setAttribute("aria-expanded", "false"));
+}
+
+function getAnnotationColumnSortLabel(column, direction) {
+  if (column.id === "id") {
+    return direction === "asc" ? "Sort first created first" : "Sort last created first";
+  }
+  if (column.id === "label" || column.id === "group" || column.id === "type") {
+    return direction === "asc" ? "Sort A to Z" : "Sort Z to A";
+  }
+  return direction === "asc" ? "Sort ascending" : "Sort descending";
+}
+
+function applyAnnotationSort(columnId, direction) {
+  annotationFilterState = {
+    ...annotationFilterState,
+    sortParameterId: columnId,
+    sortDirection: direction,
+  };
+  closeAnnotationHeaderMenu();
+  renderAnnotationList();
+}
+
+function clearAnnotationSort() {
+  annotationFilterState = {
+    ...annotationFilterState,
+    sortParameterId: "",
+    sortDirection: "asc",
+  };
+  closeAnnotationHeaderMenu();
+  renderAnnotationList();
+}
+
+function clearAnnotationColumnFilter(columnId) {
+  if (columnId === "group") {
+    annotationFilterState = { ...annotationFilterState, groupId: "" };
+  } else if (columnId === "type") {
+    annotationFilterState = { ...annotationFilterState, type: "" };
+  } else if (columnId === "validity") {
+    annotationFilterState = { ...annotationFilterState, validity: "" };
+  } else if (columnId === "label") {
+    annotationFilterState = { ...annotationFilterState, label: "" };
+  } else if (columnId === "visibility") {
+    annotationFilterState = { ...annotationFilterState, visibility: "" };
+  } else if (columnId === "locked") {
+    annotationFilterState = { ...annotationFilterState, locked: "" };
+  }
+}
+
+function resetAnnotationFilters() {
+  annotationFilterState = {
+    groupId: "",
+    type: "",
+    visibility: "",
+    locked: "",
+    validity: "",
+    label: "",
+    sortParameterId: "",
+    sortDirection: "asc",
+  };
+  closeAnnotationHeaderMenu();
+  renderAnnotationList();
+}
+
+function getAnnotationTypeOptions() {
+  const types = new Set();
+  annoJSON.features.forEach((feature) => {
+    types.add(getAnnotationFeatureTypeValue(feature));
+  });
+  return [
+    { value: "", label: "All" },
+    ...[...types]
+      .filter(Boolean)
+      .sort((a, b) => a.localeCompare(b))
+      .map((type) => ({ value: type, label: type })),
+  ];
+}
+
+function appendAnnotationHeaderTextFilter(menu) {
+  const input = document.createElement("input");
+  input.type = "text";
+  input.placeholder = "Contains";
+  input.value = annotationFilterState.label;
+  menu.appendChild(input);
+
+  const applyLabelFilter = () => {
+    annotationFilterState = {
+      ...annotationFilterState,
+      label: input.value.trim(),
+    };
+    closeAnnotationHeaderMenu();
+    renderAnnotationList();
+  };
+
+  input.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter") return;
+    event.preventDefault();
+    applyLabelFilter();
+  });
+
+  appendMeasureHeaderMenuButton(menu, "Apply label filter", applyLabelFilter);
+}
+
+function selectDisplayedAnnotations() {
+  const displayedUuids = getDisplayedAnnotationFeatures()
+    .filter((feature) => !isAnnotationFeatureLocked(feature))
+    .map((feature) => feature.properties.uuid);
+  setAnnotationSelection(
+    displayedUuids,
+    displayedUuids[displayedUuids.length - 1] || null,
+    { pan: false }
+  );
+  annotationListSelectionAnchorUuid = displayedUuids[0] || null;
+  closeAnnotationHeaderMenu();
+}
+
+function handleAnnotationListSelectAllKey(event) {
+  if (
+    event.key.toLowerCase() !== "a" ||
+    (!event.ctrlKey && !event.metaKey) ||
+    event.altKey
+  ) {
+    return false;
+  }
+
+  event.preventDefault();
+  event.stopPropagation();
+  selectDisplayedAnnotations();
+  return true;
+}
+
+function renderAnnotationHeaderMenu(column) {
+  const menu = ensureAnnotationHeaderMenu();
+  menu.innerHTML = "";
+
+  appendMeasureHeaderMenuButton(menu, getAnnotationColumnSortLabel(column, "asc"), () =>
+    applyAnnotationSort(column.id, "asc")
+  );
+  appendMeasureHeaderMenuButton(menu, getAnnotationColumnSortLabel(column, "desc"), () =>
+    applyAnnotationSort(column.id, "desc")
+  );
+  appendMeasureHeaderMenuButton(menu, "Clear sort", clearAnnotationSort, {
+    disabled: !isAnnotationColumnSorted(column.id),
+  });
+
+  appendMeasureHeaderMenuSeparator(menu);
+
+  if (column.id === "group") {
+    appendMeasureHeaderSelect(
+      menu,
+      "Group",
+      [
+        { value: "", label: "All" },
+        ...getAnnotationGroups().map((group) => ({
+          value: group.groupId,
+          label: group.groupName,
+        })),
+      ],
+      annotationFilterState.groupId,
+      (value) => {
+        annotationFilterState = { ...annotationFilterState, groupId: value };
+        closeAnnotationHeaderMenu();
+        renderAnnotationList();
+      }
+    );
+  } else if (column.id === "type") {
+    appendMeasureHeaderSelect(
+      menu,
+      "Type",
+      getAnnotationTypeOptions(),
+      annotationFilterState.type,
+      (value) => {
+        annotationFilterState = { ...annotationFilterState, type: value };
+        closeAnnotationHeaderMenu();
+        renderAnnotationList();
+      }
+    );
+  } else if (column.id === "validity") {
+    appendMeasureHeaderSelect(
+      menu,
+      "Geometry",
+      [
+        { value: "", label: "All" },
+        { value: "valid", label: "Valid" },
+        { value: "invalid", label: "Invalid" },
+      ],
+      annotationFilterState.validity,
+      (value) => {
+        annotationFilterState = { ...annotationFilterState, validity: value };
+        closeAnnotationHeaderMenu();
+        renderAnnotationList();
+      }
+    );
+  } else if (column.id === "label") {
+    appendAnnotationHeaderTextFilter(menu);
+  } else if (column.id === "visibility") {
+    appendMeasureHeaderSelect(
+      menu,
+      "Visibility",
+      [
+        { value: "", label: "All" },
+        { value: "visible", label: "Visible" },
+        { value: "hidden", label: "Hidden" },
+      ],
+      annotationFilterState.visibility,
+      (value) => {
+        annotationFilterState = { ...annotationFilterState, visibility: value };
+        closeAnnotationHeaderMenu();
+        renderAnnotationList();
+      }
+    );
+  } else if (column.id === "locked") {
+    appendMeasureHeaderSelect(
+      menu,
+      "Lock",
+      [
+        { value: "", label: "All" },
+        { value: "locked", label: "Locked" },
+        { value: "unlocked", label: "Unlocked" },
+      ],
+      annotationFilterState.locked,
+      (value) => {
+        annotationFilterState = { ...annotationFilterState, locked: value };
+        closeAnnotationHeaderMenu();
+        renderAnnotationList();
+      }
+    );
+  } else {
+    const note = document.createElement("div");
+    note.className = "measure-header-menu-note";
+    note.textContent = "No filter for this column";
+    menu.appendChild(note);
+  }
+
+  appendMeasureHeaderMenuSeparator(menu);
+  appendMeasureHeaderMenuButton(menu, "Select shown", selectDisplayedAnnotations, {
+    disabled: getDisplayedAnnotationFeatures().length === 0,
+  });
+  appendMeasureHeaderMenuButton(
+    menu,
+    "Clear this filter",
+    () => {
+      clearAnnotationColumnFilter(column.id);
+      closeAnnotationHeaderMenu();
+      renderAnnotationList();
+    },
+    { disabled: !isAnnotationColumnFiltered(column.id) }
+  );
+  appendMeasureHeaderMenuButton(menu, "Clear all", resetAnnotationFilters, {
+    disabled:
+      !annotationFilterState.groupId &&
+      !annotationFilterState.type &&
+      !annotationFilterState.visibility &&
+      !annotationFilterState.locked &&
+      !annotationFilterState.validity &&
+      !annotationFilterState.label &&
+      !annotationFilterState.sortParameterId,
+  });
+}
+
+function openAnnotationHeaderMenu(column, header) {
+  if (!header) return;
+  if (
+    annotationHeaderMenuColumnId === column.id &&
+    !annotationHeaderMenuElement?.hidden
+  ) {
+    closeAnnotationHeaderMenu();
+    return;
+  }
+  closeMeasureHeaderMenu();
+  closeAnnotationHeaderMenu();
+  renderAnnotationHeaderMenu(column);
+  const menu = ensureAnnotationHeaderMenu();
+  annotationHeaderMenuColumnId = column.id;
+  header.setAttribute("aria-expanded", "true");
+  menu.hidden = false;
+
+  const buttonRect = header.getBoundingClientRect();
+  const menuRect = menu.getBoundingClientRect();
+  const margin = 8;
+  const left = Math.min(
+    Math.max(buttonRect.left, margin),
+    window.innerWidth - menuRect.width - margin
+  );
+  const top = Math.min(
+    buttonRect.bottom + 4,
+    window.innerHeight - menuRect.height - margin
+  );
+  menu.style.left = `${Math.max(margin, left)}px`;
+  menu.style.top = `${Math.max(margin, top)}px`;
+}
+
+function createAnnotationHeaderContent(column) {
+  if (column.id === "group") {
+    const swatch = document.createElement("span");
+    swatch.className = "annotation-list-group annotation-list-header-group";
+    swatch.setAttribute("aria-hidden", "true");
+    return swatch;
+  }
+  if (column.id === "type") {
+    return createGeometryTypeIcon("Point");
+  }
+  if (column.id === "validity") {
+    const icon = document.createElement("span");
+    icon.className = "annotation-geometry-warning-icon";
+    icon.textContent = "!";
+    icon.setAttribute("aria-hidden", "true");
+    return icon;
+  }
+  if (column.id === "visibility") return createVisibilityIcon(true);
+  if (column.id === "locked") return createLockIcon(true);
+
+  const text = document.createElement("span");
+  text.textContent = column.id === "id" ? "#" : "Label";
+  return text;
+}
+
+function renderAnnotationListHeader(list) {
+  const header = document.createElement("div");
+  header.className = "annotation-list-header";
+  header.setAttribute("role", "row");
+
+  ANNOTATION_LIST_COLUMNS.forEach((column) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "annotation-list-header-cell";
+    button.title = `${column.label} sort and filter`;
+    button.setAttribute("aria-label", `${column.label} sort and filter`);
+    button.setAttribute("aria-expanded", "false");
+    button.classList.toggle("active", isAnnotationColumnMenuActive(column.id));
+    button.appendChild(createAnnotationHeaderContent(column));
+    button.addEventListener("click", (event) => {
+      event.stopPropagation();
+      openAnnotationHeaderMenu(column, event.currentTarget);
+    });
+    button.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      event.preventDefault();
+      event.stopPropagation();
+      openAnnotationHeaderMenu(column, event.currentTarget);
+    });
+    header.appendChild(button);
+  });
+
+  list.appendChild(header);
+}
+
 function toggleAnnotationInSelection(uuid, options = {}) {
   if (isAnnotationUuidLocked(uuid)) return;
   const { pan = true } = options;
@@ -12083,19 +12681,16 @@ function handleAnnotationListRowClick(event, uuid) {
   if (event.ctrlKey || event.metaKey) {
     event.preventDefault();
   }
-  const clickedIndex = getAnnotationIndexByUuid(uuid);
+  const clickedIndex = getDisplayedAnnotationIndexByUuid(uuid);
   if (clickedIndex < 0) return;
   if (isAnnotationUuidLocked(uuid)) return;
 
   if (event.shiftKey && annotationListSelectionAnchorUuid) {
-    const anchorIndex = getAnnotationIndexByUuid(annotationListSelectionAnchorUuid);
-    if (anchorIndex >= 0) {
-      const start = Math.min(anchorIndex, clickedIndex);
-      const end = Math.max(anchorIndex, clickedIndex);
-      const rangeUuids = annoJSON.features
-        .slice(start, end + 1)
-        .filter((feature) => !isAnnotationFeatureLocked(feature))
-        .map((feature) => feature.properties.uuid);
+    const rangeUuids = getDisplayedAnnotationRangeUuids(
+      annotationListSelectionAnchorUuid,
+      uuid
+    );
+    if (rangeUuids.length > 0) {
       setAnnotationSelection(rangeUuids, uuid, { pan: true });
       return;
     }
@@ -12125,33 +12720,28 @@ function handleAnnotationListArrowKey(event, uuid) {
   event.preventDefault();
   event.stopPropagation();
 
-  const selectableFeatures = annoJSON.features.filter(
+  const displayedFeatures = getDisplayedAnnotationFeatures();
+  const selectableFeatures = displayedFeatures.filter(
     (feature) => !isAnnotationFeatureLocked(feature)
   );
   if (selectableFeatures.length === 0) return true;
 
-  const currentIndex = Math.max(0, getAnnotationIndexByUuid(uuid));
+  const currentIndex = Math.max(0, getDisplayedAnnotationIndexByUuid(uuid));
   const direction = event.key === "ArrowDown" ? 1 : -1;
   let nextIndex = currentIndex;
-  for (let i = 0; i < annoJSON.features.length; i++) {
+  for (let i = 0; i < displayedFeatures.length; i++) {
     nextIndex =
-      (nextIndex + direction + annoJSON.features.length) %
-      annoJSON.features.length;
-    if (!isAnnotationFeatureLocked(annoJSON.features[nextIndex])) break;
+      (nextIndex + direction + displayedFeatures.length) %
+      displayedFeatures.length;
+    if (!isAnnotationFeatureLocked(displayedFeatures[nextIndex])) break;
   }
-  const nextUuid = annoJSON.features[nextIndex]?.properties?.uuid;
+  const nextUuid = displayedFeatures[nextIndex]?.properties?.uuid;
   if (!nextUuid) return true;
 
   if (event.shiftKey) {
     const anchorUuid = annotationListSelectionAnchorUuid || uuid || nextUuid;
-    const anchorIndex = getAnnotationIndexByUuid(anchorUuid);
-    if (anchorIndex >= 0) {
-      const start = Math.min(anchorIndex, nextIndex);
-      const end = Math.max(anchorIndex, nextIndex);
-      const rangeUuids = annoJSON.features
-        .slice(start, end + 1)
-        .filter((feature) => !isAnnotationFeatureLocked(feature))
-        .map((feature) => feature.properties.uuid);
+    const rangeUuids = getDisplayedAnnotationRangeUuids(anchorUuid, nextUuid);
+    if (rangeUuids.length > 0) {
       setAnnotationSelection(rangeUuids, nextUuid, { pan: false });
     }
   } else {
@@ -12167,9 +12757,11 @@ document
   .getElementById("annotationList")
   ?.addEventListener("keydown", function (event) {
     if (event.target !== event.currentTarget) return;
+    if (handleAnnotationListSelectAllKey(event)) return;
+    const displayedFeatures = getDisplayedAnnotationFeatures();
     handleAnnotationListArrowKey(
       event,
-      selectedAnnotationUuid || annoJSON.features[0]?.properties?.uuid
+      selectedAnnotationUuid || displayedFeatures[0]?.properties?.uuid
     );
   });
 
@@ -12321,6 +12913,7 @@ function renderAnnotationList() {
   if (!list) return;
 
   list.innerHTML = "";
+  renderAnnotationListHeader(list);
 
   if (annoJSON.features.length === 0) {
     const empty = document.createElement("div");
@@ -12332,11 +12925,25 @@ function renderAnnotationList() {
   }
 
   const fragment = document.createDocumentFragment();
+  const displayedFeatures = getDisplayedAnnotationFeatures();
 
-  annoJSON.features.forEach((feature, index) => {
+  if (displayedFeatures.length === 0) {
+    const empty = document.createElement("div");
+    empty.className = "annotation-list-empty";
+    empty.textContent = "No annotations match filters";
+    list.appendChild(empty);
+    renderAnnotationGroupOptions();
+    updateSelectedAnnotationControls();
+    return;
+  }
+
+  const annotationIdByUuid = getAnnotationIdByUuidMap();
+
+  displayedFeatures.forEach((feature) => {
     normalizeAnnotationFeature(feature);
 
     const props = feature.properties;
+    const annotationId = annotationIdByUuid.get(props.uuid) || "";
     const isVisible = isAnnotationFeatureVisible(feature);
     const isLocked = isAnnotationFeatureLocked(feature);
     const isGroupLocked = props.groupLocked === true;
@@ -12348,17 +12955,19 @@ function renderAnnotationList() {
     row.dataset.annotationUuid = props.uuid;
     row.setAttribute("aria-selected", "false");
     row.title = geometryWarning
-      ? `${index + 1}. ${props.label || "(no label)"} - ${geometryWarning}`
-      : `${index + 1}. ${props.label || "(no label)"}`;
+      ? `${annotationId}. ${props.label || "(no label)"} - ${geometryWarning}`
+      : `${annotationId}. ${props.label || "(no label)"}`;
     row.addEventListener("click", function (event) {
       handleAnnotationListRowClick(event, props.uuid);
     });
     row.addEventListener("contextmenu", function (event) {
       if (event.ctrlKey || event.metaKey) {
         event.preventDefault();
+        handleAnnotationListRowClick(event, props.uuid);
       }
     });
     row.addEventListener("keydown", function (event) {
+      if (handleAnnotationListSelectAllKey(event)) return;
       if (handleAnnotationListArrowKey(event, props.uuid)) return;
       if (event.code === "Enter" || event.code === "Space") {
         event.preventDefault();
@@ -12370,7 +12979,7 @@ function renderAnnotationList() {
 
     const indexCell = document.createElement("span");
     indexCell.className = "annotation-list-index";
-    indexCell.textContent = String(index + 1);
+    indexCell.textContent = String(annotationId);
 
     const typeCell = document.createElement("span");
     typeCell.className = "annotation-list-type";
@@ -19462,8 +20071,49 @@ function getPreservedImportGroup(properties = {}, preservedGroups) {
 function getAnnotationFeaturesFromGeoJSON(geoJSONData) {
   const geoJSON = parseJSON(geoJSONData);
   if (!geoJSON) return [];
-  const features = geoJSON.features || Object.values(geoJSON);
+  if (geoJSON.type === "FeatureCollection") {
+    return Array.isArray(geoJSON.features) ? geoJSON.features.filter(Boolean) : [];
+  }
+  if (geoJSON.type === "Feature") return [geoJSON];
+  const features = Array.isArray(geoJSON)
+    ? geoJSON
+    : geoJSON.features || Object.values(geoJSON);
   return Array.isArray(features) ? features.filter(Boolean) : [];
+}
+
+function getFirstFiniteCoordinate(coordinates) {
+  if (!Array.isArray(coordinates)) return null;
+  if (
+    coordinates.length >= 2 &&
+    Number.isFinite(Number(coordinates[0])) &&
+    Number.isFinite(Number(coordinates[1]))
+  ) {
+    return [Number(coordinates[0]), Number(coordinates[1])];
+  }
+
+  for (const coordinate of coordinates) {
+    const point = getFirstFiniteCoordinate(coordinate);
+    if (point) return point;
+  }
+  return null;
+}
+
+function applyInferredAnnotationLabelPoint(properties = {}, geometry) {
+  if (
+    Number.isFinite(Number(properties.xLabel)) &&
+    Number.isFinite(Number(properties.yLabel))
+  ) {
+    return properties;
+  }
+
+  const labelPoint = getFirstFiniteCoordinate(geometry?.coordinates);
+  if (!labelPoint) return properties;
+
+  return {
+    ...properties,
+    xLabel: labelPoint[0],
+    yLabel: labelPoint[1],
+  };
 }
 
 function annotationImportHasExplicitGroups(features) {
@@ -19706,12 +20356,13 @@ async function loadAnnotations(geoJSONData, options = {}) {
       const preservedGroup = assignedGroup
         ? null
         : getPreservedImportGroup(sourceProperties, preservedImportGroups);
+      const groupedProperties = assignedGroup
+        ? applyAnnotationGroupToProperties(sourceProperties, assignedGroup)
+        : preservedGroup
+          ? applyAnnotationGroupToProperties(sourceProperties, preservedGroup)
+          : sourceProperties;
       const properties = normalizeAnnotationProperties(
-        assignedGroup
-          ? applyAnnotationGroupToProperties(sourceProperties, assignedGroup)
-          : preservedGroup
-            ? applyAnnotationGroupToProperties(sourceProperties, preservedGroup)
-          : sourceProperties
+        applyInferredAnnotationLabelPoint(groupedProperties, geometry)
       );
       if (!geometry || !properties) {
         // Invalid feature, skipping
@@ -24801,6 +25452,47 @@ function closeMeasureHeaderMenu() {
     .forEach((header) => header.setAttribute("aria-expanded", "false"));
 }
 
+function closeAnnotateHelpDialog() {
+  if (!annotateHelpDialog) return;
+  annotateHelpDialog.hidden = true;
+  annotateHelpButton?.setAttribute("aria-expanded", "false");
+}
+
+function openAnnotateHelpDialog(button = annotateHelpButton) {
+  if (!annotateHelpDialog || !button) return;
+  if (annotateHelpDialog.parentElement !== document.body) {
+    document.body.appendChild(annotateHelpDialog);
+  }
+  closeAnnotationHeaderMenu();
+  closeAnnotationSettingsPopover();
+  closeCircleAnnotationOptionsPopover();
+  closeAnnotationBooleanPopover();
+  annotateHelpDialog.hidden = false;
+  annotateHelpButton?.setAttribute("aria-expanded", "true");
+
+  const buttonRect = button.getBoundingClientRect();
+  const dialogRect = annotateHelpDialog.getBoundingClientRect();
+  const margin = 8;
+  const left = Math.min(
+    Math.max(buttonRect.right - dialogRect.width, margin),
+    window.innerWidth - dialogRect.width - margin
+  );
+  const top = Math.min(
+    Math.max(buttonRect.bottom + 4, margin),
+    window.innerHeight - dialogRect.height - margin
+  );
+  annotateHelpDialog.style.left = `${Math.max(margin, left)}px`;
+  annotateHelpDialog.style.top = `${Math.max(margin, top)}px`;
+}
+
+function toggleAnnotateHelpDialog(button = annotateHelpButton) {
+  if (!annotateHelpDialog || annotateHelpDialog.hidden) {
+    openAnnotateHelpDialog(button);
+  } else {
+    closeAnnotateHelpDialog();
+  }
+}
+
 function closeMeasureHelpDialog() {
   if (!measureHelpDialog) return;
   measureHelpDialog.hidden = true;
@@ -29588,6 +30280,16 @@ renameMeasureGroupButton?.addEventListener("click", function () {
 newMeasureGroupButton?.addEventListener("click", function () {
   showPrompt("Enter the group name:", createMeasureGroup);
 });
+annotateHelpButton?.addEventListener("click", function (event) {
+  event.stopPropagation();
+  toggleAnnotateHelpDialog(event.currentTarget);
+});
+annotateHelpDialog?.addEventListener("click", function (event) {
+  event.stopPropagation();
+});
+makeFixedElementDraggable(annotateHelpDialog, annotateHelpHeader);
+closeAnnotateHelpButton?.addEventListener("click", closeAnnotateHelpDialog);
+
 exportMeasurementsButton?.addEventListener("click", exportMeasurementsCSV);
 measureColumnsButton?.addEventListener("click", function (event) {
   event.stopPropagation();
@@ -29879,6 +30581,12 @@ window.addEventListener("click", function (event) {
     closeMeasureHeaderMenu();
   }
   if (
+    !event.target.closest(".annotation-list-header-cell") &&
+    !event.target.closest(".annotation-header-menu")
+  ) {
+    closeAnnotationHeaderMenu();
+  }
+  if (
     !event.target.closest("#measureScaleAuditButton") &&
     !event.target.closest("#measureScaleAuditPopover")
   ) {
@@ -29890,6 +30598,12 @@ window.addEventListener("click", function (event) {
   ) {
     closeMeasureHelpDialog();
   }
+  if (
+    !event.target.closest("#annotateHelpButton") &&
+    !event.target.closest("#annotateHelpDialog")
+  ) {
+    closeAnnotateHelpDialog();
+  }
 });
 document.addEventListener(
   "keydown",
@@ -29897,6 +30611,8 @@ document.addEventListener(
     if (
       event.key !== "Escape" ||
       ((measureHeaderMenuElement?.hidden ?? true) &&
+        (annotationHeaderMenuElement?.hidden ?? true) &&
+        (annotateHelpDialog?.hidden ?? true) &&
         (measureScaleAuditPopover?.hidden ?? true) &&
         (measureHelpDialog?.hidden ?? true) &&
         measureHistogramMenu?.hidden &&
@@ -29909,6 +30625,8 @@ document.addEventListener(
     event.preventDefault();
     event.stopPropagation();
     closeMeasureHeaderMenu();
+    closeAnnotationHeaderMenu();
+    closeAnnotateHelpDialog();
     closeMeasureScaleAuditPopover();
     closeMeasureHelpDialog();
     closeMeasureHistogramMenu();

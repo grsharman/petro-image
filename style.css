@@ -1088,6 +1088,57 @@ body.import-wizard-page {
   background: rgba(255, 255, 255, 0.62);
 }
 
+.annotation-list-header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 16px 24px 20px 16px minmax(0, 1fr) 20px 20px;
+  gap: 3px;
+  min-height: 21px;
+  padding: 1px 3px;
+  border: 1px solid rgba(0, 0, 0, 0.16);
+  border-radius: 4px;
+  background: #e7e7e7;
+}
+
+.annotation-list-header-cell {
+  width: 100%;
+  height: 19px;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  padding: 0;
+  background: transparent;
+  color: #333;
+  cursor: pointer;
+  font: 700 11px/1 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.annotation-list-header-cell:hover,
+.annotation-list-header-cell:focus-visible,
+.annotation-list-header-cell.active,
+.annotation-list-header-cell[aria-expanded="true"] {
+  border-color: rgba(180, 122, 0, 0.55);
+  background: rgba(255, 220, 105, 0.78);
+  color: #3a2500;
+  outline: none;
+}
+
+.annotation-list-header-cell .annotation-geometry-icon,
+.annotation-list-header-cell .annotation-visibility-icon,
+.annotation-list-header-cell .annotation-lock-icon {
+  transform: scale(0.86);
+}
+
+.annotation-list-header-group {
+  background: linear-gradient(135deg, #ffcc00 0 50%, #4f82d8 50% 100%);
+}
+
 .annotation-list-empty {
   padding: 6px;
   color: #555;
@@ -1424,6 +1475,10 @@ body.import-wizard-page {
   top: 8px;
 }
 
+.measure-header-menu.annotation-header-menu {
+  width: 162px;
+}
+
 .measure-symbol {
   position: absolute;
   transform: translate(-50%, -50%);
@@ -1657,6 +1712,24 @@ body.import-wizard-page {
 #anno-notes {
   box-sizing: border-box;
   width: 100%;
+}
+
+.annotate-show-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) 20px;
+  gap: 4px;
+  align-items: center;
+}
+
+.annotate-show-row label {
+  min-width: 0;
+}
+
+#annotateHelpButton {
+  width: 20px;
+  min-width: 20px;
+  padding: 2px;
+  font-weight: 700;
 }
 
 .tool-palette-body #anno-label,
@@ -2336,7 +2409,7 @@ input[type="range"] {
 .hiddenSettingsMenu.annotation-settings-popover {
   position: fixed;
   box-sizing: border-box;
-  width: min(460px, calc(100vw - 16px));
+  width: min(620px, calc(100vw - 16px));
   max-height: min(420px, calc(100vh - 24px));
   overflow: auto;
   z-index: 4200;
@@ -2383,14 +2456,26 @@ input[type="range"] {
   font-size: 12px;
 }
 
-.annotation-settings-popover #annoLabelBackgroundOpacity,
-.annotation-settings-popover #lineOpacity,
-.annotation-settings-popover #fillOpacity {
-  width: 42px;
+.annotation-opacity-inputs {
+  display: grid;
+  grid-template-columns: minmax(90px, 1fr) 52px;
+  gap: 5px;
+  align-items: center;
+  min-width: 0;
+}
+
+.annotation-opacity-inputs input[type="range"] {
+  width: 100%;
+  min-width: 0;
+}
+
+.annotation-opacity-inputs input[type="number"] {
+  width: 52px;
 }
 
 .annotation-settings-popover .button-group {
   display: inline-flex;
+  align-items: center;
   gap: 3px;
   margin-left: auto;
   transform: none;
@@ -2399,6 +2484,12 @@ input[type="range"] {
 .annotation-settings-popover .apply-current-btn {
   width: 18px;
   height: 18px;
+  margin-top: 0;
+  padding: 0;
+}
+
+.annotation-settings-popover .apply-current-btn svg path {
+  stroke-width: 3.4px;
 }
 
 .annotation-settings-popover .annotation-settings-actions {
@@ -2797,12 +2888,17 @@ input[type="range"] {
   font-weight: 700;
 }
 
-.measure-help-header #closeMeasureHelpButton {
+.measure-help-header #closeMeasureHelpButton,
+.measure-help-header #closeAnnotateHelpButton {
   width: 22px;
   min-width: 22px;
   height: 22px;
   padding: 0;
   line-height: 1;
+}
+
+.annotate-help-dialog {
+  width: min(360px, calc(100vw - 16px));
 }
 
 .measure-help-content {
