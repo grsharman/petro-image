@@ -778,6 +778,8 @@ body.import-wizard-page {
   position: absolute;
   top: 5px;
   left: 5px;
+  box-sizing: border-box;
+  width: min(198px, calc(100vw - 24px));
   border: 1px solid black;
   border-radius: 4px;
   padding: 5px;
@@ -838,6 +840,97 @@ body.import-wizard-page {
 .controls summary {
   font-family: inherit;
   font-weight: inherit;
+}
+
+.controls-body > .dropdown-container {
+  width: 100%;
+  align-items: center;
+  gap: 4px;
+}
+
+.controls-body > .dropdown-container > select {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.controls-body > .dropdown-container > .custom-button {
+  flex: 0 0 auto;
+  margin: 0;
+}
+
+#imageCheckboxContainer {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  width: 100%;
+}
+
+.image-checkbox-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 4px;
+}
+
+.image-checkbox-identity {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 4px;
+}
+
+.image-checkbox-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tile-set-type-badge {
+  flex: 0 0 auto;
+  margin-left: auto;
+  padding: 1px 3px;
+  border: 1px solid rgba(0, 0, 0, 0.22);
+  border-radius: 4px;
+  color: #333;
+  background: rgba(255, 255, 255, 0.64);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.tile-set-cycle-controls {
+  display: inline-flex;
+  justify-content: flex-end;
+  gap: 1px;
+}
+
+.tile-set-cycle-controls[hidden] {
+  display: none;
+}
+
+.controls .tile-set-cycle-button {
+  width: 16px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  border: 1px solid rgba(0, 0, 0, 0.28);
+  border-radius: 4px;
+  padding: 0;
+  background: rgba(255, 255, 255, 0.76);
+  color: #222;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+}
+
+.controls .tile-set-cycle-button:hover,
+.controls .tile-set-cycle-button:focus-visible {
+  background: rgba(0, 0, 0, 0.08);
+  outline: none;
 }
 
 .grid-label {
@@ -1445,6 +1538,54 @@ body.import-wizard-page {
   display: none;
   white-space: nowrap;
   z-index: 1000;
+}
+
+.sample-info-popover {
+  position: fixed;
+  box-sizing: border-box;
+  width: min(280px, calc(100vw - 12px));
+  max-height: min(360px, calc(100vh - 12px));
+  overflow-y: auto;
+  padding: 10px;
+  border: 1px solid rgba(0, 0, 0, 0.32);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.2);
+  color: #1f1f1f;
+  font: 500 12px/1.35 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  z-index: 4100;
+}
+
+.sample-info-popover h3 {
+  margin: 0 0 8px;
+  font-size: 14px;
+  line-height: 1.2;
+}
+
+.sample-info-details {
+  display: grid;
+  gap: 5px;
+}
+
+.sample-info-row {
+  display: grid;
+  grid-template-columns: 74px minmax(0, 1fr);
+  gap: 7px;
+}
+
+.sample-info-label {
+  color: #555;
+  font-weight: 600;
+}
+
+.sample-info-value {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.sample-info-empty {
+  margin: 0;
+  color: #555;
 }
 
 .hidden {

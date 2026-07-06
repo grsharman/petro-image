@@ -2071,7 +2071,7 @@ async function readDziXmlWithPermissionFallback(event, dziPath) {
     mainWindow;
   const { canceled, filePaths } = await dialog.showOpenDialog(ownerWindow, {
     title: "Select image tile folder",
-    message: `macOS blocked access to ${path.basename(dziPath)}. Select the folder containing the DZI file and its _files folder.`,
+    message: `Select the project folder, DZI folder, or folder containing ${path.basename(dziPath)} and its _files folder.`,
     defaultPath: path.dirname(dziPath),
     properties: ["openDirectory"],
   });
@@ -2082,25 +2082,62 @@ async function readDziXmlWithPermissionFallback(event, dziPath) {
 
   const selectedRoot = normalizeDziRoot(filePaths[0]);
   rememberLocalRoot(selectedRoot);
-  const selectedDziPath = path.join(selectedRoot, path.basename(dziPath));
-  return {
-    dziPath: selectedDziPath,
-    dziXml: await fs.readFile(selectedDziPath, "utf8"),
-  };
+  const selectedMatch = await readDziFromRoots([selectedRoot], dziPath);
+  if (selectedMatch) {
+    return selectedMatch;
+  }
+
+  throw new Error(
+    `Could not find ${path.basename(dziPath)} in ${selectedRoot}, its ${DZI_FOLDER_NAME} folder, or the matching relative DZI path.`,
+  );
 }
 
 async function readDziFromCachedRoot(dziPath) {
-  for (const root of grantedLocalRoots) {
-    const cachedDziPath = path.join(root, path.basename(dziPath));
+  return readDziFromRoots(grantedLocalRoots, dziPath);
+}
 
-    try {
-      return {
-        dziPath: cachedDziPath,
-        dziXml: await fs.readFile(cachedDziPath, "utf8"),
-      };
-    } catch (error) {
-      if (!["EACCES", "EPERM", "ENOENT"].includes(error.code)) {
-        throw error;
+function getDziRelativeCandidates(dziPath) {
+  const normalizedPath = dziPath.replace(/\\/g, "/");
+  const parts = normalizedPath.split("/").filter(Boolean);
+  const basename = path.basename(dziPath);
+  const candidates = new Set([basename, path.join(DZI_FOLDER_NAME, basename)]);
+  const dziFolderIndex = parts.lastIndexOf(DZI_FOLDER_NAME);
+
+  if (dziFolderIndex !== -1) {
+    const tail = parts.slice(dziFolderIndex).join(path.sep);
+    const tailInsideDzi = parts.slice(dziFolderIndex + 1).join(path.sep);
+    if (tail) candidates.add(tail);
+    if (tailInsideDzi) candidates.add(tailInsideDzi);
+  }
+
+  return [...candidates];
+}
+
+function getDziCandidatePaths(root, dziPath) {
+  const candidates = new Set();
+  if (path.isAbsolute(dziPath)) {
+    candidates.add(dziPath);
+  }
+
+  for (const relativeCandidate of getDziRelativeCandidates(dziPath)) {
+    candidates.add(path.join(root, relativeCandidate));
+  }
+
+  return [...candidates];
+}
+
+async function readDziFromRoots(roots, dziPath) {
+  for (const root of roots) {
+    for (const cachedDziPath of getDziCandidatePaths(root, dziPath)) {
+      try {
+        return {
+          dziPath: cachedDziPath,
+          dziXml: await fs.readFile(cachedDziPath, "utf8"),
+        };
+      } catch (error) {
+        if (!["EACCES", "EPERM", "ENOENT"].includes(error.code)) {
+          throw error;
+        }
       }
     }
   }
@@ -2222,10 +2259,14 @@ function getLocalPathFromTileUri(uri) {
 async function validateSampleTiles(event, tileSets) {
   const issues = [];
   let checkedCount = 0;
-  const tileUris = (tileSets || [])
-    .flatMap((tileSet) => tileSet.tiles || [])
-    .map((tile) => tile.uri)
-    .filter((uri) => typeof uri === "string" && /\.dzi$/i.test(uri));
+  const tileUris = [
+    ...new Set(
+      (tileSets || [])
+        .flatMap((tileSet) => tileSet.tiles || [])
+        .map((tile) => tile.uri)
+        .filter((uri) => typeof uri === "string" && /\.dzi$/i.test(uri)),
+    ),
+  ];
 
   for (const uri of tileUris) {
     try {

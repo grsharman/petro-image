@@ -7,7 +7,9 @@ let currentLibraryData = { samples: [] };
 let currentLibraryPath = "";
 let annotationFiles = {}; // For loading predefined annotations
 let groupMapping = {}; // To map groups to sample indices
+let lastSelectedSampleByGroup = {};
 let scrollIndex = 1e6; // Prevents indexing error if starting at 0, due to negative numbers
+let tileSetScrollIndices = [];
 let enableStageRotation = false;
 let tileLoadGeneration = 0;
 let measurementControlsInitialized = false;
@@ -170,6 +172,7 @@ async function processJSON(data, options = {}) {
   samples = data.samples;
   annotationFiles = {}; // For loading predefined annotations
   groupMapping = {}; // To map groups to sample indices
+  lastSelectedSampleByGroup = {};
 
   samples.forEach((sample, index) => {
     annotationFiles[sample.title] = sample.annotations;
@@ -211,7 +214,8 @@ async function processJSON(data, options = {}) {
         groupMapping[group].includes(sampleIndex)
       );
       document.getElementById("groupDropdown").value = groupForSample || "All";
-      populateSampleDropdown(groupForSample || "All", { autoSelect: autoLoadSample });
+      rememberSelectedSampleForGroup(groupForSample || "All", sampleIndex);
+      populateSampleDropdown(groupForSample || "All", { autoSelect: false });
       document.getElementById("sampleDropdown").value = sampleIndex;
       if (autoLoadSample) {
         document
@@ -2380,13 +2384,13 @@ function addUnsupervisedPatchGridPreview() {
   });
 }
 
-function getSegmentTileSetActiveTileDescriptors(tileSet) {
+function getSegmentTileSetActiveTileDescriptors(tileSet, tileSetIndex = 0) {
   if (!tileSet?.tiles?.length) return [];
   const tiles = tileSet.tiles;
   const periodDegrees = tileSet.periodDegrees;
 
   if (!periodDegrees) {
-    const index = scrollIndex % tiles.length;
+    const index = getTileSetVisibleTileIndex(tileSetIndex);
     const tile = tiles[index];
     return tile?.uri ? [{ uri: tile.uri, opacity: 1 }] : [];
   }
@@ -2418,7 +2422,8 @@ function getSegmentTileSetActiveTileDescriptors(tileSet) {
 }
 
 function getUnsupervisedTileJob(resolutionScale) {
-  const tileSet = tileSets()[getUnsupervisedSegmentTileSetIndex()] || null;
+  const tileSetIndex = getUnsupervisedSegmentTileSetIndex();
+  const tileSet = tileSets()[tileSetIndex] || null;
   return {
     imageRect: {
       x: unsupervisedAoiRect.x,
@@ -2427,7 +2432,7 @@ function getUnsupervisedTileJob(resolutionScale) {
       height: unsupervisedAoiRect.height,
     },
     outputScale: resolutionScale,
-    tiles: getSegmentTileSetActiveTileDescriptors(tileSet),
+    tiles: getSegmentTileSetActiveTileDescriptors(tileSet, tileSetIndex),
   };
 }
 
@@ -5193,7 +5198,8 @@ async function renderPorosityAnalysisCanvas(imageBounds, exportSize, tileSetInde
     const activeTileImages = applySnapshotTileSetComposition(
       exportViewer,
       exportTileSet,
-      1
+      1,
+      tileSetIndex
     );
     await waitForExportViewerReady(exportViewer, activeTileImages, {
       outputPixels: exportSize.width * exportSize.height,
@@ -6338,11 +6344,17 @@ function downloadSnapshotBlob(blob) {
   window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-function getTileOpacityGetterForViewer(targetViewer, tileSet, tileSetOpacity = 1) {
+function getTileOpacityGetterForViewer(
+  targetViewer,
+  tileSet,
+  tileSetOpacity = 1,
+  tileSetIndex = 0
+) {
   const tiles = tileSet.tiles;
   const periodDegrees = tileSet.periodDegrees;
   if (!periodDegrees) {
-    return (index) => (index === scrollIndex % tiles.length ? tileSetOpacity : 0);
+    return (index) =>
+      index === getTileSetVisibleTileIndex(tileSetIndex) ? tileSetOpacity : 0;
   }
 
   let rotation;
@@ -6400,14 +6412,20 @@ function getTileOpacityGetterForViewer(targetViewer, tileSet, tileSetOpacity = 1
   };
 }
 
-function applySnapshotTileSetComposition(targetViewer, tileSet, tileSetOpacity = 1) {
+function applySnapshotTileSetComposition(
+  targetViewer,
+  tileSet,
+  tileSetOpacity = 1,
+  tileSetIndex = 0
+) {
   const activeTileImages = [];
   if (!tileSet) return activeTileImages;
 
   const getTileOpacity = getTileOpacityGetterForViewer(
     targetViewer,
     tileSet,
-    tileSetOpacity
+    tileSetOpacity,
+    tileSetIndex
   );
   tileSet.tiles.forEach((tile, index) => {
     if (!tile.image) return;
@@ -6483,6 +6501,7 @@ async function renderFullResolutionSnapshotBaseCanvas(exportSize) {
   const containerWidth = Math.max(1, Math.ceil(exportSize.width / pixelDensity));
   const containerHeight = Math.max(1, Math.ceil(exportSize.height / pixelDensity));
   const selectionViewportBounds = getSnapshotViewportBounds(snapshotSelectionRect);
+  const selectedTileSetIndex = getSnapshotTileSetIndex();
   const selectedTileSet = getSnapshotSelectedTileSet();
   const selectedTileSetOpacity = 1;
 
@@ -6553,7 +6572,8 @@ async function renderFullResolutionSnapshotBaseCanvas(exportSize) {
     const activeTileImages = applySnapshotTileSetComposition(
       exportViewer,
       exportTileSet,
-      selectedTileSetOpacity
+      selectedTileSetOpacity,
+      selectedTileSetIndex
     );
     await waitForExportViewerReady(exportViewer, activeTileImages, {
       outputPixels: exportSize.width * exportSize.height,
@@ -6688,7 +6708,8 @@ async function renderFullResolutionImageRectCanvas(
     const activeTileImages = applySnapshotTileSetComposition(
       exportViewer,
       exportTileSet,
-      selectedTileSetOpacity
+      selectedTileSetOpacity,
+      tileSetIndex
     );
     await waitForExportViewerReady(exportViewer, activeTileImages, {
       outputPixels: exportSize.width * exportSize.height,
@@ -7572,11 +7593,30 @@ function populateGroupDropdown() {
     groupDropdown.appendChild(option);
   });
 
-  // Add event listener to update the sample dropdown on group change
-  groupDropdown.addEventListener("change", function () {
+  // Update the sample dropdown on group change.
+  groupDropdown.onchange = function () {
     const selectedGroup = this.value;
     populateSampleDropdown(selectedGroup);
-  });
+  };
+}
+
+function rememberSelectedSampleForGroup(group, sampleIndex) {
+  if (!group || !groupMapping[group]?.includes(sampleIndex)) return;
+  lastSelectedSampleByGroup[group] = sampleIndex;
+}
+
+function rememberSelectedSampleForCurrentGroup(sampleIndex) {
+  const groupDropdown = document.getElementById("groupDropdown");
+  rememberSelectedSampleForGroup(groupDropdown?.value, sampleIndex);
+}
+
+function getSampleIndexForGroupSelection(selectedGroup) {
+  const groupSampleIndices = groupMapping[selectedGroup] || [];
+  const rememberedIndex = lastSelectedSampleByGroup[selectedGroup];
+  if (groupSampleIndices.includes(rememberedIndex)) {
+    return rememberedIndex;
+  }
+  return groupSampleIndices[0];
 }
 
 // Function to populate sample dropdown based on the selected group
@@ -7594,7 +7634,9 @@ function populateSampleDropdown(selectedGroup, options = {}) {
     });
     // Automatically select the first sample in the group
     if (sampleDropdown.options.length > 0) {
-      sampleDropdown.currentIndex = 0; // Select the first option
+      sampleDropdown.value = String(
+        getSampleIndexForGroupSelection(selectedGroup)
+      );
       if (autoSelect) {
         sampleDropdown.dispatchEvent(new Event("change")); // Trigger the change event
       }
@@ -7690,6 +7732,8 @@ document
   .addEventListener("change", async function () {
     try {
       currentIndex = Number(this.value);
+      rememberSelectedSampleForCurrentGroup(currentIndex);
+      hideSampleInfoPopover();
       closeScaleWizard();
       stopSnapshotDrawMode({ clearSelection: true });
       porositySelectedTileSetIndices = [];
@@ -7817,28 +7861,104 @@ document.addEventListener("click", function (event) {
   }
 });
 
+function resetTileSetScrollIndices() {
+  tileSetScrollIndices = tileSets().map(() => scrollIndex);
+}
+
+function getTileSetVisibleTileIndex(tileSetIndex) {
+  const tiles = tileSets()[tileSetIndex]?.tiles || [];
+  if (tiles.length === 0) return 0;
+
+  const scrollValue = Number.isFinite(tileSetScrollIndices[tileSetIndex])
+    ? tileSetScrollIndices[tileSetIndex]
+    : scrollIndex;
+  return ((scrollValue % tiles.length) + tiles.length) % tiles.length;
+}
+
+function getTileSetTypeLabel(tileSet) {
+  const tileCount = tileSet?.tiles?.length || 0;
+  if (tileCount <= 1) return "Individual";
+  return tileSet.periodDegrees ? "Rotation" : "Multiple";
+}
+
+function cycleTileSetImage(tileSetIndex, direction) {
+  const tileSet = tileSets()[tileSetIndex];
+  if (!tileSet || tileSet.periodDegrees || (tileSet.tiles?.length || 0) <= 1) {
+    return;
+  }
+
+  const currentValue = Number.isFinite(tileSetScrollIndices[tileSetIndex])
+    ? tileSetScrollIndices[tileSetIndex]
+    : scrollIndex;
+  tileSetScrollIndices[tileSetIndex] = currentValue + direction;
+  displayImages();
+  updateImageCheckboxLabels();
+}
+
+function canCycleTileSet(tileSet) {
+  return Boolean(
+    tileSet && !tileSet.periodDegrees && (tileSet.tiles?.length || 0) > 1
+  );
+}
+
+function cycleAllMultipleTileSetImages(direction) {
+  let changed = false;
+  tileSets().forEach((tileSet, index) => {
+    if (!canCycleTileSet(tileSet)) return;
+    const currentValue = Number.isFinite(tileSetScrollIndices[index])
+      ? tileSetScrollIndices[index]
+      : scrollIndex;
+    tileSetScrollIndices[index] = currentValue + direction;
+    changed = true;
+  });
+
+  if (!changed) return false;
+  displayImages();
+  updateImageCheckboxLabels();
+  return true;
+}
+
 // Function to update the image checkbox labels based on tileLabels array
 function updateImageCheckboxLabels() {
   const checkboxes = document.querySelectorAll(".image-checkbox");
 
   checkboxes.forEach((checkbox, i) => {
-    const label = checkbox.nextElementSibling;
+    const label = checkbox.parentElement?.querySelector(".image-checkbox-label");
+    const typeBadge = checkbox.parentElement?.parentElement?.querySelector(
+      ".tile-set-type-badge"
+    );
+    const cycleControls = checkbox.parentElement?.parentElement?.querySelector(
+      ".tile-set-cycle-controls"
+    );
     const tileSet = tileSets()[i];
     if (!tileSet || !label) return;
 
     const tiles = tileSet.tiles;
     if (!tiles || tiles.length === 0) return;
 
-    const visibleTileIndex = scrollIndex % tiles.length;
+    const visibleTileIndex = getTileSetVisibleTileIndex(i);
     const tileLabel = tiles[visibleTileIndex]?.label;
 
     label.textContent = tileLabel || tileSet.label || `Img ${i + 1}`;
+    if (typeBadge) {
+      typeBadge.textContent = getTileSetTypeLabel(tileSet);
+      typeBadge.title =
+        tileSet.periodDegrees && tiles.length > 1
+          ? "Multiple images linked to rotation"
+          : tiles.length > 1
+          ? "Multiple images selected one at a time"
+          : "Single image tile set";
+    }
+    if (cycleControls) {
+      cycleControls.hidden = Boolean(tileSet.periodDegrees) || tiles.length <= 1;
+    }
   });
 }
 
 function toggleOnImages() {
   const checkboxes = document.querySelectorAll(".image-checkbox");
   const count = tileSets().length;
+  resetTileSetScrollIndices();
 
   checkboxes.forEach((checkbox, i) => {
     if (i < count) {
@@ -7884,9 +8004,126 @@ function updateOpacitySliderLabels() {
 
 const tooltip = document.getElementById("tooltip-desc");
 const infoButton = document.getElementById("info-button-desc");
+let sampleInfoPopover = null;
+
+function getSampleScaleLabel(sample) {
+  const scale = normalizePixelsPerMeter(sample?.pixelsPerMeter);
+  if (scale === null) return "";
+
+  const pixelsPerMillimeter = scale / 1000;
+  if (pixelsPerMillimeter >= 10) {
+    return `${Math.round(pixelsPerMillimeter).toLocaleString()} px/mm`;
+  }
+  return `${pixelsPerMillimeter.toLocaleString(undefined, {
+    maximumFractionDigits: 2,
+  })} px/mm`;
+}
+
+function getSampleAnnotationLabel(sample) {
+  const annotations = sample?.annotations;
+  if (!annotations) return "";
+  if (Array.isArray(annotations)) {
+    return `${annotations.length} annotation file${annotations.length === 1 ? "" : "s"}`;
+  }
+  return "1 annotation file";
+}
+
+function appendSampleInfoRow(container, label, value) {
+  if (!value) return;
+
+  const row = document.createElement("div");
+  row.className = "sample-info-row";
+
+  const labelElement = document.createElement("span");
+  labelElement.className = "sample-info-label";
+  labelElement.textContent = label;
+
+  const valueElement = document.createElement("span");
+  valueElement.className = "sample-info-value";
+  valueElement.textContent = value;
+
+  row.append(labelElement, valueElement);
+  container.appendChild(row);
+}
+
+function getTileSetSummary(tileSet, index) {
+  const label = tileSet?.label || `Tile set ${index + 1}`;
+  return `${label}: ${getTileSetTypeLabel(tileSet)}`;
+}
+
+function buildSampleInfoPopover(sample) {
+  const popover = document.createElement("div");
+  popover.id = "sampleInfoPopover";
+  popover.className = "sample-info-popover";
+  popover.hidden = true;
+
+  const titleElement = document.createElement("h3");
+  titleElement.textContent = sample?.title || "Sample";
+  popover.appendChild(titleElement);
+
+  const details = document.createElement("div");
+  details.className = "sample-info-details";
+  appendSampleInfoRow(details, "Description", sample?.description || "");
+  appendSampleInfoRow(
+    details,
+    "Groups",
+    Array.isArray(sample?.groups) ? sample.groups.join(", ") : ""
+  );
+  appendSampleInfoRow(details, "Scale", getSampleScaleLabel(sample));
+  appendSampleInfoRow(details, "Annotations", getSampleAnnotationLabel(sample));
+
+  const tileSetSummaries = (sample?.tileSets || []).map(getTileSetSummary);
+  appendSampleInfoRow(details, "Tile sets", tileSetSummaries.join("; "));
+
+  if (!details.children.length) {
+    const empty = document.createElement("p");
+    empty.className = "sample-info-empty";
+    empty.textContent = "No sample details available.";
+    popover.appendChild(empty);
+  } else {
+    popover.appendChild(details);
+  }
+
+  return popover;
+}
+
+function positionSampleInfoPopover() {
+  if (!sampleInfoPopover || sampleInfoPopover.hidden) return;
+
+  const buttonRect = infoButton.getBoundingClientRect();
+  const popoverRect = sampleInfoPopover.getBoundingClientRect();
+  const margin = 6;
+  const maxLeft = window.innerWidth - popoverRect.width - margin;
+  const left = Math.max(margin, Math.min(buttonRect.right - popoverRect.width, maxLeft));
+  const top = Math.min(
+    buttonRect.bottom + margin,
+    window.innerHeight - popoverRect.height - margin
+  );
+
+  sampleInfoPopover.style.left = `${left}px`;
+  sampleInfoPopover.style.top = `${Math.max(margin, top)}px`;
+}
+
+function hideSampleInfoPopover() {
+  if (!sampleInfoPopover) return;
+  sampleInfoPopover.hidden = true;
+}
+
+function showSampleInfoPopover(event) {
+  event?.stopPropagation();
+  hideTooltip();
+
+  sampleInfoPopover?.remove();
+  sampleInfoPopover = buildSampleInfoPopover(samples[currentIndex]);
+  document.body.appendChild(sampleInfoPopover);
+  sampleInfoPopover.hidden = false;
+  positionSampleInfoPopover();
+}
+
 // Show tooltip with sample info on hover
 function showTooltip() {
-  const description = samples[currentIndex].description;
+  if (sampleInfoPopover && !sampleInfoPopover.hidden) return;
+  const description = samples[currentIndex]?.description;
   if (description) {
     tooltip.textContent = description;
     tooltip.style.display = "block";
@@ -7908,11 +8145,24 @@ function hideTooltip() {
 // Event listeners for tooltip
 infoButton.addEventListener("mouseenter", showTooltip);
 infoButton.addEventListener("mouseleave", hideTooltip);
+window.addEventListener("resize", positionSampleInfoPopover);
+document.addEventListener("click", function (event) {
+  if (
+    sampleInfoPopover &&
+    !sampleInfoPopover.hidden &&
+    !sampleInfoPopover.contains(event.target) &&
+    event.target !== infoButton &&
+    !infoButton.contains(event.target)
+  ) {
+    hideSampleInfoPopover();
+  }
+});
 
 // TODO: Testing HTML pop-up when button is clicked
-infoButton.addEventListener("click", function () {
+infoButton.addEventListener("click", function (event) {
   const info = samples[currentIndex].info;
   if (info) {
+    hideSampleInfoPopover();
     fetch(info)
       .then((response) => response.text())
       .then((data) => {
@@ -7920,7 +8170,7 @@ infoButton.addEventListener("click", function () {
         document.getElementById("info-modal").style.display = "block";
       });
   } else {
-    return;
+    showSampleInfoPopover(event);
   }
 });
 
@@ -9096,7 +9346,7 @@ const displayImages = () => {
     if (sliders[i]) {
       sliders[i].disabled = !isChecked[i];
     }
-    const getTileOpacity = getTileOpacityGetter(tileSet, tileSetOpacity);
+    const getTileOpacity = getTileOpacityGetter(tileSet, tileSetOpacity, i);
 
     tiles.forEach((tile, j) => {
       const image = tile.image;
@@ -9122,14 +9372,14 @@ const displayImages = () => {
 
 // Returns a function that can be used to set the opacity of each tile in the
 // given tile set, according to its index.
-const getTileOpacityGetter = (tileSet, tileSetOpacity) => {
+const getTileOpacityGetter = (tileSet, tileSetOpacity, tileSetIndex = 0) => {
   const tiles = tileSet.tiles;
   const periodDegrees = tileSet.periodDegrees;
   if (!periodDegrees) {
     // If the tile set does not have a period, the tiles are just independent
     // images that can be scrolled through. Only show the selected tile.
     return (index) =>
-      index === scrollIndex % tiles.length ? tileSetOpacity : 0;
+      index === getTileSetVisibleTileIndex(tileSetIndex) ? tileSetOpacity : 0;
   }
 
   // If the tile set does have a period, its tiles should be treated as
@@ -9388,24 +9638,68 @@ function buildImageCheckboxes() {
   const numTileSets = tileSets().length;
   const container = document.getElementById("imageCheckboxContainer");
   container.innerHTML = "";
+  resetTileSetScrollIndices();
 
   for (let i = 0; i < numTileSets; i++) {
     const div = document.createElement("div");
+    div.className = "image-checkbox-row";
 
     const checkbox = document.createElement("input");
     checkbox.type = "checkbox";
+    checkbox.id = `image${i + 1}`;
     checkbox.checked = i === 0;
     checkbox.className = "image-checkbox";
     checkbox.dataset.index = i;
     checkbox.addEventListener("change", displayImages);
 
+    const identity = document.createElement("div");
+    identity.className = "image-checkbox-identity";
+
     const label = document.createElement("label");
+    label.className = "image-checkbox-label";
+    label.htmlFor = checkbox.id;
     label.textContent = `Img ${i + 1}`;
 
-    div.appendChild(checkbox);
-    div.appendChild(label);
+    const typeBadge = document.createElement("span");
+    typeBadge.className = "tile-set-type-badge";
+    typeBadge.textContent = getTileSetTypeLabel(tileSets()[i]);
+
+    const cycleControls = document.createElement("span");
+    cycleControls.className = "tile-set-cycle-controls";
+
+    const previousButton = document.createElement("button");
+    previousButton.type = "button";
+    previousButton.className = "tile-set-cycle-button";
+    previousButton.title = "Previous image";
+    previousButton.setAttribute(
+      "aria-label",
+      `Previous image for tile set ${i + 1}`
+    );
+    previousButton.textContent = "<";
+    previousButton.addEventListener("click", () => cycleTileSetImage(i, -1));
+
+    const nextButton = document.createElement("button");
+    nextButton.type = "button";
+    nextButton.className = "tile-set-cycle-button";
+    nextButton.title = "Next image";
+    nextButton.setAttribute(
+      "aria-label",
+      `Next image for tile set ${i + 1}`
+    );
+    nextButton.textContent = ">";
+    nextButton.addEventListener("click", () => cycleTileSetImage(i, 1));
+
+    cycleControls.appendChild(previousButton);
+    cycleControls.appendChild(nextButton);
+
+    identity.appendChild(checkbox);
+    identity.appendChild(label);
+    identity.appendChild(typeBadge);
+    div.appendChild(identity);
+    div.appendChild(cycleControls);
     container.appendChild(div);
   }
+  updateImageCheckboxLabels();
   populateSnapshotTileSetSelect();
   populateSegmentTileSetSelect();
 }
@@ -28457,19 +28751,22 @@ function toggleEllipseFloaterOn(enable) {
   }
 }
 
-// TODO: Disable this behavior in text boxes? This would prevent the view from
-// changing when typing > or < into a text box
-// Listen for keydown events
 document.addEventListener("keydown", function (event) {
-  if (event.shiftKey && event.key === "<") {
-    scrollIndex--; // Move backward
-  } else if (event.shiftKey && event.key === ">") {
-    scrollIndex++; // Move forward
+  if (!event.shiftKey || event.ctrlKey || event.metaKey || event.altKey) return;
+  if (isTextEntryElement(event.target)) return;
+
+  let direction = 0;
+  if (event.key === "<" || event.key === "ArrowLeft") {
+    direction = -1;
+  } else if (event.key === ">" || event.key === "ArrowRight") {
+    direction = 1;
   }
 
-  displayImages();
-  updateImageCheckboxLabels();
-  updateOpacitySliderLabels();
+  if (direction === 0) return;
+
+  if (cycleAllMultipleTileSetImages(direction)) {
+    event.preventDefault();
+  }
 });
 
 // Function to check if a polygon is self-intersecting
