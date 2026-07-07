@@ -154,6 +154,8 @@ const DEFAULT_ANNOTATION_GROUP = {
   groupVisible: true,
   groupLocked: false,
 };
+const LAST_SAMPLE_STORAGE_KEY = "petroImageLastSample";
+const COUNT_SEGMENT_DICTIONARY_STORAGE_KEY = "petroImageCountSegmentDictionary";
 let measureJSONTemp = {
   type: "FeatureCollection",
   features: [],
@@ -177,6 +179,45 @@ function loadSampleJSON(input, options = {}) {
   }
 
   return Promise.resolve();
+}
+
+function getLibraryStorageKey(data = currentLibraryData) {
+  if (currentLibraryPath) return currentLibraryPath;
+  const titles = Array.isArray(data?.samples)
+    ? data.samples.map((sample) => sample?.title || "").join("|")
+    : "";
+  return titles || "default";
+}
+
+function getLastSamplePreference(data = currentLibraryData) {
+  try {
+    const preference = JSON.parse(
+      localStorage.getItem(LAST_SAMPLE_STORAGE_KEY) || "null"
+    );
+    if (!preference || preference.libraryKey !== getLibraryStorageKey(data)) {
+      return null;
+    }
+    return preference;
+  } catch (error) {
+    console.warn("Could not read last sample preference:", error);
+    return null;
+  }
+}
+
+function saveLastSamplePreference(sampleIndex) {
+  const sample = samples?.[sampleIndex];
+  if (!sample) return;
+  try {
+    localStorage.setItem(
+      LAST_SAMPLE_STORAGE_KEY,
+      JSON.stringify({
+        libraryKey: getLibraryStorageKey(),
+        sampleTitle: sample.title || "",
+      })
+    );
+  } catch (error) {
+    console.warn("Could not save last sample preference:", error);
+  }
 }
 
 async function processJSON(data, options = {}) {
@@ -217,13 +258,15 @@ async function processJSON(data, options = {}) {
   updateStageRotationCheck();
 
   const sampleParam = getQueryParameter("sample");
-  if (sampleParam) {
-    // const sampleIndex = samples.indexOf(sampleParam);
+  const lastSamplePreference = autoLoadSample
+    ? getLastSamplePreference(data)
+    : null;
+  const preferredSampleTitle = sampleParam || lastSamplePreference?.sampleTitle || "";
+  if (preferredSampleTitle) {
     const sampleIndex = samples.findIndex(
-      (sample) => sample.title === sampleParam
+      (sample) => sample.title === preferredSampleTitle
     );
     if (sampleIndex !== -1) {
-      // Select the correct group and sample
       const groupForSample = Object.keys(groupMapping).find((group) =>
         groupMapping[group].includes(sampleIndex)
       );
@@ -236,14 +279,14 @@ async function processJSON(data, options = {}) {
           .getElementById("sampleDropdown")
           .dispatchEvent(new Event("change"));
       }
+      return;
     }
-  } else {
-    // Default behavior if no sample is specified
-    const firstGroup = Object.keys(groupMapping)[0];
-    if (firstGroup) {
-      document.getElementById("groupDropdown").value = firstGroup;
-      populateSampleDropdown(firstGroup, { autoSelect: autoLoadSample });
-    }
+  }
+
+  const firstGroup = Object.keys(groupMapping)[0];
+  if (firstGroup) {
+    document.getElementById("groupDropdown").value = firstGroup;
+    populateSampleDropdown(firstGroup, { autoSelect: autoLoadSample });
   }
 }
 
@@ -562,6 +605,9 @@ const porosityProgressBar = document.getElementById("porosityProgressBar");
 const porosityActivityStatus = document.getElementById("porosityActivityStatus");
 const openScaleWizardButton = document.getElementById("openScaleWizardButton");
 const openLibraryEditorButton = document.getElementById("openLibraryEditorButton");
+const openCountSegmentWorkflowButton = document.getElementById(
+  "openCountSegmentWorkflowButton"
+);
 const hasElectronActions = Boolean(window.electronAPI);
 const hasSharedViewerMenus = Boolean(
   electronActionButton &&
@@ -6938,6 +6984,7 @@ if (hasSharedViewerMenus) {
       closePorosityEstimator();
       closeSegmentPalette();
       closeScaleWizard();
+      hideCountSegmentDialog();
       if (tileSetEditor && !tileSetEditor.hidden) {
         closeTileSetEditor();
         return;
@@ -7564,6 +7611,14 @@ if (openScaleWizardButton && window.electronAPI) {
   });
 }
 
+if (openCountSegmentWorkflowButton) {
+  openCountSegmentWorkflowButton.addEventListener("click", function (event) {
+    event.preventDefault();
+    closeElectronActionTray();
+    showCountSegmentDialog();
+  });
+}
+
 if (openLibraryEditorButton && window.electronAPI) {
   openLibraryEditorButton.hidden = false;
   openLibraryEditorButton.addEventListener("click", function (event) {
@@ -7777,6 +7832,7 @@ document
     try {
       currentIndex = Number(this.value);
       rememberSelectedSampleForCurrentGroup(currentIndex);
+      saveLastSamplePreference(currentIndex);
       hideSampleInfoPopover();
       closeScaleWizard();
       stopSnapshotDrawMode({ clearSelection: true });
@@ -20005,6 +20061,10 @@ function isLocalAnnotationJSONPath(file) {
 
 function loadCounts(geoJSONData) {
   const geoJSON = parseJSON(geoJSONData);
+  if (!geoJSON) {
+    alert("Could not parse count GeoJSON.");
+    return;
+  }
 
   const features = geoJSON.features || Object.values(geoJSON); // Supports both formats
   features.forEach((feature) => {
@@ -21179,6 +21239,494 @@ document
   .getElementById("annotationClearCancelButton")
   .addEventListener("click", hideAnnotationClearDialog);
 
+let pendingCountSegmentPreview = null;
+
+function setCountSegmentPreviewStatus(message, status = "") {
+  const previewEl = document.getElementById("countSegmentPreview");
+  if (!previewEl) return;
+  previewEl.textContent = message;
+  previewEl.classList.toggle(
+    "count-segment-preview-success",
+    status === "success"
+  );
+  previewEl.classList.toggle(
+    "count-segment-preview-error",
+    status === "error"
+  );
+}
+
+function updateCountSegmentApplyState() {
+  const applyButton = document.getElementById("countSegmentApplyButton");
+  if (applyButton) applyButton.disabled = !pendingCountSegmentPreview;
+}
+
+function updateCountSegmentParseControls() {
+  const parseMode = document.getElementById("countSegmentParseMode")?.value;
+  const parseIndexInput = document.getElementById("countSegmentParseIndex");
+  if (parseIndexInput) {
+    parseIndexInput.disabled = parseMode !== "character";
+  }
+}
+
+function loadCountSegmentDictionaryPreference() {
+  const dictionaryInput = document.getElementById("countSegmentDictionary");
+  if (!dictionaryInput) return;
+  try {
+    dictionaryInput.value =
+      localStorage.getItem(COUNT_SEGMENT_DICTIONARY_STORAGE_KEY) || "";
+  } catch (error) {
+    console.warn("Could not load count-segment dictionary:", error);
+  }
+}
+
+function saveCountSegmentDictionaryPreference(dictionaryText) {
+  try {
+    if (dictionaryText.trim()) {
+      localStorage.setItem(
+        COUNT_SEGMENT_DICTIONARY_STORAGE_KEY,
+        dictionaryText.trim()
+      );
+    } else {
+      localStorage.removeItem(COUNT_SEGMENT_DICTIONARY_STORAGE_KEY);
+    }
+  } catch (error) {
+    console.warn("Could not save count-segment dictionary:", error);
+  }
+}
+
+function showCountSegmentDialog() {
+  populateCountSegmentGroupOptions();
+  populateFilterDropdown();
+  loadCountSegmentDictionaryPreference();
+  pendingCountSegmentPreview = null;
+  setCountSegmentPreviewStatus(
+    "Preview runs the point-in-polygon join without changing annotations."
+  );
+  updateCountSegmentApplyState();
+  updateCountSegmentScopeControls();
+  updateCountSegmentParseControls();
+  document.getElementById("countSegmentDialog").classList.remove(
+    "modal-prompt-hidden"
+  );
+  document
+    .getElementById("countSegmentDialog")
+    .classList.add("modal-prompt-visible");
+}
+
+function hideCountSegmentDialog() {
+  pendingCountSegmentPreview = null;
+  updateCountSegmentApplyState();
+  document.getElementById("countSegmentDialog").classList.remove(
+    "modal-prompt-visible"
+  );
+  document
+    .getElementById("countSegmentDialog")
+    .classList.add("modal-prompt-hidden");
+}
+
+function populateCountSegmentGroupOptions() {
+  const select = document.getElementById("countSegmentSourceGroup");
+  if (!select) return;
+  const previousValue = select.value;
+  select.innerHTML = "";
+  getAnnotationGroups().forEach((group) => {
+    const option = document.createElement("option");
+    option.value = group.groupId;
+    option.textContent = group.groupName;
+    select.appendChild(option);
+  });
+  if ([...select.options].some((option) => option.value === previousValue)) {
+    select.value = previousValue;
+  }
+}
+
+function updateCountSegmentScopeControls() {
+  const scope = document.getElementById("countSegmentGrainScope")?.value || "all";
+  const groupSelect = document.getElementById("countSegmentSourceGroup");
+  if (groupSelect) groupSelect.disabled = scope !== "group";
+  pendingCountSegmentPreview = null;
+  updateCountSegmentApplyState();
+}
+
+function getCountSegmentOptions() {
+  const dictionaryText = document
+    .getElementById("countSegmentDictionary")
+    .value.trim();
+  let dictionary = {};
+  if (dictionaryText) {
+    try {
+      dictionary = JSON.parse(dictionaryText);
+    } catch (error) {
+      throw new Error("Dictionary must be valid JSON.");
+    }
+    if (!dictionary || Array.isArray(dictionary) || typeof dictionary !== "object") {
+      throw new Error("Dictionary must be a JSON object.");
+    }
+  }
+  saveCountSegmentDictionaryPreference(dictionaryText);
+
+  return {
+    scope: document.getElementById("countSegmentGrainScope").value,
+    sourceGroupId: document.getElementById("countSegmentSourceGroup").value,
+    useSelectedLabels: document.getElementById(
+      "countSegmentUseSelectedLabels"
+    ).checked,
+    parseMode: document.getElementById("countSegmentParseMode").value,
+    parseIndex: Math.max(
+      0,
+      Math.trunc(Number(document.getElementById("countSegmentParseIndex").value)) - 1
+    ),
+    dictionary,
+    reviewGroupName:
+      document.getElementById("countSegmentReviewGroupName").value.trim() ||
+      "Review",
+    uncountedMode: document.getElementById("countSegmentUncountedMode").value,
+  };
+}
+
+function getCountSegmentGrainFeatures(options) {
+  const selectedUuids = new Set(getSelectedAnnotationUuids());
+  return annoJSON.features.filter((feature) => {
+    if (!isAnnotationPolygonGeometry(feature)) return false;
+    if (isAnnotationFeatureLocked(feature)) return false;
+    normalizeAnnotationFeature(feature);
+    if (options.scope === "selection") {
+      return selectedUuids.has(feature.properties.uuid);
+    }
+    if (options.scope === "group") {
+      return feature.properties.groupId === options.sourceGroupId;
+    }
+    return true;
+  });
+}
+
+function getPointCountRawLabel(feature) {
+  const props = feature?.properties || {};
+  return String(props.id ?? "").trim();
+}
+
+function interpretCountLabel(rawLabel, options) {
+  const raw = String(rawLabel ?? "");
+  let parsed = raw;
+  let parseStatus = "fullLabel";
+  if (options.parseMode === "character") {
+    parsed = raw.charAt(options.parseIndex) || "";
+    parseStatus = parsed ? "parsed" : "parseMissing";
+  }
+
+  const hasDictionary = Object.keys(options.dictionary).length > 0;
+  if (!hasDictionary) {
+    return {
+      rawCountLabel: raw,
+      parsedCountCode: parsed,
+      interpretedCountLabel: parsed || raw,
+      labelTransformStatus: parsed ? parseStatus : "empty",
+    };
+  }
+
+  if (Object.prototype.hasOwnProperty.call(options.dictionary, parsed)) {
+    return {
+      rawCountLabel: raw,
+      parsedCountCode: parsed,
+      interpretedCountLabel: String(options.dictionary[parsed]),
+      labelTransformStatus: "mapped",
+    };
+  }
+
+  return {
+    rawCountLabel: raw,
+    parsedCountCode: parsed,
+    interpretedCountLabel: parsed || raw,
+    labelTransformStatus: parsed ? "unmapped" : "empty",
+  };
+}
+
+function getPointCountFeatures(options = {}) {
+  const selectedLabels = options.useSelectedLabels
+    ? new Set(getSelectedLabels())
+    : null;
+  return countJSON.features.filter((feature) => {
+    if (
+      feature?.geometry?.type !== "Point" ||
+      !Array.isArray(feature.geometry.coordinates) ||
+      !Number.isFinite(Number(feature.geometry.coordinates[0])) ||
+      !Number.isFinite(Number(feature.geometry.coordinates[1]))
+    ) {
+      return false;
+    }
+    if (!selectedLabels) return true;
+    return selectedLabels.has(String(feature.properties?.id ?? "").trim());
+  });
+}
+
+function grainFeatureContainsCountPoint(grainFeature, countFeature) {
+  const point = imagePointFromCoord(countFeature.geometry.coordinates);
+  if (grainFeature.geometry.type === "Polygon") {
+    return polygonContainsImagePoint(point, grainFeature.geometry.coordinates);
+  }
+  if (grainFeature.geometry.type === "MultiPolygon") {
+    return grainFeature.geometry.coordinates.some((polygon) =>
+      polygonContainsImagePoint(point, polygon)
+    );
+  }
+  return false;
+}
+
+function getCountSegmentStatus(matches) {
+  if (matches.length === 0) return "uncounted";
+  const labels = new Set(matches.map((match) => match.interpretedCountLabel));
+  return labels.size === 1 ? "matched" : "conflict";
+}
+
+function summarizeCountSegmentMatches(matches) {
+  const counts = new Map();
+  matches.forEach((match) => {
+    const label = match.interpretedCountLabel || "";
+    if (!label) return;
+    counts.set(label, (counts.get(label) || 0) + 1);
+  });
+  return [...counts.entries()]
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .map(([label, count]) => ({ label, count }));
+}
+
+function buildCountJoinMetadata(matches, status) {
+  const interpretedLabels = matches.map((match) => match.interpretedCountLabel);
+  const uniqueInterpretedLabels = [...new Set(interpretedLabels.filter(Boolean))];
+  const labelCounts = summarizeCountSegmentMatches(matches);
+  return {
+    workflow: "countSegmentClassification",
+    joinStatus: status,
+    nCounts: matches.length,
+    countUuids: matches.map((match) => match.countUuid),
+    rawCountLabels: matches.map((match) => match.rawCountLabel),
+    parsedCountCodes: matches.map((match) => match.parsedCountCode),
+    interpretedCountLabels: interpretedLabels,
+    uniqueInterpretedCountLabels: uniqueInterpretedLabels,
+    labelCounts,
+    interpretedCountLabel:
+      status === "matched" ? uniqueInterpretedLabels[0] || "" : "",
+    hasMixedLabels: uniqueInterpretedLabels.length > 1,
+  };
+}
+
+function buildCountSegmentPreview(options) {
+  const grainFeatures = getCountSegmentGrainFeatures(options);
+  const counts = getPointCountFeatures(options);
+  if (grainFeatures.length === 0) {
+    throw new Error("No unlocked polygon grain annotations match the selected scope.");
+  }
+  if (counts.length === 0) {
+    throw new Error(
+      options.useSelectedLabels
+        ? "No selected point-count labels are available."
+        : "No point counts are available."
+    );
+  }
+
+  const grainResults = grainFeatures.map((grainFeature) => ({
+    feature: grainFeature,
+    matches: [],
+    status: "uncounted",
+  }));
+  const matchCountsByCountUuid = new Map();
+
+  counts.forEach((countFeature) => {
+    const rawLabel = getPointCountRawLabel(countFeature);
+    const interpretation = interpretCountLabel(rawLabel, options);
+    grainResults.forEach((grainResult) => {
+      if (!grainFeatureContainsCountPoint(grainResult.feature, countFeature)) {
+        return;
+      }
+      const countUuid = countFeature.properties?.uuid || "";
+      grainResult.matches.push({
+        countUuid,
+        ...interpretation,
+      });
+      matchCountsByCountUuid.set(
+        countUuid,
+        (matchCountsByCountUuid.get(countUuid) || 0) + 1
+      );
+    });
+  });
+
+  grainResults.forEach((grainResult) => {
+    grainResult.status = getCountSegmentStatus(grainResult.matches);
+    grainResult.countJoin = buildCountJoinMetadata(
+      grainResult.matches,
+      grainResult.status
+    );
+  });
+
+  const summary = grainResults.reduce(
+    (acc, result) => {
+      acc[result.status] += 1;
+      return acc;
+    },
+    { matched: 0, conflict: 0, uncounted: 0 }
+  );
+  const outsideCounts = counts.length - [...matchCountsByCountUuid.keys()].length;
+  const ambiguousCounts = [...matchCountsByCountUuid.values()].filter(
+    (count) => count > 1
+  ).length;
+
+  return {
+    options,
+    grainResults,
+    summary,
+    outsideCounts,
+    ambiguousCounts,
+    totalCounts: counts.length,
+  };
+}
+
+function formatCountSegmentPreview(preview) {
+  const { summary, totalCounts, outsideCounts, ambiguousCounts } = preview;
+  return [
+    `${preview.grainResults.length} grain polygon${preview.grainResults.length === 1 ? "" : "s"} will be evaluated.`,
+    `${summary.matched} matched, ${summary.conflict} review, ${summary.uncounted} without counts.`,
+    `${outsideCounts} of ${totalCounts} included count point${totalCounts === 1 ? "" : "s"} did not fall inside a selected grain.`,
+    ambiguousCounts
+      ? `${ambiguousCounts} count point${ambiguousCounts === 1 ? "" : "s"} matched multiple grains.`
+      : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+}
+
+function previewCountSegmentWorkflow() {
+  try {
+    const options = getCountSegmentOptions();
+    pendingCountSegmentPreview = buildCountSegmentPreview(options);
+    setCountSegmentPreviewStatus(
+      `Preview complete. ${formatCountSegmentPreview(pendingCountSegmentPreview)}`,
+      "success"
+    );
+  } catch (error) {
+    pendingCountSegmentPreview = null;
+    setCountSegmentPreviewStatus(
+      `Preview failed. ${error.message || "Could not preview workflow."}`,
+      "error"
+    );
+  }
+  updateCountSegmentApplyState();
+}
+
+function getOrCreateCountSegmentGroup(groupName, groupCache) {
+  const trimmedName = (groupName || DEFAULT_ANNOTATION_GROUP.groupName).trim();
+  const key = trimmedName.toLowerCase();
+  if (groupCache.has(key)) return groupCache.get(key);
+
+  const groups = getAnnotationGroups();
+  const group = {
+    groupId: `group-${generateUniqueId(8)}`,
+    groupName: trimmedName,
+    groupColor: getAnnotationGroupColor(groups.length + groupCache.size),
+    groupVisible: true,
+    groupLocked: false,
+  };
+  groupCache.set(key, group);
+  return group;
+}
+
+function applyCountSegmentWorkflow() {
+  let preview = pendingCountSegmentPreview;
+  try {
+    const options = getCountSegmentOptions();
+    if (!preview || JSON.stringify(preview.options) !== JSON.stringify(options)) {
+      preview = buildCountSegmentPreview(options);
+    }
+  } catch (error) {
+    setCountSegmentPreviewStatus(
+      `Apply failed. ${error.message || "Could not apply workflow."}`,
+      "error"
+    );
+    pendingCountSegmentPreview = null;
+    updateCountSegmentApplyState();
+    return;
+  }
+
+  const changedFeatures = preview.grainResults;
+  if (changedFeatures.length === 0) {
+    setCountSegmentPreviewStatus("No grain annotations need updates.", "success");
+    return;
+  }
+
+  const groupCache = new Map(
+    getAnnotationGroups().map((group) => [group.groupName.toLowerCase(), group])
+  );
+  annotationHistory.push("Classify grain segments from point counts");
+
+  changedFeatures.forEach((result) => {
+    const feature = result.feature;
+    let targetGroupName = "";
+    if (result.status === "matched") {
+      targetGroupName = result.countJoin.interpretedCountLabel;
+    } else if (result.status === "conflict") {
+      targetGroupName = preview.options.reviewGroupName;
+    } else if (preview.options.uncountedMode === "uncounted") {
+      targetGroupName = "Uncounted";
+    }
+
+    feature.properties.countJoin = result.countJoin;
+    if (targetGroupName) {
+      const group = getOrCreateCountSegmentGroup(targetGroupName, groupCache);
+      Object.assign(feature.properties, applyAnnotationGroupToProperties(
+        feature.properties,
+        group
+      ));
+    }
+  });
+
+  renderAnnotationList();
+  drawShape(polyCanvas, [annoJSON, annoJSONTemp]);
+  applyAnnotationVisibilityState();
+  unsavedAnnotations(true);
+  setCountSegmentPreviewStatus(
+    `${changedFeatures.length} grain annotation${changedFeatures.length === 1 ? "" : "s"} updated. ${formatCountSegmentPreview(preview)}`,
+    "success"
+  );
+  pendingCountSegmentPreview = preview;
+  updateCountSegmentApplyState();
+}
+
+document
+  .getElementById("countSegmentGrainScope")
+  ?.addEventListener("change", updateCountSegmentScopeControls);
+
+[
+  "countSegmentSourceGroup",
+  "countSegmentUseSelectedLabels",
+  "countSegmentParseMode",
+  "countSegmentParseIndex",
+  "countSegmentDictionary",
+  "countSegmentReviewGroupName",
+  "countSegmentUncountedMode",
+].forEach((id) => {
+  document.getElementById(id)?.addEventListener("input", () => {
+    pendingCountSegmentPreview = null;
+    updateCountSegmentApplyState();
+    if (id === "countSegmentParseMode") updateCountSegmentParseControls();
+  });
+  document.getElementById(id)?.addEventListener("change", () => {
+    pendingCountSegmentPreview = null;
+    updateCountSegmentApplyState();
+    if (id === "countSegmentParseMode") updateCountSegmentParseControls();
+  });
+});
+
+document
+  .getElementById("countSegmentPreviewButton")
+  ?.addEventListener("click", previewCountSegmentWorkflow);
+
+document
+  .getElementById("countSegmentApplyButton")
+  ?.addEventListener("click", applyCountSegmentWorkflow);
+
+document
+  .getElementById("countSegmentCancelButton")
+  ?.addEventListener("click", hideCountSegmentDialog);
+
 // Attach export functionality to the button (GeoJSON version)
 document.getElementById("exportBtn").addEventListener("click", function () {
   showAnnotationExportDialog();
@@ -21453,8 +22001,6 @@ function disableCountButtons() {
   document.getElementById("count-notes").disabled = true;
   document.getElementById("count-export").disabled = true;
   document.getElementById("save-counts").disabled = true;
-  document.getElementById("count-geojson-input").disabled = true;
-  document.getElementById("count-file-input").disabled = true;
   document.getElementById("filterButton").disabled = true;
   document.getElementById("countFilterButton").disabled = true;
   document.getElementById("summarizeButton").disabled = true;
@@ -22673,6 +23219,12 @@ document
       return;
     }
 
+    if (!viewer.world.getItemAt(0)) {
+      alert("Load an image before importing point counts.");
+      fileInput.value = "";
+      return;
+    }
+
     annotationHistory.push("Import count JSON");
     clearGrid();
 
@@ -22701,6 +23253,12 @@ document
     const fileInput = event.target;
     const file = fileInput.files[0];
     if (!file) return;
+
+    if (!viewer.world.getItemAt(0)) {
+      alert("Load an image before importing point counts.");
+      fileInput.value = "";
+      return;
+    }
 
     annotationHistory.push("Import count CSV");
     // Clear existing grid

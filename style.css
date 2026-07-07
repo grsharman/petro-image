@@ -5173,6 +5173,54 @@ input[type="range"] {
   margin: 4px 0;
 }
 
+.count-segment-dialog-content {
+  max-width: 560px;
+}
+
+.count-segment-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(120px, 0.5fr);
+  gap: 10px;
+}
+
+.count-segment-grid label,
+.count-segment-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.count-segment-dialog-content input[type="number"],
+.count-segment-dialog-content textarea {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.count-segment-dialog-content textarea {
+  resize: vertical;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.count-segment-preview {
+  min-height: 44px;
+  padding: 8px;
+  border: 1px solid rgba(68, 68, 68, 0.35);
+  border-radius: 6px;
+  background: #f8f8f8;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.count-segment-preview-success {
+  border-color: rgba(39, 174, 96, 0.55);
+  background: #f2fbf5;
+}
+
+.count-segment-preview-error {
+  border-color: rgba(235, 87, 87, 0.55);
+  background: #fff5f5;
+}
+
 .annotation-import-progress {
   min-width: 0;
   margin: 12px 0 0;

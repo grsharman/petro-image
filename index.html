@@ -157,6 +157,70 @@
         </div>
       </div>
     </div>
+    <div id="countSegmentDialog" class="modal-prompt modal-prompt-hidden">
+      <div class="modal-prompt-content annotation-dialog-content count-segment-dialog-content">
+        <h3>Classify Grain Segments from Point Counts</h3>
+        <p class="annotation-dialog-note">
+          Adds point-count classification metadata to grain polygon annotations and assigns their groups. Point counts are not modified.
+        </p>
+        <label class="annotation-dialog-option">
+          Grain annotations
+          <select id="countSegmentGrainScope">
+            <option value="all">All polygon annotations</option>
+            <option value="selection">Selected polygon annotations</option>
+            <option value="group">Polygon annotations in group</option>
+          </select>
+        </label>
+        <label class="annotation-dialog-option">
+          Group
+          <select id="countSegmentSourceGroup"></select>
+        </label>
+        <label class="annotation-dialog-option">
+          <input type="checkbox" id="countSegmentUseSelectedLabels" checked />
+          Use Count Select choices
+        </label>
+        <div class="count-segment-grid">
+          <label>
+            Parse
+            <select id="countSegmentParseMode">
+              <option value="none">Use full count label</option>
+              <option value="character">Use character position</option>
+            </select>
+          </label>
+          <label>
+            Position
+            <input id="countSegmentParseIndex" type="number" min="1" step="1" value="2" />
+          </label>
+        </div>
+        <label class="annotation-dialog-option count-segment-stack">
+          Dictionary JSON
+          <textarea
+            id="countSegmentDictionary"
+            rows="5"
+            placeholder='{"A":"Quartz","F":"Feldspar","L":"Lithic fragment"}'
+          ></textarea>
+        </label>
+        <div class="count-segment-grid">
+          <label>
+            Conflicts
+            <input id="countSegmentReviewGroupName" type="text" value="Review" />
+          </label>
+          <label>
+            No counts
+            <select id="countSegmentUncountedMode">
+              <option value="unchanged">Leave group unchanged</option>
+              <option value="uncounted">Assign to Uncounted</option>
+            </select>
+          </label>
+        </div>
+        <div id="countSegmentPreview" class="count-segment-preview" role="status"></div>
+        <div class="annotation-dialog-actions">
+          <button id="countSegmentPreviewButton" type="button">Preview</button>
+          <button id="countSegmentApplyButton" type="button" disabled>Apply</button>
+          <button id="countSegmentCancelButton" type="button">Close</button>
+        </div>
+      </div>
+    </div>
     <div id="viewer-container">
       <canvas
         id="annotation-overlay"
@@ -562,6 +626,24 @@
             <span>
               <span class="electron-action-title">Add Scale</span>
               <span class="electron-action-description">Digitize a scalebar</span>
+            </span>
+          </button>
+          <button
+            id="openCountSegmentWorkflowButton"
+            class="electron-action-item"
+            type="button"
+            role="menuitem"
+          >
+            <span class="electron-action-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <path d="M3 12.8c-.9-5.2 2.7-9.2 8.3-9.5 2.7-.2 5.8.7 7.6 2.6 1.7 1.8 2.6 4.7 1.6 7.1-1.4 3.7-5 7.3-10.6 6.8-4.3-.4-6.2-2.8-6.9-7z" />
+                <path d="M12.4 8.1v8" />
+                <path d="M8.4 12.1h8" />
+              </svg>
+            </span>
+            <span>
+              <span class="electron-action-title">Classify Grains</span>
+              <span class="electron-action-description">Assign groups from point counts</span>
             </span>
           </button>
           <button
