@@ -1579,9 +1579,23 @@ body.import-wizard-page {
   opacity: 1;
 }
 
-#info-button-desc {
+#controlsHelpButton,
+#sampleInfoButton {
   position: relative;
   cursor: pointer;
+}
+
+#controlsHelpButton {
+  width: 20px;
+  min-width: 20px;
+  padding: 2px;
+  font-weight: 700;
+}
+
+#sampleInfoButton {
+  --button-width: 78px;
+  margin-left: auto;
+  white-space: nowrap;
 }
 
 #tooltip-desc {
@@ -2850,7 +2864,8 @@ input[type="range"] {
   padding: 2px;
 }
 
-#measureHelpButton {
+#measureHelpButton,
+#controlsHelpButton {
   width: 20px;
   min-width: 20px;
   padding: 2px;
@@ -2889,7 +2904,8 @@ input[type="range"] {
 }
 
 .measure-help-header #closeMeasureHelpButton,
-.measure-help-header #closeAnnotateHelpButton {
+.measure-help-header #closeAnnotateHelpButton,
+.measure-help-header #closeControlsHelpButton {
   width: 22px;
   min-width: 22px;
   height: 22px;
@@ -2898,6 +2914,10 @@ input[type="range"] {
 }
 
 .annotate-help-dialog {
+  width: min(360px, calc(100vw - 16px));
+}
+
+.controls-help-dialog {
   width: min(360px, calc(100vw - 16px));
 }
 
@@ -5199,7 +5219,7 @@ input[type="range"] {
 .lock-stage-container {
   display: flex;
   align-items: center;
-  width: 150px; /* total fixed width */
+  width: 185px; /* total fixed width */
   gap: 4px; /* small gap between elements */
   box-sizing: border-box;
 }

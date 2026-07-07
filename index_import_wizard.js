@@ -115,6 +115,7 @@ function setImageRowUri(row, uri) {
   if (uriInput) {
     uriInput.value = uri || "";
   }
+  updateExportButtonLabel();
 }
 
 function displaySelectedJpgFallback(fileInput) {
@@ -126,7 +127,7 @@ function displaySelectedJpgFallback(fileInput) {
   const filePath = file.path || file.name || "";
   row.dataset.sourceJpgPath = filePath;
   setImageRowUri(row, filePath);
-  updateJpgLabel(row, file.name);
+  setJpgRowConversionState(row, "selected", file.name || "JPG selected");
 }
 
 document.addEventListener("click", async (event) => {
@@ -163,29 +164,8 @@ document.addEventListener("click", async (event) => {
       return;
     }
 
-    if (!hasElectronDziConverter()) {
-      setImageRowUri(row, sourcePath);
-      setJpgRowConversionState(row, "selected", "JPG selected");
-      return;
-    }
-
-    activeConversionProgress = {
-      sourcePath,
-      fileIndex: 1,
-      totalFiles: 1,
-    };
-    showImportProgress(`Preparing: ${getPathFileName(sourcePath)}`, 0);
-    setJpgRowConversionState(row, "converting", "Converting...");
-
-    const conversion = await window.electronAPI.convertJpgToDzi(sourcePath);
-    const dziUri = conversion.relativeDziPath || conversion.dziPath || "";
-
-    setImageRowUri(row, dziUri);
-    delete row.dataset.sourceJpgPath;
-    activeConversionProgress = null;
-    showImportProgress("Converted JPG to DZI.", 100);
-    window.setTimeout(hideImportProgress, 1200);
-    setJpgRowConversionState(row, "converted", "DZI ready");
+    setImageRowUri(row, sourcePath);
+    setJpgRowConversionState(row, "selected", "JPG selected");
   } catch (error) {
     console.error(error);
     row.dataset.sourceJpgPath = "";
@@ -198,6 +178,12 @@ document.addEventListener("click", async (event) => {
 document.addEventListener("change", (event) => {
   if (event.target.matches(".jpg-file")) {
     displaySelectedJpgFallback(event.target);
+  }
+});
+
+document.addEventListener("input", (event) => {
+  if (event.target.matches(".uri-input")) {
+    updateExportButtonLabel();
   }
 });
 
@@ -297,6 +283,7 @@ function removeTileRow(btn) {
   const container = document.getElementById("tileSetContainer");
   if (container.children.length === 1) return; // keep at least one row
   btn.closest(".tile-set-row").remove();
+  updateExportButtonLabel();
 }
 
 // Update the Tile Set N labels
@@ -399,6 +386,7 @@ function removeImageRow(btn) {
   const container = btn.closest(".images-container");
   btn.closest(".image-row").remove();
   updateImageButtons(container);
+  updateExportButtonLabel();
 }
 
 function updateImageButtonsOLD(container) {
@@ -763,11 +751,31 @@ function updateExportButtonState() {
     !hasRequiredSampleFields() || (needsExistingJSON && !hasExistingJSON);
 }
 
+function hasPendingLocalJpgUris() {
+  return Array.from(document.querySelectorAll(".image-row")).some((row) => {
+    const uriInput = row.querySelector(".uri-input");
+    const fileInput = row.querySelector(".jpg-file");
+    const selectedFile = fileInput?.files[0];
+    const uri =
+      uriInput?.value ||
+      row.dataset.sourceJpgPath ||
+      selectedFile?.path ||
+      selectedFile?.name ||
+      "";
+
+    return isLocalJpgPath(uri.replace(/^["']+|["']+$/g, ""));
+  });
+}
+
 function updateExportButtonLabel() {
-  exportBtn.textContent =
+  const action =
     saveDropdown.value === "modifyExistingJSON"
       ? "Update Library"
       : "Export Library";
+
+  exportBtn.textContent = hasElectronDziConverter() && hasPendingLocalJpgUris()
+    ? `Convert JPGs and ${action}`
+    : action;
 }
 
 // Called whenever the dropdown changes
@@ -930,6 +938,20 @@ async function convertLocalJpgUrisToDzi(sample) {
       }
     }
   }
+
+  document.querySelectorAll(".image-row").forEach((row) => {
+    const uriInput = row.querySelector(".uri-input");
+    const uri = (uriInput?.value || row.dataset.sourceJpgPath || "").replace(
+      /^["']+|["']+$/g,
+      "",
+    );
+
+    if (conversionResults.has(uri)) {
+      setImageRowUri(row, conversionResults.get(uri));
+      delete row.dataset.sourceJpgPath;
+      setJpgRowConversionState(row, "converted", "DZI ready");
+    }
+  });
 
   showImportProgress("Finishing import...", 100);
 }

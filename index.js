@@ -349,6 +349,12 @@ const annotateHelpHeader = document.getElementById("annotateHelpHeader");
 const closeAnnotateHelpButton = document.getElementById(
   "closeAnnotateHelpButton"
 );
+const controlsHelpButton = document.getElementById("controlsHelpButton");
+const controlsHelpDialog = document.getElementById("controlsHelpDialog");
+const controlsHelpHeader = document.getElementById("controlsHelpHeader");
+const closeControlsHelpButton = document.getElementById(
+  "closeControlsHelpButton"
+);
 const measurePalette = document.getElementById("measurePalette");
 const measurePaletteHeader = document.getElementById("measurePaletteHeader");
 const measurePaletteBody = document.getElementById("measurePaletteBody");
@@ -7678,6 +7684,20 @@ const viewer = OpenSeadragon({
   crossOriginPolicy: "Anonymous",
 });
 
+const OPEN_SEADRAGON_FLIP_KEY_CODE = 70; // F
+
+viewer.addHandler("canvas-key", (event) => {
+  if (event.keyCode === OPEN_SEADRAGON_FLIP_KEY_CODE) {
+    event.preventDefaultAction = true;
+  }
+});
+
+viewer.addHandler("flip", (event) => {
+  if (!event.flipped || typeof viewer.viewport.setFlip !== "function") return;
+  viewer.viewport.setFlip(false);
+  displayImages();
+});
+
 viewer.addHandler("canvas-click", function (event) {
   if (event.quick === false) return;
 
@@ -8027,7 +8047,7 @@ function updateOpacitySliderLabels() {
 }
 
 const tooltip = document.getElementById("tooltip-desc");
-const infoButton = document.getElementById("info-button-desc");
+const infoButton = document.getElementById("sampleInfoButton");
 let sampleInfoPopover = null;
 
 function getSampleScaleLabel(sample) {
@@ -17310,6 +17330,31 @@ function setTileSetEditorStatus(message, isError = false) {
   tileSetEditorStatus.classList.toggle("error", isError);
 }
 
+function isTileSetEditorLocalJpgPath(uri) {
+  return (
+    typeof uri === "string" &&
+    !/^[a-z][a-z0-9+.-]*:\/\//i.test(uri) &&
+    /\.(jpe?g)$/i.test(uri)
+  );
+}
+
+function getFileNameFromPath(filePath) {
+  return String(filePath || "").split(/[\\/]/).pop();
+}
+
+function updateTileSetEditorSaveButtonLabel() {
+  if (!saveTileSetEditorButton) return;
+
+  const hasPendingJpg = Array.from(
+    tileSetEditorRows?.querySelectorAll(".tile-image-editor-uri-input") || []
+  ).some((input) => isTileSetEditorLocalJpgPath(input.value.trim()));
+
+  saveTileSetEditorButton.textContent =
+    hasPendingJpg && window.electronAPI?.convertJpgToDzi
+      ? "Convert JPGs and Save"
+      : "Save";
+}
+
 function renderTileSetEditor(tileSets) {
   if (!tileSetEditorRows) return;
 
@@ -17319,6 +17364,7 @@ function renderTileSetEditor(tileSets) {
     tileSetEditorRows.appendChild(createTileSetEditorRow(tileSet));
   });
   renumberTileSetEditorRows();
+  updateTileSetEditorSaveButtonLabel();
 }
 
 function createTileSetEditorRow(tileSet = {}) {
@@ -17442,8 +17488,7 @@ function createTileImageEditorRow(tile = {}, type = "individual") {
   uriInput.value = tile.uri || "";
 
   const chooseButton = createTileSetEditorButton("Choose JPG", "Choose JPG", "choose-jpg");
-  chooseButton.disabled =
-    !window.electronAPI?.selectJpgFile || !window.electronAPI?.convertJpgToDzi;
+  chooseButton.disabled = !window.electronAPI?.selectJpgFile;
 
   const addButton = createTileSetEditorButton("Add image", "+", "add-image");
   const removeButton = createTileSetEditorButton("Remove image", "-", "remove-image");
@@ -17546,12 +17591,14 @@ function addTileSetEditorRow(afterRow) {
   const row = createTileSetEditorRow({ label: "", tiles: [{ uri: "" }] });
   afterRow.after(row);
   renumberTileSetEditorRows();
+  updateTileSetEditorSaveButtonLabel();
 }
 
 function removeTileSetEditorRow(row) {
   if (!tileSetEditorRows || tileSetEditorRows.children.length <= 1) return;
   row.remove();
   renumberTileSetEditorRows();
+  updateTileSetEditorSaveButtonLabel();
 }
 
 function moveTileSetEditorRow(row, targetIndex) {
@@ -17582,6 +17629,7 @@ function addTileImageEditorRow(afterRow) {
   const row = createTileImageEditorRow({}, type);
   afterRow.after(row);
   updateTileSetEditorType(tileSetRow);
+  updateTileSetEditorSaveButtonLabel();
 }
 
 function removeTileImageEditorRow(row) {
@@ -17590,6 +17638,7 @@ function removeTileImageEditorRow(row) {
   if (imageRows.length <= 1) return;
   row.remove();
   updateTileSetEditorType(tileSetRow);
+  updateTileSetEditorSaveButtonLabel();
 }
 
 function parseTileSetEditorJson(datasetValue) {
@@ -17687,7 +17736,51 @@ function validateTileSetsForEditor(tileSets) {
   return "";
 }
 
-function saveTileSetEditorDraft() {
+async function convertPendingTileSetEditorJpgs() {
+  if (!window.electronAPI?.convertJpgToDzi) return;
+
+  const rows = Array.from(
+    tileSetEditorRows?.querySelectorAll(".tile-image-editor-row") || []
+  ).filter((row) => {
+    const uri = row.querySelector(".tile-image-editor-uri-input")?.value.trim() || "";
+    return isTileSetEditorLocalJpgPath(uri);
+  });
+
+  if (!rows.length) return;
+
+  const conversionResults = new Map();
+
+  for (let index = 0; index < rows.length; index += 1) {
+    const row = rows[index];
+    const uriInput = row.querySelector(".tile-image-editor-uri-input");
+    const sourcePath = uriInput?.value.trim() || "";
+
+    if (conversionResults.has(sourcePath)) {
+      uriInput.value = conversionResults.get(sourcePath);
+      setTileImageRowStatus(row, "Converted.");
+      continue;
+    }
+
+    tileSetEditorState.convertingRow = row;
+    setTileImageRowStatus(
+      row,
+      `Converting ${index + 1}/${rows.length}: ${getFileNameFromPath(sourcePath)}`
+    );
+    setTileSetEditorStatus(`Converting JPG ${index + 1} of ${rows.length}...`);
+
+    const conversion = await window.electronAPI.convertJpgToDzi(sourcePath);
+    const convertedUri = conversion?.relativeDziPath || conversion?.dziPath || "";
+    if (!convertedUri) {
+      throw new Error(`Could not convert ${getFileNameFromPath(sourcePath)}.`);
+    }
+
+    conversionResults.set(sourcePath, convertedUri);
+    uriInput.value = convertedUri;
+    setTileImageRowStatus(row, "Converted.");
+  }
+}
+
+async function saveTileSetEditorDraft() {
   const selectedSample = getTileSetEditorSelectedSample();
   if (!selectedSample) return;
   if (tileSetEditorState.convertingRow) {
@@ -17702,7 +17795,36 @@ function saveTileSetEditorDraft() {
     return;
   }
 
-  selectedSample.tileSets = tileSets;
+  const pendingJpgs = Array.from(
+    tileSetEditorRows?.querySelectorAll(".tile-image-editor-uri-input") || []
+  ).some((input) => isTileSetEditorLocalJpgPath(input.value.trim()));
+  if (pendingJpgs && !window.electronAPI?.convertJpgToDzi) {
+    setTileSetEditorStatus("JPG conversion is unavailable.", true);
+    return;
+  }
+
+  if (pendingJpgs) {
+    if (saveTileSetEditorButton) {
+      saveTileSetEditorButton.disabled = true;
+      saveTileSetEditorButton.textContent = "Converting...";
+    }
+
+    try {
+      await convertPendingTileSetEditorJpgs();
+    } catch (error) {
+      console.error("Could not convert JPG:", error);
+      setTileSetEditorStatus(error.message || "Could not convert JPG file(s).", true);
+      return;
+    } finally {
+      tileSetEditorState.convertingRow = null;
+      if (saveTileSetEditorButton) {
+        saveTileSetEditorButton.disabled = false;
+      }
+      updateTileSetEditorSaveButtonLabel();
+    }
+  }
+
+  selectedSample.tileSets = collectTileSetsFromEditor();
   setTileSetEditorStatus("");
   closeTileSetEditor();
   renderLibraryEditorRows();
@@ -17717,16 +17839,15 @@ function setTileImageRowStatus(row, message, isError = false) {
   status.classList.toggle("error", isError);
 }
 
-async function chooseAndConvertTileImage(row) {
-  if (!window.electronAPI?.selectJpgFile || !window.electronAPI?.convertJpgToDzi) {
-    setTileImageRowStatus(row, "JPG conversion is unavailable.", true);
+async function chooseTileImageJpg(row) {
+  if (!window.electronAPI?.selectJpgFile) {
+    setTileImageRowStatus(row, "JPG selection is unavailable.", true);
     return;
   }
   if (tileSetEditorState.convertingRow) return;
 
   const chooseButton = row.querySelector('button[data-action="choose-jpg"]');
   try {
-    tileSetEditorState.convertingRow = row;
     if (chooseButton) chooseButton.disabled = true;
     if (saveTileSetEditorButton) saveTileSetEditorButton.disabled = true;
     setTileImageRowStatus(row, "Selecting JPG...");
@@ -17736,18 +17857,16 @@ async function chooseAndConvertTileImage(row) {
       return;
     }
 
-    setTileImageRowStatus(row, "Converting JPG to DZI...");
-    const conversion = await window.electronAPI.convertJpgToDzi(result.sourcePath);
-    const uri = conversion?.relativeDziPath || conversion?.dziPath || "";
-    row.querySelector(".tile-image-editor-uri-input").value = uri;
-    setTileImageRowStatus(row, "Converted.");
+    row.querySelector(".tile-image-editor-uri-input").value = result.sourcePath;
+    setTileImageRowStatus(row, "JPG selected.");
+    updateTileSetEditorSaveButtonLabel();
   } catch (error) {
-    console.error("Could not convert JPG:", error);
-    setTileImageRowStatus(row, error.message || "Conversion failed.", true);
+    console.error("Could not select JPG:", error);
+    setTileImageRowStatus(row, error.message || "Selection failed.", true);
   } finally {
-    tileSetEditorState.convertingRow = null;
     if (chooseButton) chooseButton.disabled = false;
     if (saveTileSetEditorButton) saveTileSetEditorButton.disabled = false;
+    updateTileSetEditorSaveButtonLabel();
   }
 }
 
@@ -17774,6 +17893,12 @@ tileSetEditorRows?.addEventListener("change", function (event) {
   const typeSelect = event.target.closest(".tile-set-editor-type");
   if (typeSelect) {
     updateTileSetEditorType(typeSelect.closest(".tile-set-editor-row"));
+  }
+});
+
+tileSetEditorRows?.addEventListener("input", function (event) {
+  if (event.target.matches(".tile-image-editor-uri-input")) {
+    updateTileSetEditorSaveButtonLabel();
   }
 });
 
@@ -17806,7 +17931,7 @@ tileSetEditorRows?.addEventListener("click", function (event) {
   } else if (action === "remove-image") {
     removeTileImageEditorRow(button.closest(".tile-image-editor-row"));
   } else if (action === "choose-jpg") {
-    chooseAndConvertTileImage(button.closest(".tile-image-editor-row"));
+    chooseTileImageJpg(button.closest(".tile-image-editor-row"));
   }
 });
 
@@ -25458,6 +25583,44 @@ function closeAnnotateHelpDialog() {
   annotateHelpButton?.setAttribute("aria-expanded", "false");
 }
 
+function closeControlsHelpDialog() {
+  if (!controlsHelpDialog) return;
+  controlsHelpDialog.hidden = true;
+  controlsHelpButton?.setAttribute("aria-expanded", "false");
+}
+
+function openControlsHelpDialog(button = controlsHelpButton) {
+  if (!controlsHelpDialog || !button) return;
+  if (controlsHelpDialog.parentElement !== document.body) {
+    document.body.appendChild(controlsHelpDialog);
+  }
+  hideSampleInfoPopover();
+  controlsHelpDialog.hidden = false;
+  controlsHelpButton?.setAttribute("aria-expanded", "true");
+
+  const buttonRect = button.getBoundingClientRect();
+  const dialogRect = controlsHelpDialog.getBoundingClientRect();
+  const margin = 8;
+  const left = Math.min(
+    Math.max(buttonRect.right - dialogRect.width, margin),
+    window.innerWidth - dialogRect.width - margin
+  );
+  const top = Math.min(
+    Math.max(buttonRect.bottom + 4, margin),
+    window.innerHeight - dialogRect.height - margin
+  );
+  controlsHelpDialog.style.left = `${Math.max(margin, left)}px`;
+  controlsHelpDialog.style.top = `${Math.max(margin, top)}px`;
+}
+
+function toggleControlsHelpDialog(button = controlsHelpButton) {
+  if (!controlsHelpDialog || controlsHelpDialog.hidden) {
+    openControlsHelpDialog(button);
+  } else {
+    closeControlsHelpDialog();
+  }
+}
+
 function openAnnotateHelpDialog(button = annotateHelpButton) {
   if (!annotateHelpDialog || !button) return;
   if (annotateHelpDialog.parentElement !== document.body) {
@@ -30280,6 +30443,15 @@ renameMeasureGroupButton?.addEventListener("click", function () {
 newMeasureGroupButton?.addEventListener("click", function () {
   showPrompt("Enter the group name:", createMeasureGroup);
 });
+controlsHelpButton?.addEventListener("click", function (event) {
+  event.stopPropagation();
+  toggleControlsHelpDialog(event.currentTarget);
+});
+controlsHelpDialog?.addEventListener("click", function (event) {
+  event.stopPropagation();
+});
+makeFixedElementDraggable(controlsHelpDialog, controlsHelpHeader);
+closeControlsHelpButton?.addEventListener("click", closeControlsHelpDialog);
 annotateHelpButton?.addEventListener("click", function (event) {
   event.stopPropagation();
   toggleAnnotateHelpDialog(event.currentTarget);
@@ -30599,6 +30771,12 @@ window.addEventListener("click", function (event) {
     closeMeasureHelpDialog();
   }
   if (
+    !event.target.closest("#controlsHelpButton") &&
+    !event.target.closest("#controlsHelpDialog")
+  ) {
+    closeControlsHelpDialog();
+  }
+  if (
     !event.target.closest("#annotateHelpButton") &&
     !event.target.closest("#annotateHelpDialog")
   ) {
@@ -30613,6 +30791,7 @@ document.addEventListener(
       ((measureHeaderMenuElement?.hidden ?? true) &&
         (annotationHeaderMenuElement?.hidden ?? true) &&
         (annotateHelpDialog?.hidden ?? true) &&
+        (controlsHelpDialog?.hidden ?? true) &&
         (measureScaleAuditPopover?.hidden ?? true) &&
         (measureHelpDialog?.hidden ?? true) &&
         measureHistogramMenu?.hidden &&
@@ -30627,6 +30806,7 @@ document.addEventListener(
     closeMeasureHeaderMenu();
     closeAnnotationHeaderMenu();
     closeAnnotateHelpDialog();
+    closeControlsHelpDialog();
     closeMeasureScaleAuditPopover();
     closeMeasureHelpDialog();
     closeMeasureHistogramMenu();

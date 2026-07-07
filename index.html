@@ -1845,9 +1845,46 @@
       </div>
       <div class="dropdown-container">
         <select id="sampleDropdown"></select>
-        <button id="info-button-desc" class="custom-button" title="Sample Info">
-          <label for="info-button-desc">?</label>
+        <button
+          id="controlsHelpButton"
+          class="custom-button"
+          type="button"
+          title="Controls help"
+          aria-label="Controls help"
+          aria-expanded="false"
+        >
+          ?
         </button>
+        <div
+          id="controlsHelpDialog"
+          class="measure-help-dialog controls-help-dialog"
+          role="dialog"
+          aria-label="Controls help"
+          hidden
+        >
+          <div id="controlsHelpHeader" class="measure-help-header">
+            <span>Controls Help</span>
+            <button
+              id="closeControlsHelpButton"
+              class="custom-button"
+              type="button"
+              title="Close help"
+              aria-label="Close help"
+            >
+              ×
+            </button>
+          </div>
+          <div class="measure-help-content controls-help-content">
+            <h4>Groups and samples</h4>
+            <p>Use the group and sample drop-down menus to select a sample from the loaded library. Groups contain related samples; choosing a sample updates the available tile sets, scale, annotation files, and relevant controls for that sample.</p>
+            <h4>Tile sets</h4>
+            <p>The tile set checkboxes turn image layers on and off. Ctrl+1-9 or Alt+1-9 toggles a tile set, Ctrl+Shift+1-9 or Alt+Shift+1-9 shows only that tile set, and Alt+0 hides all tile sets.</p>
+            <h4>Rotation</h4>
+            <p>Image rotation rotates the displayed view. Stage rotation is available when the sample has one or more rotation-aware tile sets. The displayed image mimics the effects of stage rotation (e.g., changing interference colors under cross-polarization). Lock stage keeps image rotation synchronized with stage rotation.</p>
+            <h4>Rotation shortcuts</h4>
+            <p>For multiple-image tile sets that are not tied to stage rotation, Shift+Left or Shift+&lt; steps to the previous image and Shift+Right or Shift+&gt; steps to the next image across all eligible tile sets.</p>
+          </div>
+        </div>
       </div>
       <div id="tooltip-desc" class="hidden"></div>
       <div class="slider-container">
@@ -1903,6 +1940,14 @@
           onclick="toggleImageRotationWithStage(this)"
         />
         <label id="rotateWithStageLabel" style="display: none;">Lock stage</label>
+        <button
+          id="sampleInfoButton"
+          class="custom-button"
+          type="button"
+          title="Sample Info"
+        >
+          Sample Info
+        </button>
       </div>
       <hr />
       <div id="imageCheckboxContainer"></div>
