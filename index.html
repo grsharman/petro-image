@@ -221,6 +221,94 @@
         </div>
       </div>
     </div>
+    <div id="annotationTransferDialog" class="modal-prompt modal-prompt-hidden">
+      <div class="modal-prompt-content annotation-dialog-content annotation-transfer-dialog-content">
+        <h3>Transfer Annotation Values to Polygons</h3>
+        <p class="annotation-dialog-note">
+          Transfers values from source annotations whose centers fall inside target polygon annotations.
+        </p>
+        <div class="annotation-transfer-grid">
+          <label>
+            Source annotations
+            <select id="annotationTransferSourceScope">
+              <option value="selection">Selected annotations</option>
+              <option value="group" selected>Annotations in group</option>
+            </select>
+          </label>
+          <label>
+            Source group
+            <select id="annotationTransferSourceGroup"></select>
+          </label>
+        </div>
+        <div class="annotation-transfer-grid">
+          <label>
+            Target polygons
+            <select id="annotationTransferTargetScope">
+              <option value="selection" selected>Selected polygon annotations</option>
+              <option value="group">Polygon annotations in group</option>
+            </select>
+          </label>
+          <label>
+            Target group
+            <select id="annotationTransferTargetGroup"></select>
+          </label>
+        </div>
+        <div class="annotation-transfer-grid">
+          <label>
+            Read from
+            <select id="annotationTransferReadProperty">
+              <option value="label">Source label</option>
+              <option value="notes">Source notes</option>
+              <option value="group">Source group</option>
+            </select>
+          </label>
+          <label>
+            Write to
+            <select id="annotationTransferWriteProperty">
+              <option value="label">Target label</option>
+              <option value="notes">Target notes</option>
+              <option value="group">Target group</option>
+            </select>
+          </label>
+        </div>
+        <label class="annotation-dialog-option annotation-transfer-stack">
+          Dictionary JSON
+          <textarea
+            id="annotationTransferDictionary"
+            rows="5"
+            placeholder='{"Q":"Quartz","F":"Feldspar","L":"Lithic fragment"}'
+          ></textarea>
+        </label>
+        <div class="annotation-transfer-grid">
+          <label>
+            Conflicts
+            <select id="annotationTransferConflictMode">
+              <option value="skip">Leave target unchanged</option>
+              <option value="review">Assign to Review group</option>
+              <option value="join">Join unique values</option>
+            </select>
+          </label>
+          <label>
+            Existing values
+            <select id="annotationTransferExistingMode">
+              <option value="overwrite">Overwrite</option>
+              <option value="fill">Only fill blanks</option>
+              <option value="append">Append</option>
+            </select>
+          </label>
+        </div>
+        <label class="annotation-dialog-option">
+          Review group
+          <input id="annotationTransferReviewGroupName" type="text" value="Review" />
+        </label>
+        <div id="annotationTransferPreview" class="annotation-transfer-preview" role="status"></div>
+        <div class="annotation-dialog-actions">
+          <button id="annotationTransferPreviewButton" type="button">Preview</button>
+          <button id="annotationTransferApplyButton" type="button" disabled>Apply</button>
+          <button id="annotationTransferCancelButton" type="button">Close</button>
+        </div>
+      </div>
+    </div>
     <div id="viewer-container">
       <canvas
         id="annotation-overlay"
@@ -636,7 +724,7 @@
           >
             <span class="electron-action-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24">
-                <path d="M3 12.8c-.9-5.2 2.7-9.2 8.3-9.5 2.7-.2 5.8.7 7.6 2.6 1.7 1.8 2.6 4.7 1.6 7.1-1.4 3.7-5 7.3-10.6 6.8-4.3-.4-6.2-2.8-6.9-7z" />
+                <path d="M3.2 12.7c-.7-2.4.5-4.2 2.2-5.9 1.5-1.6 3.1-3.2 5.6-3.4 2.2-.2 3.5 1.5 5.5 2.2 2.3.8 4 2.1 4.2 4.7.2 2.3-1.2 3.6-2.4 5.4-1.4 2.2-2.8 4.3-5.5 4.6-2.6.3-4.2-1.5-6.3-2.6-2.1-1.1-2.8-2.7-3.3-5z" />
                 <path d="M12.4 8.1v8" />
                 <path d="M8.4 12.1h8" />
               </svg>
@@ -644,6 +732,26 @@
             <span>
               <span class="electron-action-title">Classify Grains</span>
               <span class="electron-action-description">Assign groups from point counts</span>
+            </span>
+          </button>
+          <button
+            id="openAnnotationTransferWorkflowButton"
+            class="electron-action-item"
+            type="button"
+            role="menuitem"
+          >
+            <span class="electron-action-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <g transform="rotate(45 12 12) scale(1.5) translate(-4 -4)">
+                  <path d="M12 .8 15.8 5.2v13.6L12 23.2 8.2 18.8V5.2z" />
+                </g>
+                <circle cx="9.6" cy="12" r="1.7" />
+                <text x="12.2" y="13.4" font-size="9" stroke="none" fill="currentColor">1</text>
+              </svg>
+            </span>
+            <span>
+              <span class="electron-action-title">Transfer Values</span>
+              <span class="electron-action-description">Copy annotation values to polygons</span>
             </span>
           </button>
           <button

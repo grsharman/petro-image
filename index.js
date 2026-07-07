@@ -156,6 +156,8 @@ const DEFAULT_ANNOTATION_GROUP = {
 };
 const LAST_SAMPLE_STORAGE_KEY = "petroImageLastSample";
 const COUNT_SEGMENT_DICTIONARY_STORAGE_KEY = "petroImageCountSegmentDictionary";
+const ANNOTATION_TRANSFER_DICTIONARY_STORAGE_KEY =
+  "petroImageAnnotationTransferDictionary";
 let measureJSONTemp = {
   type: "FeatureCollection",
   features: [],
@@ -607,6 +609,9 @@ const openScaleWizardButton = document.getElementById("openScaleWizardButton");
 const openLibraryEditorButton = document.getElementById("openLibraryEditorButton");
 const openCountSegmentWorkflowButton = document.getElementById(
   "openCountSegmentWorkflowButton"
+);
+const openAnnotationTransferWorkflowButton = document.getElementById(
+  "openAnnotationTransferWorkflowButton"
 );
 const hasElectronActions = Boolean(window.electronAPI);
 const hasSharedViewerMenus = Boolean(
@@ -7616,6 +7621,14 @@ if (openCountSegmentWorkflowButton) {
     event.preventDefault();
     closeElectronActionTray();
     showCountSegmentDialog();
+  });
+}
+
+if (openAnnotationTransferWorkflowButton) {
+  openAnnotationTransferWorkflowButton.addEventListener("click", function (event) {
+    event.preventDefault();
+    closeElectronActionTray();
+    showAnnotationTransferDialog();
   });
 }
 
@@ -21726,6 +21739,549 @@ document
 document
   .getElementById("countSegmentCancelButton")
   ?.addEventListener("click", hideCountSegmentDialog);
+
+let pendingAnnotationTransferPreview = null;
+
+function setAnnotationTransferPreviewStatus(message, status = "") {
+  const previewEl = document.getElementById("annotationTransferPreview");
+  if (!previewEl) return;
+  previewEl.textContent = message;
+  previewEl.classList.toggle(
+    "annotation-transfer-preview-success",
+    status === "success"
+  );
+  previewEl.classList.toggle(
+    "annotation-transfer-preview-error",
+    status === "error"
+  );
+}
+
+function updateAnnotationTransferApplyState() {
+  const applyButton = document.getElementById("annotationTransferApplyButton");
+  if (applyButton) applyButton.disabled = !pendingAnnotationTransferPreview;
+}
+
+function populateAnnotationTransferGroupOptions() {
+  [
+    "annotationTransferSourceGroup",
+    "annotationTransferTargetGroup",
+  ].forEach((id) => {
+    const select = document.getElementById(id);
+    if (!select) return;
+    const previousValue = select.value;
+    select.innerHTML = "";
+    getAnnotationGroups().forEach((group) => {
+      const option = document.createElement("option");
+      option.value = group.groupId;
+      option.textContent = group.groupName;
+      select.appendChild(option);
+    });
+    if ([...select.options].some((option) => option.value === previousValue)) {
+      select.value = previousValue;
+    }
+  });
+}
+
+function loadAnnotationTransferDictionaryPreference() {
+  const dictionaryInput = document.getElementById("annotationTransferDictionary");
+  if (!dictionaryInput) return;
+  try {
+    dictionaryInput.value =
+      localStorage.getItem(ANNOTATION_TRANSFER_DICTIONARY_STORAGE_KEY) || "";
+  } catch (error) {
+    console.warn("Could not load annotation-transfer dictionary:", error);
+  }
+}
+
+function saveAnnotationTransferDictionaryPreference(dictionaryText) {
+  try {
+    if (dictionaryText.trim()) {
+      localStorage.setItem(
+        ANNOTATION_TRANSFER_DICTIONARY_STORAGE_KEY,
+        dictionaryText.trim()
+      );
+    } else {
+      localStorage.removeItem(ANNOTATION_TRANSFER_DICTIONARY_STORAGE_KEY);
+    }
+  } catch (error) {
+    console.warn("Could not save annotation-transfer dictionary:", error);
+  }
+}
+
+function updateAnnotationTransferScopeControls() {
+  const sourceScope =
+    document.getElementById("annotationTransferSourceScope")?.value || "group";
+  const targetScope =
+    document.getElementById("annotationTransferTargetScope")?.value || "selection";
+  const sourceGroup = document.getElementById("annotationTransferSourceGroup");
+  const targetGroup = document.getElementById("annotationTransferTargetGroup");
+  if (sourceGroup) sourceGroup.disabled = sourceScope !== "group";
+  if (targetGroup) targetGroup.disabled = targetScope !== "group";
+  pendingAnnotationTransferPreview = null;
+  updateAnnotationTransferApplyState();
+}
+
+function showAnnotationTransferDialog() {
+  populateAnnotationTransferGroupOptions();
+  loadAnnotationTransferDictionaryPreference();
+  pendingAnnotationTransferPreview = null;
+  setAnnotationTransferPreviewStatus(
+    "Preview runs the center-in-polygon transfer without changing annotations."
+  );
+  updateAnnotationTransferApplyState();
+  updateAnnotationTransferScopeControls();
+  document.getElementById("annotationTransferDialog").classList.remove(
+    "modal-prompt-hidden"
+  );
+  document
+    .getElementById("annotationTransferDialog")
+    .classList.add("modal-prompt-visible");
+}
+
+function hideAnnotationTransferDialog() {
+  pendingAnnotationTransferPreview = null;
+  updateAnnotationTransferApplyState();
+  document.getElementById("annotationTransferDialog").classList.remove(
+    "modal-prompt-visible"
+  );
+  document
+    .getElementById("annotationTransferDialog")
+    .classList.add("modal-prompt-hidden");
+}
+
+function getAnnotationTransferOptions() {
+  const dictionaryText = document
+    .getElementById("annotationTransferDictionary")
+    .value.trim();
+  let dictionary = {};
+  if (dictionaryText) {
+    try {
+      dictionary = JSON.parse(dictionaryText);
+    } catch (error) {
+      throw new Error("Dictionary must be valid JSON.");
+    }
+    if (!dictionary || Array.isArray(dictionary) || typeof dictionary !== "object") {
+      throw new Error("Dictionary must be a JSON object.");
+    }
+  }
+  saveAnnotationTransferDictionaryPreference(dictionaryText);
+
+  return {
+    sourceScope: document.getElementById("annotationTransferSourceScope").value,
+    sourceGroupId: document.getElementById("annotationTransferSourceGroup").value,
+    targetScope: document.getElementById("annotationTransferTargetScope").value,
+    targetGroupId: document.getElementById("annotationTransferTargetGroup").value,
+    readProperty: document.getElementById("annotationTransferReadProperty").value,
+    writeProperty: document.getElementById("annotationTransferWriteProperty").value,
+    dictionary,
+    conflictMode: document.getElementById("annotationTransferConflictMode").value,
+    existingMode: document.getElementById("annotationTransferExistingMode").value,
+    reviewGroupName:
+      document.getElementById("annotationTransferReviewGroupName").value.trim() ||
+      "Review",
+  };
+}
+
+function getAnnotationTransferSourceFeatures(options) {
+  const selectedUuids = new Set(getSelectedAnnotationUuids());
+  return annoJSON.features.filter((feature) => {
+    normalizeAnnotationFeature(feature);
+    if (!feature?.properties?.uuid || !feature?.geometry) return false;
+    if (isAnnotationFeatureLocked(feature)) return false;
+    if (!getAnnotationTransferFeatureCenter(feature)) return false;
+    if (options.sourceScope === "selection") {
+      return selectedUuids.has(feature.properties.uuid);
+    }
+    if (options.sourceScope === "group") {
+      return feature.properties.groupId === options.sourceGroupId;
+    }
+    return false;
+  });
+}
+
+function getAnnotationTransferTargetFeatures(options) {
+  const selectedUuids = new Set(getSelectedAnnotationUuids());
+  return annoJSON.features.filter((feature) => {
+    if (!isAnnotationPolygonGeometry(feature)) return false;
+    if (isAnnotationFeatureLocked(feature)) return false;
+    normalizeAnnotationFeature(feature);
+    if (options.targetScope === "selection") {
+      return selectedUuids.has(feature.properties.uuid);
+    }
+    if (options.targetScope === "group") {
+      return feature.properties.groupId === options.targetGroupId;
+    }
+    return false;
+  });
+}
+
+function getAnnotationTransferFeatureCenter(feature) {
+  const center = getFeatureEditMoveCoordinate(feature);
+  if (center && Number.isFinite(center.x) && Number.isFinite(center.y)) {
+    return center;
+  }
+
+  const bounds = getFeatureImageBounds(feature);
+  if (!bounds) return null;
+  const x = (bounds.minX + bounds.maxX) / 2;
+  const y = (bounds.minY + bounds.maxY) / 2;
+  if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
+  return { x, y };
+}
+
+function annotationTransferTargetContainsSource(targetFeature, sourceFeature) {
+  if (targetFeature.properties?.uuid === sourceFeature.properties?.uuid) {
+    return false;
+  }
+  const point = getAnnotationTransferFeatureCenter(sourceFeature);
+  if (!point) return false;
+  if (targetFeature.geometry.type === "Polygon") {
+    return polygonContainsImagePoint(point, targetFeature.geometry.coordinates);
+  }
+  if (targetFeature.geometry.type === "MultiPolygon") {
+    return targetFeature.geometry.coordinates.some((polygon) =>
+      polygonContainsImagePoint(point, polygon)
+    );
+  }
+  return false;
+}
+
+function getAnnotationTransferRawValue(feature, readProperty) {
+  if (readProperty === "group") {
+    return String(
+      feature?.properties?.groupName || DEFAULT_ANNOTATION_GROUP.groupName
+    ).trim();
+  }
+  return String(feature?.properties?.[readProperty] ?? "").trim();
+}
+
+function interpretAnnotationTransferValue(rawValue, options) {
+  const raw = String(rawValue ?? "").trim();
+  if (!raw) {
+    return {
+      rawValue: raw,
+      transferredValue: "",
+      valueTransformStatus: "empty",
+    };
+  }
+
+  if (Object.prototype.hasOwnProperty.call(options.dictionary, raw)) {
+    return {
+      rawValue: raw,
+      transferredValue: String(options.dictionary[raw]),
+      valueTransformStatus: "mapped",
+    };
+  }
+
+  return {
+    rawValue: raw,
+    transferredValue: raw,
+    valueTransformStatus: Object.keys(options.dictionary).length
+      ? "unmapped"
+      : "raw",
+  };
+}
+
+function getAnnotationTransferStatus(matches) {
+  if (matches.length === 0) return "unmatched";
+  const values = new Set(
+    matches.map((match) => match.transferredValue).filter(Boolean)
+  );
+  if (values.size === 0) return "unmatched";
+  return values.size === 1 ? "matched" : "conflict";
+}
+
+function getAnnotationTransferAppliedValue(matches, status, options) {
+  const values = [
+    ...new Set(matches.map((match) => match.transferredValue).filter(Boolean)),
+  ];
+  if (status === "matched") return values[0] || "";
+  if (status === "conflict" && options.conflictMode === "join") {
+    return values.join("; ");
+  }
+  return "";
+}
+
+function buildAnnotationTransferMetadata(matches, status, appliedValue, options) {
+  const rawValues = matches.map((match) => match.rawValue);
+  const transferredValues = matches.map((match) => match.transferredValue);
+  return {
+    workflow: "annotationValueTransfer",
+    joinStatus: status,
+    matchMode: "centerInPolygon",
+    nSources: matches.length,
+    sourceUuids: matches.map((match) => match.sourceUuid),
+    sourceLabels: matches.map((match) => match.sourceLabel),
+    sourceNotes: matches.map((match) => match.sourceNotes),
+    rawValues,
+    transferredValues,
+    uniqueTransferredValues: [...new Set(transferredValues.filter(Boolean))],
+    appliedValue,
+    readProperty: options.readProperty,
+    appliedProperty: options.writeProperty,
+    conflictMode: options.conflictMode,
+    existingMode: options.existingMode,
+  };
+}
+
+function buildAnnotationTransferPreview(options) {
+  const sourceFeatures = getAnnotationTransferSourceFeatures(options);
+  const targetFeatures = getAnnotationTransferTargetFeatures(options);
+  if (sourceFeatures.length === 0) {
+    throw new Error("No unlocked source annotations match the selected scope.");
+  }
+  if (targetFeatures.length === 0) {
+    throw new Error("No unlocked polygon target annotations match the selected scope.");
+  }
+
+  const targetResults = targetFeatures.map((targetFeature) => ({
+    feature: targetFeature,
+    matches: [],
+    status: "unmatched",
+    appliedValue: "",
+  }));
+  const matchCountsBySourceUuid = new Map();
+
+  sourceFeatures.forEach((sourceFeature) => {
+    const rawValue = getAnnotationTransferRawValue(
+      sourceFeature,
+      options.readProperty
+    );
+    const interpretation = interpretAnnotationTransferValue(rawValue, options);
+    targetResults.forEach((targetResult) => {
+      if (
+        !annotationTransferTargetContainsSource(targetResult.feature, sourceFeature)
+      ) {
+        return;
+      }
+      const sourceUuid = sourceFeature.properties?.uuid || "";
+      targetResult.matches.push({
+        sourceUuid,
+        sourceLabel: sourceFeature.properties?.label || "",
+        sourceNotes: sourceFeature.properties?.notes || "",
+        ...interpretation,
+      });
+      matchCountsBySourceUuid.set(
+        sourceUuid,
+        (matchCountsBySourceUuid.get(sourceUuid) || 0) + 1
+      );
+    });
+  });
+
+  targetResults.forEach((targetResult) => {
+    targetResult.status = getAnnotationTransferStatus(targetResult.matches);
+    targetResult.appliedValue = getAnnotationTransferAppliedValue(
+      targetResult.matches,
+      targetResult.status,
+      options
+    );
+    targetResult.annotationJoin = buildAnnotationTransferMetadata(
+      targetResult.matches,
+      targetResult.status,
+      targetResult.appliedValue,
+      options
+    );
+  });
+
+  const summary = targetResults.reduce(
+    (acc, result) => {
+      acc[result.status] += 1;
+      return acc;
+    },
+    { matched: 0, conflict: 0, unmatched: 0 }
+  );
+  const outsideSources =
+    sourceFeatures.length - [...matchCountsBySourceUuid.keys()].length;
+  const ambiguousSources = [...matchCountsBySourceUuid.values()].filter(
+    (count) => count > 1
+  ).length;
+
+  return {
+    options,
+    sourceFeatures,
+    targetResults,
+    summary,
+    outsideSources,
+    ambiguousSources,
+    totalSources: sourceFeatures.length,
+  };
+}
+
+function formatAnnotationTransferPreview(preview) {
+  const { summary, totalSources, outsideSources, ambiguousSources } = preview;
+  return [
+    `${preview.targetResults.length} target polygon${preview.targetResults.length === 1 ? "" : "s"} will be evaluated.`,
+    `${summary.matched} matched, ${summary.conflict} conflict, ${summary.unmatched} without source values.`,
+    `${outsideSources} of ${totalSources} source annotation${totalSources === 1 ? "" : "s"} did not fall inside a selected target.`,
+    ambiguousSources
+      ? `${ambiguousSources} source annotation${ambiguousSources === 1 ? "" : "s"} matched multiple targets.`
+      : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+}
+
+function previewAnnotationTransferWorkflow() {
+  try {
+    const options = getAnnotationTransferOptions();
+    pendingAnnotationTransferPreview = buildAnnotationTransferPreview(options);
+    setAnnotationTransferPreviewStatus(
+      `Preview complete. ${formatAnnotationTransferPreview(pendingAnnotationTransferPreview)}`,
+      "success"
+    );
+  } catch (error) {
+    pendingAnnotationTransferPreview = null;
+    setAnnotationTransferPreviewStatus(
+      `Preview failed. ${error.message || "Could not preview workflow."}`,
+      "error"
+    );
+  }
+  updateAnnotationTransferApplyState();
+}
+
+function getOrCreateAnnotationTransferGroup(groupName, groupCache) {
+  return getOrCreateCountSegmentGroup(groupName, groupCache);
+}
+
+function getAnnotationTransferTextValue(currentValue, appliedValue, existingMode) {
+  const current = String(currentValue ?? "");
+  const next = String(appliedValue ?? "");
+  if (!next) return current;
+  if (existingMode === "fill" && current.trim()) return current;
+  if (existingMode === "append" && current.trim()) {
+    return current.includes(next) ? current : `${current}; ${next}`;
+  }
+  return next;
+}
+
+function applyAnnotationTransferWorkflow() {
+  let preview = pendingAnnotationTransferPreview;
+  try {
+    const options = getAnnotationTransferOptions();
+    if (!preview || JSON.stringify(preview.options) !== JSON.stringify(options)) {
+      preview = buildAnnotationTransferPreview(options);
+    }
+  } catch (error) {
+    setAnnotationTransferPreviewStatus(
+      `Apply failed. ${error.message || "Could not apply workflow."}`,
+      "error"
+    );
+    pendingAnnotationTransferPreview = null;
+    updateAnnotationTransferApplyState();
+    return;
+  }
+
+  const changedResults = preview.targetResults;
+  if (changedResults.length === 0) {
+    setAnnotationTransferPreviewStatus(
+      "No target annotations need updates.",
+      "success"
+    );
+    return;
+  }
+
+  const groupCache = new Map(
+    getAnnotationGroups().map((group) => [group.groupName.toLowerCase(), group])
+  );
+  annotationHistory.push("Transfer annotation values to polygons");
+
+  changedResults.forEach((result) => {
+    const feature = result.feature;
+    const options = preview.options;
+    feature.properties.annotationJoin = result.annotationJoin;
+
+    if (result.status === "conflict" && options.conflictMode === "review") {
+      const group = getOrCreateAnnotationTransferGroup(
+        options.reviewGroupName,
+        groupCache
+      );
+      Object.assign(
+        feature.properties,
+        applyAnnotationGroupToProperties(feature.properties, group)
+      );
+      return;
+    }
+
+    if (!result.appliedValue) return;
+    if (options.writeProperty === "group") {
+      const group = getOrCreateAnnotationTransferGroup(
+        result.appliedValue,
+        groupCache
+      );
+      Object.assign(
+        feature.properties,
+        applyAnnotationGroupToProperties(feature.properties, group)
+      );
+      return;
+    }
+
+    feature.properties[options.writeProperty] = getAnnotationTransferTextValue(
+      feature.properties[options.writeProperty],
+      result.appliedValue,
+      options.existingMode
+    );
+    if (options.writeProperty === "label") {
+      const labelPoint = getBooleanGeometryLabelPoint(feature.geometry, feature);
+      feature.properties.xLabel = labelPoint.x;
+      feature.properties.yLabel = labelPoint.y;
+      updateText(feature.properties.uuid, "anno", feature.properties.label || "");
+      updateAnnotationLabelOverlayPosition(feature.properties.uuid);
+      updateAnnotationListLabel(feature.properties.uuid, feature.properties.label || "");
+    }
+  });
+
+  renderAnnotationList();
+  drawShape(polyCanvas, [annoJSON, annoJSONTemp]);
+  applyAnnotationVisibilityState();
+  unsavedAnnotations(true);
+  setAnnotationTransferPreviewStatus(
+    `${changedResults.length} target annotation${changedResults.length === 1 ? "" : "s"} updated. ${formatAnnotationTransferPreview(preview)}`,
+    "success"
+  );
+  pendingAnnotationTransferPreview = preview;
+  updateAnnotationTransferApplyState();
+}
+
+[
+  "annotationTransferSourceScope",
+  "annotationTransferTargetScope",
+].forEach((id) => {
+  document
+    .getElementById(id)
+    ?.addEventListener("change", updateAnnotationTransferScopeControls);
+});
+
+[
+  "annotationTransferSourceGroup",
+  "annotationTransferTargetGroup",
+  "annotationTransferReadProperty",
+  "annotationTransferWriteProperty",
+  "annotationTransferDictionary",
+  "annotationTransferConflictMode",
+  "annotationTransferExistingMode",
+  "annotationTransferReviewGroupName",
+].forEach((id) => {
+  document.getElementById(id)?.addEventListener("input", () => {
+    pendingAnnotationTransferPreview = null;
+    updateAnnotationTransferApplyState();
+  });
+  document.getElementById(id)?.addEventListener("change", () => {
+    pendingAnnotationTransferPreview = null;
+    updateAnnotationTransferApplyState();
+  });
+});
+
+document
+  .getElementById("annotationTransferPreviewButton")
+  ?.addEventListener("click", previewAnnotationTransferWorkflow);
+
+document
+  .getElementById("annotationTransferApplyButton")
+  ?.addEventListener("click", applyAnnotationTransferWorkflow);
+
+document
+  .getElementById("annotationTransferCancelButton")
+  ?.addEventListener("click", hideAnnotationTransferDialog);
 
 // Attach export functionality to the button (GeoJSON version)
 document.getElementById("exportBtn").addEventListener("click", function () {
