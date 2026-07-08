@@ -19,6 +19,15 @@ let activeMeasureTool = null;
 let circleModeActive = false;
 let tileLoadFailureWarningKey = "";
 let tileLoadFailureWarningInFlight = false;
+const tileSetAppearanceState = new WeakMap();
+const TILE_SET_APPEARANCE_DEFAULTS = Object.freeze({
+  brightness: 100,
+  contrast: 100,
+  saturation: 100,
+  hue: 0,
+});
+const TILE_APPEARANCE_STORAGE_KEY = "petroImageTileAppearance";
+let tileAppearanceReprocessTimer = null;
 
 // Accessors for attributes of the current sample
 const title = () => samples[currentIndex].title;
@@ -9493,6 +9502,7 @@ viewer.addHandler("canvas-double-click", function (event) {
 });
 
 viewer.addHandler("tile-load-failed", handleTileLoadFailed);
+viewer.addHandler("tile-loaded", handleTileLoadedForAppearance);
 viewer.addHandler("open", clearUnsupervisedAoiForSampleChange);
 viewer.addHandler("open", scheduleScalebarRefresh);
 
@@ -9549,9 +9559,11 @@ document
       porositySelectedTileSetIndices = [];
       if (porosityTileSetSelect) porosityTileSetSelect.innerHTML = "";
       resetPorosityAnalysis();
+      restoreCurrentSampleTileAppearancePreference();
       renderPorosityTileSetSelect();
       buildImageCheckboxes();
       buildOpacitySliders();
+      buildTileAppearanceControls();
       clearAnnotations();
       annotationHistory.reset();
       updateImageCheckboxLabels();
@@ -9563,6 +9575,7 @@ document
       resetLockStage();
       updateOpacityImageSliderVisibility();
       updateOpacitySliderLabels();
+      updateTileAppearanceControls();
       if (measurementControlsInitialized) {
         resetMeasurements(true);
       }
@@ -9810,6 +9823,607 @@ function updateOpacitySliderLabels() {
     row.style.display = "";
     label.textContent = tileSet.label || `Img ${i + 1}`;
   });
+}
+
+function getTileSetDisplayLabel(tileSet, index) {
+  return tileSet?.label || `Img ${index + 1}`;
+}
+
+function normalizeAppearanceValue(key, value) {
+  const numericValue = Number(value);
+  const fallback = TILE_SET_APPEARANCE_DEFAULTS[key];
+  if (!Number.isFinite(numericValue)) return fallback;
+
+  switch (key) {
+    case "brightness":
+    case "contrast":
+    case "saturation":
+      return Math.max(0, Math.min(300, Math.round(numericValue)));
+    case "hue":
+      return Math.max(-180, Math.min(180, Math.round(numericValue)));
+    default:
+      return fallback;
+  }
+}
+
+function getTileSetAppearance(tileSet) {
+  if (!tileSet) return { ...TILE_SET_APPEARANCE_DEFAULTS };
+  const existing = tileSetAppearanceState.get(tileSet);
+  if (existing) return existing;
+
+  const appearance = { ...TILE_SET_APPEARANCE_DEFAULTS };
+  tileSetAppearanceState.set(tileSet, appearance);
+  return appearance;
+}
+
+function normalizeTileSetAppearance(appearance = {}) {
+  return {
+    brightness: normalizeAppearanceValue("brightness", appearance.brightness),
+    contrast: normalizeAppearanceValue("contrast", appearance.contrast),
+    saturation: normalizeAppearanceValue("saturation", appearance.saturation),
+    hue: normalizeAppearanceValue("hue", appearance.hue),
+  };
+}
+
+function isDefaultTileSetAppearance(tileSet) {
+  const appearance = getTileSetAppearance(tileSet);
+  return (
+    appearance.brightness === TILE_SET_APPEARANCE_DEFAULTS.brightness &&
+    appearance.contrast === TILE_SET_APPEARANCE_DEFAULTS.contrast &&
+    appearance.saturation === TILE_SET_APPEARANCE_DEFAULTS.saturation &&
+    appearance.hue === TILE_SET_APPEARANCE_DEFAULTS.hue
+  );
+}
+
+function isDefaultAppearanceValue(appearance) {
+  return (
+    appearance.brightness === TILE_SET_APPEARANCE_DEFAULTS.brightness &&
+    appearance.contrast === TILE_SET_APPEARANCE_DEFAULTS.contrast &&
+    appearance.saturation === TILE_SET_APPEARANCE_DEFAULTS.saturation &&
+    appearance.hue === TILE_SET_APPEARANCE_DEFAULTS.hue
+  );
+}
+
+function getTileSetAppearanceStorageKey(tileSet, index) {
+  return `${index}:${tileSet?.label || ""}`;
+}
+
+function getSampleAppearanceStorageKey(sampleIndex = currentIndex) {
+  const sample = samples?.[sampleIndex];
+  if (!sample) return "";
+  return `${getLibraryStorageKey()}::${sample.title || sampleIndex}`;
+}
+
+function readTileAppearanceStorage() {
+  try {
+    const stored = JSON.parse(
+      localStorage.getItem(TILE_APPEARANCE_STORAGE_KEY) || "null"
+    );
+    if (!stored || stored.version !== 1 || typeof stored.samples !== "object") {
+      return { version: 1, samples: {} };
+    }
+    return stored;
+  } catch (error) {
+    console.warn("Could not read tile appearance preferences:", error);
+    return { version: 1, samples: {} };
+  }
+}
+
+function writeTileAppearanceStorage(storage) {
+  try {
+    if (!Object.keys(storage.samples || {}).length) {
+      localStorage.removeItem(TILE_APPEARANCE_STORAGE_KEY);
+      return;
+    }
+    localStorage.setItem(TILE_APPEARANCE_STORAGE_KEY, JSON.stringify(storage));
+  } catch (error) {
+    console.warn("Could not save tile appearance preferences:", error);
+  }
+}
+
+function saveCurrentSampleTileAppearancePreference() {
+  const sampleKey = getSampleAppearanceStorageKey();
+  if (!sampleKey) return;
+
+  const tileSetSettings = {};
+  tileSets().forEach((tileSet, index) => {
+    const appearance = normalizeTileSetAppearance(getTileSetAppearance(tileSet));
+    if (isDefaultAppearanceValue(appearance)) return;
+    tileSetSettings[getTileSetAppearanceStorageKey(tileSet, index)] = appearance;
+  });
+
+  const storage = readTileAppearanceStorage();
+  if (Object.keys(tileSetSettings).length) {
+    storage.samples[sampleKey] = { tileSets: tileSetSettings };
+  } else {
+    delete storage.samples[sampleKey];
+  }
+  writeTileAppearanceStorage(storage);
+}
+
+function restoreCurrentSampleTileAppearancePreference() {
+  const sampleKey = getSampleAppearanceStorageKey();
+  const storage = readTileAppearanceStorage();
+  const savedTileSets = storage.samples?.[sampleKey]?.tileSets || {};
+
+  tileSets().forEach((tileSet, index) => {
+    const tileSetKey = getTileSetAppearanceStorageKey(tileSet, index);
+    const appearance = normalizeTileSetAppearance(savedTileSets[tileSetKey]);
+    tileSetAppearanceState.set(tileSet, appearance);
+    updateTileSetAppearanceRenderingHints(tileSet);
+  });
+}
+
+function clampColorValue(value) {
+  return Math.round(Math.max(0, Math.min(255, value)));
+}
+
+function markContextAsOpaqueTileContext(context) {
+  if (!context) return context;
+  context.petroImageForceOpaque = true;
+  if (context.canvas) {
+    context.canvas.petroImageForceOpaque = true;
+  }
+  return context;
+}
+
+function ensureTileSourceOpaqueContextSupport(tiledImage) {
+  const source = tiledImage?.source;
+  if (!source || source.petroImageSupportsOpaqueContexts) return;
+
+  const originalHasTransparency = source.hasTransparency.bind(source);
+  source.hasTransparency = function (context, url, ajaxHeaders, postData) {
+    const forcedOpaque =
+      context?.petroImageForceOpaque || context?.canvas?.petroImageForceOpaque;
+    if (forcedOpaque) {
+      return false;
+    }
+    return originalHasTransparency(context, url, ajaxHeaders, postData);
+  };
+  source.petroImageSupportsOpaqueContexts = true;
+}
+
+function applyTileSetAppearanceToContext(context, appearance) {
+  const width = context.canvas.width;
+  const height = context.canvas.height;
+  const imageData = context.getImageData(0, 0, width, height);
+  const pixels = imageData.data;
+  const brightness = appearance.brightness / 100;
+  const contrast = appearance.contrast / 100;
+  const saturation = appearance.saturation / 100;
+  const hueRadians = (appearance.hue * Math.PI) / 180;
+  const cosHue = Math.cos(hueRadians);
+  const sinHue = Math.sin(hueRadians);
+  const applyHue = appearance.hue !== TILE_SET_APPEARANCE_DEFAULTS.hue;
+
+  for (let index = 0; index < pixels.length; index += 4) {
+    let r = (pixels[index] * brightness - 128) * contrast + 128;
+    let g = (pixels[index + 1] * brightness - 128) * contrast + 128;
+    let b = (pixels[index + 2] * brightness - 128) * contrast + 128;
+
+    if (saturation !== 1) {
+      const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+      r = luminance + (r - luminance) * saturation;
+      g = luminance + (g - luminance) * saturation;
+      b = luminance + (b - luminance) * saturation;
+    }
+
+    if (applyHue) {
+      const nextR =
+        r * (0.213 + cosHue * 0.787 - sinHue * 0.213) +
+        g * (0.715 - cosHue * 0.715 - sinHue * 0.715) +
+        b * (0.072 - cosHue * 0.072 + sinHue * 0.928);
+      const nextG =
+        r * (0.213 - cosHue * 0.213 + sinHue * 0.143) +
+        g * (0.715 + cosHue * 0.285 + sinHue * 0.14) +
+        b * (0.072 - cosHue * 0.072 - sinHue * 0.283);
+      const nextB =
+        r * (0.213 - cosHue * 0.213 - sinHue * 0.787) +
+        g * (0.715 - cosHue * 0.715 + sinHue * 0.715) +
+        b * (0.072 + cosHue * 0.928 + sinHue * 0.072);
+      r = nextR;
+      g = nextG;
+      b = nextB;
+    }
+
+    pixels[index] = clampColorValue(r);
+    pixels[index + 1] = clampColorValue(g);
+    pixels[index + 2] = clampColorValue(b);
+    pixels[index + 3] = 255;
+  }
+
+  context.putImageData(imageData, 0, 0);
+}
+
+function createCanvasContextFromImage(image, options = {}) {
+  const width = image.naturalWidth || image.width || image.canvas?.width;
+  const height = image.naturalHeight || image.height || image.canvas?.height;
+  if (!width || !height) return null;
+
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const context = canvas.getContext("2d", {
+    alpha: false,
+    willReadFrequently: true,
+  });
+  context.imageSmoothingEnabled = false;
+  context.drawImage(image.canvas || image, 0, 0, width, height);
+
+  if (options.forceOpaque) {
+    const imageData = context.getImageData(0, 0, width, height);
+    const pixels = imageData.data;
+    for (let index = 3; index < pixels.length; index += 4) {
+      pixels[index] = 255;
+    }
+    context.putImageData(imageData, 0, 0);
+    markContextAsOpaqueTileContext(context);
+  }
+
+  return context;
+}
+
+function createAdjustedTileContext(sourceContext, appearance) {
+  const context = createCanvasContextFromImage(sourceContext.canvas, {
+    forceOpaque: true,
+  });
+  if (!context) return null;
+  applyTileSetAppearanceToContext(context, appearance);
+  return context;
+}
+
+function getOriginalContextForLoadedTile(loadedTile) {
+  if (loadedTile.petroImageOriginalContext) {
+    return loadedTile.petroImageOriginalContext;
+  }
+
+  if (loadedTile.context2D?.canvas) {
+    loadedTile.petroImageOriginalContext = createCanvasContextFromImage(
+      loadedTile.context2D.canvas,
+      { forceOpaque: true }
+    );
+    return loadedTile.petroImageOriginalContext;
+  }
+
+  const cachedData =
+    loadedTile.cacheImageRecord?.getData?.() ||
+    loadedTile.cacheImageRecord?.getImage?.();
+  if (cachedData) {
+    loadedTile.petroImageOriginalContext = createCanvasContextFromImage(
+      cachedData,
+      { forceOpaque: true }
+    );
+    return loadedTile.petroImageOriginalContext;
+  }
+
+  const cachedContext = loadedTile.cacheImageRecord?.getRenderedContext?.();
+  if (cachedContext?.canvas) {
+    loadedTile.petroImageOriginalContext = createCanvasContextFromImage(
+      cachedContext.canvas,
+      { forceOpaque: true }
+    );
+    return loadedTile.petroImageOriginalContext;
+  }
+
+  return null;
+}
+
+function getTileSetForTiledImage(tiledImage) {
+  if (!tiledImage) return null;
+  return tileSets().find((tileSet) =>
+    (tileSet.tiles || []).some((tile) => tile.image === tiledImage)
+  );
+}
+
+function updateTileSetAppearanceRenderingHints(tileSet) {
+  const adjusted = !isDefaultTileSetAppearance(tileSet);
+  (tileSet?.tiles || []).forEach((tile) => {
+    if (!tile.image) return;
+    ensureTileSourceOpaqueContextSupport(tile.image);
+
+    if (!tile.image.petroImageOriginalRenderingHints) {
+      tile.image.petroImageOriginalRenderingHints = {
+        smoothTileEdgesMinZoom: tile.image.smoothTileEdgesMinZoom,
+        subPixelRoundingForTransparency:
+          tile.image.subPixelRoundingForTransparency,
+      };
+    }
+
+    if (adjusted) {
+      tile.image.subPixelRoundingForTransparency =
+        OpenSeadragon.SUBPIXEL_ROUNDING_OCCURRENCES.ALWAYS;
+      return;
+    }
+
+    const original = tile.image.petroImageOriginalRenderingHints;
+    tile.image.smoothTileEdgesMinZoom = original.smoothTileEdgesMinZoom;
+    tile.image.subPixelRoundingForTransparency =
+      original.subPixelRoundingForTransparency;
+  });
+}
+
+function handleTileLoadedForAppearance(event) {
+  const tileSet = getTileSetForTiledImage(event.tiledImage);
+  if (!tileSet || isDefaultTileSetAppearance(tileSet) || !event.data) return;
+
+  ensureTileSourceOpaqueContextSupport(event.tiledImage);
+  updateTileSetAppearanceRenderingHints(tileSet);
+
+  const completionCallback = event.getCompletionCallback();
+  const appearance = { ...getTileSetAppearance(tileSet) };
+  const image = event.data;
+
+  try {
+    if (!event.tile.petroImageOriginalContext) {
+      event.tile.petroImageOriginalContext = createCanvasContextFromImage(image, {
+        forceOpaque: true,
+      });
+    }
+    const adjustedContext = createAdjustedTileContext(
+      event.tile.petroImageOriginalContext,
+      appearance
+    );
+    if (adjustedContext) {
+      event.tile.context2D = adjustedContext;
+      event.tile.hasTransparency = false;
+    }
+  } finally {
+    completionCallback();
+  }
+}
+
+function forEachLoadedTileInTileSet(tileSet, callback) {
+  (tileSet?.tiles || []).forEach((tile) => {
+    const matrix = tile.image?.tilesMatrix;
+    if (!matrix) return;
+
+    Object.values(matrix).forEach((columns) => {
+      Object.values(columns || {}).forEach((rows) => {
+        Object.values(rows || {}).forEach((loadedTile) => {
+          if (loadedTile?.loaded || loadedTile?.context2D) {
+            callback(loadedTile);
+          }
+        });
+      });
+    });
+  });
+}
+
+function reprocessLoadedTileSetTiles(tileSet) {
+  const appearance = getTileSetAppearance(tileSet);
+  forEachLoadedTileInTileSet(tileSet, (loadedTile) => {
+    const originalContext = getOriginalContextForLoadedTile(loadedTile);
+    if (!originalContext) return;
+
+    if (isDefaultTileSetAppearance(tileSet)) {
+      loadedTile.context2D = originalContext;
+      loadedTile.hasTransparency = false;
+      return;
+    }
+
+    const adjustedContext = createAdjustedTileContext(originalContext, appearance);
+    if (adjustedContext) {
+      loadedTile.context2D = adjustedContext;
+      loadedTile.hasTransparency = false;
+    }
+  });
+}
+
+function scheduleTileAppearanceReprocess(tileSet) {
+  if (tileAppearanceReprocessTimer !== null) {
+    window.clearTimeout(tileAppearanceReprocessTimer);
+  }
+  tileAppearanceReprocessTimer = window.setTimeout(() => {
+    tileAppearanceReprocessTimer = null;
+    updateTileSetAppearanceRenderingHints(tileSet);
+    reprocessLoadedTileSetTiles(tileSet);
+    displayImages();
+    viewer.forceRedraw();
+  }, 140);
+}
+
+function updateTileAppearanceValueDisplay(key, value) {
+  const controls = document.querySelectorAll(
+    `#tileAppearanceControls [data-appearance-key="${key}"]`
+  );
+  controls.forEach((control) => {
+    control.value = value;
+  });
+}
+
+function setTileSetAppearanceValue(tileSetIndex, key, value) {
+  const tileSet = tileSets()[tileSetIndex];
+  if (!tileSet) return;
+
+  const appearance = getTileSetAppearance(tileSet);
+  appearance[key] = normalizeAppearanceValue(key, value);
+  tileSetAppearanceState.set(tileSet, appearance);
+  updateTileAppearanceValueDisplay(key, appearance[key]);
+  saveCurrentSampleTileAppearancePreference();
+  scheduleTileAppearanceReprocess(tileSet);
+}
+
+function resetTileSetAppearanceParameter(tileSetIndex, key) {
+  const tileSet = tileSets()[tileSetIndex];
+  if (!tileSet) return;
+
+  const appearance = getTileSetAppearance(tileSet);
+  appearance[key] = TILE_SET_APPEARANCE_DEFAULTS[key];
+  tileSetAppearanceState.set(tileSet, appearance);
+  updateTileAppearanceValueDisplay(key, appearance[key]);
+  saveCurrentSampleTileAppearancePreference();
+  scheduleTileAppearanceReprocess(tileSet);
+}
+
+function resetTileSetAppearance(tileSetIndex) {
+  const tileSet = tileSets()[tileSetIndex];
+  if (!tileSet) return;
+  tileSetAppearanceState.set(tileSet, { ...TILE_SET_APPEARANCE_DEFAULTS });
+  saveCurrentSampleTileAppearancePreference();
+  if (tileAppearanceReprocessTimer !== null) {
+    window.clearTimeout(tileAppearanceReprocessTimer);
+    tileAppearanceReprocessTimer = null;
+  }
+  updateTileSetAppearanceRenderingHints(tileSet);
+  reprocessLoadedTileSetTiles(tileSet);
+  updateTileAppearanceControls();
+  displayImages();
+  viewer.forceRedraw();
+}
+
+function resetAllTileSetAppearance() {
+  tileSets().forEach((tileSet) => {
+    tileSetAppearanceState.set(tileSet, { ...TILE_SET_APPEARANCE_DEFAULTS });
+    updateTileSetAppearanceRenderingHints(tileSet);
+    reprocessLoadedTileSetTiles(tileSet);
+  });
+  saveCurrentSampleTileAppearancePreference();
+  if (tileAppearanceReprocessTimer !== null) {
+    window.clearTimeout(tileAppearanceReprocessTimer);
+    tileAppearanceReprocessTimer = null;
+  }
+  updateTileAppearanceControls();
+  displayImages();
+  viewer.forceRedraw();
+}
+
+function getSelectedAppearanceTileSetIndex() {
+  const select = document.getElementById("tileAppearanceSelect");
+  const rawIndex = Number.parseInt(select?.value || "0", 10);
+  if (!Number.isFinite(rawIndex)) return 0;
+  return Math.min(Math.max(rawIndex, 0), Math.max(tileSets().length - 1, 0));
+}
+
+function updateTileAppearanceControls() {
+  const container = document.getElementById("tileAppearanceControls");
+  const select = document.getElementById("tileAppearanceSelect");
+  if (!container || !select) return;
+
+  const tileSet = tileSets()[getSelectedAppearanceTileSetIndex()];
+  const appearance = getTileSetAppearance(tileSet);
+  container.querySelectorAll("[data-appearance-key]").forEach((input) => {
+    const key = input.dataset.appearanceKey;
+    const value = appearance[key] ?? TILE_SET_APPEARANCE_DEFAULTS[key];
+    input.value = value;
+  });
+
+  container.querySelectorAll("input, select, button").forEach((control) => {
+    control.disabled = tileSets().length === 0;
+  });
+}
+
+function populateTileAppearanceSelect() {
+  const select = document.getElementById("tileAppearanceSelect");
+  if (!select) return;
+
+  const selectedIndex = getSelectedAppearanceTileSetIndex();
+  select.innerHTML = "";
+  tileSets().forEach((tileSet, index) => {
+    const option = document.createElement("option");
+    option.value = String(index);
+    option.textContent = getTileSetDisplayLabel(tileSet, index);
+    select.appendChild(option);
+  });
+  select.value = String(Math.min(selectedIndex, Math.max(tileSets().length - 1, 0)));
+}
+
+function buildTileAppearanceControls() {
+  const container = document.getElementById("tileAppearanceControls");
+  if (!container) return;
+
+  container.innerHTML = "";
+
+  const selectRow = document.createElement("div");
+  selectRow.className = "tile-appearance-row tile-appearance-select-row";
+
+  const select = document.createElement("select");
+  select.id = "tileAppearanceSelect";
+  select.title = "Tile set appearance target";
+  select.addEventListener("change", updateTileAppearanceControls);
+
+  const selectLabel = document.createElement("label");
+  selectLabel.htmlFor = select.id;
+  selectLabel.textContent = "Tile set";
+
+  selectRow.appendChild(selectLabel);
+  selectRow.appendChild(select);
+  container.appendChild(selectRow);
+
+  [
+    ["brightness", "Brightness", "%", 0, 300, 1],
+    ["contrast", "Contrast", "%", 0, 300, 1],
+    ["saturation", "Saturation", "%", 0, 300, 1],
+    ["hue", "Hue", "deg", -180, 180, 1],
+  ].forEach(([key, labelText, unit, min, max, step]) => {
+    const row = document.createElement("div");
+    row.className = "tile-appearance-row";
+
+    const label = document.createElement("label");
+    label.htmlFor = `tileAppearance${key}`;
+    label.textContent = `${labelText} (${unit})`;
+
+    const slider = document.createElement("input");
+    slider.type = "range";
+    slider.id = `tileAppearance${key}`;
+    slider.min = min;
+    slider.max = max;
+    slider.step = step;
+    slider.dataset.appearanceKey = key;
+    slider.addEventListener("input", () => {
+      setTileSetAppearanceValue(getSelectedAppearanceTileSetIndex(), key, slider.value);
+    });
+
+    const valueInput = document.createElement("input");
+    valueInput.type = "number";
+    valueInput.min = min;
+    valueInput.max = max;
+    valueInput.step = step;
+    valueInput.className = "tile-appearance-value";
+    valueInput.dataset.appearanceKey = key;
+    valueInput.title = `${labelText} ${unit}`;
+    valueInput.addEventListener("change", () => {
+      const tileSetIndex = getSelectedAppearanceTileSetIndex();
+      const normalizedValue = normalizeAppearanceValue(key, valueInput.value);
+      setTileSetAppearanceValue(tileSetIndex, key, normalizedValue);
+    });
+
+    const resetButton = document.createElement("button");
+    resetButton.type = "button";
+    resetButton.className = "tile-appearance-reset-parameter";
+    resetButton.title = `Reset ${labelText}`;
+    resetButton.textContent = "Reset";
+    resetButton.addEventListener("click", () => {
+      resetTileSetAppearanceParameter(getSelectedAppearanceTileSetIndex(), key);
+    });
+
+    row.appendChild(label);
+    row.appendChild(slider);
+    row.appendChild(valueInput);
+    row.appendChild(resetButton);
+    container.appendChild(row);
+  });
+
+  const actions = document.createElement("div");
+  actions.className = "tile-appearance-actions";
+
+  const resetButton = document.createElement("button");
+  resetButton.type = "button";
+  resetButton.textContent = "Reset All";
+  resetButton.addEventListener("click", () => {
+    resetTileSetAppearance(getSelectedAppearanceTileSetIndex());
+  });
+
+  const resetAllButton = document.createElement("button");
+  resetAllButton.type = "button";
+  resetAllButton.textContent = "Reset All Tile Sets";
+  resetAllButton.addEventListener("click", resetAllTileSetAppearance);
+
+  actions.appendChild(resetButton);
+  actions.appendChild(resetAllButton);
+  container.appendChild(actions);
+
+  populateTileAppearanceSelect();
+  updateTileAppearanceControls();
 }
 
 const tooltip = document.getElementById("tooltip-desc");
@@ -11582,9 +12196,9 @@ function buildOpacitySliders() {
 }
 
 function resetOpacitySliders() {
-  // Find all range sliders inside the image settings menu
+  // Find only opacity range sliders inside the image settings menu.
   const sliders = document.querySelectorAll(
-    "#imageSettingsMenu input[type='range']"
+    "#checkboxOpacityContainer input.opacity-slider"
   );
 
   sliders.forEach((sliderInput) => {

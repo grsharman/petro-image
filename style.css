@@ -2550,6 +2550,72 @@ input[type="range"] {
   appearance: none;
 }
 
+#imageSettingsMenu .tile-appearance-controls {
+  display: grid;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+#imageSettingsMenu .tile-appearance-row {
+  display: grid;
+  grid-template-columns: 70px minmax(50px, 1fr) 34px 42px;
+  align-items: center;
+  gap: 4px;
+}
+
+#imageSettingsMenu .tile-appearance-row label {
+  margin-top: 0;
+  font-size: 12px;
+}
+
+#imageSettingsMenu .tile-appearance-select-row {
+  grid-template-columns: 70px minmax(0, 1fr);
+}
+
+#imageSettingsMenu .tile-appearance-select-row select {
+  min-width: 0;
+  width: 100%;
+}
+
+#imageSettingsMenu input.tile-appearance-value {
+  box-sizing: border-box;
+  width: 34px;
+  min-width: 34px;
+  height: 18px;
+  color: #333;
+  background-color: #fff;
+  border: 1px solid #777;
+  padding: 1px 2px;
+  font-size: 11px;
+  text-align: right;
+  line-height: 16px;
+  appearance: textfield;
+}
+
+#imageSettingsMenu input.tile-appearance-value::-webkit-outer-spin-button,
+#imageSettingsMenu input.tile-appearance-value::-webkit-inner-spin-button {
+  margin: 0;
+  appearance: none;
+}
+
+#imageSettingsMenu .tile-appearance-reset-parameter {
+  margin-top: 0;
+  padding: 2px;
+  font-size: 10px;
+  line-height: 14px;
+}
+
+#imageSettingsMenu .tile-appearance-actions {
+  display: flex;
+  gap: 6px;
+}
+
+#imageSettingsMenu .tile-appearance-actions button {
+  flex: 1 1 0;
+  margin-top: 2px;
+  padding: 4px;
+}
+
 #imageSettingsMenu button {
   margin-top: 15px;
   padding: 5px;
