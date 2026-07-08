@@ -596,6 +596,26 @@
               <span class="electron-action-description">Automatically digitize features</span>
             </span>
           </button>
+          <button
+            id="openClassifyPaletteButton"
+            class="electron-action-item"
+            type="button"
+            role="menuitem"
+          >
+            <span class="electron-action-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <path d="M4 7.5 8 4l5 1 4.5 4.5L20 16l-4 4-6.5-.8L4 15z" />
+                <path d="M8 4l2 5.5L4 15" />
+                <path d="m13 5-3 4.5 5.5 3L20 16" />
+                <circle cx="10" cy="9.5" r="1" />
+                <circle cx="15.5" cy="12.5" r="1" />
+              </svg>
+            </span>
+            <span>
+              <span class="electron-action-title">Classify Polygons <span class="beta-badge">βeta</span></span>
+              <span class="electron-action-description">Predict from image features</span>
+            </span>
+          </button>
         </div>
         <button
           class="viewer-corner-button history-button"
@@ -980,6 +1000,201 @@
           <p id="snapshotStatus" class="snapshot-status">
             Set options, then draw a rectangle.
           </p>
+        </div>
+      </div>
+      <div
+        id="classifyPalette"
+        class="tool-palette classify-palette"
+        data-default-position="bottom-right"
+        data-default-bottom-offset="156"
+        role="dialog"
+        aria-labelledby="classifyPaletteTitle"
+        hidden
+      >
+        <div id="classifyPaletteHeader" class="tool-palette-header">
+          <h2 id="classifyPaletteTitle">Classify Polygons</h2>
+          <div class="tool-palette-header-actions">
+            <button
+              id="classifyHelpButton"
+              class="tool-palette-help"
+              type="button"
+              aria-label="Classify Polygons help"
+              aria-expanded="false"
+              title="Help"
+            >
+              <span aria-hidden="true">?</span>
+            </button>
+            <button
+              id="minimizeClassifyPaletteButton"
+              class="tool-palette-minimize"
+              type="button"
+              aria-label="Minimize Classify"
+              aria-pressed="false"
+              title="Minimize"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M6 12h12" />
+              </svg>
+            </button>
+            <button
+              id="closeClassifyPaletteButton"
+              class="tool-palette-close"
+              type="button"
+              aria-label="Close Classify"
+              title="Close"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M6 6l12 12" />
+                <path d="M18 6 6 18" />
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div class="tool-palette-body classify-palette-body">
+          <details id="classifySetupSection" class="classify-section" open>
+            <summary>Set Up Model</summary>
+            <label class="snapshot-field">
+              <span>Polygons</span>
+              <select id="classifyScope">
+                <option value="all">All unlocked polygons</option>
+                <option value="selection">Selected polygons</option>
+                <option value="group">Polygons in group</option>
+              </select>
+            </label>
+            <label class="snapshot-field">
+              <span>Group</span>
+              <select id="classifyScopeGroup"></select>
+            </label>
+            <label class="snapshot-field">
+              <span>Training labels</span>
+              <select id="classifyLabelSource">
+                <option value="group">Annotation group</option>
+                <option value="label">Annotation label</option>
+                <option value="countJoin">Point-count join</option>
+              </select>
+            </label>
+            <label class="snapshot-field">
+              <span>Tile sets</span>
+              <select id="classifyTileSetSelect" multiple size="3"></select>
+            </label>
+            <label class="snapshot-field">
+              <span>Resolution</span>
+              <select id="classifyResolution">
+                <option value="1">Full resolution</option>
+                <option value="0.5">1/2 resolution</option>
+                <option value="0.25" selected>1/4 resolution</option>
+                <option value="viewer">Current view</option>
+              </select>
+            </label>
+            <label class="snapshot-option">
+              <input id="classifyIncludeShape" type="checkbox" />
+              <span>Include shape features</span>
+            </label>
+            <button id="classifyExtractFeaturesButton" type="button">Extract Features</button>
+          </details>
+          <details id="classifyRunSection" class="classify-section">
+            <summary>Select and Run Model</summary>
+            <label class="snapshot-field">
+              <span>Model</span>
+              <select id="classifyModelType">
+                <option value="randomForest" selected>Random Forest</option>
+                <option value="knn">kNN</option>
+              </select>
+            </label>
+            <div class="count-segment-grid">
+              <label id="classifyKField">
+                k (kNN)
+                <input id="classifyK" type="number" min="1" max="25" step="2" value="5" />
+              </label>
+              <label id="classifyMinConfidenceField">
+                Min confidence
+                <input id="classifyMinConfidence" type="number" min="0" max="1" step="0.05" value="0.65" />
+              </label>
+            </div>
+            <div class="classify-actions">
+              <button id="classifyTrainPredictButton" type="button" disabled>Train + Predict</button>
+            </div>
+            <div class="classify-prediction-controls">
+              <label class="snapshot-field">
+                <span>Prediction</span>
+                <select id="classifyPredictionSelect" disabled>
+                  <option value="">No predictions</option>
+                </select>
+              </label>
+              <div class="classify-highlight-actions">
+                <button id="classifySelectPredictionButton" type="button" disabled>
+                  Highlight Prediction
+                </button>
+                <button id="classifySelectLowConfidenceButton" type="button" disabled>
+                  Highlight Low
+                </button>
+              </div>
+            </div>
+            <div class="classify-feature-table-wrap">
+              <table id="classifyFeatureTable" class="classify-feature-table">
+                <thead>
+                  <tr id="classifyFeatureHeader"></tr>
+                </thead>
+                <tbody id="classifyFeatureBody">
+                  <tr>
+                    <td class="classify-feature-empty">No features extracted</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="classify-output-actions">
+              <button id="classifyApplyGroupsButton" type="button" disabled>Apply Groups</button>
+              <label class="snapshot-option classify-include-low-confidence">
+                <input id="classifyIncludeLowConfidence" type="checkbox" disabled />
+                <span>Include low confidence</span>
+              </label>
+              <button id="classifyExportCsvButton" type="button" disabled>
+                Export as CSV
+              </button>
+            </div>
+          </details>
+          <div id="classifyStatus" class="segment-status" role="status">Choose labels and tile sets, then train from labeled polygons.</div>
+          <div id="classifyProgress" class="import-progress classify-progress" hidden>
+            <div class="import-progress-track" aria-hidden="true">
+              <div id="classifyProgressBar" class="import-progress-bar"></div>
+            </div>
+            <div id="classifyProgressText" class="import-progress-text"></div>
+          </div>
+        </div>
+      </div>
+      <div
+        id="classifyHelpDialog"
+        class="measure-help-dialog classify-help-dialog"
+        role="dialog"
+        aria-label="Classify Polygons help"
+        hidden
+      >
+        <div id="classifyHelpHeader" class="measure-help-header">
+          <span>Classify Polygons Help</span>
+          <button
+            id="closeClassifyHelpButton"
+            type="button"
+            title="Close help"
+            aria-label="Close help"
+          >
+            ×
+          </button>
+        </div>
+        <div class="measure-help-content classify-help-content">
+          <h4>What It Does</h4>
+          <p>Classify Polygons predicts labels for unlabeled polygons by training from labeled polygon annotations. Predictions are kept committed when Apply Groups is clicked.</p>
+          <h4>Basic Workflow</h4>
+          <p>Choose which polygons to use, the source of training labels, the tile set(s) to use for training, and the image resolution. After clicking Extract Features, select a model and click Train + Predict. Review predictions and add additional training labels before clicking Train + Predict again. Highlighting uncertain polygons can help with adding labels where they are needed the most. Iterate by adding labels and making predictions until you are happy with the results. Then click "Apply Groups" to extend predictions to the annotations.</p>
+          <h4>Image Features</h4>
+          <p>For each selected tile set, the tool samples pixels inside each polygon and summarizes color and brightness. Parameters extracted include RGB means and standard deviations; luminance mean, spread, and range; saturation mean and spread; and a simple internal luminance-edge estimate.</p>
+          <h4>Shape Features</h4>
+          <p>Shape measurements are optional. When enabled, area, perimeter, circularity, solidity, width, height, long axis, short axis, and aspect ratio are included with the image features.</p>
+          <h4>Models</h4>
+          <p>Random Forest is the default model. K-Nearest Neighbors (kNN) is also available. The current Random Forest is a lightweight in-app implementation intended for interactive exploration rather than final research-grade model validation.</p>
+          <h4>Confidence and Groups</h4>
+          <p>Confidence is useful for triage, especially with Highlight Low. Apply Groups assigns predicted labels to annotation groups. Leave Include low confidence unchecked to skip predictions below the minimum confidence threshold.</p>
+          <h4>Beta Notes</h4>
+          <p>Feature choices, tile-set roles, model tuning, and confidence calibration are still experimental. Export the table when you want to inspect or compare results outside the app.</p>
         </div>
       </div>
       <div

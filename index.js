@@ -370,6 +370,9 @@ const openPorosityEstimatorButton = document.getElementById(
 const openSegmentPaletteButton = document.getElementById(
   "openSegmentPaletteButton"
 );
+const openClassifyPaletteButton = document.getElementById(
+  "openClassifyPaletteButton"
+);
 const gridCountPalette = document.getElementById("gridCountPalette");
 const gridCountPaletteHeader = document.getElementById("gridCountPaletteHeader");
 const gridCountPaletteBody = document.getElementById("gridCountPaletteBody");
@@ -400,6 +403,12 @@ const controlsHelpHeader = document.getElementById("controlsHelpHeader");
 const closeControlsHelpButton = document.getElementById(
   "closeControlsHelpButton"
 );
+const classifyHelpButton = document.getElementById("classifyHelpButton");
+const classifyHelpDialog = document.getElementById("classifyHelpDialog");
+const classifyHelpHeader = document.getElementById("classifyHelpHeader");
+const closeClassifyHelpButton = document.getElementById(
+  "closeClassifyHelpButton"
+);
 const measurePalette = document.getElementById("measurePalette");
 const measurePaletteHeader = document.getElementById("measurePaletteHeader");
 const measurePaletteBody = document.getElementById("measurePaletteBody");
@@ -416,6 +425,14 @@ const closeSnapshotPaletteButton = document.getElementById(
 );
 const minimizeSnapshotPaletteButton = document.getElementById(
   "minimizeSnapshotPaletteButton"
+);
+const classifyPalette = document.getElementById("classifyPalette");
+const classifyPaletteHeader = document.getElementById("classifyPaletteHeader");
+const closeClassifyPaletteButton = document.getElementById(
+  "closeClassifyPaletteButton"
+);
+const minimizeClassifyPaletteButton = document.getElementById(
+  "minimizeClassifyPaletteButton"
 );
 const porosityPalette = document.getElementById("porosityPalette");
 const porosityPaletteHeader = document.getElementById("porosityPaletteHeader");
@@ -566,6 +583,50 @@ const snapshotTileSetSelect = document.getElementById("snapshotTileSetSelect");
 const snapshotContentMode = document.getElementById("snapshotContentMode");
 const snapshotResolutionMode = document.getElementById("snapshotResolutionMode");
 const snapshotJpegQuality = document.getElementById("snapshotJpegQuality");
+const classifyScope = document.getElementById("classifyScope");
+const classifyScopeGroup = document.getElementById("classifyScopeGroup");
+const classifyLabelSource = document.getElementById("classifyLabelSource");
+const classifyTileSetSelect = document.getElementById("classifyTileSetSelect");
+const classifyResolution = document.getElementById("classifyResolution");
+const classifyIncludeShape = document.getElementById("classifyIncludeShape");
+const classifyModelType = document.getElementById("classifyModelType");
+const classifyK = document.getElementById("classifyK");
+const classifyMinConfidence = document.getElementById("classifyMinConfidence");
+const classifyExtractFeaturesButton = document.getElementById(
+  "classifyExtractFeaturesButton"
+);
+const classifyTrainPredictButton = document.getElementById(
+  "classifyTrainPredictButton"
+);
+const classifyApplyGroupsButton = document.getElementById(
+  "classifyApplyGroupsButton"
+);
+const classifyIncludeLowConfidence = document.getElementById(
+  "classifyIncludeLowConfidence"
+);
+const classifySelectLowConfidenceButton = document.getElementById(
+  "classifySelectLowConfidenceButton"
+);
+const classifyPredictionSelect = document.getElementById(
+  "classifyPredictionSelect"
+);
+const classifySelectPredictionButton = document.getElementById(
+  "classifySelectPredictionButton"
+);
+const classifyProgress = document.getElementById("classifyProgress");
+const classifyProgressBar = document.getElementById("classifyProgressBar");
+const classifyProgressText = document.getElementById("classifyProgressText");
+const classifyStatus = document.getElementById("classifyStatus");
+const classifyFeatureTable = document.getElementById("classifyFeatureTable");
+const classifyFeatureHeader = document.getElementById("classifyFeatureHeader");
+const classifyFeatureBody = document.getElementById("classifyFeatureBody");
+const classifyExportCsvButton = document.getElementById("classifyExportCsvButton");
+const classifySetupSection = document.getElementById("classifySetupSection");
+const classifyRunSection = document.getElementById("classifyRunSection");
+const classifyKField = document.getElementById("classifyKField");
+const classifyMinConfidenceField = document.getElementById(
+  "classifyMinConfidenceField"
+);
 const porosityOverlay = document.getElementById("porosity-overlay");
 const porosityTypeSelect = document.getElementById("porosityTypeSelect");
 const porosityAddTypeButton = document.getElementById("porosityAddTypeButton");
@@ -646,6 +707,19 @@ let porosityEstimateGeneration = 0;
 let porosityToleranceReestimateTimer = null;
 let porositySelectedTileSetIndices = [];
 let porosityAnalysisResolutionMode = "balanced";
+let classifyLastPrediction = null;
+let classifyRunId = 0;
+let classifyFeatureCache = null;
+let classifyFeatureRows = [];
+let classifyFeatureOptions = null;
+let classifyFeatureColumns = [];
+let classifyFeatureSort = { column: "conf", direction: "asc" };
+let classifyTrainingRunning = false;
+let classifyGroupOptionsSignature = "";
+let classifyFeatureTableRenderTimer = null;
+let classifyHighlightedPredictionUuids = new Set();
+let classifyHighlightedPredictionLabel = "";
+let classifyHighlightMode = "";
 let samValidationState = {
   status: "untested",
   fingerprint: "",
@@ -1189,6 +1263,7 @@ function clampOpenToolPalettes() {
     annotatePalette,
     measurePalette,
     snapshotPalette,
+    classifyPalette,
     porosityPalette,
     segmentPalette,
   ].forEach((palette) => {
@@ -1403,6 +1478,37 @@ function toggleSnapshotPalette() {
   }
 
   closeSnapshotPalette();
+}
+
+function openClassifyPalette() {
+  if (!classifyPalette) return;
+
+  classifyPalette.hidden = false;
+  restoreToolPalettePosition(classifyPalette, "petroImage.classifyPalette");
+  openClassifyPaletteButton?.setAttribute("aria-pressed", "true");
+  restoreToolPaletteFromMinimized(
+    classifyPalette,
+    minimizeClassifyPaletteButton
+  );
+  populateClassifyControls();
+  clampToolPaletteToViewer(classifyPalette);
+}
+
+function closeClassifyPalette() {
+  if (!classifyPalette) return;
+
+  classifyPalette.hidden = true;
+  openClassifyPaletteButton?.setAttribute("aria-pressed", "false");
+  closeClassifyHelpDialog();
+}
+
+function toggleClassifyPalette() {
+  if (!classifyPalette || classifyPalette.hidden) {
+    openClassifyPalette();
+    return;
+  }
+
+  closeClassifyPalette();
 }
 
 function openPorosityEstimator() {
@@ -3050,7 +3156,7 @@ function commitUnsupervisedSegmentFeatures(features, statusMessage) {
       area_m2: squareMetersFromSquarePixels(areaPixels2),
       perimeter_m: metersFromPixels(perimeterPixels),
     };
-    const properties = normalizeAnnotationProperties(
+    const properties = normalizeNewAnnotationProperties(
       segmentGroup
         ? applyAnnotationGroupToProperties(segmentProperties, segmentGroup)
         : applyActiveAnnotationGroup(segmentProperties)
@@ -3323,7 +3429,7 @@ function commitSegmentFeature(feature, options = {}) {
   const segmentGroup = getSegmentAnnotationGroup();
   const segmentProperties = {
     ...feature.properties,
-    uuid: generateUniqueId(8),
+    uuid: generateUniqueAnnotationUuid(null, 12),
     label: document.getElementById("anno-label")?.value || "",
     imageTitle: title(),
     pixelsPerMeter: pixelsPerMeter(),
@@ -3339,7 +3445,7 @@ function commitSegmentFeature(feature, options = {}) {
     area_m2: areaM2,
     perimeter_m: perimeterM,
   };
-  const properties = normalizeAnnotationProperties(
+  const properties = normalizeNewAnnotationProperties(
     segmentGroup
       ? applyAnnotationGroupToProperties(segmentProperties, segmentGroup)
       : applyActiveAnnotationGroup(segmentProperties)
@@ -6824,6 +6930,1512 @@ async function renderFullResolutionImageRectCanvas(
   }
 }
 
+function populateClassifyControls() {
+  populateClassifyGroupOptions();
+  populateClassifyTileSetSelect();
+  updateClassifyScopeControls({ invalidate: false });
+  updateClassifyActionState();
+  renderClassifyFeatureTable();
+}
+
+function getClassifyGroupOptionsSignature(groups) {
+  return JSON.stringify(
+    groups.map((group) => [
+      group.groupId,
+      group.groupName,
+      group.groupColor,
+      group.groupVisible !== false,
+      group.groupLocked === true,
+    ])
+  );
+}
+
+function scheduleClassifyFeatureTableRender() {
+  if (classifyFeatureTableRenderTimer) return;
+  classifyFeatureTableRenderTimer = window.setTimeout(() => {
+    classifyFeatureTableRenderTimer = null;
+    renderClassifyFeatureTable();
+  }, 0);
+}
+
+function populateClassifyGroupOptions(groups = getAnnotationGroups()) {
+  if (!classifyScopeGroup) return;
+  const previousValue = classifyScopeGroup.value;
+  classifyScopeGroup.innerHTML = "";
+  classifyGroupOptionsSignature = getClassifyGroupOptionsSignature(groups);
+  groups.forEach((group) => {
+    const option = document.createElement("option");
+    option.value = group.groupId;
+    option.textContent = group.groupName;
+    classifyScopeGroup.append(option);
+  });
+  if (
+    Array.from(classifyScopeGroup.options).some(
+      (option) => option.value === previousValue
+    )
+  ) {
+    classifyScopeGroup.value = previousValue;
+  }
+}
+
+function refreshClassifyGroupsFromAnnotations() {
+  if (!classifyPalette || classifyPalette.hidden || !classifyScopeGroup) return;
+  const previousValue = classifyScopeGroup.value;
+  const groups = getAnnotationGroups();
+  const signature = getClassifyGroupOptionsSignature(groups);
+  if (signature === classifyGroupOptionsSignature) return;
+  populateClassifyGroupOptions(groups);
+  if (classifyFeatureRows.length && classifyLabelSource?.value === "group") {
+    scheduleClassifyFeatureTableRender();
+  }
+  if (
+    previousValue &&
+    !Array.from(classifyScopeGroup.options).some(
+      (option) => option.value === previousValue
+    )
+  ) {
+    invalidateClassifyFeatures();
+  }
+}
+
+function populateClassifyTileSetSelect() {
+  if (!classifyTileSetSelect) return;
+  const previousValues = new Set(
+    Array.from(classifyTileSetSelect.selectedOptions).map((option) => option.value)
+  );
+  classifyTileSetSelect.innerHTML = "";
+  tileSets().forEach((tileSet, index) => {
+    const option = document.createElement("option");
+    option.value = String(index);
+    option.textContent = getSnapshotTileSetLabel(tileSet, index);
+    option.selected = previousValues.size === 0 || previousValues.has(option.value);
+    classifyTileSetSelect.append(option);
+  });
+}
+
+function updateClassifyScopeControls(options = {}) {
+  if (classifyScopeGroup) {
+    classifyScopeGroup.disabled = classifyScope?.value !== "group";
+  }
+  if (options.invalidate !== false) {
+    invalidateClassifyFeatures();
+  }
+  updateClassifyActionState();
+}
+
+function getClassifyFeatureOptionsKey(options) {
+  return JSON.stringify({
+    scope: options.scope,
+    scopeGroupId: options.scope === "group" ? options.scopeGroupId : "",
+    tileSetIndices: options.tileSetIndices,
+    resolutionMode: options.resolutionMode,
+    includeShape: options.includeShape,
+  });
+}
+
+function haveClassifyFeaturesForOptions(options = getClassifyOptions()) {
+  return (
+    classifyFeatureRows.length > 0 &&
+    classifyFeatureOptions?.featureOptionsKey ===
+      getClassifyFeatureOptionsKey(options)
+  );
+}
+
+function invalidateClassifyFeatures() {
+  classifyFeatureRows = [];
+  classifyFeatureOptions = null;
+  classifyFeatureColumns = [];
+  classifyLastPrediction = null;
+  clearClassifyPredictionHighlight();
+  renderClassifyFeatureTable();
+}
+
+function updateClassifyActionState() {
+  const hasPrediction = Boolean(classifyLastPrediction?.results?.length);
+  const hasFeatures = haveClassifyFeaturesForOptions();
+  const options = getClassifyOptions();
+  const canExtract =
+    options.tileSetIndices.length > 0 && getClassifyPolygonFeatures(options).length > 0;
+  updateClassifyModelControls(options);
+  if (classifyExtractFeaturesButton) {
+    classifyExtractFeaturesButton.disabled = !canExtract;
+    classifyExtractFeaturesButton.title = canExtract
+      ? ""
+      : options.tileSetIndices.length === 0
+        ? "Select at least one tile set."
+        : "No unlocked polygon annotations match the selected scope.";
+  }
+  if (classifyTrainPredictButton) {
+    classifyTrainPredictButton.disabled = !hasFeatures || classifyTrainingRunning;
+  }
+  if (classifyApplyGroupsButton) classifyApplyGroupsButton.disabled = !hasPrediction;
+  if (classifyIncludeLowConfidence) {
+    classifyIncludeLowConfidence.disabled = !hasPrediction;
+  }
+  if (classifySelectLowConfidenceButton) {
+    classifySelectLowConfidenceButton.disabled = !hasPrediction;
+  }
+  if (classifyExportCsvButton) {
+    classifyExportCsvButton.disabled = classifyFeatureRows.length === 0;
+  }
+  updateClassifyPredictionControls();
+}
+
+function updateClassifyModelControls(options = getClassifyOptions()) {
+  const isRandomForest = options.modelType === "randomForest";
+  if (classifyKField) {
+    classifyKField.classList.toggle("classify-field-disabled", isRandomForest);
+  }
+  if (classifyK) {
+    classifyK.disabled = isRandomForest;
+  }
+  if (classifyMinConfidenceField) classifyMinConfidenceField.hidden = false;
+}
+
+function syncClassifySectionAccordion(openSection) {
+  if (!openSection?.open) return;
+  [classifySetupSection, classifyRunSection].forEach((section) => {
+    if (section && section !== openSection) section.open = false;
+  });
+}
+
+function setClassifyStatus(message, status = "") {
+  if (!classifyStatus) return;
+  classifyStatus.textContent = message;
+  classifyStatus.dataset.status = status;
+}
+
+function setClassifyProgress(value, message = "") {
+  if (!classifyProgress || !classifyProgressBar || !classifyProgressText) return;
+  const percent = Math.max(0, Math.min(100, Number(value) || 0));
+  classifyProgress.hidden = false;
+  classifyProgressBar.style.width = "100%";
+  classifyProgressBar.style.transform = `scaleX(${percent / 100})`;
+  classifyProgressText.textContent = message || `${Math.round(percent)}%`;
+}
+
+function clearClassifyProgress() {
+  if (!classifyProgress || !classifyProgressBar || !classifyProgressText) return;
+  classifyProgress.hidden = true;
+  classifyProgressBar.style.width = "100%";
+  classifyProgressBar.style.transform = "scaleX(0)";
+  classifyProgressText.textContent = "";
+}
+
+function getClassifyFeatureColumnLabel(column) {
+  return String(column)
+    .replace(/^shape_/, "sh_")
+    .replace(/mean/g, "mu")
+    .replace(/std/g, "sd")
+    .replace(/range/g, "rng")
+    .replace(/Lum/g, "L")
+    .replace(/Sat/g, "S")
+    .replace(/circularity/g, "circ")
+    .replace(/solidity/g, "sol")
+    .replace(/aspectRatio/g, "ar")
+    .replace(/perimeterM/g, "perim")
+    .replace(/areaM2/g, "area")
+    .replace(/longAxisM/g, "long")
+    .replace(/shortAxisM/g, "short");
+}
+
+function formatClassifyFeatureValue(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return "";
+  if (Math.abs(number) >= 1000 || (Math.abs(number) > 0 && Math.abs(number) < 0.01)) {
+    return number.toExponential(2);
+  }
+  return number.toLocaleString(undefined, {
+    maximumFractionDigits: Math.abs(number) >= 100 ? 1 : 3,
+  });
+}
+
+function getClassifyFeatureColumnDefinition(column) {
+  return {
+    id: column,
+    label: getClassifyFeatureColumnLabel(column),
+    title: column,
+    definition: column,
+    numeric: true,
+    getValue: (rowData) => rowData.values[column],
+  };
+}
+
+function getClassifyFeatureTableColumns(options = {}) {
+  const columns = [];
+  if (options.includeUuid) {
+    columns.push({
+      id: "uuid",
+      label: "uuid",
+      title: "Annotation UUID",
+      definition: "Annotation UUID",
+      numeric: false,
+      getValue: (rowData) => rowData.uuid,
+      formatValue: (value) => String(value || "").slice(0, 8),
+    });
+  }
+  columns.push(
+    {
+      id: "label",
+      label: "label",
+      title: "Training label from the selected label source",
+      definition: "Training label from the selected label source",
+      numeric: false,
+      getValue: (rowData, context) =>
+        getClassifyTrainingLabel(rowData.feature, context.options.labelSource),
+    },
+    {
+      id: "pred",
+      label: "pred",
+      title: "Predicted label",
+      definition: "Predicted label",
+      numeric: false,
+      getValue: (rowData, context) =>
+        context.predictions.get(rowData.uuid)?.predictedLabel || "",
+    },
+    {
+      id: "conf",
+      label: "conf",
+      title: "Prediction confidence",
+      definition: "Prediction confidence",
+      numeric: true,
+      getValue: (rowData, context) =>
+        context.predictions.get(rowData.uuid)?.confidence ?? "",
+    },
+  );
+  if (options.includeFeatures) {
+    columns.push(...classifyFeatureColumns.map(getClassifyFeatureColumnDefinition));
+  }
+  return columns;
+}
+
+function getClassifyPredictionByUuid() {
+  return new Map(
+    (classifyLastPrediction?.results || []).map((result) => [result.uuid, result])
+  );
+}
+
+function updateClassifyPredictionControls() {
+  if (!classifyPredictionSelect || !classifySelectPredictionButton) return;
+  const previousValue = classifyPredictionSelect.value;
+  classifyPredictionSelect.innerHTML = "";
+  const results = classifyLastPrediction?.results || [];
+  const counts = new Map();
+  results.forEach((result) => {
+    if (!result.predictedLabel) return;
+    counts.set(result.predictedLabel, (counts.get(result.predictedLabel) || 0) + 1);
+  });
+  if (counts.size === 0) {
+    const option = document.createElement("option");
+    option.value = "";
+    option.textContent = "No predictions";
+    classifyPredictionSelect.append(option);
+    classifyPredictionSelect.disabled = true;
+    classifySelectPredictionButton.disabled = true;
+    updateClassifyHighlightControls();
+    return;
+  }
+  [...counts.entries()]
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .forEach(([label, count]) => {
+      const option = document.createElement("option");
+      option.value = label;
+      option.textContent = `${label} (${count})`;
+      classifyPredictionSelect.append(option);
+    });
+  if (
+    previousValue &&
+    Array.from(classifyPredictionSelect.options).some(
+      (option) => option.value === previousValue
+    )
+  ) {
+    classifyPredictionSelect.value = previousValue;
+  }
+  classifyPredictionSelect.disabled = false;
+  classifySelectPredictionButton.disabled = !classifyPredictionSelect.value;
+  updateClassifyHighlightControls();
+}
+
+function updateClassifyHighlightControls() {
+  const predictionLabel = classifyPredictionSelect?.value || "";
+  const predictionHighlightActive =
+    classifyHighlightMode === "prediction" &&
+    classifyHighlightedPredictionLabel === predictionLabel &&
+    classifyHighlightedPredictionUuids.size > 0;
+  if (classifySelectPredictionButton) {
+    classifySelectPredictionButton.textContent = predictionHighlightActive
+      ? "Clear Highlight"
+      : "Highlight Prediction";
+    classifySelectPredictionButton.setAttribute(
+      "aria-pressed",
+      String(predictionHighlightActive)
+    );
+  }
+  const lowHighlightActive =
+    classifyHighlightMode === "low" && classifyHighlightedPredictionUuids.size > 0;
+  if (classifySelectLowConfidenceButton) {
+    classifySelectLowConfidenceButton.textContent = lowHighlightActive
+      ? "Clear Low"
+      : "Highlight Low";
+    classifySelectLowConfidenceButton.setAttribute(
+      "aria-pressed",
+      String(lowHighlightActive)
+    );
+  }
+}
+
+function clearClassifyPredictionHighlight() {
+  if (
+    classifyHighlightedPredictionUuids.size === 0 &&
+    !classifyHighlightedPredictionLabel &&
+    !classifyHighlightMode
+  ) {
+    return;
+  }
+  classifyHighlightedPredictionUuids = new Set();
+  classifyHighlightedPredictionLabel = "";
+  classifyHighlightMode = "";
+  updateClassifyHighlightControls();
+  drawShape(polyCanvas, [annoJSON, annoJSONTemp]);
+}
+
+function isClassifyHighlightedFeature(feature) {
+  return Boolean(
+    feature?.properties?.uuid &&
+      classifyHighlightedPredictionUuids.has(feature.properties.uuid)
+  );
+}
+
+function compareClassifyFeatureTableRows(a, b, column, context) {
+  const aValue = column.getValue(a, context);
+  const bValue = column.getValue(b, context);
+  const aNumber = Number(aValue);
+  const bNumber = Number(bValue);
+  let comparison = 0;
+  if (column.numeric && (Number.isFinite(aNumber) || Number.isFinite(bNumber))) {
+    if (!Number.isFinite(aNumber)) comparison = 1;
+    else if (!Number.isFinite(bNumber)) comparison = -1;
+    else comparison = aNumber - bNumber;
+  } else {
+    comparison = String(aValue || "").localeCompare(String(bValue || ""), undefined, {
+      numeric: true,
+      sensitivity: "base",
+    });
+  }
+  return classifyFeatureSort.direction === "desc" ? -comparison : comparison;
+}
+
+function getSortedClassifyFeatureRows(columns, context) {
+  const sortColumn =
+    columns.find((column) => column.id === classifyFeatureSort.column) || columns[0];
+  return classifyFeatureRows
+    .map((rowData, index) => ({ rowData, index }))
+    .sort((a, b) => {
+      const comparison = compareClassifyFeatureTableRows(
+        a.rowData,
+        b.rowData,
+        sortColumn,
+        context
+      );
+      return comparison || a.index - b.index;
+    })
+    .map((entry) => entry.rowData);
+}
+
+function setClassifyFeatureSort(columnId) {
+  if (classifyFeatureSort.column === columnId) {
+    classifyFeatureSort = {
+      column: columnId,
+      direction: classifyFeatureSort.direction === "asc" ? "desc" : "asc",
+    };
+  } else {
+    classifyFeatureSort = { column: columnId, direction: "asc" };
+  }
+  renderClassifyFeatureTable();
+}
+
+function getNearestScrollableAncestor(element) {
+  let candidate = element?.parentElement || null;
+  while (candidate && candidate !== document.body) {
+    const style = window.getComputedStyle(candidate);
+    const canScrollY =
+      /(auto|scroll|overlay)/.test(style.overflowY) &&
+      candidate.scrollHeight > candidate.clientHeight + 1;
+    if (canScrollY) return candidate;
+    candidate = candidate.parentElement;
+  }
+  return null;
+}
+
+function centerElementInScrollContainer(element) {
+  if (!element) return;
+  const container = getNearestScrollableAncestor(element);
+  if (!container) {
+    element.scrollIntoView({ block: "center", inline: "nearest" });
+    return;
+  }
+
+  const elementRect = element.getBoundingClientRect();
+  const containerRect = container.getBoundingClientRect();
+  const elementCenter =
+    elementRect.top - containerRect.top + container.scrollTop + elementRect.height / 2;
+  const targetTop = Math.max(0, elementCenter - container.clientHeight / 2);
+  container.scrollTop = targetTop;
+}
+
+function scrollSelectedClassifyFeatureRowIntoView() {
+  if (!selectedAnnotationUuid || !classifyFeatureBody) return;
+  const row = classifyFeatureBody.querySelector(
+    `tr[data-annotation-uuid="${CSS.escape(selectedAnnotationUuid)}"]`
+  );
+  centerElementInScrollContainer(row);
+}
+
+function renderClassifyFeatureTable() {
+  if (!classifyFeatureHeader || !classifyFeatureBody) return;
+  const predictions = getClassifyPredictionByUuid();
+  const options = getClassifyOptions();
+  const context = { predictions, options };
+  const tableColumns = getClassifyFeatureTableColumns();
+  classifyFeatureHeader.innerHTML = "";
+  tableColumns.forEach((column) => {
+    const th = document.createElement("th");
+    const isSorted = classifyFeatureSort.column === column.id;
+    th.textContent = `${column.label}${isSorted ? classifyFeatureSort.direction === "asc" ? " ↑" : " ↓" : ""}`;
+    th.title = column.title || column.definition || column.id;
+    th.scope = "col";
+    th.tabIndex = 0;
+    th.setAttribute(
+      "aria-sort",
+      isSorted
+        ? classifyFeatureSort.direction === "asc"
+          ? "ascending"
+          : "descending"
+        : "none"
+    );
+    th.addEventListener("click", () => setClassifyFeatureSort(column.id));
+    th.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      event.preventDefault();
+      setClassifyFeatureSort(column.id);
+    });
+    classifyFeatureHeader.appendChild(th);
+  });
+
+  classifyFeatureBody.innerHTML = "";
+  if (!classifyFeatureRows.length) {
+    const row = document.createElement("tr");
+    const cell = document.createElement("td");
+    cell.colSpan = Math.max(1, tableColumns.length);
+    cell.className = "classify-feature-empty";
+    cell.textContent = "No features extracted";
+    row.appendChild(cell);
+    classifyFeatureBody.appendChild(row);
+    if (classifyFeatureTable) classifyFeatureTable.style.minWidth = "180px";
+    if (classifyExportCsvButton) classifyExportCsvButton.disabled = true;
+    return;
+  }
+
+  if (classifyFeatureTable) {
+    classifyFeatureTable.style.minWidth = `${Math.max(
+      180,
+      tableColumns.length * 58
+    )}px`;
+  }
+  if (classifyExportCsvButton) classifyExportCsvButton.disabled = false;
+  getSortedClassifyFeatureRows(tableColumns, context).forEach((rowData) => {
+    const row = document.createElement("tr");
+    row.dataset.annotationUuid = rowData.uuid;
+    row.classList.toggle(
+      "classify-feature-row-selected",
+      selectedAnnotationUuids.has(rowData.uuid)
+    );
+    row.addEventListener("click", () => {
+      setAnnotationSelection([rowData.uuid], rowData.uuid, { pan: true });
+    });
+    tableColumns.forEach((column) => {
+      const value = column.getValue(rowData, context);
+      const cell = document.createElement("td");
+      cell.textContent = column.formatValue
+        ? column.formatValue(value)
+        : column.numeric
+          ? formatClassifyFeatureValue(value)
+          : value;
+      row.appendChild(cell);
+    });
+    classifyFeatureBody.appendChild(row);
+  });
+  scrollSelectedClassifyFeatureRowIntoView();
+}
+
+function exportClassifyFeaturesCsv() {
+  if (!classifyFeatureRows.length) {
+    alert("No classified feature rows to export.");
+    return;
+  }
+  const predictions = getClassifyPredictionByUuid();
+  const options = getClassifyOptions();
+  const context = { predictions, options };
+  const columns = getClassifyFeatureTableColumns({
+    includeUuid: true,
+    includeFeatures: true,
+  });
+  const rows = getSortedClassifyFeatureRows(columns, context);
+  const definitionRows = [
+    ["column", "definition"],
+    ...columns.map((column) => [
+      column.label,
+      column.definition || column.title || column.id,
+    ]),
+  ];
+  const dataRows = [
+    columns.map((column) => column.label),
+    ...rows.map((rowData) =>
+      columns.map((column) => column.getValue(rowData, context))
+    ),
+  ];
+  const csv = [
+    ...definitionRows,
+    [],
+    ["data"],
+    ...dataRows,
+  ]
+    .map((row) => row.map(csvEscape).join(","))
+    .join("\n");
+  saveAs(
+    new Blob([csv], { type: "text/csv;charset=utf-8" }),
+    "classify-grain-features.csv"
+  );
+}
+
+function getClassifyOptions() {
+  const selectedTileSetIndices = Array.from(
+    classifyTileSetSelect?.selectedOptions || []
+  )
+    .map((option) => Number.parseInt(option.value, 10))
+    .filter((index) => Number.isFinite(index) && tileSets()[index]);
+
+  return {
+    scope: classifyScope?.value || "all",
+    scopeGroupId: classifyScopeGroup?.value || "",
+    labelSource: classifyLabelSource?.value || "group",
+    tileSetIndices:
+      selectedTileSetIndices.length > 0
+        ? selectedTileSetIndices
+        : tileSets().map((_, index) => index),
+    resolutionMode: classifyResolution?.value || "0.25",
+    includeShape: classifyIncludeShape?.checked !== false,
+    modelType: classifyModelType?.value || "randomForest",
+    k: Math.max(1, Math.min(25, Math.trunc(Number(classifyK?.value || 5)) || 5)),
+    minConfidence: Math.max(
+      0,
+      Math.min(1, Number(classifyMinConfidence?.value || 0.65))
+    ),
+  };
+}
+
+function getClassifyPolygonFeatures(options) {
+  const selectedUuids = new Set(getSelectedAnnotationUuids());
+  return annoJSON.features.filter((feature) => {
+    if (!isAnnotationPolygonGeometry(feature)) return false;
+    if (isAnnotationFeatureLocked(feature)) return false;
+    normalizeAnnotationFeature(feature);
+    if (options.scope === "selection") {
+      return selectedUuids.has(feature.properties.uuid);
+    }
+    if (options.scope === "group") {
+      return feature.properties.groupId === options.scopeGroupId;
+    }
+    return true;
+  });
+}
+
+function getClassifyTrainingLabel(feature, labelSource) {
+  const props = feature?.properties || {};
+  if (labelSource === "label") return String(props.label || "").trim();
+  if (labelSource === "countJoin") {
+    return String(props.countJoin?.interpretedCountLabel || "").trim();
+  }
+  if (
+    props.groupId &&
+    props.groupId !== DEFAULT_ANNOTATION_GROUP.groupId &&
+    props.groupName
+  ) {
+    return String(props.groupName).trim();
+  }
+  return "";
+}
+
+function getClassifyCombinedImageRect(features) {
+  const bounds = features.reduce(
+    (acc, feature) => {
+      const featureBounds = getFeatureImageBounds(feature);
+      if (!featureBounds) return acc;
+      acc.minX = Math.min(acc.minX, featureBounds.minX);
+      acc.minY = Math.min(acc.minY, featureBounds.minY);
+      acc.maxX = Math.max(acc.maxX, featureBounds.maxX);
+      acc.maxY = Math.max(acc.maxY, featureBounds.maxY);
+      return acc;
+    },
+    {
+      minX: Infinity,
+      minY: Infinity,
+      maxX: -Infinity,
+      maxY: -Infinity,
+    }
+  );
+  if (
+    !Number.isFinite(bounds.minX) ||
+    !Number.isFinite(bounds.minY) ||
+    !Number.isFinite(bounds.maxX) ||
+    !Number.isFinite(bounds.maxY)
+  ) {
+    return null;
+  }
+  const width = Math.max(1, bounds.maxX - bounds.minX);
+  const height = Math.max(1, bounds.maxY - bounds.minY);
+  const pad = Math.max(16, Math.min(128, Math.max(width, height) * 0.02));
+  return {
+    x: Math.floor(bounds.minX - pad),
+    y: Math.floor(bounds.minY - pad),
+    width: Math.ceil(width + pad * 2),
+    height: Math.ceil(height + pad * 2),
+  };
+}
+
+function getClassifyResolutionScale(imageRect, options) {
+  if (options.resolutionMode === "viewer") {
+    return getViewerResolutionScaleForImageRect(imageRect);
+  }
+  const scale = Number(options.resolutionMode);
+  return Number.isFinite(scale) ? Math.max(0.05, Math.min(1, scale)) : 0.25;
+}
+
+function getClassifyRenderLimitError(imageRect, scale) {
+  const width = Math.max(1, Math.round(imageRect.width * scale));
+  const height = Math.max(1, Math.round(imageRect.height * scale));
+  if (width > SNAPSHOT_MAX_OUTPUT_DIMENSION || height > SNAPSHOT_MAX_OUTPUT_DIMENSION) {
+    return `Classification render would be ${width} x ${height} pixels. Choose a lower resolution or smaller polygon scope.`;
+  }
+  if (width * height > SNAPSHOT_MAX_OUTPUT_PIXELS) {
+    return `Classification render would contain ${(width * height / 1000000).toFixed(1)} megapixels. Choose a lower resolution or smaller polygon scope.`;
+  }
+  return "";
+}
+
+function roundClassifyNumber(value, digits = 3) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return null;
+  const factor = 10 ** digits;
+  return Math.round(number * factor) / factor;
+}
+
+function getClassifyFeatureCacheKey(features, options, imageRect, renderScale) {
+  const stageRotationInput = document.getElementById("stageRotation");
+  return JSON.stringify({
+    sampleIndex: currentIndex,
+    scope: options.scope,
+    scopeGroupId: options.scope === "group" ? options.scopeGroupId : "",
+    tileSetIndices: options.tileSetIndices,
+    tileSets: options.tileSetIndices.map((tileSetIndex) => {
+      const tileSet = tileSets()[tileSetIndex] || {};
+      return {
+        index: tileSetIndex,
+        periodDegrees: tileSet.periodDegrees || null,
+        visibleTileIndex: getTileSetVisibleTileIndex(tileSetIndex),
+        tiles: (tileSet.tiles || []).map((tile) => ({
+          uri: tile.uri || "",
+          angleDegrees: Number(tile.angleDegrees) || 0,
+        })),
+      };
+    }),
+    resolutionMode: options.resolutionMode,
+    renderScale: roundClassifyNumber(renderScale, 5),
+    imageRect: {
+      x: roundClassifyNumber(imageRect.x),
+      y: roundClassifyNumber(imageRect.y),
+      width: roundClassifyNumber(imageRect.width),
+      height: roundClassifyNumber(imageRect.height),
+    },
+    includeShape: options.includeShape,
+    pixelsPerMeter: options.includeShape
+      ? roundClassifyNumber(pixelsPerMeter(), 6)
+      : null,
+    rotateWithStage: Boolean(rotateWithStage?.checked),
+    stageRotation: roundClassifyNumber(stageRotationInput?.value || 0, 3),
+    viewportRotation: roundClassifyNumber(viewer.viewport.getRotation(true), 3),
+    viewportFlip:
+      typeof viewer.viewport.getFlip === "function"
+        ? Boolean(viewer.viewport.getFlip())
+        : false,
+    features: features.map((feature) => ({
+      uuid: feature.properties?.uuid || "",
+      geometry: feature.geometry,
+    })),
+  });
+}
+
+function classifyPointInFeatureGeometry(point, geometry) {
+  if (geometry?.type === "Polygon") {
+    return polygonContainsImagePoint(point, geometry.coordinates || []);
+  }
+  if (geometry?.type === "MultiPolygon") {
+    return (geometry.coordinates || []).some((polygon) =>
+      polygonContainsImagePoint(point, polygon)
+    );
+  }
+  return false;
+}
+
+function getClassifyImageStatsForFeature(analysisImage, imageRect, feature) {
+  if (!analysisImage?.data) return {};
+  const { width, height, data: imageData } = analysisImage;
+  const scaleX = imageRect.width / Math.max(1, width);
+  const scaleY = imageRect.height / Math.max(1, height);
+  const featureBounds = getFeatureImageBounds(feature);
+  if (!featureBounds) return {};
+  const startX = Math.max(
+    0,
+    Math.floor((featureBounds.minX - imageRect.x) / scaleX) - 1
+  );
+  const endX = Math.min(
+    width - 1,
+    Math.ceil((featureBounds.maxX - imageRect.x) / scaleX) + 1
+  );
+  const startY = Math.max(
+    0,
+    Math.floor((featureBounds.minY - imageRect.y) / scaleY) - 1
+  );
+  const endY = Math.min(
+    height - 1,
+    Math.ceil((featureBounds.maxY - imageRect.y) / scaleY) + 1
+  );
+  if (endX < startX || endY < startY) return {};
+  const sums = {
+    r: 0,
+    g: 0,
+    b: 0,
+    lum: 0,
+    sat: 0,
+    r2: 0,
+    g2: 0,
+    b2: 0,
+    lum2: 0,
+    sat2: 0,
+    minLum: Infinity,
+    maxLum: -Infinity,
+    edge: 0,
+  };
+  let count = 0;
+  let interiorEdgeComparisons = 0;
+  const featurePixelSpan = Math.max(endX - startX + 1, endY - startY + 1);
+  const stride = Math.max(1, Math.floor(featurePixelSpan / 180));
+
+  for (let y = startY; y <= endY; y += stride) {
+    for (let x = startX; x <= endX; x += stride) {
+      const imagePoint = {
+        x: imageRect.x + (x + 0.5) * scaleX,
+        y: imageRect.y + (y + 0.5) * scaleY,
+      };
+      if (!classifyPointInFeatureGeometry(imagePoint, feature.geometry)) continue;
+
+      const offset = (y * width + x) * 4;
+      const r = imageData[offset];
+      const g = imageData[offset + 1];
+      const b = imageData[offset + 2];
+      const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+      const maxChannel = Math.max(r, g, b);
+      const minChannel = Math.min(r, g, b);
+      const sat = maxChannel === 0 ? 0 : (maxChannel - minChannel) / maxChannel;
+
+      sums.r += r;
+      sums.g += g;
+      sums.b += b;
+      sums.lum += lum;
+      sums.sat += sat;
+      sums.r2 += r * r;
+      sums.g2 += g * g;
+      sums.b2 += b * b;
+      sums.lum2 += lum * lum;
+      sums.sat2 += sat * sat;
+      sums.minLum = Math.min(sums.minLum, lum);
+      sums.maxLum = Math.max(sums.maxLum, lum);
+      count += 1;
+
+      if (x + stride <= endX && y + stride <= endY) {
+        const rightOffset = (y * width + x + stride) * 4;
+        const downOffset = ((y + stride) * width + x) * 4;
+        const rightLum =
+          0.2126 * imageData[rightOffset] +
+          0.7152 * imageData[rightOffset + 1] +
+          0.0722 * imageData[rightOffset + 2];
+        const downLum =
+          0.2126 * imageData[downOffset] +
+          0.7152 * imageData[downOffset + 1] +
+          0.0722 * imageData[downOffset + 2];
+        sums.edge += Math.abs(lum - rightLum) + Math.abs(lum - downLum);
+        interiorEdgeComparisons += 2;
+      }
+    }
+  }
+
+  if (count === 0) return {};
+  const mean = (key) => sums[key] / count;
+  const std = (key, squareKey) =>
+    Math.sqrt(Math.max(0, sums[squareKey] / count - mean(key) ** 2));
+
+  return {
+    meanR: mean("r"),
+    meanG: mean("g"),
+    meanB: mean("b"),
+    stdR: std("r", "r2"),
+    stdG: std("g", "g2"),
+    stdB: std("b", "b2"),
+    meanLum: mean("lum"),
+    stdLum: std("lum", "lum2"),
+    minLum: sums.minLum,
+    maxLum: sums.maxLum,
+    rangeLum: sums.maxLum - sums.minLum,
+    meanSat: mean("sat"),
+    stdSat: std("sat", "sat2"),
+    edgeLum: interiorEdgeComparisons ? sums.edge / interiorEdgeComparisons : 0,
+  };
+}
+
+function getClassifyShapeFeatures(feature) {
+  const props = calculateGeometryMeasurementProperties("polygon", feature.geometry);
+  return {
+    areaM2: props.areaM2,
+    perimeterM: props.perimeterM,
+    circularity: props.circularity,
+    solidity: props.solidity,
+    widthM: props.widthM,
+    heightM: props.heightM,
+    longAxisM: props.longAxisM,
+    shortAxisM: props.shortAxisM,
+    aspectRatio: props.aspectRatio,
+  };
+}
+
+function addPrefixedNumericFeatures(target, prefix, values) {
+  Object.entries(values || {}).forEach(([key, value]) => {
+    const number = Number(value);
+    if (Number.isFinite(number)) target[`${prefix}_${key}`] = number;
+  });
+}
+
+async function buildClassifyFeatureRows(features, options, runId) {
+  const rows = [];
+  const combinedImageRect = getClassifyCombinedImageRect(features);
+  if (!combinedImageRect) {
+    throw new Error("Could not determine polygon image bounds.");
+  }
+  const renderScale = getClassifyResolutionScale(combinedImageRect, options);
+  const limitError = getClassifyRenderLimitError(combinedImageRect, renderScale);
+  if (limitError) throw new Error(limitError);
+  const cacheKey = getClassifyFeatureCacheKey(
+    features,
+    options,
+    combinedImageRect,
+    renderScale
+  );
+  if (classifyFeatureCache?.key === cacheKey) {
+    const cachedRows = new Map(
+      classifyFeatureCache.rows.map((row) => [row.uuid, row.values])
+    );
+    setClassifyProgress(80, "Using cached image features");
+    return features
+      .map((feature) => {
+        const values = cachedRows.get(feature.properties.uuid);
+        if (!values) return null;
+        return {
+          feature,
+          uuid: feature.properties.uuid,
+          label: getClassifyTrainingLabel(feature, options.labelSource),
+          values: { ...values },
+        };
+      })
+      .filter(Boolean);
+  }
+  const tileSetCanvases = new Map();
+
+  for (let index = 0; index < options.tileSetIndices.length; index += 1) {
+    if (runId !== classifyRunId) throw new Error("Classification run was canceled.");
+    const tileSetIndex = options.tileSetIndices[index];
+    setClassifyProgress(
+      ((index + 1) / Math.max(1, options.tileSetIndices.length)) * 55,
+      `Rendering tile set ${index + 1}/${options.tileSetIndices.length}`
+    );
+    const canvas = await renderFullResolutionImageRectCanvas(
+      combinedImageRect,
+      tileSetIndex,
+      renderScale
+    );
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    if (!ctx) {
+      throw new Error("Could not read rendered tile-set pixels.");
+    }
+    tileSetCanvases.set(tileSetIndex, {
+      width: canvas.width,
+      height: canvas.height,
+      data: ctx.getImageData(0, 0, canvas.width, canvas.height).data,
+    });
+    await wait(0);
+  }
+
+  for (let featureIndex = 0; featureIndex < features.length; featureIndex += 1) {
+    if (runId !== classifyRunId) throw new Error("Classification run was canceled.");
+    const feature = features[featureIndex];
+    const featureValues = {};
+
+    for (const tileSetIndex of options.tileSetIndices) {
+      const analysisImage = tileSetCanvases.get(tileSetIndex);
+      const stats = analysisImage
+        ? getClassifyImageStatsForFeature(analysisImage, combinedImageRect, feature)
+        : {};
+      addPrefixedNumericFeatures(featureValues, `ts${tileSetIndex}`, stats);
+    }
+
+    if (options.includeShape) {
+      addPrefixedNumericFeatures(featureValues, "shape", getClassifyShapeFeatures(feature));
+    }
+
+    rows.push({
+      feature,
+      uuid: feature.properties.uuid,
+      label: getClassifyTrainingLabel(feature, options.labelSource),
+      values: featureValues,
+    });
+    setClassifyProgress(
+      55 + ((featureIndex + 1) / Math.max(1, features.length)) * 25,
+      `Sampling polygons ${featureIndex + 1}/${features.length}`
+    );
+    await wait(0);
+  }
+  classifyFeatureCache = {
+    key: cacheKey,
+    rows: rows.map((row) => ({
+      uuid: row.uuid,
+      values: { ...row.values },
+    })),
+  };
+  return rows;
+}
+
+function getClassifyFeatureColumns(rows) {
+  const columns = new Set();
+  rows.forEach((row) => {
+    Object.keys(row.values || {}).forEach((key) => columns.add(key));
+  });
+  return [...columns].sort();
+}
+
+function vectorizeClassifyRows(rows, columns) {
+  return rows.map((row) => columns.map((column) => Number(row.values[column]) || 0));
+}
+
+function getStandardization(vectors) {
+  const count = vectors.length;
+  const dimension = vectors[0]?.length || 0;
+  const means = Array(dimension).fill(0);
+  const variances = Array(dimension).fill(0);
+  vectors.forEach((vector) => {
+    vector.forEach((value, index) => {
+      means[index] += value / count;
+    });
+  });
+  vectors.forEach((vector) => {
+    vector.forEach((value, index) => {
+      variances[index] += (value - means[index]) ** 2 / count;
+    });
+  });
+  return {
+    means,
+    stds: variances.map((value) => {
+      const std = Math.sqrt(Math.max(0, value));
+      return std > 1e-9 ? std : 1;
+    }),
+  };
+}
+
+function standardizeVector(vector, standardization) {
+  return vector.map(
+    (value, index) =>
+      (value - standardization.means[index]) / standardization.stds[index]
+  );
+}
+
+function classifyKnnPredict(vector, trainingRows, k) {
+  const distances = trainingRows
+    .map((row) => {
+      const distanceSquared = row.vector.reduce(
+        (sum, value, index) => sum + (value - vector[index]) ** 2,
+        0
+      );
+      return {
+        label: row.label,
+        uuid: row.uuid,
+        distance: Math.sqrt(distanceSquared),
+      };
+    })
+    .sort((a, b) => a.distance - b.distance)
+    .slice(0, Math.min(k, trainingRows.length));
+  const votes = new Map();
+  let totalWeight = 0;
+  distances.forEach((neighbor) => {
+    const weight = 1 / Math.max(1e-6, neighbor.distance);
+    votes.set(neighbor.label, (votes.get(neighbor.label) || 0) + weight);
+    totalWeight += weight;
+  });
+  const probabilities = Object.fromEntries(
+    [...votes.entries()]
+      .map(([label, weight]) => [label, totalWeight ? weight / totalWeight : 0])
+      .sort((a, b) => b[1] - a[1])
+  );
+  const sorted = Object.entries(probabilities);
+  return {
+    predictedLabel: sorted[0]?.[0] || "",
+    confidence: sorted[0]?.[1] || 0,
+    margin: (sorted[0]?.[1] || 0) - (sorted[1]?.[1] || 0),
+    probabilities,
+    neighbors: distances.map((neighbor) => ({
+      uuid: neighbor.uuid,
+      label: neighbor.label,
+      distance: neighbor.distance,
+    })),
+  };
+}
+
+function getClassifyLabelProbabilities(rows, labels) {
+  const counts = new Map(labels.map((label) => [label, 0]));
+  rows.forEach((row) => counts.set(row.label, (counts.get(row.label) || 0) + 1));
+  const total = Math.max(1, rows.length);
+  return Object.fromEntries(labels.map((label) => [label, (counts.get(label) || 0) / total]));
+}
+
+function getClassifyGini(rows, labels) {
+  if (!rows.length) return 0;
+  const probabilities = getClassifyLabelProbabilities(rows, labels);
+  return 1 - labels.reduce((sum, label) => sum + probabilities[label] ** 2, 0);
+}
+
+function buildClassifyRandomForestTree(rows, labels, dimension, options, depth = 0) {
+  const probabilities = getClassifyLabelProbabilities(rows, labels);
+  const sortedProbabilities = Object.entries(probabilities).sort((a, b) => b[1] - a[1]);
+  const predictedLabel = sortedProbabilities[0]?.[0] || "";
+  if (
+    depth >= options.maxDepth ||
+    rows.length <= options.minLeafSize * 2 ||
+    sortedProbabilities[0]?.[1] === 1
+  ) {
+    return { type: "leaf", predictedLabel, probabilities };
+  }
+
+  const featureCount = Math.max(1, Math.min(dimension, Math.ceil(Math.sqrt(dimension))));
+  const featureIndices = [];
+  while (featureIndices.length < featureCount) {
+    const index = Math.floor(Math.random() * dimension);
+    if (!featureIndices.includes(index)) featureIndices.push(index);
+  }
+
+  const parentGini = getClassifyGini(rows, labels);
+  let bestSplit = null;
+  featureIndices.forEach((featureIndex) => {
+    const values = rows
+      .map((row) => row.vector[featureIndex])
+      .filter((value) => Number.isFinite(value));
+    if (values.length < options.minLeafSize * 2) return;
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    if (min === max) return;
+    for (let attempt = 0; attempt < options.thresholdAttempts; attempt += 1) {
+      const threshold = min + Math.random() * (max - min);
+      const left = [];
+      const right = [];
+      rows.forEach((row) => {
+        (row.vector[featureIndex] <= threshold ? left : right).push(row);
+      });
+      if (left.length < options.minLeafSize || right.length < options.minLeafSize) {
+        return;
+      }
+      const weightedGini =
+        (left.length / rows.length) * getClassifyGini(left, labels) +
+        (right.length / rows.length) * getClassifyGini(right, labels);
+      const gain = parentGini - weightedGini;
+      if (!bestSplit || gain > bestSplit.gain) {
+        bestSplit = { featureIndex, threshold, left, right, gain };
+      }
+    }
+  });
+
+  if (!bestSplit || bestSplit.gain <= 1e-9) {
+    return { type: "leaf", predictedLabel, probabilities };
+  }
+
+  return {
+    type: "node",
+    featureIndex: bestSplit.featureIndex,
+    threshold: bestSplit.threshold,
+    left: buildClassifyRandomForestTree(
+      bestSplit.left,
+      labels,
+      dimension,
+      options,
+      depth + 1
+    ),
+    right: buildClassifyRandomForestTree(
+      bestSplit.right,
+      labels,
+      dimension,
+      options,
+      depth + 1
+    ),
+  };
+}
+
+function predictClassifyRandomForestTree(tree, vector) {
+  if (!tree || tree.type === "leaf") return tree?.probabilities || {};
+  return predictClassifyRandomForestTree(
+    vector[tree.featureIndex] <= tree.threshold ? tree.left : tree.right,
+    vector
+  );
+}
+
+function trainClassifyRandomForest(trainingRows, labels, dimension) {
+  const treeCount = 32;
+  const options = {
+    maxDepth: Math.min(10, Math.max(3, Math.ceil(Math.log2(trainingRows.length)) + 3)),
+    minLeafSize: Math.max(1, Math.floor(trainingRows.length * 0.02)),
+    thresholdAttempts: 6,
+  };
+  const trees = [];
+  for (let treeIndex = 0; treeIndex < treeCount; treeIndex += 1) {
+    const sample = Array.from({ length: trainingRows.length }, () =>
+      trainingRows[Math.floor(Math.random() * trainingRows.length)]
+    );
+    trees.push(buildClassifyRandomForestTree(sample, labels, dimension, options));
+  }
+  return { model: "randomForest", treeCount, options, labels, trees };
+}
+
+function classifyRandomForestPredict(vector, forest) {
+  const totals = new Map(forest.labels.map((label) => [label, 0]));
+  forest.trees.forEach((tree) => {
+    const probabilities = predictClassifyRandomForestTree(tree, vector);
+    forest.labels.forEach((label) => {
+      totals.set(label, (totals.get(label) || 0) + (probabilities[label] || 0));
+    });
+  });
+  const probabilities = Object.fromEntries(
+    forest.labels
+      .map((label) => [label, (totals.get(label) || 0) / Math.max(1, forest.trees.length)])
+      .sort((a, b) => b[1] - a[1])
+  );
+  const sorted = Object.entries(probabilities);
+  return {
+    predictedLabel: sorted[0]?.[0] || "",
+    confidence: sorted[0]?.[1] || 0,
+    margin: (sorted[0]?.[1] || 0) - (sorted[1]?.[1] || 0),
+    probabilities,
+    treeCount: forest.treeCount,
+  };
+}
+
+function summarizeClassifyResults(results, minConfidence) {
+  const predicted = results.filter((result) => result.predictedLabel);
+  const lowConfidence = predicted.filter(
+    (result) => result.confidence < minConfidence
+  );
+  const counts = new Map();
+  predicted.forEach((result) => {
+    counts.set(result.predictedLabel, (counts.get(result.predictedLabel) || 0) + 1);
+  });
+  const classSummary = [...counts.entries()]
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .map(([label, count]) => `${label}: ${count}`)
+    .join("; ");
+  return `${predicted.length} predicted, ${lowConfidence.length} below confidence threshold.${classSummary ? ` ${classSummary}` : ""}`;
+}
+
+async function extractClassifyFeatures() {
+  const runId = classifyRunId + 1;
+  classifyRunId = runId;
+  classifyFeatureRows = [];
+  classifyFeatureOptions = null;
+  classifyFeatureColumns = [];
+  classifyLastPrediction = null;
+  clearClassifyPredictionHighlight();
+  updateClassifyActionState();
+  renderClassifyFeatureTable();
+  clearClassifyProgress();
+
+  try {
+    const options = getClassifyOptions();
+    if (options.tileSetIndices.length === 0) {
+      throw new Error("Select at least one tile set.");
+    }
+    const features = getClassifyPolygonFeatures(options);
+    if (features.length === 0) {
+      throw new Error("No unlocked polygon annotations match the selected scope.");
+    }
+    setClassifyStatus("Extracting image features...", "busy");
+    if (classifyExtractFeaturesButton) classifyExtractFeaturesButton.disabled = true;
+    if (classifyTrainPredictButton) classifyTrainPredictButton.disabled = true;
+    const rows = await buildClassifyFeatureRows(features, options, runId);
+    classifyFeatureRows = rows;
+    classifyFeatureOptions = {
+      ...options,
+      featureOptionsKey: getClassifyFeatureOptionsKey(options),
+    };
+    classifyFeatureColumns = getClassifyFeatureColumns(rows);
+    renderClassifyFeatureTable();
+    setClassifyProgress(100, "Features ready");
+    if (classifyRunSection && classifySetupSection) {
+      classifyRunSection.open = true;
+      classifySetupSection.open = false;
+    }
+    setClassifyStatus(
+      `${rows.length} polygon feature row${rows.length === 1 ? "" : "s"} ready. Select a model and click Train + Predict to create predictions.`,
+      "success"
+    );
+  } catch (error) {
+    classifyFeatureRows = [];
+    classifyFeatureOptions = null;
+    classifyFeatureColumns = [];
+    classifyLastPrediction = null;
+    renderClassifyFeatureTable();
+    setClassifyStatus(
+      `Feature extraction failed. ${error.message || "Could not extract features."}`,
+      "error"
+    );
+  } finally {
+    if (classifyExtractFeaturesButton) classifyExtractFeaturesButton.disabled = false;
+    updateClassifyActionState();
+    window.setTimeout(clearClassifyProgress, 900);
+  }
+}
+
+async function runClassifyTrainPredict() {
+  classifyRunId += 1;
+  classifyLastPrediction = null;
+  clearClassifyPredictionHighlight();
+  classifyTrainingRunning = true;
+  setClassifyStatus("Preparing classifier...", "busy");
+  setClassifyProgress(10, "Preparing training data");
+  updateClassifyActionState();
+  await new Promise((resolve) => window.requestAnimationFrame(resolve));
+
+  try {
+    const options = getClassifyOptions();
+    if (!haveClassifyFeaturesForOptions(options)) {
+      throw new Error("Extract features before training.");
+    }
+    const rows = classifyFeatureRows.map((row) => ({
+      ...row,
+      label: getClassifyTrainingLabel(row.feature, options.labelSource),
+    }));
+    const trainingRows = rows.filter((row) => row.label);
+    if (trainingRows.length < 2) {
+      throw new Error("At least two labeled polygons are needed for training.");
+    }
+    const labels = new Set(trainingRows.map((row) => row.label));
+    const labelList = [...labels].sort((a, b) => a.localeCompare(b));
+    if (labelList.length < 2) {
+      throw new Error("Training labels must include at least two classes.");
+    }
+    const columns = classifyFeatureColumns.length
+      ? classifyFeatureColumns
+      : getClassifyFeatureColumns(rows);
+    if (columns.length === 0) {
+      throw new Error("No numeric features could be extracted.");
+    }
+    const modelType =
+      options.modelType === "randomForest" ? "randomForest" : "knn";
+    const modelLabel = modelType === "randomForest" ? "Random Forest" : "kNN";
+    setClassifyStatus(`Training ${modelLabel} classifier from extracted features...`, "busy");
+    setClassifyProgress(80, "Training classifier");
+    const vectors = vectorizeClassifyRows(rows, columns);
+    const standardization = getStandardization(vectors);
+    const vectorByUuid = new Map(
+      rows.map((row, index) => [
+        row.uuid,
+        standardizeVector(vectors[index], standardization),
+      ])
+    );
+    const standardizedTrainingRows = trainingRows.map((row) => ({
+      ...row,
+      vector: vectorByUuid.get(row.uuid),
+    }));
+    const k = Math.min(options.k, standardizedTrainingRows.length);
+    const randomForest =
+      modelType === "randomForest"
+        ? trainClassifyRandomForest(
+            standardizedTrainingRows,
+            labelList,
+            columns.length
+          )
+        : null;
+    setClassifyProgress(90, "Predicting classes");
+    annotationHistory.push("Classify grains");
+
+    const results = rows.map((row) => {
+      const vector = vectorByUuid.get(row.uuid);
+      const prediction =
+        modelType === "randomForest"
+          ? classifyRandomForestPredict(vector, randomForest)
+          : classifyKnnPredict(vector, standardizedTrainingRows, k);
+      const classification = {
+        workflow: "supervisedPolygonClassification",
+        model: modelType,
+        featureVersion: 1,
+        labelSource: options.labelSource,
+        tileSetIndices: options.tileSetIndices,
+        resolutionMode: options.resolutionMode,
+        ...(modelType === "knn" ? { k } : { treeCount: randomForest.treeCount }),
+        trainingLabel: row.label,
+        predictedLabel: prediction.predictedLabel,
+        confidence: prediction.confidence,
+        margin: prediction.margin,
+        probabilities: prediction.probabilities,
+        ...(prediction.neighbors ? { neighbors: prediction.neighbors } : {}),
+        lowConfidence: prediction.confidence < options.minConfidence,
+        appliedToGroup: false,
+        updatedAt: new Date().toISOString(),
+      };
+      row.feature.properties.classification = classification;
+      return {
+        feature: row.feature,
+        uuid: row.uuid,
+        trainingLabel: row.label,
+        ...classification,
+      };
+    });
+
+    classifyLastPrediction = {
+      options,
+      columns,
+      results,
+      trainingCount: trainingRows.length,
+      classCount: labelList.length,
+    };
+    renderAnnotationList();
+    renderClassifyFeatureTable();
+    drawShape(polyCanvas, [annoJSON, annoJSONTemp]);
+    unsavedAnnotations(true);
+    setClassifyProgress(100, "Prediction complete");
+    setClassifyStatus(
+      `${modelLabel} trained on ${trainingRows.length} polygons across ${labelList.length} classes. ${summarizeClassifyResults(results, options.minConfidence)}`,
+      "success"
+    );
+  } catch (error) {
+    classifyLastPrediction = null;
+    renderClassifyFeatureTable();
+    setClassifyStatus(
+      `Classification failed. ${error.message || "Could not classify polygons."}`,
+      "error"
+    );
+  } finally {
+    classifyTrainingRunning = false;
+    updateClassifyActionState();
+    window.setTimeout(clearClassifyProgress, 900);
+  }
+}
+
+function applyClassifyPredictionsToGroups() {
+  const prediction = classifyLastPrediction;
+  if (!prediction?.results?.length) return;
+  const includeLowConfidence = Boolean(classifyIncludeLowConfidence?.checked);
+  const groupCache = new Map(
+    getAnnotationGroups().map((group) => [group.groupName.toLowerCase(), group])
+  );
+  let applied = 0;
+  let skippedLowConfidence = 0;
+  let lowConfidenceApplied = 0;
+  annotationHistory.push("Apply classified grain groups");
+  prediction.results.forEach((result) => {
+    if (!result.predictedLabel) return;
+    if (result.lowConfidence && !includeLowConfidence) {
+      skippedLowConfidence += 1;
+      return;
+    }
+    const group = getOrCreateCountSegmentGroup(result.predictedLabel, groupCache);
+    Object.assign(
+      result.feature.properties,
+      applyAnnotationGroupToProperties(result.feature.properties, group)
+    );
+    if (result.feature.properties.classification) {
+      result.feature.properties.classification.appliedToGroup = true;
+      result.feature.properties.classification.appliedAt = new Date().toISOString();
+    }
+    applied += 1;
+    if (result.lowConfidence) lowConfidenceApplied += 1;
+  });
+  renderAnnotationList();
+  drawShape(polyCanvas, [annoJSON, annoJSONTemp]);
+  applyAnnotationVisibilityState();
+  unsavedAnnotations(true);
+  setClassifyStatus(
+    `${applied} prediction${applied === 1 ? "" : "s"} applied to groups${lowConfidenceApplied ? `, including ${lowConfidenceApplied} low-confidence prediction${lowConfidenceApplied === 1 ? "" : "s"}` : ""}${skippedLowConfidence ? `. ${skippedLowConfidence} low-confidence prediction${skippedLowConfidence === 1 ? "" : "s"} skipped.` : "."}`,
+    "success"
+  );
+}
+
+function highlightLowConfidenceClassifyPredictions() {
+  const prediction = classifyLastPrediction;
+  if (!prediction?.results?.length) return;
+  if (
+    classifyHighlightMode === "low" &&
+    classifyHighlightedPredictionUuids.size > 0
+  ) {
+    clearClassifyPredictionHighlight();
+    setClassifyStatus("Low-confidence highlight cleared.");
+    return;
+  }
+  const uuids = prediction.results
+    .filter((result) => result.lowConfidence)
+    .map((result) => result.uuid);
+  classifyHighlightedPredictionUuids = new Set(uuids);
+  classifyHighlightedPredictionLabel = "Low confidence";
+  classifyHighlightMode = "low";
+  updateClassifyHighlightControls();
+  drawShape(polyCanvas, [annoJSON, annoJSONTemp]);
+  setClassifyStatus(
+    uuids.length
+      ? `${uuids.length} low-confidence polygon${uuids.length === 1 ? "" : "s"} highlighted in green.`
+      : "No low-confidence predictions to highlight.",
+    uuids.length ? "success" : ""
+  );
+}
+
+function highlightClassifyPredictionGroup() {
+  const prediction = classifyLastPrediction;
+  const label = classifyPredictionSelect?.value || "";
+  if (!prediction?.results?.length || !label) return;
+  if (
+    classifyHighlightMode === "prediction" &&
+    classifyHighlightedPredictionLabel === label &&
+    classifyHighlightedPredictionUuids.size > 0
+  ) {
+    clearClassifyPredictionHighlight();
+    setClassifyStatus(`${label} prediction highlight cleared.`);
+    return;
+  }
+  const uuids = prediction.results
+    .filter((result) => result.predictedLabel === label)
+    .map((result) => result.uuid);
+  classifyHighlightedPredictionUuids = new Set(uuids);
+  classifyHighlightedPredictionLabel = label;
+  classifyHighlightMode = "prediction";
+  updateClassifyHighlightControls();
+  drawShape(polyCanvas, [annoJSON, annoJSONTemp]);
+  setClassifyStatus(
+    uuids.length
+      ? `${uuids.length} ${label} prediction${uuids.length === 1 ? "" : "s"} highlighted in green.`
+      : `No ${label} predictions to highlight.`,
+    uuids.length ? "success" : ""
+  );
+}
+
 async function exportSnapshotSelection() {
   if (!snapshotSelectionRect) {
     updateSnapshotStatus("Draw a rectangle before exporting.");
@@ -7174,6 +8786,91 @@ if (hasSharedViewerMenus && openSnapshotPaletteButton && snapshotPalette) {
       clearSnapshotSelection();
       updateSnapshotStatus("Draw a new area after resizing the viewer.");
     }
+  });
+}
+
+if (hasSharedViewerMenus && openClassifyPaletteButton && classifyPalette) {
+  openClassifyPaletteButton.hidden = false;
+  openClassifyPaletteButton.setAttribute("aria-pressed", "false");
+  openClassifyPaletteButton.addEventListener("click", function (event) {
+    event.preventDefault();
+    closeViewerToolsTray();
+    toggleClassifyPalette();
+  });
+  closeClassifyPaletteButton?.addEventListener("click", function () {
+    closeClassifyPalette();
+  });
+  minimizeClassifyPaletteButton?.addEventListener("click", function () {
+    toggleToolPaletteMinimized(classifyPalette, minimizeClassifyPaletteButton);
+  });
+  [classifySetupSection, classifyRunSection].forEach((section) => {
+    section?.addEventListener("toggle", function () {
+      syncClassifySectionAccordion(section);
+      clampToolPaletteToViewer(classifyPalette);
+    });
+  });
+  classifyScope?.addEventListener("change", updateClassifyScopeControls);
+  [
+    classifyScopeGroup,
+    classifyTileSetSelect,
+    classifyResolution,
+    classifyIncludeShape,
+  ].forEach((element) => {
+    element?.addEventListener("change", function () {
+      invalidateClassifyFeatures();
+    });
+    element?.addEventListener("input", function () {
+      invalidateClassifyFeatures();
+    });
+  });
+  classifyLabelSource?.addEventListener("change", function () {
+    classifyLastPrediction = null;
+    clearClassifyPredictionHighlight();
+    renderClassifyFeatureTable();
+    updateClassifyActionState();
+  });
+  [classifyModelType, classifyK, classifyMinConfidence].forEach((element) => {
+    element?.addEventListener("change", function () {
+      classifyLastPrediction = null;
+      clearClassifyPredictionHighlight();
+      renderClassifyFeatureTable();
+      updateClassifyActionState();
+    });
+    element?.addEventListener("input", function () {
+      classifyLastPrediction = null;
+      clearClassifyPredictionHighlight();
+      renderClassifyFeatureTable();
+      updateClassifyActionState();
+    });
+  });
+  classifyExtractFeaturesButton?.addEventListener("click", function () {
+    extractClassifyFeatures();
+  });
+  classifyTrainPredictButton?.addEventListener("click", function () {
+    runClassifyTrainPredict();
+  });
+  classifyApplyGroupsButton?.addEventListener("click", function () {
+    applyClassifyPredictionsToGroups();
+  });
+  classifySelectLowConfidenceButton?.addEventListener("click", function () {
+    highlightLowConfidenceClassifyPredictions();
+  });
+  classifyPredictionSelect?.addEventListener("change", function () {
+    updateClassifyHighlightControls();
+  });
+  classifySelectPredictionButton?.addEventListener("click", function () {
+    highlightClassifyPredictionGroup();
+  });
+  classifyExportCsvButton?.addEventListener("click", function () {
+    exportClassifyFeaturesCsv();
+  });
+  makeToolPaletteDraggable(
+    classifyPalette,
+    classifyPaletteHeader,
+    "petroImage.classifyPalette"
+  );
+  window.addEventListener("resize", function () {
+    scheduleClampOpenToolPalettes();
   });
 }
 
@@ -8920,6 +10617,7 @@ function restoreAnnotationState(state) {
     removeAnnotationOverlays();
     annoJSON = cloneData(state.annoJSON);
     annoJSON.features.forEach(normalizeAnnotationFeature);
+    ensureUniqueAnnotationUuids();
     annoJSONTemp = cloneData(state.annoJSONTemp);
     renderAnnotationOverlaysFromJSON();
     renderAnnotationList();
@@ -11435,7 +13133,10 @@ function updateBooleanResultProperties(feature, options = {}) {
 function cloneSplitPolygonProperties(sourceFeature, polygon, index) {
   const properties = normalizeAnnotationProperties({
     ...cloneData(sourceFeature.properties),
-    uuid: index === 0 ? sourceFeature.properties.uuid : generateUniqueId(12),
+    uuid:
+      index === 0
+        ? sourceFeature.properties.uuid
+        : generateUniqueAnnotationUuid(null, 12),
     shapeType: "polygon",
   });
   const feature = {
@@ -11812,7 +13513,7 @@ function scrollSelectedAnnotationRowIntoView() {
       selectedAnnotationUuid
     )}"]`
   );
-  row?.scrollIntoView({ block: "nearest" });
+  centerElementInScrollContainer(row);
 }
 
 function setAnnotationSelection(uuids, primaryUuid = null, options = {}) {
@@ -11873,11 +13574,30 @@ function setAnnotationSelection(uuids, primaryUuid = null, options = {}) {
   } else {
     updateSelectedAnnotationControls();
   }
+  if (classifyFeatureRows.length && classifyPalette && !classifyPalette.hidden) {
+    renderClassifyFeatureTable();
+  }
+  if (classifyPalette && !classifyPalette.hidden) {
+    updateClassifyActionState();
+  }
 }
 
 function clearAnnotationSelection(options = {}) {
   annotationListSelectionAnchorUuid = null;
   setAnnotationSelection([], null, options);
+}
+
+function normalizeNewAnnotationProperties(properties = {}) {
+  const normalized = normalizeAnnotationProperties(properties);
+  const usedUuids = new Set(
+    annoJSON.features
+      .map((feature) => feature?.properties?.uuid)
+      .filter(Boolean)
+  );
+  if (!normalized.uuid || usedUuids.has(normalized.uuid)) {
+    normalized.uuid = generateUniqueAnnotationUuid(usedUuids, 12);
+  }
+  return normalized;
 }
 
 function normalizeAnnotationProperties(properties = {}) {
@@ -12997,10 +14717,157 @@ function setAnnotationGroupColor(groupId, groupColor) {
   );
 }
 
+function createAnnotationListRow(feature, annotationId) {
+  normalizeAnnotationFeature(feature);
+
+  const props = feature.properties;
+  const isVisible = isAnnotationFeatureVisible(feature);
+  const isLocked = isAnnotationFeatureLocked(feature);
+  const isGroupLocked = props.groupLocked === true;
+  const geometryWarning = getAnnotationGeometryWarning(feature);
+  const row = document.createElement("div");
+  row.className = "annotation-list-row";
+  row.tabIndex = 0;
+  row.setAttribute("role", "option");
+  row.dataset.annotationUuid = props.uuid;
+  row.setAttribute("aria-selected", "false");
+  row.title = geometryWarning
+    ? `${annotationId}. ${props.label || "(no label)"} - ${geometryWarning}`
+    : `${annotationId}. ${props.label || "(no label)"}`;
+  row.addEventListener("click", function (event) {
+    handleAnnotationListRowClick(event, props.uuid);
+  });
+  row.addEventListener("contextmenu", function (event) {
+    if (event.ctrlKey || event.metaKey) {
+      event.preventDefault();
+      handleAnnotationListRowClick(event, props.uuid);
+    }
+  });
+  row.addEventListener("keydown", function (event) {
+    if (handleAnnotationListSelectAllKey(event)) return;
+    if (handleAnnotationListArrowKey(event, props.uuid)) return;
+    if (event.code === "Enter" || event.code === "Space") {
+      event.preventDefault();
+      handleAnnotationListRowClick(event, props.uuid);
+    }
+  });
+  row.classList.toggle("annotation-row-hidden", !isVisible);
+  row.classList.toggle("annotation-row-locked", isLocked);
+
+  const indexCell = document.createElement("span");
+  indexCell.className = "annotation-list-index";
+  indexCell.textContent = String(annotationId);
+
+  const typeCell = document.createElement("span");
+  typeCell.className = "annotation-list-type";
+  typeCell.appendChild(
+    createGeometryTypeIcon(feature.geometry?.type, props.shapeType)
+  );
+
+  const warningCell = document.createElement("span");
+  warningCell.className = "annotation-list-warning";
+  if (geometryWarning) {
+    warningCell.appendChild(createAnnotationGeometryWarningIcon(geometryWarning));
+  }
+
+  const labelCell = document.createElement("span");
+  labelCell.className = "annotation-list-label";
+  labelCell.textContent = props.label || "(no label)";
+
+  const groupCell = document.createElement("span");
+  groupCell.className = "annotation-list-group";
+  groupCell.style.backgroundColor = props.groupColor;
+  groupCell.title = props.groupName;
+
+  const visibilityButton = document.createElement("button");
+  visibilityButton.type = "button";
+  visibilityButton.className = "annotation-visibility-button";
+  visibilityButton.title = isVisible ? "Hide annotation" : "Show annotation";
+  visibilityButton.setAttribute(
+    "aria-label",
+    isVisible ? "Hide annotation" : "Show annotation"
+  );
+  visibilityButton.appendChild(createVisibilityIcon(isVisible));
+  visibilityButton.addEventListener("click", function (event) {
+    event.stopPropagation();
+    setAnnotationVisibility(props.uuid, !isVisible);
+  });
+
+  const lockButton = document.createElement("button");
+  lockButton.type = "button";
+  lockButton.className = "annotation-lock-button";
+  lockButton.disabled = isGroupLocked;
+  lockButton.title = isGroupLocked
+    ? "Locked by group"
+    : isLocked
+      ? "Unlock annotation"
+      : "Lock annotation";
+  lockButton.setAttribute(
+    "aria-label",
+    isGroupLocked
+      ? "Locked by group"
+      : isLocked
+        ? "Unlock annotation"
+        : "Lock annotation"
+  );
+  lockButton.appendChild(createLockIcon(isLocked));
+  lockButton.addEventListener("click", function (event) {
+    event.stopPropagation();
+    setAnnotationLocked(props.uuid, !props.locked);
+  });
+
+  row.append(
+    groupCell,
+    indexCell,
+    typeCell,
+    warningCell,
+    labelCell,
+    visibilityButton,
+    lockButton
+  );
+  return row;
+}
+
+function canPatchAnnotationRowsAfterGroupAssignment() {
+  return !(
+    annotationFilterState.groupId ||
+    annotationFilterState.visibility ||
+    annotationFilterState.locked ||
+    ["group", "visibility", "locked"].includes(annotationFilterState.sortParameterId)
+  );
+}
+
+function updateAnnotationListRowsForUuids(uuids) {
+  const list = document.getElementById("annotationList");
+  if (!list || !canPatchAnnotationRowsAfterGroupAssignment()) return false;
+
+  const annotationIdByUuid = getAnnotationIdByUuidMap();
+  for (const uuid of uuids) {
+    const feature = getAnnotationByUuid(uuid);
+    const row = list.querySelector(
+      `.annotation-list-row[data-annotation-uuid="${CSS.escape(uuid)}"]`
+    );
+    if (!feature || !row || !annotationFeaturePassesFilters(feature)) {
+      return false;
+    }
+    row.replaceWith(
+      createAnnotationListRow(feature, annotationIdByUuid.get(uuid) || "")
+    );
+  }
+
+  syncAnnotationListSelection();
+  renderAnnotationGroupOptions();
+  updateSelectedAnnotationControls();
+  refreshClassifyGroupsFromAnnotations();
+  return true;
+}
+
 function renderAnnotationList() {
   const list = document.getElementById("annotationList");
   if (!list) return;
 
+  ensureUniqueAnnotationUuids({ rerenderOverlays: true });
+  refreshClassifyGroupsFromAnnotations();
   list.innerHTML = "";
   renderAnnotationListHeader(list);
 
@@ -13029,115 +14896,8 @@ function renderAnnotationList() {
   const annotationIdByUuid = getAnnotationIdByUuidMap();
 
   displayedFeatures.forEach((feature) => {
-    normalizeAnnotationFeature(feature);
-
-    const props = feature.properties;
-    const annotationId = annotationIdByUuid.get(props.uuid) || "";
-    const isVisible = isAnnotationFeatureVisible(feature);
-    const isLocked = isAnnotationFeatureLocked(feature);
-    const isGroupLocked = props.groupLocked === true;
-    const geometryWarning = getAnnotationGeometryWarning(feature);
-    const row = document.createElement("div");
-    row.className = "annotation-list-row";
-    row.tabIndex = 0;
-    row.setAttribute("role", "option");
-    row.dataset.annotationUuid = props.uuid;
-    row.setAttribute("aria-selected", "false");
-    row.title = geometryWarning
-      ? `${annotationId}. ${props.label || "(no label)"} - ${geometryWarning}`
-      : `${annotationId}. ${props.label || "(no label)"}`;
-    row.addEventListener("click", function (event) {
-      handleAnnotationListRowClick(event, props.uuid);
-    });
-    row.addEventListener("contextmenu", function (event) {
-      if (event.ctrlKey || event.metaKey) {
-        event.preventDefault();
-        handleAnnotationListRowClick(event, props.uuid);
-      }
-    });
-    row.addEventListener("keydown", function (event) {
-      if (handleAnnotationListSelectAllKey(event)) return;
-      if (handleAnnotationListArrowKey(event, props.uuid)) return;
-      if (event.code === "Enter" || event.code === "Space") {
-        event.preventDefault();
-        handleAnnotationListRowClick(event, props.uuid);
-      }
-    });
-    row.classList.toggle("annotation-row-hidden", !isVisible);
-    row.classList.toggle("annotation-row-locked", isLocked);
-
-    const indexCell = document.createElement("span");
-    indexCell.className = "annotation-list-index";
-    indexCell.textContent = String(annotationId);
-
-    const typeCell = document.createElement("span");
-    typeCell.className = "annotation-list-type";
-    typeCell.appendChild(
-      createGeometryTypeIcon(feature.geometry?.type, props.shapeType)
-    );
-
-    const warningCell = document.createElement("span");
-    warningCell.className = "annotation-list-warning";
-    if (geometryWarning) {
-      warningCell.appendChild(createAnnotationGeometryWarningIcon(geometryWarning));
-    }
-
-    const labelCell = document.createElement("span");
-    labelCell.className = "annotation-list-label";
-    labelCell.textContent = props.label || "(no label)";
-
-    const groupCell = document.createElement("span");
-    groupCell.className = "annotation-list-group";
-    groupCell.style.backgroundColor = props.groupColor;
-    groupCell.title = props.groupName;
-
-    const visibilityButton = document.createElement("button");
-    visibilityButton.type = "button";
-    visibilityButton.className = "annotation-visibility-button";
-    visibilityButton.title = isVisible ? "Hide annotation" : "Show annotation";
-    visibilityButton.setAttribute(
-      "aria-label",
-      isVisible ? "Hide annotation" : "Show annotation"
-    );
-    visibilityButton.appendChild(createVisibilityIcon(isVisible));
-    visibilityButton.addEventListener("click", function (event) {
-      event.stopPropagation();
-      setAnnotationVisibility(props.uuid, !isVisible);
-    });
-
-    const lockButton = document.createElement("button");
-    lockButton.type = "button";
-    lockButton.className = "annotation-lock-button";
-    lockButton.disabled = isGroupLocked;
-    lockButton.title = isGroupLocked
-      ? "Locked by group"
-      : isLocked
-        ? "Unlock annotation"
-        : "Lock annotation";
-    lockButton.setAttribute(
-      "aria-label",
-      isGroupLocked
-        ? "Locked by group"
-        : isLocked
-          ? "Unlock annotation"
-          : "Lock annotation"
-    );
-    lockButton.appendChild(createLockIcon(isLocked));
-    lockButton.addEventListener("click", function (event) {
-      event.stopPropagation();
-      setAnnotationLocked(props.uuid, !props.locked);
-    });
-
-    row.append(
-      groupCell,
-      indexCell,
-      typeCell,
-      warningCell,
-      labelCell,
-      visibilityButton,
-      lockButton
-    );
-    fragment.appendChild(row);
+    const annotationId = annotationIdByUuid.get(feature.properties?.uuid) || "";
+    fragment.appendChild(createAnnotationListRow(feature, annotationId));
   });
 
   list.appendChild(fragment);
@@ -13160,7 +14920,17 @@ function assignSelectedAnnotationGroup(group) {
     feature.properties.groupVisible = group.groupVisible;
     feature.properties.groupLocked = group.groupLocked;
   });
-  renderAnnotationList();
+  if (!updateAnnotationListRowsForUuids(selectedUuids)) {
+    renderAnnotationList();
+  }
+  if (
+    classifyFeatureRows.length &&
+    classifyLabelSource?.value === "group" &&
+    classifyPalette &&
+    !classifyPalette.hidden
+  ) {
+    scheduleClassifyFeatureTableRender();
+  }
   unsavedAnnotations(true);
 }
 
@@ -15956,7 +17726,7 @@ function cloneFeaturesWithRoundedCoordinates(features) {
 // Function to add a point to the annoJSON
 function addPointToGeoJSON(x, y, metadata) {
   annotationHistory.push("Add annotation");
-  const properties = normalizeAnnotationProperties(
+  const properties = normalizeNewAnnotationProperties(
     applyActiveAnnotationGroup(metadata)
   );
 
@@ -15985,7 +17755,7 @@ function addPolylineToGeoJSON(JSON, coordinates, metadata) {
   }
   const properties =
     JSON === annoJSON
-      ? normalizeAnnotationProperties(applyActiveAnnotationGroup(metadata))
+      ? normalizeNewAnnotationProperties(applyActiveAnnotationGroup(metadata))
       : metadata;
 
   // Create a GeoJSON point feature
@@ -16014,7 +17784,7 @@ function addPolygonToGeoJSON(JSON, coordinates, metadata) {
   }
   const properties =
     JSON === annoJSON
-      ? normalizeAnnotationProperties(applyActiveAnnotationGroup(metadata))
+      ? normalizeNewAnnotationProperties(applyActiveAnnotationGroup(metadata))
       : metadata;
 
   // Create a GeoJSON polygon feature
@@ -16059,6 +17829,62 @@ function generateUniqueId(length = 8) {
   }
 
   return result;
+}
+
+function generateUniqueAnnotationUuid(usedUuids = null, length = 12) {
+  const used =
+    usedUuids ||
+    new Set(
+      annoJSON.features
+        .map((feature) => feature?.properties?.uuid)
+        .filter(Boolean)
+    );
+  let uuid = generateUniqueId(length);
+  while (used.has(uuid)) {
+    uuid = generateUniqueId(length);
+  }
+  used.add(uuid);
+  return uuid;
+}
+
+function ensureUniqueAnnotationUuids(options = {}) {
+  const { rerenderOverlays = false } = options;
+  const usedUuids = new Set();
+  let repaired = 0;
+
+  annoJSON.features.forEach((feature) => {
+    if (!feature) return;
+    feature.properties ||= {};
+    const uuid = feature.properties.uuid;
+    if (!uuid || usedUuids.has(uuid)) {
+      feature.properties.uuid = generateUniqueAnnotationUuid(usedUuids, 12);
+      repaired += 1;
+      return;
+    }
+    usedUuids.add(uuid);
+  });
+
+  if (repaired === 0) return 0;
+
+  selectedAnnotationUuids = new Set(getSelectedAnnotationUuids());
+  if (selectedAnnotationUuid && !getAnnotationByUuid(selectedAnnotationUuid)) {
+    selectedAnnotationUuid = getSelectedAnnotationUuid();
+  }
+  annotationListSelectionAnchorUuid =
+    selectedAnnotationUuids.has(annotationListSelectionAnchorUuid)
+      ? annotationListSelectionAnchorUuid
+      : selectedAnnotationUuid;
+  classifyFeatureCache = null;
+  if (classifyFeatureRows.length) {
+    invalidateClassifyFeatures();
+  }
+  if (rerenderOverlays) {
+    removeAnnotationOverlays();
+    renderAnnotationOverlaysFromJSON();
+  }
+  unsavedAnnotations(true);
+  console.warn(`Repaired ${repaired} duplicate or missing annotation UUID(s).`);
+  return repaired;
 }
 
 let enableDivideImages = true;
@@ -19011,6 +20837,15 @@ function drawPolygon(ctx, coordinates, image, feature) {
   }
   ctx.stroke();
 
+  if (isClassifyHighlightedFeature(feature)) {
+    ctx.save();
+    ctx.setLineDash([]);
+    ctx.strokeStyle = "rgba(0, 180, 90, 0.95)";
+    ctx.lineWidth = Math.max(Number(ctx.lineWidth) + 4, 6);
+    ctx.stroke();
+    ctx.restore();
+  }
+
   if (selectedAnnotationUuids.has(feature.properties.uuid)) {
     ctx.save();
     ctx.setLineDash([]);
@@ -19118,6 +20953,15 @@ function drawPath(ctx, coordinates, image, shape, closePath) {
     }
   }
   ctx.stroke();
+
+  if (isClassifyHighlightedFeature(shape)) {
+    ctx.save();
+    ctx.setLineDash([]);
+    ctx.strokeStyle = "rgba(0, 180, 90, 0.95)";
+    ctx.lineWidth = Math.max(Number(ctx.lineWidth) + 4, 6);
+    ctx.stroke();
+    ctx.restore();
+  }
 
   if (selectedAnnotationUuids.has(shape.properties.uuid)) {
     ctx.save();
@@ -20567,10 +22411,8 @@ async function loadAnnotations(geoJSONData, options = {}) {
         continue;
       }
 
-      // Skip duplicate UUIDs
       if (existingUuids.has(properties.uuid)) {
-        // Annotation already exists, skipping
-        continue;
+        properties.uuid = generateUniqueAnnotationUuid(existingUuids, 12);
       }
 
       const { type, coordinates } = geometry;
@@ -20795,7 +22637,7 @@ function handleMultiPolygon(coords, properties) {
 // Save the annotation as GeoJSON
 function saveAnnotationToJSON(type, coordinates, properties) {
   annotationHistory.push("Add annotation");
-  const normalizedProperties = normalizeAnnotationProperties(
+  const normalizedProperties = normalizeNewAnnotationProperties(
     applyActiveAnnotationGroup(properties)
   );
 
@@ -26703,6 +28545,12 @@ function closeControlsHelpDialog() {
   controlsHelpButton?.setAttribute("aria-expanded", "false");
 }
 
+function closeClassifyHelpDialog() {
+  if (!classifyHelpDialog) return;
+  classifyHelpDialog.hidden = true;
+  classifyHelpButton?.setAttribute("aria-expanded", "false");
+}
+
 function openControlsHelpDialog(button = controlsHelpButton) {
   if (!controlsHelpDialog || !button) return;
   if (controlsHelpDialog.parentElement !== document.body) {
@@ -26727,11 +28575,42 @@ function openControlsHelpDialog(button = controlsHelpButton) {
   controlsHelpDialog.style.top = `${Math.max(margin, top)}px`;
 }
 
+function openClassifyHelpDialog(button = classifyHelpButton) {
+  if (!classifyHelpDialog || !button) return;
+  if (classifyHelpDialog.parentElement !== document.body) {
+    document.body.appendChild(classifyHelpDialog);
+  }
+  classifyHelpDialog.hidden = false;
+  classifyHelpButton?.setAttribute("aria-expanded", "true");
+
+  const buttonRect = button.getBoundingClientRect();
+  const dialogRect = classifyHelpDialog.getBoundingClientRect();
+  const margin = 8;
+  const left = Math.min(
+    Math.max(buttonRect.right - dialogRect.width, margin),
+    window.innerWidth - dialogRect.width - margin
+  );
+  const top = Math.min(
+    Math.max(buttonRect.bottom + 4, margin),
+    window.innerHeight - dialogRect.height - margin
+  );
+  classifyHelpDialog.style.left = `${Math.max(margin, left)}px`;
+  classifyHelpDialog.style.top = `${Math.max(margin, top)}px`;
+}
+
 function toggleControlsHelpDialog(button = controlsHelpButton) {
   if (!controlsHelpDialog || controlsHelpDialog.hidden) {
     openControlsHelpDialog(button);
   } else {
     closeControlsHelpDialog();
+  }
+}
+
+function toggleClassifyHelpDialog(button = classifyHelpButton) {
+  if (!classifyHelpDialog || classifyHelpDialog.hidden) {
+    openClassifyHelpDialog(button);
+  } else {
+    closeClassifyHelpDialog();
   }
 }
 
@@ -31566,6 +33445,15 @@ controlsHelpDialog?.addEventListener("click", function (event) {
 });
 makeFixedElementDraggable(controlsHelpDialog, controlsHelpHeader);
 closeControlsHelpButton?.addEventListener("click", closeControlsHelpDialog);
+classifyHelpButton?.addEventListener("click", function (event) {
+  event.stopPropagation();
+  toggleClassifyHelpDialog(event.currentTarget);
+});
+classifyHelpDialog?.addEventListener("click", function (event) {
+  event.stopPropagation();
+});
+makeFixedElementDraggable(classifyHelpDialog, classifyHelpHeader);
+closeClassifyHelpButton?.addEventListener("click", closeClassifyHelpDialog);
 annotateHelpButton?.addEventListener("click", function (event) {
   event.stopPropagation();
   toggleAnnotateHelpDialog(event.currentTarget);
@@ -31891,6 +33779,12 @@ window.addEventListener("click", function (event) {
     closeControlsHelpDialog();
   }
   if (
+    !event.target.closest("#classifyHelpButton") &&
+    !event.target.closest("#classifyHelpDialog")
+  ) {
+    closeClassifyHelpDialog();
+  }
+  if (
     !event.target.closest("#annotateHelpButton") &&
     !event.target.closest("#annotateHelpDialog")
   ) {
@@ -31906,6 +33800,7 @@ document.addEventListener(
         (annotationHeaderMenuElement?.hidden ?? true) &&
         (annotateHelpDialog?.hidden ?? true) &&
         (controlsHelpDialog?.hidden ?? true) &&
+        (classifyHelpDialog?.hidden ?? true) &&
         (measureScaleAuditPopover?.hidden ?? true) &&
         (measureHelpDialog?.hidden ?? true) &&
         measureHistogramMenu?.hidden &&
@@ -31921,6 +33816,7 @@ document.addEventListener(
     closeAnnotationHeaderMenu();
     closeAnnotateHelpDialog();
     closeControlsHelpDialog();
+    closeClassifyHelpDialog();
     closeMeasureScaleAuditPopover();
     closeMeasureHelpDialog();
     closeMeasureHistogramMenu();
