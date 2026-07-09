@@ -566,6 +566,13 @@ body.import-wizard-page {
   min-width: 0;
 }
 
+.transform-token-table-scroll {
+  max-height: 112px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 2px;
+}
+
 .transform-calculator-button-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -585,6 +592,13 @@ body.import-wizard-page {
   border-collapse: separate;
   border-spacing: 1px;
   font-size: 9px;
+}
+
+.transform-calculator-token-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: rgba(244, 244, 244, 0.96);
 }
 
 .transform-calculator-token-table th,

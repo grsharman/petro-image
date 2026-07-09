@@ -55,6 +55,23 @@ const TRANSFORM_RASTER_AGGREGATE_FUNCTIONS = Object.freeze([
   "mean",
 ]);
 const TRANSFORM_RASTER_SCALAR_FUNCTIONS = Object.freeze(["abs", "normdiff"]);
+const TRANSFORM_EXPORT_RESOLUTION_TIERS = Object.freeze({
+  small: {
+    label: "Small",
+    maxPixels: 10000000,
+    maxSide: 12000,
+  },
+  medium: {
+    label: "Medium",
+    maxPixels: 40000000,
+    maxSide: 18000,
+  },
+  large: {
+    label: "Large",
+    maxPixels: 80000000,
+    maxSide: 24000,
+  },
+});
 const TILE_APPEARANCE_STORAGE_KEY = "petroImageTileAppearance";
 let tileAppearanceReprocessTimer = null;
 let tileAppearanceReprocessToken = 0;
@@ -9132,6 +9149,9 @@ if (
   transformResetDefaultButton?.addEventListener("click", resetTransformControlsToDefault);
   transformGenerateButton?.addEventListener("click", generateTransformedTileSet);
   window.electronAPI?.onDerivedDziProgress?.((progress) => {
+    if (transformGenerationRunning && (progress?.percent || 0) < 100) {
+      setTransformStatus("Writing transformed DZI tiles...");
+    }
     setTransformProgress(progress?.percent || 0, "Writing DZI tiles...");
   });
   window.addEventListener("resize", function () {
@@ -11651,10 +11671,12 @@ function updateTransformControls() {
   if (transformIntensity) transformIntensity.disabled = !usesIntensity;
   if (transformIntensityValue) transformIntensityValue.disabled = !usesIntensity;
   if (transformGenerateButton) {
+    const canGenerateRasterRecipe =
+      !rasterRecipe || planHasRenderableAdvancedExpression();
     transformGenerateButton.disabled =
       transformGenerationRunning ||
       tileSets().length === 0 ||
-      rasterRecipe ||
+      !canGenerateRasterRecipe ||
       !window.electronAPI?.createDerivedDzi;
   }
   updateTransformOutputName();
@@ -11843,14 +11865,44 @@ function getTransformGenerationImageRect() {
   };
 }
 
-function getTransformGenerationScale(imageRect) {
-  const mode = transformGenerateSize?.value || "0.25";
-  if (mode === "current") {
-    return getViewerResolutionScaleForImageRect(imageRect);
-  }
+function getTransformGenerationResolution(imageRect) {
+  const tierKey = transformGenerateSize?.value || "medium";
+  const tier =
+    TRANSFORM_EXPORT_RESOLUTION_TIERS[tierKey] ||
+    TRANSFORM_EXPORT_RESOLUTION_TIERS.medium;
+  const sourceWidth = Math.max(1, Math.round(imageRect?.width || 1));
+  const sourceHeight = Math.max(1, Math.round(imageRect?.height || 1));
+  const sourcePixels = sourceWidth * sourceHeight;
+  const pixelScale = Math.sqrt(tier.maxPixels / sourcePixels);
+  const sideScale = Math.min(tier.maxSide / sourceWidth, tier.maxSide / sourceHeight);
+  const scale = Math.max(0.01, Math.min(1, pixelScale, sideScale));
+  const width = Math.max(1, Math.round(sourceWidth * scale));
+  const height = Math.max(1, Math.round(sourceHeight * scale));
 
-  const scale = Number(mode);
-  return Number.isFinite(scale) ? Math.max(0.05, Math.min(1, scale)) : 0.25;
+  return {
+    key: tierKey,
+    label: tier.label,
+    scale,
+    width,
+    height,
+    pixels: width * height,
+    maxPixels: tier.maxPixels,
+    maxSide: tier.maxSide,
+    isCapped: scale < 0.999,
+  };
+}
+
+function formatMegapixels(pixelCount) {
+  const megapixels = Math.max(0, Number(pixelCount) || 0) / 1000000;
+  if (megapixels >= 10) return `${Math.round(megapixels)} MP`;
+  return `${megapixels.toFixed(1)} MP`;
+}
+
+function getTransformGenerationResolutionLabel(resolution) {
+  const percent = Math.round((resolution?.scale || 1) * 100);
+  const sizeLabel = `${resolution.width} x ${resolution.height}`;
+  const capLabel = formatMegapixels(resolution.maxPixels);
+  return `${resolution.label}: ${percent}% (${sizeLabel}, ${capLabel} cap)`;
 }
 
 function sanitizeDerivedTileSetName(value) {
@@ -11866,6 +11918,119 @@ function getDerivedTileSetUri(result) {
   return result?.relativeDziPath || result?.dziPath || "";
 }
 
+async function persistCurrentLibraryAfterTileSetExport() {
+  currentLibraryData = serializeLibraryDataForSave();
+  if (currentLibraryPath && window.electronAPI?.writeJsonFile) {
+    try {
+      await window.electronAPI.writeJsonFile(currentLibraryPath, currentLibraryData);
+      window.electronAPI?.setUnsavedState?.(
+        window.appState.hasUnsavedAnnotations || window.appState.hasUnsavedCounts
+      );
+      return true;
+    } catch (error) {
+      console.warn("Could not save library after tile-set export:", error);
+    }
+  }
+
+  window.electronAPI?.setUnsavedState?.(true);
+  return false;
+}
+
+async function applyAdvancedTransformToExportContext(
+  context,
+  transform,
+  imageRect,
+  scale
+) {
+  const plan = getTransformAdvancedExpressionPlan(transform.rasterExpression);
+  if (!plan.valid) {
+    throw new Error(plan.errors[0] || "Advanced expression is not valid.");
+  }
+  if (plan.needsSourceStacks) {
+    throw new Error("Stack aggregate export is not connected yet.");
+  }
+  if (!plan.ast) {
+    throw new Error("Advanced expression could not be parsed.");
+  }
+
+  const width = context.canvas.width;
+  const height = context.canvas.height;
+  const outputImageData = context.getImageData(0, 0, width, height);
+  const inputMap = {};
+
+  for (const input of plan.visibleInputs) {
+    if (inputMap[input.set]) continue;
+    if (input.tileSetIndex < 0) {
+      throw new Error(`${input.set} is not an available tile set.`);
+    }
+    const inputCanvas = await renderFullResolutionImageRectCanvas(
+      imageRect,
+      input.tileSetIndex,
+      scale
+    );
+    const inputContext = inputCanvas.getContext("2d", {
+      willReadFrequently: true,
+    });
+    const inputImageData = getContextImageDataMatchingSize(
+      inputContext,
+      width,
+      height
+    );
+    if (!inputImageData) {
+      throw new Error(`Could not render ${input.set} for export.`);
+    }
+    inputMap[input.set] = inputImageData;
+    await wait(0);
+  }
+
+  const output = outputImageData.data;
+  const values = new Float32Array(output.length / 4);
+  let minValue = Infinity;
+  let maxValue = -Infinity;
+
+  for (
+    let offset = 0, valueIndex = 0;
+    offset < output.length;
+    offset += 4, valueIndex += 1
+  ) {
+    const result = evaluateTransformRasterExpressionAtPixel(
+      plan.ast,
+      inputMap,
+      offset
+    );
+    if (!result.ok) {
+      throw new Error(result.error || "Advanced expression could not be evaluated.");
+    }
+    const value = Number(result.value);
+    values[valueIndex] = Number.isFinite(value) ? value : 0;
+    minValue = Math.min(minValue, values[valueIndex]);
+    maxValue = Math.max(maxValue, values[valueIndex]);
+  }
+
+  for (
+    let offset = 0, valueIndex = 0;
+    offset < output.length;
+    offset += 4, valueIndex += 1
+  ) {
+    const value = clampColorValue(
+      mapAdvancedRasterValue(values[valueIndex], transform, minValue, maxValue)
+    );
+    if (transform.output === "falseColor") {
+      const [red, green, blue] = getFalseColorRgb(value);
+      output[offset] = red;
+      output[offset + 1] = green;
+      output[offset + 2] = blue;
+    } else {
+      output[offset] = value;
+      output[offset + 1] = value;
+      output[offset + 2] = value;
+    }
+    output[offset + 3] = 255;
+  }
+
+  context.putImageData(outputImageData, 0, 0);
+}
+
 async function generateTransformedTileSet() {
   if (transformGenerationRunning) return;
   const tileSetIndex = getSelectedTransformTileSetIndex();
@@ -11878,8 +12043,15 @@ async function generateTransformedTileSet() {
     return;
   }
   if (isRasterRecipe(transform)) {
-    setTransformStatus("Advanced Transform generation is not connected yet.", "error");
-    return;
+    const plan = getTransformAdvancedExpressionPlan(transform.rasterExpression);
+    if (!plan.valid) {
+      setTransformStatus(plan.errors[0] || "Advanced expression is not valid.", "error");
+      return;
+    }
+    if (plan.needsSourceStacks) {
+      setTransformStatus("Stack aggregate export is not connected yet.", "error");
+      return;
+    }
   }
   if (!imageRect) {
     setTransformStatus("Could not determine the source image size.", "error");
@@ -11894,25 +12066,44 @@ async function generateTransformedTileSet() {
   transformGenerationRunning = true;
   updateTransformControls();
   clearTransformProgress();
+  setTransformStatus(`Generating "${outputName}" tile set...`);
   setTransformProgress(5, "Rendering source tile set...");
 
   try {
-    const scale = getTransformGenerationScale(imageRect);
+    const resolution = getTransformGenerationResolution(imageRect);
+    const scale = resolution.scale;
+    setTransformStatus("Rendering transformed source image...");
+    setTransformProgress(
+      8,
+      `Rendering ${getTransformGenerationResolutionLabel(resolution)}...`
+    );
     const canvas = await renderFullResolutionImageRectCanvas(
       imageRect,
       tileSetIndex,
       scale
     );
+    setTransformStatus("Applying transform to export image...");
     setTransformProgress(45, "Applying transform...");
     const context = canvas.getContext("2d", { willReadFrequently: true });
     if (!context) {
       throw new Error("Could not process the transformed image.");
     }
-    applyTileSetTransformToContext(context, transform);
+    if (isRasterRecipe(transform)) {
+      await applyAdvancedTransformToExportContext(
+        context,
+        transform,
+        imageRect,
+        scale
+      );
+    } else {
+      applyTileSetTransformToContext(context, transform);
+    }
     await wait(0);
 
+    setTransformStatus("Encoding transformed image...");
     setTransformProgress(65, "Encoding transformed image...");
     const dataUrl = await canvasToPngDataUrl(canvas);
+    setTransformStatus("Writing transformed DZI tiles...");
     const result = await window.electronAPI.createDerivedDzi({
       dataUrl,
       baseName: outputName,
@@ -11929,13 +12120,19 @@ async function generateTransformedTileSet() {
         sourceTileSet: getSnapshotTileSetLabel(sourceTileSet, tileSetIndex),
         transform,
         generatedAt: new Date().toISOString(),
-        resolution: transformGenerateSize?.value || "0.25",
+        resolution: {
+          tier: resolution.key,
+          scale: resolution.scale,
+          width: resolution.width,
+          height: resolution.height,
+          maxPixels: resolution.maxPixels,
+        },
       },
     };
     tileSets().push(newTileSet);
-    currentLibraryData = serializeLibraryDataForSave();
-    window.electronAPI?.setUnsavedState?.(true);
+    const librarySaved = await persistCurrentLibraryAfterTileSetExport();
 
+    setTransformStatus("Loading generated tile set...");
     buildImageCheckboxes();
     buildOpacitySliders();
     populateTileAppearanceSelect();
@@ -11949,7 +12146,12 @@ async function generateTransformedTileSet() {
     displayImages();
     updateImageCheckboxLabels();
     setTransformProgress(100, "Done");
-    setTransformStatus(`Added "${outputName}" as a new tile set.`, "ok");
+    setTransformStatus(
+      librarySaved
+        ? `Added "${outputName}" as a new tile set and saved the library.`
+        : `Added "${outputName}" as a new tile set. Automatic library save is unavailable for this library.`,
+      "ok"
+    );
   } catch (error) {
     console.error("Could not generate transformed tile set:", error);
     setTransformStatus(error.message || "Could not generate tile set.", "error");

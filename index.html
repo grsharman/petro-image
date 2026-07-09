@@ -1303,17 +1303,17 @@
                 <option value="custom" selected>Custom expression</option>
               </select>
             </div>
-            <div class="transform-calculator-section">
+            <div class="transform-calculator-section transform-token-table-scroll">
               <table class="transform-calculator-token-table">
                 <thead>
                   <tr>
                     <th>Set</th>
-                    <th>r</th>
-                    <th>g</th>
-                    <th>b</th>
-                    <th>l</th>
-                    <th>s</th>
-                    <th>h</th>
+                    <th>R</th>
+                    <th>G</th>
+                    <th>B</th>
+                    <th>Lum</th>
+                    <th>Sat</th>
+                    <th>Hue</th>
                   </tr>
                 </thead>
                 <tbody id="transformRasterInputTableBody"></tbody>
@@ -1459,10 +1459,9 @@
               <label class="snapshot-field">
                 <span>Resolution</span>
                 <select id="transformGenerateSize">
-                  <option value="1">Full resolution</option>
-                  <option value="0.5">1/2 resolution</option>
-                  <option value="0.25" selected>1/4 resolution</option>
-                  <option value="current">Current resolution</option>
+                  <option value="small">Small (up to 10 MP)</option>
+                  <option value="medium" selected>Medium (up to 40 MP)</option>
+                  <option value="large">Large (up to 80 MP)</option>
                 </select>
               </label>
               <button id="transformGenerateButton" type="button">
