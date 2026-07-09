@@ -31,6 +31,21 @@ body.import-wizard-page {
   height: 100%;
 }
 
+.transform-value-tooltip {
+  position: fixed;
+  z-index: 3300;
+  max-width: 180px;
+  padding: 4px 6px;
+  border: 1px solid rgba(17, 17, 17, 0.2);
+  border-radius: 4px;
+  background: rgba(17, 17, 17, 0.88);
+  color: #fff;
+  font: 12px/1.25 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  pointer-events: none;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
 .viewer-corner-actions {
   position: absolute;
   top: 8px;
@@ -366,6 +381,72 @@ body.import-wizard-page {
 .transform-imagery-palette-body .snapshot-field > span {
   min-width: 0;
   white-space: normal;
+}
+
+.transform-raster-options-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.transform-raster-options-row .snapshot-option {
+  width: auto;
+}
+
+.transform-preview-options-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.transform-preview-options-row .snapshot-option {
+  width: auto;
+}
+
+.transform-custom-range-inline {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 8px;
+}
+
+.transform-custom-range-inline[hidden] {
+  display: none;
+}
+
+.transform-custom-range-inline label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  font: inherit;
+}
+
+.transform-custom-range-inline span {
+  flex: 0 0 auto;
+}
+
+.transform-custom-range-inline input {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  height: 24px;
+}
+
+.transform-histogram-panel {
+  width: 100%;
+  min-width: 0;
+}
+
+.transform-histogram-canvas {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  height: 44px;
+  border: 1px solid rgba(17, 17, 17, 0.16);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.78);
 }
 
 .transform-imagery-palette-body .snapshot-field input,

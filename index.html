@@ -366,6 +366,7 @@
         <span class="segment-reticle-line segment-reticle-line-vertical"></span>
       </div>
       <div id="annotation-marquee" class="annotation-marquee" hidden></div>
+      <div id="transformValueTooltip" class="transform-value-tooltip" hidden></div>
       <div id="snapshot-selection" class="snapshot-selection" hidden>
         <div
           id="snapshotSelectionBody"
@@ -1247,10 +1248,16 @@
             <span>Source tile set</span>
             <select id="transformTileSetSelect"></select>
           </label>
-          <label class="snapshot-option">
-            <input id="transformPreviewEnabled" type="checkbox" checked />
-            <span>Show preview transform</span>
-          </label>
+          <div class="transform-preview-options-row">
+            <label class="snapshot-option">
+              <input id="transformPreviewEnabled" type="checkbox" checked />
+              <span>Show preview</span>
+            </label>
+            <label class="snapshot-option transform-cursor-value-option">
+              <input id="transformValueTooltipEnabled" type="checkbox" />
+              <span>Cursor value</span>
+            </label>
+          </div>
           <div class="transform-simple-fields">
             <label class="snapshot-field">
               <span>Transform</span>
@@ -1343,10 +1350,12 @@
                 aria-label="Expression"
               />
             </div>
-            <label class="snapshot-option">
-              <input id="transformRasterNormalize" type="checkbox" checked />
-              <span>Auto-scale result</span>
-            </label>
+            <div class="transform-raster-options-row">
+              <label class="snapshot-option">
+                <input id="transformRasterNormalize" type="checkbox" checked />
+                <span>Auto-scale</span>
+              </label>
+            </div>
             <label class="snapshot-field">
               <span>Output range</span>
               <select id="transformRasterScaleSelect">
@@ -1354,8 +1363,23 @@
                 <option value="signed">Signed -255 to 255</option>
                 <option value="unit">Unit -1 to 1</option>
                 <option value="raw">Raw 0 to 255</option>
+                <option value="custom">Custom...</option>
               </select>
             </label>
+            <div
+              id="transformRasterCustomRangeFields"
+              class="transform-custom-range-inline"
+              hidden
+            >
+              <label>
+                <span>Min</span>
+                <input id="transformRasterCustomMinInput" type="number" step="any" />
+              </label>
+              <label>
+                <span>Max</span>
+                <input id="transformRasterCustomMaxInput" type="number" step="any" />
+              </label>
+            </div>
           </div>
           <label class="snapshot-field transform-channel-field">
             <span>Channel</span>
@@ -1417,6 +1441,13 @@
           <div class="transform-actions">
             <button id="transformResetPreviewButton" type="button">Reset Preview</button>
             <button id="transformResetDefaultButton" type="button">Reset to Default</button>
+          </div>
+          <div class="transform-histogram-panel">
+            <canvas
+              id="transformHistogramCanvas"
+              class="transform-histogram-canvas"
+              aria-label="Output histogram"
+            ></canvas>
           </div>
           <details class="transform-export-details">
             <summary>Export to Tile Set</summary>
