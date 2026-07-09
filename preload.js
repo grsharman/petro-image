@@ -50,11 +50,21 @@ contextBridge.exposeInMainWorld("electronAPI", {
     ipcRenderer.invoke("save-json-file-as", { defaultFileName, jsonData }),
   convertJpgToDzi: (sourcePath) =>
     ipcRenderer.invoke("convert-jpg-to-dzi", sourcePath),
+  createDerivedDzi: (request) =>
+    ipcRenderer.invoke("create-derived-dzi", request),
+  deleteProjectDzi: (request) =>
+    ipcRenderer.invoke("delete-project-dzi", request),
   onDziConversionProgress: (callback) => {
     const listener = (event, payload) => callback(payload);
     ipcRenderer.on("dzi-conversion-progress", listener);
     return () =>
       ipcRenderer.removeListener("dzi-conversion-progress", listener);
+  },
+  onDerivedDziProgress: (callback) => {
+    const listener = (event, payload) => callback(payload);
+    ipcRenderer.on("derived-dzi-progress", listener);
+    return () =>
+      ipcRenderer.removeListener("derived-dzi-progress", listener);
   },
   completeSampleImport: (jsonData, selectedTitle) =>
     ipcRenderer.invoke("complete-sample-import", {

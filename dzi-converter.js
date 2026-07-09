@@ -68,8 +68,86 @@ export async function convertJpgToDzi(
   };
 }
 
+export async function convertImageBufferToDzi(
+  imageBuffer,
+  baseName,
+  onProgress = () => {},
+  outputDirectory,
+) {
+  let metadata;
+
+  try {
+    metadata = await sharp(imageBuffer, {
+      limitInputPixels: false,
+      sequentialRead: true,
+    }).metadata();
+  } catch (error) {
+    throw new Error("Could not load the transformed image.");
+  }
+
+  const { width, height } = metadata;
+
+  if (!width || !height) {
+    throw new Error("Could not load the transformed image.");
+  }
+
+  const maxLevel = Math.ceil(Math.log2(Math.max(width, height)));
+  const { dziPath, tilesPath } = await getUniqueDziOutputPaths(
+    `${sanitizeBaseName(baseName || "derived-image")}.png`,
+    outputDirectory,
+  );
+  const totalTiles = countTiles(width, height, maxLevel);
+
+  onProgress({
+    sourcePath: baseName,
+    completedTiles: 0,
+    totalTiles,
+    level: 0,
+    percent: 0,
+  });
+
+  await fs.mkdir(outputDirectory, { recursive: true });
+
+  await sharp(imageBuffer, {
+    limitInputPixels: false,
+    sequentialRead: true,
+  })
+    .jpeg({ quality: JPEG_QUALITY })
+    .tile({
+      size: DZI_TILE_SIZE,
+      overlap: DZI_OVERLAP,
+      layout: "dz",
+    })
+    .toFile(stripDziExtension(dziPath));
+
+  onProgress({
+    sourcePath: baseName,
+    completedTiles: totalTiles,
+    totalTiles,
+    level: maxLevel,
+    percent: 100,
+  });
+
+  return {
+    dziPath,
+    tilesPath,
+    width,
+    height,
+    tileSize: DZI_TILE_SIZE,
+    overlap: DZI_OVERLAP,
+  };
+}
+
 function stripDziExtension(dziPath) {
   return dziPath.replace(/\.dzi$/i, "");
+}
+
+function sanitizeBaseName(value) {
+  const sanitized = String(value)
+    .trim()
+    .replace(/[^a-z0-9._-]+/gi, "-")
+    .replace(/^-+|-+$/g, "");
+  return sanitized || "derived-image";
 }
 
 function createSourceImage(sourcePath) {

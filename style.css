@@ -351,6 +351,279 @@ body.import-wizard-page {
   overflow-x: hidden;
 }
 
+.transform-imagery-palette-body {
+  display: grid;
+  gap: 6px;
+  overflow-x: hidden;
+}
+
+.transform-imagery-palette-body .snapshot-field,
+.transform-imagery-palette-body .snapshot-option {
+  min-width: 0;
+  gap: 4px;
+}
+
+.transform-imagery-palette-body .snapshot-field > span {
+  min-width: 0;
+  white-space: normal;
+}
+
+.transform-imagery-palette-body .snapshot-field input,
+.transform-imagery-palette-body .snapshot-field select {
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 104px;
+}
+
+.transform-imagery-palette-body button {
+  margin: 0;
+  max-width: 100%;
+}
+
+.transform-mode-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  border: 1px solid rgba(0, 0, 0, 0.24);
+  border-radius: 4px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.transform-mode-toggle label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.transform-mode-toggle input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.transform-mode-toggle span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 32px;
+  padding: 3px 4px;
+  text-align: center;
+  font-size: 11px;
+  line-height: 1.12;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.transform-mode-toggle input:checked + span {
+  background: rgba(0, 0, 0, 0.14);
+  font-weight: 600;
+}
+
+.transform-range-field {
+  grid-template-columns: 56px minmax(0, 1fr) 42px;
+}
+
+.transform-range-field input[type="number"] {
+  min-width: 0;
+}
+
+.transform-field-disabled {
+  opacity: 0.62;
+}
+
+.transform-simple-fields,
+.transform-raster-fields {
+  display: grid;
+  gap: 6px;
+}
+
+.transform-simple-fields[hidden],
+.transform-raster-fields[hidden],
+.transform-channel-field[hidden],
+.transform-range-field[hidden],
+.transform-actions[hidden] {
+  display: none !important;
+}
+
+.transform-raster-expression-field input {
+  box-sizing: border-box;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 11px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 48px;
+  padding: 5px 7px;
+  text-align: left;
+  caret-color: #111;
+}
+
+.transform-raster-expression-field {
+  display: block;
+  width: 100%;
+  min-width: 0;
+}
+
+.transform-raster-expression-field input {
+  cursor: text;
+  background: #fff;
+}
+
+.transform-imagery-palette-body .transform-raster-expression-field input {
+  width: 100%;
+  max-width: 100%;
+}
+
+.transform-calculator-section {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.transform-calculator-button-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 2px;
+  min-width: 0;
+}
+
+.transform-calculator-operator-grid {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  width: 100%;
+}
+
+.transform-calculator-token-table {
+  width: 100%;
+  max-width: 100%;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 1px;
+  font-size: 9px;
+}
+
+.transform-calculator-token-table th,
+.transform-calculator-token-table td {
+  padding: 0;
+  text-align: center;
+}
+
+.transform-calculator-token-table th:first-child {
+  width: 18px;
+}
+
+.transform-calculator-token-table button,
+.transform-calculator-button-grid button,
+.transform-calculator-actions button {
+  appearance: none;
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(0, 0, 0, 0.28);
+  border-radius: 3px;
+  box-sizing: border-box;
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  min-height: 17px;
+  padding: 1px;
+  overflow: hidden;
+  font-size: 9px;
+  line-height: 1.15;
+  text-overflow: clip;
+  white-space: nowrap;
+}
+
+.transform-calculator-token-table button:hover,
+.transform-calculator-button-grid button:hover,
+.transform-calculator-actions button:hover {
+  background: rgba(255, 255, 255, 0.94);
+}
+
+#transformRasterPreviewButton {
+  background: #1f7a4d;
+  border-color: #155f3a;
+  color: #fff;
+  font-weight: 600;
+}
+
+#transformRasterPreviewButton:hover {
+  background: #25915c;
+}
+
+.transform-calculator-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 2px;
+  min-width: 0;
+}
+
+.transform-create-fields {
+  display: grid;
+  gap: 6px;
+}
+
+.transform-export-details {
+  min-width: 0;
+}
+
+.transform-export-details summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.transform-export-details .transform-create-fields {
+  padding-top: 5px;
+}
+
+.transform-export-details .snapshot-field {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+}
+
+.transform-export-details .snapshot-field input,
+.transform-export-details .snapshot-field select {
+  width: 100%;
+  max-width: none;
+}
+
+.transform-export-details button {
+  width: 100%;
+}
+
+.transform-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px;
+}
+
+.transform-actions button {
+  min-width: 0;
+  white-space: normal;
+  line-height: 1.12;
+}
+
+.transform-actions button[hidden] {
+  display: none;
+}
+
+.transform-progress .import-progress-text {
+  display: none;
+}
+
+.transform-progress {
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  margin-right: 0;
+}
+
+.transform-progress .import-progress-bar {
+  background-color: #20874e;
+}
+
 .beta-badge {
   display: inline-block;
   margin-left: 4px;
@@ -4946,10 +5219,23 @@ input[type="range"] {
 
 .tile-set-editor-label-wrap[hidden],
 .tile-set-editor-period-wrap[hidden],
+.tile-set-editor-cleanup-wrap[hidden],
 .tile-image-editor-label-input[hidden],
 .tile-image-editor-angle-wrap[hidden],
 .tile-set-editor button[hidden] {
   display: none;
+}
+
+.tile-set-editor-cleanup-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #6a2a2a;
+  font-size: 12px;
+}
+
+.tile-set-editor-cleanup-wrap input {
+  min-height: 0;
 }
 
 .tile-set-editor-images {
@@ -5980,6 +6266,13 @@ input[type="range"] {
   flex: 1 1 auto;
   min-width: 220px;
   margin-right: auto;
+}
+
+.transform-imagery-palette-body .transform-progress.import-progress {
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  margin-right: 0;
 }
 
 .import-progress-track {

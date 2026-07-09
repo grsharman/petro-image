@@ -20,14 +20,36 @@ let circleModeActive = false;
 let tileLoadFailureWarningKey = "";
 let tileLoadFailureWarningInFlight = false;
 const tileSetAppearanceState = new WeakMap();
+const tileSetTransformState = new WeakMap();
 const TILE_SET_APPEARANCE_DEFAULTS = Object.freeze({
   brightness: 100,
   contrast: 100,
   saturation: 100,
   hue: 0,
 });
+const TILE_SET_TRANSFORM_DEFAULTS = Object.freeze({
+  recipeType: "simple",
+  type: "none",
+  intensity: 1,
+  radius: 2,
+  output: "grayscale",
+  channel: "luminance",
+  rasterPreset: "absoluteDifference",
+  rasterChannelA: "luminance",
+  rasterChannelB: "luminance",
+  rasterTileSetBIndex: 1,
+  rasterNormalize: true,
+  rasterScale: "auto",
+  rasterCustomExpression: "A.l",
+});
 const TILE_APPEARANCE_STORAGE_KEY = "petroImageTileAppearance";
 let tileAppearanceReprocessTimer = null;
+let tileAppearanceReprocessToken = 0;
+let rasterPreviewRetryTimer = null;
+let transformGenerationRunning = false;
+let activeTransformPreviewSettings = { ...TILE_SET_TRANSFORM_DEFAULTS };
+const rasterComparisonTileContextCache = new Map();
+const rasterCustomExpressionEvaluatorCache = new Map();
 
 // Accessors for attributes of the current sample
 const title = () => samples[currentIndex].title;
@@ -373,6 +395,9 @@ const openMeasurePaletteButton = document.getElementById(
 const openSnapshotPaletteButton = document.getElementById(
   "openSnapshotPaletteButton"
 );
+const openTransformImageryPaletteButton = document.getElementById(
+  "openTransformImageryPaletteButton"
+);
 const openPorosityEstimatorButton = document.getElementById(
   "openPorosityEstimatorButton"
 );
@@ -435,6 +460,73 @@ const closeSnapshotPaletteButton = document.getElementById(
 const minimizeSnapshotPaletteButton = document.getElementById(
   "minimizeSnapshotPaletteButton"
 );
+const transformImageryPalette = document.getElementById("transformImageryPalette");
+const transformImageryPaletteHeader = document.getElementById(
+  "transformImageryPaletteHeader"
+);
+const closeTransformImageryPaletteButton = document.getElementById(
+  "closeTransformImageryPaletteButton"
+);
+const minimizeTransformImageryPaletteButton = document.getElementById(
+  "minimizeTransformImageryPaletteButton"
+);
+const transformTileSetSelect = document.getElementById("transformTileSetSelect");
+const transformPreviewEnabled = document.getElementById("transformPreviewEnabled");
+const transformTypeSelect = document.getElementById("transformTypeSelect");
+const transformChannelSelect = document.getElementById("transformChannelSelect");
+const transformOutputSelect = document.getElementById("transformOutputSelect");
+const transformRasterChannelASelect = document.getElementById(
+  "transformRasterChannelASelect"
+);
+const transformRasterTileSetBSelect = document.getElementById(
+  "transformRasterTileSetBSelect"
+);
+const transformRasterChannelBSelect = document.getElementById(
+  "transformRasterChannelBSelect"
+);
+const transformRasterPresetSelect = document.getElementById(
+  "transformRasterPresetSelect"
+);
+const transformRasterNormalize = document.getElementById(
+  "transformRasterNormalize"
+);
+const transformRasterScaleSelect = document.getElementById(
+  "transformRasterScaleSelect"
+);
+const transformRasterCustomExpression = document.getElementById(
+  "transformRasterCustomExpression"
+);
+const transformRasterInputTableBody = document.getElementById(
+  "transformRasterInputTableBody"
+);
+const transformRasterBackspaceButton = document.getElementById(
+  "transformRasterBackspaceButton"
+);
+const transformRasterClearButton = document.getElementById(
+  "transformRasterClearButton"
+);
+const transformRasterPreviewButton = document.getElementById(
+  "transformRasterPreviewButton"
+);
+const transformIntensity = document.getElementById("transformIntensity");
+const transformIntensityValue = document.getElementById(
+  "transformIntensityValue"
+);
+const transformRadius = document.getElementById("transformRadius");
+const transformRadiusValue = document.getElementById("transformRadiusValue");
+const transformOutputName = document.getElementById("transformOutputName");
+const transformGenerateSize = document.getElementById("transformGenerateSize");
+const transformResetPreviewButton = document.getElementById(
+  "transformResetPreviewButton"
+);
+const transformResetDefaultButton = document.getElementById(
+  "transformResetDefaultButton"
+);
+const transformGenerateButton = document.getElementById("transformGenerateButton");
+const transformStatus = document.getElementById("transformStatus");
+const transformProgress = document.getElementById("transformProgress");
+const transformProgressBar = document.getElementById("transformProgressBar");
+const transformProgressText = document.getElementById("transformProgressText");
 const classifyPalette = document.getElementById("classifyPalette");
 const classifyPaletteHeader = document.getElementById("classifyPaletteHeader");
 const closeClassifyPaletteButton = document.getElementById(
@@ -1272,6 +1364,7 @@ function clampOpenToolPalettes() {
     annotatePalette,
     measurePalette,
     snapshotPalette,
+    transformImageryPalette,
     classifyPalette,
     porosityPalette,
     segmentPalette,
@@ -1487,6 +1580,40 @@ function toggleSnapshotPalette() {
   }
 
   closeSnapshotPalette();
+}
+
+function openTransformImageryPalette() {
+  if (!transformImageryPalette) return;
+
+  transformImageryPalette.hidden = false;
+  restoreToolPalettePosition(
+    transformImageryPalette,
+    "petroImage.transformImageryPalette"
+  );
+  openTransformImageryPaletteButton?.setAttribute("aria-pressed", "true");
+  restoreToolPaletteFromMinimized(
+    transformImageryPalette,
+    minimizeTransformImageryPaletteButton
+  );
+  populateTransformTileSetSelect();
+  updateTransformControls();
+  clampToolPaletteToViewer(transformImageryPalette);
+}
+
+function closeTransformImageryPalette() {
+  if (!transformImageryPalette) return;
+
+  transformImageryPalette.hidden = true;
+  openTransformImageryPaletteButton?.setAttribute("aria-pressed", "false");
+}
+
+function toggleTransformImageryPalette() {
+  if (!transformImageryPalette || transformImageryPalette.hidden) {
+    openTransformImageryPalette();
+    return;
+  }
+
+  closeTransformImageryPalette();
 }
 
 function openClassifyPalette() {
@@ -8798,6 +8925,149 @@ if (hasSharedViewerMenus && openSnapshotPaletteButton && snapshotPalette) {
   });
 }
 
+if (
+  hasSharedViewerMenus &&
+  openTransformImageryPaletteButton &&
+  transformImageryPalette
+) {
+  openTransformImageryPaletteButton.hidden = false;
+  openTransformImageryPaletteButton.setAttribute("aria-pressed", "false");
+  openTransformImageryPaletteButton.addEventListener("click", function (event) {
+    event.preventDefault();
+    closeViewerToolsTray();
+    toggleTransformImageryPalette();
+  });
+  closeTransformImageryPaletteButton?.addEventListener("click", function () {
+    closeTransformImageryPalette();
+  });
+  minimizeTransformImageryPaletteButton?.addEventListener("click", function () {
+    toggleToolPaletteMinimized(
+      transformImageryPalette,
+      minimizeTransformImageryPaletteButton
+    );
+  });
+  makeToolPaletteDraggable(
+    transformImageryPalette,
+    transformImageryPaletteHeader,
+    "petroImage.transformImageryPalette"
+  );
+  document
+    .querySelectorAll('input[name="transformImageryRecipe"]')
+    .forEach((input) => {
+      input.addEventListener("change", function () {
+        if (input.checked && input.value === "raster") {
+          clearSimpleTransformControls();
+          updateTransformControls();
+          clearSelectedTransformPreviewForRasterEntry();
+          return;
+        }
+        resetRasterTransformTileCaches(tileSets()[getSelectedTransformTileSetIndex()]);
+        updateTransformControls();
+        applyTransformControlsToSelectedTileSet();
+      });
+    });
+  [
+    transformTileSetSelect,
+    transformTypeSelect,
+    transformChannelSelect,
+    transformOutputSelect,
+    transformRasterChannelASelect,
+    transformRasterTileSetBSelect,
+    transformRasterChannelBSelect,
+    transformRasterPresetSelect,
+    transformRasterScaleSelect,
+  ].forEach((element) => {
+    element?.addEventListener("change", function () {
+      if (
+        element === transformRasterPresetSelect &&
+        transformRasterPresetSelect?.value === "custom" &&
+        transformRasterCustomExpression &&
+        transformRasterCustomExpression.dataset.userEdited !== "true" &&
+        transformRasterCustomExpression.value.trim() === ""
+      ) {
+        transformRasterCustomExpression.value =
+          TILE_SET_TRANSFORM_DEFAULTS.rasterCustomExpression;
+      }
+      updateTransformControls();
+      if (!isRasterRecipe(getTransformOptionsFromControls())) {
+        applyTransformControlsToSelectedTileSet();
+      } else {
+        setTransformStatus("Expression changed. Click Preview to calculate.");
+      }
+      updateTransformControls();
+    });
+  });
+  transformRasterNormalize?.addEventListener("change", function () {
+    updateTransformControls();
+    setTransformStatus("Expression changed. Click Preview to calculate.");
+    updateTransformControls();
+  });
+  transformRasterCustomExpression?.addEventListener("beforeinput", function (event) {
+    event.preventDefault();
+  });
+  transformRasterCustomExpression?.addEventListener("paste", function (event) {
+    event.preventDefault();
+  });
+  transformRasterCustomExpression?.addEventListener("drop", function (event) {
+    event.preventDefault();
+  });
+  transformRasterCustomExpression?.addEventListener("keydown", function (event) {
+    if (event.key !== "Backspace" && event.key !== "Delete") return;
+    event.preventDefault();
+    if (event.key === "Backspace") {
+      deleteRasterCalculatorSelection();
+      return;
+    }
+
+    const input = transformRasterCustomExpression;
+    const value = input.value || "";
+    const start = input.selectionStart ?? value.length;
+    const end = input.selectionEnd ?? start;
+    if (start !== end) {
+      deleteRasterCalculatorSelection();
+    } else if (start < value.length) {
+      setRasterCalculatorExpression(`${value.slice(0, start)}${value.slice(start + 1)}`);
+      focusRasterCalculatorExpression(start, start);
+      setTransformStatus("Expression changed. Click Preview to calculate.");
+    }
+  });
+  transformRasterBackspaceButton?.addEventListener("click", deleteRasterCalculatorSelection);
+  transformRasterClearButton?.addEventListener("click", function () {
+    setRasterCalculatorExpression("");
+    focusRasterCalculatorExpression();
+    setTransformStatus("Expression changed. Click Preview to calculate.");
+  });
+  transformRasterPreviewButton?.addEventListener("click", applyRasterCalculatorPreview);
+  document.querySelectorAll("[data-raster-insert]").forEach((button) => {
+    button.addEventListener("click", function () {
+      insertRasterCalculatorText(button.dataset.rasterInsert || "");
+    });
+  });
+  document.querySelectorAll("[data-raster-function]").forEach((button) => {
+    button.addEventListener("click", function () {
+      insertRasterBuilderFunction(button.dataset.rasterFunction || "");
+    });
+  });
+  transformPreviewEnabled?.addEventListener("change", function () {
+    applyTransformControlsToSelectedTileSet();
+    updateTransformControls();
+  });
+  setupTransformNumberPair(transformIntensity, transformIntensityValue, 1);
+  setupTransformNumberPair(transformRadius, transformRadiusValue, 2);
+  transformOutputName?.addEventListener("input", function () {
+    transformOutputName.dataset.autoValue = "false";
+  });
+  transformResetPreviewButton?.addEventListener("click", resetSelectedTransformPreview);
+  transformResetDefaultButton?.addEventListener("click", resetTransformControlsToDefault);
+  transformGenerateButton?.addEventListener("click", generateTransformedTileSet);
+  window.electronAPI?.onDerivedDziProgress?.((progress) => {
+    setTransformProgress(progress?.percent || 0, "Writing DZI tiles...");
+  });
+  window.addEventListener("resize", function () {
+    scheduleClampOpenToolPalettes();
+  });
+}
+
 if (hasSharedViewerMenus && openClassifyPaletteButton && classifyPalette) {
   openClassifyPaletteButton.hidden = false;
   openClassifyPaletteButton.setAttribute("aria-pressed", "false");
@@ -9503,6 +9773,12 @@ viewer.addHandler("canvas-double-click", function (event) {
 
 viewer.addHandler("tile-load-failed", handleTileLoadFailed);
 viewer.addHandler("tile-loaded", handleTileLoadedForAppearance);
+viewer.addHandler("tile-drawn", handleTileDrawnForTransformPreview);
+viewer.addHandler("animation-finish", scheduleActiveRasterPreviewReprocess);
+viewer.addHandler("update-viewport", () => {
+  const tileSet = getActiveRasterPreviewTileSet();
+  if (tileSet) scheduleRasterPreviewRetry(tileSet);
+});
 viewer.addHandler("open", clearUnsupervisedAoiForSampleChange);
 viewer.addHandler("open", scheduleScalebarRefresh);
 
@@ -9564,6 +9840,7 @@ document
       buildImageCheckboxes();
       buildOpacitySliders();
       buildTileAppearanceControls();
+      resetTransformImageryForSampleChange();
       clearAnnotations();
       annotationHistory.reset();
       updateImageCheckboxLabels();
@@ -9856,6 +10133,1333 @@ function getTileSetAppearance(tileSet) {
   return appearance;
 }
 
+function normalizeTransformValue(key, value) {
+  const fallback = TILE_SET_TRANSFORM_DEFAULTS[key];
+  const stringValue = String(value ?? fallback);
+  const valueKey = stringValue.trim();
+  switch (key) {
+    case "recipeType":
+      return ["simple", "raster"].includes(valueKey) ? valueKey : fallback;
+    case "type":
+      return [
+        "none",
+        "sobel",
+        "laplacian",
+        "unsharp",
+        "localContrast",
+        "emboss",
+        "channelMap",
+      ].includes(valueKey)
+        ? valueKey
+        : fallback;
+    case "output":
+      return ["grayscale", "falseColor", "rgb"].includes(valueKey) ? valueKey : fallback;
+    case "channel":
+      return ["red", "green", "blue", "luminance", "saturation", "hue"].includes(valueKey)
+        ? valueKey
+        : fallback;
+    case "rasterPreset":
+      return [
+        "channelA",
+        "difference",
+        "absoluteDifference",
+        "normalizedDifference",
+        "ratio",
+        "sourceRange",
+        "sourceMax",
+        "sourceMin",
+        "sourceMean",
+        "custom",
+      ].includes(valueKey)
+        ? valueKey
+        : fallback;
+    case "rasterScale":
+      return ["auto", "signed", "unit", "raw"].includes(valueKey) ? valueKey : fallback;
+    case "rasterCustomExpression":
+      return (
+        normalizeRasterExpressionVariableCase(
+          stringValue
+            .trim()
+            .replace(/\s+/g, " ")
+            .slice(0, 160)
+        ) || fallback
+      );
+    case "rasterChannelA":
+    case "rasterChannelB":
+      return ["red", "green", "blue", "luminance", "saturation", "hue"].includes(valueKey)
+        ? valueKey
+        : fallback;
+    case "rasterTileSetBIndex": {
+      const numericValue = Number.parseInt(value, 10);
+      return Number.isFinite(numericValue) ? Math.max(0, numericValue) : fallback;
+    }
+    case "rasterNormalize":
+      return value !== false && value !== "false";
+    case "intensity": {
+      const numericValue = Number(value);
+      return Number.isFinite(numericValue)
+        ? Math.max(0, Math.min(3, numericValue))
+        : fallback;
+    }
+    case "radius": {
+      const numericValue = Number(value);
+      return Number.isFinite(numericValue)
+        ? Math.max(1, Math.min(8, Math.round(numericValue)))
+        : fallback;
+    }
+    default:
+      return fallback;
+  }
+}
+
+function normalizeTileSetTransform(transform = {}) {
+  return {
+    recipeType: normalizeTransformValue("recipeType", transform.recipeType),
+    type: normalizeTransformValue("type", transform.type),
+    intensity: normalizeTransformValue("intensity", transform.intensity),
+    radius: normalizeTransformValue("radius", transform.radius),
+    output: normalizeTransformValue("output", transform.output),
+    channel: normalizeTransformValue("channel", transform.channel),
+    rasterPreset: normalizeTransformValue("rasterPreset", transform.rasterPreset),
+    rasterChannelA: normalizeTransformValue(
+      "rasterChannelA",
+      transform.rasterChannelA
+    ),
+    rasterChannelB: normalizeTransformValue(
+      "rasterChannelB",
+      transform.rasterChannelB
+    ),
+    rasterTileSetBIndex: normalizeTransformValue(
+      "rasterTileSetBIndex",
+      transform.rasterTileSetBIndex
+    ),
+    rasterNormalize: normalizeTransformValue(
+      "rasterNormalize",
+      transform.rasterNormalize
+    ),
+    rasterScale: normalizeTransformValue("rasterScale", transform.rasterScale),
+    rasterCustomExpression: normalizeTransformValue(
+      "rasterCustomExpression",
+      transform.rasterCustomExpression
+    ),
+  };
+}
+
+function getTileSetTransform(tileSet) {
+  if (!tileSet) return { ...TILE_SET_TRANSFORM_DEFAULTS };
+  const existing = tileSetTransformState.get(tileSet);
+  if (existing) return existing;
+
+  const transform = { ...TILE_SET_TRANSFORM_DEFAULTS };
+  tileSetTransformState.set(tileSet, transform);
+  return transform;
+}
+
+function isDefaultTileSetTransform(tileSet) {
+  const transform = getTileSetTransform(tileSet);
+  return (
+    transform.recipeType === TILE_SET_TRANSFORM_DEFAULTS.recipeType &&
+    transform.type === TILE_SET_TRANSFORM_DEFAULTS.type
+  );
+}
+
+function shouldProcessTileSet(tileSet) {
+  return !isDefaultTileSetAppearance(tileSet) || !isDefaultTileSetTransform(tileSet);
+}
+
+function getSelectedTransformTileSetIndex() {
+  const rawIndex = Number.parseInt(transformTileSetSelect?.value || "0", 10);
+  if (!Number.isFinite(rawIndex)) return 0;
+  return Math.min(Math.max(rawIndex, 0), Math.max(tileSets().length - 1, 0));
+}
+
+function getTransformMode() {
+  return "preview";
+}
+
+function getSelectedTransformRecipeType() {
+  return (
+    document.querySelector('input[name="transformImageryRecipe"]:checked')?.value ||
+    "simple"
+  );
+}
+
+function isTransformPreviewEnabled() {
+  return transformPreviewEnabled?.checked !== false;
+}
+
+function isChannelTransform(type) {
+  return type === "channelMap";
+}
+
+function isRasterRecipe(transform) {
+  return transform?.recipeType === "raster";
+}
+
+function rasterPresetUsesInputB(preset) {
+  return [
+    "difference",
+    "absoluteDifference",
+    "normalizedDifference",
+    "ratio",
+  ].includes(preset);
+}
+
+function rasterPresetUsesSourceStack(preset) {
+  return ["sourceRange", "sourceMax", "sourceMin", "sourceMean"].includes(preset);
+}
+
+function getRasterCustomExpressionKey(expression) {
+  return String(expression || TILE_SET_TRANSFORM_DEFAULTS.rasterCustomExpression)
+    .trim()
+    .replace(/\s+/g, "")
+    .toLowerCase();
+}
+
+function rasterCustomExpressionHasAStackAggregate(expression) {
+  return /\b(?:range|max|min|mean)\s*\(\s*A(?:_(?:r|g|b|l|s|h))?\s*\)/i.test(expression || "");
+}
+
+function getRasterCustomExpressionStackAggregateInputs(expression) {
+  const inputPattern = getRasterInputRegexAlternation();
+  const aggregatePattern = new RegExp(
+    `\\b(?:range|max|min|mean)\\s*\\(\\s*(${inputPattern})(?:_(?:r|g|b|l|s|h))?\\s*\\)`,
+    "gi"
+  );
+  const inputs = new Set();
+  String(expression || "").replace(aggregatePattern, (match, inputName) => {
+    inputs.add(String(inputName || "").toUpperCase());
+    return match;
+  });
+  return [...inputs];
+}
+
+function rasterCustomExpressionUsesSourceStack(expression) {
+  return rasterCustomExpressionHasAStackAggregate(expression);
+}
+
+function rasterCustomExpressionRequiresMultipleSourceImages(expression) {
+  const key = getRasterCustomExpressionKey(expression);
+  return (
+    key === "range(a)" ||
+    /\brange\s*\(\s*(?:A|A_(?:r|g|b|l|s|h))\s*\)/i.test(expression || "") ||
+    (/\bmax\s*\(\s*(?:A|A_(?:r|g|b|l|s|h))\s*\)/i.test(expression || "") &&
+      /\bmin\s*\(\s*(?:A|A_(?:r|g|b|l|s|h))\s*\)/i.test(expression || ""))
+  );
+}
+
+function getRasterTransformContextMessage(transform, tileSet) {
+  if (!isRasterRecipe(transform)) return "";
+  const tileCount = tileSet?.tiles?.length || 0;
+  const needsMultipleSourceImages =
+    transform.rasterPreset === "sourceRange" ||
+    (transform.rasterPreset === "custom" &&
+      rasterCustomExpressionRequiresMultipleSourceImages(
+        transform.rasterCustomExpression
+      ));
+  if (needsMultipleSourceImages && tileCount <= 1) {
+    return "Stack range calculations need a source tile set with multiple images.";
+  }
+  return "";
+}
+
+function rasterTransformUsesInputB(transform) {
+  if (!isRasterRecipe(transform)) return false;
+  if (rasterPresetUsesInputB(transform.rasterPreset)) return true;
+  return (
+    transform.rasterPreset === "custom" &&
+    /\bB(?:\b|_)/.test(transform.rasterCustomExpression || "")
+  );
+}
+
+function getRasterTransformInputTileSetIndices(transform) {
+  const indices = new Set();
+  if (!isRasterRecipe(transform)) return indices;
+  indices.add(0);
+  if (rasterTransformUsesInputB(transform)) {
+    indices.add(transform.rasterTileSetBIndex);
+  }
+  return indices;
+}
+
+function rasterTransformUsesSourceStack(transform) {
+  if (!isRasterRecipe(transform)) return false;
+  if (rasterPresetUsesSourceStack(transform.rasterPreset)) return true;
+  return (
+    transform.rasterPreset === "custom" &&
+    rasterCustomExpressionUsesSourceStack(transform.rasterCustomExpression)
+  );
+}
+
+function getTransformTypeLabel(type) {
+  switch (type) {
+    case "sobel":
+      return "Sobel Edge";
+    case "laplacian":
+      return "Laplacian Edge";
+    case "unsharp":
+      return "Unsharp Mask";
+    case "localContrast":
+      return "Local Contrast";
+    case "emboss":
+      return "Emboss Relief";
+    case "channelMap":
+      return "Channel Map";
+    default:
+      return "Transform";
+  }
+}
+
+function getRasterPresetLabel(preset) {
+  switch (preset) {
+    case "channelA":
+      return "A Channel";
+    case "difference":
+      return "Difference";
+    case "absoluteDifference":
+      return "Absolute Difference";
+    case "normalizedDifference":
+      return "Normalized Difference";
+    case "ratio":
+      return "Ratio";
+    case "sourceRange":
+      return "Source Range";
+    case "sourceMax":
+      return "Source Max";
+    case "sourceMin":
+      return "Source Min";
+    case "sourceMean":
+      return "Source Mean";
+    case "custom":
+      return "Advanced Transform";
+    default:
+      return "Advanced Transform";
+  }
+}
+
+function getRasterExpressionText(transform) {
+  const a = `A.${getRasterTokenChannelLabel(transform.rasterChannelA)}`;
+  const b = `B.${getRasterTokenChannelLabel(transform.rasterChannelB)}`;
+  switch (transform.rasterPreset) {
+    case "channelA":
+      return a;
+    case "difference":
+      return `${a} - ${b}`;
+    case "normalizedDifference":
+      return `(${a} - ${b}) / (${a} + ${b})`;
+    case "ratio":
+      return `${a} / ${b}`;
+    case "sourceRange":
+      return `range(${a})`;
+    case "sourceMax":
+      return `max(${a})`;
+    case "sourceMin":
+      return `min(${a})`;
+    case "sourceMean":
+      return `mean(${a})`;
+    case "custom":
+      return transform.rasterCustomExpression || TILE_SET_TRANSFORM_DEFAULTS.rasterCustomExpression;
+    case "absoluteDifference":
+    default:
+      return `abs(${a} - ${b})`;
+  }
+}
+
+function getTransformOptionsFromControls() {
+  const recipeType = getSelectedTransformRecipeType();
+  const rasterExpression = normalizeRasterExpressionTokens(
+    transformRasterCustomExpression?.value ||
+      TILE_SET_TRANSFORM_DEFAULTS.rasterCustomExpression
+  );
+  const comparisonInputs = rasterExpression.inputs.filter((inputName) => inputName !== "A");
+  const comparisonInput = comparisonInputs[0] || "B";
+  const comparisonIndex = getRasterInputIndex(comparisonInput);
+  return normalizeTileSetTransform({
+    recipeType,
+    type: recipeType === "raster" ? "none" : transformTypeSelect?.value || "none",
+    intensity: recipeType === "raster" ? 1 : transformIntensity?.value || 1,
+    radius: recipeType === "raster" ? 2 : transformRadius?.value || 2,
+    output: transformOutputSelect?.value || "grayscale",
+    channel: transformChannelSelect?.value || "luminance",
+    rasterPreset:
+      recipeType === "raster"
+        ? "custom"
+        : transformRasterPresetSelect?.value || "absoluteDifference",
+    rasterChannelA:
+      rasterExpression.channels.A ||
+      transformRasterChannelASelect?.value ||
+      "luminance",
+    rasterChannelB:
+      rasterExpression.channels[comparisonInput] ||
+      rasterExpression.channels.B ||
+      transformRasterChannelBSelect?.value ||
+      "luminance",
+    rasterTileSetBIndex:
+      comparisonInputs.length > 0
+        ? comparisonIndex
+        : transformRasterTileSetBSelect?.value || 1,
+    rasterNormalize: transformRasterNormalize?.checked !== false,
+    rasterScale: transformRasterScaleSelect?.value || "auto",
+    rasterCustomExpression:
+      rasterExpression.expression
+        .replace(
+          new RegExp(`\\b${comparisonInput}_`, "g"),
+          comparisonInput === "A" ? "A_" : "B_"
+        )
+        .replace(
+          new RegExp(`\\b${comparisonInput}\\b`, "g"),
+          comparisonInput === "A" ? "A" : "B"
+        ) ||
+      TILE_SET_TRANSFORM_DEFAULTS.rasterCustomExpression,
+  });
+}
+
+function getRasterExpressionInputValue() {
+  return String(transformRasterCustomExpression?.value || "")
+    .trim()
+    .replace(/\s+/g, " ");
+}
+
+function normalizeRasterTokenChannel(channel) {
+  const value = String(channel || "").toLowerCase();
+  switch (value) {
+    case "r":
+    case "red":
+      return "red";
+    case "g":
+    case "green":
+      return "green";
+    case "b":
+    case "blue":
+      return "blue";
+    case "l":
+    case "lum":
+    case "luminance":
+      return "luminance";
+    case "s":
+    case "saturation":
+      return "saturation";
+    case "h":
+    case "hue":
+      return "hue";
+    default:
+      return "luminance";
+  }
+}
+
+function normalizeRasterExpressionVariableCase(expression) {
+  return String(expression || "")
+    .replace(/\b([ab])_(r|g|b|l|s|h)\b/gi, (match, inputName, channel) => {
+      return `${inputName.toUpperCase()}_${getRasterTokenChannelLabel(channel)}`;
+    })
+    .replace(/\b([ab])\b/g, (match) => match.toUpperCase());
+}
+
+function getRasterTokenChannelLabel(channel) {
+  switch (normalizeRasterTokenChannel(channel)) {
+    case "red":
+      return "r";
+    case "green":
+      return "g";
+    case "blue":
+      return "b";
+    case "saturation":
+      return "s";
+    case "hue":
+      return "h";
+    case "luminance":
+    default:
+      return "l";
+  }
+}
+
+function getRasterInputSymbol(index) {
+  const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  if (index < alphabet.length) return alphabet[index];
+  return `T${index + 1}`;
+}
+
+function getRasterInputTileSetEntries() {
+  return tileSets()
+    .map((tileSet, tileSetIndex) => ({
+      symbol: getRasterInputSymbol(tileSetIndex),
+      tileSet,
+      tileSetIndex,
+    }))
+    .filter((entry) => entry.tileSet);
+}
+
+function escapeRegExp(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function getRasterInputIndex(symbol) {
+  const value = String(symbol || "A").toUpperCase();
+  const entry = getRasterInputTileSetEntries().find(
+    (item) => item.symbol === value
+  );
+  if (entry) return entry.tileSetIndex;
+  return 0;
+}
+
+function getRasterInputRegexAlternation() {
+  const symbols = getRasterInputTileSetEntries().map((entry) =>
+    escapeRegExp(entry.symbol)
+  );
+  return symbols.length ? symbols.join("|") : "A";
+}
+
+function normalizeRasterExpressionTokens(expression) {
+  const channels = {};
+  const inputs = new Set();
+  const validInputs = new Set(
+    getRasterInputTileSetEntries().map((entry) => entry.symbol)
+  );
+  const invalidInputs = new Set();
+  const invalidProperties = new Set();
+  const tokenPattern = new RegExp(
+    `\\b([A-Z]|T\\d+)\\.(r|g|b|l|s|h)\\b`,
+    "gi"
+  );
+  const rawExpression = String(
+    expression || TILE_SET_TRANSFORM_DEFAULTS.rasterCustomExpression
+  );
+  rawExpression.replace(
+    /\b([A-Z]|T\d+)\.([A-Za-z0-9]+)\b/gi,
+    (match, inputName, propertyName) => {
+      const normalizedInput = inputName.toUpperCase();
+      const normalizedProperty = propertyName.toLowerCase();
+      if (!validInputs.has(normalizedInput)) {
+        invalidInputs.add(normalizedInput);
+      } else if (!["r", "g", "b", "l", "s", "h"].includes(normalizedProperty)) {
+        invalidProperties.add(`${normalizedInput}.${propertyName}`);
+      }
+      return match;
+    }
+  );
+  const expressionText = rawExpression.replace(tokenPattern,
+    (match, inputName, channel) => {
+      const normalizedInput = inputName.toUpperCase();
+      if (!validInputs.has(normalizedInput)) {
+        invalidInputs.add(normalizedInput);
+        return match;
+      }
+      const normalizedChannel = normalizeRasterTokenChannel(channel);
+      if (!channels[normalizedInput]) {
+        channels[normalizedInput] = normalizedChannel;
+      }
+      inputs.add(normalizedInput);
+      return `${normalizedInput}_${getRasterTokenChannelLabel(normalizedChannel)}`;
+    }
+  );
+
+  return {
+    expression: expressionText.trim().replace(/\s+/g, " "),
+    channels,
+    inputs: [...inputs],
+    invalidInputs: [...invalidInputs],
+    invalidProperties: [...invalidProperties],
+  };
+}
+
+function setRasterCalculatorExpression(value) {
+  if (!transformRasterCustomExpression) return;
+  transformRasterCustomExpression.value = String(value ?? "").trim();
+  transformRasterCustomExpression.dataset.userEdited = "true";
+  rasterCustomExpressionEvaluatorCache.clear();
+  if (transformRasterPresetSelect) transformRasterPresetSelect.value = "custom";
+  updateTransformControls();
+}
+
+function focusRasterCalculatorExpression(start = null, end = null) {
+  if (!transformRasterCustomExpression) return;
+  transformRasterCustomExpression.focus();
+  const length = transformRasterCustomExpression.value.length;
+  const selectionStart = start === null ? length : Math.max(0, Math.min(length, start));
+  const selectionEnd = end === null ? selectionStart : Math.max(0, Math.min(length, end));
+  transformRasterCustomExpression.setSelectionRange(selectionStart, selectionEnd);
+}
+
+function insertRasterCalculatorText(text, selectOffset = 0) {
+  if (!transformRasterCustomExpression) return;
+  const input = transformRasterCustomExpression;
+  const value = input.value || "";
+  const start = input.selectionStart ?? value.length;
+  const end = input.selectionEnd ?? start;
+  const nextValue = `${value.slice(0, start)}${text}${value.slice(end)}`;
+  setRasterCalculatorExpression(nextValue);
+  const cursor = start + text.length + selectOffset;
+  focusRasterCalculatorExpression(cursor, cursor);
+  setTransformStatus("Expression changed. Click Preview to calculate.");
+}
+
+function deleteRasterCalculatorSelection() {
+  if (!transformRasterCustomExpression) return;
+  const input = transformRasterCustomExpression;
+  const value = input.value || "";
+  const start = input.selectionStart ?? value.length;
+  const end = input.selectionEnd ?? start;
+  if (start !== end) {
+    setRasterCalculatorExpression(`${value.slice(0, start)}${value.slice(end)}`);
+    focusRasterCalculatorExpression(start, start);
+  } else if (start > 0) {
+    setRasterCalculatorExpression(`${value.slice(0, start - 1)}${value.slice(start)}`);
+    focusRasterCalculatorExpression(start - 1, start - 1);
+  }
+  setTransformStatus("Expression changed. Click Preview to calculate.");
+}
+
+function insertRasterInputToken(inputName, channel) {
+  const normalizedInput = String(inputName || "A").toUpperCase();
+  const normalizedChannel = normalizeRasterTokenChannel(channel);
+  if (inputName === "A" && transformRasterChannelASelect) {
+    transformRasterChannelASelect.value = normalizedChannel;
+  }
+  if (inputName === "B" && transformRasterChannelBSelect) {
+    transformRasterChannelBSelect.value = normalizedChannel;
+  }
+  insertRasterCalculatorText(
+    `${normalizedInput}.${getRasterTokenChannelLabel(normalizedChannel)}`
+  );
+}
+
+function populateTransformRasterInputTable() {
+  if (!transformRasterInputTableBody) return;
+  transformRasterInputTableBody.innerHTML = "";
+  const channels = [
+    ["red", "r"],
+    ["green", "g"],
+    ["blue", "b"],
+    ["luminance", "l"],
+    ["saturation", "s"],
+    ["hue", "h"],
+  ];
+  getRasterInputTileSetEntries().forEach((entry) => {
+    const { symbol, tileSet, tileSetIndex } = entry;
+    const row = document.createElement("tr");
+    const heading = document.createElement("th");
+    heading.textContent = symbol;
+    heading.title = getSnapshotTileSetLabel(tileSet, tileSetIndex);
+    row.append(heading);
+    channels.forEach(([channel, label]) => {
+      const cell = document.createElement("td");
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = label;
+      button.dataset.rasterInput = symbol;
+      button.dataset.rasterChannel = channel;
+      button.title = `${symbol}.${getRasterTokenChannelLabel(channel)} - ${getSnapshotTileSetLabel(tileSet, tileSetIndex)}`;
+      button.addEventListener("click", function () {
+        insertRasterInputToken(symbol, channel);
+      });
+      cell.append(button);
+      row.append(cell);
+    });
+    transformRasterInputTableBody.append(row);
+  });
+}
+
+function insertRasterBuilderFunction(functionName) {
+  if (!functionName) return;
+  const text = `${functionName}()`;
+  insertRasterCalculatorText(text, -1);
+}
+
+function applyRasterCalculatorPreview() {
+  const rasterRecipeInput = document.querySelector(
+    'input[name="transformImageryRecipe"][value="raster"]'
+  );
+  if (rasterRecipeInput) rasterRecipeInput.checked = true;
+  if (transformRasterPresetSelect) transformRasterPresetSelect.value = "custom";
+  if (!getRasterExpressionInputValue()) {
+    setTransformStatus("Add an expression before previewing.", "error");
+    return;
+  }
+  const rasterExpression = normalizeRasterExpressionTokens(
+    transformRasterCustomExpression?.value ||
+      TILE_SET_TRANSFORM_DEFAULTS.rasterCustomExpression
+  );
+  if (rasterExpression.invalidInputs.length > 0) {
+    setTransformStatus(
+      `${rasterExpression.invalidInputs.join(", ")} is not available for this source tile set.`,
+      "error"
+    );
+    return;
+  }
+  if (rasterExpression.invalidProperties.length > 0) {
+    setTransformStatus(
+      `Use r, g, b, l, s, or h after the dot. Invalid: ${rasterExpression.invalidProperties.join(", ")}.`,
+      "error"
+    );
+    return;
+  }
+  const comparisonInputs = rasterExpression.inputs.filter((inputName) => inputName !== "A");
+  if (new Set(comparisonInputs).size > 1) {
+    setTransformStatus(
+      "Use A and one comparison tile set per preview for now.",
+      "error"
+    );
+    return;
+  }
+  const comparisonStackInputs = getRasterCustomExpressionStackAggregateInputs(
+    rasterExpression.expression
+  ).filter((inputName) => inputName !== "A");
+  if (comparisonStackInputs.length > 0) {
+    setTransformStatus(
+      "Stack functions use A only for now. Use comparison tile sets in value expressions.",
+      "error"
+    );
+    return;
+  }
+  clearSimpleTransformControls();
+  resetRasterTransformTileCaches(null, { restoreDisplayed: false });
+  setRasterCalculatorExpression(getRasterExpressionInputValue());
+  setTransformStatus("Processing preview...");
+  setTransformPreviewProgressStart();
+  applyTransformControlsToSelectedTileSet();
+  updateTransformControls();
+}
+
+function populateTransformTileSetSelect() {
+  if (!transformTileSetSelect) return;
+
+  const previousValue = transformTileSetSelect.value;
+  transformTileSetSelect.innerHTML = "";
+  tileSets().forEach((tileSet, index) => {
+    const option = document.createElement("option");
+    option.value = String(index);
+    option.textContent = getSnapshotTileSetLabel(tileSet, index);
+    transformTileSetSelect.append(option);
+  });
+
+  const hasPrevious =
+    previousValue !== "" &&
+    Array.from(transformTileSetSelect.options).some(
+      (option) => option.value === previousValue
+    );
+  transformTileSetSelect.value = hasPrevious ? previousValue : "0";
+  populateTransformRasterTileSetBSelect();
+  populateTransformRasterInputTable();
+}
+
+function populateTransformRasterTileSetBSelect() {
+  if (!transformRasterTileSetBSelect) return;
+
+  const selectedAIndex = getSelectedTransformTileSetIndex();
+  const previousValue = transformRasterTileSetBSelect.value;
+  transformRasterTileSetBSelect.innerHTML = "";
+  tileSets().forEach((tileSet, index) => {
+    const option = document.createElement("option");
+    option.value = String(index);
+    const label = getSnapshotTileSetLabel(tileSet, index);
+    option.textContent =
+      index === selectedAIndex ? `${label} (source)` : label;
+    transformRasterTileSetBSelect.append(option);
+  });
+
+  const fallbackBIndex = tileSets().findIndex(
+    (tileSet, index) => tileSet && index !== selectedAIndex
+  );
+  const preferredValue =
+    previousValue !== ""
+      ? previousValue
+      : String(fallbackBIndex >= 0 ? fallbackBIndex : selectedAIndex);
+  const hasPreferred = Array.from(transformRasterTileSetBSelect.options).some(
+    (option) => option.value === preferredValue
+  );
+  transformRasterTileSetBSelect.value = hasPreferred
+    ? preferredValue
+    : String(fallbackBIndex >= 0 ? fallbackBIndex : selectedAIndex);
+}
+
+function setTransformStatus(message, status = "") {
+  if (!transformStatus) return;
+  transformStatus.textContent = message;
+  transformStatus.classList.toggle("ok", status === "ok");
+  transformStatus.classList.toggle("error", status === "error");
+}
+
+function setTransformProgress(value, message = "") {
+  if (!transformProgress || !transformProgressBar || !transformProgressText) return;
+  const percent = Math.max(0, Math.min(100, Number(value) || 0));
+  transformProgress.hidden = false;
+  transformProgressBar.style.width = `${percent}%`;
+  transformProgressBar.style.transform = `scaleX(${percent / 100})`;
+  transformProgressText.textContent = message || `${Math.round(percent)}%`;
+}
+
+function clearTransformProgress() {
+  if (!transformProgress || !transformProgressBar || !transformProgressText) return;
+  transformProgress.hidden = true;
+  transformProgressBar.style.width = "0%";
+  transformProgressBar.style.transform = "scaleX(0)";
+  transformProgressText.textContent = "";
+}
+
+function setTransformPreviewProgressStart() {
+  if (getTransformMode() !== "preview" || transformGenerationRunning) return;
+  setTransformProgress(8, "Processing preview...");
+}
+
+function updateTransformPreviewProgress(stats) {
+  if (getTransformMode() !== "preview" || transformGenerationRunning) return;
+  const total = Math.max(0, stats?.total || stats?.processed || 0);
+  const processed = Math.max(0, stats?.processed || 0);
+  const missing = Math.max(0, stats?.missingRasterInputs || 0);
+  if (total === 0) {
+    setTransformProgress(8, "Waiting for source tiles...");
+    return;
+  }
+
+  const completed = Math.max(0, processed - missing);
+  const percent =
+    processed < total || missing > 0
+      ? Math.max(8, (completed / total) * 100)
+      : 100;
+  const label =
+    processed < total
+      ? `${processed}/${total} tiles calculated`
+      : missing > 0
+      ? `${completed}/${total} tiles calculated`
+      : "Preview calculated";
+  setTransformProgress(percent, label);
+}
+
+function updateTransformOutputName() {
+  if (!transformOutputName) return;
+  const tileSet = tileSets()[getSelectedTransformTileSetIndex()];
+  const transform = getTransformOptionsFromControls();
+  const sourceLabel = getSnapshotTileSetLabel(tileSet, getSelectedTransformTileSetIndex());
+  const suggestedName =
+    isRasterRecipe(transform)
+      ? `${sourceLabel} ${getRasterPresetLabel(transform.rasterPreset)}`
+      : transform.type === "none"
+      ? `${sourceLabel} Copy`
+      : `${sourceLabel} ${getTransformTypeLabel(transform.type)}`;
+  if (!transformOutputName.value || transformOutputName.dataset.autoValue === "true") {
+    transformOutputName.value = suggestedName;
+    transformOutputName.dataset.autoValue = "true";
+  }
+}
+
+function clearSimpleTransformControls() {
+  if (transformTypeSelect) {
+    transformTypeSelect.value = TILE_SET_TRANSFORM_DEFAULTS.type;
+  }
+  if (transformChannelSelect) {
+    transformChannelSelect.value = TILE_SET_TRANSFORM_DEFAULTS.channel;
+  }
+  if (transformIntensity) {
+    transformIntensity.value = TILE_SET_TRANSFORM_DEFAULTS.intensity;
+  }
+  if (transformIntensityValue) {
+    transformIntensityValue.value = TILE_SET_TRANSFORM_DEFAULTS.intensity;
+  }
+  if (transformRadius) {
+    transformRadius.value = TILE_SET_TRANSFORM_DEFAULTS.radius;
+  }
+  if (transformRadiusValue) {
+    transformRadiusValue.value = TILE_SET_TRANSFORM_DEFAULTS.radius;
+  }
+}
+
+function clearSelectedTransformPreviewForRasterEntry() {
+  const tileSet = tileSets()[getSelectedTransformTileSetIndex()];
+  activeTransformPreviewSettings = getTransformOptionsFromControls();
+  if (!tileSet) {
+    setTransformStatus("Build an expression, then click Preview.");
+    clearTransformProgress();
+    return;
+  }
+
+  const hadTransform = !isDefaultTileSetTransform(tileSet);
+  resetRasterTransformTileCaches(tileSet);
+  tileSetTransformState.set(tileSet, { ...TILE_SET_TRANSFORM_DEFAULTS });
+  updateRasterCalculationPreloadHints();
+  clearTransformProgress();
+  setTransformStatus("Build an expression, then click Preview.");
+  if (hadTransform) {
+    scheduleTileAppearanceReprocess(tileSet);
+  }
+}
+
+function resetTransformImageryForSampleChange() {
+  activeTransformPreviewSettings = { ...TILE_SET_TRANSFORM_DEFAULTS };
+  resetRasterTransformTileCaches();
+  tileSets().forEach((tileSet) => {
+    tileSetTransformState.set(tileSet, { ...TILE_SET_TRANSFORM_DEFAULTS });
+  });
+  syncTransformControlsFromSettings(activeTransformPreviewSettings);
+  if (transformPreviewEnabled) transformPreviewEnabled.checked = true;
+  if (transformOutputName) {
+    transformOutputName.value = "";
+    transformOutputName.dataset.autoValue = "true";
+  }
+  clearTransformProgress();
+  setTransformStatus("Preview transforms are temporary.");
+  updateRasterCalculationPreloadHints();
+  updateTransformControls();
+}
+
+function resetRasterTransformTileCaches(tileSetToReset = null, options = {}) {
+  const restoreDisplayed = options.restoreDisplayed !== false;
+  tileAppearanceReprocessToken += 1;
+  if (tileAppearanceReprocessTimer !== null) {
+    window.clearTimeout(tileAppearanceReprocessTimer);
+    tileAppearanceReprocessTimer = null;
+  }
+  if (rasterPreviewRetryTimer !== null) {
+    window.clearTimeout(rasterPreviewRetryTimer);
+    rasterPreviewRetryTimer = null;
+  }
+  const setsToReset = tileSetToReset ? [tileSetToReset] : tileSets();
+  setsToReset.forEach((tileSet) => {
+    forEachLoadedTileInTileSet(tileSet, (loadedTile) => {
+      loadedTile.petroImageProcessedContext = null;
+      if (restoreDisplayed) {
+        restoreLoadedTileSourceContext(loadedTile);
+      }
+    });
+  });
+  rasterComparisonTileContextCache.clear();
+  rasterCustomExpressionEvaluatorCache.clear();
+  if (restoreDisplayed) {
+    displayImages();
+    viewer?.forceRedraw?.();
+  }
+}
+
+function updateTransformControls() {
+  const simpleFields = document.querySelector(".transform-simple-fields");
+  const rasterFields = document.querySelector(".transform-raster-fields");
+  const transformActions = document.querySelector(".transform-actions");
+  const transform = getTransformOptionsFromControls();
+  const rasterRecipe = isRasterRecipe(transform);
+  const hasTransform = rasterRecipe || transform.type !== "none";
+  if (simpleFields) simpleFields.hidden = rasterRecipe;
+  if (rasterFields) rasterFields.hidden = !rasterRecipe;
+  if (transformActions) transformActions.hidden = rasterRecipe;
+  document
+    .querySelectorAll(".transform-range-field")
+    .forEach((field) => {
+      field.hidden = rasterRecipe;
+    });
+  populateTransformRasterTileSetBSelect();
+  populateTransformRasterInputTable();
+
+  const usesRadius =
+    !rasterRecipe && ["unsharp", "localContrast"].includes(transform.type);
+  const channelField = document.querySelector(".transform-channel-field");
+  if (transformChannelSelect) {
+    transformChannelSelect.disabled = rasterRecipe || transform.type !== "channelMap";
+  }
+  if (channelField) {
+    channelField.hidden = rasterRecipe;
+    channelField.classList.toggle(
+      "transform-field-disabled",
+      rasterRecipe || transform.type !== "channelMap"
+    );
+  }
+  if (transformRasterTileSetBSelect) {
+    transformRasterTileSetBSelect.disabled = !rasterRecipe;
+  }
+  if (transformRasterChannelBSelect) {
+    transformRasterChannelBSelect.disabled = !rasterRecipe;
+  }
+  if (transformRasterScaleSelect) {
+    transformRasterScaleSelect.disabled = transform.rasterNormalize;
+  }
+  if (transformRadius) transformRadius.disabled = !usesRadius;
+  if (transformRadiusValue) transformRadiusValue.disabled = !usesRadius;
+  if (transformOutputSelect) {
+    const outputDefaults = {
+      none: "grayscale",
+      sobel: "grayscale",
+      laplacian: "grayscale",
+      unsharp: "rgb",
+      localContrast: "grayscale",
+      emboss: "grayscale",
+      channelMap: "grayscale",
+    };
+    const outputEnabled =
+      rasterRecipe || ["localContrast", "channelMap"].includes(transform.type);
+    transformOutputSelect.disabled = !outputEnabled;
+    Array.from(transformOutputSelect.options).forEach((option) => {
+      if (option.value === "rgb") {
+        option.disabled = rasterRecipe || transform.type !== "localContrast";
+      }
+      if (option.value === "falseColor") {
+        option.disabled =
+          !rasterRecipe && transform.type !== "channelMap";
+      }
+      if (option.value === "grayscale") {
+        option.disabled = !hasTransform && transform.type !== "none";
+      }
+    });
+    if (!outputEnabled || transformOutputSelect.selectedOptions[0]?.disabled) {
+      transformOutputSelect.value = rasterRecipe
+        ? "grayscale"
+        : outputDefaults[transform.type] || "grayscale";
+    }
+  }
+  const usesIntensity =
+    !rasterRecipe && hasTransform && !isChannelTransform(transform.type);
+  if (transformIntensity) transformIntensity.disabled = !usesIntensity;
+  if (transformIntensityValue) transformIntensityValue.disabled = !usesIntensity;
+  if (transformGenerateButton) {
+    transformGenerateButton.disabled =
+      transformGenerationRunning ||
+      tileSets().length === 0 ||
+      rasterRecipe ||
+      !window.electronAPI?.createDerivedDzi;
+  }
+  updateTransformOutputName();
+  if (!transformGenerationRunning) {
+    const defaultStatuses = new Set([
+      "",
+      "Preview transforms are temporary.",
+      "Preview applied.",
+      "Preview transform is hidden.",
+      "Source tile set is not currently selected.",
+      "Generate a derived DZI from the current transform settings.",
+      "Advanced transforms are preview-only for now.",
+      "Stack range calculations need a source tile set with multiple images.",
+    ]);
+    if (defaultStatuses.has(transformStatus?.textContent || "")) {
+      const contextMessage = getRasterTransformContextMessage(
+        transform,
+        tileSets()[getSelectedTransformTileSetIndex()]
+      );
+      setTransformStatus(
+        contextMessage ||
+          "Preview transforms are temporary."
+      );
+    }
+  }
+}
+
+function setupTransformNumberPair(rangeInput, numberInput) {
+  if (!rangeInput || !numberInput) return;
+  const syncAndApply = (value) => {
+    const key = rangeInput === transformRadius ? "radius" : "intensity";
+    const normalized = normalizeTransformValue(key, value);
+    rangeInput.value = normalized;
+    numberInput.value = normalized;
+    applyTransformControlsToSelectedTileSet();
+    updateTransformControls();
+  };
+  rangeInput.addEventListener("input", () => syncAndApply(rangeInput.value));
+  numberInput.addEventListener("change", () => syncAndApply(numberInput.value));
+}
+
+function applyTransformControlsToSelectedTileSet() {
+  if (getTransformMode() !== "preview") return;
+  const tileSet = tileSets()[getSelectedTransformTileSetIndex()];
+  if (!tileSet) return;
+
+  const hadTransform = !isDefaultTileSetTransform(tileSet);
+  const transform = getTransformOptionsFromControls();
+  activeTransformPreviewSettings = { ...transform };
+  const appliedTransform = isTransformPreviewEnabled()
+    ? transform
+    : { ...TILE_SET_TRANSFORM_DEFAULTS };
+  if (
+    hadTransform ||
+    appliedTransform.type !== "none" ||
+    isRasterRecipe(appliedTransform)
+  ) {
+    resetRasterTransformTileCaches(tileSet, { restoreDisplayed: false });
+  }
+  tileSetTransformState.set(tileSet, appliedTransform);
+  if (isRasterRecipe(transform) || transform.type !== "none" || hadTransform) {
+    setTransformStatus("Processing preview...");
+    setTransformPreviewProgressStart();
+  }
+  updateRasterCalculationPreloadHints();
+  scheduleTileAppearanceReprocess(tileSet);
+}
+
+function getRasterCalculationPreloadTileSetIndices() {
+  const indices = new Set();
+  tileSets().forEach((tileSet, tileSetIndex) => {
+    const transform = getTileSetTransform(tileSet);
+    if (!isRasterRecipe(transform)) return;
+    indices.add(tileSetIndex);
+    getRasterTransformInputTileSetIndices(transform).forEach((inputIndex) => {
+      indices.add(inputIndex);
+    });
+  });
+  return indices;
+}
+
+function updateRasterCalculationPreloadHints() {
+  const preloadIndices = getRasterCalculationPreloadTileSetIndices();
+  tileSets().forEach((tileSet, tileSetIndex) => {
+    const shouldPreload = preloadIndices.has(tileSetIndex);
+    (tileSet.tiles || []).forEach((tile) => {
+      if (typeof tile.image?.setPreload === "function") {
+        tile.image.setPreload(shouldPreload);
+      }
+    });
+  });
+  viewer?.forceRedraw?.();
+}
+
+function isTransformSourceTileSetVisible() {
+  const checkbox = document.querySelector(
+    `.image-checkbox[data-index="${getSelectedTransformTileSetIndex()}"]`
+  );
+  return Boolean(checkbox?.checked);
+}
+
+function getTransformPreviewIdleStatus(tileSet) {
+  const contextMessage = getRasterTransformContextMessage(
+    getTileSetTransform(tileSet),
+    tileSet
+  );
+  if (contextMessage) return contextMessage;
+  if (
+    !isTransformPreviewEnabled() &&
+    (isRasterRecipe(activeTransformPreviewSettings) ||
+      activeTransformPreviewSettings.type !== "none")
+  ) {
+    return "Preview transform is hidden.";
+  }
+  if (isDefaultTileSetTransform(tileSet)) return "Preview transforms are temporary.";
+  return isTransformSourceTileSetVisible()
+    ? "Preview applied."
+    : "Source tile set is not currently selected.";
+}
+
+function refreshTransformPreviewStatus() {
+  if (
+    !transformImageryPalette ||
+    transformImageryPalette.hidden ||
+    transformStatus?.textContent === "Processing preview..." ||
+    getTransformMode() !== "preview"
+  ) {
+    return;
+  }
+
+  const tileSet = tileSets()[getSelectedTransformTileSetIndex()];
+  if (!tileSet) return;
+  setTransformStatus(getTransformPreviewIdleStatus(tileSet));
+}
+
+function syncTransformControlsFromSettings(transform) {
+  const normalized = normalizeTileSetTransform(transform);
+  const recipeInput = document.querySelector(
+    `input[name="transformImageryRecipe"][value="${normalized.recipeType}"]`
+  );
+  if (recipeInput) recipeInput.checked = true;
+  if (transformTypeSelect) transformTypeSelect.value = normalized.type;
+  if (transformOutputSelect) transformOutputSelect.value = normalized.output;
+  if (transformRasterChannelASelect) {
+    transformRasterChannelASelect.value = normalized.rasterChannelA;
+  }
+  if (transformRasterTileSetBSelect) {
+    transformRasterTileSetBSelect.value = String(normalized.rasterTileSetBIndex);
+  }
+  if (transformRasterChannelBSelect) {
+    transformRasterChannelBSelect.value = normalized.rasterChannelB;
+  }
+  if (transformRasterPresetSelect) {
+    transformRasterPresetSelect.value = normalized.rasterPreset;
+  }
+  if (transformRasterNormalize) {
+    transformRasterNormalize.checked = normalized.rasterNormalize;
+  }
+  if (transformRasterScaleSelect) {
+    transformRasterScaleSelect.value = normalized.rasterScale;
+  }
+  if (transformRasterCustomExpression) {
+    transformRasterCustomExpression.value =
+      normalized.rasterPreset === "custom"
+        ? normalized.rasterCustomExpression
+        : getRasterExpressionText(normalized);
+  }
+  if (transformIntensity) transformIntensity.value = normalized.intensity;
+  if (transformIntensityValue) transformIntensityValue.value = normalized.intensity;
+  if (transformRadius) transformRadius.value = normalized.radius;
+  if (transformRadiusValue) transformRadiusValue.value = normalized.radius;
+}
+
+function applyActiveTransformPreviewToSelectedTileSet() {
+  if (getTransformMode() !== "preview") return;
+  syncTransformControlsFromSettings(activeTransformPreviewSettings);
+  applyTransformControlsToSelectedTileSet();
+}
+
+function resetSelectedTransformPreview() {
+  const tileSet = tileSets()[getSelectedTransformTileSetIndex()];
+  if (!tileSet) return;
+  resetRasterTransformTileCaches(tileSet);
+  tileSetTransformState.set(tileSet, { ...TILE_SET_TRANSFORM_DEFAULTS });
+  activeTransformPreviewSettings = { ...TILE_SET_TRANSFORM_DEFAULTS };
+  syncTransformControlsFromSettings(activeTransformPreviewSettings);
+  if (transformPreviewEnabled) transformPreviewEnabled.checked = true;
+  setTransformStatus("Processing preview...");
+  clearTransformProgress();
+  updateTransformControls();
+  updateRasterCalculationPreloadHints();
+  scheduleTileAppearanceReprocess(tileSet);
+}
+
+function resetTransformControlsToDefault() {
+  const currentType = normalizeTransformValue(
+    "type",
+    transformTypeSelect?.value || TILE_SET_TRANSFORM_DEFAULTS.type
+  );
+  const currentRecipeType = normalizeTransformValue(
+    "recipeType",
+    getSelectedTransformRecipeType()
+  );
+  activeTransformPreviewSettings = {
+    ...TILE_SET_TRANSFORM_DEFAULTS,
+    recipeType: currentRecipeType,
+    type: currentType,
+    output:
+      currentRecipeType === "raster" || currentType === "unsharp"
+        ? currentRecipeType === "raster"
+          ? "grayscale"
+          : "rgb"
+        : TILE_SET_TRANSFORM_DEFAULTS.output,
+  };
+  syncTransformControlsFromSettings(activeTransformPreviewSettings);
+  applyTransformControlsToSelectedTileSet();
+  updateTransformControls();
+  updateRasterCalculationPreloadHints();
+}
+
+function getTransformGenerationImageRect() {
+  const image = viewer.world.getItemAt(0);
+  const size = image?.getContentSize?.();
+  if (!size?.x || !size?.y) return null;
+  return {
+    x: 0,
+    y: 0,
+    width: size.x,
+    height: size.y,
+  };
+}
+
+function getTransformGenerationScale(imageRect) {
+  const mode = transformGenerateSize?.value || "0.25";
+  if (mode === "current") {
+    return getViewerResolutionScaleForImageRect(imageRect);
+  }
+
+  const scale = Number(mode);
+  return Number.isFinite(scale) ? Math.max(0.05, Math.min(1, scale)) : 0.25;
+}
+
+function sanitizeDerivedTileSetName(value) {
+  return (
+    String(value || "")
+      .trim()
+      .replace(/\s+/g, " ")
+      .slice(0, 80) || "Derived Tile Set"
+  );
+}
+
+function getDerivedTileSetUri(result) {
+  return result?.relativeDziPath || result?.dziPath || "";
+}
+
+async function generateTransformedTileSet() {
+  if (transformGenerationRunning) return;
+  const tileSetIndex = getSelectedTransformTileSetIndex();
+  const sourceTileSet = tileSets()[tileSetIndex];
+  const transform = getTransformOptionsFromControls();
+  const imageRect = getTransformGenerationImageRect();
+
+  if (!sourceTileSet) {
+    setTransformStatus("Choose a source tile set.", "error");
+    return;
+  }
+  if (isRasterRecipe(transform)) {
+    setTransformStatus("Advanced transforms are preview-only for now.", "error");
+    return;
+  }
+  if (!imageRect) {
+    setTransformStatus("Could not determine the source image size.", "error");
+    return;
+  }
+  if (!window.electronAPI?.createDerivedDzi) {
+    setTransformStatus("Derived tile-set generation requires the Electron app.", "error");
+    return;
+  }
+
+  const outputName = sanitizeDerivedTileSetName(transformOutputName?.value);
+  transformGenerationRunning = true;
+  updateTransformControls();
+  clearTransformProgress();
+  setTransformProgress(5, "Rendering source tile set...");
+
+  try {
+    const scale = getTransformGenerationScale(imageRect);
+    const canvas = await renderFullResolutionImageRectCanvas(
+      imageRect,
+      tileSetIndex,
+      scale
+    );
+    setTransformProgress(45, "Applying transform...");
+    const context = canvas.getContext("2d", { willReadFrequently: true });
+    if (!context) {
+      throw new Error("Could not process the transformed image.");
+    }
+    applyTileSetTransformToContext(context, transform);
+    await wait(0);
+
+    setTransformProgress(65, "Encoding transformed image...");
+    const dataUrl = await canvasToPngDataUrl(canvas);
+    const result = await window.electronAPI.createDerivedDzi({
+      dataUrl,
+      baseName: outputName,
+    });
+    const uri = getDerivedTileSetUri(result);
+    if (!uri) {
+      throw new Error("The derived DZI path was not returned.");
+    }
+
+    const newTileSet = {
+      label: outputName,
+      tiles: [{ uri }],
+      derivedFrom: {
+        sourceTileSet: getSnapshotTileSetLabel(sourceTileSet, tileSetIndex),
+        transform,
+        generatedAt: new Date().toISOString(),
+        resolution: transformGenerateSize?.value || "0.25",
+      },
+    };
+    tileSets().push(newTileSet);
+    currentLibraryData = serializeLibraryDataForSave();
+    window.electronAPI?.setUnsavedState?.(true);
+
+    buildImageCheckboxes();
+    buildOpacitySliders();
+    populateTileAppearanceSelect();
+    updateTileAppearanceControls();
+    updateTransformControls();
+    await loadTileSet();
+
+    document.querySelectorAll(".image-checkbox").forEach((checkbox, index) => {
+      checkbox.checked = index === tileSets().length - 1;
+    });
+    displayImages();
+    updateImageCheckboxLabels();
+    setTransformProgress(100, "Done");
+    setTransformStatus(`Added "${outputName}" as a new tile set.`, "ok");
+  } catch (error) {
+    console.error("Could not generate transformed tile set:", error);
+    setTransformStatus(error.message || "Could not generate tile set.", "error");
+  } finally {
+    transformGenerationRunning = false;
+    updateTransformControls();
+    window.setTimeout(clearTransformProgress, 1200);
+  }
+}
+
 function normalizeTileSetAppearance(appearance = {}) {
   return {
     brightness: normalizeAppearanceValue("brightness", appearance.brightness),
@@ -10035,6 +11639,1460 @@ function applyTileSetAppearanceToContext(context, appearance) {
   context.putImageData(imageData, 0, 0);
 }
 
+function getPixelLuminance(pixels, offset) {
+  return 0.2126 * pixels[offset] + 0.7152 * pixels[offset + 1] + 0.0722 * pixels[offset + 2];
+}
+
+function getClampedPixelOffset(width, height, x, y) {
+  const clampedX = Math.max(0, Math.min(width - 1, x));
+  const clampedY = Math.max(0, Math.min(height - 1, y));
+  return (clampedY * width + clampedX) * 4;
+}
+
+function getClampedPixelLuminance(pixels, width, height, x, y) {
+  return getPixelLuminance(pixels, getClampedPixelOffset(width, height, x, y));
+}
+
+function applySobelTransformToContext(context, transform) {
+  const width = context.canvas.width;
+  const height = context.canvas.height;
+  const imageData = context.getImageData(0, 0, width, height);
+  const source = new Uint8ClampedArray(imageData.data);
+  const output = imageData.data;
+  const intensity = transform.intensity || 1;
+  const grayscale = transform.output !== "rgb";
+
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      const offset = (y * width + x) * 4;
+      const tl = getClampedPixelLuminance(source, width, height, x - 1, y - 1);
+      const tc = getClampedPixelLuminance(source, width, height, x, y - 1);
+      const tr = getClampedPixelLuminance(source, width, height, x + 1, y - 1);
+      const ml = getClampedPixelLuminance(source, width, height, x - 1, y);
+      const mr = getClampedPixelLuminance(source, width, height, x + 1, y);
+      const bl = getClampedPixelLuminance(source, width, height, x - 1, y + 1);
+      const bc = getClampedPixelLuminance(source, width, height, x, y + 1);
+      const br = getClampedPixelLuminance(source, width, height, x + 1, y + 1);
+      const gx = -tl + tr - 2 * ml + 2 * mr - bl + br;
+      const gy = -tl - 2 * tc - tr + bl + 2 * bc + br;
+      const edge = clampColorValue(Math.hypot(gx, gy) * intensity);
+
+      if (grayscale) {
+        output[offset] = edge;
+        output[offset + 1] = edge;
+        output[offset + 2] = edge;
+      } else {
+        const scale = edge / 255;
+        output[offset] = clampColorValue(source[offset] * scale);
+        output[offset + 1] = clampColorValue(source[offset + 1] * scale);
+        output[offset + 2] = clampColorValue(source[offset + 2] * scale);
+      }
+      output[offset + 3] = 255;
+    }
+  }
+
+  context.putImageData(imageData, 0, 0);
+}
+
+function applyLaplacianTransformToContext(context, transform) {
+  const width = context.canvas.width;
+  const height = context.canvas.height;
+  const imageData = context.getImageData(0, 0, width, height);
+  const source = new Uint8ClampedArray(imageData.data);
+  const output = imageData.data;
+  const intensity = transform.intensity || 1;
+  const grayscale = transform.output !== "rgb";
+
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      const offset = (y * width + x) * 4;
+      const center = getPixelLuminance(source, offset);
+      const top = getClampedPixelLuminance(source, width, height, x, y - 1);
+      const left = getClampedPixelLuminance(source, width, height, x - 1, y);
+      const right = getClampedPixelLuminance(source, width, height, x + 1, y);
+      const bottom = getClampedPixelLuminance(source, width, height, x, y + 1);
+      const edge = clampColorValue(Math.abs(4 * center - top - left - right - bottom) * intensity);
+
+      if (grayscale) {
+        output[offset] = edge;
+        output[offset + 1] = edge;
+        output[offset + 2] = edge;
+      } else {
+        const scale = edge / 255;
+        output[offset] = clampColorValue(source[offset] * scale);
+        output[offset + 1] = clampColorValue(source[offset + 1] * scale);
+        output[offset + 2] = clampColorValue(source[offset + 2] * scale);
+      }
+      output[offset + 3] = 255;
+    }
+  }
+
+  context.putImageData(imageData, 0, 0);
+}
+
+function applyUnsharpTransformToContext(context, transform) {
+  const width = context.canvas.width;
+  const height = context.canvas.height;
+  const imageData = context.getImageData(0, 0, width, height);
+  const source = new Uint8ClampedArray(imageData.data);
+  const output = imageData.data;
+  const radius = transform.radius || 2;
+  const amount = transform.intensity || 1;
+
+  for (let y = 0; y < height; y += 1) {
+    const yMin = Math.max(0, y - radius);
+    const yMax = Math.min(height - 1, y + radius);
+    for (let x = 0; x < width; x += 1) {
+      const xMin = Math.max(0, x - radius);
+      const xMax = Math.min(width - 1, x + radius);
+      const offset = (y * width + x) * 4;
+      let r = 0;
+      let g = 0;
+      let b = 0;
+      let count = 0;
+
+      for (let yy = yMin; yy <= yMax; yy += 1) {
+        for (let xx = xMin; xx <= xMax; xx += 1) {
+          const sampleOffset = (yy * width + xx) * 4;
+          r += source[sampleOffset];
+          g += source[sampleOffset + 1];
+          b += source[sampleOffset + 2];
+          count += 1;
+        }
+      }
+
+      output[offset] = clampColorValue(source[offset] + (source[offset] - r / count) * amount);
+      output[offset + 1] = clampColorValue(source[offset + 1] + (source[offset + 1] - g / count) * amount);
+      output[offset + 2] = clampColorValue(source[offset + 2] + (source[offset + 2] - b / count) * amount);
+      output[offset + 3] = 255;
+    }
+  }
+
+  context.putImageData(imageData, 0, 0);
+}
+
+function applyLocalContrastTransformToContext(context, transform) {
+  const width = context.canvas.width;
+  const height = context.canvas.height;
+  const imageData = context.getImageData(0, 0, width, height);
+  const source = new Uint8ClampedArray(imageData.data);
+  const output = imageData.data;
+  const radius = transform.radius || 2;
+  const amount = transform.intensity || 1;
+  const grayscale = transform.output !== "rgb";
+
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      const offset = (y * width + x) * 4;
+      const lum = getPixelLuminance(source, offset);
+      let minLum = Infinity;
+      let maxLum = -Infinity;
+
+      for (let yy = y - radius; yy <= y + radius; yy += 1) {
+        for (let xx = x - radius; xx <= x + radius; xx += 1) {
+          const sampleLum = getClampedPixelLuminance(source, width, height, xx, yy);
+          minLum = Math.min(minLum, sampleLum);
+          maxLum = Math.max(maxLum, sampleLum);
+        }
+      }
+
+      const span = maxLum - minLum;
+      const stretchedLum = span <= 1 ? lum : ((lum - minLum) / span) * 255;
+      const nextLum = clampColorValue(lum + (stretchedLum - lum) * amount);
+
+      if (grayscale) {
+        output[offset] = nextLum;
+        output[offset + 1] = nextLum;
+        output[offset + 2] = nextLum;
+      } else {
+        const scale = lum <= 1 ? nextLum / 128 : nextLum / lum;
+        output[offset] = clampColorValue(source[offset] * scale);
+        output[offset + 1] = clampColorValue(source[offset + 1] * scale);
+        output[offset + 2] = clampColorValue(source[offset + 2] * scale);
+      }
+      output[offset + 3] = 255;
+    }
+  }
+
+  context.putImageData(imageData, 0, 0);
+}
+
+function applyEmbossTransformToContext(context, transform) {
+  const width = context.canvas.width;
+  const height = context.canvas.height;
+  const imageData = context.getImageData(0, 0, width, height);
+  const source = new Uint8ClampedArray(imageData.data);
+  const output = imageData.data;
+  const amount = transform.intensity || 1;
+
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      const offset = (y * width + x) * 4;
+      const upperLeft = getClampedPixelLuminance(source, width, height, x - 1, y - 1);
+      const lowerRight = getClampedPixelLuminance(source, width, height, x + 1, y + 1);
+      const relief = clampColorValue(128 + (lowerRight - upperLeft) * amount);
+      output[offset] = relief;
+      output[offset + 1] = relief;
+      output[offset + 2] = relief;
+      output[offset + 3] = 255;
+    }
+  }
+
+  context.putImageData(imageData, 0, 0);
+}
+
+function getHueChannelValue(r, g, b) {
+  const red = r / 255;
+  const green = g / 255;
+  const blue = b / 255;
+  const maxChannel = Math.max(red, green, blue);
+  const minChannel = Math.min(red, green, blue);
+  const delta = maxChannel - minChannel;
+  if (delta === 0) return 0;
+
+  let hue;
+  if (maxChannel === red) {
+    hue = ((green - blue) / delta) % 6;
+  } else if (maxChannel === green) {
+    hue = (blue - red) / delta + 2;
+  } else {
+    hue = (red - green) / delta + 4;
+  }
+
+  return (((hue * 60 + 360) % 360) / 360) * 255;
+}
+
+function getSaturationChannelValue(r, g, b) {
+  const maxChannel = Math.max(r, g, b);
+  const minChannel = Math.min(r, g, b);
+  return maxChannel === 0 ? 0 : ((maxChannel - minChannel) / maxChannel) * 255;
+}
+
+function getFalseColorRgb(value) {
+  const t = Math.max(0, Math.min(1, value / 255));
+  const stops = [
+    [0, 36, 32, 120],
+    [0.25, 42, 145, 190],
+    [0.5, 70, 175, 95],
+    [0.75, 245, 190, 65],
+    [1, 190, 55, 45],
+  ];
+
+  for (let index = 1; index < stops.length; index += 1) {
+    const [position, r, g, b] = stops[index];
+    const [previousPosition, previousR, previousG, previousB] = stops[index - 1];
+    if (t <= position) {
+      const localT = (t - previousPosition) / (position - previousPosition);
+      return [
+        clampColorValue(previousR + (r - previousR) * localT),
+        clampColorValue(previousG + (g - previousG) * localT),
+        clampColorValue(previousB + (b - previousB) * localT),
+      ];
+    }
+  }
+
+  return [190, 55, 45];
+}
+
+function applyChannelTransformToContext(context, transform) {
+  const width = context.canvas.width;
+  const height = context.canvas.height;
+  const imageData = context.getImageData(0, 0, width, height);
+  const pixels = imageData.data;
+
+  for (let offset = 0; offset < pixels.length; offset += 4) {
+    const r = pixels[offset];
+    const g = pixels[offset + 1];
+    const b = pixels[offset + 2];
+    let value;
+
+    switch (transform.channel) {
+      case "red":
+        value = r;
+        break;
+      case "green":
+        value = g;
+        break;
+      case "blue":
+        value = b;
+        break;
+      case "saturation":
+        value = getSaturationChannelValue(r, g, b);
+        break;
+      case "hue":
+        value = getHueChannelValue(r, g, b);
+        break;
+      case "luminance":
+      default:
+        value = getPixelLuminance(pixels, offset);
+        break;
+    }
+
+    const channelValue = clampColorValue(value);
+    if (transform.output === "falseColor") {
+      const [falseR, falseG, falseB] = getFalseColorRgb(channelValue);
+      pixels[offset] = falseR;
+      pixels[offset + 1] = falseG;
+      pixels[offset + 2] = falseB;
+    } else {
+      pixels[offset] = channelValue;
+      pixels[offset + 1] = channelValue;
+      pixels[offset + 2] = channelValue;
+    }
+    pixels[offset + 3] = 255;
+  }
+
+  context.putImageData(imageData, 0, 0);
+}
+
+function getChannelScalarValue(pixels, offset, channel) {
+  switch (channel) {
+    case "red":
+      return pixels[offset];
+    case "green":
+      return pixels[offset + 1];
+    case "blue":
+      return pixels[offset + 2];
+    case "saturation":
+      return getSaturationChannelValue(
+        pixels[offset],
+        pixels[offset + 1],
+        pixels[offset + 2]
+      );
+    case "hue":
+      return getHueChannelValue(
+        pixels[offset],
+        pixels[offset + 1],
+        pixels[offset + 2]
+      );
+    case "luminance":
+    default:
+      return getPixelLuminance(pixels, offset);
+  }
+}
+
+function getLoadedTileCoordinateValue(loadedTile, key) {
+  const value =
+    loadedTile?.[key] ??
+    loadedTile?.tile?.[key] ??
+    loadedTile?.position?.[key] ??
+    loadedTile?.petroImageTileCoordinates?.[key];
+  const numericValue = Number.parseInt(value, 10);
+  return Number.isFinite(numericValue) ? numericValue : null;
+}
+
+function getLoadedTileCoordinates(loadedTile) {
+  if (!loadedTile) return null;
+  const level = getLoadedTileCoordinateValue(loadedTile, "level");
+  const x = getLoadedTileCoordinateValue(loadedTile, "x");
+  const y = getLoadedTileCoordinateValue(loadedTile, "y");
+  if (level === null || x === null || y === null) return null;
+  return { level, x, y };
+}
+
+function findLoadedTileByCoordinates(tileSet, coordinates) {
+  if (!tileSet || !coordinates) return null;
+  for (const tile of tileSet.tiles || []) {
+    const loadedTile = findLoadedTileByCoordinatesInTile(tile, coordinates);
+    if (loadedTile) return loadedTile;
+  }
+  return null;
+}
+
+function findLoadedTileByCoordinatesInTile(tile, coordinates) {
+  if (!tile || !coordinates) return null;
+  const matrix = tile.image?.tilesMatrix;
+  const loadedTile =
+    matrix?.[coordinates.level]?.[coordinates.x]?.[coordinates.y] ||
+    matrix?.[String(coordinates.level)]?.[String(coordinates.x)]?.[
+      String(coordinates.y)
+    ];
+  if (loadedTile?.loaded || loadedTile?.context2D) {
+    return loadedTile;
+  }
+  return null;
+}
+
+function getCalculatedAncestorTileContext(tileSet, coordinates) {
+  if (!tileSet || !coordinates) return null;
+
+  let level = coordinates.level - 1;
+  let x = Math.floor(coordinates.x / 2);
+  let y = Math.floor(coordinates.y / 2);
+  while (level >= 0) {
+    const ancestorTile = findLoadedTileByCoordinates(tileSet, { level, x, y });
+    const ancestorContext = ancestorTile?.petroImageProcessedContext?.context;
+    if (ancestorContext?.canvas && !ancestorContext.petroImageRasterMissingInput) {
+      return {
+        context: ancestorContext,
+        depth: coordinates.level - level,
+        xRemainder: coordinates.x % 2 ** (coordinates.level - level),
+        yRemainder: coordinates.y % 2 ** (coordinates.level - level),
+      };
+    }
+    level -= 1;
+    x = Math.floor(x / 2);
+    y = Math.floor(y / 2);
+  }
+
+  return null;
+}
+
+function drawCalculatedAncestorPlaceholder(context, tileSet, coordinates) {
+  const ancestor = getCalculatedAncestorTileContext(tileSet, coordinates);
+  const sourceCanvas = ancestor?.context?.canvas;
+  if (!sourceCanvas) return false;
+
+  const divisions = 2 ** ancestor.depth;
+  const sourceWidth = Math.max(1, sourceCanvas.width / divisions);
+  const sourceHeight = Math.max(1, sourceCanvas.height / divisions);
+  const sourceX = Math.min(
+    sourceCanvas.width - sourceWidth,
+    ancestor.xRemainder * sourceWidth
+  );
+  const sourceY = Math.min(
+    sourceCanvas.height - sourceHeight,
+    ancestor.yRemainder * sourceHeight
+  );
+
+  context.clearRect(0, 0, context.canvas.width, context.canvas.height);
+  context.imageSmoothingEnabled = true;
+  context.drawImage(
+    sourceCanvas,
+    sourceX,
+    sourceY,
+    sourceWidth,
+    sourceHeight,
+    0,
+    0,
+    context.canvas.width,
+    context.canvas.height
+  );
+  return true;
+}
+
+function assignLoadedTileCoordinatesFromMatrix(tiledImage, loadedTile) {
+  if (!tiledImage?.tilesMatrix || !loadedTile) return null;
+  const existingCoordinates = getLoadedTileCoordinates(loadedTile);
+  if (existingCoordinates) return existingCoordinates;
+
+  for (const [level, columns] of Object.entries(tiledImage.tilesMatrix)) {
+    for (const [x, rows] of Object.entries(columns || {})) {
+      for (const [y, tileEntry] of Object.entries(rows || {})) {
+        if (tileEntry !== loadedTile) continue;
+        const coordinates = {
+          level: Number.parseInt(level, 10),
+          x: Number.parseInt(x, 10),
+          y: Number.parseInt(y, 10),
+        };
+        loadedTile.petroImageTileCoordinates = coordinates;
+        return coordinates;
+      }
+    }
+  }
+
+  return null;
+}
+
+function getTileSetForLoadedTile(loadedTile) {
+  if (!loadedTile) return null;
+  return tileSets().find((tileSet) =>
+    (tileSet.tiles || []).some((tile) => {
+      const matrix = tile.image?.tilesMatrix;
+      if (!matrix) return false;
+      return Object.values(matrix).some((columns) =>
+        Object.values(columns || {}).some((rows) =>
+          Object.values(rows || {}).some((tileEntry) => tileEntry === loadedTile)
+        )
+      );
+    })
+  );
+}
+
+function getRasterComparisonSourceTile(tileSet, tileSetIndex, tileImageIndex = null) {
+  if (!tileSet?.tiles?.length) return null;
+  if (tileImageIndex !== null) {
+    return tileSet.tiles[Math.max(0, Math.min(tileSet.tiles.length - 1, tileImageIndex))];
+  }
+  if (!tileSet.periodDegrees) {
+    return tileSet.tiles[getTileSetVisibleTileIndex(getSafeTileSetIndex(tileSetIndex))] ||
+      tileSet.tiles[0];
+  }
+
+  return tileSet.tiles.find((tile) => tile.image?.source) || tileSet.tiles[0];
+}
+
+function getSafeTileSetIndex(tileSetIndex) {
+  return Math.max(0, Math.min(tileSets().length - 1, Number(tileSetIndex) || 0));
+}
+
+function getRasterComparisonTileUrl(tileSetIndex, coordinates, tileImageIndex = null) {
+  const tileSet = tileSets()[tileSetIndex];
+  const sourceTile = getRasterComparisonSourceTile(
+    tileSet,
+    tileSetIndex,
+    tileImageIndex
+  );
+  const source = sourceTile?.image?.source || sourceTile?.tileSource;
+  if (!source || !coordinates) return "";
+
+  if (typeof source.getTileUrl === "function") {
+    return source.getTileUrl(coordinates.level, coordinates.x, coordinates.y);
+  }
+
+  return "";
+}
+
+function getRasterStackTileRequests(tileSetIndex, coordinates) {
+  const tileSet = tileSets()[tileSetIndex];
+  return (tileSet?.tiles || []).map((tile, tileImageIndex) => ({
+    tileImageIndex,
+    url: getRasterComparisonTileUrl(tileSetIndex, coordinates, tileImageIndex),
+  }));
+}
+
+function loadImageElementFromBlob(blob) {
+  return new Promise((resolve) => {
+    const objectUrl = URL.createObjectURL(blob);
+    const image = new Image();
+    image.crossOrigin = "Anonymous";
+    image.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      resolve(image);
+    };
+    image.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      resolve(null);
+    };
+    image.src = objectUrl;
+  });
+}
+
+function loadImageElementFromUrl(url, useCrossOrigin = true) {
+  return new Promise((resolve) => {
+    const image = new Image();
+    if (useCrossOrigin) {
+      image.crossOrigin = "Anonymous";
+    }
+    image.onload = () => resolve(image);
+    image.onerror = () => {
+      if (useCrossOrigin) {
+        loadImageElementFromUrl(url, false).then(resolve);
+      } else {
+        resolve(null);
+      }
+    };
+    image.src = url;
+  });
+}
+
+function drawRasterImageSourceToContext(imageSource, width, height) {
+  if (!imageSource) return null;
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const context = canvas.getContext("2d", {
+    alpha: false,
+    willReadFrequently: true,
+  });
+  if (!context) return null;
+  context.imageSmoothingEnabled = false;
+  context.drawImage(imageSource, 0, 0, width, height);
+  if (typeof imageSource.close === "function") {
+    imageSource.close();
+  }
+  return context;
+}
+
+function loadRasterComparisonImageContext(url, width, height) {
+  return new Promise((resolve) => {
+    let settled = false;
+    const controller = typeof AbortController === "function"
+      ? new AbortController()
+      : null;
+    const finish = (context) => {
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(timeoutId);
+      resolve(context);
+    };
+    const timeoutId = window.setTimeout(() => {
+      controller?.abort();
+      finish(null);
+    }, 8000);
+
+    const loadViaFetch = () => {
+      fetch(url, {
+        cache: "force-cache",
+        mode: "cors",
+        signal: controller?.signal,
+      })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`Tile request failed: ${response.status}`);
+        }
+        return response.blob();
+      })
+      .then(async (blob) => {
+        let imageSource = null;
+        if (typeof createImageBitmap === "function") {
+          try {
+            imageSource = await createImageBitmap(blob);
+          } catch {
+            imageSource = null;
+          }
+        }
+        if (!imageSource) {
+          imageSource = await loadImageElementFromBlob(blob);
+        }
+        try {
+          finish(drawRasterImageSourceToContext(imageSource, width, height));
+        } catch {
+          finish(null);
+        }
+      })
+      .catch(() => {
+        finish(null);
+      });
+    };
+
+    loadImageElementFromUrl(url)
+      .then((image) => {
+        if (!image) {
+          loadViaFetch();
+          return;
+        }
+        try {
+          finish(drawRasterImageSourceToContext(image, width, height));
+        } catch {
+          loadViaFetch();
+        }
+      })
+      .catch(loadViaFetch);
+  });
+}
+
+function requestRasterComparisonTileContext(
+  tileSetIndex,
+  coordinates,
+  width,
+  height,
+  tileImageIndex = null
+) {
+  const url = getRasterComparisonTileUrl(tileSetIndex, coordinates, tileImageIndex);
+  if (!url) return null;
+
+  const cacheKey = JSON.stringify({
+    sampleIndex: currentIndex,
+    tileSetIndex,
+    tileImageIndex,
+    level: coordinates.level,
+    x: coordinates.x,
+    y: coordinates.y,
+    width,
+    height,
+    url,
+  });
+  const cached = rasterComparisonTileContextCache.get(cacheKey);
+  if (cached?.status === "ready") return cached.context;
+  if (cached?.status === "pending") return null;
+
+  rasterComparisonTileContextCache.set(cacheKey, { status: "pending" });
+  loadRasterComparisonImageContext(url, width, height).then((context) => {
+    if (context) {
+      rasterComparisonTileContextCache.set(cacheKey, {
+        status: "ready",
+        context,
+      });
+    } else {
+      rasterComparisonTileContextCache.delete(cacheKey);
+    }
+    const bTileSet = tileSets()[tileSetIndex];
+    if (bTileSet) scheduleRasterCalculationDependents(bTileSet);
+  });
+  return null;
+}
+
+function getContextImageDataMatchingSize(context, width, height) {
+  if (!context?.canvas) return null;
+  if (context.canvas.width === width && context.canvas.height === height) {
+    return context.getImageData(0, 0, width, height);
+  }
+
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const scaledContext = canvas.getContext("2d", {
+    alpha: false,
+    willReadFrequently: true,
+  });
+  if (!scaledContext) return null;
+  scaledContext.imageSmoothingEnabled = true;
+  scaledContext.drawImage(context.canvas, 0, 0, width, height);
+  return scaledContext.getImageData(0, 0, width, height);
+}
+
+function getArrayMin(values) {
+  return values.reduce((min, value) => Math.min(min, value), Infinity);
+}
+
+function getArrayMax(values) {
+  return values.reduce((max, value) => Math.max(max, value), -Infinity);
+}
+
+function getArrayMean(values) {
+  if (!values.length) return 0;
+  return values.reduce((sum, value) => sum + value, 0) / values.length;
+}
+
+function normalizeRasterFunctionInputs(values) {
+  return values
+    .flatMap((value) => (Array.isArray(value) ? value : [value]))
+    .map((value) => Number(value) || 0);
+}
+
+function getRasterVariableParts(variableName) {
+  const match = /\b([AB])_(r|g|b|l|s|h)\b/i.exec(variableName || "");
+  if (!match) return null;
+  const channel = normalizeRasterTokenChannel(match[2]);
+  return {
+    input: match[1].toUpperCase(),
+    label: getRasterTokenChannelLabel(channel),
+    channel,
+  };
+}
+
+function getRasterSourceStackChannel(expression, fallbackChannel) {
+  const match = /\b(?:range|max|min|mean)\s*\(\s*A_(r|g|b|l|s|h)\s*\)/i.exec(
+    expression || ""
+  );
+  return match ? normalizeRasterTokenChannel(match[1]) : fallbackChannel;
+}
+
+function updateRasterPixelScope(
+  scope,
+  source,
+  inputB,
+  offset,
+  defaultA,
+  defaultB,
+  rasterVariables = []
+) {
+  scope.A = defaultA;
+  scope.B = defaultB;
+  rasterVariables.forEach((variableName) => {
+    const variable = getRasterVariableParts(variableName);
+    if (!variable) return;
+    scope[`${variable.input}_${variable.label}`] =
+      variable.input === "B"
+        ? inputB
+          ? getChannelScalarValue(inputB, offset, variable.channel)
+          : 0
+        : getChannelScalarValue(source, offset, variable.channel);
+  });
+  return scope;
+}
+
+function getRasterCustomExpressionEvaluator(expression) {
+  const normalizedExpression =
+    normalizeRasterExpressionVariableCase(
+      String(expression || TILE_SET_TRANSFORM_DEFAULTS.rasterCustomExpression)
+        .trim()
+        .replace(/\s+/g, " ")
+    ) || TILE_SET_TRANSFORM_DEFAULTS.rasterCustomExpression;
+  const evaluableExpression = normalizedExpression.replace(
+    /\b(range|max|min|mean)\s*\(\s*A(?:_(?:r|g|b|l|s|h))?\s*\)/gi,
+    "$1(__stack)"
+  );
+  const expressionKey = getRasterCustomExpressionKey(normalizedExpression);
+
+  switch (expressionKey) {
+    case "a":
+      return (a) => a;
+    case "b":
+      return (a, b) => b;
+    case "abs(a-b)":
+      return (a, b) => Math.abs(a - b);
+    case "a-b":
+      return (a, b) => a - b;
+    case "a_r":
+    case "a_g":
+    case "a_b":
+    case "a_l":
+    case "a_s":
+    case "a_h": {
+      const variableName = normalizeRasterExpressionVariableCase(expressionKey);
+      const evaluator = (a, b, sourceValues, pixelScope = {}) =>
+        Number(pixelScope[variableName]) || 0;
+      evaluator.rasterVariables = [variableName];
+      return evaluator;
+    }
+    case "b_r":
+    case "b_g":
+    case "b_b":
+    case "b_l":
+    case "b_s":
+    case "b_h": {
+      const variableName = normalizeRasterExpressionVariableCase(expressionKey);
+      const evaluator = (a, b, sourceValues, pixelScope = {}) =>
+        Number(pixelScope[variableName]) || 0;
+      evaluator.rasterVariables = [variableName];
+      return evaluator;
+    }
+    case "range(a)":
+    case "max(a)-min(a)":
+      return (a, b, sourceValues) =>
+        sourceValues.length
+          ? getArrayMax(sourceValues) - getArrayMin(sourceValues)
+          : a;
+    case "min(a)-max(a)":
+      return (a, b, sourceValues) =>
+        sourceValues.length
+          ? getArrayMin(sourceValues) - getArrayMax(sourceValues)
+          : -a;
+    case "max(a)":
+      return (a, b, sourceValues) =>
+        sourceValues.length ? getArrayMax(sourceValues) : a;
+    case "min(a)":
+      return (a, b, sourceValues) =>
+        sourceValues.length ? getArrayMin(sourceValues) : a;
+    case "mean(a)":
+      return (a, b, sourceValues) =>
+        sourceValues.length ? getArrayMean(sourceValues) : a;
+    default:
+      break;
+  }
+
+  const directBinaryMatch =
+    /^(abs\()?([AB]_(?:r|g|b|l|s|h))([+\-*/])([AB]_(?:r|g|b|l|s|h))\)?$/i.exec(
+      expressionKey
+    );
+  if (directBinaryMatch) {
+    const isAbs = Boolean(directBinaryMatch[1]);
+    const leftName = normalizeRasterExpressionVariableCase(directBinaryMatch[2]);
+    const operator = directBinaryMatch[3];
+    const rightName = normalizeRasterExpressionVariableCase(directBinaryMatch[4]);
+    const evaluator = (a, b, sourceValues, pixelScope = {}) => {
+      const left = Number(pixelScope[leftName]) || 0;
+      const right = Number(pixelScope[rightName]) || 0;
+      let value = 0;
+      switch (operator) {
+        case "+":
+          value = left + right;
+          break;
+        case "-":
+          value = left - right;
+          break;
+        case "*":
+          value = left * right;
+          break;
+        case "/":
+          value = left / Math.max(0.0001, right);
+          break;
+        default:
+          value = 0;
+          break;
+      }
+      return isAbs ? Math.abs(value) : value;
+    };
+    evaluator.rasterVariables = [...new Set([leftName, rightName])];
+    return evaluator;
+  }
+
+  const cacheKey = getRasterCustomExpressionKey(evaluableExpression);
+  const cached = rasterCustomExpressionEvaluatorCache.get(cacheKey);
+  if (cached) return cached;
+  if (!/^[\d\sA-Za-z_.,()+\-*/%]*$/.test(evaluableExpression)) {
+    const fallback = () => 0;
+    rasterCustomExpressionEvaluatorCache.set(cacheKey, fallback);
+    return fallback;
+  }
+
+  const identifiers =
+    evaluableExpression.match(/\b[A-Za-z_][A-Za-z0-9_]*\b/g) || [];
+  const rasterVariables = [
+    ...new Set(identifiers.filter((identifier) => getRasterVariableParts(identifier))),
+  ];
+  const allowedIdentifiers = new Set([
+    "A",
+    "B",
+    "__stack",
+    "A_r",
+    "A_g",
+    "A_b",
+    "A_l",
+    "A_s",
+    "A_h",
+    "B_r",
+    "B_g",
+    "B_b",
+    "B_l",
+    "B_s",
+    "B_h",
+    "abs",
+    "min",
+    "max",
+    "mean",
+    "range",
+    "diff",
+    "ratio",
+    "normdiff",
+  ]);
+  if (identifiers.some((identifier) => !allowedIdentifiers.has(identifier))) {
+    const fallback = () => 0;
+    rasterCustomExpressionEvaluatorCache.set(cacheKey, fallback);
+    return fallback;
+  }
+
+  const functions = {
+    abs: Math.abs,
+    min: (...values) => getArrayMin(normalizeRasterFunctionInputs(values)),
+    max: (...values) => getArrayMax(normalizeRasterFunctionInputs(values)),
+    mean: (...values) => getArrayMean(normalizeRasterFunctionInputs(values)),
+    range: (...inputValues) => {
+      const values = normalizeRasterFunctionInputs(inputValues);
+      return getArrayMax(values) - getArrayMin(values);
+    },
+    diff: (left, right) => left - right,
+    ratio: (left, right) => left / Math.max(0.0001, right),
+    normdiff: (left, right) => (left - right) / Math.max(0.0001, left + right),
+  };
+
+  try {
+    const evaluator = new Function(
+      "scope",
+      `"use strict"; const { A, B, __stack, A_r, A_g, A_b, A_l, A_s, A_h, B_r, B_g, B_b, B_l, B_s, B_h, abs, min, max, mean, range, diff, ratio, normdiff } = scope; return (${evaluableExpression});`
+    );
+    const compiled = (a, b, sourceValues, pixelScope = {}) => {
+      const value = evaluator({
+        A: a,
+        B: b,
+        __stack: sourceValues,
+        ...pixelScope,
+        ...functions,
+      });
+      return Number.isFinite(value) ? value : 0;
+    };
+    compiled.rasterVariables = rasterVariables;
+    rasterCustomExpressionEvaluatorCache.set(cacheKey, compiled);
+    return compiled;
+  } catch (error) {
+    const fallback = () => 0;
+    rasterCustomExpressionEvaluatorCache.set(cacheKey, fallback);
+    return fallback;
+  }
+}
+
+function getRasterCalculationValue(
+  a,
+  b,
+  sourceValues,
+  transform,
+  customEvaluator,
+  pixelScope = null
+) {
+  switch (transform.rasterPreset) {
+    case "channelA":
+      return a;
+    case "difference":
+      return a - b;
+    case "normalizedDifference":
+      return (a - b) / Math.max(0.0001, a + b);
+    case "ratio":
+      return a / Math.max(0.0001, b);
+    case "sourceRange":
+      return sourceValues.length
+        ? getArrayMax(sourceValues) - getArrayMin(sourceValues)
+        : a;
+    case "sourceMax":
+      return sourceValues.length ? getArrayMax(sourceValues) : a;
+    case "sourceMin":
+      return sourceValues.length ? getArrayMin(sourceValues) : a;
+    case "sourceMean":
+      return sourceValues.length ? getArrayMean(sourceValues) : a;
+    case "custom":
+      return customEvaluator ? customEvaluator(a, b, sourceValues, pixelScope) : a;
+    case "absoluteDifference":
+    default:
+      return Math.abs(a - b);
+  }
+}
+
+function mapRasterCalculationValue(value, transform, minValue, maxValue) {
+  if (transform.rasterNormalize) {
+    const span = maxValue - minValue;
+    return span <= 0.0001
+      ? Math.abs(maxValue) > 0.0001
+        ? 255
+        : 0
+      : ((value - minValue) / span) * 255;
+  }
+
+  switch (transform.rasterScale) {
+    case "signed":
+      return value + 128;
+    case "unit":
+      return (value + 1) * 127.5;
+    case "raw":
+      return value;
+    default:
+      switch (transform.rasterPreset) {
+        case "difference":
+          return value + 128;
+        case "normalizedDifference":
+          return (value + 1) * 127.5;
+        case "ratio":
+          return value * 128;
+        default:
+          return value;
+      }
+  }
+}
+
+function getDirectRasterChannelExpression(expression) {
+  const match = /^A_(r|g|b|l|s|h)$/i.exec(String(expression || "").trim());
+  return match ? normalizeRasterTokenChannel(match[1]) : null;
+}
+
+function getDirectRasterBinaryExpression(expression) {
+  const match =
+    /^(abs\()?A_(r|g|b|l|s|h)([+\-*/])A_(r|g|b|l|s|h)\)?$/i.exec(
+      String(expression || "").replace(/\s+/g, "")
+    );
+  if (!match) return null;
+  return {
+    absolute: Boolean(match[1]),
+    leftChannel: normalizeRasterTokenChannel(match[2]),
+    operator: match[3],
+    rightChannel: normalizeRasterTokenChannel(match[4]),
+  };
+}
+
+function getDirectRasterBinaryValue(left, right, operator) {
+  switch (operator) {
+    case "+":
+      return left + right;
+    case "-":
+      return left - right;
+    case "*":
+      return left * right;
+    case "/":
+      return left / Math.max(0.0001, right);
+    default:
+      return 0;
+  }
+}
+
+function getRasterTileImageContext(
+  tileSetIndex,
+  tileImageIndex,
+  coordinates,
+  width,
+  height,
+  currentLoadedTile,
+  currentContext,
+  preferTileUrl = false
+) {
+  const tileSet = tileSets()[tileSetIndex];
+  const tile = tileSet?.tiles?.[tileImageIndex];
+  if (!tile) return null;
+
+  if (preferTileUrl && coordinates) {
+    return requestRasterComparisonTileContext(
+      tileSetIndex,
+      coordinates,
+      width,
+      height,
+      tileImageIndex
+    );
+  }
+
+  const matchingTile = findLoadedTileByCoordinatesInTile(tile, coordinates);
+  let sourceContext = null;
+  if (matchingTile === currentLoadedTile) {
+    sourceContext = currentContext;
+  } else if (matchingTile) {
+    sourceContext = getOriginalContextForLoadedTile(matchingTile);
+  }
+  if (!sourceContext && coordinates) {
+    sourceContext = requestRasterComparisonTileContext(
+      tileSetIndex,
+      coordinates,
+      width,
+      height,
+      tileImageIndex
+    );
+  }
+  return sourceContext;
+}
+
+function applyRasterCalculationTransformToContext(context, transform, loadedTile) {
+  const width = context.canvas.width;
+  const height = context.canvas.height;
+  const imageData = context.getImageData(0, 0, width, height);
+  const source = new Uint8ClampedArray(imageData.data);
+  const output = imageData.data;
+  const usesInputB = rasterTransformUsesInputB(transform);
+  const usesSourceStack = rasterTransformUsesSourceStack(transform);
+  let inputA = source;
+  let inputB = null;
+  let sourceStackInputs = [];
+  const outputTileSet = getTileSetForLoadedTile(loadedTile);
+  const inputATileSetIndex = 0;
+  const inputATileSet = tileSets()[inputATileSetIndex] || outputTileSet;
+  const coordinates = getLoadedTileCoordinates(loadedTile);
+  const contextMessage = getRasterTransformContextMessage(transform, inputATileSet);
+  if (contextMessage) {
+    context.petroImageRasterMissingInput = false;
+    context.petroImageRasterInvalidContext = true;
+    context.petroImageRasterContextMessage = contextMessage;
+    if (context.canvas) {
+      context.canvas.petroImageRasterMissingInput = false;
+      context.canvas.petroImageRasterInvalidContext = true;
+      context.canvas.petroImageRasterContextMessage = contextMessage;
+    }
+    return;
+  }
+
+  if (inputATileSet && inputATileSet !== outputTileSet) {
+    let aContext = null;
+    const matchingTile = findLoadedTileByCoordinates(inputATileSet, coordinates);
+    aContext = matchingTile ? getOriginalContextForLoadedTile(matchingTile) : null;
+    if (!aContext && coordinates) {
+      aContext = requestRasterComparisonTileContext(
+        inputATileSetIndex,
+        coordinates,
+        width,
+        height
+      );
+    }
+
+    const aImageData = getContextImageDataMatchingSize(aContext, width, height);
+    inputA = aImageData?.data || null;
+  }
+
+  if (usesInputB) {
+    const bTileSet = tileSets()[transform.rasterTileSetBIndex];
+    let bContext = null;
+
+    if (bTileSet && bTileSet === outputTileSet) {
+      bContext = context;
+    } else {
+      const matchingTile = findLoadedTileByCoordinates(bTileSet, coordinates);
+      bContext = matchingTile ? getOriginalContextForLoadedTile(matchingTile) : null;
+      if (!bContext && coordinates) {
+        bContext = requestRasterComparisonTileContext(
+          transform.rasterTileSetBIndex,
+          coordinates,
+          width,
+          height
+        );
+      }
+    }
+
+    const bImageData = getContextImageDataMatchingSize(bContext, width, height);
+    inputB = bImageData?.data || null;
+  }
+
+  if (usesSourceStack) {
+    const stackTileRequests = getRasterStackTileRequests(
+      getSafeTileSetIndex(tileSets().indexOf(inputATileSet)),
+      coordinates
+    );
+    const distinctStackUrls = new Set(
+      stackTileRequests.map((request) => request.url).filter(Boolean)
+    );
+    if (
+      stackTileRequests.length > 1 &&
+      distinctStackUrls.size > 0 &&
+      distinctStackUrls.size < stackTileRequests.length
+    ) {
+      context.petroImageRasterMissingInput = false;
+      context.petroImageRasterInvalidContext = true;
+      context.petroImageRasterContextMessage =
+        `Stack inputs resolved to ${distinctStackUrls.size}/${stackTileRequests.length} distinct tile URLs.`;
+      if (context.canvas) {
+        context.canvas.petroImageRasterMissingInput = false;
+        context.canvas.petroImageRasterInvalidContext = true;
+        context.canvas.petroImageRasterContextMessage =
+          context.petroImageRasterContextMessage;
+      }
+      return;
+    }
+    sourceStackInputs = stackTileRequests
+      .map((request) => {
+        const tileContext = getRasterTileImageContext(
+          getSafeTileSetIndex(tileSets().indexOf(inputATileSet)),
+          request.tileImageIndex,
+          coordinates,
+          width,
+          height,
+          loadedTile,
+          context,
+          true
+        );
+        return getContextImageDataMatchingSize(tileContext, width, height)?.data || null;
+      })
+      .filter(Boolean);
+    if (inputA && sourceStackInputs.length === 0) {
+      sourceStackInputs.unshift(inputA);
+    }
+  }
+
+  const expectedSourceStackCount = Math.max(1, inputATileSet?.tiles?.length || 0);
+  const minimumSourceStackCount =
+    usesSourceStack ? expectedSourceStackCount : 0;
+  const missingSourceStack =
+    usesSourceStack &&
+    sourceStackInputs.length < minimumSourceStackCount;
+  if (!inputA || (usesInputB && !inputB) || missingSourceStack) {
+    if (missingSourceStack && inputA) {
+      markRasterContextAsMissingInput(
+        context,
+        sourceStackInputs.length,
+        expectedSourceStackCount,
+        true
+      );
+      return;
+    }
+    const usedAncestorPlaceholder = drawCalculatedAncestorPlaceholder(
+      context,
+      outputTileSet,
+      coordinates
+    );
+    if (!usedAncestorPlaceholder) {
+      for (let offset = 0; offset < output.length; offset += 4) {
+        output[offset] = 0;
+        output[offset + 1] = 0;
+        output[offset + 2] = 0;
+        output[offset + 3] = 0;
+      }
+      context.putImageData(imageData, 0, 0);
+    }
+    context.petroImageRasterMissingInput = true;
+    context.petroImageForceOpaque = usedAncestorPlaceholder;
+    context.petroImageRasterAncestorPlaceholder = usedAncestorPlaceholder;
+    if (context.canvas) {
+      context.canvas.petroImageRasterMissingInput = true;
+      context.canvas.petroImageForceOpaque = usedAncestorPlaceholder;
+      context.canvas.petroImageRasterAncestorPlaceholder = usedAncestorPlaceholder;
+    }
+    return;
+  }
+
+  const customEvaluator =
+    transform.rasterPreset === "custom"
+      ? getRasterCustomExpressionEvaluator(transform.rasterCustomExpression)
+      : null;
+  const directChannel =
+    transform.rasterPreset === "custom" &&
+    !usesInputB &&
+    !usesSourceStack
+      ? getDirectRasterChannelExpression(transform.rasterCustomExpression)
+      : null;
+  const directBinary =
+    transform.rasterPreset === "custom" &&
+    !usesInputB &&
+    !usesSourceStack &&
+    !directChannel
+      ? getDirectRasterBinaryExpression(transform.rasterCustomExpression)
+      : null;
+  const sourceStackChannel =
+    transform.rasterPreset === "custom"
+      ? getRasterSourceStackChannel(
+          transform.rasterCustomExpression,
+          transform.rasterChannelA
+        )
+      : transform.rasterChannelA;
+  const emptySourceValues = [];
+  const values = new Float32Array(width * height);
+  const pixelScope = transform.rasterPreset === "custom" ? {} : null;
+  const rasterVariables = customEvaluator?.rasterVariables || [];
+  let minValue = Infinity;
+  let maxValue = -Infinity;
+
+  if (directChannel) {
+    for (let offset = 0; offset < output.length; offset += 4) {
+      const value = getChannelScalarValue(inputA, offset, directChannel);
+      const mappedValue = clampColorValue(value);
+      if (transform.output === "falseColor") {
+        const [r, g, b] = getFalseColorRgb(mappedValue);
+        output[offset] = r;
+        output[offset + 1] = g;
+        output[offset + 2] = b;
+      } else {
+        output[offset] = mappedValue;
+        output[offset + 1] = mappedValue;
+        output[offset + 2] = mappedValue;
+      }
+      output[offset + 3] = 255;
+    }
+    context.putImageData(imageData, 0, 0);
+    context.petroImageRasterMissingInput = false;
+    context.petroImageRasterInvalidContext = false;
+    context.petroImageRasterContextMessage = "";
+    context.petroImageRasterOutputMin = 0;
+    context.petroImageRasterOutputMax = 255;
+    if (context.canvas) {
+      context.canvas.petroImageRasterMissingInput = false;
+      context.canvas.petroImageRasterInvalidContext = false;
+      context.canvas.petroImageRasterContextMessage = "";
+      context.canvas.petroImageRasterOutputMin = 0;
+      context.canvas.petroImageRasterOutputMax = 255;
+    }
+    return;
+  }
+
+  if (directBinary) {
+    for (let offset = 0, valueIndex = 0; offset < source.length; offset += 4, valueIndex += 1) {
+      const left = getChannelScalarValue(inputA, offset, directBinary.leftChannel);
+      const right = getChannelScalarValue(inputA, offset, directBinary.rightChannel);
+      const rawValue = getDirectRasterBinaryValue(
+        left,
+        right,
+        directBinary.operator
+      );
+      const value = directBinary.absolute ? Math.abs(rawValue) : rawValue;
+      values[valueIndex] = value;
+      minValue = Math.min(minValue, value);
+      maxValue = Math.max(maxValue, value);
+    }
+
+    for (let offset = 0, valueIndex = 0; offset < output.length; offset += 4, valueIndex += 1) {
+      const mappedValue = clampColorValue(
+        mapRasterCalculationValue(values[valueIndex], transform, minValue, maxValue)
+      );
+      if (transform.output === "falseColor") {
+        const [r, g, b] = getFalseColorRgb(mappedValue);
+        output[offset] = r;
+        output[offset + 1] = g;
+        output[offset + 2] = b;
+      } else {
+        output[offset] = mappedValue;
+        output[offset + 1] = mappedValue;
+        output[offset + 2] = mappedValue;
+      }
+      output[offset + 3] = 255;
+    }
+
+    context.putImageData(imageData, 0, 0);
+    context.petroImageRasterMissingInput = false;
+    context.petroImageRasterInvalidContext = false;
+    context.petroImageRasterContextMessage = "";
+    context.petroImageRasterOutputMin = minValue;
+    context.petroImageRasterOutputMax = maxValue;
+    if (context.canvas) {
+      context.canvas.petroImageRasterMissingInput = false;
+      context.canvas.petroImageRasterInvalidContext = false;
+      context.canvas.petroImageRasterContextMessage = "";
+      context.canvas.petroImageRasterOutputMin = minValue;
+      context.canvas.petroImageRasterOutputMax = maxValue;
+    }
+    return;
+  }
+
+  for (let offset = 0, valueIndex = 0; offset < source.length; offset += 4, valueIndex += 1) {
+    const a = getChannelScalarValue(inputA, offset, transform.rasterChannelA);
+    const b = inputB
+      ? getChannelScalarValue(inputB, offset, transform.rasterChannelB)
+      : 0;
+    if (pixelScope) {
+      updateRasterPixelScope(
+        pixelScope,
+        inputA,
+        inputB,
+        offset,
+        a,
+        b,
+        rasterVariables
+      );
+    }
+    const sourceValues = usesSourceStack
+      ? sourceStackInputs.map((input) =>
+          getChannelScalarValue(input, offset, sourceStackChannel)
+        )
+      : emptySourceValues;
+    const value = getRasterCalculationValue(
+      a,
+      b,
+      sourceValues,
+      transform,
+      customEvaluator,
+      pixelScope
+    );
+    values[valueIndex] = value;
+    minValue = Math.min(minValue, value);
+    maxValue = Math.max(maxValue, value);
+  }
+
+  for (let offset = 0, valueIndex = 0; offset < output.length; offset += 4, valueIndex += 1) {
+    const mappedValue = clampColorValue(
+      mapRasterCalculationValue(values[valueIndex], transform, minValue, maxValue)
+    );
+    if (transform.output === "falseColor") {
+      const [r, g, b] = getFalseColorRgb(mappedValue);
+      output[offset] = r;
+      output[offset + 1] = g;
+      output[offset + 2] = b;
+    } else {
+      output[offset] = mappedValue;
+      output[offset + 1] = mappedValue;
+      output[offset + 2] = mappedValue;
+    }
+    output[offset + 3] = 255;
+  }
+
+  context.putImageData(imageData, 0, 0);
+  context.petroImageRasterMissingInput = false;
+  context.petroImageRasterInvalidContext = false;
+  context.petroImageRasterContextMessage = "";
+  context.petroImageRasterOutputMin = minValue;
+  context.petroImageRasterOutputMax = maxValue;
+  if (usesSourceStack) {
+    context.petroImageRasterStackReady = sourceStackInputs.length;
+    context.petroImageRasterStackExpected = expectedSourceStackCount;
+  }
+  if (context.canvas) {
+    context.canvas.petroImageRasterMissingInput = false;
+    context.canvas.petroImageRasterInvalidContext = false;
+    context.canvas.petroImageRasterContextMessage = "";
+    context.canvas.petroImageRasterOutputMin = minValue;
+    context.canvas.petroImageRasterOutputMax = maxValue;
+    if (usesSourceStack) {
+      context.canvas.petroImageRasterStackReady = sourceStackInputs.length;
+      context.canvas.petroImageRasterStackExpected = expectedSourceStackCount;
+    }
+  }
+}
+
+function applyTileSetTransformToContext(context, transform, loadedTile = null) {
+  if (isRasterRecipe(transform)) {
+    applyRasterCalculationTransformToContext(context, transform, loadedTile);
+    return;
+  }
+
+  switch (transform.type) {
+    case "sobel":
+      applySobelTransformToContext(context, transform);
+      break;
+    case "laplacian":
+      applyLaplacianTransformToContext(context, transform);
+      break;
+    case "unsharp":
+      applyUnsharpTransformToContext(context, transform);
+      break;
+    case "localContrast":
+      applyLocalContrastTransformToContext(context, transform);
+      break;
+    case "emboss":
+      applyEmbossTransformToContext(context, transform);
+      break;
+    case "channelMap":
+      applyChannelTransformToContext(context, transform);
+      break;
+  }
+}
+
 function createCanvasContextFromImage(image, options = {}) {
   const width = image.naturalWidth || image.width || image.canvas?.width;
   const height = image.naturalHeight || image.height || image.canvas?.height;
@@ -10072,40 +13130,182 @@ function createAdjustedTileContext(sourceContext, appearance) {
   return context;
 }
 
-function getOriginalContextForLoadedTile(loadedTile) {
-  if (loadedTile.petroImageOriginalContext) {
-    return loadedTile.petroImageOriginalContext;
+function markRasterContextAsMissingInput(
+  context,
+  stackReady = 0,
+  stackExpected = 0,
+  forceOpaque = true
+) {
+  if (!context) return context;
+  context.petroImageRasterMissingInput = true;
+  context.petroImageForceOpaque = forceOpaque;
+  context.petroImageRasterStackReady = stackReady;
+  context.petroImageRasterStackExpected = stackExpected;
+  if (context.canvas) {
+    context.canvas.petroImageRasterMissingInput = true;
+    context.canvas.petroImageForceOpaque = forceOpaque;
+    context.canvas.petroImageRasterStackReady = stackReady;
+    context.canvas.petroImageRasterStackExpected = stackExpected;
+  }
+  return context;
+}
+
+function createMissingRasterInputContext(width, height, stackReady = 0, stackExpected = 0) {
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const context = canvas.getContext("2d", {
+    alpha: false,
+    willReadFrequently: true,
+  });
+  return markRasterContextAsMissingInput(
+    context,
+    stackReady,
+    stackExpected,
+    true
+  );
+}
+
+function createProcessedTileContext(
+  sourceContext,
+  appearance,
+  transform,
+  loadedTile = null
+) {
+  const context = createCanvasContextFromImage(sourceContext.canvas, {
+    forceOpaque: true,
+  });
+  if (!context) return null;
+  if (!isDefaultAppearanceValue(appearance)) {
+    applyTileSetAppearanceToContext(context, appearance);
+  }
+  if (isRasterRecipe(transform) || transform.type !== "none") {
+    applyTileSetTransformToContext(context, transform, loadedTile);
+  }
+  if (
+    context.petroImageRasterMissingInput &&
+    !context.petroImageRasterAncestorPlaceholder
+  ) {
+    return createMissingRasterInputContext(
+      context.canvas.width,
+      context.canvas.height,
+      context.petroImageRasterStackReady || 0,
+      context.petroImageRasterStackExpected || 0
+    );
+  }
+  context.petroImageGeneratedPreviewContext = true;
+  if (context.canvas) {
+    context.canvas.petroImageGeneratedPreviewContext = true;
+  }
+  return context;
+}
+
+function getTileProcessingCacheKey(appearance, transform) {
+  return JSON.stringify({
+    appearance: normalizeTileSetAppearance(appearance),
+    transform: normalizeTileSetTransform(transform),
+  });
+}
+
+function getCachedProcessedTileContext(loadedTile, originalContext, appearance, transform) {
+  const cacheKey = getTileProcessingCacheKey(appearance, transform);
+  if (
+    loadedTile.petroImageProcessedContext?.key === cacheKey &&
+    loadedTile.petroImageProcessedContext.context?.canvas &&
+    !loadedTile.petroImageProcessedContext.context.petroImageRasterMissingInput &&
+    !loadedTile.petroImageProcessedContext.context.petroImageRasterInvalidContext
+  ) {
+    return loadedTile.petroImageProcessedContext.context;
   }
 
-  if (loadedTile.context2D?.canvas) {
-    loadedTile.petroImageOriginalContext = createCanvasContextFromImage(
-      loadedTile.context2D.canvas,
-      { forceOpaque: true }
-    );
-    return loadedTile.petroImageOriginalContext;
+  const processedContext = createProcessedTileContext(
+    originalContext,
+    appearance,
+    transform,
+    loadedTile
+  );
+  if (
+    processedContext &&
+    !processedContext.petroImageRasterMissingInput &&
+    !processedContext.petroImageRasterInvalidContext
+  ) {
+    loadedTile.petroImageProcessedContext = {
+      key: cacheKey,
+      context: processedContext,
+    };
+  } else if (
+    processedContext?.petroImageRasterMissingInput ||
+    processedContext?.petroImageRasterInvalidContext
+  ) {
+    loadedTile.petroImageProcessedContext = null;
   }
+  return processedContext;
+}
+
+function isUsableSourceTileContext(context) {
+  return Boolean(
+    context?.canvas &&
+      !context.petroImageRasterMissingInput &&
+      !context.canvas?.petroImageRasterMissingInput &&
+      !context.petroImageRasterInvalidContext &&
+      !context.canvas?.petroImageRasterInvalidContext &&
+      !context.petroImageGeneratedPreviewContext &&
+      !context.canvas?.petroImageGeneratedPreviewContext
+  );
+}
+
+function createSourceContextForLoadedTile(loadedTile) {
+  if (!loadedTile) return null;
 
   const cachedData =
     loadedTile.cacheImageRecord?.getData?.() ||
     loadedTile.cacheImageRecord?.getImage?.();
   if (cachedData) {
-    loadedTile.petroImageOriginalContext = createCanvasContextFromImage(
-      cachedData,
-      { forceOpaque: true }
-    );
-    return loadedTile.petroImageOriginalContext;
+    return createCanvasContextFromImage(cachedData, { forceOpaque: true });
   }
 
   const cachedContext = loadedTile.cacheImageRecord?.getRenderedContext?.();
   if (cachedContext?.canvas) {
-    loadedTile.petroImageOriginalContext = createCanvasContextFromImage(
-      cachedContext.canvas,
-      { forceOpaque: true }
-    );
-    return loadedTile.petroImageOriginalContext;
+    return createCanvasContextFromImage(cachedContext.canvas, {
+      forceOpaque: true,
+    });
+  }
+
+  if (isUsableSourceTileContext(loadedTile.petroImageOriginalContext)) {
+    return createCanvasContextFromImage(loadedTile.petroImageOriginalContext.canvas, {
+      forceOpaque: true,
+    });
+  }
+
+  if (isUsableSourceTileContext(loadedTile.context2D)) {
+    return createCanvasContextFromImage(loadedTile.context2D.canvas, {
+      forceOpaque: true,
+    });
   }
 
   return null;
+}
+
+function restoreLoadedTileSourceContext(loadedTile) {
+  if (!loadedTile) return false;
+
+  const sourceContext = createSourceContextForLoadedTile(loadedTile);
+  loadedTile.petroImageProcessedContext = null;
+  loadedTile.petroImageOriginalContext = sourceContext || null;
+  if (!sourceContext) return false;
+
+  loadedTile.context2D = sourceContext;
+  loadedTile.hasTransparency = false;
+  return true;
+}
+
+function getOriginalContextForLoadedTile(loadedTile) {
+  if (isUsableSourceTileContext(loadedTile.petroImageOriginalContext)) {
+    return loadedTile.petroImageOriginalContext;
+  }
+
+  loadedTile.petroImageOriginalContext = createSourceContextForLoadedTile(loadedTile);
+  return loadedTile.petroImageOriginalContext;
 }
 
 function getTileSetForTiledImage(tiledImage) {
@@ -10116,7 +13316,7 @@ function getTileSetForTiledImage(tiledImage) {
 }
 
 function updateTileSetAppearanceRenderingHints(tileSet) {
-  const adjusted = !isDefaultTileSetAppearance(tileSet);
+  const adjusted = shouldProcessTileSet(tileSet);
   (tileSet?.tiles || []).forEach((tile) => {
     if (!tile.image) return;
     ensureTileSourceOpaqueContextSupport(tile.image);
@@ -10142,34 +13342,122 @@ function updateTileSetAppearanceRenderingHints(tileSet) {
   });
 }
 
+function processLoadedTileForPreview(tileSet, tiledImage, loadedTile, sourceData = null) {
+  if (!tileSet || !loadedTile || !shouldProcessTileSet(tileSet)) return false;
+
+  ensureTileSourceOpaqueContextSupport(tiledImage);
+  updateTileSetAppearanceRenderingHints(tileSet);
+  assignLoadedTileCoordinatesFromMatrix(tiledImage, loadedTile);
+
+  if (!loadedTile.petroImageOriginalContext) {
+    const sourceContext = sourceData || loadedTile.context2D?.canvas;
+    if (sourceContext) {
+      loadedTile.petroImageOriginalContext = createCanvasContextFromImage(
+        sourceContext,
+        { forceOpaque: true }
+      );
+    }
+  }
+
+  const originalContext = getOriginalContextForLoadedTile(loadedTile);
+  if (!originalContext) return false;
+
+  const appearance = { ...getTileSetAppearance(tileSet) };
+  const transform = { ...getTileSetTransform(tileSet) };
+  const cacheKey = getTileProcessingCacheKey(appearance, transform);
+  if (
+    loadedTile.petroImageProcessedContext?.key === cacheKey &&
+    loadedTile.context2D === loadedTile.petroImageProcessedContext.context
+  ) {
+    return false;
+  }
+
+  const adjustedContext = getCachedProcessedTileContext(
+    loadedTile,
+    originalContext,
+    appearance,
+    transform
+  );
+  if (!adjustedContext) return false;
+  if (
+    adjustedContext.petroImageRasterMissingInput ||
+    adjustedContext.petroImageRasterInvalidContext
+  ) {
+    if (
+      adjustedContext.petroImageRasterMissingInput &&
+      adjustedContext.petroImageRasterAncestorPlaceholder
+    ) {
+      loadedTile.context2D = adjustedContext;
+      loadedTile.hasTransparency = false;
+      return false;
+    }
+    loadedTile.context2D = originalContext;
+    loadedTile.hasTransparency = false;
+    return false;
+  }
+
+  loadedTile.context2D = adjustedContext;
+  loadedTile.hasTransparency = Boolean(
+    adjustedContext.petroImageRasterMissingInput &&
+      !adjustedContext.petroImageForceOpaque
+  );
+  return !adjustedContext.petroImageRasterMissingInput;
+}
+
 function handleTileLoadedForAppearance(event) {
   const tileSet = getTileSetForTiledImage(event.tiledImage);
-  if (!tileSet || isDefaultTileSetAppearance(tileSet) || !event.data) return;
+  if (!tileSet || !event.data) return;
 
-  ensureTileSourceOpaqueContextSupport(event.tiledImage);
-  updateTileSetAppearanceRenderingHints(tileSet);
+  if (!shouldProcessTileSet(tileSet)) {
+    scheduleRasterCalculationDependents(tileSet);
+    return;
+  }
 
   const completionCallback = event.getCompletionCallback();
-  const appearance = { ...getTileSetAppearance(tileSet) };
-  const image = event.data;
 
   try {
-    if (!event.tile.petroImageOriginalContext) {
-      event.tile.petroImageOriginalContext = createCanvasContextFromImage(image, {
-        forceOpaque: true,
-      });
-    }
-    const adjustedContext = createAdjustedTileContext(
-      event.tile.petroImageOriginalContext,
-      appearance
+    processLoadedTileForPreview(
+      tileSet,
+      event.tiledImage,
+      event.tile,
+      event.data
     );
-    if (adjustedContext) {
-      event.tile.context2D = adjustedContext;
-      event.tile.hasTransparency = false;
-    }
   } finally {
     completionCallback();
+    scheduleRasterCalculationDependents(tileSet);
   }
+}
+
+function handleTileDrawnForTransformPreview(event) {
+  const tileSet = getTileSetForTiledImage(event.tiledImage);
+  if (!tileSet || !shouldProcessTileSet(tileSet)) return;
+  const changed = processLoadedTileForPreview(
+    tileSet,
+    event.tiledImage,
+    event.tile
+  );
+  if (changed) {
+    viewer?.forceRedraw?.();
+    if (tileSet === tileSets()[getSelectedTransformTileSetIndex()]) {
+      scheduleTileAppearanceReprocess(tileSet);
+    }
+  }
+}
+
+
+function scheduleRasterCalculationDependents(loadedTileSet) {
+  const loadedTileSetIndex = tileSets().indexOf(loadedTileSet);
+  tileSets().forEach((tileSet) => {
+    const transform = getTileSetTransform(tileSet);
+    if (!isRasterRecipe(transform)) {
+      return;
+    }
+    const inputIndices = getRasterTransformInputTileSetIndices(transform);
+    if (tileSet !== loadedTileSet && !inputIndices.has(loadedTileSetIndex)) {
+      return;
+    }
+    scheduleTileAppearanceReprocess(tileSet);
+  });
 }
 
 function forEachLoadedTileInTileSet(tileSet, callback) {
@@ -10177,10 +13465,15 @@ function forEachLoadedTileInTileSet(tileSet, callback) {
     const matrix = tile.image?.tilesMatrix;
     if (!matrix) return;
 
-    Object.values(matrix).forEach((columns) => {
-      Object.values(columns || {}).forEach((rows) => {
-        Object.values(rows || {}).forEach((loadedTile) => {
+    Object.entries(matrix).forEach(([level, columns]) => {
+      Object.entries(columns || {}).forEach(([x, rows]) => {
+        Object.entries(rows || {}).forEach(([y, loadedTile]) => {
           if (loadedTile?.loaded || loadedTile?.context2D) {
+            loadedTile.petroImageTileCoordinates = {
+              level: Number.parseInt(level, 10),
+              x: Number.parseInt(x, 10),
+              y: Number.parseInt(y, 10),
+            };
             callback(loadedTile);
           }
         });
@@ -10189,36 +13482,270 @@ function forEachLoadedTileInTileSet(tileSet, callback) {
   });
 }
 
-function reprocessLoadedTileSetTiles(tileSet) {
-  const appearance = getTileSetAppearance(tileSet);
+function getLoadedTilesInTileSet(tileSet) {
+  const loadedTiles = [];
   forEachLoadedTileInTileSet(tileSet, (loadedTile) => {
-    const originalContext = getOriginalContextForLoadedTile(loadedTile);
-    if (!originalContext) return;
+    loadedTiles.push(loadedTile);
+  });
+  return loadedTiles;
+}
 
-    if (isDefaultTileSetAppearance(tileSet)) {
-      loadedTile.context2D = originalContext;
-      loadedTile.hasTransparency = false;
-      return;
-    }
+function processLoadedTileForScheduledReprocess(
+  tileSet,
+  loadedTile,
+  appearance,
+  transform,
+  stats
+) {
+  const originalContext = getOriginalContextForLoadedTile(loadedTile);
+  if (!originalContext) return;
 
-    const adjustedContext = createAdjustedTileContext(originalContext, appearance);
-    if (adjustedContext) {
+  if (!shouldProcessTileSet(tileSet)) {
+    loadedTile.context2D = originalContext;
+    loadedTile.hasTransparency = false;
+    return;
+  }
+
+  const adjustedContext = getCachedProcessedTileContext(
+    loadedTile,
+    originalContext,
+    appearance,
+    transform
+  );
+  if (!adjustedContext) return;
+  if (
+    adjustedContext.petroImageRasterMissingInput ||
+    adjustedContext.petroImageRasterInvalidContext
+  ) {
+    if (
+      adjustedContext.petroImageRasterMissingInput &&
+      adjustedContext.petroImageRasterAncestorPlaceholder
+    ) {
       loadedTile.context2D = adjustedContext;
       loadedTile.hasTransparency = false;
+    } else {
+      loadedTile.context2D = originalContext;
+      loadedTile.hasTransparency = false;
+    }
+    if (adjustedContext.petroImageRasterMissingInput) {
+      stats.missingRasterInputs += 1;
+      stats.stackReady = Math.max(
+        stats.stackReady || 0,
+        adjustedContext.petroImageRasterStackReady || 0
+      );
+      stats.stackExpected = Math.max(
+        stats.stackExpected || 0,
+        adjustedContext.petroImageRasterStackExpected || 0
+      );
+    }
+    if (adjustedContext.petroImageRasterInvalidContext) {
+      stats.invalidRasterContexts += 1;
+      stats.contextMessage =
+        adjustedContext.petroImageRasterContextMessage || stats.contextMessage;
+    }
+    return;
+  }
+
+  loadedTile.context2D = adjustedContext;
+  loadedTile.hasTransparency = Boolean(
+    adjustedContext.petroImageRasterMissingInput &&
+      !adjustedContext.petroImageForceOpaque
+  );
+  stats.processed += 1;
+  if (Number.isFinite(adjustedContext.petroImageRasterOutputMin)) {
+    stats.outputMin = Math.min(
+      stats.outputMin ?? Infinity,
+      adjustedContext.petroImageRasterOutputMin
+    );
+  }
+  if (Number.isFinite(adjustedContext.petroImageRasterOutputMax)) {
+    stats.outputMax = Math.max(
+      stats.outputMax ?? -Infinity,
+      adjustedContext.petroImageRasterOutputMax
+    );
+  }
+  if (adjustedContext.petroImageRasterMissingInput) {
+    stats.missingRasterInputs += 1;
+    stats.stackReady = Math.max(
+      stats.stackReady || 0,
+      adjustedContext.petroImageRasterStackReady || 0
+    );
+    stats.stackExpected = Math.max(
+      stats.stackExpected || 0,
+      adjustedContext.petroImageRasterStackExpected || 0
+    );
+  }
+  if (adjustedContext.petroImageRasterInvalidContext) {
+    stats.invalidRasterContexts += 1;
+    stats.contextMessage =
+      adjustedContext.petroImageRasterContextMessage || stats.contextMessage;
+  }
+}
+
+function updateTransformPreviewAfterReprocess(tileSet, stats) {
+  if (
+    !transformImageryPalette ||
+    transformImageryPalette.hidden ||
+    tileSet !== tileSets()[getSelectedTransformTileSetIndex()]
+  ) {
+    return;
+  }
+
+  if (shouldProcessTileSet(tileSet)) {
+    updateTransformPreviewProgress(stats);
+  } else {
+    clearTransformProgress();
+  }
+
+  if (stats.contextMessage) {
+    setTransformStatus(stats.contextMessage, "");
+  } else if (stats.missingRasterInputs > 0) {
+    const transform = getTileSetTransform(tileSet);
+    const missingLabel = rasterTransformUsesSourceStack(transform)
+      ? "Loading source stack tiles"
+      : "Loading comparison tiles";
+    const stackProgress =
+      stats.stackExpected > 0
+        ? ` ${Math.min(stats.stackReady || 0, stats.stackExpected)}/${stats.stackExpected} ready,`
+        : "";
+    setTransformStatus(
+      `${missingLabel}...${stackProgress} ${stats.missingRasterInputs} pending`,
+      ""
+    );
+    scheduleRasterPreviewRetry(tileSet);
+  } else if (
+    isRasterRecipe(getTileSetTransform(tileSet)) &&
+    shouldProcessTileSet(tileSet) &&
+    stats.processed === 0
+  ) {
+    setTransformStatus("Waiting for source tiles...", "");
+    scheduleRasterPreviewRetry(tileSet);
+  } else if (
+    rasterTransformUsesSourceStack(getTileSetTransform(tileSet)) &&
+    Number.isFinite(stats.outputMin) &&
+    Number.isFinite(stats.outputMax) &&
+    Math.abs(stats.outputMax - stats.outputMin) <= 0.0001
+  ) {
+    setTransformStatus(
+      `Stack calculated 6/6, range ${stats.outputMin.toFixed(2)}-${stats.outputMax.toFixed(2)}.`,
+      "error"
+    );
+  } else if (
+    transformStatus?.textContent === "Processing preview..." ||
+    transformStatus?.textContent === "Waiting for source tiles..." ||
+    transformStatus?.textContent?.startsWith("Loading comparison tiles...") ||
+    transformStatus?.textContent?.startsWith("Loading source stack tiles...")
+  ) {
+    const idleStatus = getTransformPreviewIdleStatus(tileSet);
+    setTransformStatus(
+      idleStatus,
+      getRasterTransformContextMessage(getTileSetTransform(tileSet), tileSet)
+        ? ""
+        : "ok"
+    );
+  }
+}
+
+function waitForNextPreviewFrame() {
+  return new Promise((resolve) => {
+    if (typeof window.requestAnimationFrame === "function") {
+      window.requestAnimationFrame(() => resolve());
+    } else {
+      window.setTimeout(resolve, 16);
     }
   });
 }
 
+async function reprocessLoadedTileSetTilesAsync(tileSet, token) {
+  const appearance = getTileSetAppearance(tileSet);
+  const transform = getTileSetTransform(tileSet);
+  const loadedTiles = getLoadedTilesInTileSet(tileSet);
+  const stats = {
+    total: loadedTiles.length,
+    processed: 0,
+    missingRasterInputs: 0,
+    invalidRasterContexts: 0,
+    contextMessage: "",
+    outputMin: Infinity,
+    outputMax: -Infinity,
+  };
+
+  for (let index = 0; index < loadedTiles.length; index += 1) {
+    if (token !== tileAppearanceReprocessToken) return null;
+
+    const frameStart = performance.now();
+    do {
+      const loadedTile = loadedTiles[index];
+      processLoadedTileForScheduledReprocess(
+        tileSet,
+        loadedTile,
+        appearance,
+        transform,
+        stats
+      );
+      index += 1;
+    } while (
+      index < loadedTiles.length &&
+      performance.now() - frameStart < 10
+    );
+
+    if (token !== tileAppearanceReprocessToken) return null;
+
+    displayImages();
+    viewer?.forceRedraw?.();
+    updateTransformPreviewAfterReprocess(tileSet, stats);
+
+    if (index < loadedTiles.length) {
+      await waitForNextPreviewFrame();
+      index -= 1;
+    }
+  }
+
+  return stats;
+}
+
+function scheduleRasterPreviewRetry(tileSet) {
+  if (!tileSet || rasterPreviewRetryTimer !== null) return;
+  rasterPreviewRetryTimer = window.setTimeout(() => {
+    rasterPreviewRetryTimer = null;
+    if (isRasterRecipe(getTileSetTransform(tileSet))) {
+      viewer?.forceRedraw?.();
+      scheduleTileAppearanceReprocess(tileSet);
+    }
+  }, 450);
+}
+
+function getActiveRasterPreviewTileSet() {
+  if (getTransformMode() !== "preview") return null;
+  const tileSet = tileSets()[getSelectedTransformTileSetIndex()];
+  if (!tileSet) return null;
+  const transform = getTileSetTransform(tileSet);
+  return isRasterRecipe(transform) ? tileSet : null;
+}
+
+function scheduleActiveRasterPreviewReprocess() {
+  const tileSet = getActiveRasterPreviewTileSet();
+  if (!tileSet) return;
+  setTransformStatus("Processing preview...");
+  setTransformPreviewProgressStart();
+  scheduleTileAppearanceReprocess(tileSet);
+}
+
 function scheduleTileAppearanceReprocess(tileSet) {
+  tileAppearanceReprocessToken += 1;
+  const token = tileAppearanceReprocessToken;
   if (tileAppearanceReprocessTimer !== null) {
     window.clearTimeout(tileAppearanceReprocessTimer);
   }
   tileAppearanceReprocessTimer = window.setTimeout(() => {
     tileAppearanceReprocessTimer = null;
     updateTileSetAppearanceRenderingHints(tileSet);
-    reprocessLoadedTileSetTiles(tileSet);
-    displayImages();
-    viewer.forceRedraw();
+    reprocessLoadedTileSetTilesAsync(tileSet, token).then((stats) => {
+      if (!stats || token !== tileAppearanceReprocessToken) return;
+      displayImages();
+      viewer?.forceRedraw?.();
+      updateTransformPreviewAfterReprocess(tileSet, stats);
+    });
   }, 140);
 }
 
@@ -11673,6 +15200,7 @@ async function loadTileSet() {
 
           tile.image = event.item;
           tile.tileSource = event.item?.source || tileSource;
+          updateRasterCalculationPreloadHints();
           displayImages();
         },
       });
@@ -11813,6 +15341,10 @@ const displayImages = () => {
 const getTileOpacityGetter = (tileSet, tileSetOpacity, tileSetIndex = 0) => {
   const tiles = tileSet.tiles;
   const periodDegrees = tileSet.periodDegrees;
+  const transform = getTileSetTransform(tileSet);
+  if (rasterTransformUsesSourceStack(transform)) {
+    return (index) => (index === 0 ? tileSetOpacity : 0);
+  }
   if (!periodDegrees) {
     // If the tile set does not have a period, the tiles are just independent
     // images that can be scrolled through. Only show the selected tile.
@@ -12088,7 +15620,19 @@ function buildImageCheckboxes() {
     checkbox.checked = i === 0;
     checkbox.className = "image-checkbox";
     checkbox.dataset.index = i;
-    checkbox.addEventListener("change", displayImages);
+    checkbox.addEventListener("change", () => {
+      displayImages();
+      refreshTransformPreviewStatus();
+      const selectedTileSet = tileSets()[getSelectedTransformTileSetIndex()];
+      const transform = getTileSetTransform(selectedTileSet);
+      if (
+        selectedTileSet &&
+        isRasterRecipe(transform) &&
+        rasterTransformUsesInputB(transform)
+      ) {
+        scheduleTileAppearanceReprocess(selectedTileSet);
+      }
+    });
 
     const identity = document.createElement("div");
     identity.className = "image-checkbox-identity";
@@ -12139,7 +15683,9 @@ function buildImageCheckboxes() {
   }
   updateImageCheckboxLabels();
   populateSnapshotTileSetSelect();
+  populateTransformTileSetSelect();
   populateSegmentTileSetSelect();
+  populateClassifyTileSetSelect();
 }
 
 function buildOpacitySliders() {
@@ -19389,6 +22935,7 @@ const tileSetEditorState = {
   sampleIndex: -1,
   convertingRow: null,
   progressUnsubscribe: null,
+  pendingDeletedDziUris: new Set(),
 };
 let activelyMakingPoly = false; // Either polyline or polygon
 
@@ -19811,6 +23358,7 @@ function openTileSetEditor() {
   const selectedSample = getLibraryEditorSelectedSample();
   if (!selectedSample || !tileSetEditor || !tileSetEditorRows) return;
 
+  tileSetEditorState.pendingDeletedDziUris = new Set();
   tileSetEditorState.sampleIndex = libraryEditorState.selectedIndex;
   setTileSetEditorStatus("");
   if (tileSetEditorTitle) {
@@ -19830,6 +23378,7 @@ function closeTileSetEditor() {
 
   tileSetEditor.hidden = true;
   tileSetEditorState.sampleIndex = -1;
+  tileSetEditorState.pendingDeletedDziUris = new Set();
   setTileSetEditorStatus("");
 }
 
@@ -19864,6 +23413,103 @@ function updateTileSetEditorSaveButtonLabel() {
       : "Save";
 }
 
+function isTileSetEditorDziUri(uri) {
+  return typeof uri === "string" && /\.dzi$/i.test(uri.trim());
+}
+
+function getTileSetEditorDziUris(tileSet) {
+  return [
+    ...new Set(
+      (tileSet?.tiles || [])
+        .map((tile) => tile?.uri || "")
+        .filter(isTileSetEditorDziUri)
+    ),
+  ];
+}
+
+function getAllLibraryDraftDziUris() {
+  const uris = [];
+  (libraryEditorState.samples || []).forEach((sample) => {
+    (sample.tileSets || []).forEach((tileSet) => {
+      uris.push(...getTileSetEditorDziUris(tileSet));
+    });
+  });
+  return uris;
+}
+
+function queueTileSetEditorDziDeletion(row) {
+  const cleanupInput = row?.querySelector(".tile-set-editor-cleanup-input");
+  if (!cleanupInput?.checked) return;
+
+  const originalTileSet = parseTileSetEditorJson(row.dataset.originalTileSet);
+  getTileSetEditorDziUris(originalTileSet).forEach((uri) => {
+    tileSetEditorState.pendingDeletedDziUris.add(uri);
+  });
+}
+
+function getUnreferencedQueuedDziUris() {
+  const queuedUris = [...tileSetEditorState.pendingDeletedDziUris];
+  if (!queuedUris.length) return [];
+  const referencedUris = new Set(getAllLibraryDraftDziUris());
+  return queuedUris.filter((uri) => !referencedUris.has(uri));
+}
+
+function getSkippedReferencedQueuedDziUris() {
+  const queuedUris = [...tileSetEditorState.pendingDeletedDziUris];
+  if (!queuedUris.length) return [];
+  const referencedUris = new Set(getAllLibraryDraftDziUris());
+  return queuedUris.filter((uri) => referencedUris.has(uri));
+}
+
+async function deleteQueuedTileSetDziFiles() {
+  if (!window.electronAPI?.deleteProjectDzi) return { deleted: [], skipped: [] };
+
+  const uris = getUnreferencedQueuedDziUris();
+  if (!uris.length) {
+    return { deleted: [], skipped: [] };
+  }
+
+  const confirmed = window.confirm(
+    [
+      "Move the associated DZI files and tile folders to the trash?",
+      "",
+      ...uris.map((uri) => `- ${uri}`),
+    ].join("\n")
+  );
+  if (!confirmed) {
+    return {
+      deleted: [],
+      skipped: uris.map((uri) => ({ uri, reason: "Deletion was canceled." })),
+    };
+  }
+
+  return window.electronAPI.deleteProjectDzi({ uris });
+}
+
+function getDziDeletionSummary(result, referencedSkips = []) {
+  const deletedCount = result?.deleted?.length || 0;
+  const skipped = [
+    ...(result?.skipped || []),
+    ...referencedSkips.map((uri) => ({
+      uri,
+      reason: "Still referenced in the library draft.",
+    })),
+  ];
+
+  const messages = [];
+  if (deletedCount > 0) {
+    messages.push(`Moved ${deletedCount} DZI item${deletedCount === 1 ? "" : "s"} to the trash.`);
+  }
+  if (skipped.length > 0) {
+    messages.push(
+      `Skipped ${skipped.length} DZI item${skipped.length === 1 ? "" : "s"}: ${skipped
+        .map((item) => item.uri)
+        .join(", ")}`
+    );
+  }
+  return messages.join(" ");
+}
+
 function renderTileSetEditor(tileSets) {
   if (!tileSetEditorRows) return;
 
@@ -19880,6 +23526,7 @@ function createTileSetEditorRow(tileSet = {}) {
   const row = document.createElement("section");
   row.className = "tile-set-editor-row";
   row.dataset.originalTileSet = JSON.stringify(tileSet || {});
+  const originalDziUris = getTileSetEditorDziUris(tileSet);
 
   const header = document.createElement("div");
   header.className = "tile-set-editor-row-header";
@@ -19959,7 +23606,19 @@ function createTileSetEditorRow(tileSet = {}) {
     images.appendChild(createTileImageEditorRow(tile, typeSelect.value));
   });
 
-  row.append(header, typeSelect, labelWrap, periodWrap, images);
+  const cleanupWrap = document.createElement("label");
+  cleanupWrap.className = "tile-set-editor-cleanup-wrap";
+  cleanupWrap.hidden = originalDziUris.length === 0 || !window.electronAPI?.deleteProjectDzi;
+  const cleanupInput = document.createElement("input");
+  cleanupInput.className = "tile-set-editor-cleanup-input";
+  cleanupInput.type = "checkbox";
+  cleanupInput.disabled = cleanupWrap.hidden;
+  cleanupWrap.append(
+    cleanupInput,
+    document.createTextNode(" Delete local DZI files if this tile set is removed")
+  );
+
+  row.append(header, typeSelect, labelWrap, periodWrap, images, cleanupWrap);
   updateTileSetEditorType(row);
   return row;
 }
@@ -20105,6 +23764,7 @@ function addTileSetEditorRow(afterRow) {
 
 function removeTileSetEditorRow(row) {
   if (!tileSetEditorRows || tileSetEditorRows.children.length <= 1) return;
+  queueTileSetEditorDziDeletion(row);
   row.remove();
   renumberTileSetEditorRows();
   updateTileSetEditorSaveButtonLabel();
@@ -20334,11 +23994,24 @@ async function saveTileSetEditorDraft() {
   }
 
   selectedSample.tileSets = collectTileSetsFromEditor();
+  const referencedSkips = getSkippedReferencedQueuedDziUris();
+  let deletionSummary = "";
+  try {
+    const deletionResult = await deleteQueuedTileSetDziFiles();
+    deletionSummary = getDziDeletionSummary(deletionResult, referencedSkips);
+  } catch (error) {
+    console.error("Could not delete queued DZI files:", error);
+    deletionSummary = error.message || "Could not delete queued DZI files.";
+  }
   setTileSetEditorStatus("");
   closeTileSetEditor();
   renderLibraryEditorRows();
   renderLibraryEditorForm();
-  setLibraryEditorStatus("Tile set changes saved to the draft. Apply to write them.");
+  setLibraryEditorStatus(
+    ["Tile set changes saved to the draft. Apply to write them.", deletionSummary]
+      .filter(Boolean)
+      .join(" ")
+  );
 }
 
 function setTileImageRowStatus(row, message, isError = false) {

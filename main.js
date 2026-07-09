@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, dialog, screen } from "electron";
+import { app, BrowserWindow, ipcMain, dialog, screen, shell } from "electron";
 import { fileURLToPath } from "url";
 import path from "path";
 import fs from "fs/promises";
@@ -6,7 +6,7 @@ import { createReadStream } from "fs";
 import { spawn } from "child_process";
 import http from "http";
 import { randomUUID } from "crypto";
-import { convertJpgToDzi } from "./dzi-converter.js";
+import { convertImageBufferToDzi, convertJpgToDzi } from "./dzi-converter.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -2149,6 +2149,14 @@ function normalizeDziRoot(selectedPath) {
   return selectedPath.endsWith("_files") ? path.dirname(selectedPath) : selectedPath;
 }
 
+function isPathInside(parentPath, childPath) {
+  const relativePath = path.relative(parentPath, childPath);
+  return (
+    relativePath === "" ||
+    (relativePath && !relativePath.startsWith("..") && !path.isAbsolute(relativePath))
+  );
+}
+
 function rememberLocalRoot(rootPath) {
   if (!grantedLocalRoots.includes(rootPath)) {
     grantedLocalRoots.push(rootPath);
@@ -2416,6 +2424,107 @@ ipcMain.handle("convert-jpg-to-dzi", async (event, sourcePath) => {
   }
 
   return result;
+});
+
+ipcMain.handle("create-derived-dzi", async (event, { dataUrl, baseName }) => {
+  const settings = await readProjectSettings();
+  const outputDirectory = settings.projectDirectory
+    ? path.join(settings.projectDirectory, DZI_FOLDER_NAME)
+    : app.getPath("documents");
+  const match = String(dataUrl || "").match(/^data:image\/png;base64,(.+)$/);
+
+  if (!match) {
+    throw new Error("The transformed image was not a PNG data URL.");
+  }
+
+  const imageBuffer = Buffer.from(match[1], "base64");
+  const result = await convertImageBufferToDzi(
+    imageBuffer,
+    baseName || "derived-image",
+    (progress) => {
+      event.sender.send("derived-dzi-progress", progress);
+    },
+    outputDirectory,
+  );
+
+  if (settings.projectDirectory) {
+    result.relativeDziPath = path.relative(settings.projectDirectory, result.dziPath);
+  }
+
+  return result;
+});
+
+ipcMain.handle("delete-project-dzi", async (event, { uris } = {}) => {
+  const settings = await readProjectSettings();
+  const projectDirectory = settings.projectDirectory;
+  if (!projectDirectory) {
+    throw new Error("DZI file deletion is only available for project libraries.");
+  }
+
+  const projectRoot = path.resolve(projectDirectory);
+  const allowedDziRoot = path.resolve(projectRoot, DZI_FOLDER_NAME);
+  const uniqueUris = [...new Set(Array.isArray(uris) ? uris : [])];
+  const deleted = [];
+  const skipped = [];
+
+  for (const uri of uniqueUris) {
+    try {
+      if (typeof uri !== "string" || !/\.dzi$/i.test(uri)) {
+        skipped.push({ uri, reason: "Not a DZI path." });
+        continue;
+      }
+      if (/^[a-z][a-z0-9+.-]*:\/\//i.test(uri)) {
+        skipped.push({ uri, reason: "Remote DZI paths cannot be deleted." });
+        continue;
+      }
+
+      const resolvedDziPath = path.resolve(
+        path.isAbsolute(uri) ? uri : path.join(projectRoot, uri),
+      );
+      if (
+        !isPathInside(projectRoot, resolvedDziPath) ||
+        !isPathInside(allowedDziRoot, resolvedDziPath)
+      ) {
+        skipped.push({ uri, reason: "DZI path is outside the project dzi folder." });
+        continue;
+      }
+
+      const parsedPath = path.parse(resolvedDziPath);
+      const tilesPath = path.join(parsedPath.dir, `${parsedPath.name}_files`);
+      const pathsToTrash = [];
+
+      if (await pathExists(resolvedDziPath)) {
+        pathsToTrash.push(resolvedDziPath);
+      }
+      if (await pathExists(tilesPath)) {
+        if (
+          !isPathInside(projectRoot, tilesPath) ||
+          !isPathInside(allowedDziRoot, tilesPath)
+        ) {
+          skipped.push({ uri, reason: "Tile folder is outside the project dzi folder." });
+          continue;
+        }
+        pathsToTrash.push(tilesPath);
+      }
+
+      if (!pathsToTrash.length) {
+        skipped.push({ uri, reason: "DZI file and tile folder were not found." });
+        continue;
+      }
+
+      for (const targetPath of pathsToTrash) {
+        await shell.trashItem(targetPath);
+      }
+      deleted.push({
+        uri,
+        paths: pathsToTrash.map((targetPath) => path.relative(projectRoot, targetPath)),
+      });
+    } catch (error) {
+      skipped.push({ uri, reason: error.message || "Could not delete DZI files." });
+    }
+  }
+
+  return { deleted, skipped };
 });
 
 ipcMain.handle("complete-sample-import", (event, { jsonData, selectedTitle }) => {

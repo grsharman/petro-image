@@ -554,6 +554,27 @@
             </span>
           </button>
           <button
+            id="openTransformImageryPaletteButton"
+            class="electron-action-item"
+            type="button"
+            role="menuitem"
+            hidden
+          >
+            <span class="electron-action-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <path d="M4 5h16v14H4z" />
+                <path d="M8 9h8" />
+                <path d="M8 15h8" />
+                <path d="M10 7v4" />
+                <path d="M14 13v4" />
+              </svg>
+            </span>
+            <span>
+              <span class="electron-action-title">Transform Imagery</span>
+              <span class="electron-action-description">Preview filters and create tile sets</span>
+            </span>
+          </button>
+          <button
             id="openPorosityEstimatorButton"
             class="electron-action-item"
             type="button"
@@ -1159,6 +1180,273 @@
               <div id="classifyProgressBar" class="import-progress-bar"></div>
             </div>
             <div id="classifyProgressText" class="import-progress-text"></div>
+          </div>
+        </div>
+      </div>
+      <div
+        id="transformImageryPalette"
+        class="tool-palette transform-imagery-palette"
+        data-default-position="bottom-right"
+        data-default-bottom-offset="156"
+        role="dialog"
+        aria-labelledby="transformImageryPaletteTitle"
+        hidden
+      >
+        <div id="transformImageryPaletteHeader" class="tool-palette-header">
+          <h2 id="transformImageryPaletteTitle">Transform Imagery</h2>
+          <div class="tool-palette-header-actions">
+            <button
+              id="minimizeTransformImageryPaletteButton"
+              class="tool-palette-minimize"
+              type="button"
+              aria-label="Minimize Transform Imagery"
+              aria-pressed="false"
+              title="Minimize"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M6 12h12" />
+              </svg>
+            </button>
+            <button
+              id="closeTransformImageryPaletteButton"
+              class="tool-palette-close"
+              type="button"
+              aria-label="Close Transform Imagery"
+              title="Close"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M6 6l12 12" />
+                <path d="M18 6 6 18" />
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div class="tool-palette-body transform-imagery-palette-body">
+          <div class="transform-mode-toggle" role="group" aria-label="Transform Imagery recipe">
+            <label>
+              <input
+                id="transformRecipeSimple"
+                type="radio"
+                name="transformImageryRecipe"
+                value="simple"
+                checked
+              />
+              <span>Simple Transform</span>
+            </label>
+            <label>
+              <input
+                id="transformRecipeRaster"
+                type="radio"
+                name="transformImageryRecipe"
+                value="raster"
+              />
+              <span>Advanced Transform</span>
+            </label>
+          </div>
+          <label class="snapshot-field">
+            <span>Source tile set</span>
+            <select id="transformTileSetSelect"></select>
+          </label>
+          <label class="snapshot-option">
+            <input id="transformPreviewEnabled" type="checkbox" checked />
+            <span>Show preview transform</span>
+          </label>
+          <div class="transform-simple-fields">
+            <label class="snapshot-field">
+              <span>Transform</span>
+              <select id="transformTypeSelect">
+                <option value="none">None</option>
+                <option value="sobel">Sobel edge</option>
+                <option value="laplacian">Laplacian edge</option>
+                <option value="unsharp">Unsharp mask</option>
+                <option value="localContrast">Local contrast</option>
+                <option value="emboss">Emboss / relief shading</option>
+                <option value="channelMap">Channel map</option>
+              </select>
+            </label>
+          </div>
+          <div class="transform-raster-fields" hidden>
+            <div class="transform-raster-hidden-controls" hidden>
+              <select id="transformRasterChannelASelect">
+                <option value="red">Red</option>
+                <option value="green">Green</option>
+                <option value="blue">Blue</option>
+                <option value="luminance" selected>Luminance</option>
+                <option value="saturation">Saturation</option>
+                <option value="hue">Hue</option>
+              </select>
+              <select id="transformRasterChannelBSelect">
+                <option value="red">Red</option>
+                <option value="green">Green</option>
+                <option value="blue">Blue</option>
+                <option value="luminance" selected>Luminance</option>
+                <option value="saturation">Saturation</option>
+                <option value="hue">Hue</option>
+              </select>
+              <select id="transformRasterPresetSelect">
+                <option value="channelA">A channel</option>
+                <option value="difference">A - B</option>
+                <option value="absoluteDifference">|A - B|</option>
+                <option value="normalizedDifference">(A - B) / (A + B)</option>
+                <option value="ratio">A / B</option>
+                <option value="sourceRange">Source image range</option>
+                <option value="sourceMax">Source image max</option>
+                <option value="sourceMin">Source image min</option>
+                <option value="sourceMean">Source image mean</option>
+                <option value="custom" selected>Custom expression</option>
+              </select>
+            </div>
+            <div class="transform-calculator-section">
+              <table class="transform-calculator-token-table">
+                <thead>
+                  <tr>
+                    <th>Set</th>
+                    <th>r</th>
+                    <th>g</th>
+                    <th>b</th>
+                    <th>l</th>
+                    <th>s</th>
+                    <th>h</th>
+                  </tr>
+                </thead>
+                <tbody id="transformRasterInputTableBody"></tbody>
+              </table>
+            </div>
+            <div class="transform-calculator-section">
+              <div class="transform-calculator-button-grid transform-calculator-operator-grid">
+                <button type="button" data-raster-insert=" + ">+</button>
+                <button type="button" data-raster-insert=" - ">-</button>
+                <button type="button" data-raster-insert=" * ">*</button>
+                <button type="button" data-raster-insert=" / ">/</button>
+                <button type="button" data-raster-insert="(">(</button>
+                <button type="button" data-raster-insert=")">)</button>
+                <button type="button" data-raster-function="abs">abs</button>
+                <button type="button" data-raster-function="range">range</button>
+                <button type="button" data-raster-function="max">max</button>
+                <button type="button" data-raster-function="min">min</button>
+                <button type="button" data-raster-function="mean">mean</button>
+                <button type="button" data-raster-function="normdiff">norm</button>
+              </div>
+            </div>
+            <div class="transform-calculator-actions">
+              <button id="transformRasterPreviewButton" type="button">Preview</button>
+              <button id="transformRasterBackspaceButton" type="button">Delete</button>
+              <button id="transformRasterClearButton" type="button">Clear</button>
+            </div>
+            <div class="transform-raster-expression-field">
+              <input
+                id="transformRasterCustomExpression"
+                type="text"
+                value="A.l"
+                inputmode="none"
+                spellcheck="false"
+                aria-label="Expression"
+              />
+            </div>
+            <label class="snapshot-option">
+              <input id="transformRasterNormalize" type="checkbox" checked />
+              <span>Auto-scale result</span>
+            </label>
+            <label class="snapshot-field">
+              <span>Output range</span>
+              <select id="transformRasterScaleSelect">
+                <option value="auto" selected>Auto min/max</option>
+                <option value="signed">Signed -255 to 255</option>
+                <option value="unit">Unit -1 to 1</option>
+                <option value="raw">Raw 0 to 255</option>
+              </select>
+            </label>
+          </div>
+          <label class="snapshot-field transform-channel-field">
+            <span>Channel</span>
+            <select id="transformChannelSelect">
+              <option value="red">Red</option>
+              <option value="green">Green</option>
+              <option value="blue">Blue</option>
+              <option value="luminance" selected>Luminance</option>
+              <option value="saturation">Saturation</option>
+              <option value="hue">Hue</option>
+            </select>
+          </label>
+          <label class="snapshot-field">
+            <span>Output</span>
+            <select id="transformOutputSelect">
+              <option value="grayscale">Grayscale</option>
+              <option value="falseColor">False color</option>
+              <option value="rgb">RGB</option>
+            </select>
+          </label>
+          <label class="snapshot-field transform-range-field">
+            <span>Intensity</span>
+            <input
+              id="transformIntensity"
+              type="range"
+              min="0"
+              max="3"
+              step="0.05"
+              value="1"
+            />
+            <input
+              id="transformIntensityValue"
+              type="number"
+              min="0"
+              max="3"
+              step="0.05"
+              value="1"
+            />
+          </label>
+          <label class="snapshot-field transform-range-field">
+            <span>Radius</span>
+            <input
+              id="transformRadius"
+              type="range"
+              min="1"
+              max="8"
+              step="1"
+              value="2"
+            />
+            <input
+              id="transformRadiusValue"
+              type="number"
+              min="1"
+              max="8"
+              step="1"
+              value="2"
+            />
+          </label>
+          <div class="transform-actions">
+            <button id="transformResetPreviewButton" type="button">Reset Preview</button>
+            <button id="transformResetDefaultButton" type="button">Reset to Default</button>
+          </div>
+          <details class="transform-export-details">
+            <summary>Export to Tile Set</summary>
+            <div class="transform-create-fields">
+              <label class="snapshot-field">
+                <span>Output name</span>
+                <input id="transformOutputName" type="text" value="" />
+              </label>
+              <label class="snapshot-field">
+                <span>Resolution</span>
+                <select id="transformGenerateSize">
+                  <option value="1">Full resolution</option>
+                  <option value="0.5">1/2 resolution</option>
+                  <option value="0.25" selected>1/4 resolution</option>
+                  <option value="current">Current resolution</option>
+                </select>
+              </label>
+              <button id="transformGenerateButton" type="button">
+                Generate Tile Set
+              </button>
+            </div>
+          </details>
+          <div id="transformStatus" class="segment-status" role="status">
+            Preview transforms are temporary.
+          </div>
+          <div id="transformProgress" class="import-progress transform-progress" hidden>
+            <div class="import-progress-track" aria-hidden="true">
+              <div id="transformProgressBar" class="import-progress-bar"></div>
+            </div>
+            <div id="transformProgressText" class="import-progress-text"></div>
           </div>
         </div>
       </div>
