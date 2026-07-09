@@ -476,6 +476,24 @@ const classifyHelpHeader = document.getElementById("classifyHelpHeader");
 const closeClassifyHelpButton = document.getElementById(
   "closeClassifyHelpButton"
 );
+const transformImageryHelpButton = document.getElementById(
+  "transformImageryHelpButton"
+);
+const transformImageryHelpDialog = document.getElementById(
+  "transformImageryHelpDialog"
+);
+const transformImageryHelpHeader = document.getElementById(
+  "transformImageryHelpHeader"
+);
+const closeTransformImageryHelpButton = document.getElementById(
+  "closeTransformImageryHelpButton"
+);
+const porosityHelpButton = document.getElementById("porosityHelpButton");
+const porosityHelpDialog = document.getElementById("porosityHelpDialog");
+const porosityHelpHeader = document.getElementById("porosityHelpHeader");
+const closePorosityHelpButton = document.getElementById(
+  "closePorosityHelpButton"
+);
 const measurePalette = document.getElementById("measurePalette");
 const measurePaletteHeader = document.getElementById("measurePaletteHeader");
 const measurePaletteBody = document.getElementById("measurePaletteBody");
@@ -1655,6 +1673,7 @@ function closeTransformImageryPalette() {
 
   transformImageryPalette.hidden = true;
   openTransformImageryPaletteButton?.setAttribute("aria-pressed", "false");
+  closeTransformImageryHelpDialog();
 }
 
 function toggleTransformImageryPalette() {
@@ -1716,6 +1735,7 @@ function closePorosityEstimator() {
 
   stopPorosityAoiMode();
   stopPorosityPickMode();
+  closePorosityHelpDialog();
   porosityPalette.hidden = true;
   openPorosityEstimatorButton?.setAttribute("aria-pressed", "false");
 }
@@ -7000,7 +7020,8 @@ function getViewportBoundsForImageRect(imageRect) {
 async function renderFullResolutionImageRectCanvas(
   imageRect,
   tileSetIndex = 0,
-  outputScale = 1
+  outputScale = 1,
+  options = {}
 ) {
   const renderScale = Math.max(0.05, Math.min(1, Number(outputScale) || 1));
   const exportSize = {
@@ -7077,12 +7098,28 @@ async function renderFullResolutionImageRectCanvas(
     exportViewer.viewport.setRotation(viewer.viewport.getRotation(true), true);
     exportViewer.viewport.fitBounds(imageViewportBounds, true);
 
-    const activeTileImages = applySnapshotTileSetComposition(
-      exportViewer,
-      exportTileSet,
-      selectedTileSetOpacity,
-      tileSetIndex
-    );
+    let activeTileImages;
+    const onlyTileIndex = Number.isInteger(options.tileIndex)
+      ? options.tileIndex
+      : null;
+    if (onlyTileIndex === null) {
+      activeTileImages = applySnapshotTileSetComposition(
+        exportViewer,
+        exportTileSet,
+        selectedTileSetOpacity,
+        tileSetIndex
+      );
+    } else {
+      activeTileImages = [];
+      exportTileSet.tiles.forEach((tile, index) => {
+        if (!tile.image) return;
+        const tileOpacity = index === onlyTileIndex ? 1 : 0;
+        tile.image.setOpacity(tileOpacity);
+        tile.image.resetCroppingPolygons();
+        if (tileOpacity > 0) activeTileImages.push(tile.image);
+      });
+      exportViewer.forceRedraw();
+    }
     await waitForExportViewerReady(exportViewer, activeTileImages, {
       outputPixels: exportSize.width * exportSize.height,
     });
@@ -9102,7 +9139,13 @@ if (
     }
   );
   transformRasterCustomExpression?.addEventListener("beforeinput", function (event) {
-    event.preventDefault();
+    if (!isAllowedRasterExpressionKeyboardInput(event)) {
+      event.preventDefault();
+    }
+  });
+  transformRasterCustomExpression?.addEventListener("input", function () {
+    transformRasterCustomExpression.dataset.userEdited = "true";
+    updateTransformAdvancedExpressionStatus();
   });
   transformRasterCustomExpression?.addEventListener("paste", function (event) {
     event.preventDefault();
@@ -10500,6 +10543,15 @@ function setRasterCalculatorExpression(value) {
   transformRasterCustomExpression.dataset.userEdited = "true";
 }
 
+function isAllowedRasterExpressionKeyboardInput(event) {
+  if (!event || event.isComposing) return false;
+  if (event.inputType && event.inputType.startsWith("delete")) {
+    return true;
+  }
+  if (event.inputType && event.inputType !== "insertText") return false;
+  return /^[0-9+\-*/().,\s]+$/.test(event.data || "");
+}
+
 function focusRasterCalculatorExpression(start = null, end = null) {
   if (!transformRasterCustomExpression) return;
   transformRasterCustomExpression.focus();
@@ -10933,7 +10985,7 @@ function evaluateRasterExpressionAstNode(
         if (Object.prototype.hasOwnProperty.call(aggregateValues, aggregateKey)) {
           return aggregateValues[aggregateKey];
         }
-        throw new Error(`${node.name}(${getRasterVariableKey(variableNode)}) is a stack aggregate and is not wired yet.`);
+        throw new Error(`${node.name}(${getRasterVariableKey(variableNode)}) stack data is not available.`);
       }
 
       if (node.name === "abs") {
@@ -10997,6 +11049,66 @@ function evaluateTransformRasterExpressionAtPixel(
   }
 }
 
+function getRasterAggregateValuesForPixel(plan, aggregateInputMap, pixelOffset) {
+  const values = {};
+  const groupedInputs = new Map();
+  (plan.aggregateInputs || []).forEach((input) => {
+    const existing = groupedInputs.get(input.key);
+    if (existing) {
+      existing.functions.add(input.functionName);
+    } else {
+      groupedInputs.set(input.key, {
+        ...input,
+        functions: new Set([input.functionName]),
+      });
+    }
+  });
+
+  groupedInputs.forEach((input) => {
+    const stack = aggregateInputMap?.[input.key] || [];
+    if (!stack.length) return;
+
+    let min = Infinity;
+    let max = -Infinity;
+    let sum = 0;
+    let count = 0;
+    stack.forEach((imageData) => {
+      const pixels = imageData?.data || imageData;
+      if (!pixels) return;
+      const value = getChannelScalarValue(
+        pixels,
+        pixelOffset,
+        TRANSFORM_RASTER_CHANNELS[input.channel]
+      );
+      if (!Number.isFinite(value)) return;
+      min = Math.min(min, value);
+      max = Math.max(max, value);
+      sum += value;
+      count += 1;
+    });
+
+    if (count === 0) return;
+    for (const functionName of input.functions) {
+      const aggregateKey = `${functionName}:${input.key}`;
+      switch (functionName) {
+        case "range":
+          values[aggregateKey] = max - min;
+          break;
+        case "max":
+          values[aggregateKey] = max;
+          break;
+        case "min":
+          values[aggregateKey] = min;
+          break;
+        case "mean":
+          values[aggregateKey] = sum / count;
+          break;
+      }
+    }
+  });
+  return values;
+}
+
 function runTransformRasterEvaluatorSelfCheck() {
   const inputMap = {
     A: { data: new Uint8ClampedArray([100, 40, 20, 255]) },
@@ -11021,18 +11133,45 @@ function runTransformRasterEvaluatorSelfCheck() {
       error: result.error || "",
     };
   });
-  const aggregateAst = parseRasterExpressionAst("range(A.l)");
-  const aggregateResult = evaluateTransformRasterExpressionAtPixel(
-    aggregateAst,
-    inputMap,
+  const aggregatePlan = {
+    aggregateInputs: ["range", "max", "min", "mean"].map((functionName) => ({
+      functionName,
+      key: "A.l",
+      channel: "l",
+    })),
+  };
+  const aggregateValues = getRasterAggregateValuesForPixel(
+    aggregatePlan,
+    {
+      "A.l": [
+        { data: new Uint8ClampedArray([10, 10, 10, 255]) },
+        { data: new Uint8ClampedArray([40, 40, 40, 255]) },
+        { data: new Uint8ClampedArray([70, 70, 70, 255]) },
+      ],
+    },
     0
   );
-  results.push({
-    expression: "range(A.l)",
-    expected: "unresolved aggregate",
-    actual: aggregateResult.error || aggregateResult.value,
-    passed: !aggregateResult.ok,
-    error: aggregateResult.error || "",
+  [
+    ["range(A.l)", 60],
+    ["max(A.l)", 70],
+    ["min(A.l)", 10],
+    ["mean(A.l)", 40],
+    ["A.r - mean(A.l)", 60],
+  ].forEach(([expression, expected]) => {
+    const ast = parseRasterExpressionAst(expression);
+    const result = evaluateTransformRasterExpressionAtPixel(
+      ast,
+      inputMap,
+      0,
+      aggregateValues
+    );
+    results.push({
+      expression,
+      expected,
+      actual: result.value,
+      passed: result.ok && Math.abs(result.value - expected) <= 0.000001,
+      error: result.error || "",
+    });
   });
   return {
     passed: results.every((result) => result.passed),
@@ -11047,6 +11186,8 @@ if (typeof window !== "undefined") {
 
 function getTransformAdvancedExpressionStatus(plan) {
   if (!plan.valid) return plan.errors[0] || "Expression is not valid.";
+  const aggregateWarning = getTransformAggregateWarning(plan);
+  if (aggregateWarning) return aggregateWarning;
   const visibleCount = plan.visibleInputs.length;
   const aggregateCount = plan.aggregateInputs.length;
   const degenerateCount = plan.aggregateInputs.filter(
@@ -11062,6 +11203,27 @@ function getTransformAdvancedExpressionStatus(plan) {
   return `Expression valid: ${details.join(", ")}.`;
 }
 
+function getTransformAggregateWarning(plan) {
+  if (!plan?.valid || !plan.aggregateInputs?.length) return "";
+  const degenerateRangeInput = plan.aggregateInputs.find(
+    (input) => input.functionName === "range" && input.degenerate
+  );
+  if (!degenerateRangeInput) return "";
+
+  const alternative = getRasterInputTileSetEntries().find(
+    (entry) =>
+      entry.symbol !== degenerateRangeInput.set &&
+      (entry.tileSet?.tiles?.length || 0) > 1
+  );
+  const source = `${degenerateRangeInput.set}.${degenerateRangeInput.channel}`;
+  const imageCount = Math.max(0, degenerateRangeInput.tileCount || 0);
+  const countLabel = `${imageCount} image${imageCount === 1 ? "" : "s"}`;
+  if (alternative) {
+    return `${source} has ${countLabel}; range(${source}) will be 0. Try ${alternative.symbol}.${degenerateRangeInput.channel}.`;
+  }
+  return `${source} has ${countLabel}; range(${source}) will be 0.`;
+}
+
 function updateTransformAdvancedExpressionStatus() {
   if (!isRasterRecipe(getTransformOptionsFromControls())) return null;
   const plan = getTransformAdvancedExpressionPlan();
@@ -11074,7 +11236,7 @@ function updateTransformAdvancedExpressionStatus() {
 
 function planHasRenderableAdvancedExpression() {
   const plan = getTransformAdvancedExpressionPlan();
-  return Boolean(plan.valid && !plan.needsSourceStacks);
+  return Boolean(plan.valid);
 }
 
 function getAdvancedVisibleInputPreloadTileSetIndices() {
@@ -11083,9 +11245,12 @@ function getAdvancedVisibleInputPreloadTileSetIndices() {
     const transform = getTileSetTransform(tileSet);
     if (!isRasterRecipe(transform)) return;
     const plan = getTransformAdvancedExpressionPlan(transform.rasterExpression);
-    if (!plan.valid || plan.needsSourceStacks) return;
+    if (!plan.valid) return;
     indices.add(tileSetIndex);
     plan.visibleInputs.forEach((input) => {
+      if (input.tileSetIndex >= 0) indices.add(input.tileSetIndex);
+    });
+    plan.aggregateInputs.forEach((input) => {
       if (input.tileSetIndex >= 0) indices.add(input.tileSetIndex);
     });
   });
@@ -11143,13 +11308,6 @@ function applyRasterCalculatorPreview() {
   const tileSet = tileSets()[getSelectedTransformTileSetIndex()];
   const plan = updateTransformAdvancedExpressionStatus();
   if (!tileSet || !plan?.valid) {
-    return;
-  }
-  if (plan.needsSourceStacks) {
-    setTransformStatus(
-      "Stack aggregate rendering is not connected yet.",
-      "error"
-    );
     return;
   }
 
@@ -11274,8 +11432,8 @@ function renderTransformHistogram() {
   }
 
   const transform = getTransformOptionsFromControls();
-  const outputRequestsRgb =
-    transform.output === "rgb" || transform.output === "falseColor";
+  const outputRequestsRgb = transform.output === "rgb";
+  const forceScalarHistogram = transform.output === "falseColor";
   const rgbBins = [
     new Uint32Array(256),
     new Uint32Array(256),
@@ -11338,7 +11496,7 @@ function renderTransformHistogram() {
     drawTransformHistogramAxisLabels(context, width, height);
     return;
   }
-  const drawRgb = outputRequestsRgb || hasColorSamples;
+  const drawRgb = !forceScalarHistogram && (outputRequestsRgb || hasColorSamples);
   if (drawRgb) {
     drawTransformHistogramSeries(context, rgbBins[0], width, height, "rgba(220, 50, 47, 0.42)");
     drawTransformHistogramSeries(context, rgbBins[1], width, height, "rgba(30, 160, 80, 0.42)");
@@ -11457,7 +11615,10 @@ function updateTransformPreviewProgress(stats) {
   if (getTransformMode() !== "preview" || transformGenerationRunning) return;
   const total = Math.max(0, stats?.total || stats?.processed || 0);
   const processed = Math.max(0, stats?.processed || 0);
-  const missing = Math.max(0, stats?.missingRasterInputs || 0);
+  const missing = Math.max(
+    0,
+    stats?.missingAdvancedInputs || stats?.missingRasterInputs || 0
+  );
   if (total === 0) {
     setTransformProgress(8, "Waiting for source tiles...");
     return;
@@ -11688,7 +11849,7 @@ function updateTransformControls() {
       "Preview transform is hidden.",
       "Source tile set is not currently selected.",
       "Generate a derived DZI from the current transform settings.",
-      "Advanced Transform controls are inactive.",
+      "Transform Calculator controls are inactive.",
     ]);
     if (defaultStatuses.has(transformStatus?.textContent || "")) {
       if (rasterRecipe) {
@@ -11946,9 +12107,6 @@ async function applyAdvancedTransformToExportContext(
   if (!plan.valid) {
     throw new Error(plan.errors[0] || "Advanced expression is not valid.");
   }
-  if (plan.needsSourceStacks) {
-    throw new Error("Stack aggregate export is not connected yet.");
-  }
   if (!plan.ast) {
     throw new Error("Advanced expression could not be parsed.");
   }
@@ -11957,6 +12115,7 @@ async function applyAdvancedTransformToExportContext(
   const height = context.canvas.height;
   const outputImageData = context.getImageData(0, 0, width, height);
   const inputMap = {};
+  const aggregateInputMap = {};
 
   for (const input of plan.visibleInputs) {
     if (inputMap[input.set]) continue;
@@ -11983,6 +12142,40 @@ async function applyAdvancedTransformToExportContext(
     await wait(0);
   }
 
+  for (const input of plan.aggregateInputs) {
+    if (aggregateInputMap[input.key]) continue;
+    if (input.tileSetIndex < 0) {
+      throw new Error(`${input.set} is not an available tile set.`);
+    }
+    const sourceTileSet = tileSets()[input.tileSetIndex];
+    const stack = [];
+    for (let tileIndex = 0; tileIndex < (sourceTileSet?.tiles || []).length; tileIndex += 1) {
+      const inputCanvas = await renderFullResolutionImageRectCanvas(
+        imageRect,
+        input.tileSetIndex,
+        scale,
+        { tileIndex }
+      );
+      const inputContext = inputCanvas.getContext("2d", {
+        willReadFrequently: true,
+      });
+      const inputImageData = getContextImageDataMatchingSize(
+        inputContext,
+        width,
+        height
+      );
+      if (!inputImageData) {
+        throw new Error(`Could not render ${input.set} image ${tileIndex + 1} for export.`);
+      }
+      stack.push(inputImageData);
+      await wait(0);
+    }
+    if (!stack.length) {
+      throw new Error(`${input.set} does not contain images for stack aggregation.`);
+    }
+    aggregateInputMap[input.key] = stack;
+  }
+
   const output = outputImageData.data;
   const values = new Float32Array(output.length / 4);
   let minValue = Infinity;
@@ -11996,7 +12189,8 @@ async function applyAdvancedTransformToExportContext(
     const result = evaluateTransformRasterExpressionAtPixel(
       plan.ast,
       inputMap,
-      offset
+      offset,
+      getRasterAggregateValuesForPixel(plan, aggregateInputMap, offset)
     );
     if (!result.ok) {
       throw new Error(result.error || "Advanced expression could not be evaluated.");
@@ -12046,10 +12240,6 @@ async function generateTransformedTileSet() {
     const plan = getTransformAdvancedExpressionPlan(transform.rasterExpression);
     if (!plan.valid) {
       setTransformStatus(plan.errors[0] || "Advanced expression is not valid.", "error");
-      return;
-    }
-    if (plan.needsSourceStacks) {
-      setTransformStatus("Stack aggregate export is not connected yet.", "error");
       return;
     }
   }
@@ -12739,6 +12929,29 @@ function findLoadedTileByCoordinates(tileSet, coordinates) {
   return null;
 }
 
+function findTileEntryForLoadedTile(tileSet, loadedTile) {
+  if (!tileSet || !loadedTile) return null;
+  for (const tile of tileSet.tiles || []) {
+    const matrix = tile.image?.tilesMatrix;
+    if (!matrix) continue;
+    for (const [level, columns] of Object.entries(matrix)) {
+      for (const [x, rows] of Object.entries(columns || {})) {
+        for (const [y, tileEntry] of Object.entries(rows || {})) {
+          if (tileEntry !== loadedTile) continue;
+          const coordinates = {
+            level: Number.parseInt(level, 10),
+            x: Number.parseInt(x, 10),
+            y: Number.parseInt(y, 10),
+          };
+          loadedTile.petroImageTileCoordinates = coordinates;
+          return { tile, coordinates };
+        }
+      }
+    }
+  }
+  return null;
+}
+
 function getContextImageDataMatchingSize(context, width, height) {
   if (!context?.canvas) return null;
   if (context.canvas.width === width && context.canvas.height === height) {
@@ -12762,7 +12975,7 @@ function mapAdvancedRasterValue(value, transform, minValue, maxValue) {
   if (transform.rasterNormalize || transform.rasterScale === "auto") {
     const span = maxValue - minValue;
     if (!Number.isFinite(span) || Math.abs(span) <= 0.0000001) {
-      return 0;
+      return value;
     }
     return ((value - minValue) / span) * 255;
   }
@@ -12793,7 +13006,7 @@ function applyAdvancedVisibleTransformToContext(
   outputTileSet
 ) {
   const plan = getTransformAdvancedExpressionPlan(transform.rasterExpression);
-  if (!plan.valid || plan.needsSourceStacks || !plan.ast) {
+  if (!plan.valid || !plan.ast) {
     context.petroImageAdvancedTransformError =
       plan.errors[0] || "Advanced expression is not renderable yet.";
     return false;
@@ -12803,10 +13016,11 @@ function applyAdvancedVisibleTransformToContext(
   const height = context.canvas.height;
   const imageData = context.getImageData(0, 0, width, height);
   const inputMap = {};
+  const aggregateInputMap = {};
   const outputTileSetIndex = tileSets().indexOf(outputTileSet);
-  const needsMatchedTile = plan.visibleInputs.some(
-    (input) => input.tileSetIndex !== outputTileSetIndex
-  );
+  const needsMatchedTile =
+    plan.aggregateInputs.length > 0 ||
+    plan.visibleInputs.some((input) => input.tileSetIndex !== outputTileSetIndex);
   const coordinates = needsMatchedTile
     ? getLoadedTileCoordinates(loadedTile)
     : null;
@@ -12838,6 +13052,37 @@ function applyAdvancedVisibleTransformToContext(
     inputMap[input.set] = inputImageData;
   }
 
+  for (const input of plan.aggregateInputs) {
+    if (aggregateInputMap[input.key]) continue;
+    const entry = getRasterInputEntry(input.set);
+    if (!entry?.tileSet || !coordinates) {
+      context.petroImageAdvancedMissingInput = true;
+      return false;
+    }
+    const stack = [];
+    for (const tile of entry.tileSet.tiles || []) {
+      const matchingTile = findLoadedTileByCoordinatesInTile(tile, coordinates);
+      const inputContext = matchingTile
+        ? getOriginalContextForLoadedTile(matchingTile)
+        : null;
+      const inputImageData = getContextImageDataMatchingSize(
+        inputContext,
+        width,
+        height
+      );
+      if (!inputImageData) {
+        context.petroImageAdvancedMissingInput = true;
+        return false;
+      }
+      stack.push(inputImageData);
+    }
+    if (!stack.length) {
+      context.petroImageAdvancedMissingInput = true;
+      return false;
+    }
+    aggregateInputMap[input.key] = stack;
+  }
+
   const output = imageData.data;
   const values = new Float32Array(output.length / 4);
   let minValue = Infinity;
@@ -12850,7 +13095,8 @@ function applyAdvancedVisibleTransformToContext(
     const result = evaluateTransformRasterExpressionAtPixel(
       plan.ast,
       inputMap,
-      offset
+      offset,
+      getRasterAggregateValuesForPixel(plan, aggregateInputMap, offset)
     );
     if (!result.ok) {
       context.petroImageAdvancedTransformError = result.error;
@@ -12986,6 +13232,100 @@ function createAdvancedPendingTileContext(width, height) {
   return context;
 }
 
+function getStableProcessedContextForLoadedTile(loadedTile) {
+  const cachedContext = loadedTile?.petroImageProcessedContext?.context;
+  if (
+    cachedContext?.canvas &&
+    !cachedContext.petroImageAdvancedMissingInput &&
+    !cachedContext.canvas?.petroImageAdvancedMissingInput &&
+    !cachedContext.petroImageAdvancedTransformError
+  ) {
+    return cachedContext;
+  }
+  const context = loadedTile?.context2D;
+  if (
+    context?.canvas &&
+    context.petroImageGeneratedPreviewContext &&
+    !context.petroImageAdvancedMissingInput &&
+    !context.canvas?.petroImageAdvancedMissingInput &&
+    !context.petroImageAdvancedTransformError
+  ) {
+    return context;
+  }
+  return null;
+}
+
+function createLowerResolutionTransformFallbackContext(
+  outputTileSet,
+  loadedTile,
+  width,
+  height
+) {
+  const entry = findTileEntryForLoadedTile(outputTileSet, loadedTile);
+  const coordinates = entry?.coordinates || getLoadedTileCoordinates(loadedTile);
+  if (!entry?.tile || !coordinates || coordinates.level <= 0) return null;
+
+  let parentCoordinates = {
+    level: coordinates.level - 1,
+    x: Math.floor(coordinates.x / 2),
+    y: Math.floor(coordinates.y / 2),
+  };
+  while (parentCoordinates.level >= 0) {
+    const parentTile = findLoadedTileByCoordinatesInTile(
+      entry.tile,
+      parentCoordinates
+    );
+    const parentContext = getStableProcessedContextForLoadedTile(parentTile);
+    if (parentContext?.canvas) {
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const context = canvas.getContext("2d", {
+        alpha: false,
+        willReadFrequently: true,
+      });
+      if (!context) return null;
+
+      const levelDelta = coordinates.level - parentCoordinates.level;
+      const scale = 2 ** levelDelta;
+      const xInParent = coordinates.x - parentCoordinates.x * scale;
+      const yInParent = coordinates.y - parentCoordinates.y * scale;
+      const sourceWidth = parentContext.canvas.width / scale;
+      const sourceHeight = parentContext.canvas.height / scale;
+      context.imageSmoothingEnabled = true;
+      context.drawImage(
+        parentContext.canvas,
+        xInParent * sourceWidth,
+        yInParent * sourceHeight,
+        sourceWidth,
+        sourceHeight,
+        0,
+        0,
+        width,
+        height
+      );
+      context.petroImageGeneratedPreviewContext = true;
+      context.petroImageAdvancedMissingInput = true;
+      context.petroImageLowerResolutionFallbackContext = true;
+      if (context.canvas) {
+        context.canvas.petroImageGeneratedPreviewContext = true;
+        context.canvas.petroImageAdvancedMissingInput = true;
+        context.canvas.petroImageLowerResolutionFallbackContext = true;
+      }
+      markContextAsOpaqueTileContext(context);
+      return context;
+    }
+
+    parentCoordinates = {
+      level: parentCoordinates.level - 1,
+      x: Math.floor(parentCoordinates.x / 2),
+      y: Math.floor(parentCoordinates.y / 2),
+    };
+  }
+
+  return null;
+}
+
 function createProcessedTileContext(
   sourceContext,
   appearance,
@@ -13010,10 +13350,23 @@ function createProcessedTileContext(
     );
   }
   if (context.petroImageAdvancedMissingInput) {
-    return createAdvancedPendingTileContext(
+    const fallbackContext = createLowerResolutionTransformFallbackContext(
+      outputTileSet,
+      loadedTile,
       context.canvas.width,
       context.canvas.height
     );
+    if (fallbackContext) {
+      return fallbackContext;
+    }
+    context.petroImageGeneratedPreviewContext = true;
+    context.petroImageAdvancedMissingInput = true;
+    if (context.canvas) {
+      context.canvas.petroImageGeneratedPreviewContext = true;
+      context.canvas.petroImageAdvancedMissingInput = true;
+    }
+    markContextAsOpaqueTileContext(context);
+    return context;
   }
   context.petroImageGeneratedPreviewContext = true;
   if (context.canvas) {
@@ -13209,9 +13562,7 @@ function processLoadedTileForPreview(tileSet, tiledImage, loadedTile, sourceData
   ) {
     const changed = loadedTile.context2D !== adjustedContext;
     loadedTile.context2D = adjustedContext;
-    loadedTile.hasTransparency = Boolean(
-      adjustedContext.petroImageAdvancedMissingInput
-    );
+    loadedTile.hasTransparency = false;
     return changed;
   }
 
@@ -13277,8 +13628,8 @@ function scheduleAdvancedVisibleTransformDependents(loadedTileSet) {
     const transform = getTileSetTransform(tileSet);
     if (!isRasterRecipe(transform)) return;
     const plan = getTransformAdvancedExpressionPlan(transform.rasterExpression);
-    if (!plan.valid || plan.needsSourceStacks) return;
-    const usesLoadedTileSet = plan.visibleInputs.some(
+    if (!plan.valid) return;
+    const usesLoadedTileSet = [...plan.visibleInputs, ...plan.aggregateInputs].some(
       (input) => input.tileSetIndex === loadedTileSetIndex
     );
     if (usesLoadedTileSet) {
@@ -13346,9 +13697,7 @@ function processLoadedTileForScheduledReprocess(
     adjustedContext.petroImageAdvancedTransformError
   ) {
     loadedTile.context2D = adjustedContext;
-    loadedTile.hasTransparency = Boolean(
-      adjustedContext.petroImageAdvancedMissingInput
-    );
+    loadedTile.hasTransparency = false;
     if (adjustedContext.petroImageAdvancedMissingInput) {
       stats.missingAdvancedInputs += 1;
     }
@@ -13361,6 +13710,13 @@ function processLoadedTileForScheduledReprocess(
 
   loadedTile.context2D = adjustedContext;
   loadedTile.hasTransparency = false;
+  if (adjustedContext.petroImageAdvancedRawValues?.length) {
+    for (const value of adjustedContext.petroImageAdvancedRawValues) {
+      if (!Number.isFinite(value)) continue;
+      stats.advancedRawMin = Math.min(stats.advancedRawMin, value);
+      stats.advancedRawMax = Math.max(stats.advancedRawMax, value);
+    }
+  }
   stats.processed += 1;
 }
 
@@ -13379,17 +13735,38 @@ function updateTransformPreviewAfterReprocess(tileSet, stats) {
     clearTransformProgress();
   }
 
+  const transform = getTileSetTransform(tileSet);
+  const plan = isRasterRecipe(transform)
+    ? getTransformAdvancedExpressionPlan(transform.rasterExpression)
+    : null;
+  const aggregateWarning = getTransformAggregateWarning(plan);
+  const rawMin = Number.isFinite(stats.advancedRawMin) ? stats.advancedRawMin : null;
+  const rawMax = Number.isFinite(stats.advancedRawMax) ? stats.advancedRawMax : null;
+
   if (stats.contextMessage) {
     setTransformStatus(stats.contextMessage, "error");
   } else if (stats.missingAdvancedInputs > 0) {
     setTransformStatus(
-      `Waiting for visible input tiles... ${stats.missingAdvancedInputs} pending`,
+      `Waiting for source stack tiles... ${stats.missingAdvancedInputs} pending`,
       ""
+    );
+  } else if (aggregateWarning) {
+    setTransformStatus(aggregateWarning, "");
+  } else if (
+    isRasterRecipe(transform) &&
+    rawMin !== null &&
+    rawMax !== null &&
+    Math.abs(rawMax - rawMin) <= 0.0000001
+  ) {
+    setTransformStatus(
+      `Preview applied. Raw output is constant ${formatTransformTooltipNumber(rawMin)}.`,
+      "ok"
     );
   } else if (
     transformStatus?.textContent === "Processing preview..." ||
     transformStatus?.textContent === "Waiting for source tiles..." ||
-    transformStatus?.textContent?.startsWith("Waiting for visible input tiles...")
+    transformStatus?.textContent?.startsWith("Waiting for visible input tiles...") ||
+    transformStatus?.textContent?.startsWith("Waiting for source stack tiles...")
   ) {
     const idleStatus = getTransformPreviewIdleStatus(tileSet);
     setTransformStatus(idleStatus, "ok");
@@ -13416,6 +13793,8 @@ async function reprocessLoadedTileSetTilesAsync(tileSet, token) {
     processed: 0,
     missingAdvancedInputs: 0,
     contextMessage: "",
+    advancedRawMin: Infinity,
+    advancedRawMax: -Infinity,
   };
 
   for (let index = 0; index < loadedTiles.length; index += 1) {
@@ -32744,6 +33123,18 @@ function closeClassifyHelpDialog() {
   classifyHelpButton?.setAttribute("aria-expanded", "false");
 }
 
+function closeTransformImageryHelpDialog() {
+  if (!transformImageryHelpDialog) return;
+  transformImageryHelpDialog.hidden = true;
+  transformImageryHelpButton?.setAttribute("aria-expanded", "false");
+}
+
+function closePorosityHelpDialog() {
+  if (!porosityHelpDialog) return;
+  porosityHelpDialog.hidden = true;
+  porosityHelpButton?.setAttribute("aria-expanded", "false");
+}
+
 function openControlsHelpDialog(button = controlsHelpButton) {
   if (!controlsHelpDialog || !button) return;
   if (controlsHelpDialog.parentElement !== document.body) {
@@ -32791,6 +33182,52 @@ function openClassifyHelpDialog(button = classifyHelpButton) {
   classifyHelpDialog.style.top = `${Math.max(margin, top)}px`;
 }
 
+function openTransformImageryHelpDialog(button = transformImageryHelpButton) {
+  if (!transformImageryHelpDialog || !button) return;
+  if (transformImageryHelpDialog.parentElement !== document.body) {
+    document.body.appendChild(transformImageryHelpDialog);
+  }
+  transformImageryHelpDialog.hidden = false;
+  transformImageryHelpButton?.setAttribute("aria-expanded", "true");
+
+  const buttonRect = button.getBoundingClientRect();
+  const dialogRect = transformImageryHelpDialog.getBoundingClientRect();
+  const margin = 8;
+  const left = Math.min(
+    Math.max(buttonRect.right - dialogRect.width, margin),
+    window.innerWidth - dialogRect.width - margin
+  );
+  const top = Math.min(
+    Math.max(buttonRect.bottom + 4, margin),
+    window.innerHeight - dialogRect.height - margin
+  );
+  transformImageryHelpDialog.style.left = `${Math.max(margin, left)}px`;
+  transformImageryHelpDialog.style.top = `${Math.max(margin, top)}px`;
+}
+
+function openPorosityHelpDialog(button = porosityHelpButton) {
+  if (!porosityHelpDialog || !button) return;
+  if (porosityHelpDialog.parentElement !== document.body) {
+    document.body.appendChild(porosityHelpDialog);
+  }
+  porosityHelpDialog.hidden = false;
+  porosityHelpButton?.setAttribute("aria-expanded", "true");
+
+  const buttonRect = button.getBoundingClientRect();
+  const dialogRect = porosityHelpDialog.getBoundingClientRect();
+  const margin = 8;
+  const left = Math.min(
+    Math.max(buttonRect.right - dialogRect.width, margin),
+    window.innerWidth - dialogRect.width - margin
+  );
+  const top = Math.min(
+    Math.max(buttonRect.bottom + 4, margin),
+    window.innerHeight - dialogRect.height - margin
+  );
+  porosityHelpDialog.style.left = `${Math.max(margin, left)}px`;
+  porosityHelpDialog.style.top = `${Math.max(margin, top)}px`;
+}
+
 function toggleControlsHelpDialog(button = controlsHelpButton) {
   if (!controlsHelpDialog || controlsHelpDialog.hidden) {
     openControlsHelpDialog(button);
@@ -32804,6 +33241,22 @@ function toggleClassifyHelpDialog(button = classifyHelpButton) {
     openClassifyHelpDialog(button);
   } else {
     closeClassifyHelpDialog();
+  }
+}
+
+function toggleTransformImageryHelpDialog(button = transformImageryHelpButton) {
+  if (!transformImageryHelpDialog || transformImageryHelpDialog.hidden) {
+    openTransformImageryHelpDialog(button);
+  } else {
+    closeTransformImageryHelpDialog();
+  }
+}
+
+function togglePorosityHelpDialog(button = porosityHelpButton) {
+  if (!porosityHelpDialog || porosityHelpDialog.hidden) {
+    openPorosityHelpDialog(button);
+  } else {
+    closePorosityHelpDialog();
   }
 }
 
@@ -37647,6 +38100,27 @@ classifyHelpDialog?.addEventListener("click", function (event) {
 });
 makeFixedElementDraggable(classifyHelpDialog, classifyHelpHeader);
 closeClassifyHelpButton?.addEventListener("click", closeClassifyHelpDialog);
+transformImageryHelpButton?.addEventListener("click", function (event) {
+  event.stopPropagation();
+  toggleTransformImageryHelpDialog(event.currentTarget);
+});
+transformImageryHelpDialog?.addEventListener("click", function (event) {
+  event.stopPropagation();
+});
+makeFixedElementDraggable(transformImageryHelpDialog, transformImageryHelpHeader);
+closeTransformImageryHelpButton?.addEventListener(
+  "click",
+  closeTransformImageryHelpDialog
+);
+porosityHelpButton?.addEventListener("click", function (event) {
+  event.stopPropagation();
+  togglePorosityHelpDialog(event.currentTarget);
+});
+porosityHelpDialog?.addEventListener("click", function (event) {
+  event.stopPropagation();
+});
+makeFixedElementDraggable(porosityHelpDialog, porosityHelpHeader);
+closePorosityHelpButton?.addEventListener("click", closePorosityHelpDialog);
 annotateHelpButton?.addEventListener("click", function (event) {
   event.stopPropagation();
   toggleAnnotateHelpDialog(event.currentTarget);
@@ -37978,6 +38452,18 @@ window.addEventListener("click", function (event) {
     closeClassifyHelpDialog();
   }
   if (
+    !event.target.closest("#transformImageryHelpButton") &&
+    !event.target.closest("#transformImageryHelpDialog")
+  ) {
+    closeTransformImageryHelpDialog();
+  }
+  if (
+    !event.target.closest("#porosityHelpButton") &&
+    !event.target.closest("#porosityHelpDialog")
+  ) {
+    closePorosityHelpDialog();
+  }
+  if (
     !event.target.closest("#annotateHelpButton") &&
     !event.target.closest("#annotateHelpDialog")
   ) {
@@ -37994,6 +38480,8 @@ document.addEventListener(
         (annotateHelpDialog?.hidden ?? true) &&
         (controlsHelpDialog?.hidden ?? true) &&
         (classifyHelpDialog?.hidden ?? true) &&
+        (transformImageryHelpDialog?.hidden ?? true) &&
+        (porosityHelpDialog?.hidden ?? true) &&
         (measureScaleAuditPopover?.hidden ?? true) &&
         (measureHelpDialog?.hidden ?? true) &&
         measureHistogramMenu?.hidden &&
@@ -38010,6 +38498,8 @@ document.addEventListener(
     closeAnnotateHelpDialog();
     closeControlsHelpDialog();
     closeClassifyHelpDialog();
+    closeTransformImageryHelpDialog();
+    closePorosityHelpDialog();
     closeMeasureScaleAuditPopover();
     closeMeasureHelpDialog();
     closeMeasureHistogramMenu();

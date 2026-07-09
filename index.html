@@ -472,30 +472,6 @@
           hidden
         >
           <button
-            id="openGridCountPaletteButton"
-            class="electron-action-item"
-            type="button"
-            role="menuitem"
-            hidden
-          >
-            <span class="electron-action-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24">
-                <path d="M7 5v4" />
-                <path d="M5 7h4" />
-                <path d="M17 5v4" />
-                <path d="M15 7h4" />
-                <path d="M7 15v4" />
-                <path d="M5 17h4" />
-                <path d="M17 15v4" />
-                <path d="M15 17h4" />
-              </svg>
-            </span>
-            <span>
-              <span class="electron-action-title">Grid &amp; Count</span>
-              <span class="electron-action-description">Create grids and point counts</span>
-            </span>
-          </button>
-          <button
             id="openMeasurePaletteButton"
             class="electron-action-item"
             type="button"
@@ -537,6 +513,30 @@
             </span>
           </button>
           <button
+            id="openGridCountPaletteButton"
+            class="electron-action-item"
+            type="button"
+            role="menuitem"
+            hidden
+          >
+            <span class="electron-action-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <path d="M7 5v4" />
+                <path d="M5 7h4" />
+                <path d="M17 5v4" />
+                <path d="M15 7h4" />
+                <path d="M7 15v4" />
+                <path d="M5 17h4" />
+                <path d="M17 15v4" />
+                <path d="M15 17h4" />
+              </svg>
+            </span>
+            <span>
+              <span class="electron-action-title">Grid &amp; Count</span>
+              <span class="electron-action-description">Create grids and point counts</span>
+            </span>
+          </button>
+          <button
             id="openSnapshotPaletteButton"
             class="electron-action-item"
             type="button"
@@ -552,49 +552,6 @@
             <span>
               <span class="electron-action-title">Snapshot</span>
               <span class="electron-action-description">Export an image crop</span>
-            </span>
-          </button>
-          <button
-            id="openTransformImageryPaletteButton"
-            class="electron-action-item"
-            type="button"
-            role="menuitem"
-            hidden
-          >
-            <span class="electron-action-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24">
-                <path d="M4 5h16v14H4z" />
-                <path d="M8 9h8" />
-                <path d="M8 15h8" />
-                <path d="M10 7v4" />
-                <path d="M14 13v4" />
-              </svg>
-            </span>
-            <span>
-              <span class="electron-action-title">Transform Imagery</span>
-              <span class="electron-action-description">Preview filters and create tile sets</span>
-            </span>
-          </button>
-          <button
-            id="openPorosityEstimatorButton"
-            class="electron-action-item"
-            type="button"
-            role="menuitem"
-            hidden
-          >
-            <span class="electron-action-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24">
-                <rect x="4" y="5" width="16" height="14" rx="1.5" />
-                <circle cx="9" cy="10" r="1.5" />
-                <circle cx="14.5" cy="12.5" r="1.75" />
-                <circle cx="10.5" cy="16" r="1.25" />
-                <path d="M17 7.5h1.5" />
-                <path d="M17 16.5h1.5" />
-              </svg>
-            </span>
-            <span>
-              <span class="electron-action-title">Porosity Estimator</span>
-              <span class="electron-action-description">Estimate pore-color area in an AOI</span>
             </span>
           </button>
           <button
@@ -616,6 +573,49 @@
             <span>
               <span class="electron-action-title">Segment</span>
               <span class="electron-action-description">Automatically digitize features</span>
+            </span>
+          </button>
+          <button
+            id="openTransformImageryPaletteButton"
+            class="electron-action-item"
+            type="button"
+            role="menuitem"
+            hidden
+          >
+            <span class="electron-action-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <path d="M4 5h16v14H4z" />
+                <path d="M8 9h8" />
+                <path d="M8 15h8" />
+                <path d="M10 7v4" />
+                <path d="M14 13v4" />
+              </svg>
+            </span>
+            <span>
+              <span class="electron-action-title">Transform Imagery <span class="beta-badge">βeta</span></span>
+              <span class="electron-action-description">Preview filters and create tile sets</span>
+            </span>
+          </button>
+          <button
+            id="openPorosityEstimatorButton"
+            class="electron-action-item"
+            type="button"
+            role="menuitem"
+            hidden
+          >
+            <span class="electron-action-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <rect x="4" y="5" width="16" height="14" rx="1.5" />
+                <circle cx="9" cy="10" r="1.5" />
+                <circle cx="14.5" cy="12.5" r="1.75" />
+                <circle cx="10.5" cy="16" r="1.25" />
+                <path d="M17 7.5h1.5" />
+                <path d="M17 16.5h1.5" />
+              </svg>
+            </span>
+            <span>
+              <span class="electron-action-title">Estimate Porosity <span class="beta-badge">βeta</span></span>
+              <span class="electron-action-description">Estimate pore-color area in an AOI</span>
             </span>
           </button>
           <button
@@ -1197,6 +1197,16 @@
           <h2 id="transformImageryPaletteTitle">Transform Imagery</h2>
           <div class="tool-palette-header-actions">
             <button
+              id="transformImageryHelpButton"
+              class="tool-palette-help"
+              type="button"
+              aria-label="Transform Imagery help"
+              aria-expanded="false"
+              title="Help"
+            >
+              <span aria-hidden="true">?</span>
+            </button>
+            <button
               id="minimizeTransformImageryPaletteButton"
               class="tool-palette-minimize"
               type="button"
@@ -1241,7 +1251,7 @@
                 name="transformImageryRecipe"
                 value="raster"
               />
-              <span>Advanced Transform</span>
+              <span>Transform Calculator</span>
             </label>
           </div>
           <label class="snapshot-field">
@@ -1481,6 +1491,39 @@
         </div>
       </div>
       <div
+        id="transformImageryHelpDialog"
+        class="measure-help-dialog transform-imagery-help-dialog"
+        role="dialog"
+        aria-label="Transform Imagery help"
+        hidden
+      >
+        <div id="transformImageryHelpHeader" class="measure-help-header">
+          <span>Transform Imagery Help</span>
+          <button
+            id="closeTransformImageryHelpButton"
+            type="button"
+            title="Close help"
+            aria-label="Close help"
+          >
+            ×
+          </button>
+        </div>
+        <div class="measure-help-content transform-imagery-help-content">
+          <h4>What It Does</h4>
+          <p>Transform Imagery allows filters and calculations to be made on tile sets. Results can be previewed on the fly, or saved to their own tile set (enabling faster loading for calculations).</p>
+          <h4>Simple Transform</h4>
+          <p>Use Simple Transform for common visual filters such as edge detection, local contrast, unsharp masking, relief shading, and channel mapping. These are intended for quick visual exploration.</p>
+          <h4>Transform Calculator</h4>
+          <p>Use Transform Calculator to build expressions from tile-set channels. Calculations can be performed on any tile set (labeled A, B, C, etc.) for R, G, B, luminance, saturation, and hue. Supported functions include abs, normdiff, range, max, min, and mean.</p>
+          <h4>Tile-Set Stack Functions</h4>
+          <p>range, max, min, and mean summarize all images within the selected source tile set at each pixel. A single-image tile set has a range of 0.</p>
+          <h4>Display and Histogram</h4>
+          <p>The preview is mapped to a display image. Auto-scale stretches calculator output for viewing, while the histogram shows the rendered display intensities from 0 to 255.</p>
+          <h4>Export Notes</h4>
+          <p>Preview changes are temporary. Use Generate Tile Set to make a persistent transformed tile set. Higher output resolutions preserve more detail but take longer to render. Exported images may be deleted using the Edit Library action.</p>
+        </div>
+      </div>
+      <div
         id="classifyHelpDialog"
         class="measure-help-dialog classify-help-dialog"
         role="dialog"
@@ -1525,13 +1568,23 @@
         hidden
       >
         <div id="porosityPaletteHeader" class="tool-palette-header">
-          <h2 id="porosityPaletteTitle">Porosity Estimator</h2>
+          <h2 id="porosityPaletteTitle">Estimate Porosity</h2>
           <div class="tool-palette-header-actions">
+            <button
+              id="porosityHelpButton"
+              class="tool-palette-help"
+              type="button"
+              aria-label="Estimate Porosity help"
+              aria-expanded="false"
+              title="Help"
+            >
+              <span aria-hidden="true">?</span>
+            </button>
             <button
               id="minimizePorosityPaletteButton"
               class="tool-palette-minimize"
               type="button"
-              aria-label="Minimize Porosity Estimator"
+              aria-label="Minimize Estimate Porosity"
               aria-pressed="false"
               title="Minimize"
             >
@@ -1543,7 +1596,7 @@
               id="closePorosityPaletteButton"
               class="tool-palette-close"
               type="button"
-              aria-label="Close Porosity Estimator"
+              aria-label="Close Estimate Porosity"
               title="Close"
             >
               <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -1729,6 +1782,41 @@
             aria-live="polite"
             hidden
           ></p>
+        </div>
+      </div>
+      <div
+        id="porosityHelpDialog"
+        class="measure-help-dialog porosity-help-dialog"
+        role="dialog"
+        aria-label="Estimate Porosity help"
+        hidden
+      >
+        <div id="porosityHelpHeader" class="measure-help-header">
+          <span>Estimate Porosity Help</span>
+          <button
+            id="closePorosityHelpButton"
+            type="button"
+            title="Close help"
+            aria-label="Close help"
+          >
+            ×
+          </button>
+        </div>
+        <div class="measure-help-content porosity-help-content">
+          <h4>What It Does</h4>
+          <p>Estimate Porosity measures the area fraction of pore-colored pixels inside a polygon AOI. More than one porosity type can be estimated (e.g., macroporosity vs microporosity). Results are shown by porosity type and as a combined total.</p>
+          <h4>Basic Workflow</h4>
+          <p>Draw an AOI, choose one or more tile sets, pick representative pore colors, then click Estimate View or Estimate AOI. Estimate View analyzes the visible part of the AOI and is useful for assessing whether the porosity has been estimated accurately; Estimate AOI analyzes the whole AOI.</p>
+          <h4>Porosity Types</h4>
+          <p>Use multiple porosity types when different pore colors or textures should be tracked separately. Each type has its own color samples, tolerance, overlay color, opacity, and result.</p>
+          <h4>Color Picking and Tolerance</h4>
+          <p>Pick several representative pore pixels for each pore type. Higher tolerance includes a broader range of similar colors; lower tolerance keeps the match stricter. Adjusting tolerance updates the estimate after a result exists.</p>
+          <h4>Resolution</h4>
+          <p>Fast preview is quicker and lower detail. Balanced is the default. High detail and Maximum available preserve more image detail but take longer to render and analyze.</p>
+          <h4>AOI Editing</h4>
+          <p>After drawing an AOI, drag vertices to refine it. The eye button hides or shows the AOI overlay without clearing results.</p>
+          <h4>Beta Notes</h4>
+          <p>This tool estimates porosity from sampled color similarity. Lighting changes, stains, shadows, and mixed pixels can affect results, so review the overlay and tune samples/tolerance before treating measurements as final.</p>
         </div>
       </div>
       <div

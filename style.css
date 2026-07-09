@@ -3531,7 +3531,9 @@ input[type="range"] {
 .measure-help-header #closeMeasureHelpButton,
 .measure-help-header #closeAnnotateHelpButton,
 .measure-help-header #closeControlsHelpButton,
-.measure-help-header #closeClassifyHelpButton {
+.measure-help-header #closeClassifyHelpButton,
+.measure-help-header #closeTransformImageryHelpButton,
+.measure-help-header #closePorosityHelpButton {
   width: 22px;
   min-width: 22px;
   height: 22px;
@@ -3548,6 +3550,14 @@ input[type="range"] {
 }
 
 .classify-help-dialog {
+  width: min(380px, calc(100vw - 16px));
+}
+
+.transform-imagery-help-dialog {
+  width: min(380px, calc(100vw - 16px));
+}
+
+.porosity-help-dialog {
   width: min(380px, calc(100vw - 16px));
 }
 
