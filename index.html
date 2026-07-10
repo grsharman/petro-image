@@ -828,8 +828,18 @@
         hidden
       >
         <div id="gridCountPaletteHeader" class="tool-palette-header">
-          <h2 id="gridCountPaletteTitle">Grid and Point Count</h2>
+          <h2 id="gridCountPaletteTitle">Grid &amp; Point Count</h2>
           <div class="tool-palette-header-actions">
+            <button
+              id="gridCountHelpButton"
+              class="tool-palette-help"
+              type="button"
+              aria-label="Grid and Point Count help"
+              aria-expanded="false"
+              title="Help"
+            >
+              <span aria-hidden="true">?</span>
+            </button>
             <button
               id="minimizeGridCountPaletteButton"
               class="tool-palette-minimize"
@@ -859,6 +869,39 @@
         <div id="gridCountPaletteBody" class="tool-palette-body"></div>
       </div>
       <div
+        id="gridCountHelpDialog"
+        class="measure-help-dialog grid-count-help-dialog"
+        role="dialog"
+        aria-label="Grid and Point Count help"
+        hidden
+      >
+        <div id="gridCountHelpHeader" class="measure-help-header">
+          <span>Grid &amp; Point Count Help</span>
+          <button
+            id="closeGridCountHelpButton"
+            type="button"
+            title="Close help"
+            aria-label="Close help"
+          >
+            ×
+          </button>
+        </div>
+        <div class="measure-help-content grid-count-help-content">
+          <h4>Create a Grid</h4>
+          <p>Use the Grid section to set the area of interest, point spacing, and the number of points. Crosshair appearance can also be adjusted. Click Apply to create the grid. Applying or clearing a grid replaces existing grid and point-count data, so export your work before clearing the grid.</p>
+          <h4>Gridding Algorithm</h4>
+          <p>The gridding algorithm places points at the specified spacing value. If the area of interest is not large enough to accomodate the number of points, an infill pattern is used to place points between existing locations. It is good practice to create more points than you think you need, in case you have to count more than you anticipated (e.g., create 600 points if you plan on a n=400 point count).</p>
+          <h4>Enter Point Counts</h4>
+          <p>Use the Count section to navigate between crosshairs. Enter an identifier or notes and press Enter to record the value. Press Space to advance to the next point and Shift+Space to return to the previous point. <i>Hint: </i>Using a code (e.g., A for quartz) can make point-counting faster. Use notes to provide metadata for each count (e.g., note uncertain idenfications).</p>
+          <h4>Review Results</h4>
+          <p>Select chooses which identifiers appear in the summary. Summarize displays counts and percentages. Filter limits the visible crosshairs to selected identifiers.</p>
+          <h4>Import and Export</h4>
+          <p>JSON preserves point-count data and grid appearance. CSV supports exchanging point locations and count values, but does not preserve all appearance settings.</p>
+          <h4>Performance</h4>
+          <p>Very dense grids can slow display and interaction. Reduce the point count or enlarge the grid spacing if performance becomes sluggish.</p>
+        </div>
+      </div>
+      <div
         id="annotatePalette"
         class="tool-palette annotate-palette"
         data-default-position="bottom-left"
@@ -870,6 +913,16 @@
         <div id="annotatePaletteHeader" class="tool-palette-header">
           <h2 id="annotatePaletteTitle">Annotate</h2>
           <div class="tool-palette-header-actions">
+            <button
+              id="annotateHelpButton"
+              class="tool-palette-help"
+              type="button"
+              aria-label="Annotate help"
+              aria-expanded="false"
+              title="Help"
+            >
+              <span aria-hidden="true">?</span>
+            </button>
             <button
               id="minimizeAnnotatePaletteButton"
               class="tool-palette-minimize"
@@ -911,6 +964,16 @@
           <h2 id="measurePaletteTitle">Measure</h2>
           <div class="tool-palette-header-actions">
             <button
+              id="measureHelpButton"
+              class="tool-palette-help"
+              type="button"
+              aria-label="Measure help"
+              aria-expanded="false"
+              title="Help"
+            >
+              <span aria-hidden="true">?</span>
+            </button>
+            <button
               id="minimizeMeasurePaletteButton"
               class="tool-palette-minimize"
               type="button"
@@ -950,6 +1013,16 @@
         <div id="snapshotPaletteHeader" class="tool-palette-header">
           <h2 id="snapshotPaletteTitle">Snapshot</h2>
           <div class="tool-palette-header-actions">
+            <button
+              id="snapshotHelpButton"
+              class="tool-palette-help"
+              type="button"
+              aria-label="Snapshot help"
+              aria-expanded="false"
+              title="Help"
+            >
+              <span aria-hidden="true">?</span>
+            </button>
             <button
               id="minimizeSnapshotPaletteButton"
               class="tool-palette-minimize"
@@ -992,9 +1065,10 @@
           <label class="snapshot-field">
             <span>Resolution</span>
             <select id="snapshotResolutionMode">
-              <option value="current">Current view</option>
-              <option value="2x">2x</option>
-              <option value="full">Full resolution</option>
+              <option value="1">Full resolution</option>
+              <option value="0.5">1/2 resolution</option>
+              <option value="0.25">1/4 resolution</option>
+              <option value="viewer" selected>Current viewer resolution</option>
             </select>
           </label>
           <label class="snapshot-option">
@@ -1012,16 +1086,75 @@
               value="92"
             />
           </label>
+          <label class="snapshot-option">
+            <input id="snapshotExportFilter" type="checkbox" disabled />
+            <span>Export applied filter</span>
+          </label>
           <div class="snapshot-actions">
             <button id="snapshotDrawButton" type="button">Draw Area</button>
+            <button id="snapshotUseScreenExtentButton" type="button">
+              Use Screen Extent
+            </button>
             <button id="snapshotClearButton" type="button" disabled>Clear</button>
+          </div>
+          <div
+            id="snapshotExportStats"
+            class="segment-info-table"
+            aria-live="polite"
+          >
+            <div>
+              <span>Dimensions</span>
+              <strong id="snapshotExportDimensions">Draw area</strong>
+            </div>
+            <div>
+              <span>Pixels</span>
+              <strong id="snapshotExportPixelCount">-</strong>
+            </div>
+          </div>
+          <div class="snapshot-export-actions">
             <button id="snapshotExportButton" type="button" disabled>
-              Export
+              Save to JPG
+            </button>
+            <button id="snapshotCopyButton" type="button" disabled>
+              Copy to Clipboard
             </button>
           </div>
-          <p id="snapshotStatus" class="snapshot-status">
+          <div id="snapshotStatus" class="segment-status" role="status">
             Set options, then draw a rectangle.
-          </p>
+          </div>
+        </div>
+      </div>
+      <div
+        id="snapshotHelpDialog"
+        class="measure-help-dialog snapshot-help-dialog"
+        role="dialog"
+        aria-label="Snapshot help"
+        hidden
+      >
+        <div id="snapshotHelpHeader" class="measure-help-header">
+          <span>Snapshot Help</span>
+          <button
+            id="closeSnapshotHelpButton"
+            type="button"
+            title="Close help"
+            aria-label="Close help"
+          >
+            ×
+          </button>
+        </div>
+        <div class="measure-help-content snapshot-help-content">
+          <h4>What It Does</h4>
+          <p>Snapshot captures a selected image area as a JPG, with options for including visible annotations, labels, a scalebar, and an applied image filter (if there is one).</p>
+          <h4>Select an Area</h4>
+          <p>Click Draw Area and click+drag over the image, or use the current screen extent. Drag the box or its handles to adjust the snapshot area.</p>
+          <h4>Contents and Resolution</h4>
+          <p>Choose the tile set and whether to include annotations and labels. Full, half, and quarter resolution use source-image pixels. Current viewer resolution captures the detail currently displayed. The dimensions table previews the chosen output size.</p>
+          <h4>Scalebar and Filter</h4>
+          <p>The option to include a scalebar in the image is enabled when image scale is available. Export applied filter uses the active Transform Imagery preview instead of the raw tile set.</p>
+          <h4>Save or Copy</h4>
+          <p>Save to JPG opens the file-save workflow. Copy to Clipboard places the rendered image directly on the system clipboard and keeps the selected area available.</p>
+          <h4>Output Limits</h4>
+          <p>Snapshots are limited to 16,000 pixels per side and 100 megapixels total. Choose a lower resolution or a smaller area when the limit is exceeded.</p>
         </div>
       </div>
       <div
@@ -1814,7 +1947,7 @@
           <h4>Resolution</h4>
           <p>Fast preview is quicker and lower detail. Balanced is the default. High detail and Maximum available preserve more image detail but take longer to render and analyze.</p>
           <h4>AOI Editing</h4>
-          <p>After drawing an AOI, drag vertices to refine it. The eye button hides or shows the AOI overlay without clearing results.</p>
+          <p>Drag to draw a rectangular AOI. After drawing, drag vertices to refine it. Double-click an edge or Option-click an edge to add a vertex, and use Delete or Backspace to remove the selected vertex. The eye button hides or shows the AOI overlay without clearing results.</p>
           <h4>Beta Notes</h4>
           <p>This tool estimates porosity from sampled color similarity. Lighting changes, stains, shadows, and mixed pixels can affect results, so review the overlay and tune samples/tolerance before treating measurements as final.</p>
         </div>
@@ -1934,6 +2067,16 @@
           <h2 id="segmentPaletteTitle">Segment</h2>
           <div class="tool-palette-header-actions">
             <button
+              id="segmentHelpButton"
+              class="tool-palette-help"
+              type="button"
+              aria-label="Segment help"
+              aria-expanded="false"
+              title="Help"
+            >
+              <span aria-hidden="true">?</span>
+            </button>
+            <button
               id="minimizeSegmentPaletteButton"
               class="tool-palette-minimize"
               type="button"
@@ -2037,7 +2180,7 @@
               <input
                 id="segmenteverygrainModelPath"
                 type="text"
-                placeholder="/path/to/segmenteverygrain model.h5"
+                placeholder="/path/to/seg_model.keras"
                 spellcheck="false"
               />
             </label>
@@ -2292,6 +2435,50 @@
         </div>
       </div>
       <div
+        id="segmentHelpDialog"
+        class="measure-help-dialog segment-help-dialog"
+        role="dialog"
+        aria-label="Segment help"
+        hidden
+      >
+        <div id="segmentHelpHeader" class="measure-help-header">
+          <span>Segment Help</span>
+          <button
+            id="closeSegmentHelpButton"
+            type="button"
+            title="Close help"
+            aria-label="Close help"
+          >
+            ×
+          </button>
+        </div>
+        <div class="measure-help-content segment-help-content">
+          <h4>What It Does</h4>
+          <p>Supervised Segmentation uses SAM 2.1 with box and point prompts. segmenteverygrain uses a U-Net model to propose grains and can refine their outlines with SAM 2.1.</p>
+          <h4>Create the Python Environment</h4>
+          <ol>
+            <li>Install Miniforge (recommended) or another conda/mamba distribution.</li>
+            <li>Clone the project with <code>git clone --depth 1 https://github.com/zsylvester/segmenteverygrain.git</code>.</li>
+            <li>In Terminal or Anaconda Prompt, run <code>conda env create -f segmenteverygrain/environment_macos.yml</code> on macOS, or <code>conda env create -f segmenteverygrain/environment.yml</code> on Windows/Linux.</li>
+            <li>Activate it with <code>conda activate segmenteverygrain</code>.</li>
+          </ol>
+          <p>The official environment file installs Python 3.10 and the required segmenteverygrain, TensorFlow, PyTorch, torchvision, SAM 2, OpenCV, and scikit-image dependencies.</p>
+          <h4>Find the Python File</h4>
+          <p>Run <code>conda run -n segmenteverygrain python -c "import sys; print(sys.executable)"</code>. Copy the printed path. In SAM 2.1 Setup, click Choose Python and select that exact file. It normally ends in <code>/bin/python</code> on macOS/Linux or <code>python.exe</code> on Windows.</p>
+          <h4>Download the Models</h4>
+          <p>Download a SAM 2.1 <code>.pt</code> checkpoint from <code>github.com/facebookresearch/sam2</code>, choose the matching model size, and select it under SAM 2.1 Setup.</p>
+          <p>Clone or download <code>github.com/zsylvester/segmenteverygrain</code>, then select a trained <code>.keras</code> file from its <code>models</code> folder (for example, <code>seg_model_smooth_labels.keras</code>) under segmenteverygrain Setup. Installing only the Python package does not necessarily download this model file.</p>
+          <h4>Test the Setup</h4>
+          <p>Click Test SAM, then Test segmenteverygrain. The readiness indicators should turn green before running either workflow.</p>
+          <h4>Using the Tools</h4>
+          <p>For supervised segmentation, draw a box and optionally add positive or negative points, then add the result as an annotation. For segmenteverygrain, draw an AOI, choose a processing resolution, review the estimated pixel load, and run the model.</p>
+          <h4>Citation and Attribution</h4>
+          <p>If these tools contribute to a publication, please cite the methods used.</p>
+          <p><strong>SAM 2:</strong> Ravi, N., Gabeur, V., Hu, Y.-T., et al. (2024). “SAM 2: Segment Anything in Images and Videos.” arXiv:2408.00714. doi:10.48550/arXiv.2408.00714.</p>
+          <p><strong>segmenteverygrain:</strong> Sylvester, Z., Stockli, D. F., Howes, N., Roberts, K., Malkowski, M. A., Poros, Z., Martindale, R. C., &amp; Bai, W. (2025). “Segmenteverygrain: A Python module for segmentation of grains in images.” Journal of Open Source Software, 10(112), 7953. doi:10.21105/joss.07953.</p>
+        </div>
+      </div>
+      <div
         id="tileSetEditor"
         class="tile-set-editor electron-only"
         role="dialog"
@@ -2426,18 +2613,30 @@
     <div class="controls">
       <div class="controls-header">
         <div id="image-container"></div>
-        <button
-          id="minimizeControlsButton"
-          class="controls-minimize-button"
-          type="button"
-          aria-label="Minimize image controls"
-          aria-pressed="false"
-          title="Minimize image controls"
-        >
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M6 12h12" />
-          </svg>
-        </button>
+        <div class="controls-header-actions">
+          <button
+            id="controlsHelpButton"
+            class="controls-header-button controls-help-button"
+            type="button"
+            title="Controls help"
+            aria-label="Controls help"
+            aria-expanded="false"
+          >
+            <span aria-hidden="true">?</span>
+          </button>
+          <button
+            id="minimizeControlsButton"
+            class="controls-header-button controls-minimize-button"
+            type="button"
+            aria-label="Minimize image controls"
+            aria-pressed="false"
+            title="Minimize image controls"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M6 12h12" />
+            </svg>
+          </button>
+        </div>
       </div>
       <div id="controlsBody" class="controls-body">
       <div class="dropdown-container">
@@ -2662,14 +2861,13 @@
       <div class="dropdown-container">
         <select id="sampleDropdown"></select>
         <button
-          id="controlsHelpButton"
+          id="sampleInfoButton"
           class="custom-button"
           type="button"
-          title="Controls help"
-          aria-label="Controls help"
-          aria-expanded="false"
+          title="Sample Info"
+          aria-label="Sample Info"
         >
-          ?
+          <span aria-hidden="true">ⓘ</span>
         </button>
         <div
           id="controlsHelpDialog"
@@ -2756,14 +2954,6 @@
           onclick="toggleImageRotationWithStage(this)"
         />
         <label id="rotateWithStageLabel" style="display: none;">Lock stage</label>
-        <button
-          id="sampleInfoButton"
-          class="custom-button"
-          type="button"
-          title="Sample Info"
-        >
-          Sample Info
-        </button>
       </div>
       <hr />
       <div id="imageCheckboxContainer"></div>
@@ -3621,16 +3811,6 @@
               onclick="toggleAnnotation(this)"
             />
             <label for="show-annotations">Show annotations</label>
-            <button
-              id="annotateHelpButton"
-              class="custom-button"
-              type="button"
-              title="Annotate help"
-              aria-label="Annotate help"
-              aria-expanded="false"
-            >
-              ?
-            </button>
             <div
               id="annotateHelpDialog"
               class="measure-help-dialog annotate-help-dialog"
@@ -4885,16 +5065,6 @@
                   />
                 </g>
               </svg>
-            </button>
-            <button
-              id="measureHelpButton"
-              class="custom-button"
-              type="button"
-              title="Measure help"
-              aria-label="Measure help"
-              aria-expanded="false"
-            >
-              ?
             </button>
           </div>
           <div id="measureToolButtons" class="measure-tool-grid">

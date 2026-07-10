@@ -905,6 +905,13 @@ body.import-wizard-page {
   gap: 6px;
 }
 
+.segment-python-details > .segment-setup-details {
+  box-sizing: border-box;
+  margin-left: 10px;
+  padding-left: 7px;
+  border-left: 1px solid rgba(68, 68, 68, 0.22);
+}
+
 .tool-palette-body .segment-setup-details,
 .tool-palette-body .segment-primary-details,
 .tool-palette-body .segment-workflow-details {
@@ -1354,7 +1361,13 @@ body.import-wizard-page {
   gap: 6px;
 }
 
-.controls-minimize-button {
+.controls-header-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.controls-header-button {
   width: 20px;
   height: 20px;
   display: inline-flex;
@@ -1368,8 +1381,8 @@ body.import-wizard-page {
   cursor: pointer;
 }
 
-.controls-minimize-button:hover,
-.controls-minimize-button:focus-visible {
+.controls-header-button:hover,
+.controls-header-button:focus-visible {
   background: rgba(0, 0, 0, 0.08);
   outline: none;
 }
@@ -2152,9 +2165,14 @@ body.import-wizard-page {
 }
 
 #sampleInfoButton {
-  --button-width: 78px;
-  margin-left: auto;
-  white-space: nowrap;
+  --button-width: 20px;
+  width: 20px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1;
 }
 
 #tooltip-desc {
@@ -2688,6 +2706,33 @@ body.import-wizard-page {
 
 .annotation-vertex-handle:hover,
 .annotation-vertex-handle:focus-visible {
+  background: #ffe36a;
+  outline: none;
+}
+
+.segment-aoi-vertex-handle {
+  box-sizing: border-box;
+  appearance: none;
+  width: 8px;
+  height: 8px;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  line-height: 0;
+  position: relative;
+  border: 2px solid #111;
+  border-radius: 0;
+  background: #ffcc00;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.9);
+  transform: translate(-50%, -50%);
+  cursor: grab;
+  touch-action: none;
+  z-index: 1004;
+}
+
+.segment-aoi-vertex-handle:hover,
+.segment-aoi-vertex-handle:focus-visible,
+.segment-aoi-vertex-handle.is-selected {
   background: #ffe36a;
   outline: none;
 }
@@ -3533,7 +3578,10 @@ input[type="range"] {
 .measure-help-header #closeControlsHelpButton,
 .measure-help-header #closeClassifyHelpButton,
 .measure-help-header #closeTransformImageryHelpButton,
-.measure-help-header #closePorosityHelpButton {
+.measure-help-header #closePorosityHelpButton,
+.measure-help-header #closeSnapshotHelpButton,
+.measure-help-header #closeGridCountHelpButton,
+.measure-help-header #closeSegmentHelpButton {
   width: 22px;
   min-width: 22px;
   height: 22px;
@@ -3559,6 +3607,30 @@ input[type="range"] {
 
 .porosity-help-dialog {
   width: min(380px, calc(100vw - 16px));
+}
+
+.snapshot-help-dialog {
+  width: min(380px, calc(100vw - 16px));
+}
+
+.grid-count-help-dialog {
+  width: min(380px, calc(100vw - 16px));
+}
+
+.segment-help-dialog {
+  width: min(430px, calc(100vw - 16px));
+}
+
+.segment-help-content ol {
+  display: grid;
+  gap: 5px;
+  margin: -4px 0 0;
+  padding-left: 20px;
+}
+
+.segment-help-content code {
+  overflow-wrap: anywhere;
+  user-select: text;
 }
 
 .measure-help-content {
@@ -4446,12 +4518,48 @@ input[type="range"] {
   font: inherit;
 }
 
-.snapshot-status {
-  min-height: 2.4em;
-  margin: 0;
-  color: rgba(17, 17, 17, 0.9);
+.snapshot-export-actions,
+.snapshot-export-actions button {
+  width: 100%;
+}
+
+.snapshot-export-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.snapshot-export-actions button {
+  padding: 5px 6px;
   font: inherit;
-  line-height: 1.2;
+  font-weight: 600;
+}
+
+#snapshotExportButton[aria-busy="true"]::before,
+#snapshotCopyButton[aria-busy="true"]::before {
+  content: "";
+  display: inline-block;
+  width: 0.8em;
+  height: 0.8em;
+  margin-right: 0.4em;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  vertical-align: -0.1em;
+  animation: snapshot-export-spin 0.7s linear infinite;
+}
+
+@keyframes snapshot-export-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #snapshotExportButton[aria-busy="true"]::before,
+  #snapshotCopyButton[aria-busy="true"]::before {
+    animation: none;
+  }
 }
 
 .porosity-palette-body {

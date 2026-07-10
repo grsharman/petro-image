@@ -40,6 +40,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
     ipcRenderer.invoke("confirm-slow-tiles", validationResult),
   showTileLoadWarning: (failure) =>
     ipcRenderer.invoke("show-tile-load-warning", failure),
+  copyImageToClipboard: (imageBytes) =>
+    ipcRenderer.invoke("copy-image-to-clipboard", imageBytes),
   readLocalJsonFile: (filePath) =>
     ipcRenderer.invoke("read-local-json-file", filePath),
   selectJpgFile: () => ipcRenderer.invoke("select-jpg-file"),

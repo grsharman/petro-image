@@ -449,6 +449,12 @@ const closeGridCountPaletteButton = document.getElementById(
 const minimizeGridCountPaletteButton = document.getElementById(
   "minimizeGridCountPaletteButton"
 );
+const gridCountHelpButton = document.getElementById("gridCountHelpButton");
+const gridCountHelpDialog = document.getElementById("gridCountHelpDialog");
+const gridCountHelpHeader = document.getElementById("gridCountHelpHeader");
+const closeGridCountHelpButton = document.getElementById(
+  "closeGridCountHelpButton"
+);
 const annotatePalette = document.getElementById("annotatePalette");
 const annotatePaletteHeader = document.getElementById("annotatePaletteHeader");
 const annotatePaletteBody = document.getElementById("annotatePaletteBody");
@@ -510,6 +516,12 @@ const closeSnapshotPaletteButton = document.getElementById(
 );
 const minimizeSnapshotPaletteButton = document.getElementById(
   "minimizeSnapshotPaletteButton"
+);
+const snapshotHelpButton = document.getElementById("snapshotHelpButton");
+const snapshotHelpDialog = document.getElementById("snapshotHelpDialog");
+const snapshotHelpHeader = document.getElementById("snapshotHelpHeader");
+const closeSnapshotHelpButton = document.getElementById(
+  "closeSnapshotHelpButton"
 );
 const transformImageryPalette = document.getElementById("transformImageryPalette");
 const transformImageryPaletteHeader = document.getElementById(
@@ -617,6 +629,12 @@ const closeSegmentPaletteButton = document.getElementById(
 );
 const minimizeSegmentPaletteButton = document.getElementById(
   "minimizeSegmentPaletteButton"
+);
+const segmentHelpButton = document.getElementById("segmentHelpButton");
+const segmentHelpDialog = document.getElementById("segmentHelpDialog");
+const segmentHelpHeader = document.getElementById("segmentHelpHeader");
+const closeSegmentHelpButton = document.getElementById(
+  "closeSegmentHelpButton"
 );
 const samPythonPathInput = document.getElementById("samPythonPath");
 const samCheckpointPathInput = document.getElementById("samCheckpointPath");
@@ -741,12 +759,23 @@ const segmentReticle = document.getElementById("segment-reticle");
 const snapshotSelection = document.getElementById("snapshot-selection");
 const snapshotSelectionBody = document.getElementById("snapshotSelectionBody");
 const snapshotDrawButton = document.getElementById("snapshotDrawButton");
+const snapshotUseScreenExtentButton = document.getElementById(
+  "snapshotUseScreenExtentButton"
+);
 const snapshotClearButton = document.getElementById("snapshotClearButton");
 const snapshotExportButton = document.getElementById("snapshotExportButton");
+const snapshotCopyButton = document.getElementById("snapshotCopyButton");
+const snapshotExportDimensions = document.getElementById(
+  "snapshotExportDimensions"
+);
+const snapshotExportPixelCount = document.getElementById(
+  "snapshotExportPixelCount"
+);
 const snapshotStatus = document.getElementById("snapshotStatus");
 const snapshotIncludeScalebar = document.getElementById(
   "snapshotIncludeScalebar"
 );
+const snapshotExportFilter = document.getElementById("snapshotExportFilter");
 const snapshotTileSetSelect = document.getElementById("snapshotTileSetSelect");
 const snapshotContentMode = document.getElementById("snapshotContentMode");
 const snapshotResolutionMode = document.getElementById("snapshotResolutionMode");
@@ -855,7 +884,9 @@ let measurePaletteControlsMoved = false;
 let snapshotModeActive = false;
 let snapshotDragState = null;
 let snapshotSelectionRect = null;
+let snapshotSelectionImageRect = null;
 let snapshotAdjustState = null;
+let snapshotExportInProgress = false;
 let porosityAoiModeActive = false;
 let porosityPickModeActive = false;
 let porosityAoiImagePoints = [];
@@ -863,6 +894,7 @@ let porosityAoiComplete = false;
 let porosityAoiMousePoint = null;
 let porosityAoiSelectedVertexIndex = null;
 let porosityAoiDragState = null;
+let porosityAoiDrawState = null;
 let porosityAoiVisible = true;
 let porosityAoiConstrainSegment = false;
 let porosityTypes = [];
@@ -900,6 +932,9 @@ let segmenteverygrainValidationState = {
 let unsupervisedAoiModeActive = false;
 let unsupervisedAoiDragState = null;
 let unsupervisedAoiRect = null;
+let unsupervisedAoiImagePoints = [];
+let unsupervisedAoiSelectedVertexIndex = null;
+let unsupervisedAoiVertexDragState = null;
 let unsupervisedSegmentIsRunning = false;
 let unsupervisedSegmentCancelRequested = false;
 let unsupervisedSegmentRunId = 0;
@@ -1544,6 +1579,7 @@ function closeGridCountPalette() {
   if (!gridCountPalette) return;
 
   closeCountDropdowns();
+  closeGridCountHelpDialog();
   gridCountPalette.hidden = true;
   openGridCountPaletteButton?.setAttribute("aria-pressed", "false");
 }
@@ -1609,6 +1645,7 @@ function closeMeasurePalette() {
   closeMeasureScatterMenu();
   closeMeasureRoseMenu();
   closeMeasureParticleSizeMenu();
+  closeMeasureHelpDialog();
   measurePalette.hidden = true;
   openMeasurePaletteButton?.setAttribute("aria-pressed", "false");
 }
@@ -1636,6 +1673,7 @@ function closeSnapshotPalette() {
   if (!snapshotPalette) return;
 
   stopSnapshotDrawMode({ clearSelection: true });
+  closeSnapshotHelpDialog();
   snapshotPalette.hidden = true;
   openSnapshotPaletteButton?.setAttribute("aria-pressed", "false");
 }
@@ -2914,6 +2952,38 @@ function imageRectToPolygon(rect) {
   ];
 }
 
+function imageRectToPoints(rect) {
+  return imageRectToPolygon(rect)
+    .slice(0, 4)
+    .map(([x, y]) => ({ x, y }));
+}
+
+function imagePointsToPolygon(points) {
+  const coordinates = points.map((point) => [point.x, point.y]);
+  if (coordinates.length > 0) {
+    coordinates.push([...coordinates[0]]);
+  }
+  return coordinates;
+}
+
+function imageBoundsFromPoints(points) {
+  if (!Array.isArray(points) || points.length < 3) return null;
+
+  const minX = Math.floor(Math.min(...points.map((point) => point.x)));
+  const minY = Math.floor(Math.min(...points.map((point) => point.y)));
+  const maxX = Math.ceil(Math.max(...points.map((point) => point.x)));
+  const maxY = Math.ceil(Math.max(...points.map((point) => point.y)));
+  const width = maxX - minX;
+  const height = maxY - minY;
+  if (width < 1 || height < 1) return null;
+  return { x: minX, y: minY, width, height };
+}
+
+function syncUnsupervisedAoiRectFromPoints() {
+  unsupervisedAoiRect = imageBoundsFromPoints(unsupervisedAoiImagePoints);
+  return unsupervisedAoiRect;
+}
+
 function getSegmentPromptBounds(promptRect, promptPoints = segmentPromptPoints) {
   const xs = [];
   const ys = [];
@@ -3223,14 +3293,16 @@ function hideSegmentReticle() {
   if (segmentReticle) segmentReticle.hidden = true;
 }
 
-function updateUnsupervisedAoiPreview(rect = unsupervisedAoiRect) {
+function updateUnsupervisedAoiPreview(points = unsupervisedAoiImagePoints) {
   annoJSONTemp = {
     type: "FeatureCollection",
     features: [],
   };
-  if (rect) {
+  const aoiPoints = Array.isArray(points) ? points : [];
+  if (aoiPoints.length >= 3) {
+    syncUnsupervisedAoiRectFromPoints();
     addUnsupervisedPatchGridPreview();
-    addPolygonToGeoJSON(annoJSONTemp, imageRectToPolygon(rect), {
+    addPolygonToGeoJSON(annoJSONTemp, imagePointsToPolygon(aoiPoints), {
       uuid: "segmenteverygrain-aoi",
       label: "segmenteverygrain AOI",
       shapeType: "segment-prompt",
@@ -3243,6 +3315,7 @@ function updateUnsupervisedAoiPreview(rect = unsupervisedAoiRect) {
     });
   }
   drawShape(polyCanvas, [annoJSON, annoJSONTemp]);
+  renderUnsupervisedAoiVertexHandles();
   updateUnsupervisedAoiStats();
 }
 
@@ -3256,10 +3329,14 @@ function startUnsupervisedAoiMode() {
   unsupervisedAoiModeActive = true;
   unsupervisedAoiDragState = null;
   unsupervisedAoiRect = null;
+  unsupervisedAoiImagePoints = [];
+  unsupervisedAoiSelectedVertexIndex = null;
+  unsupervisedAoiVertexDragState = null;
+  removeUnsupervisedAoiVertexHandles();
   deactivateAnnotationModes();
   stopSnapshotDrawMode({ clearSelection: false });
   if (typeof stopMeasurementMode === "function") stopMeasurementMode();
-  setUnsupervisedSegmentStatus("Drag an AOI around the grains to segment.");
+  setUnsupervisedSegmentStatus("Drag an AOI rectangle around the grains to segment.");
   updateUnsupervisedSegmentControls();
 }
 
@@ -3267,6 +3344,10 @@ function clearUnsupervisedAoi(message = "Draw an AOI before running segmentation
   unsupervisedAoiModeActive = false;
   unsupervisedAoiDragState = null;
   unsupervisedAoiRect = null;
+  unsupervisedAoiImagePoints = [];
+  unsupervisedAoiSelectedVertexIndex = null;
+  unsupervisedAoiVertexDragState = null;
+  removeUnsupervisedAoiVertexHandles();
   annoJSONTemp = {
     type: "FeatureCollection",
     features: [],
@@ -3287,6 +3368,170 @@ function clearUnsupervisedAoiForSampleChange() {
   }
 
   clearUnsupervisedAoi("AOI cleared after sample change.");
+}
+
+function removeUnsupervisedAoiVertexHandles() {
+  document.querySelectorAll(".segment-aoi-vertex-handle").forEach((handle) => {
+    viewer.removeOverlay(handle);
+    handle.remove();
+  });
+}
+
+function renderUnsupervisedAoiVertexHandles() {
+  removeUnsupervisedAoiVertexHandles();
+  if (unsupervisedSegmentIsRunning || unsupervisedAoiImagePoints.length < 3) return;
+
+  const image = viewer.world.getItemAt(0);
+  if (!image) return;
+
+  unsupervisedAoiImagePoints.forEach((point, index) => {
+    const handle = document.createElement("button");
+    handle.type = "button";
+    handle.className = "segment-aoi-vertex-handle";
+    if (index === unsupervisedAoiSelectedVertexIndex) {
+      handle.classList.add("is-selected");
+    }
+    handle.title = "Drag AOI vertex. Option-click to delete.";
+    handle.setAttribute(
+      "aria-label",
+      `Move AOI vertex ${index + 1}. Option-click to delete.`
+    );
+    handle.dataset.vertexIndex = String(index);
+    handle.addEventListener("pointerdown", (event) => {
+      handleUnsupervisedAoiVertexPointerDown(event, index);
+    });
+
+    viewer.addOverlay({
+      element: handle,
+      location: image.imageToViewportCoordinates(
+        new OpenSeadragon.Point(point.x, point.y)
+      ),
+      checkResize: false,
+      rotationMode: OpenSeadragon.OverlayRotationMode.NO_ROTATION,
+    });
+  });
+}
+
+function getUnsupervisedAoiScreenPoints() {
+  const image = viewer.world.getItemAt(0);
+  if (!image) return [];
+  return unsupervisedAoiImagePoints.map((point) =>
+    viewer.viewport.viewportToViewerElementCoordinates(
+      image.imageToViewportCoordinates(point.x, point.y)
+    )
+  );
+}
+
+function getUnsupervisedAoiEdgeHit(viewerPixel, maxDistance = 12) {
+  if (!viewerPixel || unsupervisedAoiImagePoints.length < 3) return null;
+
+  const points = getUnsupervisedAoiScreenPoints();
+  let bestHit = null;
+  points.forEach((point, index) => {
+    const nextIndex = (index + 1) % points.length;
+    const distance = distanceToSegment(viewerPixel, point, points[nextIndex]);
+    if (distance <= maxDistance && (!bestHit || distance < bestHit.distance)) {
+      bestHit = {
+        insertIndex: nextIndex,
+        distance,
+      };
+    }
+  });
+  return bestHit;
+}
+
+function insertUnsupervisedAoiVertex(viewerPixel) {
+  const edgeHit = getUnsupervisedAoiEdgeHit(viewerPixel);
+  if (!edgeHit) return false;
+
+  const imagePoint = getImagePointFromViewerPixel(viewerPixel);
+  if (!imagePoint) return false;
+
+  unsupervisedAoiImagePoints.splice(edgeHit.insertIndex, 0, {
+    x: imagePoint.x,
+    y: imagePoint.y,
+  });
+  unsupervisedAoiSelectedVertexIndex = edgeHit.insertIndex;
+  syncUnsupervisedAoiRectFromPoints();
+  updateUnsupervisedAoiPreview();
+  setUnsupervisedSegmentStatus("AOI vertex added. Run segmentation when ready.");
+  updateUnsupervisedSegmentControls();
+  return true;
+}
+
+function deleteUnsupervisedAoiVertex(index) {
+  if (
+    index === null ||
+    index < 0 ||
+    index >= unsupervisedAoiImagePoints.length ||
+    unsupervisedAoiImagePoints.length <= 3
+  ) {
+    setUnsupervisedSegmentStatus("AOI needs at least three vertices.", "error");
+    return false;
+  }
+
+  unsupervisedAoiImagePoints.splice(index, 1);
+  unsupervisedAoiSelectedVertexIndex = null;
+  syncUnsupervisedAoiRectFromPoints();
+  updateUnsupervisedAoiPreview();
+  setUnsupervisedSegmentStatus("AOI vertex deleted. Run segmentation when ready.");
+  updateUnsupervisedSegmentControls();
+  return true;
+}
+
+function handleUnsupervisedAoiVertexPointerDown(event, vertexIndex) {
+  if (unsupervisedSegmentIsRunning) return;
+
+  event.preventDefault();
+  event.stopPropagation();
+  if (event.altKey) {
+    deleteUnsupervisedAoiVertex(vertexIndex);
+    return;
+  }
+
+  unsupervisedAoiSelectedVertexIndex = vertexIndex;
+  unsupervisedAoiVertexDragState = {
+    pointerId: event.pointerId,
+    vertexIndex,
+    moved: false,
+  };
+  viewerContainer?.setPointerCapture?.(event.pointerId);
+  renderUnsupervisedAoiVertexHandles();
+  setUnsupervisedSegmentStatus("Drag AOI vertex, or press Delete to remove it.");
+}
+
+function updateUnsupervisedAoiVertexDrag(event) {
+  if (!unsupervisedAoiVertexDragState) return;
+
+  event.preventDefault();
+  event.stopPropagation();
+  const imagePoint = getPorosityImagePointFromClientPoint(
+    event.clientX,
+    event.clientY
+  );
+  if (!imagePoint) return;
+
+  unsupervisedAoiImagePoints[unsupervisedAoiVertexDragState.vertexIndex] = {
+    x: imagePoint.x,
+    y: imagePoint.y,
+  };
+  unsupervisedAoiVertexDragState.moved = true;
+  syncUnsupervisedAoiRectFromPoints();
+  updateUnsupervisedAoiPreview();
+}
+
+function finishUnsupervisedAoiVertexDrag(event) {
+  if (!unsupervisedAoiVertexDragState) return;
+
+  event.preventDefault();
+  event.stopPropagation();
+  viewerContainer?.releasePointerCapture?.(unsupervisedAoiVertexDragState.pointerId);
+  const moved = unsupervisedAoiVertexDragState.moved;
+  unsupervisedAoiVertexDragState = null;
+  if (moved) {
+    setUnsupervisedSegmentStatus("AOI vertex moved. Run segmentation when ready.");
+    updateUnsupervisedSegmentControls();
+  }
 }
 
 function buildUnsupervisedSegmentFeature(fullImagePolygon, result = {}) {
@@ -3384,6 +3629,10 @@ function commitUnsupervisedSegmentFeatures(features, statusMessage) {
   unsupervisedAoiModeActive = false;
   unsupervisedAoiDragState = null;
   unsupervisedAoiRect = null;
+  unsupervisedAoiImagePoints = [];
+  unsupervisedAoiSelectedVertexIndex = null;
+  unsupervisedAoiVertexDragState = null;
+  removeUnsupervisedAoiVertexHandles();
   drawShape(polyCanvas, [annoJSON, annoJSONTemp]);
   renderAnnotationList();
   renderAnnotationGroupOptions();
@@ -3466,6 +3715,7 @@ async function runUnsupervisedSegmentation() {
       return;
     }
 
+    const aoiPolygon = [imagePointsToPolygon(unsupervisedAoiImagePoints)];
     const features = (result.polygons || [])
       .map((polygon) =>
         polygon.coordinates.map(([x, y]) => [
@@ -3482,6 +3732,10 @@ async function runUnsupervisedSegmentation() {
         ])
       )
       .filter((coordinates) => coordinates.length >= 4)
+      .filter((coordinates) => {
+        const center = getCoordinateCenter(coordinates);
+        return center && polygonContainsImagePoint(center, aoiPolygon);
+      })
       .map((coordinates) =>
         buildUnsupervisedSegmentFeature(coordinates, {
           modelPath: getSegmenteverygrainSettingsFromInputs().modelPath,
@@ -3739,6 +3993,7 @@ function closeSegmentPalette() {
   if (!segmentPalette) return;
 
   clearSegmentPreview({ keepMode: false });
+  closeSegmentHelpDialog();
   segmentPalette.hidden = true;
   openSegmentPaletteButton?.setAttribute("aria-pressed", "false");
 }
@@ -3776,6 +4031,23 @@ function updateSnapshotScalebarAvailability() {
   snapshotIncludeScalebar.title = "";
 }
 
+function hasSnapshotExportableTransform() {
+  return !isDefaultTileSetTransform(getSnapshotSelectedTileSet());
+}
+
+function updateSnapshotFilterAvailability() {
+  if (!snapshotExportFilter) return;
+
+  const hasTransform = hasSnapshotExportableTransform();
+  snapshotExportFilter.disabled = !hasTransform;
+  snapshotExportFilter.title = hasTransform
+    ? ""
+    : "Apply a Transform Imagery preview before exporting a filter.";
+  if (!hasTransform) {
+    snapshotExportFilter.checked = false;
+  }
+}
+
 function getSnapshotExportLimitError(exportSize) {
   if (!exportSize) return "";
 
@@ -3794,10 +4066,33 @@ function getSnapshotExportLimitError(exportSize) {
   return "";
 }
 
+function updateSnapshotExportStats(exportSize) {
+  if (!snapshotExportDimensions || !snapshotExportPixelCount) return;
+
+  if (!snapshotSelectionRect || !exportSize) {
+    snapshotExportDimensions.textContent = "Draw area";
+    snapshotExportPixelCount.textContent = "-";
+    setSegmentProcessingLoadClass([
+      snapshotExportDimensions,
+      snapshotExportPixelCount,
+    ]);
+    return;
+  }
+
+  const pixelCount = exportSize.width * exportSize.height;
+  snapshotExportDimensions.textContent = `${exportSize.width} x ${exportSize.height}`;
+  snapshotExportPixelCount.textContent = formatSegmentPixels(pixelCount);
+  setSegmentProcessingLoadClass(
+    [snapshotExportDimensions, snapshotExportPixelCount],
+    getSegmentProcessingLoadClass(pixelCount)
+  );
+}
+
 function updateSnapshotStatus(message) {
   if (!snapshotStatus) return;
 
   updateSnapshotScalebarAvailability();
+  updateSnapshotFilterAvailability();
 
   let exportSize = null;
   let exportLimitError = "";
@@ -3810,10 +4105,23 @@ function updateSnapshotStatus(message) {
     exportLimitError = getSnapshotExportLimitError(exportSize);
   }
 
+  updateSnapshotExportStats(exportSize);
+
   if (snapshotExportButton) {
     snapshotExportButton.disabled =
-      !snapshotSelectionRect || snapshotModeActive || Boolean(exportLimitError);
+      snapshotExportInProgress ||
+      !snapshotSelectionRect ||
+      snapshotModeActive ||
+      Boolean(exportLimitError);
     snapshotExportButton.title = exportLimitError || "";
+  }
+  if (snapshotCopyButton) {
+    snapshotCopyButton.disabled =
+      snapshotExportInProgress ||
+      !snapshotSelectionRect ||
+      snapshotModeActive ||
+      Boolean(exportLimitError);
+    snapshotCopyButton.title = exportLimitError || "";
   }
 
   if (message) {
@@ -3840,6 +4148,7 @@ function updateSnapshotStatus(message) {
 
 function clearSnapshotSelection() {
   snapshotSelectionRect = null;
+  snapshotSelectionImageRect = null;
   snapshotAdjustState = null;
   if (snapshotSelection) {
     snapshotSelection.hidden = true;
@@ -3851,7 +4160,26 @@ function clearSnapshotSelection() {
   if (snapshotExportButton) {
     snapshotExportButton.disabled = true;
   }
+  if (snapshotCopyButton) {
+    snapshotCopyButton.disabled = true;
+  }
   updateSnapshotStatus();
+}
+
+function useSnapshotScreenExtent() {
+  const bounds = getSnapshotViewerBounds();
+  if (!snapshotSelection || !bounds?.width || !bounds?.height) {
+    updateSnapshotStatus("Could not determine the current screen extent.");
+    return;
+  }
+
+  stopSnapshotDrawMode({ clearSelection: false });
+  renderSnapshotSelection({
+    left: 0,
+    top: 0,
+    width: bounds.width,
+    height: bounds.height,
+  });
 }
 
 function startSnapshotDrawMode() {
@@ -3920,7 +4248,7 @@ function finishSnapshotSelection(endPixel) {
   renderSnapshotSelection(rect);
 }
 
-function renderSnapshotSelection(rect = snapshotSelectionRect) {
+function renderSnapshotSelection(rect = snapshotSelectionRect, options = {}) {
   if (!snapshotSelection || !rect) return;
 
   snapshotSelectionRect = {
@@ -3929,6 +4257,11 @@ function renderSnapshotSelection(rect = snapshotSelectionRect) {
     width: rect.width,
     height: rect.height,
   };
+  if (options.syncImageRect !== false) {
+    snapshotSelectionImageRect = getSnapshotSelectionImageRect(
+      snapshotSelectionRect
+    );
+  }
   snapshotSelection.hidden = false;
   snapshotSelection.style.left = `${snapshotSelectionRect.left}px`;
   snapshotSelection.style.top = `${snapshotSelectionRect.top}px`;
@@ -3941,6 +4274,42 @@ function renderSnapshotSelection(rect = snapshotSelectionRect) {
     snapshotExportButton.disabled = false;
   }
   updateSnapshotStatus();
+}
+
+function refreshSnapshotSelectionForViewportChange() {
+  if (!snapshotSelectionImageRect || snapshotModeActive || snapshotAdjustState) {
+    return;
+  }
+
+  const image = viewer.world.getItemAt(0);
+  if (!image) return;
+
+  const { x, y, width, height } = snapshotSelectionImageRect;
+  const screenPoints = [
+    [x, y],
+    [x + width, y],
+    [x + width, y + height],
+    [x, y + height],
+  ].map(([imageX, imageY]) =>
+    viewer.viewport.viewportToViewerElementCoordinates(
+      image.imageToViewportCoordinates(imageX, imageY)
+    )
+  );
+  const xs = screenPoints.map((point) => point.x).filter(Number.isFinite);
+  const ys = screenPoints.map((point) => point.y).filter(Number.isFinite);
+  if (!xs.length || !ys.length) return;
+
+  const left = Math.min(...xs);
+  const top = Math.min(...ys);
+  renderSnapshotSelection(
+    {
+      left,
+      top,
+      width: Math.max(1, Math.max(...xs) - left),
+      height: Math.max(1, Math.max(...ys) - top),
+    },
+    { syncImageRect: false }
+  );
 }
 
 function getSnapshotViewerBounds() {
@@ -4616,7 +4985,7 @@ function drawPorosityOverlay() {
   ) {
     ctx.lineTo(porosityAoiMousePoint.x, porosityAoiMousePoint.y);
   }
-  if (porosityAoiComplete && points.length >= 3) {
+  if ((porosityAoiComplete || porosityAoiModeActive) && points.length >= 3) {
     ctx.closePath();
   }
   ctx.lineJoin = "round";
@@ -5023,12 +5392,9 @@ function updatePorosityControls(message) {
       1
     )}% (${activeType.result.porePixels.toLocaleString()} of ${activeType.result.totalPixels.toLocaleString()} pixels).`;
   } else if (porosityAoiModeActive) {
-    porosityStatus.textContent =
-      porosityAoiImagePoints.length < 3
-        ? "Click at least three AOI vertices. Drag to pan and scroll to zoom."
-        : "Double-click to finish the AOI, or keep adding vertices.";
+    porosityStatus.textContent = "Drag an AOI rectangle over the image.";
   } else if (!hasAoi) {
-    porosityStatus.textContent = "Draw a polygon AOI, then pick pore colors.";
+    porosityStatus.textContent = "Draw an AOI, then pick pore colors.";
   } else if (!hasSelectedTileSets) {
     porosityStatus.textContent = "Select at least one tile set.";
   } else if (!hasSamples) {
@@ -5059,6 +5425,7 @@ function resetPorosityAnalysis(options = {}) {
   porosityAoiMousePoint = null;
   porosityAoiSelectedVertexIndex = null;
   porosityAoiDragState = null;
+  porosityAoiDrawState = null;
   porosityAoiVisible = true;
   porosityEstimateGeneration += 1;
   if (porosityToleranceReestimateTimer !== null) {
@@ -5116,6 +5483,7 @@ function undoPorosityReset() {
 function stopPorosityAoiMode() {
   porosityAoiModeActive = false;
   porosityAoiDragState = null;
+  porosityAoiDrawState = null;
   updatePorosityControls();
 }
 
@@ -5358,6 +5726,7 @@ function startPorosityAoiMode() {
   porosityPickModeActive = false;
   porosityAoiSelectedVertexIndex = null;
   porosityAoiDragState = null;
+  porosityAoiDrawState = null;
   porosityAoiVisible = true;
   porosityAoiImagePoints = [];
   porosityAoiComplete = false;
@@ -5384,6 +5753,7 @@ function finishPorosityAoi() {
   }
 
   porosityAoiModeActive = false;
+  porosityAoiDrawState = null;
   porosityAoiComplete = true;
   porosityAoiSelectedVertexIndex = null;
   porosityTypes.forEach((type) => {
@@ -5891,7 +6261,7 @@ async function estimatePorosity(options = {}) {
   const imageBounds =
     scope === "view" ? getPorosityViewImageBounds(aoiBounds, viewPolygon) : aoiBounds;
   if (!porosityAoiComplete || !imageBounds) {
-    updatePorosityControls("Draw a polygon AOI before estimating.");
+    updatePorosityControls("Draw an AOI before estimating.");
     return;
   }
   if (!targetType || targetType.colorSamples.length === 0) {
@@ -6418,8 +6788,10 @@ function getSnapshotSelectedTileSet() {
 }
 
 function getSnapshotResolutionMode() {
-  const mode = snapshotResolutionMode?.value || "current";
-  return mode === "native" ? "full" : mode;
+  const mode = snapshotResolutionMode?.value || "viewer";
+  if (mode === "viewer" || mode === "current") return "current";
+  if (mode === "1" || mode === "native") return "full";
+  return mode;
 }
 
 function getSnapshotImagePixelsPerScreenPixel(selectionRect) {
@@ -6470,19 +6842,28 @@ function getSnapshotExportSize(sourceRect = null) {
   if (!snapshotSelectionRect) return null;
 
   const resolutionMode = getSnapshotResolutionMode();
-  if (resolutionMode === "full") {
+  if (
+    resolutionMode === "full" ||
+    resolutionMode === "0.5" ||
+    resolutionMode === "0.25"
+  ) {
     const imagePixelsPerScreenPixel = getSnapshotImagePixelsPerScreenPixel(
       snapshotSelectionRect
     );
     if (!imagePixelsPerScreenPixel) return null;
+    const scale = resolutionMode === "full" ? 1 : Number(resolutionMode);
     return {
       width: Math.max(
         1,
-        Math.round(snapshotSelectionRect.width * imagePixelsPerScreenPixel.x)
+        Math.round(
+          snapshotSelectionRect.width * imagePixelsPerScreenPixel.x * scale
+        )
       ),
       height: Math.max(
         1,
-        Math.round(snapshotSelectionRect.height * imagePixelsPerScreenPixel.y)
+        Math.round(
+          snapshotSelectionRect.height * imagePixelsPerScreenPixel.y * scale
+        )
       ),
     };
   }
@@ -6495,11 +6876,72 @@ function getSnapshotExportSize(sourceRect = null) {
     1,
     Math.round(sourceRect?.height || snapshotSelectionRect.height)
   );
-  const scale = resolutionMode === "2x" ? 2 : 1;
   return {
-    width: Math.max(1, Math.round(baseWidth * scale)),
-    height: Math.max(1, Math.round(baseHeight * scale)),
+    width: baseWidth,
+    height: baseHeight,
   };
+}
+
+function getSnapshotSelectionImageRect(selectionRect = snapshotSelectionRect) {
+  const image = viewer.world.getItemAt(0);
+  if (!image || !selectionRect) return null;
+
+  const points = [
+    [selectionRect.left, selectionRect.top],
+    [selectionRect.left + selectionRect.width, selectionRect.top],
+    [selectionRect.left + selectionRect.width, selectionRect.top + selectionRect.height],
+    [selectionRect.left, selectionRect.top + selectionRect.height],
+  ].map(([x, y]) =>
+    image.viewportToImageCoordinates(
+      viewer.viewport.pointFromPixel(new OpenSeadragon.Point(x, y))
+    )
+  );
+
+  const xs = points.map((point) => point.x).filter(Number.isFinite);
+  const ys = points.map((point) => point.y).filter(Number.isFinite);
+  if (!xs.length || !ys.length) return null;
+
+  const left = Math.min(...xs);
+  const top = Math.min(...ys);
+  const right = Math.max(...xs);
+  const bottom = Math.max(...ys);
+  return {
+    x: left,
+    y: top,
+    width: Math.max(1, right - left),
+    height: Math.max(1, bottom - top),
+  };
+}
+
+async function applySnapshotExportFilter(outputCanvas, exportSize) {
+  if (!snapshotExportFilter?.checked || !hasSnapshotExportableTransform()) {
+    return false;
+  }
+
+  const transform = getTileSetTransform(getSnapshotSelectedTileSet());
+  const context = outputCanvas.getContext("2d", { willReadFrequently: true });
+  if (!context) return false;
+
+  if (isRasterRecipe(transform)) {
+    const imageRect = getSnapshotSelectionImageRect();
+    if (!imageRect) {
+      throw new Error("Could not determine the filter export image area.");
+    }
+    const scale = Math.min(
+      exportSize.width / imageRect.width,
+      exportSize.height / imageRect.height
+    );
+    await applyAdvancedTransformToExportContext(
+      context,
+      transform,
+      imageRect,
+      scale
+    );
+  } else {
+    applyTileSetTransformToContext(context, transform);
+  }
+
+  return true;
 }
 
 function getSnapshotMetersPerOutputPixel(selectionRect, outputWidth) {
@@ -8659,7 +9101,9 @@ function highlightClassifyPredictionGroup() {
   );
 }
 
-async function exportSnapshotSelection() {
+async function exportSnapshotSelection(destination = "file") {
+  if (snapshotExportInProgress) return;
+
   if (!snapshotSelectionRect) {
     updateSnapshotStatus("Draw a rectangle before exporting.");
     return;
@@ -8684,6 +9128,22 @@ async function exportSnapshotSelection() {
     return;
   }
 
+  snapshotExportInProgress = true;
+  const activeButton =
+    destination === "clipboard" ? snapshotCopyButton : snapshotExportButton;
+  activeButton?.setAttribute("aria-busy", "true");
+  if (activeButton) {
+    activeButton.textContent =
+      destination === "clipboard" ? "Copying…" : "Saving…";
+  }
+  updateSnapshotStatus(
+    `${destination === "clipboard" ? "Copying" : "Saving"} ${exportSize.width} x ${exportSize.height}px snapshot…`
+  );
+
+  // Give the browser an opportunity to paint the busy state before rendering.
+  await new Promise((resolve) => requestAnimationFrame(() => setTimeout(resolve, 0)));
+
+  let finalStatus = "";
   try {
     outputCanvas =
       getSnapshotResolutionMode() === "current"
@@ -8691,9 +9151,12 @@ async function exportSnapshotSelection() {
         : await renderFullResolutionSnapshotBaseCanvas(exportSize);
     ctx = outputCanvas?.getContext("2d");
     if (!ctx || !outputCanvas) {
-      updateSnapshotStatus("Could not create the snapshot canvas.");
-      return;
+      throw new Error("Could not create the snapshot canvas.");
     }
+    const filterApplied =
+      getSnapshotResolutionMode() === "current"
+        ? Boolean(snapshotExportFilter?.checked && hasSnapshotExportableTransform())
+        : await applySnapshotExportFilter(outputCanvas, exportSize);
 
     const contentMode = getSnapshotContentMode();
     if (contentMode === "annotations" || contentMode === "labels") {
@@ -8709,26 +9172,43 @@ async function exportSnapshotSelection() {
       ? drawSnapshotScalebar(ctx, outputCanvas, snapshotSelectionRect)
       : false;
 
-    outputCanvas.toBlob(
-      (blob) => {
-        if (!blob) {
-          updateSnapshotStatus("Could not encode the JPG snapshot.");
-          return;
-        }
-        downloadSnapshotBlob(blob);
-        clearSnapshotSelection();
-        updateSnapshotStatus(
-          scalebarRequested && !scalebarDrawn
-            ? "Snapshot exported without scalebar; scale unknown."
-            : "Snapshot exported."
-        );
-      },
-      "image/jpeg",
-      getSnapshotQuality()
+    const blob = await new Promise((resolve, reject) =>
+      outputCanvas.toBlob(
+        (encodedBlob) =>
+          encodedBlob
+            ? resolve(encodedBlob)
+            : reject(new Error("Could not encode the JPG snapshot.")),
+        "image/jpeg",
+        getSnapshotQuality()
+      )
     );
+    if (destination === "clipboard") {
+      if (!window.electronAPI?.copyImageToClipboard) {
+        throw new Error("Image clipboard access is unavailable.");
+      }
+      await window.electronAPI.copyImageToClipboard(
+        new Uint8Array(await blob.arrayBuffer())
+      );
+    } else {
+      downloadSnapshotBlob(blob);
+      clearSnapshotSelection();
+    }
+    const action = destination === "clipboard" ? "copied to clipboard" : "saved";
+    finalStatus =
+      scalebarRequested && !scalebarDrawn
+        ? `Snapshot ${action} without scalebar; scale unknown.`
+        : filterApplied
+        ? `Snapshot ${action} with applied filter.`
+        : `Snapshot ${action}.`;
   } catch (error) {
     console.error("Snapshot export failed:", error);
-    updateSnapshotStatus("Snapshot export was blocked by image security.");
+    finalStatus = error.message || "Snapshot export failed.";
+  } finally {
+    snapshotExportInProgress = false;
+    activeButton?.removeAttribute("aria-busy");
+    if (snapshotExportButton) snapshotExportButton.textContent = "Save to JPG";
+    if (snapshotCopyButton) snapshotCopyButton.textContent = "Copy to Clipboard";
+    updateSnapshotStatus(finalStatus);
   }
 }
 
@@ -8992,12 +9472,23 @@ if (hasSharedViewerMenus && openSnapshotPaletteButton && snapshotPalette) {
     );
     startSnapshotDrawMode();
   });
+  snapshotUseScreenExtentButton?.addEventListener("click", function () {
+    restoreToolPaletteFromMinimized(
+      snapshotPalette,
+      minimizeSnapshotPaletteButton
+    );
+    useSnapshotScreenExtent();
+  });
   snapshotClearButton?.addEventListener("click", function () {
     stopSnapshotDrawMode({ clearSelection: true });
   });
   snapshotExportButton?.addEventListener("click", function () {
-    exportSnapshotSelection();
+    exportSnapshotSelection("file");
   });
+  snapshotCopyButton?.addEventListener("click", function () {
+    exportSnapshotSelection("clipboard");
+  });
+  snapshotTileSetSelect?.addEventListener("change", updateSnapshotStatus);
   makeToolPaletteDraggable(
     snapshotPalette,
     snapshotPaletteHeader,
@@ -9005,10 +9496,7 @@ if (hasSharedViewerMenus && openSnapshotPaletteButton && snapshotPalette) {
   );
   window.addEventListener("resize", function () {
     scheduleClampOpenToolPalettes();
-    if (snapshotSelectionRect) {
-      clearSnapshotSelection();
-      updateSnapshotStatus("Draw a new area after resizing the viewer.");
-    }
+    refreshSnapshotSelectionForViewportChange();
   });
 }
 
@@ -9881,7 +10369,47 @@ viewer.addHandler("canvas-click", function (event) {
 
   if (porosityAoiModeActive) {
     event.preventDefaultAction = true;
-    addPorosityAoiPoint(event);
+    updatePorosityControls("Drag to draw an AOI rectangle.");
+    return;
+  }
+
+  if (
+    porosityAoiComplete &&
+    !porosityPickModeActive &&
+    event.originalEvent?.altKey
+  ) {
+    const inserted = insertPorosityAoiVertex(event.position);
+    if (inserted) {
+      event.preventDefaultAction = true;
+      return;
+    }
+  }
+
+  if (
+    unsupervisedAoiImagePoints.length >= 3 &&
+    !unsupervisedSegmentIsRunning &&
+    event.originalEvent?.altKey
+  ) {
+    const inserted = insertUnsupervisedAoiVertex(event.position);
+    if (inserted) {
+      event.preventDefaultAction = true;
+      return;
+    }
+  }
+
+  if (unsupervisedAoiSelectedVertexIndex !== null) {
+    unsupervisedAoiSelectedVertexIndex = null;
+    renderUnsupervisedAoiVertexHandles();
+  }
+
+  if (
+    porosityAoiComplete &&
+    !porosityPickModeActive &&
+    porosityAoiSelectedVertexIndex !== null
+  ) {
+    porosityAoiSelectedVertexIndex = null;
+    drawPorosityOverlay();
+    updatePorosityControls();
     return;
   }
 
@@ -9899,10 +10427,17 @@ viewer.addHandler("canvas-double-click", function (event) {
       return;
     }
   }
+  if (
+    unsupervisedAoiImagePoints.length >= 3 &&
+    !unsupervisedSegmentIsRunning &&
+    insertUnsupervisedAoiVertex(event.position)
+  ) {
+    event.preventDefaultAction = true;
+    return;
+  }
   if (!porosityAoiModeActive) return;
 
   event.preventDefaultAction = true;
-  finishPorosityAoi();
 });
 
 viewer.addHandler("tile-load-failed", handleTileLoadFailed);
@@ -9958,6 +10493,7 @@ document
   .getElementById("sampleDropdown")
   .addEventListener("change", async function () {
     try {
+      const previousTileSets = [...tileSets()];
       currentIndex = Number(this.value);
       rememberSelectedSampleForCurrentGroup(currentIndex);
       saveLastSamplePreference(currentIndex);
@@ -9972,7 +10508,7 @@ document
       buildImageCheckboxes();
       buildOpacitySliders();
       buildTileAppearanceControls();
-      resetTransformImageryForSampleChange();
+      resetTransformImageryForSampleChange(previousTileSets);
       clearAnnotations();
       annotationHistory.reset();
       updateImageCheckboxLabels();
@@ -11321,6 +11857,7 @@ function applyRasterCalculatorPreview() {
       ? transform
       : { ...TILE_SET_TRANSFORM_DEFAULTS }
   );
+  updateSnapshotStatus();
   updateAdvancedVisibleInputPreloadHints();
   setTransformStatus("Processing preview...");
   setTransformPreviewProgressStart();
@@ -11696,12 +12233,13 @@ function clearSelectedTransformPreviewForRasterEntry() {
   scheduleTransformHistogramRefresh();
 }
 
-function resetTransformImageryForSampleChange() {
+function resetTransformImageryForSampleChange(previousTileSets = []) {
   activeTransformPreviewSettings = { ...TILE_SET_TRANSFORM_DEFAULTS };
-  resetTransformTileCaches();
-  tileSets().forEach((tileSet) => {
+  const tileSetsToReset = [...new Set([...previousTileSets, ...tileSets()])];
+  tileSetsToReset.forEach((tileSet) => {
     tileSetTransformState.set(tileSet, { ...TILE_SET_TRANSFORM_DEFAULTS });
   });
+  resetTransformTileCaches(tileSetsToReset);
   updateAdvancedVisibleInputPreloadHints();
   syncTransformControlsFromSettings(activeTransformPreviewSettings);
   if (transformPreviewEnabled) transformPreviewEnabled.checked = true;
@@ -11722,7 +12260,11 @@ function resetTransformTileCaches(tileSetToReset = null, options = {}) {
     window.clearTimeout(tileAppearanceReprocessTimer);
     tileAppearanceReprocessTimer = null;
   }
-  const setsToReset = tileSetToReset ? [tileSetToReset] : tileSets();
+  const setsToReset = Array.isArray(tileSetToReset)
+    ? tileSetToReset
+    : tileSetToReset
+    ? [tileSetToReset]
+    : tileSets();
   setsToReset.forEach((tileSet) => {
     forEachLoadedTileInTileSet(tileSet, (loadedTile) => {
       loadedTile.petroImageProcessedContext = null;
@@ -11894,6 +12436,7 @@ function applyTransformControlsToSelectedTileSet() {
     resetTransformTileCaches(tileSet, { restoreDisplayed: false });
   }
   tileSetTransformState.set(tileSet, appliedTransform);
+  updateSnapshotStatus();
   updateAdvancedVisibleInputPreloadHints();
   if (isRasterRecipe(transform) && planHasRenderableAdvancedExpression()) {
     setTransformStatus("Processing preview...");
@@ -11981,6 +12524,7 @@ function resetSelectedTransformPreview() {
   if (!tileSet) return;
   resetTransformTileCaches(tileSet);
   tileSetTransformState.set(tileSet, { ...TILE_SET_TRANSFORM_DEFAULTS });
+  updateSnapshotStatus();
   updateAdvancedVisibleInputPreloadHints();
   activeTransformPreviewSettings = { ...TILE_SET_TRANSFORM_DEFAULTS };
   syncTransformControlsFromSettings(activeTransformPreviewSettings);
@@ -25099,6 +25643,7 @@ function boundsIntersect(a, b) {
 viewer.addHandler("animation", () => {
   drawViewerOverlays();
   refreshPorosityOverlayForViewportChange();
+  refreshSnapshotSelectionForViewportChange();
   if (unsupervisedResolutionSelect?.value === "viewer") {
     updateUnsupervisedAoiStats();
   }
@@ -25107,6 +25652,7 @@ viewer.addHandler("animation", () => {
 viewer.addHandler("animation-finish", () => {
   drawViewerOverlays();
   refreshPorosityOverlayForViewportChange();
+  refreshSnapshotSelectionForViewportChange();
   if (unsupervisedResolutionSelect?.value === "viewer") {
     refreshUnsupervisedAoiPreviewAndControls();
   }
@@ -25116,12 +25662,14 @@ if (window.ResizeObserver && viewerContainer) {
   const overlayResizeObserver = new ResizeObserver(() => {
     drawViewerOverlays();
     refreshPorosityOverlayForViewportChange();
+    refreshSnapshotSelectionForViewportChange();
   });
   overlayResizeObserver.observe(viewerContainer);
 } else {
   window.addEventListener("resize", () => {
     drawViewerOverlays();
     refreshPorosityOverlayForViewportChange();
+    refreshSnapshotSelectionForViewportChange();
   });
 }
 
@@ -25135,7 +25683,9 @@ viewerContainer.addEventListener("pointerenter", updateSegmentReticlePosition);
 viewerContainer.addEventListener("pointerleave", hideSegmentReticle);
 
 viewerContainer.addEventListener("mousemove", (event) => {
-  if (!porosityAoiModeActive || porosityAoiComplete) return;
+  if (!porosityAoiModeActive || porosityAoiComplete || porosityAoiDrawState) {
+    return;
+  }
 
   const rect = viewerContainer.getBoundingClientRect();
   porosityAoiConstrainSegment = event.shiftKey;
@@ -25162,6 +25712,7 @@ viewerContainer.addEventListener("mousemove", (event) => {
 viewerContainer.addEventListener(
   "pointerdown",
   (event) => {
+    if (event.target?.closest?.(".segment-aoi-vertex-handle")) return;
     startPorosityAoiVertexDrag(event);
   },
   true
@@ -25170,6 +25721,7 @@ viewerContainer.addEventListener(
 viewerContainer.addEventListener(
   "pointermove",
   (event) => {
+    updateUnsupervisedAoiVertexDrag(event);
     updatePorosityAoiVertexDrag(event);
   },
   true
@@ -25178,6 +25730,7 @@ viewerContainer.addEventListener(
 viewerContainer.addEventListener(
   "pointerup",
   (event) => {
+    finishUnsupervisedAoiVertexDrag(event);
     finishPorosityAoiVertexDrag(event);
   },
   true
@@ -25186,6 +25739,7 @@ viewerContainer.addEventListener(
 viewerContainer.addEventListener(
   "pointercancel",
   (event) => {
+    finishUnsupervisedAoiVertexDrag(event);
     finishPorosityAoiVertexDrag(event);
   },
   true
@@ -25573,6 +26127,10 @@ function isUnsupervisedAoiDrawGesture() {
   return unsupervisedAoiModeActive;
 }
 
+function isPorosityAoiDrawGesture() {
+  return porosityAoiModeActive;
+}
+
 function getImageMarqueePolygon(startPixel, endPixel) {
   const image = viewer.world.getItemAt(0);
   if (!image) return null;
@@ -25647,6 +26205,32 @@ function toggleAnnotationsInMarquee(marqueePolygon) {
 }
 
 viewer.addHandler("canvas-drag", function (event) {
+  if (isPorosityAoiDrawGesture(event)) {
+    event.preventDefaultAction = true;
+    const delta = event.delta || new OpenSeadragon.Point(0, 0);
+    if (!porosityAoiDrawState) {
+      porosityAoiDrawState = {
+        startPixel: new OpenSeadragon.Point(
+          event.position.x - delta.x,
+          event.position.y - delta.y
+        ),
+      };
+    }
+    const aoiRect = imageRectFromPixelBox(
+      porosityAoiDrawState.startPixel,
+      event.position
+    );
+    if (aoiRect && aoiRect.width > 0 && aoiRect.height > 0) {
+      porosityAoiImagePoints = imageRectToPoints(aoiRect);
+      porosityAoiMousePoint = null;
+      porosityTypes.forEach((type) => {
+        type.result = null;
+      });
+      drawPorosityOverlay();
+    }
+    return;
+  }
+
   if (isUnsupervisedAoiDrawGesture(event)) {
     event.preventDefaultAction = true;
     const delta = event.delta || new OpenSeadragon.Point(0, 0);
@@ -25664,7 +26248,8 @@ viewer.addHandler("canvas-drag", function (event) {
     );
     if (aoiRect && aoiRect.width > 0 && aoiRect.height > 0) {
       unsupervisedAoiRect = aoiRect;
-      updateUnsupervisedAoiPreview(aoiRect);
+      unsupervisedAoiImagePoints = imageRectToPoints(aoiRect);
+      updateUnsupervisedAoiPreview();
     }
     return;
   }
@@ -25835,6 +26420,28 @@ viewer.addHandler("canvas-drag", function (event) {
 
 // Finalize the rectangle on mouseup
 viewer.addHandler("canvas-release", function (event) {
+  if (isPorosityAoiDrawGesture(event)) {
+    event.preventDefaultAction = true;
+    const aoiRect =
+      porosityAoiDrawState
+        ? imageRectFromPixelBox(porosityAoiDrawState.startPixel, event.position)
+        : null;
+    porosityAoiDrawState = null;
+    porosityAoiMousePoint = null;
+
+    if (!aoiRect || aoiRect.width < 4 || aoiRect.height < 4) {
+      porosityAoiImagePoints = [];
+      porosityAoiComplete = false;
+      updatePorosityControls("Draw a larger AOI.");
+      drawPorosityOverlay();
+      return;
+    }
+
+    porosityAoiImagePoints = imageRectToPoints(aoiRect);
+    finishPorosityAoi();
+    return;
+  }
+
   if (isUnsupervisedAoiDrawGesture(event)) {
     event.preventDefaultAction = true;
     const aoiRect =
@@ -25850,9 +26457,11 @@ viewer.addHandler("canvas-release", function (event) {
     }
 
     unsupervisedAoiRect = aoiRect;
-    updateUnsupervisedAoiPreview(aoiRect);
+    unsupervisedAoiImagePoints = imageRectToPoints(aoiRect);
+    unsupervisedAoiSelectedVertexIndex = null;
+    updateUnsupervisedAoiPreview();
     setUnsupervisedSegmentStatus(
-      "AOI ready. Run segmenteverygrain to add annotations."
+      "AOI ready. Drag vertices to refine it, or run segmentation."
     );
     updateUnsupervisedSegmentControls();
     return;
@@ -28813,6 +29422,18 @@ document.addEventListener("keydown", (event) => {
 
 document.addEventListener("keydown", (event) => {
   if (event.key !== "Delete" && event.key !== "Backspace") return;
+  if (!segmentPalette || segmentPalette.hidden) return;
+  if (unsupervisedAoiSelectedVertexIndex === null) return;
+
+  const tag = event.target.tagName;
+  if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+
+  event.preventDefault();
+  deleteUnsupervisedAoiVertex(unsupervisedAoiSelectedVertexIndex);
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key !== "Delete" && event.key !== "Backspace") return;
   if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey) {
     return;
   }
@@ -28827,7 +29448,12 @@ document.addEventListener("keydown", (event) => {
   ) {
     return;
   }
-  if (porosityAoiSelectedVertexIndex !== null) return;
+  if (
+    porosityAoiSelectedVertexIndex !== null ||
+    unsupervisedAoiSelectedVertexIndex !== null
+  ) {
+    return;
+  }
 
   if (deleteSelectedAnnotations()) {
     event.preventDefault();
@@ -33111,6 +33737,43 @@ function closeAnnotateHelpDialog() {
   annotateHelpButton?.setAttribute("aria-expanded", "false");
 }
 
+function closeGridCountHelpDialog() {
+  if (!gridCountHelpDialog) return;
+  gridCountHelpDialog.hidden = true;
+  gridCountHelpButton?.setAttribute("aria-expanded", "false");
+}
+
+function openGridCountHelpDialog(button = gridCountHelpButton) {
+  if (!gridCountHelpDialog || !button) return;
+  if (gridCountHelpDialog.parentElement !== document.body) {
+    document.body.appendChild(gridCountHelpDialog);
+  }
+  gridCountHelpDialog.hidden = false;
+  gridCountHelpButton?.setAttribute("aria-expanded", "true");
+
+  const buttonRect = button.getBoundingClientRect();
+  const dialogRect = gridCountHelpDialog.getBoundingClientRect();
+  const margin = 8;
+  const left = Math.min(
+    Math.max(buttonRect.right - dialogRect.width, margin),
+    window.innerWidth - dialogRect.width - margin
+  );
+  const top = Math.min(
+    Math.max(buttonRect.bottom + 4, margin),
+    window.innerHeight - dialogRect.height - margin
+  );
+  gridCountHelpDialog.style.left = `${Math.max(margin, left)}px`;
+  gridCountHelpDialog.style.top = `${Math.max(margin, top)}px`;
+}
+
+function toggleGridCountHelpDialog(button = gridCountHelpButton) {
+  if (!gridCountHelpDialog || gridCountHelpDialog.hidden) {
+    openGridCountHelpDialog(button);
+  } else {
+    closeGridCountHelpDialog();
+  }
+}
+
 function closeControlsHelpDialog() {
   if (!controlsHelpDialog) return;
   controlsHelpDialog.hidden = true;
@@ -33133,6 +33796,72 @@ function closePorosityHelpDialog() {
   if (!porosityHelpDialog) return;
   porosityHelpDialog.hidden = true;
   porosityHelpButton?.setAttribute("aria-expanded", "false");
+}
+
+function closeSnapshotHelpDialog() {
+  if (!snapshotHelpDialog) return;
+  snapshotHelpDialog.hidden = true;
+  snapshotHelpButton?.setAttribute("aria-expanded", "false");
+}
+
+function closeSegmentHelpDialog() {
+  if (!segmentHelpDialog) return;
+  segmentHelpDialog.hidden = true;
+  segmentHelpButton?.setAttribute("aria-expanded", "false");
+}
+
+function openSegmentHelpDialog(button = segmentHelpButton) {
+  if (!segmentHelpDialog || !button) return;
+  if (segmentHelpDialog.parentElement !== document.body) {
+    document.body.appendChild(segmentHelpDialog);
+  }
+  segmentHelpDialog.hidden = false;
+  segmentHelpButton?.setAttribute("aria-expanded", "true");
+
+  const buttonRect = button.getBoundingClientRect();
+  const dialogRect = segmentHelpDialog.getBoundingClientRect();
+  const margin = 8;
+  const left = Math.min(
+    Math.max(buttonRect.right - dialogRect.width, margin),
+    window.innerWidth - dialogRect.width - margin
+  );
+  const top = Math.min(
+    Math.max(buttonRect.bottom + 4, margin),
+    window.innerHeight - dialogRect.height - margin
+  );
+  segmentHelpDialog.style.left = `${Math.max(margin, left)}px`;
+  segmentHelpDialog.style.top = `${Math.max(margin, top)}px`;
+}
+
+function toggleSegmentHelpDialog(button = segmentHelpButton) {
+  if (!segmentHelpDialog || segmentHelpDialog.hidden) {
+    openSegmentHelpDialog(button);
+  } else {
+    closeSegmentHelpDialog();
+  }
+}
+
+function openSnapshotHelpDialog(button = snapshotHelpButton) {
+  if (!snapshotHelpDialog || !button) return;
+  if (snapshotHelpDialog.parentElement !== document.body) {
+    document.body.appendChild(snapshotHelpDialog);
+  }
+  snapshotHelpDialog.hidden = false;
+  snapshotHelpButton?.setAttribute("aria-expanded", "true");
+
+  const buttonRect = button.getBoundingClientRect();
+  const dialogRect = snapshotHelpDialog.getBoundingClientRect();
+  const margin = 8;
+  const left = Math.min(
+    Math.max(buttonRect.right - dialogRect.width, margin),
+    window.innerWidth - dialogRect.width - margin
+  );
+  const top = Math.min(
+    Math.max(buttonRect.bottom + 4, margin),
+    window.innerHeight - dialogRect.height - margin
+  );
+  snapshotHelpDialog.style.left = `${Math.max(margin, left)}px`;
+  snapshotHelpDialog.style.top = `${Math.max(margin, top)}px`;
 }
 
 function openControlsHelpDialog(button = controlsHelpButton) {
@@ -33257,6 +33986,14 @@ function togglePorosityHelpDialog(button = porosityHelpButton) {
     openPorosityHelpDialog(button);
   } else {
     closePorosityHelpDialog();
+  }
+}
+
+function toggleSnapshotHelpDialog(button = snapshotHelpButton) {
+  if (!snapshotHelpDialog || snapshotHelpDialog.hidden) {
+    openSnapshotHelpDialog(button);
+  } else {
+    closeSnapshotHelpDialog();
   }
 }
 
@@ -38091,6 +38828,24 @@ controlsHelpDialog?.addEventListener("click", function (event) {
 });
 makeFixedElementDraggable(controlsHelpDialog, controlsHelpHeader);
 closeControlsHelpButton?.addEventListener("click", closeControlsHelpDialog);
+gridCountHelpButton?.addEventListener("click", function (event) {
+  event.stopPropagation();
+  toggleGridCountHelpDialog(event.currentTarget);
+});
+gridCountHelpDialog?.addEventListener("click", function (event) {
+  event.stopPropagation();
+});
+makeFixedElementDraggable(gridCountHelpDialog, gridCountHelpHeader);
+closeGridCountHelpButton?.addEventListener("click", closeGridCountHelpDialog);
+segmentHelpButton?.addEventListener("click", function (event) {
+  event.stopPropagation();
+  toggleSegmentHelpDialog(event.currentTarget);
+});
+segmentHelpDialog?.addEventListener("click", function (event) {
+  event.stopPropagation();
+});
+makeFixedElementDraggable(segmentHelpDialog, segmentHelpHeader);
+closeSegmentHelpButton?.addEventListener("click", closeSegmentHelpDialog);
 classifyHelpButton?.addEventListener("click", function (event) {
   event.stopPropagation();
   toggleClassifyHelpDialog(event.currentTarget);
@@ -38121,6 +38876,15 @@ porosityHelpDialog?.addEventListener("click", function (event) {
 });
 makeFixedElementDraggable(porosityHelpDialog, porosityHelpHeader);
 closePorosityHelpButton?.addEventListener("click", closePorosityHelpDialog);
+snapshotHelpButton?.addEventListener("click", function (event) {
+  event.stopPropagation();
+  toggleSnapshotHelpDialog(event.currentTarget);
+});
+snapshotHelpDialog?.addEventListener("click", function (event) {
+  event.stopPropagation();
+});
+makeFixedElementDraggable(snapshotHelpDialog, snapshotHelpHeader);
+closeSnapshotHelpButton?.addEventListener("click", closeSnapshotHelpDialog);
 annotateHelpButton?.addEventListener("click", function (event) {
   event.stopPropagation();
   toggleAnnotateHelpDialog(event.currentTarget);
@@ -38446,6 +39210,12 @@ window.addEventListener("click", function (event) {
     closeControlsHelpDialog();
   }
   if (
+    !event.target.closest("#gridCountHelpButton") &&
+    !event.target.closest("#gridCountHelpDialog")
+  ) {
+    closeGridCountHelpDialog();
+  }
+  if (
     !event.target.closest("#classifyHelpButton") &&
     !event.target.closest("#classifyHelpDialog")
   ) {
@@ -38464,6 +39234,18 @@ window.addEventListener("click", function (event) {
     closePorosityHelpDialog();
   }
   if (
+    !event.target.closest("#snapshotHelpButton") &&
+    !event.target.closest("#snapshotHelpDialog")
+  ) {
+    closeSnapshotHelpDialog();
+  }
+  if (
+    !event.target.closest("#segmentHelpButton") &&
+    !event.target.closest("#segmentHelpDialog")
+  ) {
+    closeSegmentHelpDialog();
+  }
+  if (
     !event.target.closest("#annotateHelpButton") &&
     !event.target.closest("#annotateHelpDialog")
   ) {
@@ -38479,9 +39261,12 @@ document.addEventListener(
         (annotationHeaderMenuElement?.hidden ?? true) &&
         (annotateHelpDialog?.hidden ?? true) &&
         (controlsHelpDialog?.hidden ?? true) &&
+        (gridCountHelpDialog?.hidden ?? true) &&
         (classifyHelpDialog?.hidden ?? true) &&
         (transformImageryHelpDialog?.hidden ?? true) &&
         (porosityHelpDialog?.hidden ?? true) &&
+        (snapshotHelpDialog?.hidden ?? true) &&
+        (segmentHelpDialog?.hidden ?? true) &&
         (measureScaleAuditPopover?.hidden ?? true) &&
         (measureHelpDialog?.hidden ?? true) &&
         measureHistogramMenu?.hidden &&
@@ -38497,9 +39282,12 @@ document.addEventListener(
     closeAnnotationHeaderMenu();
     closeAnnotateHelpDialog();
     closeControlsHelpDialog();
+    closeGridCountHelpDialog();
     closeClassifyHelpDialog();
     closeTransformImageryHelpDialog();
     closePorosityHelpDialog();
+    closeSnapshotHelpDialog();
+    closeSegmentHelpDialog();
     closeMeasureScaleAuditPopover();
     closeMeasureHelpDialog();
     closeMeasureHistogramMenu();

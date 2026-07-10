@@ -1,4 +1,13 @@
-import { app, BrowserWindow, ipcMain, dialog, screen, shell } from "electron";
+import {
+  app,
+  BrowserWindow,
+  clipboard,
+  ipcMain,
+  dialog,
+  nativeImage,
+  screen,
+  shell,
+} from "electron";
 import { fileURLToPath } from "url";
 import path from "path";
 import fs from "fs/promises";
@@ -1996,6 +2005,16 @@ ipcMain.handle("show-tile-load-warning", async (event, failure) => {
     });
   }
   return { suppressed: false, dontShowAgain: result.response === 1 };
+});
+
+ipcMain.handle("copy-image-to-clipboard", async (event, imageBytes) => {
+  if (!imageBytes) throw new Error("No snapshot image was provided.");
+
+  const image = nativeImage.createFromBuffer(Buffer.from(imageBytes));
+  if (image.isEmpty()) throw new Error("Could not prepare the snapshot image.");
+
+  clipboard.writeImage(image);
+  return true;
 });
 
 function getTileLoadFailureContext(failure = {}) {
