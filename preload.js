@@ -44,14 +44,14 @@ contextBridge.exposeInMainWorld("electronAPI", {
     ipcRenderer.invoke("copy-image-to-clipboard", imageBytes),
   readLocalJsonFile: (filePath) =>
     ipcRenderer.invoke("read-local-json-file", filePath),
-  selectJpgFile: () => ipcRenderer.invoke("select-jpg-file"),
+  selectImageFile: () => ipcRenderer.invoke("select-image-file"),
   selectExistingJsonFile: () => ipcRenderer.invoke("select-existing-json-file"),
   writeJsonFile: (filePath, jsonData) =>
     ipcRenderer.invoke("write-json-file", { filePath, jsonData }),
   saveJsonFileAs: (defaultFileName, jsonData) =>
     ipcRenderer.invoke("save-json-file-as", { defaultFileName, jsonData }),
-  convertJpgToDzi: (sourcePath) =>
-    ipcRenderer.invoke("convert-jpg-to-dzi", sourcePath),
+  convertImageToDzi: (sourcePath) =>
+    ipcRenderer.invoke("convert-image-to-dzi", sourcePath),
   createDerivedDzi: (request) =>
     ipcRenderer.invoke("create-derived-dzi", request),
   deleteProjectDzi: (request) =>

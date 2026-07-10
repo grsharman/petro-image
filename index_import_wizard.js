@@ -89,12 +89,12 @@ function validateGroupUniqueness() {
   return !Object.values(counts).some((c) => c > 1);
 }
 
-function hasElectronJpgPicker() {
-  return Boolean(window.electronAPI?.selectJpgFile);
+function hasElectronImagePicker() {
+  return Boolean(window.electronAPI?.selectImageFile);
 }
 
 function hasElectronDziConverter() {
-  return Boolean(window.electronAPI?.convertJpgToDzi);
+  return Boolean(window.electronAPI?.convertImageToDzi);
 }
 
 function updateJpgLabel(row, text) {
@@ -107,7 +107,7 @@ function updateJpgLabel(row, text) {
 function setJpgRowConversionState(row, state, message) {
   row.dataset.dziState = state;
   row.title = message || "";
-  updateJpgLabel(row, message || "Choose JPG");
+  updateJpgLabel(row, message || "Choose image");
 }
 
 function setImageRowUri(row, uri) {
@@ -118,22 +118,22 @@ function setImageRowUri(row, uri) {
   updateExportButtonLabel();
 }
 
-function displaySelectedJpgFallback(fileInput) {
+function displaySelectedImageFallback(fileInput) {
   const row = fileInput.closest(".image-row");
   const file = fileInput.files?.[0];
 
-  if (!row || !file || hasElectronJpgPicker()) return;
+  if (!row || !file || hasElectronImagePicker()) return;
 
   const filePath = file.path || file.name || "";
-  row.dataset.sourceJpgPath = filePath;
+  row.dataset.sourceImagePath = filePath;
   setImageRowUri(row, filePath);
-  setJpgRowConversionState(row, "selected", file.name || "JPG selected");
+  setJpgRowConversionState(row, "selected", file.name || "Image selected");
 }
 
 document.addEventListener("click", async (event) => {
   const label = event.target.closest(".jpg-label");
 
-  if (!label || !hasElectronJpgPicker()) return;
+  if (!label || !hasElectronImagePicker()) return;
 
   event.preventDefault();
   event.stopPropagation();
@@ -142,42 +142,42 @@ document.addEventListener("click", async (event) => {
   if (!row) return;
 
   try {
-    setJpgRowConversionState(row, "selecting", "Selecting JPG...");
-    const result = await window.electronAPI.selectJpgFile();
+    setJpgRowConversionState(row, "selecting", "Selecting image...");
+    const result = await window.electronAPI.selectImageFile();
 
     if (result?.canceled) {
-      const priorPath = row.dataset.sourceJpgPath;
+      const priorPath = row.dataset.sourceImagePath;
       setJpgRowConversionState(
         row,
         priorPath ? "selected" : "idle",
-        priorPath ? "JPG selected" : "Choose JPG",
+        priorPath ? "Image selected" : "Choose image",
       );
       return;
     }
 
     const sourcePath = result.sourcePath || "";
-    row.dataset.sourceJpgPath = sourcePath;
+    row.dataset.sourceImagePath = sourcePath;
 
     if (!sourcePath) {
       setImageRowUri(row, "");
-      setJpgRowConversionState(row, "idle", "Choose JPG");
+      setJpgRowConversionState(row, "idle", "Choose image");
       return;
     }
 
     setImageRowUri(row, sourcePath);
-    setJpgRowConversionState(row, "selected", "JPG selected");
+    setJpgRowConversionState(row, "selected", "Image selected");
   } catch (error) {
     console.error(error);
-    row.dataset.sourceJpgPath = "";
+    row.dataset.sourceImagePath = "";
     activeConversionProgress = null;
     setJpgRowConversionState(row, "error", "Selection failed");
-    alert(error.message || "Could not select the JPG file.");
+    alert(error.message || "Could not select the image file.");
   }
 });
 
 document.addEventListener("change", (event) => {
   if (event.target.matches(".jpg-file")) {
-    displaySelectedJpgFallback(event.target);
+    displaySelectedImageFallback(event.target);
   }
 });
 
@@ -263,11 +263,11 @@ function addTileRow() {
               &minus;
             </button>
 
-            <!-- JPG / URI inputs -->
+            <!-- Local image / URI inputs -->
             <div class="jpg-row">
                 <label class="file-label jpg-label" style="--file-label-width: 104px">
-                  <span class="jpg-label-text">Choose JPG</span>
-                  <input type="file" class="file-input jpg-file" accept=".jpg,.jpeg,image/jpeg"/>
+                  <span class="jpg-label-text">Choose image</span>
+                  <input type="file" class="file-input jpg-file" accept=".jpg,.jpeg,.png,.tif,.tiff,.webp,.gif,.avif,.heif,.heic,.svg,.v,.vips,.jp2,.j2k,.jpf,.jpx,.jpm,.mj2,image/*"/>
 				</label>
                 <input type="text" class="uri-input" placeholder="dzi/sample.dzi" />
             </div>
@@ -327,8 +327,8 @@ function addImageRowMultiple(btn) {
 
     <div class="jpg-row">
       <label class="file-label jpg-label" style="--file-label-width: 104px">
-        <span class="jpg-label-text">Choose JPG</span>
-	    <input type="file" class="file-input jpg-file" accept=".jpg,.jpeg,image/jpeg" />
+        <span class="jpg-label-text">Choose image</span>
+	    <input type="file" class="file-input jpg-file" accept=".jpg,.jpeg,.png,.tif,.tiff,.webp,.gif,.avif,.heif,.heic,.svg,.v,.vips,.jp2,.j2k,.jpf,.jpx,.jpm,.mj2,image/*" />
 	  </label>
       
       <input type="text" class="uri-input" placeholder="dzi/sample.dzi" />
@@ -368,8 +368,8 @@ function addImageRowRotation(btn) {
 
     <div class="jpg-row">
       <label class="file-label jpg-label" style="--file-label-width: 104px">
-        <span class="jpg-label-text">Choose JPG</span>
-        <input type="file" class="file-input jpg-file" accept=".jpg,.jpeg,image/jpeg" />
+        <span class="jpg-label-text">Choose image</span>
+        <input type="file" class="file-input jpg-file" accept=".jpg,.jpeg,.png,.tif,.tiff,.webp,.gif,.avif,.heif,.heic,.svg,.v,.vips,.jp2,.j2k,.jpf,.jpx,.jpm,.mj2,image/*" />
 	  </label>
       
       <input type="text" class="uri-input" placeholder="dzi/sample.dzi" />
@@ -603,8 +603,8 @@ function addImageRowTemplate(btn, mode = "label") {
       <button type="button" class="img-btn remove-btn" onclick="removeImageRow(this)">&minus;</button>
       <div class="jpg-row">
         <label class="file-label jpg-label" style="--file-label-width:104px">
-          <span class="jpg-label-text">Choose JPG</span>
-			<input type="file" class="file-input jpg-file" accept=".jpg,.jpeg,image/jpeg" />
+          <span class="jpg-label-text">Choose image</span>
+			<input type="file" class="file-input jpg-file" accept=".jpg,.jpeg,.png,.tif,.tiff,.webp,.gif,.avif,.heif,.heic,.svg,.v,.vips,.jp2,.j2k,.jpf,.jpx,.jpm,.mj2,image/*" />
 		</label>
         <input type="text" class="uri-input" placeholder="dzi/sample.dzi" />
       </div>
@@ -620,8 +620,8 @@ function addImageRowTemplate(btn, mode = "label") {
       <button type="button" class="img-btn remove-btn" onclick="removeImageRow(this)">&minus;</button>
       <div class="jpg-row">
         <label class="file-label jpg-label" style="--file-label-width:104px">
-          <span class="jpg-label-text">Choose JPG</span>
-			<input type="file" class="file-input jpg-file" accept=".jpg,.jpeg,image/jpeg" />
+          <span class="jpg-label-text">Choose image</span>
+			<input type="file" class="file-input jpg-file" accept=".jpg,.jpeg,.png,.tif,.tiff,.webp,.gif,.avif,.heif,.heic,.svg,.v,.vips,.jp2,.j2k,.jpf,.jpx,.jpm,.mj2,image/*" />
 		</label>
         <input type="text" class="uri-input" placeholder="dzi/sample.dzi" />
       </div>
@@ -681,7 +681,7 @@ function createJSON() {
         const selectedFile = fileInput?.files[0];
         let uri =
           uriInput?.value ||
-          imgRow.dataset.sourceJpgPath ||
+          imgRow.dataset.sourceImagePath ||
           selectedFile?.path ||
           selectedFile?.name ||
           "";
@@ -751,19 +751,19 @@ function updateExportButtonState() {
     !hasRequiredSampleFields() || (needsExistingJSON && !hasExistingJSON);
 }
 
-function hasPendingLocalJpgUris() {
+function hasPendingLocalImageUris() {
   return Array.from(document.querySelectorAll(".image-row")).some((row) => {
     const uriInput = row.querySelector(".uri-input");
     const fileInput = row.querySelector(".jpg-file");
     const selectedFile = fileInput?.files[0];
     const uri =
       uriInput?.value ||
-      row.dataset.sourceJpgPath ||
+      row.dataset.sourceImagePath ||
       selectedFile?.path ||
       selectedFile?.name ||
       "";
 
-    return isLocalJpgPath(uri.replace(/^["']+|["']+$/g, ""));
+    return isLocalImagePath(uri.replace(/^["']+|["']+$/g, ""));
   });
 }
 
@@ -773,8 +773,8 @@ function updateExportButtonLabel() {
       ? "Update Library"
       : "Export Library";
 
-  exportBtn.textContent = hasElectronDziConverter() && hasPendingLocalJpgUris()
-    ? `Convert JPGs and ${action}`
+  exportBtn.textContent = hasElectronDziConverter() && hasPendingLocalImageUris()
+    ? `Convert images and ${action}`
     : action;
 }
 
@@ -830,21 +830,21 @@ existingFileInput.addEventListener("change", updateExportButtonState);
 // Initialize state on page load
 updateSaveType();
 
-function isLocalJpgPath(uri) {
+function isLocalImagePath(uri) {
   return (
     typeof uri === "string" &&
     !/^[a-z][a-z0-9+.-]*:\/\//i.test(uri) &&
-    /\.(jpe?g)$/i.test(uri)
+    /\.(jpe?g|png|tiff?|webp|gif|avif|hei[cf]|svg|v|vips|jp2|j2k|jpf|jpx|jpm|mj2)$/i.test(uri)
   );
 }
 
-function getLocalJpgUris(sample) {
+function getLocalImageUris(sample) {
   const uris = [];
   const seen = new Set();
 
   for (const tileSet of sample.tileSets || []) {
     for (const tile of tileSet.tiles || []) {
-      if (!isLocalJpgPath(tile.uri) || seen.has(tile.uri)) continue;
+      if (!isLocalImagePath(tile.uri) || seen.has(tile.uri)) continue;
 
       seen.add(tile.uri);
       uris.push(tile.uri);
@@ -904,30 +904,30 @@ if (window.electronAPI?.onDziConversionProgress) {
   window.electronAPI.onDziConversionProgress(handleDziConversionProgress);
 }
 
-async function convertLocalJpgUrisToDzi(sample) {
+async function convertLocalImageUrisToDzi(sample) {
   if (!hasElectronDziConverter()) return;
 
-  const localJpgUris = getLocalJpgUris(sample);
+  const localImageUris = getLocalImageUris(sample);
   const conversionResults = new Map();
 
-  if (!localJpgUris.length) {
+  if (!localImageUris.length) {
     return;
   }
 
-  for (let i = 0; i < localJpgUris.length; i += 1) {
-    const uri = localJpgUris[i];
+  for (let i = 0; i < localImageUris.length; i += 1) {
+    const uri = localImageUris[i];
 
     activeConversionProgress = {
       sourcePath: uri,
       fileIndex: i + 1,
-      totalFiles: localJpgUris.length,
+      totalFiles: localImageUris.length,
     };
     showImportProgress(
-      `Preparing ${i + 1}/${localJpgUris.length}: ${getPathFileName(uri)}`,
-      (i / localJpgUris.length) * 100,
+      `Preparing ${i + 1}/${localImageUris.length}: ${getPathFileName(uri)}`,
+      (i / localImageUris.length) * 100,
     );
 
-    const result = await window.electronAPI.convertJpgToDzi(uri);
+    const result = await window.electronAPI.convertImageToDzi(uri);
     conversionResults.set(uri, result.relativeDziPath || result.dziPath);
   }
 
@@ -941,14 +941,14 @@ async function convertLocalJpgUrisToDzi(sample) {
 
   document.querySelectorAll(".image-row").forEach((row) => {
     const uriInput = row.querySelector(".uri-input");
-    const uri = (uriInput?.value || row.dataset.sourceJpgPath || "").replace(
+    const uri = (uriInput?.value || row.dataset.sourceImagePath || "").replace(
       /^["']+|["']+$/g,
       "",
     );
 
     if (conversionResults.has(uri)) {
       setImageRowUri(row, conversionResults.get(uri));
-      delete row.dataset.sourceJpgPath;
+      delete row.dataset.sourceImagePath;
       setJpgRowConversionState(row, "converted", "DZI ready");
     }
   });
@@ -988,10 +988,10 @@ document.getElementById("exportJSONBtn").addEventListener("click", async () => {
   setExportInProgress(true);
 
   try {
-    await convertLocalJpgUrisToDzi(newSample);
+    await convertLocalImageUrisToDzi(newSample);
   } catch (error) {
     console.error(error);
-    alert(error.message || "Could not convert JPG file(s) to DZI.");
+    alert(error.message || "Could not convert image file(s) to DZI.");
     setExportInProgress(false);
     hideImportProgress();
     updateExportButtonState();

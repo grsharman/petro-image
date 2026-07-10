@@ -24214,11 +24214,11 @@ function setTileSetEditorStatus(message, isError = false) {
   tileSetEditorStatus.classList.toggle("error", isError);
 }
 
-function isTileSetEditorLocalJpgPath(uri) {
+function isTileSetEditorLocalImagePath(uri) {
   return (
     typeof uri === "string" &&
     !/^[a-z][a-z0-9+.-]*:\/\//i.test(uri) &&
-    /\.(jpe?g)$/i.test(uri)
+    /\.(jpe?g|png|tiff?|webp|gif|avif|hei[cf]|svg|v|vips|jp2|j2k|jpf|jpx|jpm|mj2)$/i.test(uri)
   );
 }
 
@@ -24229,13 +24229,13 @@ function getFileNameFromPath(filePath) {
 function updateTileSetEditorSaveButtonLabel() {
   if (!saveTileSetEditorButton) return;
 
-  const hasPendingJpg = Array.from(
+  const hasPendingImage = Array.from(
     tileSetEditorRows?.querySelectorAll(".tile-image-editor-uri-input") || []
-  ).some((input) => isTileSetEditorLocalJpgPath(input.value.trim()));
+  ).some((input) => isTileSetEditorLocalImagePath(input.value.trim()));
 
   saveTileSetEditorButton.textContent =
-    hasPendingJpg && window.electronAPI?.convertJpgToDzi
-      ? "Convert JPGs and Save"
+    hasPendingImage && window.electronAPI?.convertImageToDzi
+      ? "Convert images and Save"
       : "Save";
 }
 
@@ -24481,8 +24481,8 @@ function createTileImageEditorRow(tile = {}, type = "individual") {
   uriInput.placeholder = "images/sample.dzi";
   uriInput.value = tile.uri || "";
 
-  const chooseButton = createTileSetEditorButton("Choose JPG", "Choose JPG", "choose-jpg");
-  chooseButton.disabled = !window.electronAPI?.selectJpgFile;
+  const chooseButton = createTileSetEditorButton("Choose image", "Choose image", "choose-image");
+  chooseButton.disabled = !window.electronAPI?.selectImageFile;
 
   const addButton = createTileSetEditorButton("Add image", "+", "add-image");
   const removeButton = createTileSetEditorButton("Remove image", "-", "remove-image");
@@ -24717,7 +24717,7 @@ function validateTileSetsForEditor(tileSets) {
 
     for (const [tileIndex, tile] of tileSet.tiles.entries()) {
       if (!tile.uri) {
-        return `${label}, image ${tileIndex + 1} needs a URI or converted JPG.`;
+      return `${label}, image ${tileIndex + 1} needs a URI or converted image.`;
       }
       if (tile.angleDegrees !== undefined) {
         const angle = Number(tile.angleDegrees);
@@ -24731,14 +24731,14 @@ function validateTileSetsForEditor(tileSets) {
   return "";
 }
 
-async function convertPendingTileSetEditorJpgs() {
-  if (!window.electronAPI?.convertJpgToDzi) return;
+async function convertPendingTileSetEditorImages() {
+  if (!window.electronAPI?.convertImageToDzi) return;
 
   const rows = Array.from(
     tileSetEditorRows?.querySelectorAll(".tile-image-editor-row") || []
   ).filter((row) => {
     const uri = row.querySelector(".tile-image-editor-uri-input")?.value.trim() || "";
-    return isTileSetEditorLocalJpgPath(uri);
+    return isTileSetEditorLocalImagePath(uri);
   });
 
   if (!rows.length) return;
@@ -24761,9 +24761,9 @@ async function convertPendingTileSetEditorJpgs() {
       row,
       `Converting ${index + 1}/${rows.length}: ${getFileNameFromPath(sourcePath)}`
     );
-    setTileSetEditorStatus(`Converting JPG ${index + 1} of ${rows.length}...`);
+    setTileSetEditorStatus(`Converting image ${index + 1} of ${rows.length}...`);
 
-    const conversion = await window.electronAPI.convertJpgToDzi(sourcePath);
+    const conversion = await window.electronAPI.convertImageToDzi(sourcePath);
     const convertedUri = conversion?.relativeDziPath || conversion?.dziPath || "";
     if (!convertedUri) {
       throw new Error(`Could not convert ${getFileNameFromPath(sourcePath)}.`);
@@ -24779,7 +24779,7 @@ async function saveTileSetEditorDraft() {
   const selectedSample = getTileSetEditorSelectedSample();
   if (!selectedSample) return;
   if (tileSetEditorState.convertingRow) {
-    setTileSetEditorStatus("Wait for the JPG conversion to finish.", true);
+    setTileSetEditorStatus("Wait for the image conversion to finish.", true);
     return;
   }
 
@@ -24790,25 +24790,25 @@ async function saveTileSetEditorDraft() {
     return;
   }
 
-  const pendingJpgs = Array.from(
+  const pendingImages = Array.from(
     tileSetEditorRows?.querySelectorAll(".tile-image-editor-uri-input") || []
-  ).some((input) => isTileSetEditorLocalJpgPath(input.value.trim()));
-  if (pendingJpgs && !window.electronAPI?.convertJpgToDzi) {
-    setTileSetEditorStatus("JPG conversion is unavailable.", true);
+  ).some((input) => isTileSetEditorLocalImagePath(input.value.trim()));
+  if (pendingImages && !window.electronAPI?.convertImageToDzi) {
+    setTileSetEditorStatus("Image conversion is unavailable.", true);
     return;
   }
 
-  if (pendingJpgs) {
+  if (pendingImages) {
     if (saveTileSetEditorButton) {
       saveTileSetEditorButton.disabled = true;
       saveTileSetEditorButton.textContent = "Converting...";
     }
 
     try {
-      await convertPendingTileSetEditorJpgs();
+      await convertPendingTileSetEditorImages();
     } catch (error) {
-      console.error("Could not convert JPG:", error);
-      setTileSetEditorStatus(error.message || "Could not convert JPG file(s).", true);
+      console.error("Could not convert image:", error);
+      setTileSetEditorStatus(error.message || "Could not convert image file(s).", true);
       return;
     } finally {
       tileSetEditorState.convertingRow = null;
@@ -24847,29 +24847,29 @@ function setTileImageRowStatus(row, message, isError = false) {
   status.classList.toggle("error", isError);
 }
 
-async function chooseTileImageJpg(row) {
-  if (!window.electronAPI?.selectJpgFile) {
-    setTileImageRowStatus(row, "JPG selection is unavailable.", true);
+async function chooseTileImage(row) {
+  if (!window.electronAPI?.selectImageFile) {
+    setTileImageRowStatus(row, "Image selection is unavailable.", true);
     return;
   }
   if (tileSetEditorState.convertingRow) return;
 
-  const chooseButton = row.querySelector('button[data-action="choose-jpg"]');
+  const chooseButton = row.querySelector('button[data-action="choose-image"]');
   try {
     if (chooseButton) chooseButton.disabled = true;
     if (saveTileSetEditorButton) saveTileSetEditorButton.disabled = true;
-    setTileImageRowStatus(row, "Selecting JPG...");
-    const result = await window.electronAPI.selectJpgFile();
+    setTileImageRowStatus(row, "Selecting image...");
+    const result = await window.electronAPI.selectImageFile();
     if (result?.canceled || !result?.sourcePath) {
       setTileImageRowStatus(row, "");
       return;
     }
 
     row.querySelector(".tile-image-editor-uri-input").value = result.sourcePath;
-    setTileImageRowStatus(row, "JPG selected.");
+    setTileImageRowStatus(row, "Image selected.");
     updateTileSetEditorSaveButtonLabel();
   } catch (error) {
-    console.error("Could not select JPG:", error);
+    console.error("Could not select image:", error);
     setTileImageRowStatus(row, error.message || "Selection failed.", true);
   } finally {
     if (chooseButton) chooseButton.disabled = false;
@@ -24884,7 +24884,7 @@ function handleTileSetEditorConversionProgress(progress) {
 
   const percent = Number(progress.percent);
   const percentLabel = Number.isFinite(percent) ? ` ${Math.round(percent)}%` : "";
-  setTileImageRowStatus(row, `Converting JPG to DZI...${percentLabel}`);
+  setTileImageRowStatus(row, `Converting image to DZI...${percentLabel}`);
 }
 
 if (window.electronAPI?.onDziConversionProgress) {
@@ -24938,8 +24938,8 @@ tileSetEditorRows?.addEventListener("click", function (event) {
     addTileImageEditorRow(button.closest(".tile-image-editor-row"));
   } else if (action === "remove-image") {
     removeTileImageEditorRow(button.closest(".tile-image-editor-row"));
-  } else if (action === "choose-jpg") {
-    chooseTileImageJpg(button.closest(".tile-image-editor-row"));
+  } else if (action === "choose-image") {
+    chooseTileImage(button.closest(".tile-image-editor-row"));
   }
 });
 

@@ -15,7 +15,7 @@ import { createReadStream } from "fs";
 import { spawn } from "child_process";
 import http from "http";
 import { randomUUID } from "crypto";
-import { convertImageBufferToDzi, convertJpgToDzi } from "./dzi-converter.js";
+import { convertImageBufferToDzi, convertImageToDzi } from "./dzi-converter.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -1693,12 +1693,32 @@ ipcMain.handle("resize-import-wizard-to-content", (event, { width, height }) => 
   importWizardWindow.setContentSize(nextWidth, nextHeight);
 });
 
-ipcMain.handle("select-jpg-file", async () => {
+ipcMain.handle("select-image-file", async () => {
   const ownerWindow = BrowserWindow.getFocusedWindow() || mainWindow;
   const { canceled, filePaths } = await dialog.showOpenDialog(ownerWindow, {
-    title: "Select JPG file",
+    title: "Select image file",
     properties: ["openFile"],
-    filters: [{ name: "JPEG Images", extensions: ["jpg", "jpeg"] }],
+    filters: [
+      {
+        name: "Supported Images",
+        extensions: [
+          "jpg", "jpeg", "png", "tif", "tiff", "webp", "gif",
+          "avif", "heif", "heic", "svg", "v", "vips",
+          "jp2", "j2k", "jpf", "jpx", "jpm", "mj2",
+        ],
+      },
+      { name: "JPEG", extensions: ["jpg", "jpeg"] },
+      { name: "PNG", extensions: ["png"] },
+      { name: "TIFF", extensions: ["tif", "tiff"] },
+      { name: "WebP", extensions: ["webp"] },
+      { name: "AVIF / HEIF", extensions: ["avif", "heif", "heic"] },
+      { name: "GIF", extensions: ["gif"] },
+      { name: "SVG", extensions: ["svg"] },
+      {
+        name: "JPEG 2000 / JPX",
+        extensions: ["jp2", "j2k", "jpf", "jpx", "jpm", "mj2"],
+      },
+    ],
   });
 
   if (canceled || !filePaths.length) {
@@ -2425,12 +2445,12 @@ function ensureJsonExtension(fileName) {
   return /\.json$/i.test(fileName) ? fileName : `${fileName}.json`;
 }
 
-ipcMain.handle("convert-jpg-to-dzi", async (event, sourcePath) => {
+ipcMain.handle("convert-image-to-dzi", async (event, sourcePath) => {
   const settings = await readProjectSettings();
   const outputDirectory = settings.projectDirectory
     ? path.join(settings.projectDirectory, DZI_FOLDER_NAME)
     : path.dirname(sourcePath);
-  const result = await convertJpgToDzi(
+  const result = await convertImageToDzi(
     sourcePath,
     (progress) => {
       event.sender.send("dzi-conversion-progress", progress);

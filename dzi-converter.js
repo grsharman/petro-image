@@ -6,7 +6,7 @@ const DZI_TILE_SIZE = 254;
 const DZI_OVERLAP = 1;
 const JPEG_QUALITY = 90;
 
-export async function convertJpgToDzi(
+export async function convertImageToDzi(
   sourcePath,
   onProgress = () => {},
   outputDirectory = path.dirname(sourcePath),
@@ -16,13 +16,13 @@ export async function convertJpgToDzi(
   try {
     metadata = await createSourceImage(sourcePath).metadata();
   } catch (error) {
-    throw new Error("Could not load the selected JPG file.");
+    throw new Error(getSourceImageError(sourcePath, error));
   }
 
   const { width, height } = metadata;
 
   if (!width || !height) {
-    throw new Error("Could not load the selected JPG file.");
+    throw new Error("Could not read the dimensions of the selected image.");
   }
 
   const maxLevel = Math.ceil(Math.log2(Math.max(width, height)));
@@ -155,6 +155,18 @@ function createSourceImage(sourcePath) {
     limitInputPixels: false,
     sequentialRead: true,
   });
+}
+
+function getSourceImageError(sourcePath, error) {
+  const extension = path.extname(sourcePath || "").toLowerCase();
+  if ([".jp2", ".j2k", ".jpf", ".jpx", ".jpm", ".mj2"].includes(extension)) {
+    return "JPEG 2000/JPX is not supported by this build of the image converter.";
+  }
+
+  const detail = String(error?.message || "");
+  return detail
+    ? `Could not load the selected image: ${detail}`
+    : "Could not load the selected image.";
 }
 
 function countTiles(width, height, maxLevel) {
