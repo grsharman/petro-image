@@ -357,7 +357,7 @@
           position: absolute;
           top: 0;
           left: 0;
-          z-index: 1003;
+          z-index: 999;
           pointer-events: none;
         "
       ></canvas>
@@ -1740,6 +1740,16 @@
           </div>
         </div>
         <div class="tool-palette-body porosity-palette-body">
+          <details id="porosityDefinePanel" class="porosity-workflow-panel" open>
+            <summary>Define porosity</summary>
+          <details class="porosity-recipe-panel">
+            <summary>Recipe</summary>
+            <div class="porosity-recipe-actions">
+              <button id="importPorosityRecipeButton" type="button">Import recipe…</button>
+              <input id="porosityRecipeFileInput" type="file" accept="application/json,.json" hidden />
+            </div>
+            <p class="porosity-recipe-note">Import replaces the current AOI, porosity types, linked color picks, and settings.</p>
+          </details>
           <div class="porosity-start-row">
             <button id="porosityDrawAoiButton" type="button">Draw AOI</button>
             <button id="porosityClearButton" type="button" disabled>
@@ -1829,47 +1839,48 @@
             </button>
           </div>
           <label class="snapshot-field porosity-tile-set-field">
-            <span>Select tile set(s) for estimation</span>
+            <span>Select tile set(s)</span>
             <select id="porosityTileSetSelect" multiple size="2"></select>
           </label>
           <div class="porosity-actions">
             <button id="porosityPickColorButton" type="button" disabled>
               Pick Porosity
             </button>
-            <button id="porosityUndoColorButton" type="button" disabled>
-              Undo
+          </div>
+          <div class="porosity-polygon-action">
+            <button id="porosityAddSelectedPolygonsButton" type="button" disabled>
+              Add selected polygons
             </button>
           </div>
-          <label class="snapshot-field">
-            <span>Opacity (%)</span>
-            <span class="porosity-opacity-controls">
-              <input
-                id="porosityOverlayOpacity"
-                type="range"
-                min="5"
-                max="100"
-                step="1"
-                value="100"
-              />
-              <input
-                id="porosityOverlayOpacityValue"
-                class="porosity-opacity-value"
-                type="number"
-                min="5"
-                max="100"
-                step="1"
-                value="100"
-                aria-label="Porosity overlay opacity percentage"
-              />
-            </span>
+          <label class="snapshot-field porosity-tolerance-field porosity-opacity-field">
+            <span>Opacity</span>
+            <input
+              id="porosityOverlayOpacity"
+              type="range"
+              min="5"
+              max="100"
+              step="1"
+              value="100"
+            />
+            <input
+              id="porosityOverlayOpacityValue"
+              class="porosity-tolerance-value"
+              type="number"
+              min="5"
+              max="100"
+              step="1"
+              value="100"
+              aria-label="Porosity overlay opacity percentage"
+            />
           </label>
           <div id="porositySamples" class="porosity-samples"></div>
           <div class="porosity-estimate-row">
+            <span>Estimate</span>
             <button id="porosityEstimateViewButton" type="button" disabled>
-              Estimate View
+              View
             </button>
             <button id="porosityEstimateButton" type="button" disabled>
-              Estimate AOI
+              AOI
             </button>
           </div>
           <label class="snapshot-field porosity-tolerance-field">
@@ -1893,28 +1904,115 @@
               aria-label="Porosity tolerance value"
             />
           </label>
+          <p id="porosityPreviewStatus" class="porosity-preview-status" hidden></p>
           <div
             id="porosityResults"
             class="porosity-results"
             aria-label="Porosity results summary"
           ></div>
+          </details>
+          <details id="porosityCalculatePanel" class="porosity-workflow-panel">
+            <summary>Calculate properties</summary>
+          <div class="porosity-analysis-actions">
+            <div
+              id="porosityThicknessMenu"
+              class="measure-histogram-menu porosity-thickness-menu"
+              role="dialog"
+              aria-label="Local thickness distribution"
+              hidden
+            >
+              <div id="porosityThicknessHeader" class="measure-histogram-header">
+                <span id="porosityPropertiesPlotTitle">Local Thickness</span>
+                <button id="closePorosityThicknessButton" class="custom-button" type="button" aria-label="Close local thickness">×</button>
+              </div>
+              <div class="measure-histogram-controls">
+                <label><span>Plot</span><select id="porosityPropertiesPlot"><option value="localThickness" selected>Local thickness</option><option value="distance">Distance to boundary</option><option value="component">Component property</option><option value="chord">Chord length</option></select></label>
+                <label><span>Direction</span><select id="porosityChordDirection" disabled><option value="both" selected>Horizontal + vertical</option><option value="horizontal">Horizontal</option><option value="vertical">Vertical</option></select></label>
+                <label><span>Property</span><select id="porosityThicknessSize"><option value="radius">Radius</option><option value="diameter" selected>Diameter</option></select></label>
+                <label><span>Display</span><select id="porosityThicknessMode"><option value="combined">Combined</option><option value="groups" selected>By type</option></select></label>
+                <label><span>Weight</span><select id="porosityThicknessWeight"><option value="equal">Equal observations</option><option value="area" selected>Pore area</option></select></label>
+                <label><span>AOI edge</span><select id="porosityThicknessEdgeFilter"><option value="include" selected>Include pores</option><option value="exclude">Exclude pores</option></select></label>
+              </div>
+              <div class="measure-histogram-range-controls">
+                <label><span>Min</span><input id="porosityThicknessMin" type="number" step="any" /></label>
+                <label><span>Max</span><input id="porosityThicknessMax" type="number" step="any" /></label>
+                <label><span>Bin</span><input id="porosityThicknessBin" type="number" step="any" min="0.000001" /></label>
+              </div>
+              <div class="porosity-thickness-options">
+                <label class="measure-histogram-stacked-control"><input id="porosityThicknessCumulative" type="checkbox" /><span>Cumulative</span></label>
+                <label class="measure-histogram-stacked-control"><input id="porosityThicknessStacked" type="checkbox" /><span>Stack types</span></label>
+                <label class="measure-histogram-stacked-control"><input id="porosityThicknessLogX" type="checkbox" checked /><span>Log x-axis</span></label>
+                <label class="porosity-thickness-log-base"><span>base:</span><select id="porosityThicknessLogBase"><option value="2" selected>2</option><option value="10">10</option></select></label>
+              </div>
+              <div id="porosityThicknessGroups" class="measure-histogram-groups"></div>
+              <canvas id="porosityThicknessCanvas" class="measure-histogram-canvas" width="360" height="220"></canvas>
+              <div class="measure-summary-table-wrapper measure-histogram-stats-wrapper">
+                <table class="measure-summary-table measure-histogram-stats-table">
+                  <thead><tr><th>Type</th><th>n</th><th>Mean</th><th>Median</th><th>SD</th><th>Min</th><th>Max</th></tr></thead>
+                  <tbody id="porosityThicknessStatsBody"><tr><td colspan="7">No results</td></tr></tbody>
+                </table>
+              </div>
+              <div class="measure-histogram-export-row">
+                <button id="exportPorosityThicknessStatsButton" class="custom-button" type="button">Export Stats CSV</button>
+                <button id="exportPorosityThicknessButton" class="custom-button" type="button">Export PDF</button>
+              </div>
+            </div>
+          </div>
+          <div id="porosityThicknessOverlayPanel" class="porosity-thickness-overlay-panel">
+            <div class="porosity-thickness-overlay-actions">
+              <div class="porosity-thickness-calculate-row">
+                <button id="porosityThicknessCalculateButton" type="button" disabled>Calculate properties</button>
+                <button id="porosityThicknessButton" class="custom-button" type="button" title="Local thickness distribution" aria-label="Local thickness distribution" aria-expanded="false" disabled>
+                  <svg class="annotation-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h16" /><path d="M5 20V13h3v7" /><path d="M10.5 20V6h3v14" /><path d="M16 20v-10h3v10" /></svg>
+                </button>
+              </div>
+              <label class="porosity-thickness-method"><span>Local thickness method</span><select id="porosityThicknessMethod"><option value="exact">Exact</option><option value="25" selected>Approx. 25</option><option value="50">Approx. 50</option><option value="100">Approx. 100</option></select></label>
+              <label><input id="porosityThicknessOverlayEnabled" type="checkbox" disabled /><span id="porosityCalculatedRasterShowLabel">Show local thickness</span></label>
+            </div>
+            <div class="porosity-thickness-overlay-grid">
+              <label><span>Parameter</span><select id="porosityCalculatedRasterParameter"><optgroup label="Local thickness"><option value="localThickness-radius">Radius</option><option value="localThickness-diameter" selected>Diameter</option></optgroup><optgroup label="Distance"><option value="distance">Distance to boundary</option></optgroup><optgroup label="Component property"><option value="component-area">Area</option><option value="component-equivalentDiameter">Equivalent diameter</option><option value="component-meanThickness">Mean thickness</option><option value="component-maxThickness">Max thickness</option><option value="component-circularity">Circularity</option><option value="component-aspectRatio">Aspect ratio</option><option value="component-orientation">Orientation</option><option value="component-id">Component ID</option></optgroup></select></label>
+              <label><span>Scale</span><select id="porosityThicknessOverlayScale"><option value="linear">Linear</option><option value="log2" selected>Log2</option><option value="log10">Log10</option></select></label>
+              <label><span>Colors</span><select id="porosityThicknessOverlayColormap"><option value="viridis" selected>Viridis</option><option value="inferno">Inferno</option><option value="turbo">Turbo</option><option value="gray">Grayscale</option></select></label>
+              <label><span>Opacity</span><input id="porosityThicknessOverlayOpacity" type="number" min="5" max="100" step="1" value="80" /></label>
+            </div>
+            <label><input id="porosityThicknessOverlayAutoRange" type="checkbox" checked /><span>Auto range</span></label>
+            <div class="porosity-thickness-overlay-range">
+              <label><span>Min</span><input id="porosityThicknessOverlayMin" type="number" step="any" disabled /></label>
+              <label><span>Max</span><input id="porosityThicknessOverlayMax" type="number" step="any" disabled /></label>
+            </div>
+            <div id="porosityThicknessOverlayLegend" class="porosity-thickness-overlay-legend" hidden>
+              <div class="porosity-thickness-overlay-gradient"></div>
+              <div class="porosity-thickness-overlay-legend-labels"><span></span><span></span><span></span></div>
+            </div>
+          </div>
+          </details>
+          <details id="porosityExportPanel" class="porosity-workflow-panel">
+            <summary>Results &amp; export</summary>
+            <p id="porosityExportSummary" class="porosity-export-summary">Estimate porosity to export results.</p>
+            <div class="porosity-export-actions">
+              <button id="exportPorosityRecipeButton" type="button">Export recipe JSON</button>
+              <button id="exportPorosityResultsCsvButton" type="button" disabled>Export results CSV</button>
+              <button id="exportPorosityResultsJsonButton" type="button" disabled>Export results JSON</button>
+            </div>
+            <div class="porosity-raster-export">
+              <span class="porosity-raster-export-title">Raster exports</span>
+              <label><span>Export</span><select id="porosityRasterExportProduct"><option value="active-mask">Porosity mask (active type)</option><option value="all-masks">Porosity masks (all types)</option><option value="calculated">Calculated property (active type)</option><option value="composite-calculated">Calculated property (composite all types)</option></select></label>
+              <label><span>Type</span><select id="porosityRasterExportFormat"><option value="npy" selected>NumPy array (.npy)</option><option value="png">PNG image</option><option value="jpeg">JPEG image</option><option value="tiff">TIFF image</option></select></label>
+              <button id="exportPorosityRasterButton" type="button" disabled>Export raster…</button>
+              <p id="porosityRasterExportNote" class="porosity-raster-export-note">Exports AOI-cropped source-image rasters with a JSON coordinate sidecar.</p>
+            </div>
+          </details>
           <div
             id="porosityProgress"
             class="porosity-progress"
             aria-live="polite"
             hidden
           >
-            <span id="porosityProgressLabel">Estimating porosity...</span>
+            <span id="porosityProgressLabel">Ready.</span>
             <div class="porosity-progress-track" aria-hidden="true">
               <span id="porosityProgressBar" class="porosity-progress-bar"></span>
             </div>
           </div>
-          <p
-            id="porosityActivityStatus"
-            class="porosity-activity-status"
-            aria-live="polite"
-            hidden
-          ></p>
         </div>
       </div>
       <div
@@ -1939,13 +2037,21 @@
           <h4>What It Does</h4>
           <p>Estimate Porosity measures the area fraction of pore-colored pixels inside a polygon AOI. More than one porosity type can be estimated (e.g., macroporosity vs microporosity). Results are shown by porosity type and as a combined total.</p>
           <h4>Basic Workflow</h4>
-          <p>Draw an AOI, choose one or more tile sets, pick representative pore colors, then click Estimate View or Estimate AOI. Estimate View analyzes the visible part of the AOI and is useful for assessing whether the porosity has been estimated accurately; Estimate AOI analyzes the whole AOI.</p>
+          <p>Draw an AOI, choose one or more tile sets, pick representative pore colors, then click Estimate View or Estimate AOI. Estimate View is a temporary check of the visible part of the AOI; Estimate AOI commits results for the whole AOI.</p>
           <h4>Porosity Types</h4>
-          <p>Use multiple porosity types when different pore colors or textures should be tracked separately. Each type has its own color samples, tolerance, overlay color, opacity, and result.</p>
+          <p>Use multiple porosity types when different pore colors or textures should be tracked separately. Each type has its own color samples, tolerance, overlay color, opacity, and result. Select polygon annotations that intersect the AOI and use Add selected polygons to force their area to porosity. This can be useful when a pore contains a bubble.</p>
           <h4>Color Picking and Tolerance</h4>
-          <p>Pick several representative pore pixels for each pore type. Higher tolerance includes a broader range of similar colors; lower tolerance keeps the match stricter. Adjusting tolerance updates the estimate after a result exists.</p>
+          <p>Pick several representative pore pixels for each pore type. With multiple tile sets, each pick is shown as a linked swatch column. Click any swatch to select its whole column, then press Delete or Backspace to remove that linked pick. Higher tolerance includes a broader range of similar colors; lower tolerance keeps the match stricter. Adjusting tolerance updates the estimate after a result exists.</p>
           <h4>Resolution</h4>
-          <p>Fast preview is quicker and lower detail. Balanced is the default. High detail and Maximum available preserve more image detail but take longer to render and analyze.</p>
+          <p>Fast preview is quicker and lower detail. Balanced is the default. High detail and Maximum available preserve more image detail but take longer to render and analyze. Local-thickness calculations on very large analysis rasters show a memory/time warning before continuing.</p>
+          <h4>Calculated Properties</h4>
+          <p>Calculate properties computes local thickness, distance to boundary, and connected-component properties. Each pore pixel is assigned the diameter of the largest circle that overlaps it and remains inside that porosity type. The Parameter menu also displays component area, equivalent diameter, mean/max thickness, circularity, aspect ratio, orientation, and ID.</p>
+          <h4>Histogram Controls</h4>
+          <p>Use the histogram Plot menu to compare local thickness, distance to boundary, component properties, or chord lengths. Weight defaults to pore area. The AOI edge filter can exclude complete pores that touch the analysis edge; it is unavailable for chord lengths because chord values are not linked to component IDs.</p>
+          <h4>Recipes and Results</h4>
+          <p>Recipe JSON saves the AOI, tile-set selections, color picks, settings, and embedded manual-polygon geometry. Import validates the source sample and automatically estimates the full AOI. Results &amp; export also provides summary CSV/JSON files.</p>
+          <h4>Raster Export and Further Analysis</h4>
+          <p>Export AOI-cropped binary porosity masks or calculated-property rasters as NumPy arrays, TIFF, PNG, or JPEG, each with source-image-coordinate metadata. Numeric NumPy and TIFF outputs are suitable for downstream Python workflows and more sophisticated porous-media analysis, including <a href="https://joss.theoj.org/papers/10.21105/joss.01296" target="_blank" rel="noopener noreferrer">PoreSpy</a> (Gostick et al., 2019). Composite calculated-property exports combine all compatible porosity types into one raster.</p>
           <h4>AOI Editing</h4>
           <p>Drag to draw a rectangular AOI. After drawing, drag vertices to refine it. Double-click an edge or Option-click an edge to add a vertex, and use Delete or Backspace to remove the selected vertex. The eye button hides or shows the AOI overlay without clearing results.</p>
           <h4>Beta Notes</h4>
@@ -6033,7 +6139,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
     <script src="node_modules/polygon-clipping/dist/polygon-clipping.umd.min.js"></script>
-    <script src="index.js?v=undo-grid-count"></script>
+    <script src="local-thickness.js"></script>
+    <script src="index.js?v=porosity-local-thickness"></script>
     <script src="electron-import-wizard-launcher.js"></script>
   </body>
 </html>

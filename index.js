@@ -89,7 +89,9 @@ const title = () => samples[currentIndex].title;
 const tileSets = () => samples[currentIndex]?.tileSets || [];
 const normalizePixelsPerMeter = (value) => {
   const numericValue = Number(value);
-  return Number.isFinite(numericValue) && numericValue > 0 ? numericValue : null;
+  return Number.isFinite(numericValue) && numericValue > 0
+    ? numericValue
+    : null;
 };
 const pixelsPerMeter = () => {
   return normalizePixelsPerMeter(samples[currentIndex]?.pixelsPerMeter);
@@ -103,7 +105,9 @@ const pixelsPerMicron = () => {
 };
 const metersFromPixels = (pixels) => {
   const scale = pixelsPerMeter();
-  return scale === null || pixels === null || pixels === undefined ? null : pixels / scale;
+  return scale === null || pixels === null || pixels === undefined
+    ? null
+    : pixels / scale;
 };
 const squareMetersFromSquarePixels = (pixels2) => {
   const scale = pixelsPerMeter();
@@ -258,7 +262,7 @@ function getLibraryStorageKey(data = currentLibraryData) {
 function getLastSamplePreference(data = currentLibraryData) {
   try {
     const preference = JSON.parse(
-      localStorage.getItem(LAST_SAMPLE_STORAGE_KEY) || "null"
+      localStorage.getItem(LAST_SAMPLE_STORAGE_KEY) || "null",
     );
     if (!preference || preference.libraryKey !== getLibraryStorageKey(data)) {
       return null;
@@ -279,7 +283,7 @@ function saveLastSamplePreference(sampleIndex) {
       JSON.stringify({
         libraryKey: getLibraryStorageKey(),
         sampleTitle: sample.title || "",
-      })
+      }),
     );
   } catch (error) {
     console.warn("Could not save last sample preference:", error);
@@ -327,14 +331,15 @@ async function processJSON(data, options = {}) {
   const lastSamplePreference = autoLoadSample
     ? getLastSamplePreference(data)
     : null;
-  const preferredSampleTitle = sampleParam || lastSamplePreference?.sampleTitle || "";
+  const preferredSampleTitle =
+    sampleParam || lastSamplePreference?.sampleTitle || "";
   if (preferredSampleTitle) {
     const sampleIndex = samples.findIndex(
-      (sample) => sample.title === preferredSampleTitle
+      (sample) => sample.title === preferredSampleTitle,
     );
     if (sampleIndex !== -1) {
       const groupForSample = Object.keys(groupMapping).find((group) =>
-        groupMapping[group].includes(sampleIndex)
+        groupMapping[group].includes(sampleIndex),
       );
       document.getElementById("groupDropdown").value = groupForSample || "All";
       rememberSelectedSampleForGroup(groupForSample || "All", sampleIndex);
@@ -406,7 +411,9 @@ async function changeProjectWithElectronDialog() {
 
 const loadLibraryInput = document.getElementById("load-sample-JSON");
 const loadLibraryButton = document.getElementById("loadLibraryButton");
-const actionLoadLibraryButton = document.getElementById("actionLoadLibraryButton");
+const actionLoadLibraryButton = document.getElementById(
+  "actionLoadLibraryButton",
+);
 const electronActionButton = document.getElementById("electronActionButton");
 const electronActionTray = document.getElementById("electronActionTray");
 const viewerToolsButton = document.getElementById("viewerToolsButton");
@@ -414,194 +421,206 @@ const viewerToolsTray = document.getElementById("viewerToolsTray");
 const changeProjectButton = document.getElementById("changeProjectButton");
 const controlsPanel = document.querySelector(".controls");
 const minimizeControlsButton = document.getElementById(
-  "minimizeControlsButton"
+  "minimizeControlsButton",
 );
 const openGridCountPaletteButton = document.getElementById(
-  "openGridCountPaletteButton"
+  "openGridCountPaletteButton",
 );
 const openAnnotatePaletteButton = document.getElementById(
-  "openAnnotatePaletteButton"
+  "openAnnotatePaletteButton",
 );
 const openMeasurePaletteButton = document.getElementById(
-  "openMeasurePaletteButton"
+  "openMeasurePaletteButton",
 );
 const openSnapshotPaletteButton = document.getElementById(
-  "openSnapshotPaletteButton"
+  "openSnapshotPaletteButton",
 );
 const openTransformImageryPaletteButton = document.getElementById(
-  "openTransformImageryPaletteButton"
+  "openTransformImageryPaletteButton",
 );
 const openPorosityEstimatorButton = document.getElementById(
-  "openPorosityEstimatorButton"
+  "openPorosityEstimatorButton",
 );
 const openSegmentPaletteButton = document.getElementById(
-  "openSegmentPaletteButton"
+  "openSegmentPaletteButton",
 );
 const openClassifyPaletteButton = document.getElementById(
-  "openClassifyPaletteButton"
+  "openClassifyPaletteButton",
 );
 const gridCountPalette = document.getElementById("gridCountPalette");
-const gridCountPaletteHeader = document.getElementById("gridCountPaletteHeader");
+const gridCountPaletteHeader = document.getElementById(
+  "gridCountPaletteHeader",
+);
 const gridCountPaletteBody = document.getElementById("gridCountPaletteBody");
 const closeGridCountPaletteButton = document.getElementById(
-  "closeGridCountPaletteButton"
+  "closeGridCountPaletteButton",
 );
 const minimizeGridCountPaletteButton = document.getElementById(
-  "minimizeGridCountPaletteButton"
+  "minimizeGridCountPaletteButton",
 );
 const gridCountHelpButton = document.getElementById("gridCountHelpButton");
 const gridCountHelpDialog = document.getElementById("gridCountHelpDialog");
 const gridCountHelpHeader = document.getElementById("gridCountHelpHeader");
 const closeGridCountHelpButton = document.getElementById(
-  "closeGridCountHelpButton"
+  "closeGridCountHelpButton",
 );
 const annotatePalette = document.getElementById("annotatePalette");
 const annotatePaletteHeader = document.getElementById("annotatePaletteHeader");
 const annotatePaletteBody = document.getElementById("annotatePaletteBody");
 const closeAnnotatePaletteButton = document.getElementById(
-  "closeAnnotatePaletteButton"
+  "closeAnnotatePaletteButton",
 );
 const minimizeAnnotatePaletteButton = document.getElementById(
-  "minimizeAnnotatePaletteButton"
+  "minimizeAnnotatePaletteButton",
 );
 const annotateHelpButton = document.getElementById("annotateHelpButton");
 const annotateHelpDialog = document.getElementById("annotateHelpDialog");
 const annotateHelpHeader = document.getElementById("annotateHelpHeader");
 const closeAnnotateHelpButton = document.getElementById(
-  "closeAnnotateHelpButton"
+  "closeAnnotateHelpButton",
 );
 const controlsHelpButton = document.getElementById("controlsHelpButton");
 const controlsHelpDialog = document.getElementById("controlsHelpDialog");
 const controlsHelpHeader = document.getElementById("controlsHelpHeader");
 const closeControlsHelpButton = document.getElementById(
-  "closeControlsHelpButton"
+  "closeControlsHelpButton",
 );
 const classifyHelpButton = document.getElementById("classifyHelpButton");
 const classifyHelpDialog = document.getElementById("classifyHelpDialog");
 const classifyHelpHeader = document.getElementById("classifyHelpHeader");
 const closeClassifyHelpButton = document.getElementById(
-  "closeClassifyHelpButton"
+  "closeClassifyHelpButton",
 );
 const transformImageryHelpButton = document.getElementById(
-  "transformImageryHelpButton"
+  "transformImageryHelpButton",
 );
 const transformImageryHelpDialog = document.getElementById(
-  "transformImageryHelpDialog"
+  "transformImageryHelpDialog",
 );
 const transformImageryHelpHeader = document.getElementById(
-  "transformImageryHelpHeader"
+  "transformImageryHelpHeader",
 );
 const closeTransformImageryHelpButton = document.getElementById(
-  "closeTransformImageryHelpButton"
+  "closeTransformImageryHelpButton",
 );
 const porosityHelpButton = document.getElementById("porosityHelpButton");
 const porosityHelpDialog = document.getElementById("porosityHelpDialog");
 const porosityHelpHeader = document.getElementById("porosityHelpHeader");
 const closePorosityHelpButton = document.getElementById(
-  "closePorosityHelpButton"
+  "closePorosityHelpButton",
 );
 const measurePalette = document.getElementById("measurePalette");
 const measurePaletteHeader = document.getElementById("measurePaletteHeader");
 const measurePaletteBody = document.getElementById("measurePaletteBody");
 const closeMeasurePaletteButton = document.getElementById(
-  "closeMeasurePaletteButton"
+  "closeMeasurePaletteButton",
 );
 const minimizeMeasurePaletteButton = document.getElementById(
-  "minimizeMeasurePaletteButton"
+  "minimizeMeasurePaletteButton",
 );
 const snapshotPalette = document.getElementById("snapshotPalette");
 const snapshotPaletteHeader = document.getElementById("snapshotPaletteHeader");
 const closeSnapshotPaletteButton = document.getElementById(
-  "closeSnapshotPaletteButton"
+  "closeSnapshotPaletteButton",
 );
 const minimizeSnapshotPaletteButton = document.getElementById(
-  "minimizeSnapshotPaletteButton"
+  "minimizeSnapshotPaletteButton",
 );
 const snapshotHelpButton = document.getElementById("snapshotHelpButton");
 const snapshotHelpDialog = document.getElementById("snapshotHelpDialog");
 const snapshotHelpHeader = document.getElementById("snapshotHelpHeader");
 const closeSnapshotHelpButton = document.getElementById(
-  "closeSnapshotHelpButton"
+  "closeSnapshotHelpButton",
 );
-const transformImageryPalette = document.getElementById("transformImageryPalette");
+const transformImageryPalette = document.getElementById(
+  "transformImageryPalette",
+);
 const transformImageryPaletteHeader = document.getElementById(
-  "transformImageryPaletteHeader"
+  "transformImageryPaletteHeader",
 );
 const closeTransformImageryPaletteButton = document.getElementById(
-  "closeTransformImageryPaletteButton"
+  "closeTransformImageryPaletteButton",
 );
 const minimizeTransformImageryPaletteButton = document.getElementById(
-  "minimizeTransformImageryPaletteButton"
+  "minimizeTransformImageryPaletteButton",
 );
-const transformTileSetSelect = document.getElementById("transformTileSetSelect");
-const transformPreviewEnabled = document.getElementById("transformPreviewEnabled");
+const transformTileSetSelect = document.getElementById(
+  "transformTileSetSelect",
+);
+const transformPreviewEnabled = document.getElementById(
+  "transformPreviewEnabled",
+);
 const transformTypeSelect = document.getElementById("transformTypeSelect");
-const transformChannelSelect = document.getElementById("transformChannelSelect");
+const transformChannelSelect = document.getElementById(
+  "transformChannelSelect",
+);
 const transformOutputSelect = document.getElementById("transformOutputSelect");
 const transformHistogramCanvas = document.getElementById(
-  "transformHistogramCanvas"
+  "transformHistogramCanvas",
 );
 const transformRasterChannelASelect = document.getElementById(
-  "transformRasterChannelASelect"
+  "transformRasterChannelASelect",
 );
 const transformRasterTileSetBSelect = document.getElementById(
-  "transformRasterTileSetBSelect"
+  "transformRasterTileSetBSelect",
 );
 const transformRasterChannelBSelect = document.getElementById(
-  "transformRasterChannelBSelect"
+  "transformRasterChannelBSelect",
 );
 const transformRasterPresetSelect = document.getElementById(
-  "transformRasterPresetSelect"
+  "transformRasterPresetSelect",
 );
 const transformRasterNormalize = document.getElementById(
-  "transformRasterNormalize"
+  "transformRasterNormalize",
 );
 const transformRasterScaleSelect = document.getElementById(
-  "transformRasterScaleSelect"
+  "transformRasterScaleSelect",
 );
 const transformRasterCustomRangeFields = document.getElementById(
-  "transformRasterCustomRangeFields"
+  "transformRasterCustomRangeFields",
 );
 const transformRasterCustomMinInput = document.getElementById(
-  "transformRasterCustomMinInput"
+  "transformRasterCustomMinInput",
 );
 const transformRasterCustomMaxInput = document.getElementById(
-  "transformRasterCustomMaxInput"
+  "transformRasterCustomMaxInput",
 );
 const transformValueTooltipEnabled = document.getElementById(
-  "transformValueTooltipEnabled"
+  "transformValueTooltipEnabled",
 );
 const transformValueTooltip = document.getElementById("transformValueTooltip");
 const transformRasterCustomExpression = document.getElementById(
-  "transformRasterCustomExpression"
+  "transformRasterCustomExpression",
 );
 const transformRasterInputTableBody = document.getElementById(
-  "transformRasterInputTableBody"
+  "transformRasterInputTableBody",
 );
 const transformRasterBackspaceButton = document.getElementById(
-  "transformRasterBackspaceButton"
+  "transformRasterBackspaceButton",
 );
 const transformRasterClearButton = document.getElementById(
-  "transformRasterClearButton"
+  "transformRasterClearButton",
 );
 const transformRasterPreviewButton = document.getElementById(
-  "transformRasterPreviewButton"
+  "transformRasterPreviewButton",
 );
 const transformIntensity = document.getElementById("transformIntensity");
 const transformIntensityValue = document.getElementById(
-  "transformIntensityValue"
+  "transformIntensityValue",
 );
 const transformRadius = document.getElementById("transformRadius");
 const transformRadiusValue = document.getElementById("transformRadiusValue");
 const transformOutputName = document.getElementById("transformOutputName");
 const transformGenerateSize = document.getElementById("transformGenerateSize");
 const transformResetPreviewButton = document.getElementById(
-  "transformResetPreviewButton"
+  "transformResetPreviewButton",
 );
 const transformResetDefaultButton = document.getElementById(
-  "transformResetDefaultButton"
+  "transformResetDefaultButton",
 );
-const transformGenerateButton = document.getElementById("transformGenerateButton");
+const transformGenerateButton = document.getElementById(
+  "transformGenerateButton",
+);
 const transformStatus = document.getElementById("transformStatus");
 const transformProgress = document.getElementById("transformProgress");
 const transformProgressBar = document.getElementById("transformProgressBar");
@@ -609,150 +628,157 @@ const transformProgressText = document.getElementById("transformProgressText");
 const classifyPalette = document.getElementById("classifyPalette");
 const classifyPaletteHeader = document.getElementById("classifyPaletteHeader");
 const closeClassifyPaletteButton = document.getElementById(
-  "closeClassifyPaletteButton"
+  "closeClassifyPaletteButton",
 );
 const minimizeClassifyPaletteButton = document.getElementById(
-  "minimizeClassifyPaletteButton"
+  "minimizeClassifyPaletteButton",
 );
 const porosityPalette = document.getElementById("porosityPalette");
 const porosityPaletteHeader = document.getElementById("porosityPaletteHeader");
 const closePorosityPaletteButton = document.getElementById(
-  "closePorosityPaletteButton"
+  "closePorosityPaletteButton",
 );
 const minimizePorosityPaletteButton = document.getElementById(
-  "minimizePorosityPaletteButton"
+  "minimizePorosityPaletteButton",
 );
+const porosityDefinePanel = document.getElementById("porosityDefinePanel");
+const porosityCalculatePanel = document.getElementById(
+  "porosityCalculatePanel",
+);
+const porosityExportPanel = document.getElementById("porosityExportPanel");
 const segmentPalette = document.getElementById("segmentPalette");
 const segmentPaletteHeader = document.getElementById("segmentPaletteHeader");
 const closeSegmentPaletteButton = document.getElementById(
-  "closeSegmentPaletteButton"
+  "closeSegmentPaletteButton",
 );
 const minimizeSegmentPaletteButton = document.getElementById(
-  "minimizeSegmentPaletteButton"
+  "minimizeSegmentPaletteButton",
 );
 const segmentHelpButton = document.getElementById("segmentHelpButton");
 const segmentHelpDialog = document.getElementById("segmentHelpDialog");
 const segmentHelpHeader = document.getElementById("segmentHelpHeader");
 const closeSegmentHelpButton = document.getElementById(
-  "closeSegmentHelpButton"
+  "closeSegmentHelpButton",
 );
 const samPythonPathInput = document.getElementById("samPythonPath");
 const samCheckpointPathInput = document.getElementById("samCheckpointPath");
 const samModelTypeSelect = document.getElementById("samModelType");
 const chooseSamPythonButton = document.getElementById("chooseSamPythonButton");
 const chooseSamCheckpointButton = document.getElementById(
-  "chooseSamCheckpointButton"
+  "chooseSamCheckpointButton",
 );
 const saveSamSettingsButton = document.getElementById("saveSamSettingsButton");
 const testSamSetupButton = document.getElementById("testSamSetupButton");
 const samSetupStatus = document.getElementById("samSetupStatus");
 const samSetupReadiness = document.getElementById("samSetupReadiness");
 const testSegmenteverygrainSetupButton = document.getElementById(
-  "testSegmenteverygrainSetupButton"
+  "testSegmenteverygrainSetupButton",
 );
 const segmenteverygrainSetupStatus = document.getElementById(
-  "segmenteverygrainSetupStatus"
+  "segmenteverygrainSetupStatus",
 );
 const segmenteverygrainSetupReadiness = document.getElementById(
-  "segmenteverygrainSetupReadiness"
+  "segmenteverygrainSetupReadiness",
 );
 const segmenteverygrainModelPathInput = document.getElementById(
-  "segmenteverygrainModelPath"
+  "segmenteverygrainModelPath",
 );
 const chooseSegmenteverygrainModelButton = document.getElementById(
-  "chooseSegmenteverygrainModelButton"
+  "chooseSegmenteverygrainModelButton",
 );
 const segmentTileSetSelect = document.getElementById("segmentTileSetSelect");
-const segmentResolutionSelect = document.getElementById("segmentResolutionSelect");
+const segmentResolutionSelect = document.getElementById(
+  "segmentResolutionSelect",
+);
 const unsupervisedSegmentTileSetSelect = document.getElementById(
-  "unsupervisedSegmentTileSetSelect"
+  "unsupervisedSegmentTileSetSelect",
 );
 const segmentPaddingPercentInput = document.getElementById(
-  "segmentPaddingPercent"
+  "segmentPaddingPercent",
 );
 const segmentPaddingMinInput = document.getElementById("segmentPaddingMin");
 const segmentPaddingMaxInput = document.getElementById("segmentPaddingMax");
 const segmentPaddingStatus = document.getElementById("segmentPaddingStatus");
 const segmentSimplifyEnabledInput = document.getElementById(
-  "segmentSimplifyEnabled"
+  "segmentSimplifyEnabled",
 );
 const segmentSimplifyEpsilonInput = document.getElementById(
-  "segmentSimplifyEpsilon"
+  "segmentSimplifyEpsilon",
 );
 const segmentAnnotationGroupInput = document.getElementById(
-  "segmentAnnotationGroup"
+  "segmentAnnotationGroup",
 );
 const segmentAnnotationGroupOptions = document.getElementById(
-  "segmentAnnotationGroupOptions"
+  "segmentAnnotationGroupOptions",
 );
 const segmentModeToggle = document.getElementById("segmentModeToggle");
 const segmentAutoAddCheckbox = document.getElementById("segmentAutoAdd");
 const segmentDrawBoxButton = document.getElementById("segmentDrawBoxButton");
 const segmentClearButton = document.getElementById("segmentClearButton");
 const segmentAddPositivePointButton = document.getElementById(
-  "segmentAddPositivePointButton"
+  "segmentAddPositivePointButton",
 );
 const segmentAddNegativePointButton = document.getElementById(
-  "segmentAddNegativePointButton"
+  "segmentAddNegativePointButton",
 );
 const segmentAddAnnotationButton = document.getElementById(
-  "segmentAddAnnotationButton"
+  "segmentAddAnnotationButton",
 );
 const unsupervisedSimplifyEnabledInput = document.getElementById(
-  "unsupervisedSimplifyEnabled"
+  "unsupervisedSimplifyEnabled",
 );
 const unsupervisedSimplifyEpsilonInput = document.getElementById(
-  "unsupervisedSimplifyEpsilon"
+  "unsupervisedSimplifyEpsilon",
 );
 const unsupervisedUseSamRefinementInput = document.getElementById(
-  "unsupervisedUseSamRefinement"
+  "unsupervisedUseSamRefinement",
 );
 const unsupervisedMinAreaInput = document.getElementById("unsupervisedMinArea");
 const unsupervisedPatchSizeInput = document.getElementById(
-  "unsupervisedPatchSize"
+  "unsupervisedPatchSize",
 );
 const unsupervisedOverlapInput = document.getElementById("unsupervisedOverlap");
 const unsupervisedDilationInput = document.getElementById(
-  "unsupervisedDilation"
+  "unsupervisedDilation",
 );
 const unsupervisedShowPatchGridInput = document.getElementById(
-  "unsupervisedShowPatchGrid"
+  "unsupervisedShowPatchGrid",
 );
 const unsupervisedRemoveEdgeGrainsInput = document.getElementById(
-  "unsupervisedRemoveEdgeGrains"
+  "unsupervisedRemoveEdgeGrains",
 );
 const unsupervisedResolutionSelect = document.getElementById(
-  "unsupervisedResolutionSelect"
+  "unsupervisedResolutionSelect",
 );
 const unsupervisedAoiSourcePixels = document.getElementById(
-  "unsupervisedAoiSourcePixels"
+  "unsupervisedAoiSourcePixels",
 );
 const unsupervisedAoiProcessedPixels = document.getElementById(
-  "unsupervisedAoiProcessedPixels"
+  "unsupervisedAoiProcessedPixels",
 );
 const unsupervisedAoiPixelCount = document.getElementById(
-  "unsupervisedAoiPixelCount"
+  "unsupervisedAoiPixelCount",
 );
 const unsupervisedSegmentStatus = document.getElementById(
-  "unsupervisedSegmentStatus"
+  "unsupervisedSegmentStatus",
 );
 const unsupervisedSegmentProgress = document.getElementById(
-  "unsupervisedSegmentProgress"
+  "unsupervisedSegmentProgress",
 );
 const unsupervisedSegmentProgressBar = document.getElementById(
-  "unsupervisedSegmentProgressBar"
+  "unsupervisedSegmentProgressBar",
 );
 const unsupervisedDrawAoiButton = document.getElementById(
-  "unsupervisedDrawAoiButton"
+  "unsupervisedDrawAoiButton",
 );
 const unsupervisedClearAoiButton = document.getElementById(
-  "unsupervisedClearAoiButton"
+  "unsupervisedClearAoiButton",
 );
 const runUnsupervisedSegmentationButton = document.getElementById(
-  "runUnsupervisedSegmentationButton"
+  "runUnsupervisedSegmentationButton",
 );
 const cancelUnsupervisedSegmentationButton = document.getElementById(
-  "cancelUnsupervisedSegmentationButton"
+  "cancelUnsupervisedSegmentationButton",
 );
 const segmentStatus = document.getElementById("segmentStatus");
 const segmentReticle = document.getElementById("segment-reticle");
@@ -760,25 +786,27 @@ const snapshotSelection = document.getElementById("snapshot-selection");
 const snapshotSelectionBody = document.getElementById("snapshotSelectionBody");
 const snapshotDrawButton = document.getElementById("snapshotDrawButton");
 const snapshotUseScreenExtentButton = document.getElementById(
-  "snapshotUseScreenExtentButton"
+  "snapshotUseScreenExtentButton",
 );
 const snapshotClearButton = document.getElementById("snapshotClearButton");
 const snapshotExportButton = document.getElementById("snapshotExportButton");
 const snapshotCopyButton = document.getElementById("snapshotCopyButton");
 const snapshotExportDimensions = document.getElementById(
-  "snapshotExportDimensions"
+  "snapshotExportDimensions",
 );
 const snapshotExportPixelCount = document.getElementById(
-  "snapshotExportPixelCount"
+  "snapshotExportPixelCount",
 );
 const snapshotStatus = document.getElementById("snapshotStatus");
 const snapshotIncludeScalebar = document.getElementById(
-  "snapshotIncludeScalebar"
+  "snapshotIncludeScalebar",
 );
 const snapshotExportFilter = document.getElementById("snapshotExportFilter");
 const snapshotTileSetSelect = document.getElementById("snapshotTileSetSelect");
 const snapshotContentMode = document.getElementById("snapshotContentMode");
-const snapshotResolutionMode = document.getElementById("snapshotResolutionMode");
+const snapshotResolutionMode = document.getElementById(
+  "snapshotResolutionMode",
+);
 const snapshotJpegQuality = document.getElementById("snapshotJpegQuality");
 const classifyScope = document.getElementById("classifyScope");
 const classifyScopeGroup = document.getElementById("classifyScopeGroup");
@@ -790,25 +818,25 @@ const classifyModelType = document.getElementById("classifyModelType");
 const classifyK = document.getElementById("classifyK");
 const classifyMinConfidence = document.getElementById("classifyMinConfidence");
 const classifyExtractFeaturesButton = document.getElementById(
-  "classifyExtractFeaturesButton"
+  "classifyExtractFeaturesButton",
 );
 const classifyTrainPredictButton = document.getElementById(
-  "classifyTrainPredictButton"
+  "classifyTrainPredictButton",
 );
 const classifyApplyGroupsButton = document.getElementById(
-  "classifyApplyGroupsButton"
+  "classifyApplyGroupsButton",
 );
 const classifyIncludeLowConfidence = document.getElementById(
-  "classifyIncludeLowConfidence"
+  "classifyIncludeLowConfidence",
 );
 const classifySelectLowConfidenceButton = document.getElementById(
-  "classifySelectLowConfidenceButton"
+  "classifySelectLowConfidenceButton",
 );
 const classifyPredictionSelect = document.getElementById(
-  "classifyPredictionSelect"
+  "classifyPredictionSelect",
 );
 const classifySelectPredictionButton = document.getElementById(
-  "classifySelectPredictionButton"
+  "classifySelectPredictionButton",
 );
 const classifyProgress = document.getElementById("classifyProgress");
 const classifyProgressBar = document.getElementById("classifyProgressBar");
@@ -817,66 +845,213 @@ const classifyStatus = document.getElementById("classifyStatus");
 const classifyFeatureTable = document.getElementById("classifyFeatureTable");
 const classifyFeatureHeader = document.getElementById("classifyFeatureHeader");
 const classifyFeatureBody = document.getElementById("classifyFeatureBody");
-const classifyExportCsvButton = document.getElementById("classifyExportCsvButton");
+const classifyExportCsvButton = document.getElementById(
+  "classifyExportCsvButton",
+);
 const classifySetupSection = document.getElementById("classifySetupSection");
 const classifyRunSection = document.getElementById("classifyRunSection");
 const classifyKField = document.getElementById("classifyKField");
 const classifyMinConfidenceField = document.getElementById(
-  "classifyMinConfidenceField"
+  "classifyMinConfidenceField",
 );
 const porosityOverlay = document.getElementById("porosity-overlay");
 const porosityTypeSelect = document.getElementById("porosityTypeSelect");
 const porosityAddTypeButton = document.getElementById("porosityAddTypeButton");
 const porosityRenameTypeButton = document.getElementById(
-  "porosityRenameTypeButton"
+  "porosityRenameTypeButton",
 );
 const porosityDeleteTypeButton = document.getElementById(
-  "porosityDeleteTypeButton"
+  "porosityDeleteTypeButton",
 );
 const porosityTileSetSelect = document.getElementById("porosityTileSetSelect");
 const porosityDrawAoiButton = document.getElementById("porosityDrawAoiButton");
 const porosityToggleAoiButton = document.getElementById(
-  "porosityToggleAoiButton"
+  "porosityToggleAoiButton",
 );
-const porosityPickColorButton = document.getElementById("porosityPickColorButton");
-const porosityUndoColorButton = document.getElementById("porosityUndoColorButton");
+const porosityPickColorButton = document.getElementById(
+  "porosityPickColorButton",
+);
+const porosityAddSelectedPolygonsButton = document.getElementById(
+  "porosityAddSelectedPolygonsButton",
+);
+const importPorosityRecipeButton = document.getElementById(
+  "importPorosityRecipeButton",
+);
+const porosityRecipeFileInput = document.getElementById(
+  "porosityRecipeFileInput",
+);
+const exportPorosityRecipeButton = document.getElementById(
+  "exportPorosityRecipeButton",
+);
+const exportPorosityResultsCsvButton = document.getElementById(
+  "exportPorosityResultsCsvButton",
+);
+const exportPorosityResultsJsonButton = document.getElementById(
+  "exportPorosityResultsJsonButton",
+);
+const porosityExportSummary = document.getElementById("porosityExportSummary");
+const porosityRasterExportProduct = document.getElementById(
+  "porosityRasterExportProduct",
+);
+const porosityRasterExportFormat = document.getElementById(
+  "porosityRasterExportFormat",
+);
+const exportPorosityRasterButton = document.getElementById(
+  "exportPorosityRasterButton",
+);
+const porosityRasterExportNote = document.getElementById(
+  "porosityRasterExportNote",
+);
 const porosityEstimateViewButton = document.getElementById(
-  "porosityEstimateViewButton"
+  "porosityEstimateViewButton",
 );
-const porosityEstimateButton = document.getElementById("porosityEstimateButton");
-const porosityResolutionMode = document.getElementById("porosityResolutionMode");
+const porosityEstimateButton = document.getElementById(
+  "porosityEstimateButton",
+);
+const porosityResolutionMode = document.getElementById(
+  "porosityResolutionMode",
+);
 const porosityResolutionStatus = document.getElementById(
-  "porosityResolutionStatus"
+  "porosityResolutionStatus",
 );
 const porosityClearButton = document.getElementById("porosityClearButton");
 const porosityTolerance = document.getElementById("porosityTolerance");
-const porosityToleranceValue = document.getElementById("porosityToleranceValue");
+const porosityToleranceValue = document.getElementById(
+  "porosityToleranceValue",
+);
+const porosityPreviewStatus = document.getElementById("porosityPreviewStatus");
 const porosityOverlayColor = document.getElementById("porosityOverlayColor");
-const porosityOverlayOpacity = document.getElementById("porosityOverlayOpacity");
+const porosityOverlayOpacity = document.getElementById(
+  "porosityOverlayOpacity",
+);
 const porosityOverlayOpacityValue = document.getElementById(
-  "porosityOverlayOpacityValue"
+  "porosityOverlayOpacityValue",
 );
 const porositySamples = document.getElementById("porositySamples");
 const porosityResults = document.getElementById("porosityResults");
+const porosityThicknessButton = document.getElementById(
+  "porosityThicknessButton",
+);
+const porosityThicknessMenu = document.getElementById("porosityThicknessMenu");
+const porosityThicknessHeader = document.getElementById(
+  "porosityThicknessHeader",
+);
+const porosityPropertiesPlotTitle = document.getElementById(
+  "porosityPropertiesPlotTitle",
+);
+const porosityThicknessMethod = document.getElementById(
+  "porosityThicknessMethod",
+);
+const closePorosityThicknessButton = document.getElementById(
+  "closePorosityThicknessButton",
+);
+const porosityThicknessSize = document.getElementById("porosityThicknessSize");
+const porosityPropertiesPlot = document.getElementById(
+  "porosityPropertiesPlot",
+);
+const porosityChordDirection = document.getElementById(
+  "porosityChordDirection",
+);
+const porosityThicknessMode = document.getElementById("porosityThicknessMode");
+const porosityThicknessWeight = document.getElementById(
+  "porosityThicknessWeight",
+);
+const porosityThicknessEdgeFilter = document.getElementById(
+  "porosityThicknessEdgeFilter",
+);
+const porosityThicknessMin = document.getElementById("porosityThicknessMin");
+const porosityThicknessMax = document.getElementById("porosityThicknessMax");
+const porosityThicknessBin = document.getElementById("porosityThicknessBin");
+const porosityThicknessStacked = document.getElementById(
+  "porosityThicknessStacked",
+);
+const porosityThicknessCumulative = document.getElementById(
+  "porosityThicknessCumulative",
+);
+const porosityThicknessLogX = document.getElementById("porosityThicknessLogX");
+const porosityThicknessLogBase = document.getElementById(
+  "porosityThicknessLogBase",
+);
+const porosityThicknessGroups = document.getElementById(
+  "porosityThicknessGroups",
+);
+const porosityThicknessCanvas = document.getElementById(
+  "porosityThicknessCanvas",
+);
+const porosityThicknessSummary = document.getElementById(
+  "porosityThicknessSummary",
+);
+const porosityThicknessStatsBody = document.getElementById(
+  "porosityThicknessStatsBody",
+);
+const exportPorosityThicknessStatsButton = document.getElementById(
+  "exportPorosityThicknessStatsButton",
+);
+const exportPorosityThicknessButton = document.getElementById(
+  "exportPorosityThicknessButton",
+);
+const porosityThicknessOverlayEnabled = document.getElementById(
+  "porosityThicknessOverlayEnabled",
+);
+const porosityCalculatedRasterParameter = document.getElementById(
+  "porosityCalculatedRasterParameter",
+);
+const porosityCalculatedRasterShowLabel = document.getElementById(
+  "porosityCalculatedRasterShowLabel",
+);
+const porosityThicknessCalculateButton = document.getElementById(
+  "porosityThicknessCalculateButton",
+);
+const porosityThicknessOverlayScale = document.getElementById(
+  "porosityThicknessOverlayScale",
+);
+const porosityThicknessOverlayColormap = document.getElementById(
+  "porosityThicknessOverlayColormap",
+);
+const porosityThicknessOverlayOpacity = document.getElementById(
+  "porosityThicknessOverlayOpacity",
+);
+const porosityThicknessOverlayAutoRange = document.getElementById(
+  "porosityThicknessOverlayAutoRange",
+);
+const porosityThicknessOverlayMin = document.getElementById(
+  "porosityThicknessOverlayMin",
+);
+const porosityThicknessOverlayMax = document.getElementById(
+  "porosityThicknessOverlayMax",
+);
+const porosityThicknessOverlayLegend = document.getElementById(
+  "porosityThicknessOverlayLegend",
+);
+const porosityThicknessStatusText = document.getElementById(
+  "porosityThicknessStatusText",
+);
+const porosityThicknessStatusBar = document.getElementById(
+  "porosityThicknessStatusBar",
+);
 const porosityStatus = document.getElementById("porosityStatus");
 const porosityProgress = document.getElementById("porosityProgress");
 const porosityProgressLabel = document.getElementById("porosityProgressLabel");
 const porosityProgressBar = document.getElementById("porosityProgressBar");
-const porosityActivityStatus = document.getElementById("porosityActivityStatus");
+const porosityActivityStatus = document.getElementById(
+  "porosityActivityStatus",
+);
 const openScaleWizardButton = document.getElementById("openScaleWizardButton");
-const openLibraryEditorButton = document.getElementById("openLibraryEditorButton");
+const openLibraryEditorButton = document.getElementById(
+  "openLibraryEditorButton",
+);
 const openCountSegmentWorkflowButton = document.getElementById(
-  "openCountSegmentWorkflowButton"
+  "openCountSegmentWorkflowButton",
 );
 const openAnnotationTransferWorkflowButton = document.getElementById(
-  "openAnnotationTransferWorkflowButton"
+  "openAnnotationTransferWorkflowButton",
 );
 const hasElectronActions = Boolean(window.electronAPI);
 const hasSharedViewerMenus = Boolean(
   electronActionButton &&
-    electronActionTray &&
-    viewerToolsButton &&
-    viewerToolsTray
+  electronActionTray &&
+  viewerToolsButton &&
+  viewerToolsTray,
 );
 let gridCountPaletteControlsMoved = false;
 let annotatePaletteControlsMoved = false;
@@ -895,6 +1070,7 @@ let porosityAoiMousePoint = null;
 let porosityAoiSelectedVertexIndex = null;
 let porosityAoiDragState = null;
 let porosityAoiDrawState = null;
+let porosityAoiHistoryState = null;
 let porosityAoiVisible = true;
 let porosityAoiConstrainSegment = false;
 let porosityTypes = [];
@@ -902,11 +1078,16 @@ let activePorosityTypeId = "";
 let porosityRecolorFrame = null;
 let porosityActivityClearTimer = null;
 let porosityProgressClearTimer = null;
-let porosityUndoState = null;
+let selectedPorositySampleSetId = "";
 let porosityEstimateGeneration = 0;
 let porosityToleranceReestimateTimer = null;
 let porositySelectedTileSetIndices = [];
 let porosityAnalysisResolutionMode = "balanced";
+let porosityThicknessWorker = null;
+let porosityThicknessSelectedTypeIds = new Set();
+let porosityThicknessKnownTypeIds = new Set();
+let porosityThicknessRangeEdited = false;
+let porosityThicknessOverlayExtentCache = null;
 let classifyLastPrediction = null;
 let classifyRunId = 0;
 let classifyFeatureCache = null;
@@ -953,6 +1134,7 @@ const SNAPSHOT_MAX_OUTPUT_DIMENSION = 16000;
 const SNAPSHOT_MAX_OUTPUT_PIXELS = 100000000;
 const POROSITY_MAX_ANALYSIS_DIMENSION = 12000;
 const POROSITY_MAX_ANALYSIS_PIXELS = 36000000;
+const POROSITY_LOCAL_THICKNESS_MAX_PIXELS = 12000000;
 const POROSITY_ANALYSIS_RESOLUTION_MODES = {
   preview: {
     label: "Fast preview",
@@ -987,7 +1169,7 @@ let toolPaletteClampFrame = null;
 
 function getToolPaletteEdgeAffinity(palette, containerRect, paletteRect) {
   const left = Number.parseFloat(
-    palette.style.left || String(TOOL_PALETTE_EDGE_MARGIN)
+    palette.style.left || String(TOOL_PALETTE_EDGE_MARGIN),
   );
   const top = Number.parseFloat(palette.style.top || "56");
   const rightGap = containerRect.width - left - paletteRect.width;
@@ -995,13 +1177,11 @@ function getToolPaletteEdgeAffinity(palette, containerRect, paletteRect) {
 
   return {
     horizontal:
-      rightGap <= TOOL_PALETTE_EDGE_SNAP_DISTANCE &&
-      rightGap <= left
+      rightGap <= TOOL_PALETTE_EDGE_SNAP_DISTANCE && rightGap <= left
         ? "right"
         : "left",
     vertical:
-      bottomGap <= TOOL_PALETTE_EDGE_SNAP_DISTANCE &&
-      bottomGap <= top
+      bottomGap <= TOOL_PALETTE_EDGE_SNAP_DISTANCE && bottomGap <= top
         ? "bottom"
         : "top",
   };
@@ -1018,10 +1198,7 @@ function getPaletteBounds(left, top, paletteRect) {
 
 function rectsOverlap(a, b) {
   return (
-    a.left < b.right &&
-    a.right > b.left &&
-    a.top < b.bottom &&
-    a.bottom > b.top
+    a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top
   );
 }
 
@@ -1058,7 +1235,7 @@ function getToolPaletteReservedRects() {
     },
   ]
     .map(({ element, kind }) =>
-      getReservedRectForElement(element, containerRect, kind)
+      getReservedRectForElement(element, containerRect, kind),
     )
     .filter(Boolean);
 }
@@ -1068,14 +1245,14 @@ function resolveControlsDragCollision(
   top,
   paletteRect,
   reservedRect,
-  previousPosition
+  previousPosition,
 ) {
   if (!previousPosition) return { left, top };
 
   const previousBounds = getPaletteBounds(
     previousPosition.left,
     previousPosition.top,
-    paletteRect
+    paletteRect,
   );
   let nextLeft = left;
   let nextTop = top;
@@ -1123,7 +1300,7 @@ function resolveControlsDragCollision(
 function resolveControlsAutoCollision(left, top, paletteRect, maxLeft, maxTop) {
   const reservedRects = getToolPaletteReservedRects();
   const reservedRect = reservedRects.find((rect) =>
-    rectsOverlap(getPaletteBounds(left, top, paletteRect), rect)
+    rectsOverlap(getPaletteBounds(left, top, paletteRect), rect),
   );
   if (!reservedRect) return { left, top };
 
@@ -1154,7 +1331,7 @@ function avoidControlsOverlap(
   paletteRect,
   maxLeft,
   maxTop,
-  options = {}
+  options = {},
 ) {
   const reservedRects = getToolPaletteReservedRects();
   if (reservedRects.length === 0) return { left, top };
@@ -1162,7 +1339,12 @@ function avoidControlsOverlap(
   let nextLeft = left;
   let nextTop = top;
   for (const reservedRect of reservedRects) {
-    if (!rectsOverlap(getPaletteBounds(nextLeft, nextTop, paletteRect), reservedRect)) {
+    if (
+      !rectsOverlap(
+        getPaletteBounds(nextLeft, nextTop, paletteRect),
+        reservedRect,
+      )
+    ) {
       continue;
     }
 
@@ -1170,7 +1352,7 @@ function avoidControlsOverlap(
       const previousBounds = getPaletteBounds(
         options.previousPosition.left,
         options.previousPosition.top,
-        paletteRect
+        paletteRect,
       );
       if (
         reservedRect.kind === "corner-actions" &&
@@ -1179,11 +1361,11 @@ function avoidControlsOverlap(
         return {
           left: Math.min(
             Math.max(options.previousPosition.left, TOOL_PALETTE_EDGE_MARGIN),
-            maxLeft
+            maxLeft,
           ),
           top: Math.min(
             Math.max(options.previousPosition.top, TOOL_PALETTE_EDGE_MARGIN),
-            maxTop
+            maxTop,
           ),
         };
       }
@@ -1193,7 +1375,7 @@ function avoidControlsOverlap(
         nextTop,
         paletteRect,
         reservedRect,
-        options.previousPosition
+        options.previousPosition,
       );
       nextLeft = dragPosition.left;
       nextTop = dragPosition.top;
@@ -1203,7 +1385,7 @@ function avoidControlsOverlap(
         nextTop,
         paletteRect,
         maxLeft,
-        maxTop
+        maxTop,
       );
       nextLeft = autoPosition.left;
       nextTop = autoPosition.top;
@@ -1237,16 +1419,16 @@ function clampToolPaletteToViewer(palette) {
     TOOL_PALETTE_EDGE_MARGIN,
     paletteFitsX
       ? containerRect.width - paletteRect.width - TOOL_PALETTE_EDGE_MARGIN
-      : containerRect.width - TOOL_PALETTE_MIN_VISIBLE_WIDTH
+      : containerRect.width - TOOL_PALETTE_MIN_VISIBLE_WIDTH,
   );
   const maxTop = Math.max(
     TOOL_PALETTE_EDGE_MARGIN,
     paletteFitsY
       ? containerRect.height - paletteRect.height - TOOL_PALETTE_EDGE_MARGIN
-      : containerRect.height - TOOL_PALETTE_MIN_VISIBLE_HEIGHT
+      : containerRect.height - TOOL_PALETTE_MIN_VISIBLE_HEIGHT,
   );
   const currentLeft = Number.parseFloat(
-    palette.style.left || String(TOOL_PALETTE_EDGE_MARGIN)
+    palette.style.left || String(TOOL_PALETTE_EDGE_MARGIN),
   );
   const currentTop = Number.parseFloat(palette.style.top || "56");
   const preferredLeft =
@@ -1260,18 +1442,18 @@ function clampToolPaletteToViewer(palette) {
 
   const nextLeft = Math.min(
     Math.max(preferredLeft, TOOL_PALETTE_EDGE_MARGIN),
-    maxLeft
+    maxLeft,
   );
   const nextTop = Math.min(
     Math.max(preferredTop, TOOL_PALETTE_EDGE_MARGIN),
-    maxTop
+    maxTop,
   );
   const adjustedPosition = avoidControlsOverlap(
     nextLeft,
     nextTop,
     paletteRect,
     maxLeft,
-    maxTop
+    maxTop,
   );
 
   palette.style.left = `${adjustedPosition.left}px`;
@@ -1293,11 +1475,11 @@ function setDefaultToolPalettePosition(palette) {
       ? TOOL_PALETTE_EDGE_MARGIN
       : Math.max(
           TOOL_PALETTE_EDGE_MARGIN,
-          containerRect.width - paletteRect.width - TOOL_PALETTE_EDGE_MARGIN
+          containerRect.width - paletteRect.width - TOOL_PALETTE_EDGE_MARGIN,
         );
   const top = Math.max(
     TOOL_PALETTE_EDGE_MARGIN,
-    containerRect.height - paletteRect.height - bottomOffset
+    containerRect.height - paletteRect.height - bottomOffset,
   );
 
   palette.style.left = `${left}px`;
@@ -1311,7 +1493,9 @@ function restoreToolPalettePosition(palette, storageKey) {
   if (!palette) return;
 
   try {
-    const storedPosition = JSON.parse(localStorage.getItem(storageKey) || "null");
+    const storedPosition = JSON.parse(
+      localStorage.getItem(storageKey) || "null",
+    );
     if (storedPosition) {
       palette.style.left = `${storedPosition.left}px`;
       palette.style.top = `${storedPosition.top}px`;
@@ -1347,12 +1531,12 @@ function saveToolPalettePosition(palette, storageKey) {
       storageKey,
       JSON.stringify({
         left: Number.parseFloat(
-          palette.style.left || String(TOOL_PALETTE_EDGE_MARGIN)
+          palette.style.left || String(TOOL_PALETTE_EDGE_MARGIN),
         ),
         top: Number.parseFloat(palette.style.top || "56"),
         edgeHorizontal: affinity.horizontal,
         edgeVertical: affinity.vertical,
-      })
+      }),
     );
   } catch (error) {
     console.warn("Could not save tool palette position:", error);
@@ -1372,7 +1556,7 @@ function makeToolPaletteDraggable(palette, handle, storageKey) {
       offsetX: event.clientX - paletteRect.left,
       offsetY: event.clientY - paletteRect.top,
       lastLeft: Number.parseFloat(
-        palette.style.left || String(TOOL_PALETTE_EDGE_MARGIN)
+        palette.style.left || String(TOOL_PALETTE_EDGE_MARGIN),
       ),
       lastTop: Number.parseFloat(palette.style.top || "56"),
     };
@@ -1389,24 +1573,18 @@ function makeToolPaletteDraggable(palette, handle, storageKey) {
     const paletteRect = palette.getBoundingClientRect();
     const maxLeft = Math.max(
       TOOL_PALETTE_EDGE_MARGIN,
-      containerRect.width - paletteRect.width - TOOL_PALETTE_EDGE_MARGIN
+      containerRect.width - paletteRect.width - TOOL_PALETTE_EDGE_MARGIN,
     );
     const maxTop = Math.max(
       TOOL_PALETTE_EDGE_MARGIN,
-      containerRect.height - paletteRect.height - TOOL_PALETTE_EDGE_MARGIN
+      containerRect.height - paletteRect.height - TOOL_PALETTE_EDGE_MARGIN,
     );
     const nextLeft = event.clientX - containerRect.left - dragState.offsetX;
     const nextTop = event.clientY - containerRect.top - dragState.offsetY;
 
     const adjustedPosition = avoidControlsOverlap(
-      Math.min(
-        Math.max(nextLeft, TOOL_PALETTE_EDGE_MARGIN),
-        maxLeft
-      ),
-      Math.min(
-        Math.max(nextTop, TOOL_PALETTE_EDGE_MARGIN),
-        maxTop
-      ),
+      Math.min(Math.max(nextLeft, TOOL_PALETTE_EDGE_MARGIN), maxLeft),
+      Math.min(Math.max(nextTop, TOOL_PALETTE_EDGE_MARGIN), maxTop),
       paletteRect,
       maxLeft,
       maxTop,
@@ -1415,7 +1593,7 @@ function makeToolPaletteDraggable(palette, handle, storageKey) {
           left: dragState.lastLeft,
           top: dragState.lastTop,
         },
-      }
+      },
     );
 
     palette.style.left = `${adjustedPosition.left}px`;
@@ -1449,7 +1627,7 @@ function toggleToolPaletteMinimized(palette, button) {
   button.setAttribute("aria-pressed", String(isMinimized));
   button.setAttribute(
     "aria-label",
-    isMinimized ? `Expand ${title}` : `Minimize ${title}`
+    isMinimized ? `Expand ${title}` : `Minimize ${title}`,
   );
   button.title = isMinimized ? "Expand" : "Minimize";
   clampToolPaletteToViewer(palette);
@@ -1471,10 +1649,10 @@ function clampOpenToolPalettes() {
     porosityPalette,
     segmentPalette,
   ].forEach((palette) => {
-      if (palette && !palette.hidden) {
-        clampToolPaletteToViewer(palette);
-      }
-    });
+    if (palette && !palette.hidden) {
+      clampToolPaletteToViewer(palette);
+    }
+  });
 }
 
 function scheduleClampOpenToolPalettes() {
@@ -1546,7 +1724,8 @@ function moveMeasureControlsToPalette() {
 }
 
 function setupGridCountAccordion(gridDetails, countDetails) {
-  if (!gridDetails || !countDetails || gridDetails.dataset.accordionReady) return;
+  if (!gridDetails || !countDetails || gridDetails.dataset.accordionReady)
+    return;
 
   gridDetails.dataset.accordionReady = "true";
   countDetails.dataset.accordionReady = "true";
@@ -1693,12 +1872,12 @@ function openTransformImageryPalette() {
   transformImageryPalette.hidden = false;
   restoreToolPalettePosition(
     transformImageryPalette,
-    "petroImage.transformImageryPalette"
+    "petroImage.transformImageryPalette",
   );
   openTransformImageryPaletteButton?.setAttribute("aria-pressed", "true");
   restoreToolPaletteFromMinimized(
     transformImageryPalette,
-    minimizeTransformImageryPaletteButton
+    minimizeTransformImageryPaletteButton,
   );
   populateTransformTileSetSelect();
   updateTransformControls();
@@ -1731,7 +1910,7 @@ function openClassifyPalette() {
   openClassifyPaletteButton?.setAttribute("aria-pressed", "true");
   restoreToolPaletteFromMinimized(
     classifyPalette,
-    minimizeClassifyPaletteButton
+    minimizeClassifyPaletteButton,
   );
   populateClassifyControls();
   clampToolPaletteToViewer(classifyPalette);
@@ -1762,7 +1941,7 @@ function openPorosityEstimator() {
   openPorosityEstimatorButton?.setAttribute("aria-pressed", "true");
   restoreToolPaletteFromMinimized(
     porosityPalette,
-    minimizePorosityPaletteButton
+    minimizePorosityPaletteButton,
   );
   clampToolPaletteToViewer(porosityPalette);
   updatePorosityControls();
@@ -1774,6 +1953,7 @@ function closePorosityEstimator() {
   stopPorosityAoiMode();
   stopPorosityPickMode();
   closePorosityHelpDialog();
+  closePorosityThicknessMenu();
   porosityPalette.hidden = true;
   openPorosityEstimatorButton?.setAttribute("aria-pressed", "false");
 }
@@ -1874,7 +2054,7 @@ function getSegmenteverygrainSettingsFingerprint() {
 }
 
 function updateSegmenteverygrainReadinessIndicator(
-  status = segmenteverygrainValidationState.status
+  status = segmenteverygrainValidationState.status,
 ) {
   if (!segmenteverygrainSetupReadiness) return;
 
@@ -2047,13 +2227,19 @@ function formatSamProbeResult(result) {
     const moduleResult = modules[name];
     if (!moduleResult) return;
     const version = moduleResult.version ? ` ${moduleResult.version}` : "";
-    lines.push(`${name}: ${moduleResult.available ? "ok" : "missing"}${version}`);
+    lines.push(
+      `${name}: ${moduleResult.available ? "ok" : "missing"}${version}`,
+    );
   });
   if (result.torch?.deviceRecommendation) {
     lines.push(`Device: ${result.torch.deviceRecommendation}`);
   }
   if (Array.isArray(result.warnings) && result.warnings.length > 0) {
-    lines.push("", "Warnings:", ...result.warnings.map((warning) => `- ${warning}`));
+    lines.push(
+      "",
+      "Warnings:",
+      ...result.warnings.map((warning) => `- ${warning}`),
+    );
   }
   if (Array.isArray(result.errors) && result.errors.length > 0) {
     lines.push("", "Errors:", ...result.errors.map((error) => `- ${error}`));
@@ -2070,11 +2256,11 @@ function setSegmenteverygrainSetupStatus(message, state = "") {
   segmenteverygrainSetupStatus.textContent = message;
   segmenteverygrainSetupStatus.classList.toggle(
     "segment-status-ok",
-    state === "ok"
+    state === "ok",
   );
   segmenteverygrainSetupStatus.classList.toggle(
     "segment-status-error",
-    state === "error"
+    state === "error",
   );
 }
 
@@ -2091,16 +2277,26 @@ function formatSegmenteverygrainProbeResult(result) {
     lines.push(`Model: ${sizeMb}`);
   }
   const modules = result.modules || {};
-  ["segmenteverygrain", "tensorflow", "torch", "opencv-python", "scikit-image"].forEach(
-    (name) => {
-      const moduleResult = modules[name];
-      if (!moduleResult) return;
-      const version = moduleResult.version ? ` ${moduleResult.version}` : "";
-      lines.push(`${name}: ${moduleResult.available ? "ok" : "missing"}${version}`);
-    }
-  );
+  [
+    "segmenteverygrain",
+    "tensorflow",
+    "torch",
+    "opencv-python",
+    "scikit-image",
+  ].forEach((name) => {
+    const moduleResult = modules[name];
+    if (!moduleResult) return;
+    const version = moduleResult.version ? ` ${moduleResult.version}` : "";
+    lines.push(
+      `${name}: ${moduleResult.available ? "ok" : "missing"}${version}`,
+    );
+  });
   if (Array.isArray(result.warnings) && result.warnings.length > 0) {
-    lines.push("", "Warnings:", ...result.warnings.map((warning) => `- ${warning}`));
+    lines.push(
+      "",
+      "Warnings:",
+      ...result.warnings.map((warning) => `- ${warning}`),
+    );
   }
   if (Array.isArray(result.errors) && result.errors.length > 0) {
     lines.push("", "Errors:", ...result.errors.map((error) => `- ${error}`));
@@ -2126,11 +2322,10 @@ async function testSegmenteverygrainSetup() {
   updateSegmenteverygrainReadinessIndicator("testing");
   setSegmenteverygrainSetupStatus("Testing segmenteverygrain setup...");
   try {
-    const result =
-      await window.electronAPI.validateSegmenteverygrainSetup({
-        sam: requestedSettings,
-        segmenteverygrain: getSegmenteverygrainSettingsFromInputs(),
-      });
+    const result = await window.electronAPI.validateSegmenteverygrainSetup({
+      sam: requestedSettings,
+      segmenteverygrain: getSegmenteverygrainSettingsFromInputs(),
+    });
     if (result.segmenteverygrainSettings) {
       setSegmenteverygrainInputs(result.segmenteverygrainSettings);
     }
@@ -2141,7 +2336,7 @@ async function testSegmenteverygrainSetup() {
     updateSegmenteverygrainReadinessIndicator();
     setSegmenteverygrainSetupStatus(
       `${result.ok ? "segmenteverygrain looks ready." : "segmenteverygrain needs attention."}\n\n${formatSegmenteverygrainProbeResult(result)}`,
-      result.ok ? "ok" : "error"
+      result.ok ? "ok" : "error",
     );
   } catch (error) {
     console.error("segmenteverygrain setup test failed:", error);
@@ -2152,7 +2347,7 @@ async function testSegmenteverygrainSetup() {
     updateSegmenteverygrainReadinessIndicator();
     setSegmenteverygrainSetupStatus(
       error.message || "segmenteverygrain setup test failed.",
-      "error"
+      "error",
     );
   } finally {
     if (testSegmenteverygrainSetupButton) {
@@ -2179,7 +2374,7 @@ async function loadSamSettings() {
 }
 
 async function saveSegmenteverygrainSettings(
-  message = "segmenteverygrain settings saved."
+  message = "segmenteverygrain settings saved.",
 ) {
   if (!window.electronAPI?.saveSegmenteverygrainSettings) return null;
 
@@ -2194,7 +2389,7 @@ async function saveSegmenteverygrainSettings(
     console.error("Could not save segmenteverygrain settings:", error);
     setSegmenteverygrainSetupStatus(
       error.message || "Could not save segmenteverygrain settings.",
-      "error"
+      "error",
     );
     return null;
   }
@@ -2231,14 +2426,14 @@ async function chooseSegmenteverygrainModel() {
       result.settings || {
         ...getSegmenteverygrainSettingsFromInputs(),
         modelPath: result.filePath,
-      }
+      },
     );
     setSegmenteverygrainSetupStatus("segmenteverygrain model selected.");
   } catch (error) {
     console.error("Could not choose segmenteverygrain model:", error);
     setSegmenteverygrainSetupStatus(
       error.message || "Could not choose segmenteverygrain model.",
-      "error"
+      "error",
     );
   }
 }
@@ -2249,7 +2444,12 @@ async function chooseSamPython() {
   try {
     const result = await window.electronAPI.selectSamPython();
     if (result?.canceled) return;
-    setSamInputs(result.settings || { ...getSamSettingsFromInputs(), pythonPath: result.filePath });
+    setSamInputs(
+      result.settings || {
+        ...getSamSettingsFromInputs(),
+        pythonPath: result.filePath,
+      },
+    );
     updateSamReadinessIndicator();
     setSamSetupStatus("Python executable selected.");
   } catch (error) {
@@ -2265,7 +2465,10 @@ async function chooseSamCheckpoint() {
     const result = await window.electronAPI.selectSamCheckpoint();
     if (result?.canceled) return;
     setSamInputs(
-      result.settings || { ...getSamSettingsFromInputs(), checkpointPath: result.filePath }
+      result.settings || {
+        ...getSamSettingsFromInputs(),
+        checkpointPath: result.filePath,
+      },
     );
     updateSamReadinessIndicator();
     setSamSetupStatus("SAM checkpoint selected.");
@@ -2287,7 +2490,7 @@ async function testSamSetup(options = {}) {
   };
   updateSamReadinessIndicator("testing");
   setSamSetupStatus(
-    options.automatic ? "Checking saved SAM setup..." : "Testing SAM setup..."
+    options.automatic ? "Checking saved SAM setup..." : "Testing SAM setup...",
   );
   try {
     const result = await window.electronAPI.validateSamSetup(requestedSettings);
@@ -2306,7 +2509,7 @@ async function testSamSetup(options = {}) {
     if (settingsStillCurrent) {
       setSamSetupStatus(
         `${result.ok ? "SAM setup looks ready." : "SAM setup needs attention."}\n\n${formatSamProbeResult(result)}`,
-        result.ok ? "ok" : "error"
+        result.ok ? "ok" : "error",
       );
     } else {
       setSamSetupStatus("SAM settings changed. Test SAM again.");
@@ -2338,11 +2541,11 @@ function setUnsupervisedSegmentStatus(message, state = "") {
   unsupervisedSegmentStatus.textContent = message;
   unsupervisedSegmentStatus.classList.toggle(
     "segment-status-ok",
-    state === "ok"
+    state === "ok",
   );
   unsupervisedSegmentStatus.classList.toggle(
     "segment-status-error",
-    state === "error"
+    state === "error",
   );
 }
 
@@ -2353,7 +2556,7 @@ function setUnsupervisedSegmentProgress(percent, options = {}) {
   unsupervisedSegmentProgress.hidden = false;
   unsupervisedSegmentProgress.classList.toggle(
     "segment-progress-indeterminate",
-    indeterminate
+    indeterminate,
   );
   if (!indeterminate) {
     const clampedPercent = Math.max(0, Math.min(100, Number(percent) || 0));
@@ -2364,7 +2567,9 @@ function setUnsupervisedSegmentProgress(percent, options = {}) {
 function hideUnsupervisedSegmentProgress() {
   if (!unsupervisedSegmentProgress || !unsupervisedSegmentProgressBar) return;
   unsupervisedSegmentProgress.hidden = true;
-  unsupervisedSegmentProgress.classList.remove("segment-progress-indeterminate");
+  unsupervisedSegmentProgress.classList.remove(
+    "segment-progress-indeterminate",
+  );
   unsupervisedSegmentProgressBar.style.width = "0%";
   unsupervisedSegmentLastProgressPercent = 0;
 }
@@ -2391,14 +2596,17 @@ function handleSegmenteverygrainProgress(payload = {}) {
 function updateSegmentControls() {
   if (segmentDrawBoxButton) {
     segmentDrawBoxButton.disabled = segmentModeActive || segmentIsRunning;
-    segmentDrawBoxButton.textContent = segmentBoxModeActive ? "Drawing..." : "+ Box";
+    segmentDrawBoxButton.textContent = segmentBoxModeActive
+      ? "Drawing..."
+      : "+ Box";
   }
   if (segmentModeToggle) {
     segmentModeToggle.checked = segmentModeActive;
   }
   if (segmentAutoAddCheckbox) {
     segmentAutoAddCheckbox.disabled = segmentModeActive;
-    segmentAutoAddCheckbox.checked = segmentModeActive || segmentAutoAddUserChecked;
+    segmentAutoAddCheckbox.checked =
+      segmentModeActive || segmentAutoAddUserChecked;
   }
   if (segmentClearButton) {
     segmentClearButton.disabled =
@@ -2410,17 +2618,19 @@ function updateSegmentControls() {
         segmentPromptPoints.length === 0);
   }
   if (segmentAddPositivePointButton) {
-    segmentAddPositivePointButton.disabled = segmentModeActive || segmentIsRunning;
+    segmentAddPositivePointButton.disabled =
+      segmentModeActive || segmentIsRunning;
     segmentAddPositivePointButton.classList.toggle(
       "active",
-      segmentPointMode === "positive"
+      segmentPointMode === "positive",
     );
   }
   if (segmentAddNegativePointButton) {
-    segmentAddNegativePointButton.disabled = segmentModeActive || segmentIsRunning;
+    segmentAddNegativePointButton.disabled =
+      segmentModeActive || segmentIsRunning;
     segmentAddNegativePointButton.classList.toggle(
       "active",
-      segmentPointMode === "negative"
+      segmentPointMode === "negative",
     );
   }
   if (segmentAddAnnotationButton) {
@@ -2464,7 +2674,8 @@ function refreshUnsupervisedAoiPreviewAndControls() {
 }
 
 async function cancelUnsupervisedSegmentation() {
-  if (!unsupervisedSegmentIsRunning || unsupervisedSegmentCancelRequested) return;
+  if (!unsupervisedSegmentIsRunning || unsupervisedSegmentCancelRequested)
+    return;
   unsupervisedSegmentCancelRequested = true;
   setUnsupervisedSegmentStatus("Canceling segmenteverygrain...");
   updateUnsupervisedSegmentControls();
@@ -2502,14 +2713,21 @@ function getSegmentNumberInput(input, fallback, min, max) {
 
 function getSegmentPadding(promptRect) {
   const percent = getSegmentNumberInput(segmentPaddingPercentInput, 50, 0, 300);
-  const minPadding = getSegmentNumberInput(segmentPaddingMinInput, 256, 0, 2048);
+  const minPadding = getSegmentNumberInput(
+    segmentPaddingMinInput,
+    256,
+    0,
+    2048,
+  );
   const maxPadding = Math.max(
     minPadding,
-    getSegmentNumberInput(segmentPaddingMaxInput, 512, 0, 4096)
+    getSegmentNumberInput(segmentPaddingMaxInput, 512, 0, 4096),
   );
   const boxSize = Math.max(promptRect?.width || 0, promptRect?.height || 0);
   const relativePadding = boxSize * (percent / 100);
-  return Math.round(Math.min(maxPadding, Math.max(minPadding, relativePadding)));
+  return Math.round(
+    Math.min(maxPadding, Math.max(minPadding, relativePadding)),
+  );
 }
 
 function updateSegmentPaddingStatus(promptRect = segmentPromptBox) {
@@ -2517,7 +2735,7 @@ function updateSegmentPaddingStatus(promptRect = segmentPromptBox) {
 
   if (promptRect) {
     segmentPaddingStatus.textContent = `Current box padding: ${getSegmentPadding(
-      promptRect
+      promptRect,
     )} px.`;
   } else {
     segmentPaddingStatus.textContent =
@@ -2549,7 +2767,7 @@ function populateSegmentTileSetSelect() {
     unsupervisedSegmentTileSetSelect,
   ].filter(Boolean);
   const previousValues = new Map(
-    selects.map((select) => [select, select.value])
+    selects.map((select) => [select, select.value]),
   );
   selects.forEach((select) => {
     select.innerHTML = "";
@@ -2562,7 +2780,7 @@ function populateSegmentTileSetSelect() {
   });
 
   const checkedIndex = Array.from(
-    document.querySelectorAll(".image-checkbox")
+    document.querySelectorAll(".image-checkbox"),
   ).findIndex((checkbox) => checkbox.checked);
   const fallbackValue = String(checkedIndex >= 0 ? checkedIndex : 0);
 
@@ -2570,7 +2788,9 @@ function populateSegmentTileSetSelect() {
     const previousValue = previousValues.get(select);
     const hasPrevious =
       previousValue !== "" &&
-      Array.from(select.options).some((option) => option.value === previousValue);
+      Array.from(select.options).some(
+        (option) => option.value === previousValue,
+      );
     select.value = hasPrevious ? previousValue : fallbackValue;
   });
 }
@@ -2584,7 +2804,7 @@ function getSegmentTileSetIndex() {
 function getUnsupervisedSegmentTileSetIndex() {
   const rawIndex = Number.parseInt(
     unsupervisedSegmentTileSetSelect?.value || "0",
-    10
+    10,
   );
   if (!Number.isFinite(rawIndex)) return 0;
   return Math.min(Math.max(rawIndex, 0), Math.max(tileSets().length - 1, 0));
@@ -2597,7 +2817,7 @@ function getViewerResolutionScaleForImageRect(imageRect) {
   const topLeft = image.imageToViewportCoordinates(imageRect.x, imageRect.y);
   const bottomRight = image.imageToViewportCoordinates(
     imageRect.x + imageRect.width,
-    imageRect.y + imageRect.height
+    imageRect.y + imageRect.height,
   );
   const screenTopLeft =
     viewer.viewport.viewportToViewerElementCoordinates(topLeft);
@@ -2613,7 +2833,8 @@ function getViewerResolutionScaleForImageRect(imageRect) {
 
 function getResolutionScaleFromSelect(select, imageRect) {
   const value = select?.value || "1";
-  if (value === "viewer") return getViewerResolutionScaleForImageRect(imageRect);
+  if (value === "viewer")
+    return getViewerResolutionScaleForImageRect(imageRect);
   const scale = Number(value);
   return Number.isFinite(scale) ? Math.max(0.05, Math.min(1, scale)) : 1;
 }
@@ -2629,7 +2850,7 @@ function getUnsupervisedSimplifyEpsilon() {
     unsupervisedSimplifyEpsilonInput,
     2,
     0,
-    100
+    100,
   );
   return Number(value.toFixed(3));
 }
@@ -2640,7 +2861,10 @@ function getUnsupervisedViewerResolutionScale() {
 }
 
 function getUnsupervisedResolutionScale() {
-  return getResolutionScaleFromSelect(unsupervisedResolutionSelect, unsupervisedAoiRect);
+  return getResolutionScaleFromSelect(
+    unsupervisedResolutionSelect,
+    unsupervisedAoiRect,
+  );
 }
 
 function getUnsupervisedProcessingSize() {
@@ -2688,7 +2912,7 @@ function setSegmentProcessingLoadClass(elements, className = "") {
     element.classList.remove(
       "segment-load-low",
       "segment-load-medium",
-      "segment-load-high"
+      "segment-load-high",
     );
     if (className) element.classList.add(className);
   });
@@ -2720,30 +2944,30 @@ function updateUnsupervisedAoiStats() {
   unsupervisedAoiPixelCount.textContent = formatSegmentPixels(size.pixelCount);
   setSegmentProcessingLoadClass(
     [unsupervisedAoiProcessedPixels, unsupervisedAoiPixelCount],
-    getSegmentProcessingLoadClass(size.pixelCount)
+    getSegmentProcessingLoadClass(size.pixelCount),
   );
 }
 
 function getUnsupervisedSegmentationOptions() {
   const patchSize = Math.round(
-    getSegmentNumberInput(unsupervisedPatchSizeInput, 2000, 256, 8000)
+    getSegmentNumberInput(unsupervisedPatchSizeInput, 2000, 256, 8000),
   );
   const overlap = Math.round(
     getSegmentNumberInput(
       unsupervisedOverlapInput,
       300,
       0,
-      Math.max(0, patchSize - 1)
-    )
+      Math.max(0, patchSize - 1),
+    ),
   );
   const minArea = getSegmentNumberInput(
     unsupervisedMinAreaInput,
     50,
     0,
-    1000000
+    1000000,
   );
   const dilation = Math.round(
-    getSegmentNumberInput(unsupervisedDilationInput, 0, 0, 25)
+    getSegmentNumberInput(unsupervisedDilationInput, 0, 0, 25),
   );
 
   return {
@@ -2775,8 +2999,16 @@ function addUnsupervisedPatchGridPreview() {
   const scale = Math.max(0.05, size.scale || 1);
   const patchSize = Math.max(1, options.patchSize);
   const stepSize = Math.max(1, patchSize - options.overlap);
-  const xStarts = getPatchStartPositions(size.processedWidth, patchSize, stepSize);
-  const yStarts = getPatchStartPositions(size.processedHeight, patchSize, stepSize);
+  const xStarts = getPatchStartPositions(
+    size.processedWidth,
+    patchSize,
+    stepSize,
+  );
+  const yStarts = getPatchStartPositions(
+    size.processedHeight,
+    patchSize,
+    stepSize,
+  );
   const patchCount = xStarts.length * yStarts.length;
 
   if (patchCount > UNSUPERVISED_PATCH_PREVIEW_MAX_PATCHES) {
@@ -2786,8 +3018,14 @@ function addUnsupervisedPatchGridPreview() {
   let patchIndex = 0;
   yStarts.forEach((processedY) => {
     xStarts.forEach((processedX) => {
-      const processedWidth = Math.min(patchSize, size.processedWidth - processedX);
-      const processedHeight = Math.min(patchSize, size.processedHeight - processedY);
+      const processedWidth = Math.min(
+        patchSize,
+        size.processedWidth - processedX,
+      );
+      const processedHeight = Math.min(
+        patchSize,
+        size.processedHeight - processedY,
+      );
       if (processedWidth <= 0 || processedHeight <= 0) return;
       patchIndex += 1;
       addPolygonToGeoJSON(
@@ -2808,7 +3046,7 @@ function addUnsupervisedPatchGridPreview() {
           lineOpacity: 0.32,
           fillColor: "#777777",
           fillOpacity: 0.075,
-        }
+        },
       );
     });
   });
@@ -2829,7 +3067,8 @@ function getSegmentTileSetActiveTileDescriptors(tileSet, tileSetIndex = 0) {
   const rawRotation = rotateWithStage?.checked
     ? viewer.viewport.getRotation(true)
     : Number(stageRotationInput?.value || 0);
-  const rotation = ((rawRotation % periodDegrees) + periodDegrees) % periodDegrees;
+  const rotation =
+    ((rawRotation % periodDegrees) + periodDegrees) % periodDegrees;
   let supremumIndex = 0;
   for (let index = 0; index < tiles.length; index += 1) {
     if (Number(tiles[index].angleDegrees || 0) > rotation) {
@@ -2837,8 +3076,10 @@ function getSegmentTileSetActiveTileDescriptors(tileSet, tileSetIndex = 0) {
       break;
     }
   }
-  const infimumIndex = supremumIndex === 0 ? tiles.length - 1 : supremumIndex - 1;
-  const supremum = Number(tiles[supremumIndex]?.angleDegrees || 0) +
+  const infimumIndex =
+    supremumIndex === 0 ? tiles.length - 1 : supremumIndex - 1;
+  const supremum =
+    Number(tiles[supremumIndex]?.angleDegrees || 0) +
     (supremumIndex === 0 ? periodDegrees : 0);
   const infimum = Number(tiles[infimumIndex]?.angleDegrees || 0);
   const t = (rotation - infimum) / Math.max(1, supremum - infimum);
@@ -2925,10 +3166,10 @@ function imageRectFromPixelBox(startPixel, endPixel) {
   const bottom = Math.max(startPixel.y, endPixel.y);
 
   const topLeft = image.viewportToImageCoordinates(
-    viewer.viewport.pointFromPixel(new OpenSeadragon.Point(left, top))
+    viewer.viewport.pointFromPixel(new OpenSeadragon.Point(left, top)),
   );
   const bottomRight = image.viewportToImageCoordinates(
-    viewer.viewport.pointFromPixel(new OpenSeadragon.Point(right, bottom))
+    viewer.viewport.pointFromPixel(new OpenSeadragon.Point(right, bottom)),
   );
   const x0 = Math.min(topLeft.x, bottomRight.x);
   const y0 = Math.min(topLeft.y, bottomRight.y);
@@ -2958,6 +3199,33 @@ function imageRectToPoints(rect) {
     .map(([x, y]) => ({ x, y }));
 }
 
+function imagePointsFromPixelBox(startPixel, endPixel) {
+  const image = viewer.world.getItemAt(0);
+  if (!image) return null;
+
+  const left = Math.min(startPixel.x, endPixel.x);
+  const top = Math.min(startPixel.y, endPixel.y);
+  const right = Math.max(startPixel.x, endPixel.x);
+  const bottom = Math.max(startPixel.y, endPixel.y);
+  return [
+    new OpenSeadragon.Point(left, top),
+    new OpenSeadragon.Point(right, top),
+    new OpenSeadragon.Point(right, bottom),
+    new OpenSeadragon.Point(left, bottom),
+  ].map((pixelPoint) => {
+    const viewportPoint = viewer.viewport.pointFromPixel(pixelPoint);
+    const imagePoint = image.viewportToImageCoordinates(viewportPoint);
+    return { x: imagePoint.x, y: imagePoint.y };
+  });
+}
+
+function isPixelBoxLargeEnough(startPixel, endPixel, minimumSize = 4) {
+  return (
+    Math.abs(endPixel.x - startPixel.x) >= minimumSize &&
+    Math.abs(endPixel.y - startPixel.y) >= minimumSize
+  );
+}
+
 function imagePointsToPolygon(points) {
   const coordinates = points.map((point) => [point.x, point.y]);
   if (coordinates.length > 0) {
@@ -2984,7 +3252,10 @@ function syncUnsupervisedAoiRectFromPoints() {
   return unsupervisedAoiRect;
 }
 
-function getSegmentPromptBounds(promptRect, promptPoints = segmentPromptPoints) {
+function getSegmentPromptBounds(
+  promptRect,
+  promptPoints = segmentPromptPoints,
+) {
   const xs = [];
   const ys = [];
   if (promptRect) {
@@ -3020,11 +3291,11 @@ function getPaddedSegmentCropRect(promptRect) {
   const y = Math.max(0, Math.floor(promptBounds.y - padding));
   const right = Math.min(
     imageSize.x,
-    Math.ceil(promptBounds.x + promptBounds.width + padding)
+    Math.ceil(promptBounds.x + promptBounds.width + padding),
   );
   const bottom = Math.min(
     imageSize.y,
-    Math.ceil(promptBounds.y + promptBounds.height + padding)
+    Math.ceil(promptBounds.y + promptBounds.height + padding),
   );
   return {
     x,
@@ -3063,7 +3334,7 @@ function canvasToPngDataUrl(canvas) {
       const reader = new FileReader();
       reader.addEventListener("load", () => resolve(reader.result));
       reader.addEventListener("error", () =>
-        reject(new Error("Could not read the segmentation crop."))
+        reject(new Error("Could not read the segmentation crop.")),
       );
       reader.readAsDataURL(blob);
     }, "image/png");
@@ -3071,7 +3342,8 @@ function canvasToPngDataUrl(canvas) {
 }
 
 function clearSegmentPreview(options = {}) {
-  const { message = "Draw a box around one feature.", keepMode = true } = options;
+  const { message = "Draw a box around one feature.", keepMode = true } =
+    options;
   segmentBoxModeActive = false;
   segmentBoxDragState = null;
   segmentPromptBox = null;
@@ -3119,7 +3391,9 @@ function updateSegmentPromptPreview(promptRect = segmentPromptBox) {
 
 function buildSegmentFeature(fullImagePolygon, result) {
   const style = getCurrentAnnotationStyleColors();
-  const labelFontSize = Number(document.getElementById("annoLabelFontSize").value);
+  const labelFontSize = Number(
+    document.getElementById("annoLabelFontSize").value,
+  );
   return {
     type: "Feature",
     geometry: {
@@ -3133,15 +3407,21 @@ function buildSegmentFeature(fullImagePolygon, result) {
       labelFontSize,
       labelFontColor: style.labelFontColor,
       labelBackgroundColor: style.labelBackgroundColor,
-      labelBackgroundOpacity: getAnnotationOpacityValue("annoLabelBackgroundOpacity"),
+      labelBackgroundOpacity: getAnnotationOpacityValue(
+        "annoLabelBackgroundOpacity",
+      ),
       lineStyle: "solid",
-      lineWeight: Math.max(2, Number(document.getElementById("lineWeight").value)),
+      lineWeight: Math.max(
+        2,
+        Number(document.getElementById("lineWeight").value),
+      ),
       lineColor: "#00d6d6",
       lineOpacity: 0.95,
       fillColor: "#00d6d6",
       fillOpacity: 0.22,
       segmentationBackend: "sam2",
-      segmentationModel: result.modelType || getSamSettingsFromInputs().modelType,
+      segmentationModel:
+        result.modelType || getSamSettingsFromInputs().modelType,
       segmentationModelConfig: result.modelConfig || "",
       segmentationPromptType: "box",
       segmentationScore: result.score,
@@ -3176,19 +3456,28 @@ function previewSegmentPolygon(fullImagePolygon, result) {
 }
 
 function getSegmentPromptSummary() {
-  const positiveCount = segmentPromptPoints.filter((point) => point.label === 1).length;
-  const negativeCount = segmentPromptPoints.filter((point) => point.label === 0).length;
+  const positiveCount = segmentPromptPoints.filter(
+    (point) => point.label === 1,
+  ).length;
+  const negativeCount = segmentPromptPoints.filter(
+    (point) => point.label === 0,
+  ).length;
   const parts = [];
   if (segmentPromptBox) parts.push("box");
-  if (positiveCount > 0) parts.push(`${positiveCount} + point${positiveCount === 1 ? "" : "s"}`);
-  if (negativeCount > 0) parts.push(`${negativeCount} - point${negativeCount === 1 ? "" : "s"}`);
+  if (positiveCount > 0)
+    parts.push(`${positiveCount} + point${positiveCount === 1 ? "" : "s"}`);
+  if (negativeCount > 0)
+    parts.push(`${negativeCount} - point${negativeCount === 1 ? "" : "s"}`);
   return parts.length ? ` Prompts: ${parts.join(", ")}.` : "";
 }
 
 function startSegmentBoxMode() {
   if (segmentIsRunning) return;
 
-  clearSegmentPreview({ message: "Drag a box around one feature.", keepMode: true });
+  clearSegmentPreview({
+    message: "Drag a box around one feature.",
+    keepMode: true,
+  });
   segmentBoxModeActive = true;
   deactivateAnnotationModes();
   stopSnapshotDrawMode({ clearSelection: false });
@@ -3208,7 +3497,7 @@ function setSegmentPointMode(mode) {
     setSegmentStatus(
       segmentPointMode === "positive"
         ? "Click inside the feature to add a positive point."
-        : "Click outside the feature to add a negative point."
+        : "Click outside the feature to add a negative point.",
     );
   } else {
     setSegmentStatus("Draw a box around one feature.");
@@ -3223,7 +3512,7 @@ function getSegmentImagePointFromCanvasEvent(event) {
   const viewportPoint = viewer.viewport.pointFromPixel(event.position);
   const imagePoint = image.viewportToImageCoordinates(
     viewportPoint.x,
-    viewportPoint.y
+    viewportPoint.y,
   );
   return {
     x: imagePoint.x,
@@ -3243,7 +3532,9 @@ function addSegmentPromptPoint(event) {
     label: segmentPointMode === "positive" ? 1 : 0,
   });
   updateSegmentPromptPreview();
-  setSegmentStatus(`Running SAM 2.1 segmentation...${getSegmentPromptSummary()}`);
+  setSegmentStatus(
+    `Running SAM 2.1 segmentation...${getSegmentPromptSummary()}`,
+  );
   runSegmentForPromptBox(segmentPromptBox);
   return true;
 }
@@ -3336,11 +3627,15 @@ function startUnsupervisedAoiMode() {
   deactivateAnnotationModes();
   stopSnapshotDrawMode({ clearSelection: false });
   if (typeof stopMeasurementMode === "function") stopMeasurementMode();
-  setUnsupervisedSegmentStatus("Drag an AOI rectangle around the grains to segment.");
+  setUnsupervisedSegmentStatus(
+    "Drag an AOI rectangle around the grains to segment.",
+  );
   updateUnsupervisedSegmentControls();
 }
 
-function clearUnsupervisedAoi(message = "Draw an AOI before running segmentation.") {
+function clearUnsupervisedAoi(
+  message = "Draw an AOI before running segmentation.",
+) {
   unsupervisedAoiModeActive = false;
   unsupervisedAoiDragState = null;
   unsupervisedAoiRect = null;
@@ -3360,7 +3655,7 @@ function clearUnsupervisedAoi(message = "Draw an AOI before running segmentation
 function clearUnsupervisedAoiForSampleChange() {
   const hasAoiPreview =
     annoJSONTemp?.features?.some(
-      (feature) => feature?.properties?.uuid === "segmenteverygrain-aoi"
+      (feature) => feature?.properties?.uuid === "segmenteverygrain-aoi",
     ) || false;
 
   if (!unsupervisedAoiModeActive && !unsupervisedAoiRect && !hasAoiPreview) {
@@ -3379,7 +3674,8 @@ function removeUnsupervisedAoiVertexHandles() {
 
 function renderUnsupervisedAoiVertexHandles() {
   removeUnsupervisedAoiVertexHandles();
-  if (unsupervisedSegmentIsRunning || unsupervisedAoiImagePoints.length < 3) return;
+  if (unsupervisedSegmentIsRunning || unsupervisedAoiImagePoints.length < 3)
+    return;
 
   const image = viewer.world.getItemAt(0);
   if (!image) return;
@@ -3394,7 +3690,7 @@ function renderUnsupervisedAoiVertexHandles() {
     handle.title = "Drag AOI vertex. Option-click to delete.";
     handle.setAttribute(
       "aria-label",
-      `Move AOI vertex ${index + 1}. Option-click to delete.`
+      `Move AOI vertex ${index + 1}. Option-click to delete.`,
     );
     handle.dataset.vertexIndex = String(index);
     handle.addEventListener("pointerdown", (event) => {
@@ -3404,7 +3700,7 @@ function renderUnsupervisedAoiVertexHandles() {
     viewer.addOverlay({
       element: handle,
       location: image.imageToViewportCoordinates(
-        new OpenSeadragon.Point(point.x, point.y)
+        new OpenSeadragon.Point(point.x, point.y),
       ),
       checkResize: false,
       rotationMode: OpenSeadragon.OverlayRotationMode.NO_ROTATION,
@@ -3417,8 +3713,8 @@ function getUnsupervisedAoiScreenPoints() {
   if (!image) return [];
   return unsupervisedAoiImagePoints.map((point) =>
     viewer.viewport.viewportToViewerElementCoordinates(
-      image.imageToViewportCoordinates(point.x, point.y)
-    )
+      image.imageToViewportCoordinates(point.x, point.y),
+    ),
   );
 }
 
@@ -3454,7 +3750,9 @@ function insertUnsupervisedAoiVertex(viewerPixel) {
   unsupervisedAoiSelectedVertexIndex = edgeHit.insertIndex;
   syncUnsupervisedAoiRectFromPoints();
   updateUnsupervisedAoiPreview();
-  setUnsupervisedSegmentStatus("AOI vertex added. Run segmentation when ready.");
+  setUnsupervisedSegmentStatus(
+    "AOI vertex added. Run segmentation when ready.",
+  );
   updateUnsupervisedSegmentControls();
   return true;
 }
@@ -3474,7 +3772,9 @@ function deleteUnsupervisedAoiVertex(index) {
   unsupervisedAoiSelectedVertexIndex = null;
   syncUnsupervisedAoiRectFromPoints();
   updateUnsupervisedAoiPreview();
-  setUnsupervisedSegmentStatus("AOI vertex deleted. Run segmentation when ready.");
+  setUnsupervisedSegmentStatus(
+    "AOI vertex deleted. Run segmentation when ready.",
+  );
   updateUnsupervisedSegmentControls();
   return true;
 }
@@ -3497,7 +3797,9 @@ function handleUnsupervisedAoiVertexPointerDown(event, vertexIndex) {
   };
   viewerContainer?.setPointerCapture?.(event.pointerId);
   renderUnsupervisedAoiVertexHandles();
-  setUnsupervisedSegmentStatus("Drag AOI vertex, or press Delete to remove it.");
+  setUnsupervisedSegmentStatus(
+    "Drag AOI vertex, or press Delete to remove it.",
+  );
 }
 
 function updateUnsupervisedAoiVertexDrag(event) {
@@ -3507,7 +3809,7 @@ function updateUnsupervisedAoiVertexDrag(event) {
   event.stopPropagation();
   const imagePoint = getPorosityImagePointFromClientPoint(
     event.clientX,
-    event.clientY
+    event.clientY,
   );
   if (!imagePoint) return;
 
@@ -3525,18 +3827,24 @@ function finishUnsupervisedAoiVertexDrag(event) {
 
   event.preventDefault();
   event.stopPropagation();
-  viewerContainer?.releasePointerCapture?.(unsupervisedAoiVertexDragState.pointerId);
+  viewerContainer?.releasePointerCapture?.(
+    unsupervisedAoiVertexDragState.pointerId,
+  );
   const moved = unsupervisedAoiVertexDragState.moved;
   unsupervisedAoiVertexDragState = null;
   if (moved) {
-    setUnsupervisedSegmentStatus("AOI vertex moved. Run segmentation when ready.");
+    setUnsupervisedSegmentStatus(
+      "AOI vertex moved. Run segmentation when ready.",
+    );
     updateUnsupervisedSegmentControls();
   }
 }
 
 function buildUnsupervisedSegmentFeature(fullImagePolygon, result = {}) {
   const style = getCurrentAnnotationStyleColors();
-  const labelFontSize = Number(document.getElementById("annoLabelFontSize").value);
+  const labelFontSize = Number(
+    document.getElementById("annoLabelFontSize").value,
+  );
   return {
     type: "Feature",
     geometry: {
@@ -3550,9 +3858,14 @@ function buildUnsupervisedSegmentFeature(fullImagePolygon, result = {}) {
       labelFontSize,
       labelFontColor: style.labelFontColor,
       labelBackgroundColor: style.labelBackgroundColor,
-      labelBackgroundOpacity: getAnnotationOpacityValue("annoLabelBackgroundOpacity"),
+      labelBackgroundOpacity: getAnnotationOpacityValue(
+        "annoLabelBackgroundOpacity",
+      ),
       lineStyle: "solid",
-      lineWeight: Math.max(2, Number(document.getElementById("lineWeight").value)),
+      lineWeight: Math.max(
+        2,
+        Number(document.getElementById("lineWeight").value),
+      ),
       segmentationBackend: "segmenteverygrain",
       segmentationModel: result.modelPath || "",
       segmentationSamRefined: Boolean(result.useSam),
@@ -3574,7 +3887,7 @@ function commitUnsupervisedSegmentFeatures(features, statusMessage) {
   const usedUuids = new Set(
     annoJSON.features
       .map((existingFeature) => existingFeature.properties?.uuid)
-      .filter(Boolean)
+      .filter(Boolean),
   );
   const getUniqueAnnotationUuid = () => {
     let uuid = generateUniqueId(12);
@@ -3610,7 +3923,7 @@ function commitUnsupervisedSegmentFeatures(features, statusMessage) {
     const properties = normalizeNewAnnotationProperties(
       segmentGroup
         ? applyAnnotationGroupToProperties(segmentProperties, segmentGroup)
-        : applyActiveAnnotationGroup(segmentProperties)
+        : applyActiveAnnotationGroup(segmentProperties),
     );
     annoJSON.features.push({
       type: "Feature",
@@ -3649,7 +3962,7 @@ async function runUnsupervisedSegmentation() {
   if (!window.electronAPI?.runSegmenteverygrainSegmentation) {
     setUnsupervisedSegmentStatus(
       "segmenteverygrain segmentation is only available in the Electron app.",
-      "error"
+      "error",
     );
     return;
   }
@@ -3673,10 +3986,12 @@ async function runUnsupervisedSegmentation() {
       const cropCanvas = await renderFullResolutionImageRectCanvas(
         unsupervisedAoiRect,
         getUnsupervisedSegmentTileSetIndex(),
-        resolutionScale
+        resolutionScale,
       );
-      fallbackScaleX = cropCanvas.width / Math.max(1, unsupervisedAoiRect.width);
-      fallbackScaleY = cropCanvas.height / Math.max(1, unsupervisedAoiRect.height);
+      fallbackScaleX =
+        cropCanvas.width / Math.max(1, unsupervisedAoiRect.width);
+      fallbackScaleY =
+        cropCanvas.height / Math.max(1, unsupervisedAoiRect.height);
       requestImage = {
         cropPngDataUrl: await canvasToPngDataUrl(cropCanvas),
       };
@@ -3686,7 +4001,7 @@ async function runUnsupervisedSegmentation() {
     setUnsupervisedSegmentStatus(
       options.useSam
         ? "Running segmenteverygrain with SAM refinement..."
-        : "Running segmenteverygrain U-Net pass..."
+        : "Running segmenteverygrain U-Net pass...",
     );
     const result = await window.electronAPI.runSegmenteverygrainSegmentation({
       samSettings: getSamSettingsFromInputs(),
@@ -3709,8 +4024,10 @@ async function runUnsupervisedSegmentation() {
         return;
       }
       setUnsupervisedSegmentStatus(
-        result?.error || result?.stderr || "segmenteverygrain could not segment the AOI.",
-        "error"
+        result?.error ||
+          result?.stderr ||
+          "segmenteverygrain could not segment the AOI.",
+        "error",
       );
       return;
     }
@@ -3729,7 +4046,7 @@ async function runUnsupervisedSegmentation() {
               ? Number(result.scaleY)
               : fallbackScaleY) +
             unsupervisedAoiRect.y,
-        ])
+        ]),
       )
       .filter((coordinates) => coordinates.length >= 4)
       .filter((coordinates) => {
@@ -3741,13 +4058,13 @@ async function runUnsupervisedSegmentation() {
           modelPath: getSegmenteverygrainSettingsFromInputs().modelPath,
           useSam: result.useSam,
           samModelType: result.samModelType,
-        })
+        }),
       );
 
     if (features.length === 0) {
       setUnsupervisedSegmentStatus(
         "segmenteverygrain did not return any polygons for this AOI.",
-        "error"
+        "error",
       );
       return;
     }
@@ -3755,7 +4072,7 @@ async function runUnsupervisedSegmentation() {
     setUnsupervisedSegmentProgress(100);
     commitUnsupervisedSegmentFeatures(
       features,
-      `Added ${features.length} segmenteverygrain annotation${features.length === 1 ? "" : "s"}.`
+      `Added ${features.length} segmenteverygrain annotation${features.length === 1 ? "" : "s"}.`,
     );
   } catch (error) {
     if (
@@ -3768,7 +4085,7 @@ async function runUnsupervisedSegmentation() {
     console.error("segmenteverygrain segmentation failed:", error);
     setUnsupervisedSegmentStatus(
       error.message || "segmenteverygrain segmentation failed.",
-      "error"
+      "error",
     );
   } finally {
     if (runId === unsupervisedSegmentRunId) {
@@ -3794,7 +4111,7 @@ async function runSegmentForPromptBox(promptRect) {
     const cropCanvas = await renderFullResolutionImageRectCanvas(
       cropRect,
       getSegmentTileSetIndex(),
-      resolutionScale
+      resolutionScale,
     );
     const scaleX = cropCanvas.width / Math.max(1, cropRect.width);
     const scaleY = cropCanvas.height / Math.max(1, cropRect.height);
@@ -3812,7 +4129,9 @@ async function runSegmentForPromptBox(promptRect) {
       label: point.label,
     }));
     const cropPngDataUrl = await canvasToPngDataUrl(cropCanvas);
-    setSegmentStatus(`Running SAM 2.1 segmentation...${getSegmentPromptSummary()}`);
+    setSegmentStatus(
+      `Running SAM 2.1 segmentation...${getSegmentPromptSummary()}`,
+    );
     const result = await window.electronAPI.runSamSegmentation({
       samSettings: getSamSettingsFromInputs(),
       cropPngDataUrl,
@@ -3825,7 +4144,7 @@ async function runSegmentForPromptBox(promptRect) {
     if (!result?.ok) {
       setSegmentStatus(
         result?.error || result?.stderr || "SAM 2.1 could not segment the box.",
-        "error"
+        "error",
       );
       return;
     }
@@ -3834,10 +4153,9 @@ async function runSegmentForPromptBox(promptRect) {
       x / scaleX + cropRect.x,
       y / scaleY + cropRect.y,
     ]);
-    const scoreText =
-      Number.isFinite(Number(result.score))
-        ? ` Score: ${Number(result.score).toFixed(3)}.`
-        : "";
+    const scoreText = Number.isFinite(Number(result.score))
+      ? ` Score: ${Number(result.score).toFixed(3)}.`
+      : "";
     if (shouldAutoAddSegment()) {
       const feature = buildSegmentFeature(fullImagePolygon, result);
       commitSegmentFeature(feature, {
@@ -3849,7 +4167,7 @@ async function runSegmentForPromptBox(promptRect) {
       previewSegmentPolygon(fullImagePolygon, result);
       setSegmentStatus(
         `Segment preview ready.${scoreText}${getSegmentPromptSummary()}`,
-        "ok"
+        "ok",
       );
     }
   } catch (error) {
@@ -3908,7 +4226,7 @@ function commitSegmentFeature(feature, options = {}) {
   const properties = normalizeNewAnnotationProperties(
     segmentGroup
       ? applyAnnotationGroupToProperties(segmentProperties, segmentGroup)
-      : applyActiveAnnotationGroup(segmentProperties)
+      : applyActiveAnnotationGroup(segmentProperties),
   );
 
   annotationHistory.push("Add segmented annotation");
@@ -3945,12 +4263,15 @@ function commitSegmentFeature(feature, options = {}) {
     properties.labelFontColor,
     properties.labelFontSize,
     properties.labelBackgroundColor,
-    properties.labelBackgroundOpacity
+    properties.labelBackgroundOpacity,
   );
   enableAnnoButtons();
   populateSegmentAnnotationGroupOptions();
   unsavedAnnotations(true);
-  setSegmentStatus(options.statusMessage || "Segment added as an annotation.", "ok");
+  setSegmentStatus(
+    options.statusMessage || "Segment added as an annotation.",
+    "ok",
+  );
   updateSegmentControls();
 }
 
@@ -4014,12 +4335,13 @@ function updateSnapshotScalebarAvailability() {
   if (!scaleAvailable) {
     if (!snapshotIncludeScalebar.disabled) {
       snapshotIncludeScalebar.dataset.restoreChecked = String(
-        snapshotIncludeScalebar.checked
+        snapshotIncludeScalebar.checked,
       );
     }
     snapshotIncludeScalebar.checked = false;
     snapshotIncludeScalebar.disabled = true;
-    snapshotIncludeScalebar.title = "Set an image scale before including a scalebar.";
+    snapshotIncludeScalebar.title =
+      "Set an image scale before including a scalebar.";
     return;
   }
 
@@ -4060,7 +4382,7 @@ function getSnapshotExportLimitError(exportSize) {
   }
   if (totalPixels > SNAPSHOT_MAX_OUTPUT_PIXELS) {
     return `Output is too large (${exportSize.width} x ${exportSize.height}px). Maximum area is ${Math.round(
-      SNAPSHOT_MAX_OUTPUT_PIXELS / 1000000
+      SNAPSHOT_MAX_OUTPUT_PIXELS / 1000000,
     )} megapixels.`;
   }
   return "";
@@ -4084,7 +4406,7 @@ function updateSnapshotExportStats(exportSize) {
   snapshotExportPixelCount.textContent = formatSegmentPixels(pixelCount);
   setSegmentProcessingLoadClass(
     [snapshotExportDimensions, snapshotExportPixelCount],
-    getSegmentProcessingLoadClass(pixelCount)
+    getSegmentProcessingLoadClass(pixelCount),
   );
 }
 
@@ -4204,7 +4526,9 @@ function stopSnapshotDrawMode(options = {}) {
   if (snapshotSelection) {
     snapshotSelection.style.pointerEvents = "auto";
   }
-  document.getElementById("viewer-container")?.classList.remove("snapshot-mode");
+  document
+    .getElementById("viewer-container")
+    ?.classList.remove("snapshot-mode");
   if (options.clearSelection) {
     clearSnapshotSelection();
   } else {
@@ -4259,7 +4583,7 @@ function renderSnapshotSelection(rect = snapshotSelectionRect, options = {}) {
   };
   if (options.syncImageRect !== false) {
     snapshotSelectionImageRect = getSnapshotSelectionImageRect(
-      snapshotSelectionRect
+      snapshotSelectionRect,
     );
   }
   snapshotSelection.hidden = false;
@@ -4277,7 +4601,11 @@ function renderSnapshotSelection(rect = snapshotSelectionRect, options = {}) {
 }
 
 function refreshSnapshotSelectionForViewportChange() {
-  if (!snapshotSelectionImageRect || snapshotModeActive || snapshotAdjustState) {
+  if (
+    !snapshotSelectionImageRect ||
+    snapshotModeActive ||
+    snapshotAdjustState
+  ) {
     return;
   }
 
@@ -4292,8 +4620,8 @@ function refreshSnapshotSelectionForViewportChange() {
     [x, y + height],
   ].map(([imageX, imageY]) =>
     viewer.viewport.viewportToViewerElementCoordinates(
-      image.imageToViewportCoordinates(imageX, imageY)
-    )
+      image.imageToViewportCoordinates(imageX, imageY),
+    ),
   );
   const xs = screenPoints.map((point) => point.x).filter(Number.isFinite);
   const ys = screenPoints.map((point) => point.y).filter(Number.isFinite);
@@ -4308,7 +4636,7 @@ function refreshSnapshotSelectionForViewportChange() {
       width: Math.max(1, Math.max(...xs) - left),
       height: Math.max(1, Math.max(...ys) - top),
     },
-    { syncImageRect: false }
+    { syncImageRect: false },
   );
 }
 
@@ -4327,8 +4655,14 @@ function clampSnapshotRect(rect) {
 
   const width = Math.min(Math.max(rect.width, 8), bounds.width);
   const height = Math.min(Math.max(rect.height, 8), bounds.height);
-  const left = Math.min(Math.max(rect.left, 0), Math.max(bounds.width - width, 0));
-  const top = Math.min(Math.max(rect.top, 0), Math.max(bounds.height - height, 0));
+  const left = Math.min(
+    Math.max(rect.left, 0),
+    Math.max(bounds.width - width, 0),
+  );
+  const top = Math.min(
+    Math.max(rect.top, 0),
+    Math.max(bounds.height - height, 0),
+  );
   return {
     left,
     top,
@@ -4360,7 +4694,7 @@ function updateSnapshotRectFromAdjustment(pointerX, pointerY) {
         top: startRect.top + dy,
         width: startRect.width,
         height: startRect.height,
-      })
+      }),
     );
     return;
   }
@@ -4376,7 +4710,7 @@ function updateSnapshotRectFromAdjustment(pointerX, pointerY) {
   if (handle.includes("s")) bottom += dy;
 
   renderSnapshotSelection(
-    getSnapshotNormalizedRectFromEdges(left, top, right, bottom)
+    getSnapshotNormalizedRectFromEdges(left, top, right, bottom),
   );
 }
 
@@ -4413,7 +4747,7 @@ function getOpenSeadragonImageCanvas(targetViewer = viewer) {
     "porosity-overlay",
   ]);
   return Array.from(targetViewer.container.querySelectorAll("canvas")).find(
-    (canvas) => !ignoredCanvasIds.has(canvas.id)
+    (canvas) => !ignoredCanvasIds.has(canvas.id),
   );
 }
 
@@ -4468,7 +4802,11 @@ function createPorosityType(name, options = {}) {
     id: `porosity-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     name,
     colorSamples: [],
+    manualPolygonUuids: [],
+    manualPolygons: [],
     result: null,
+    previewResult: null,
+    previewTolerance: null,
     tolerance: options.tolerance ?? 35,
     overlayColor: options.overlayColor || "#ff0000",
     overlayOpacity: options.overlayOpacity ?? 100,
@@ -4490,6 +4828,982 @@ function ensurePorosityTypes() {
 function getActivePorosityType() {
   ensurePorosityTypes();
   return porosityTypes.find((type) => type.id === activePorosityTypeId) || null;
+}
+
+function clearPorosityPreviews() {
+  porosityTypes.forEach((type) => {
+    type.previewResult = null;
+    type.previewTolerance = null;
+  });
+}
+
+function getPorosityManualPolygonGeometries(type) {
+  const savedPolygonEntries = (type?.manualPolygons || []).filter((polygon) =>
+    isAnnotationPolygonGeometry({ geometry: polygon?.geometry }),
+  );
+  const savedPolygons = savedPolygonEntries
+    .map((polygon) => polygon.geometry)
+    .filter((geometry) => isAnnotationPolygonGeometry({ geometry }));
+  const savedUuids = new Set(
+    savedPolygonEntries.map((polygon) => polygon.uuid).filter(Boolean),
+  );
+  const referencedPolygons = (type?.manualPolygonUuids || [])
+    .filter((uuid) => !savedUuids.has(uuid))
+    .map((uuid) => getAnnotationByUuid(uuid)?.geometry)
+    .filter((geometry) => isAnnotationPolygonGeometry({ geometry }));
+  return [...savedPolygons, ...referencedPolygons];
+}
+
+function getPorosityManualPolygonSnapshots(type) {
+  const snapshots = new Map();
+  const addSnapshot = (uuid, geometry) => {
+    if (!isAnnotationPolygonGeometry({ geometry })) return;
+    const key = uuid || JSON.stringify(geometry);
+    snapshots.set(key, {
+      uuid: uuid || null,
+      geometry: cloneData(geometry),
+    });
+  };
+
+  (type?.manualPolygons || []).forEach((polygon) =>
+    addSnapshot(polygon?.uuid, polygon?.geometry),
+  );
+  (type?.manualPolygonUuids || []).forEach((uuid) =>
+    addSnapshot(uuid, getAnnotationByUuid(uuid)?.geometry),
+  );
+  return [...snapshots.values()];
+}
+
+function getPorosityRecipeData() {
+  const imageSize = viewer.world.getItemAt(0)?.getContentSize?.() || null;
+  const selectedTileSetIndices = getPorositySelectedTileSetIndices();
+  return {
+    schema: "petro-image.porosity-recipe",
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    source: {
+      title: typeof title === "function" ? title() : "",
+      width: imageSize?.x ?? null,
+      height: imageSize?.y ?? null,
+    },
+    tileSets: selectedTileSetIndices.map((index) => ({
+      index,
+      label: getPorosityTileSetLabel(index),
+    })),
+    selectedTileSetIndices,
+    analysisResolutionMode: getPorosityAnalysisResolutionMode(),
+    aoi: {
+      complete: porosityAoiComplete,
+      points: porosityAoiImagePoints.map((point) => ({
+        x: point.x,
+        y: point.y,
+      })),
+    },
+    activeTypeId: activePorosityTypeId,
+    types: porosityTypes.map((type) => ({
+      id: type.id,
+      name: type.name,
+      colorSamples: (type.colorSamples || []).map((sample) => ({
+        sampleSetId: sample.sampleSetId,
+        tileSetIndex: sample.tileSetIndex,
+        r: sample.r,
+        g: sample.g,
+        b: sample.b,
+      })),
+      manualPolygonUuids: [...(type.manualPolygonUuids || [])],
+      manualPolygons: getPorosityManualPolygonSnapshots(type),
+      tolerance: type.tolerance,
+      overlayColor: type.overlayColor,
+      overlayOpacity: type.overlayOpacity,
+      visible: type.visible !== false,
+    })),
+  };
+}
+
+function getPorosityExportResults() {
+  const recipe = getPorosityRecipeData();
+  return {
+    schema: "petro-image.porosity-results",
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    recipe,
+    results: porosityTypes.map((type) => ({
+      typeId: type.id,
+      typeName: type.name,
+      estimated: Boolean(type.result),
+      percent: type.result?.percent ?? null,
+      porePixels: type.result?.porePixels ?? null,
+      totalPixels: type.result?.totalPixels ?? null,
+      scope: type.result?.scope ?? null,
+      analysisWidth: type.result?.analysisWidth ?? null,
+      analysisHeight: type.result?.analysisHeight ?? null,
+      analysisScale: type.result?.analysisScale ?? null,
+      analysisResolutionMode: type.result?.analysisResolutionMode ?? null,
+      analysisResolutionLabel: type.result?.analysisResolutionLabel ?? null,
+      committedTolerance: type.result?.tolerance ?? null,
+      currentTolerance: type.tolerance,
+      tileSetIndices: type.result?.tileSetIndices ?? [],
+      manualPolygonCount: getPorosityManualPolygonSnapshots(type).length,
+    })),
+  };
+}
+
+function getPorosityExportFilename(suffix, extension) {
+  const sourceName =
+    (typeof title === "function" ? title() : "porosity")
+      .replace(/[^a-z0-9_-]+/gi, "-")
+      .replace(/^-+|-+$/g, "") || "porosity";
+  return `${sourceName}-${suffix}.${extension}`;
+}
+
+function exportPorosityRecipe() {
+  const json = JSON.stringify(getPorosityRecipeData(), null, 2);
+  saveAs(
+    new Blob([json], { type: "application/json;charset=utf-8" }),
+    getPorosityExportFilename("recipe", "json"),
+  );
+}
+
+function exportPorosityResultsJson() {
+  const json = JSON.stringify(getPorosityExportResults(), null, 2);
+  saveAs(
+    new Blob([json], { type: "application/json;charset=utf-8" }),
+    getPorosityExportFilename("results", "json"),
+  );
+}
+
+function exportPorosityResultsCsv() {
+  const sourceTitle = typeof title === "function" ? title() : "";
+  const rows = [
+    [
+      "source_title",
+      "type",
+      "estimated",
+      "percent",
+      "pore_pixels",
+      "total_pixels",
+      "scope",
+      "analysis_width_px",
+      "analysis_height_px",
+      "analysis_scale",
+      "analysis_resolution",
+      "tile_sets",
+      "committed_tolerance",
+      "current_tolerance",
+      "manual_polygon_count",
+    ],
+    ...porosityTypes.map((type) => [
+      sourceTitle,
+      type.name,
+      type.result ? "true" : "false",
+      type.result?.percent ?? "",
+      type.result?.porePixels ?? "",
+      type.result?.totalPixels ?? "",
+      type.result?.scope ?? "",
+      type.result?.analysisWidth ?? "",
+      type.result?.analysisHeight ?? "",
+      type.result?.analysisScale ?? "",
+      type.result?.analysisResolutionLabel ?? "",
+      (type.result?.tileSetIndices || [])
+        .map(getPorosityTileSetLabel)
+        .join(" | "),
+      type.result?.tolerance ?? "",
+      type.tolerance,
+      getPorosityManualPolygonSnapshots(type).length,
+    ]),
+  ];
+  const csv = rows.map((row) => row.map(csvEscape).join(",")).join("\n");
+  saveAs(
+    new Blob([csv], { type: "text/csv;charset=utf-8" }),
+    getPorosityExportFilename("results", "csv"),
+  );
+}
+
+function getPorosityAoiRasterTypes() {
+  return porosityTypes.filter(
+    (type) =>
+      type.result?.scope === "aoi" &&
+      type.result.mask?.canvas &&
+      type.result.mask?.alphaData,
+  );
+}
+
+function getPorosityRasterExportMetadata(type, product, details = {}) {
+  const result = type.result;
+  const mask = result?.mask;
+  const topLeft = mask?.imageCorners?.topLeft;
+  const topRight = mask?.imageCorners?.topRight;
+  const bottomLeft = mask?.imageCorners?.bottomLeft;
+  const width = mask?.canvas?.width || 0;
+  const height = mask?.canvas?.height || 0;
+  const imageSize = viewer.world.getItemAt(0)?.getContentSize?.();
+  const xStep =
+    topLeft && topRight && width
+      ? {
+          x: (topRight.x - topLeft.x) / width,
+          y: (topRight.y - topLeft.y) / width,
+        }
+      : null;
+  const yStep =
+    topLeft && bottomLeft && height
+      ? {
+          x: (bottomLeft.x - topLeft.x) / height,
+          y: (bottomLeft.y - topLeft.y) / height,
+        }
+      : null;
+  return {
+    schema: "petro-image.porosity-raster",
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    product,
+    source: {
+      title: typeof title === "function" ? title() : "",
+      width: imageSize?.x ?? null,
+      height: imageSize?.y ?? null,
+      coordinateSpace: "source-image-pixels",
+      origin: "top-left",
+      axes: { x: "right", y: "down" },
+    },
+    porosityType: { id: type.id, name: type.name },
+    result: {
+      scope: result?.scope || "aoi",
+      analysisResolutionMode: result?.analysisResolutionMode || "",
+      analysisResolutionLabel: result?.analysisResolutionLabel || "",
+      analysisScale: result?.analysisScale ?? null,
+      tolerance: result?.tolerance ?? null,
+    },
+    raster: {
+      width,
+      height,
+      pixelToSourceImage: {
+        origin: topLeft || null,
+        xStep,
+        yStep,
+        pixelCenterOffset: { x: 0.5, y: 0.5 },
+      },
+      aoiPolygon: porosityAoiImagePoints.map((point) => ({ ...point })),
+      outsideAoi: details.outsideAoi || "no-data",
+      noDataValue: details.noDataValue ?? null,
+    },
+    ...details,
+  };
+}
+
+function canvasToBlob(canvas, type = "image/png", quality) {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (blob) resolve(blob);
+      else reject(new Error("Could not encode the raster image."));
+    }, type, quality);
+  });
+}
+
+function getPorosityAoiRasterValidity(result) {
+  const mask = result.mask;
+  const topLeft = mask.imageCorners?.topLeft;
+  const topRight = mask.imageCorners?.topRight;
+  const bottomLeft = mask.imageCorners?.bottomLeft;
+  if (!topLeft || !topRight || !bottomLeft) return null;
+  const width = mask.canvas.width;
+  const height = mask.canvas.height;
+  const values = new Uint8Array(width * height);
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      const xFraction = (x + 0.5) / width;
+      const yFraction = (y + 0.5) / height;
+      const imagePoint = {
+        x:
+          topLeft.x +
+          (topRight.x - topLeft.x) * xFraction +
+          (bottomLeft.x - topLeft.x) * yFraction,
+        y:
+          topLeft.y +
+          (topRight.y - topLeft.y) * xFraction +
+          (bottomLeft.y - topLeft.y) * yFraction,
+      };
+      values[y * width + x] = isPointInPolygon(
+        imagePoint,
+        porosityAoiImagePoints,
+      )
+        ? 1
+        : 0;
+    }
+  }
+  return values;
+}
+
+function encodeNpy(values, width, height, descriptor) {
+  const dictionary = `{\"descr\": \"${descriptor}\", \"fortran_order\": False, \"shape\": (${height}, ${width}), }`;
+  const prefixLength = 10;
+  const headerLength = Math.ceil((dictionary.length + 1 + prefixLength) / 16) * 16;
+  const header = `${dictionary}${" ".repeat(headerLength - prefixLength - dictionary.length - 1)}\n`;
+  const bytes = new Uint8Array(prefixLength + header.length);
+  bytes.set([0x93, 0x4e, 0x55, 0x4d, 0x50, 0x59, 0x01, 0x00]);
+  new DataView(bytes.buffer).setUint16(8, header.length, true);
+  bytes.set(new TextEncoder().encode(header), prefixLength);
+  return new Blob([bytes, values], {
+    type: "application/octet-stream",
+  });
+}
+
+function encodeTiff(values, width, height, options = {}) {
+  const { bitsPerSample = 8, sampleFormat = 1 } = options;
+  const entryCount = 11;
+  const ifdOffset = 8;
+  const dataOffset = ifdOffset + 2 + entryCount * 12 + 4;
+  const header = new ArrayBuffer(dataOffset);
+  const view = new DataView(header);
+  view.setUint8(0, 0x49);
+  view.setUint8(1, 0x49);
+  view.setUint16(2, 42, true);
+  view.setUint32(4, ifdOffset, true);
+  view.setUint16(ifdOffset, entryCount, true);
+  const entries = [
+    [256, 4, width],
+    [257, 4, height],
+    [258, 3, bitsPerSample],
+    [259, 3, 1],
+    [262, 3, 1],
+    [273, 4, dataOffset],
+    [277, 3, 1],
+    [278, 4, height],
+    [279, 4, values.byteLength],
+    [284, 3, 1],
+    [339, 3, sampleFormat],
+  ];
+  entries.forEach(([tag, fieldType, value], index) => {
+    const offset = ifdOffset + 2 + index * 12;
+    view.setUint16(offset, tag, true);
+    view.setUint16(offset + 2, fieldType, true);
+    view.setUint32(offset + 4, 1, true);
+    if (fieldType === 3) view.setUint16(offset + 8, value, true);
+    else view.setUint32(offset + 8, value, true);
+  });
+  view.setUint32(ifdOffset + 2 + entryCount * 12, 0, true);
+  return new Blob([header, values], { type: "image/tiff" });
+}
+
+function getPorosityRasterExportFormat() {
+  return porosityRasterExportFormat?.value || "npy";
+}
+
+function getPorosityRasterFileExtension(format) {
+  return format === "jpeg" ? "jpg" : format;
+}
+
+function getPorosityRasterSidecarFilename(filename) {
+  return filename.replace(/\.[^.]+$/, ".json");
+}
+
+function createPorosityMaskExportCanvas(mask, valid, opaque = false) {
+  const canvas = document.createElement("canvas");
+  canvas.width = mask.canvas.width;
+  canvas.height = mask.canvas.height;
+  const context = canvas.getContext("2d");
+  const image = context.createImageData(canvas.width, canvas.height);
+  for (let index = 0; index < valid.length; index += 1) {
+    const offset = index * 4;
+    const pore = mask.alphaData[index] > 0;
+    image.data[offset] = pore ? 255 : 0;
+    image.data[offset + 1] = pore ? 255 : 0;
+    image.data[offset + 2] = pore ? 255 : 0;
+    image.data[offset + 3] = valid[index] || opaque ? 255 : 0;
+  }
+  context.putImageData(image, 0, 0);
+  return canvas;
+}
+
+function createPorosityCalculatedPreviewCanvas(type, settings, valid) {
+  const result = type.result;
+  const raster = getPorosityCalculatedRasterValues(type, settings);
+  const extent = getPorosityThicknessOverlayExtent(settings);
+  if (!raster?.values || !extent) return null;
+  const canvas = document.createElement("canvas");
+  canvas.width = result.mask.canvas.width;
+  canvas.height = result.mask.canvas.height;
+  const context = canvas.getContext("2d");
+  const image = context.createImageData(canvas.width, canvas.height);
+  const transformedMin = transformPorosityThicknessDisplayValue(
+    extent.min,
+    settings.scale,
+  );
+  const transformedMax = transformPorosityThicknessDisplayValue(
+    extent.max,
+    settings.scale,
+  );
+  const span = Math.max(Number.EPSILON, transformedMax - transformedMin);
+  for (let index = 0; index < raster.values.length; index += 1) {
+    const value = raster.values[index] * raster.factor;
+    if (!valid[index] || !(value > 0)) continue;
+    const color = getPorosityThicknessColor(
+      (transformPorosityThicknessDisplayValue(value, settings.scale) -
+        transformedMin) /
+        span,
+      settings.colormap,
+    );
+    const offset = index * 4;
+    image.data[offset] = color[0];
+    image.data[offset + 1] = color[1];
+    image.data[offset + 2] = color[2];
+    image.data[offset + 3] = 255;
+  }
+  context.putImageData(image, 0, 0);
+  return { canvas, extent };
+}
+
+function doPorosityRasterGridsMatch(referenceResult, candidateResult) {
+  const referenceMask = referenceResult?.mask;
+  const candidateMask = candidateResult?.mask;
+  if (
+    !referenceMask?.canvas ||
+    !candidateMask?.canvas ||
+    referenceMask.canvas.width !== candidateMask.canvas.width ||
+    referenceMask.canvas.height !== candidateMask.canvas.height
+  ) {
+    return false;
+  }
+  return ["topLeft", "topRight", "bottomLeft"].every((corner) => {
+    const referencePoint = referenceMask.imageCorners?.[corner];
+    const candidatePoint = candidateMask.imageCorners?.[corner];
+    return (
+      referencePoint &&
+      candidatePoint &&
+      Math.abs(referencePoint.x - candidatePoint.x) < 1e-6 &&
+      Math.abs(referencePoint.y - candidatePoint.y) < 1e-6
+    );
+  });
+}
+
+function createPorosityCompositePreviewCanvas(values, result, settings) {
+  const extent = getPorosityThicknessOverlayExtent(settings);
+  if (!extent) return null;
+  const canvas = document.createElement("canvas");
+  canvas.width = result.mask.canvas.width;
+  canvas.height = result.mask.canvas.height;
+  const context = canvas.getContext("2d");
+  const image = context.createImageData(canvas.width, canvas.height);
+  const transformedMin = transformPorosityThicknessDisplayValue(
+    extent.min,
+    settings.scale,
+  );
+  const transformedMax = transformPorosityThicknessDisplayValue(
+    extent.max,
+    settings.scale,
+  );
+  const span = Math.max(Number.EPSILON, transformedMax - transformedMin);
+  for (let index = 0; index < values.length; index += 1) {
+    const value = values[index];
+    if (!(value > 0)) continue;
+    const color = getPorosityThicknessColor(
+      (transformPorosityThicknessDisplayValue(value, settings.scale) -
+        transformedMin) /
+        span,
+      settings.colormap,
+    );
+    const offset = index * 4;
+    image.data[offset] = color[0];
+    image.data[offset + 1] = color[1];
+    image.data[offset + 2] = color[2];
+    image.data[offset + 3] = 255;
+  }
+  context.putImageData(image, 0, 0);
+  return { canvas, extent };
+}
+
+async function exportPorosityMaskRaster(type, format) {
+  const result = type.result;
+  const mask = result?.mask;
+  if (!mask?.canvas || !mask.alphaData) {
+    throw new Error(`${type.name} does not have an AOI porosity result to export.`);
+  }
+  const valid = getPorosityAoiRasterValidity(result);
+  if (!valid) throw new Error("Could not determine the AOI raster extent.");
+  const values = new Uint8Array(valid.length);
+  for (let index = 0; index < valid.length; index += 1) {
+    values[index] = valid[index] && mask.alphaData[index] > 0 ? 1 : 0;
+  }
+  const extension = getPorosityRasterFileExtension(format);
+  const filename = getPorosityExportFilename(
+    `${type.name.replace(/[^a-z0-9_-]+/gi, "-")}-porosity-mask`,
+    extension,
+  );
+  let encoding;
+  if (format === "npy") {
+    saveAs(encodeNpy(values, mask.canvas.width, mask.canvas.height, "|u1"), filename);
+    encoding = "NumPy .npy, unsigned 8-bit: 1=pore, 0=non-pore or outside AOI";
+  } else if (format === "tiff") {
+    const displayValues = new Uint8Array(values.length);
+    displayValues.forEach((_, index) => {
+      displayValues[index] = values[index] ? 255 : 0;
+    });
+    saveAs(
+      encodeTiff(displayValues, mask.canvas.width, mask.canvas.height),
+      filename,
+    );
+    encoding = "TIFF, unsigned 8-bit grayscale: 255=pore, 0=non-pore or outside AOI";
+  } else {
+    const canvas = createPorosityMaskExportCanvas(
+      mask,
+      valid,
+      format === "jpeg",
+    );
+    saveAs(
+      await canvasToBlob(
+        canvas,
+        format === "jpeg" ? "image/jpeg" : "image/png",
+        format === "jpeg" ? 0.95 : undefined,
+      ),
+      filename,
+    );
+    encoding =
+      format === "jpeg"
+        ? "JPEG: white=pore, black=non-pore or outside AOI"
+        : "PNG RGBA: white=pore, black=non-pore, alpha=0 outside AOI";
+  }
+  const metadata = getPorosityRasterExportMetadata(type, "porosity-mask", {
+    encoding,
+    outsideAoi: format === "png" ? "transparent" : "zero",
+    noDataValue: null,
+  });
+  saveAs(
+    new Blob([JSON.stringify(metadata, null, 2)], {
+      type: "application/json;charset=utf-8",
+    }),
+    getPorosityRasterSidecarFilename(filename),
+  );
+}
+
+async function exportPorosityCalculatedRaster(type, format) {
+  const result = type.result;
+  const settings = getPorosityThicknessOverlaySettings();
+  const raster = getPorosityCalculatedRasterValues(type, settings);
+  if (!result?.mask?.alphaData || !raster?.values) {
+    throw new Error(
+      `Calculate ${settings.parameter === "localThickness" ? "local thickness" : "pore properties"} before exporting this raster.`,
+    );
+  }
+  const valid = getPorosityAoiRasterValidity(result);
+  if (!valid) throw new Error("Could not determine the AOI raster extent.");
+  const values = new Float32Array(raster.values.length);
+  for (let index = 0; index < values.length; index += 1) {
+    values[index] =
+      valid[index] && result.mask.alphaData[index] > 0
+        ? raster.values[index] * raster.factor
+        : Number.NaN;
+  }
+  const parameter = settings.parameter === "component"
+    ? `component-${settings.componentProperty}`
+    : settings.parameter;
+  const extension = getPorosityRasterFileExtension(format);
+  const filename = getPorosityExportFilename(
+    `${type.name.replace(/[^a-z0-9_-]+/gi, "-")}-${parameter}`,
+    extension,
+  );
+  let encoding;
+  let displayRange = null;
+  if (format === "npy") {
+    saveAs(
+      encodeNpy(values, result.mask.canvas.width, result.mask.canvas.height, "<f4"),
+      filename,
+    );
+    encoding = "NumPy .npy, little-endian float32";
+  } else if (format === "tiff") {
+    saveAs(
+      encodeTiff(values, result.mask.canvas.width, result.mask.canvas.height, {
+        bitsPerSample: 32,
+        sampleFormat: 3,
+      }),
+      filename,
+    );
+    encoding = "TIFF, little-endian float32";
+  } else {
+    const preview = createPorosityCalculatedPreviewCanvas(type, settings, valid);
+    if (!preview) throw new Error("Could not create the calculated-property preview.");
+    saveAs(
+      await canvasToBlob(
+        preview.canvas,
+        format === "jpeg" ? "image/jpeg" : "image/png",
+        format === "jpeg" ? 0.95 : undefined,
+      ),
+      filename,
+    );
+    encoding = `${format.toUpperCase()} display image using the current color mapping`;
+    displayRange = {
+      min: preview.extent.min,
+      max: preview.extent.max,
+      unit: preview.extent.unit,
+      scale: settings.scale,
+      colormap: settings.colormap,
+    };
+  }
+  const metadata = getPorosityRasterExportMetadata(type, "calculated-property", {
+    encoding,
+    parameter: settings.parameter,
+    componentProperty:
+      settings.parameter === "component" ? settings.componentProperty : null,
+    unit: raster.unit,
+    outsideAoi:
+      format === "png" ? "transparent" : format === "jpeg" ? "black" : "NaN",
+    noDataValue:
+      format === "png" ? "transparent" : format === "jpeg" ? "black" : "NaN",
+    displayRange,
+  });
+  saveAs(
+    new Blob([JSON.stringify(metadata, null, 2)], {
+      type: "application/json;charset=utf-8",
+    }),
+    getPorosityRasterSidecarFilename(filename),
+  );
+}
+
+async function exportCompositePorosityCalculatedRaster(types, format) {
+  const settings = getPorosityThicknessOverlaySettings();
+  const referenceType = types[0];
+  const referenceResult = referenceType?.result;
+  if (!referenceResult || !types.length) {
+    throw new Error("Calculate properties before exporting a composite raster.");
+  }
+  if (!types.every((type) => doPorosityRasterGridsMatch(referenceResult, type.result))) {
+    throw new Error(
+      "All porosity types must be estimated together at the same AOI resolution before creating a composite raster.",
+    );
+  }
+  const width = referenceResult.mask.canvas.width;
+  const height = referenceResult.mask.canvas.height;
+  const values = new Float32Array(width * height);
+  values.fill(Number.NaN);
+  let overlapPixels = 0;
+  types.forEach((type) => {
+    const raster = getPorosityCalculatedRasterValues(type, settings);
+    const alpha = type.result.mask.alphaData;
+    for (let index = 0; index < values.length; index += 1) {
+      if (!alpha[index]) continue;
+      if (Number.isFinite(values[index])) overlapPixels += 1;
+      values[index] = raster.values[index] * raster.factor;
+    }
+  });
+  const parameter =
+    settings.parameter === "component"
+      ? `component-${settings.componentProperty}`
+      : settings.parameter;
+  const extension = getPorosityRasterFileExtension(format);
+  const filename = getPorosityExportFilename(
+    `porosity-composite-${parameter}`,
+    extension,
+  );
+  let encoding;
+  let displayRange = null;
+  if (format === "npy") {
+    saveAs(encodeNpy(values, width, height, "<f4"), filename);
+    encoding = "NumPy .npy, little-endian float32";
+  } else if (format === "tiff") {
+    saveAs(
+      encodeTiff(values, width, height, { bitsPerSample: 32, sampleFormat: 3 }),
+      filename,
+    );
+    encoding = "TIFF, little-endian float32";
+  } else {
+    const preview = createPorosityCompositePreviewCanvas(
+      values,
+      referenceResult,
+      settings,
+    );
+    if (!preview) throw new Error("Could not create the composite preview.");
+    saveAs(
+      await canvasToBlob(
+        preview.canvas,
+        format === "jpeg" ? "image/jpeg" : "image/png",
+        format === "jpeg" ? 0.95 : undefined,
+      ),
+      filename,
+    );
+    encoding = `${format.toUpperCase()} display image using the current color mapping`;
+    displayRange = {
+      min: preview.extent.min,
+      max: preview.extent.max,
+      unit: preview.extent.unit,
+      scale: settings.scale,
+      colormap: settings.colormap,
+    };
+  }
+  const unit = getPorosityCalculatedRasterValues(referenceType, settings).unit;
+  const metadata = getPorosityRasterExportMetadata(
+    referenceType,
+    "calculated-property-composite",
+    {
+      encoding,
+      parameter: settings.parameter,
+      componentProperty:
+        settings.parameter === "component" ? settings.componentProperty : null,
+      unit,
+      outsideAoi:
+        format === "png" ? "transparent" : format === "jpeg" ? "black" : "NaN",
+      noDataValue:
+        format === "png" ? "transparent" : format === "jpeg" ? "black" : "NaN",
+      displayRange,
+      compositePorosityTypes: types.map((type) => ({
+        id: type.id,
+        name: type.name,
+      })),
+      overlapPixels,
+      overlapResolution: "Later porosity types in the listed order replace earlier values.",
+    },
+  );
+  delete metadata.porosityType;
+  saveAs(
+    new Blob([JSON.stringify(metadata, null, 2)], {
+      type: "application/json;charset=utf-8",
+    }),
+    getPorosityRasterSidecarFilename(filename),
+  );
+}
+
+async function exportSelectedPorosityRaster() {
+  const product = porosityRasterExportProduct?.value || "active-mask";
+  const format = getPorosityRasterExportFormat();
+  const types = getPorosityAoiRasterTypes();
+  const activeType = getActivePorosityType();
+  const calculatedTypes = types.filter((type) =>
+    getPorosityCalculatedRasterValues(
+      type,
+      getPorosityThicknessOverlaySettings(),
+    )?.values,
+  );
+  try {
+    if (product === "all-masks") {
+      if (!types.length) throw new Error("Estimate the AOI before exporting rasters.");
+      for (const type of types) await exportPorosityMaskRaster(type, format);
+      updatePorosityControls(`Exported ${types.length} porosity mask${types.length === 1 ? "" : "s"} with coordinate sidecars.`);
+      return;
+    }
+    if (product === "composite-calculated") {
+      if (!calculatedTypes.length) {
+        throw new Error("Calculate properties before exporting calculated rasters.");
+      }
+      await exportCompositePorosityCalculatedRaster(calculatedTypes, format);
+      updatePorosityControls(
+        `Exported one composite calculated raster for ${calculatedTypes.length} porosity type${calculatedTypes.length === 1 ? "" : "s"}.`,
+      );
+      return;
+    }
+    if (!activeType || !types.includes(activeType)) {
+      throw new Error("Estimate the active porosity type for the AOI before exporting.");
+    }
+    if (product === "calculated") {
+      await exportPorosityCalculatedRaster(activeType, format);
+      updatePorosityControls("Exported the calculated raster and coordinate sidecar.");
+    } else {
+      await exportPorosityMaskRaster(activeType, format);
+      updatePorosityControls("Exported the porosity mask and coordinate sidecar.");
+    }
+  } catch (error) {
+    console.error("Could not export porosity raster:", error);
+    updatePorosityControls(error.message || "Could not export the porosity raster.");
+  }
+}
+
+function validatePorosityRecipeSource(recipe) {
+  const recipeTitle = String(recipe?.source?.title || "").trim();
+  const currentTitle = String(typeof title === "function" ? title() : "").trim();
+  if (recipeTitle && currentTitle && recipeTitle !== currentTitle) {
+    throw new Error(
+      `This recipe was created for “${recipeTitle}”, but the current sample is “${currentTitle}”. Select the matching sample before importing.`,
+    );
+  }
+
+  const imageSize = viewer.world.getItemAt(0)?.getContentSize?.();
+  if (
+    recipe?.source?.width &&
+    recipe?.source?.height &&
+    imageSize &&
+    (Math.round(recipe.source.width) !== Math.round(imageSize.x) ||
+      Math.round(recipe.source.height) !== Math.round(imageSize.y))
+  ) {
+    throw new Error(
+      "The recipe was created for an image with different dimensions.",
+    );
+  }
+}
+
+function importPorosityRecipe(recipe) {
+  if (
+    recipe?.schema !== "petro-image.porosity-recipe" ||
+    recipe.version !== 1
+  ) {
+    throw new Error("This is not a supported Estimate Porosity recipe.");
+  }
+  if (!Array.isArray(recipe.types) || recipe.types.length === 0) {
+    throw new Error("The recipe does not contain any porosity types.");
+  }
+  validatePorosityRecipeSource(recipe);
+
+  const recipeTileSets = Array.isArray(recipe.tileSets) ? recipe.tileSets : [];
+  const tileSetIndexMap = new Map();
+  recipeTileSets.forEach((recipeTileSet) => {
+    const matchingIndices = tileSets()
+      .map((tileSet, index) => ({
+        index,
+        label: tileSet.label || `Tile set ${index + 1}`,
+      }))
+      .filter((tileSet) => tileSet.label === recipeTileSet.label)
+      .map((tileSet) => tileSet.index);
+    const mappedIndex =
+      matchingIndices.length === 1
+        ? matchingIndices[0]
+        : normalizePorosityTileSetIndex(recipeTileSet.index);
+    if (mappedIndex === null || mappedIndex === undefined) {
+      throw new Error(
+        `Could not match recipe tile set “${recipeTileSet.label || recipeTileSet.index}”.`,
+      );
+    }
+    tileSetIndexMap.set(Number(recipeTileSet.index), mappedIndex);
+  });
+
+  const selectedIndices = (recipe.selectedTileSetIndices || [])
+    .map((index) => tileSetIndexMap.get(Number(index)))
+    .filter((index) => index !== undefined);
+  if (selectedIndices.length === 0) {
+    throw new Error("None of the recipe's selected tile sets are available.");
+  }
+
+  const availableAnnotationUuids = new Set(
+    annoJSON.features
+      .map((feature) => feature.properties?.uuid)
+      .filter(Boolean),
+  );
+  const importedTypes = recipe.types.map((savedType, index) => {
+    const type = createPorosityType(savedType.name || `Porosity ${index + 1}`, {
+      tolerance: Number(savedType.tolerance) || 35,
+      overlayColor: savedType.overlayColor || "#ff0000",
+      overlayOpacity: Number(savedType.overlayOpacity) || 100,
+      visible: savedType.visible !== false,
+    });
+    type.colorSamples = (savedType.colorSamples || [])
+      .map((sample) => ({
+        sampleSetId: sample.sampleSetId || `imported-${index}`,
+        tileSetIndex: tileSetIndexMap.get(Number(sample.tileSetIndex)),
+        r: Number(sample.r),
+        g: Number(sample.g),
+        b: Number(sample.b),
+      }))
+      .filter(
+        (sample) =>
+          sample.tileSetIndex !== undefined &&
+          [sample.r, sample.g, sample.b].every(Number.isFinite),
+      );
+    type.manualPolygons = (savedType.manualPolygons || [])
+      .filter((polygon) => isAnnotationPolygonGeometry({ geometry: polygon?.geometry }))
+      .map((polygon) => ({
+        uuid: polygon.uuid || null,
+        geometry: cloneData(polygon.geometry),
+      }));
+    type.manualPolygonUuids = [
+      ...new Set(
+        [
+          ...(savedType.manualPolygonUuids || []),
+          ...type.manualPolygons.map((polygon) => polygon.uuid).filter(Boolean),
+        ].filter((uuid) => availableAnnotationUuids.has(uuid)),
+      ),
+    ];
+    return type;
+  });
+
+  porosityTypes = importedTypes;
+  activePorosityTypeId = importedTypes[0].id;
+  const savedActiveIndex = recipe.types.findIndex(
+    (savedType) => savedType.id === recipe.activeTypeId,
+  );
+  if (savedActiveIndex >= 0) {
+    activePorosityTypeId = importedTypes[savedActiveIndex].id;
+  }
+  porositySelectedTileSetIndices = [...new Set(selectedIndices)];
+  porosityAnalysisResolutionMode = POROSITY_ANALYSIS_RESOLUTION_MODES[
+    recipe.analysisResolutionMode
+  ]
+    ? recipe.analysisResolutionMode
+    : "balanced";
+  porosityAoiImagePoints = (recipe.aoi?.points || [])
+    .filter(
+      (point) =>
+        Number.isFinite(Number(point.x)) && Number.isFinite(Number(point.y)),
+    )
+    .map((point) => ({ x: Number(point.x), y: Number(point.y) }));
+  porosityAoiComplete =
+    Boolean(recipe.aoi?.complete) && porosityAoiImagePoints.length >= 3;
+  porosityAoiModeActive = false;
+  porosityPickModeActive = false;
+  selectedPorositySampleSetId = "";
+  porosityTypes.forEach((type) => {
+    type.result = null;
+  });
+  renderPorosityTileSetSelect();
+  renderPorosityTypeSelect(activePorosityTypeId);
+  syncPorosityControlsFromActiveType();
+  drawPorosityOverlay();
+  updatePorosityControls(
+    "Porosity recipe imported. Estimate to generate results.",
+  );
+}
+
+function doesPorosityPolygonIntersectAoi(feature) {
+  if (!porosityAoiComplete || porosityAoiImagePoints.length < 3) return false;
+  if (!isAnnotationPolygonGeometry(feature)) return false;
+
+  const aoiBounds = getPorosityAoiImageBounds();
+  if (!boundsIntersect(getFeatureImageBounds(feature), aoiBounds)) return false;
+
+  const aoiRing = porosityAoiImagePoints.map((point) => [point.x, point.y]);
+  aoiRing.push([...aoiRing[0]]);
+  const aoiSegments = getRingSegments(aoiRing);
+
+  return getGeometryPolygons(feature.geometry).some((polygon) => {
+    if (!Array.isArray(polygon) || polygon.length === 0) return false;
+    if (
+      porosityAoiImagePoints.some((point) =>
+        polygonContainsImagePoint(point, polygon),
+      )
+    ) {
+      return true;
+    }
+    if (
+      polygon.some((ring) =>
+        ring.some((coordinate) =>
+          isPointInPolygon(
+            imagePointFromCoord(coordinate),
+            porosityAoiImagePoints,
+          ),
+        ),
+      )
+    ) {
+      return true;
+    }
+    return polygon.some((ring) =>
+      getRingSegments(ring).some(([start, end]) =>
+        aoiSegments.some(([aoiStart, aoiEnd]) =>
+          imageSegmentsIntersect(
+            imagePointFromCoord(start),
+            imagePointFromCoord(end),
+            imagePointFromCoord(aoiStart),
+            imagePointFromCoord(aoiEnd),
+          ),
+        ),
+      ),
+    );
+  });
+}
+
+function getSelectedPorosityPolygonsInAoi() {
+  return getSelectedAnnotationUuids()
+    .map((uuid) => getAnnotationByUuid(uuid))
+    .filter((feature) => doesPorosityPolygonIntersectAoi(feature));
+}
+
+function isPorosityImagePointInsideManualPolygon(imagePoint, type) {
+  return getPorosityManualPolygonGeometries(type).some((geometry) =>
+    getGeometryPolygons(geometry).some((polygon) =>
+      polygonContainsImagePoint(imagePoint, polygon),
+    ),
+  );
 }
 
 function clonePorosityMask(mask) {
@@ -4527,8 +5841,32 @@ function clonePorosityResult(result) {
     analysisHeight: result.analysisHeight,
     analysisResolutionMode: result.analysisResolutionMode || "balanced",
     analysisResolutionLabel: result.analysisResolutionLabel || "",
+    tolerance: result.tolerance ?? null,
     tileSetIndices: result.tileSetIndices ? [...result.tileSetIndices] : null,
     scope: result.scope || "aoi",
+    localThickness: result.localThickness
+      ? {
+          ...result.localThickness,
+          radiusValues: new Float32Array(result.localThickness.radiusValues),
+          radii: [...(result.localThickness.radii || [])],
+        }
+      : null,
+    properties: result.properties
+      ? {
+          ...result.properties,
+          distanceToBoundary: new Float32Array(
+            result.properties.distanceToBoundary,
+          ),
+          componentLabels: new Int32Array(result.properties.componentLabels),
+          components: result.properties.components.map((component) => ({
+            ...component,
+          })),
+          horizontalChords: new Float32Array(
+            result.properties.horizontalChords,
+          ),
+          verticalChords: new Float32Array(result.properties.verticalChords),
+        }
+      : null,
   };
 }
 
@@ -4546,6 +5884,8 @@ function clonePorosityState() {
       id: type.id,
       name: type.name,
       colorSamples: type.colorSamples.map((sample) => ({ ...sample })),
+      manualPolygonUuids: [...(type.manualPolygonUuids || [])],
+      manualPolygons: cloneData(type.manualPolygons || []),
       result: clonePorosityResult(type.result),
       tolerance: type.tolerance,
       overlayColor: type.overlayColor,
@@ -4560,21 +5900,26 @@ function restorePorosityState(state, message = "") {
 
   porosityAoiModeActive = state.aoiModeActive;
   porosityPickModeActive = state.pickModeActive;
+  porosityAoiHistoryState = null;
+  selectedPorositySampleSetId = "";
   porosityAoiMousePoint = null;
   porosityAoiImagePoints = state.aoiImagePoints.map((point) => ({ ...point }));
   porosityAoiComplete = state.aoiComplete;
   porosityAoiVisible = state.aoiVisible !== false;
   porositySelectedTileSetIndices = [...(state.selectedTileSetIndices || [])];
-  porosityAnalysisResolutionMode =
-    POROSITY_ANALYSIS_RESOLUTION_MODES[state.analysisResolutionMode]
-      ? state.analysisResolutionMode
-      : getPorosityAnalysisResolutionMode();
+  porosityAnalysisResolutionMode = POROSITY_ANALYSIS_RESOLUTION_MODES[
+    state.analysisResolutionMode
+  ]
+    ? state.analysisResolutionMode
+    : getPorosityAnalysisResolutionMode();
   if (porosityResolutionMode) {
     porosityResolutionMode.value = porosityAnalysisResolutionMode;
   }
   porosityTypes = state.types.map((type) => ({
     ...type,
     colorSamples: type.colorSamples.map((sample) => ({ ...sample })),
+    manualPolygonUuids: [...(type.manualPolygonUuids || [])],
+    manualPolygons: cloneData(type.manualPolygons || []),
     result: clonePorosityResult(type.result),
   }));
   activePorosityTypeId = state.activeTypeId;
@@ -4600,7 +5945,7 @@ function renderPorosityTypeSelect(preferredValue = activePorosityTypeId) {
     porosityTypeSelect.append(option);
   });
   porosityTypeSelect.value = porosityTypes.some(
-    (type) => type.id === targetValue
+    (type) => type.id === targetValue,
   )
     ? targetValue
     : activePorosityTypeId;
@@ -4651,7 +5996,7 @@ function renderPorosityTileSetSelect() {
   });
   porosityTileSetSelect.size = Math.max(
     1,
-    Math.min(3, Math.max(tileSets().length, 1))
+    Math.min(3, Math.max(tileSets().length, 1)),
   );
 }
 
@@ -4667,14 +6012,17 @@ function normalizePorosityTypeSamples(type) {
   type.colorSamples = (type.colorSamples || [])
     .map((sample, index) => {
       const tileSetIndex =
-        normalizePorosityTileSetIndex(sample.tileSetIndex) ?? defaultTileSetIndex;
+        normalizePorosityTileSetIndex(sample.tileSetIndex) ??
+        defaultTileSetIndex;
       return {
         ...sample,
         sampleSetId: sample.sampleSetId || `legacy-sample-${index}`,
         tileSetIndex,
       };
     })
-    .filter((sample) => normalizePorosityTileSetIndex(sample.tileSetIndex) !== null);
+    .filter(
+      (sample) => normalizePorosityTileSetIndex(sample.tileSetIndex) !== null,
+    );
 }
 
 function getPorosityAnalysisResolutionMode() {
@@ -4699,9 +6047,10 @@ function updatePorosityResolutionStatus(exportSize = null) {
   if (!porosityResolutionStatus) return;
 
   const exportMode = exportSize?.mode;
-  const settings = exportMode && POROSITY_ANALYSIS_RESOLUTION_MODES[exportMode]
-    ? { mode: exportMode, ...POROSITY_ANALYSIS_RESOLUTION_MODES[exportMode] }
-    : getPorosityAnalysisResolutionSettings();
+  const settings =
+    exportMode && POROSITY_ANALYSIS_RESOLUTION_MODES[exportMode]
+      ? { mode: exportMode, ...POROSITY_ANALYSIS_RESOLUTION_MODES[exportMode] }
+      : getPorosityAnalysisResolutionSettings();
   if (!exportSize) {
     porosityResolutionStatus.textContent = `${settings.label} analysis resolution.`;
     return;
@@ -4729,27 +6078,11 @@ function getPorosityResultExportSize(result) {
 }
 
 function showPorosityActivityStatus(message) {
-  if (!porosityActivityStatus) return;
-
-  if (porosityActivityClearTimer !== null) {
-    window.clearTimeout(porosityActivityClearTimer);
-    porosityActivityClearTimer = null;
-  }
-  porosityActivityStatus.textContent = message;
-  porosityActivityStatus.hidden = !message;
+  setPorosityProgress(message, null);
 }
 
 function clearPorosityActivityStatus(delayMs = 600) {
-  if (!porosityActivityStatus) return;
-
-  if (porosityActivityClearTimer !== null) {
-    window.clearTimeout(porosityActivityClearTimer);
-  }
-  porosityActivityClearTimer = window.setTimeout(() => {
-    porosityActivityClearTimer = null;
-    porosityActivityStatus.textContent = "";
-    porosityActivityStatus.hidden = true;
-  }, delayMs);
+  clearPorosityProgress(delayMs);
 }
 
 function setPorosityProgress(message, percent = null) {
@@ -4770,7 +6103,7 @@ function setPorosityProgress(message, percent = null) {
     porosityProgressBar.style.width = `${width}%`;
     porosityProgressBar.classList.toggle(
       "porosity-progress-bar-indeterminate",
-      !Number.isFinite(percent)
+      !Number.isFinite(percent),
     );
   }
 }
@@ -4787,7 +6120,9 @@ function clearPorosityProgress(delayMs = 600) {
     if (porosityProgressLabel) porosityProgressLabel.textContent = "";
     if (porosityProgressBar) {
       porosityProgressBar.style.width = "0%";
-      porosityProgressBar.classList.remove("porosity-progress-bar-indeterminate");
+      porosityProgressBar.classList.remove(
+        "porosity-progress-bar-indeterminate",
+      );
     }
   }, delayMs);
 }
@@ -4840,7 +6175,7 @@ function syncActivePorosityTypeFromControls() {
   }
   type.overlayColor = porosityOverlayColor?.value || type.overlayColor;
   type.overlayOpacity = clampPorosityOverlayOpacity(
-    porosityOverlayOpacity?.value || type.overlayOpacity
+    porosityOverlayOpacity?.value || type.overlayOpacity,
   );
   setPorosityOverlayOpacityControlValue(type.overlayOpacity);
   return type;
@@ -4882,7 +6217,7 @@ function renamePorosityType(typeId, name) {
   const duplicateType = porosityTypes.find(
     (type) =>
       type.id !== typeId &&
-      type.name.toLowerCase() === trimmedName.toLowerCase()
+      type.name.toLowerCase() === trimmedName.toLowerCase(),
   );
   if (duplicateType) {
     alert("A porosity type with that name already exists.");
@@ -4907,7 +6242,8 @@ function deletePorosityType(typeId = activePorosityTypeId) {
 
   const [removedType] = porosityTypes.splice(typeIndex, 1);
   if (activePorosityTypeId === typeId) {
-    const nextType = porosityTypes[Math.min(typeIndex, porosityTypes.length - 1)];
+    const nextType =
+      porosityTypes[Math.min(typeIndex, porosityTypes.length - 1)];
     activePorosityTypeId = nextType?.id || "";
   }
   porosityPickModeActive = false;
@@ -4923,13 +6259,13 @@ function drawPorosityMask(ctx, mask) {
   ctx.imageSmoothingEnabled = false;
   if (mask.imageCorners) {
     const topLeft = getPorosityScreenPointFromImagePoint(
-      mask.imageCorners.topLeft
+      mask.imageCorners.topLeft,
     );
     const topRight = getPorosityScreenPointFromImagePoint(
-      mask.imageCorners.topRight
+      mask.imageCorners.topRight,
     );
     const bottomLeft = getPorosityScreenPointFromImagePoint(
-      mask.imageCorners.bottomLeft
+      mask.imageCorners.bottomLeft,
     );
     if (topLeft && topRight && bottomLeft) {
       ctx.save();
@@ -4939,7 +6275,7 @@ function drawPorosityMask(ctx, mask) {
         (bottomLeft.x - topLeft.x) / mask.canvas.height,
         (bottomLeft.y - topLeft.y) / mask.canvas.height,
         topLeft.x,
-        topLeft.y
+        topLeft.y,
       );
       ctx.drawImage(mask.canvas, 0, 0);
       ctx.restore();
@@ -4952,6 +6288,298 @@ function drawPorosityMask(ctx, mask) {
   }
 }
 
+const POROSITY_THICKNESS_COLORMAPS = {
+  viridis: [
+    [68, 1, 84],
+    [59, 82, 139],
+    [33, 145, 140],
+    [94, 201, 98],
+    [253, 231, 37],
+  ],
+  inferno: [
+    [0, 0, 4],
+    [87, 15, 109],
+    [187, 55, 84],
+    [249, 142, 9],
+    [252, 255, 164],
+  ],
+  turbo: [
+    [48, 18, 59],
+    [50, 120, 238],
+    [34, 208, 139],
+    [249, 190, 31],
+    [122, 4, 3],
+  ],
+  gray: [
+    [0, 0, 0],
+    [255, 255, 255],
+  ],
+};
+
+function getPorosityThicknessColor(value, name) {
+  const colors =
+    POROSITY_THICKNESS_COLORMAPS[name] || POROSITY_THICKNESS_COLORMAPS.viridis;
+  const position = Math.max(0, Math.min(1, value)) * (colors.length - 1);
+  const index = Math.min(colors.length - 2, Math.floor(position));
+  const fraction = position - index;
+  return colors[index].map((channel, channelIndex) =>
+    Math.round(
+      channel + (colors[index + 1][channelIndex] - channel) * fraction,
+    ),
+  );
+}
+
+function getPorosityThicknessOverlaySettings() {
+  const selection = porosityCalculatedRasterParameter?.value || "localThickness-diameter";
+  const isComponent = selection.startsWith("component-");
+  const isLocalThickness = selection.startsWith("localThickness-");
+  const selectedLabel =
+    porosityCalculatedRasterParameter?.selectedOptions?.[0]?.textContent ||
+    "Local thickness";
+  return {
+    enabled: Boolean(porosityThicknessOverlayEnabled?.checked),
+    sizeFactor: selection === "localThickness-diameter" ? 2 : 1,
+    scale: porosityThicknessOverlayScale?.value || "log2",
+    colormap: porosityThicknessOverlayColormap?.value || "viridis",
+    opacity: Math.max(
+      0.05,
+      Math.min(1, Number(porosityThicknessOverlayOpacity?.value || 80) / 100),
+    ),
+    autoRange: porosityThicknessOverlayAutoRange?.checked !== false,
+    parameter: isComponent
+      ? "component"
+      : selection === "distance"
+        ? "distance"
+        : isLocalThickness
+          ? "localThickness"
+          : "localThickness",
+    componentProperty: isComponent ? selection.slice("component-".length) : "area",
+    label: isLocalThickness
+      ? `Local thickness (${selectedLabel})`
+      : isComponent
+        ? `Component ${selectedLabel}`
+        : selectedLabel,
+  };
+}
+
+function getPorosityCalculatedRasterValues(type, settings) {
+  const result = type.result;
+  const physicalScale = getPorosityThicknessScale(result);
+  if (settings.parameter === "distance") {
+    return {
+      values: result.properties?.distanceToBoundary,
+      factor: physicalScale.factor * settings.sizeFactor,
+      unit: physicalScale.unit,
+    };
+  }
+  if (settings.parameter === "component") {
+    const labels = result.properties?.componentLabels;
+    const components = result.properties?.components;
+    if (!labels || !components) return null;
+    const property = settings.componentProperty;
+    let factor = 1;
+    let unit = "";
+    if (property === "area") {
+      factor = physicalScale.factor ** 2;
+      unit = physicalScale.unit === "µm" ? "µm²" : "source px²";
+    } else if (
+      ["equivalentDiameter", "meanThickness", "maxThickness"].includes(property)
+    ) {
+      factor =
+        physicalScale.factor *
+        (property.includes("Thickness") ? settings.sizeFactor : 1);
+      unit = physicalScale.unit;
+    } else if (property === "orientation") {
+      unit = "°";
+    }
+    const cacheKey = [property, factor, unit].join("|");
+    result.componentPropertyRasterCache ||= {};
+    const cached = result.componentPropertyRasterCache[cacheKey];
+    if (cached?.labels === labels && cached.components === components) {
+      return cached.raster;
+    }
+
+    const lookup = new Float64Array(components.length + 1);
+    components.forEach((component) => {
+      lookup[component.id] =
+        Number(component[property] ?? component.id) * factor;
+    });
+    const values = new Float32Array(labels.length);
+    for (let index = 0; index < labels.length; index += 1)
+      values[index] = lookup[labels[index]] || 0;
+    const raster = { values, factor: 1, unit };
+    result.componentPropertyRasterCache[cacheKey] = {
+      labels,
+      components,
+      raster,
+    };
+    return raster;
+  }
+  return {
+    values: result.localThickness?.radiusValues,
+    factor: physicalScale.factor * settings.sizeFactor,
+    unit: physicalScale.unit,
+  };
+}
+
+function transformPorosityThicknessDisplayValue(value, scale) {
+  if (scale === "log2") return Math.log2(Math.max(Number.EPSILON, value));
+  if (scale === "log10") return Math.log10(Math.max(Number.EPSILON, value));
+  return value;
+}
+
+function getPorosityThicknessOverlayExtent(settings) {
+  const sourceTypes = porosityTypes.filter(
+    (type) => type.visible !== false && type.result?.properties,
+  );
+  const sources = sourceTypes
+    .map((type) => ({
+      type,
+      raster: getPorosityCalculatedRasterValues(type, settings),
+    }))
+    .filter((source) => source.raster?.values);
+  const sourceArrays = sources.map((source) => source.raster.values);
+  const cacheKey = [
+    currentIndex,
+    settings.sizeFactor,
+    settings.parameter,
+    settings.componentProperty,
+    settings.autoRange,
+    settings.autoRange ? "auto" : porosityThicknessOverlayMin?.value || "",
+    settings.autoRange ? "auto" : porosityThicknessOverlayMax?.value || "",
+    sources.map((source) => source.type.id).join(","),
+  ].join("|");
+  if (
+    porosityThicknessOverlayExtentCache?.key === cacheKey &&
+    sourceArrays.every(
+      (array, index) =>
+        porosityThicknessOverlayExtentCache.sources[index] === array,
+    )
+  ) {
+    return porosityThicknessOverlayExtentCache.extent;
+  }
+  let min = Infinity;
+  let max = -Infinity;
+  let unit = hasKnownScale() ? "µm" : "source px";
+  sources.forEach(({ raster }) => {
+    unit = raster.unit;
+    raster.values.forEach((rawValue) => {
+      if (!(rawValue > 0)) return;
+      const value = rawValue * raster.factor;
+      if (value < min) min = value;
+      if (value > max) max = value;
+    });
+  });
+  if (!settings.autoRange) {
+    const customMin = Number(porosityThicknessOverlayMin?.value);
+    const customMax = Number(porosityThicknessOverlayMax?.value);
+    if (
+      Number.isFinite(customMin) &&
+      Number.isFinite(customMax) &&
+      customMax > customMin
+    ) {
+      min = customMin;
+      max = customMax;
+    }
+  }
+  const extent =
+    Number.isFinite(min) && Number.isFinite(max) ? { min, max, unit } : null;
+  porosityThicknessOverlayExtentCache = {
+    key: cacheKey,
+    sources: sourceArrays,
+    extent,
+  };
+  return extent;
+}
+
+function createPorosityThicknessDisplayMask(type, settings, extent) {
+  const result = type.result;
+  const raster = getPorosityCalculatedRasterValues(type, settings);
+  const values = raster?.values;
+  if (!values || !result.mask?.canvas) return null;
+  const cacheKey = [
+    result.localThickness.methodKey || "legacy",
+    settings.sizeFactor,
+    settings.scale,
+    settings.colormap,
+    settings.opacity,
+    settings.parameter,
+    settings.componentProperty,
+    extent.min,
+    extent.max,
+  ].join("|");
+  if (
+    result.thicknessDisplayCache?.key === cacheKey &&
+    result.thicknessDisplayCache.values === values
+  ) {
+    return result.thicknessDisplayCache.mask;
+  }
+  const canvas = document.createElement("canvas");
+  canvas.width = result.mask.canvas.width;
+  canvas.height = result.mask.canvas.height;
+  const ctx = canvas.getContext("2d");
+  const image = ctx.createImageData(canvas.width, canvas.height);
+  const physicalScale = getPorosityThicknessScale(result);
+  const transformedMin = transformPorosityThicknessDisplayValue(
+    extent.min,
+    settings.scale,
+  );
+  const transformedMax = transformPorosityThicknessDisplayValue(
+    extent.max,
+    settings.scale,
+  );
+  const span = Math.max(Number.EPSILON, transformedMax - transformedMin);
+  const alpha = Math.round(settings.opacity * 255);
+  for (let index = 0; index < values.length; index += 1) {
+    if (!(values[index] > 0)) continue;
+    const value = values[index] * raster.factor;
+    const normalized =
+      (transformPorosityThicknessDisplayValue(value, settings.scale) -
+        transformedMin) /
+      span;
+    const color = getPorosityThicknessColor(normalized, settings.colormap);
+    const offset = index * 4;
+    image.data[offset] = color[0];
+    image.data[offset + 1] = color[1];
+    image.data[offset + 2] = color[2];
+    image.data[offset + 3] = alpha;
+  }
+  ctx.putImageData(image, 0, 0);
+  const displayMask = { ...result.mask, canvas, alphaData: null };
+  result.thicknessDisplayCache = { key: cacheKey, values, mask: displayMask };
+  return displayMask;
+}
+
+function updatePorosityThicknessOverlayLegend(settings, extent) {
+  if (!porosityThicknessOverlayLegend) return;
+  porosityThicknessOverlayLegend.hidden = !settings.enabled || !extent;
+  if (!extent) return;
+  if (settings.autoRange) {
+    if (porosityThicknessOverlayMin) {
+      porosityThicknessOverlayMin.value = formatHistogramInputValue(extent.min);
+    }
+    if (porosityThicknessOverlayMax) {
+      porosityThicknessOverlayMax.value = formatHistogramInputValue(extent.max);
+    }
+  }
+  const colors =
+    POROSITY_THICKNESS_COLORMAPS[settings.colormap] ||
+    POROSITY_THICKNESS_COLORMAPS.viridis;
+  const stops = colors.map(
+    (color, index) =>
+      `rgb(${color.join(",")}) ${(index / (colors.length - 1)) * 100}%`,
+  );
+  porosityThicknessOverlayLegend.querySelector(
+    ".porosity-thickness-overlay-gradient",
+  ).style.background = `linear-gradient(90deg, ${stops.join(",")})`;
+  const labels = porosityThicknessOverlayLegend.querySelectorAll(
+    ".porosity-thickness-overlay-legend-labels span",
+  );
+  labels[0].textContent = `${formatHistogramAxisNumber(extent.min)} ${extent.unit}`;
+  labels[1].textContent = settings.scale === "linear" ? "" : settings.scale;
+  labels[2].textContent = `${formatHistogramAxisNumber(extent.max)} ${extent.unit}`;
+}
+
 function drawPorosityOverlay() {
   if (!porosityOverlay) return;
 
@@ -4959,9 +6587,29 @@ function drawPorosityOverlay() {
   const ctx = porosityOverlay.getContext("2d");
   if (!ctx) return;
 
+  const thicknessSettings = getPorosityThicknessOverlaySettings();
+  const thicknessExtent = thicknessSettings.enabled
+    ? getPorosityThicknessOverlayExtent(thicknessSettings)
+    : null;
   porosityTypes.forEach((type) => {
-    if (type.visible !== false) drawPorosityMask(ctx, type.result?.mask);
+    if (type.visible === false) return;
+    const previewMask =
+      type.id === activePorosityTypeId &&
+      type.previewResult &&
+      type.previewTolerance === type.tolerance
+        ? type.previewResult.mask
+        : null;
+    const mask =
+      thicknessSettings.enabled && thicknessExtent
+        ? createPorosityThicknessDisplayMask(
+            type,
+            thicknessSettings,
+            thicknessExtent,
+          )
+        : previewMask || type.result?.mask;
+    drawPorosityMask(ctx, mask);
   });
+  updatePorosityThicknessOverlayLegend(thicknessSettings, thicknessExtent);
 
   if (!porosityAoiVisible && !porosityAoiModeActive) return;
 
@@ -5004,7 +6652,7 @@ function drawPorosityOverlay() {
       point.y,
       index === porosityAoiSelectedVertexIndex ? 5.5 : 4,
       0,
-      Math.PI * 2
+      Math.PI * 2,
     );
     ctx.fillStyle =
       index === porosityAoiSelectedVertexIndex ? "#2f80ed" : "#ffffff";
@@ -5023,7 +6671,10 @@ function removeDuplicatePorosityAoiFinishPoint() {
   const lastPoint = points[points.length - 1];
   const previousPoint = points[points.length - 2];
   if (!lastPoint || !previousPoint) return;
-  if (Math.hypot(lastPoint.x - previousPoint.x, lastPoint.y - previousPoint.y) <= 3) {
+  if (
+    Math.hypot(lastPoint.x - previousPoint.x, lastPoint.y - previousPoint.y) <=
+    3
+  ) {
     porosityAoiImagePoints.pop();
   }
 }
@@ -5036,6 +6687,13 @@ function getPorosityToleranceValue() {
 function getPorosityToleranceValueForType(type) {
   const value = Number(type?.tolerance ?? 35);
   return Number.isFinite(value) ? value : 35;
+}
+
+function isPorosityResultStale(type) {
+  return (
+    Number.isFinite(type?.result?.tolerance) &&
+    type.result.tolerance !== getPorosityToleranceValueForType(type)
+  );
 }
 
 function getPorosityOverlayColorRgb() {
@@ -5073,7 +6731,12 @@ function recolorPorosityMask() {
   const ctx = mask.canvas.getContext("2d", { willReadFrequently: true });
   if (!ctx) return false;
 
-  const imageData = ctx.getImageData(0, 0, mask.canvas.width, mask.canvas.height);
+  const imageData = ctx.getImageData(
+    0,
+    0,
+    mask.canvas.width,
+    mask.canvas.height,
+  );
   const overlayColor = getPorosityOverlayColorRgb();
   const overlayAlpha = getPorosityOverlayAlpha();
 
@@ -5119,30 +6782,125 @@ function renderPorositySamples() {
   const selectedTileSetIndices = getPorositySelectedTileSetIndices();
   porositySamples.innerHTML = "";
 
+  const sampleSetIds = [
+    ...new Set(
+      samples
+        .filter((sample) =>
+          selectedTileSetIndices.includes(sample.tileSetIndex),
+        )
+        .map((sample) => sample.sampleSetId)
+        .filter(Boolean),
+    ),
+  ];
+  if (!sampleSetIds.includes(selectedPorositySampleSetId)) {
+    selectedPorositySampleSetId = "";
+  }
+  if (selectedTileSetIndices.length === 0 || sampleSetIds.length === 0) return;
+
+  const tableWrap = document.createElement("div");
+  tableWrap.className = "porosity-sample-table-wrap";
+  tableWrap.tabIndex = 0;
+  tableWrap.setAttribute("aria-label", "Linked porosity color samples");
+  const table = document.createElement("table");
+  table.className = "porosity-sample-table";
+  const body = document.createElement("tbody");
+  table.append(body);
+
   selectedTileSetIndices.forEach((tileSetIndex) => {
-    const row = document.createElement("div");
-    row.className = "porosity-sample-row";
-    const label = document.createElement("span");
+    const row = document.createElement("tr");
+    const label = document.createElement("th");
     label.className = "porosity-sample-label";
+    label.scope = "row";
     label.textContent = getPorosityTileSetLabel(tileSetIndex);
     row.append(label);
 
-    const swatches = document.createElement("span");
-    swatches.className = "porosity-sample-swatches";
-    samples
-      .filter((sample) => sample.tileSetIndex === tileSetIndex)
-      .forEach((sample, index) => {
-        const swatch = document.createElement("span");
-        swatch.className = "porosity-sample";
-        swatch.style.backgroundColor = formatPorosityColorSample(sample);
-        swatch.title = `${getPorosityTileSetLabel(tileSetIndex)} sample ${
-          index + 1
-        }: ${formatPorosityColorSample(sample)}`;
-        swatches.append(swatch);
+    sampleSetIds.forEach((sampleSetId, index) => {
+      const sample = samples.find(
+        (candidate) =>
+          candidate.tileSetIndex === tileSetIndex &&
+          candidate.sampleSetId === sampleSetId,
+      );
+      if (!sample) {
+        const cell = document.createElement("td");
+        const placeholder = document.createElement("span");
+        placeholder.className = "porosity-sample porosity-sample-placeholder";
+        placeholder.setAttribute("aria-hidden", "true");
+        cell.append(placeholder);
+        row.append(cell);
+        return;
+      }
+
+      const cell = document.createElement("td");
+      const swatch = document.createElement("button");
+      swatch.type = "button";
+      swatch.className = "porosity-sample";
+      swatch.classList.toggle(
+        "is-selected",
+        sampleSetId === selectedPorositySampleSetId,
+      );
+      swatch.style.backgroundColor = formatPorosityColorSample(sample);
+      swatch.dataset.sampleSetId = sampleSetId;
+      swatch.title = `${getPorosityTileSetLabel(tileSetIndex)} linked sample ${index + 1}: ${formatPorosityColorSample(sample)}`;
+      swatch.setAttribute(
+        "aria-label",
+        `${getPorosityTileSetLabel(tileSetIndex)} linked sample ${index + 1}`,
+      );
+      swatch.setAttribute(
+        "aria-pressed",
+        String(sampleSetId === selectedPorositySampleSetId),
+      );
+      swatch.addEventListener("click", () => {
+        selectedPorositySampleSetId = sampleSetId;
+        porosityAoiSelectedVertexIndex = null;
+        renderPorositySamples();
+        const nextSwatch = porositySamples.querySelector(
+          `[data-sample-set-id="${CSS.escape(sampleSetId)}"]`,
+        );
+        nextSwatch?.focus({ preventScroll: true });
+        drawPorosityOverlay();
       });
-    row.append(swatches);
-    porositySamples.append(row);
+      swatch.addEventListener("keydown", handlePorositySampleDeleteKey);
+      cell.append(swatch);
+      row.append(cell);
+    });
+    body.append(row);
   });
+
+  tableWrap.addEventListener("keydown", handlePorositySampleDeleteKey);
+  tableWrap.append(table);
+  porositySamples.append(tableWrap);
+}
+
+function handlePorositySampleDeleteKey(event) {
+  if (
+    !selectedPorositySampleSetId ||
+    (event.key !== "Delete" && event.key !== "Backspace")
+  ) {
+    return;
+  }
+  event.preventDefault();
+  event.stopImmediatePropagation();
+  removePorositySampleSet(selectedPorositySampleSetId);
+}
+
+function removePorositySampleSet(sampleSetId) {
+  const activeType = getActivePorosityType();
+  if (!activeType || !sampleSetId) return false;
+  const hasSampleSet = activeType.colorSamples.some(
+    (sample) => sample.sampleSetId === sampleSetId,
+  );
+  if (!hasSampleSet) return false;
+
+  annotationHistory.pushPorosity("Remove porosity color sample");
+  activeType.colorSamples = activeType.colorSamples.filter(
+    (sample) => sample.sampleSetId !== sampleSetId,
+  );
+  selectedPorositySampleSetId = "";
+  activeType.result = null;
+  renderPorositySamples();
+  drawPorosityOverlay();
+  updatePorosityControls("Removed linked porosity color samples.");
+  return true;
 }
 
 function formatPorosityResultPercent(result) {
@@ -5170,7 +6928,7 @@ function renderPorosityResults() {
     .map((type) => type.result)
     .filter(Boolean);
   const resultScopes = new Set(
-    estimatedResults.map((result) => result.scope || "aoi")
+    estimatedResults.map((result) => result.scope || "aoi"),
   );
   const hasMixedResultScopes = resultScopes.size > 1;
   let totalPorePixels = 0;
@@ -5204,7 +6962,7 @@ function renderPorosityResults() {
       : `Show ${type.name} overlay`;
     visibilityButton.setAttribute(
       "aria-label",
-      isVisible ? `Hide ${type.name} overlay` : `Show ${type.name} overlay`
+      isVisible ? `Hide ${type.name} overlay` : `Show ${type.name} overlay`,
     );
     visibilityButton.appendChild(createVisibilityIcon(isVisible));
     visibilityButton.addEventListener("click", (event) => {
@@ -5212,7 +6970,7 @@ function renderPorosityResults() {
       type.visible = !isVisible;
       drawPorosityOverlay();
       updatePorosityControls(
-        `${type.name} overlay ${type.visible ? "shown" : "hidden"}.`
+        `${type.name} overlay ${type.visible ? "shown" : "hidden"}.`,
       );
     });
 
@@ -5228,7 +6986,13 @@ function renderPorosityResults() {
     if (type.result) {
       const scopeBadge = document.createElement("span");
       scopeBadge.className = "porosity-result-scope";
-      scopeBadge.textContent = type.result.scope === "view" ? "View" : "AOI";
+      const scope = type.result.scope === "view" ? "View" : "AOI";
+      scopeBadge.textContent = isPorosityResultStale(type)
+        ? `${scope} stale`
+        : scope;
+      if (isPorosityResultStale(type)) {
+        scopeBadge.title = "Committed with a different tolerance";
+      }
       nameCell.append(scopeBadge);
     }
 
@@ -5238,11 +7002,15 @@ function renderPorosityResults() {
     percentText.textContent = formatPorosityResultPercent(type.result);
     areaCell.append(percentText);
     if (type.result && !hasMixedResultScopes) {
-      areaCell.append(createPorosityResultBar(type.result.percent, type.overlayColor));
+      areaCell.append(
+        createPorosityResultBar(type.result.percent, type.overlayColor),
+      );
       totalPorePixels += type.result.porePixels;
       totalPixels = Math.max(totalPixels, type.result.totalPixels || 0);
     } else if (type.result) {
-      areaCell.append(createPorosityResultBar(type.result.percent, type.overlayColor));
+      areaCell.append(
+        createPorosityResultBar(type.result.percent, type.overlayColor),
+      );
     }
 
     row.append(visibilityButton, nameCell, areaCell);
@@ -5286,24 +7054,30 @@ function updatePorosityControls(message) {
   const hasSelectedTileSets = getPorositySelectedTileSetIndices().length > 0;
   const hasAnySamples = (activeType?.colorSamples || []).length > 0;
   const hasSamples = hasPorositySamplesForSelectedTileSets(activeType);
-  const canAnalyze = hasAoi && hasSamples;
+  const allTypesHaveSamples = porosityTypes.every((type) =>
+    hasPorositySamplesForSelectedTileSets(type),
+  );
+  const canAnalyze = hasAoi && hasSelectedTileSets && allTypesHaveSamples;
   const workflowEnabled = hasAoi;
   const porosityViewerContainer = document.getElementById("viewer-container");
 
-  porosityPalette?.classList.toggle("porosity-workflow-disabled", !workflowEnabled);
+  porosityPalette?.classList.toggle(
+    "porosity-workflow-disabled",
+    !workflowEnabled,
+  );
   porosityViewerContainer?.classList.toggle(
     "porosity-pick-cursor",
-    porosityPickModeActive
+    porosityPickModeActive,
   );
   porosityViewerContainer?.classList.toggle(
     "porosity-aoi-editing",
-    hasAoi && !porosityPickModeActive && !porosityAoiModeActive
+    hasAoi && !porosityPickModeActive && !porosityAoiModeActive,
   );
 
   if (porosityDrawAoiButton) {
     porosityDrawAoiButton.classList.toggle(
       "porosity-pick-active",
-      porosityAoiModeActive
+      porosityAoiModeActive,
     );
     porosityDrawAoiButton.textContent = porosityAoiModeActive
       ? "Drawing..."
@@ -5316,7 +7090,8 @@ function updatePorosityControls(message) {
       : "Rename porosity type";
   }
   if (porosityDeleteTypeButton) {
-    porosityDeleteTypeButton.disabled = !workflowEnabled || porosityTypes.length <= 1;
+    porosityDeleteTypeButton.disabled =
+      !workflowEnabled || porosityTypes.length <= 1;
     porosityDeleteTypeButton.title =
       porosityTypes.length <= 1
         ? "At least one porosity type is required"
@@ -5326,28 +7101,38 @@ function updatePorosityControls(message) {
     porosityToggleAoiButton.disabled = !hasAoi;
     porosityToggleAoiButton.setAttribute(
       "aria-pressed",
-      porosityAoiVisible ? "true" : "false"
+      porosityAoiVisible ? "true" : "false",
     );
-    porosityToggleAoiButton.title = porosityAoiVisible ? "Hide AOI" : "Show AOI";
+    porosityToggleAoiButton.title = porosityAoiVisible
+      ? "Hide AOI"
+      : "Show AOI";
     porosityToggleAoiButton.setAttribute(
       "aria-label",
-      porosityAoiVisible ? "Hide AOI" : "Show AOI"
+      porosityAoiVisible ? "Hide AOI" : "Show AOI",
     );
-    porosityToggleAoiButton.classList.toggle(
-      "is-off",
-      !porosityAoiVisible
-    );
+    porosityToggleAoiButton.classList.toggle("is-off", !porosityAoiVisible);
   }
 
   if (porosityPickColorButton) {
     porosityPickColorButton.disabled = !hasAoi || !hasSelectedTileSets;
     porosityPickColorButton.classList.toggle(
       "porosity-pick-active",
-      porosityPickModeActive
+      porosityPickModeActive,
     );
     porosityPickColorButton.textContent = porosityPickModeActive
       ? "Picking..."
       : "Pick Porosity";
+  }
+  if (porosityAddSelectedPolygonsButton) {
+    const selectedPolygonCount = hasAoi
+      ? getSelectedPorosityPolygonsInAoi().length
+      : 0;
+    porosityAddSelectedPolygonsButton.disabled = selectedPolygonCount === 0;
+    porosityAddSelectedPolygonsButton.title = selectedPolygonCount
+      ? `Add ${selectedPolygonCount} selected polygon${selectedPolygonCount === 1 ? "" : "s"} as ${activeType?.name || "porosity"}`
+      : hasAoi
+        ? "Select a polygon that intersects the AOI"
+        : "Draw an AOI, then select polygon annotations";
   }
   if (porosityTypeSelect) porosityTypeSelect.disabled = !workflowEnabled;
   if (porosityAddTypeButton) porosityAddTypeButton.disabled = !workflowEnabled;
@@ -5358,18 +7143,88 @@ function updatePorosityControls(message) {
   if (porosityEstimateViewButton) {
     porosityEstimateViewButton.disabled = !canAnalyze;
   }
-  const activeResultExportSize = getPorosityResultExportSize(activeType?.result);
+  if (porosityThicknessButton) {
+    porosityThicknessButton.disabled = !porosityTypes.some(
+      (type) => type.result?.localThickness?.radiusValues,
+    );
+  }
+  if (porosityThicknessOverlayEnabled) {
+    const hasThickness = porosityTypes.some(
+      (type) => type.result?.localThickness?.radiusValues,
+    );
+    porosityThicknessOverlayEnabled.disabled = !hasThickness;
+    if (!hasThickness) porosityThicknessOverlayEnabled.checked = false;
+  }
+  if (porosityThicknessCalculateButton) {
+    porosityThicknessCalculateButton.disabled = !porosityTypes.some(
+      (type) => type.result?.porePixels > 0,
+    );
+  }
+  const activeResultExportSize = getPorosityResultExportSize(
+    activeType?.result,
+  );
   updatePorosityResolutionStatus(activeResultExportSize);
-  if (porosityUndoColorButton) {
-    porosityUndoColorButton.disabled = !hasAnySamples && !porosityUndoState;
-    porosityUndoColorButton.textContent =
-      !hasAnySamples && porosityUndoState ? "Undo Reset" : "Undo";
+  const hasResults = porosityTypes.some((type) => type.result);
+  if (exportPorosityResultsCsvButton) {
+    exportPorosityResultsCsvButton.disabled = !hasResults;
+  }
+  if (exportPorosityResultsJsonButton) {
+    exportPorosityResultsJsonButton.disabled = !hasResults;
+  }
+  const aoiRasterTypes = getPorosityAoiRasterTypes();
+  const activeAoiRasterAvailable = aoiRasterTypes.includes(activeType);
+  const calculatedAoiRasterTypes = aoiRasterTypes.filter((type) =>
+    getPorosityCalculatedRasterValues(
+      type,
+      getPorosityThicknessOverlaySettings(),
+    )?.values,
+  );
+  const activeCalculatedRasterAvailable = calculatedAoiRasterTypes.includes(
+    activeType,
+  );
+  const rasterProduct = porosityRasterExportProduct?.value || "active-mask";
+  if (exportPorosityRasterButton) {
+    exportPorosityRasterButton.disabled =
+      rasterProduct === "all-masks"
+        ? aoiRasterTypes.length === 0
+        : rasterProduct === "composite-calculated"
+          ? calculatedAoiRasterTypes.length === 0
+          : rasterProduct === "calculated"
+          ? !activeCalculatedRasterAvailable
+          : !activeAoiRasterAvailable;
+  }
+  if (porosityRasterExportNote) {
+    porosityRasterExportNote.textContent =
+      rasterProduct === "calculated" || rasterProduct === "composite-calculated"
+        ? getPorosityRasterExportFormat() === "npy" ||
+          getPorosityRasterExportFormat() === "tiff"
+          ? "Exports the current calculated parameter as numeric raster data; calculate properties first."
+          : "Exports a display image using the current calculated-property colors and range."
+        : "Exports AOI-cropped source-image rasters with a JSON coordinate sidecar.";
+  }
+  if (porosityExportSummary) {
+    const estimatedCount = porosityTypes.filter((type) => type.result).length;
+    const staleCount = porosityTypes.filter(isPorosityResultStale).length;
+    porosityExportSummary.textContent = hasResults
+      ? `${estimatedCount} of ${porosityTypes.length} porosity type${porosityTypes.length === 1 ? "" : "s"} estimated.${staleCount ? ` ${staleCount} result${staleCount === 1 ? " is" : "s are"} stale after a tolerance change.` : ""} Export the recipe or summary results.`
+      : "Estimate porosity to export results. Recipe export is available at any time.";
+  }
+  if (porosityPreviewStatus) {
+    const preview =
+      activeType?.previewResult &&
+      activeType.previewTolerance === activeType.tolerance
+        ? activeType.previewResult
+        : null;
+    porosityPreviewStatus.hidden = !preview;
+    porosityPreviewStatus.textContent = preview
+      ? `View preview: ${preview.percent.toFixed(1)}%. Estimate the AOI to commit changes.`
+      : "";
   }
   if (porosityClearButton) {
     porosityClearButton.disabled =
       !hasDraftAoi &&
       porosityTypes.every(
-        (type) => type.colorSamples.length === 0 && !type.result
+        (type) => type.colorSamples.length === 0 && !type.result,
       ) &&
       !porosityPickModeActive &&
       !porosityAoiModeActive;
@@ -5389,7 +7244,7 @@ function updatePorosityControls(message) {
     porosityStatus.textContent = message;
   } else if (activeType?.result) {
     porosityStatus.textContent = `${activeType.name}: ${activeType.result.percent.toFixed(
-      1
+      1,
     )}% (${activeType.result.porePixels.toLocaleString()} of ${activeType.result.totalPixels.toLocaleString()} pixels).`;
   } else if (porosityAoiModeActive) {
     porosityStatus.textContent = "Drag an AOI rectangle over the image.";
@@ -5398,8 +7253,7 @@ function updatePorosityControls(message) {
   } else if (!hasSelectedTileSets) {
     porosityStatus.textContent = "Select at least one tile set.";
   } else if (!hasSamples) {
-    porosityStatus.textContent =
-      "Pick pore colors for each selected tile set.";
+    porosityStatus.textContent = "Pick pore colors for each selected tile set.";
   } else {
     const sampleCount = activeType?.colorSamples.length || 0;
     porosityStatus.textContent = `${activeType?.name || "Porosity"}: ${sampleCount} color sample${
@@ -5412,14 +7266,9 @@ function resetPorosityAnalysis(options = {}) {
   const {
     keepAoi = false,
     keepSamples = false,
+    resetTypes = false,
     message = "",
-    undoable = false,
   } = options;
-  if (undoable) {
-    porosityUndoState = clonePorosityState();
-  } else {
-    porosityUndoState = null;
-  }
   porosityAoiModeActive = false;
   porosityPickModeActive = false;
   porosityAoiMousePoint = null;
@@ -5446,6 +7295,13 @@ function resetPorosityAnalysis(options = {}) {
       porosityProgressClearTimer = null;
     }
     porosityProgress.hidden = true;
+    if (porosityProgressLabel) porosityProgressLabel.textContent = "";
+    if (porosityProgressBar) {
+      porosityProgressBar.style.width = "0%";
+      porosityProgressBar.classList.remove(
+        "porosity-progress-bar-indeterminate",
+      );
+    }
   }
   if (porosityRecolorFrame !== null) {
     cancelAnimationFrame(porosityRecolorFrame);
@@ -5458,26 +7314,29 @@ function resetPorosityAnalysis(options = {}) {
   if (!keepSamples) {
     porosityTypes.forEach((type) => {
       type.colorSamples = [];
+      type.manualPolygonUuids = [];
+      type.manualPolygons = [];
       type.result = null;
     });
+    selectedPorositySampleSetId = "";
     renderPorositySamples();
   } else {
     porosityTypes.forEach((type) => {
       type.result = null;
     });
   }
+  if (resetTypes) {
+    porosityTypes = [];
+    activePorosityTypeId = "";
+    ensurePorosityTypes();
+    selectedPorositySampleSetId = "";
+    renderPorositySamples();
+    syncPorosityControlsFromActiveType();
+  }
+  clearPorosityPreviews();
   clearPorosityOverlay();
   drawPorosityOverlay();
   updatePorosityControls(message);
-}
-
-function undoPorosityReset() {
-  if (!porosityUndoState) return false;
-
-  const state = porosityUndoState;
-  porosityUndoState = null;
-  restorePorosityState(state, "Reset undone.");
-  return true;
 }
 
 function stopPorosityAoiMode() {
@@ -5498,6 +7357,7 @@ function refreshPorosityOverlayForViewportChange() {
 
 function invalidatePorosityResultsForAoiEdit() {
   porosityEstimateGeneration += 1;
+  clearPorosityPreviews();
   porosityTypes.forEach((type) => {
     type.result = null;
   });
@@ -5521,7 +7381,10 @@ function getPorosityAoiVertexHit(viewerPixel, maxDistance = 9) {
   const points = getPorosityAoiScreenPoints();
   let bestHit = null;
   points.forEach((point, index) => {
-    const distance = Math.hypot(point.x - viewerPixel.x, point.y - viewerPixel.y);
+    const distance = Math.hypot(
+      point.x - viewerPixel.x,
+      point.y - viewerPixel.y,
+    );
     if (distance <= maxDistance && (!bestHit || distance < bestHit.distance)) {
       bestHit = { index, distance };
     }
@@ -5533,11 +7396,15 @@ function getPointToSegmentDistance(point, start, end) {
   const dx = end.x - start.x;
   const dy = end.y - start.y;
   const lengthSquared = dx * dx + dy * dy;
-  if (lengthSquared === 0) return Math.hypot(point.x - start.x, point.y - start.y);
+  if (lengthSquared === 0)
+    return Math.hypot(point.x - start.x, point.y - start.y);
 
   const t = Math.max(
     0,
-    Math.min(1, ((point.x - start.x) * dx + (point.y - start.y) * dy) / lengthSquared)
+    Math.min(
+      1,
+      ((point.x - start.x) * dx + (point.y - start.y) * dy) / lengthSquared,
+    ),
   );
   const projection = {
     x: start.x + t * dx,
@@ -5547,7 +7414,11 @@ function getPointToSegmentDistance(point, start, end) {
 }
 
 function getPorosityAoiEdgeHit(viewerPixel, maxDistance = 8) {
-  if (!porosityAoiComplete || !viewerPixel || porosityAoiImagePoints.length < 3) {
+  if (
+    !porosityAoiComplete ||
+    !viewerPixel ||
+    porosityAoiImagePoints.length < 3
+  ) {
     return null;
   }
 
@@ -5558,7 +7429,7 @@ function getPorosityAoiEdgeHit(viewerPixel, maxDistance = 8) {
     const distance = getPointToSegmentDistance(
       viewerPixel,
       point,
-      points[nextIndex]
+      points[nextIndex],
     );
     if (distance <= maxDistance && (!bestHit || distance < bestHit.distance)) {
       bestHit = {
@@ -5582,6 +7453,7 @@ function deletePorosityAoiVertex(index) {
     return false;
   }
 
+  annotationHistory.pushPorosity("Edit porosity AOI");
   porosityAoiImagePoints.splice(index, 1);
   porosityAoiSelectedVertexIndex = null;
   invalidatePorosityResultsForAoiEdit();
@@ -5597,6 +7469,7 @@ function insertPorosityAoiVertex(viewerPixel) {
   const imagePoint = getPorosityImagePointFromViewerPixel(viewerPixel);
   if (!imagePoint) return false;
 
+  annotationHistory.pushPorosity("Edit porosity AOI");
   porosityAoiImagePoints.splice(edgeHit.insertIndex, 0, imagePoint);
   porosityAoiSelectedVertexIndex = edgeHit.insertIndex;
   invalidatePorosityResultsForAoiEdit();
@@ -5606,7 +7479,8 @@ function insertPorosityAoiVertex(viewerPixel) {
 }
 
 function constrainPorosityAoiPointToPrevious(imagePoint) {
-  const previousPoint = porosityAoiImagePoints[porosityAoiImagePoints.length - 1];
+  const previousPoint =
+    porosityAoiImagePoints[porosityAoiImagePoints.length - 1];
   if (!imagePoint || !previousPoint) return imagePoint;
 
   const dx = Math.abs(imagePoint.x - previousPoint.x);
@@ -5623,7 +7497,7 @@ function startPorosityAoiVertexDrag(event) {
 
   const viewerPixel = getPorosityViewerPixelFromClientPoint(
     event.clientX,
-    event.clientY
+    event.clientY,
   );
   const vertexHit = getPorosityAoiVertexHit(viewerPixel);
   if (!vertexHit) return false;
@@ -5640,6 +7514,7 @@ function startPorosityAoiVertexDrag(event) {
     pointerId: event.pointerId,
     vertexIndex: vertexHit.index,
     moved: false,
+    historyCommitted: false,
   };
   viewerContainer?.setPointerCapture?.(event.pointerId);
   drawPorosityOverlay();
@@ -5654,10 +7529,14 @@ function updatePorosityAoiVertexDrag(event) {
   event.stopPropagation();
   const imagePoint = getPorosityImagePointFromClientPoint(
     event.clientX,
-    event.clientY
+    event.clientY,
   );
   if (!imagePoint) return;
 
+  if (!porosityAoiDragState.historyCommitted) {
+    annotationHistory.pushPorosity("Edit porosity AOI");
+    porosityAoiDragState.historyCommitted = true;
+  }
   porosityAoiImagePoints[porosityAoiDragState.vertexIndex] = imagePoint;
   porosityAoiDragState.moved = true;
   invalidatePorosityResultsForAoiEdit();
@@ -5673,15 +7552,16 @@ function finishPorosityAoiVertexDrag(event) {
   const moved = porosityAoiDragState.moved;
   porosityAoiDragState = null;
   updatePorosityControls(
-    moved ? "AOI vertex moved. Estimate again when ready." : undefined
+    moved ? "AOI vertex moved. Estimate again when ready." : undefined,
   );
 }
 
 async function reestimatePorosityTypesWithResults(options = {}) {
   showPorosityActivityStatus("Updating porosity estimation...");
-  const estimateGeneration = options.estimateGeneration ?? porosityEstimateGeneration;
+  const estimateGeneration =
+    options.estimateGeneration ?? porosityEstimateGeneration;
   const typesToEstimate = porosityTypes.filter(
-    (type) => type.result || type.id === activePorosityTypeId
+    (type) => type.result || type.id === activePorosityTypeId,
   );
   const nextResults = new Map();
   for (const type of typesToEstimate) {
@@ -5712,6 +7592,879 @@ async function reestimatePorosityTypesWithResults(options = {}) {
   clearPorosityActivityStatus();
 }
 
+async function previewActivePorosityTolerance(estimateGeneration) {
+  const activeType = getActivePorosityType();
+  if (
+    !activeType ||
+    !porosityAoiComplete ||
+    !hasPorositySamplesForSelectedTileSets(activeType)
+  ) {
+    return;
+  }
+
+  const preview = await estimatePorosity({
+    dryRun: true,
+    typeId: activeType.id,
+    estimateGeneration,
+    scope: "view",
+  });
+  if (estimateGeneration !== porosityEstimateGeneration || !preview) return;
+
+  activeType.previewResult = preview;
+  activeType.previewTolerance = activeType.tolerance;
+  drawPorosityOverlay();
+  updatePorosityControls();
+  clearPorosityProgress();
+}
+
+function schedulePorosityTolerancePreview() {
+  const activeType = getActivePorosityType();
+  if (!activeType) return;
+
+  activeType.previewResult = null;
+  activeType.previewTolerance = null;
+  porosityEstimateGeneration += 1;
+  const estimateGeneration = porosityEstimateGeneration;
+  if (porosityToleranceReestimateTimer !== null) {
+    window.clearTimeout(porosityToleranceReestimateTimer);
+  }
+  drawPorosityOverlay();
+  updatePorosityControls();
+  porosityToleranceReestimateTimer = window.setTimeout(async () => {
+    porosityToleranceReestimateTimer = null;
+    if (estimateGeneration !== porosityEstimateGeneration) return;
+    await previewActivePorosityTolerance(estimateGeneration);
+  }, 250);
+}
+
+function getPorosityThicknessTypes() {
+  return porosityTypes.filter((type) => type.result?.porePixels > 0);
+}
+
+function showPorosityThicknessCanvasMessage(message) {
+  if (!porosityThicknessCanvas) return;
+  const ctx = porosityThicknessCanvas.getContext("2d");
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  const width = porosityThicknessCanvas.width;
+  const height = porosityThicknessCanvas.height;
+  ctx.clearRect(0, 0, width, height);
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, width, height);
+  ctx.strokeStyle = "#d1d1d1";
+  ctx.strokeRect(0.5, 0.5, width - 1, height - 1);
+  ctx.fillStyle = "#555555";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  const measuredCssWidth =
+    porosityThicknessCanvas.getBoundingClientRect().width;
+  const canvasScale = measuredCssWidth > 10 ? width / measuredCssWidth : 1;
+  ctx.font = `${Math.max(12, Math.round(canvasScale * 12))}px sans-serif`;
+  ctx.fillText(message, width / 2, height / 2, Math.max(40, width - 32));
+}
+
+function setPorosityThicknessStatus(message, percent = null) {
+  setPorosityProgress(message, percent);
+}
+
+function clearPorosityThicknessDisplay(message = "No local-thickness results") {
+  if (porosityThicknessWorker) {
+    porosityThicknessWorker.terminate();
+    porosityThicknessWorker = null;
+  }
+  showPorosityThicknessCanvasMessage(message);
+  setPorosityThicknessStatus(message, 0);
+  if (porosityThicknessGroups) porosityThicknessGroups.innerHTML = "";
+  if (porosityThicknessStatsBody) {
+    porosityThicknessStatsBody.innerHTML =
+      '<tr><td colspan="7">No results</td></tr>';
+  }
+}
+
+function syncPorosityThicknessTypeSelection(types) {
+  const ids = new Set(types.map((type) => type.id));
+  ids.forEach((id) => {
+    if (!porosityThicknessKnownTypeIds.has(id))
+      porosityThicknessSelectedTypeIds.add(id);
+  });
+  porosityThicknessKnownTypeIds = ids;
+  porosityThicknessSelectedTypeIds = new Set(
+    [...porosityThicknessSelectedTypeIds].filter((id) => ids.has(id)),
+  );
+}
+
+function renderPorosityThicknessTypeControls() {
+  if (!porosityThicknessGroups) return;
+  const types = getPorosityThicknessTypes();
+  syncPorosityThicknessTypeSelection(types);
+  porosityThicknessGroups.innerHTML = "";
+  types.forEach((type) => {
+    const label = document.createElement("label");
+    label.className = "measure-histogram-group";
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.checked = porosityThicknessSelectedTypeIds.has(type.id);
+    checkbox.addEventListener("change", async () => {
+      if (checkbox.checked) porosityThicknessSelectedTypeIds.add(type.id);
+      else porosityThicknessSelectedTypeIds.delete(type.id);
+      porosityThicknessRangeEdited = false;
+      if (checkbox.checked) {
+        try {
+          const calculation = await calculatePorosityLocalThickness(type);
+          if (!calculation) {
+            porosityThicknessSelectedTypeIds.delete(type.id);
+            checkbox.checked = false;
+            updatePorosityControls("Local-thickness calculation cancelled.");
+            return;
+          }
+        } catch (error) {
+          console.error("Local thickness calculation failed:", error);
+          updatePorosityControls(
+            error.message || "Local thickness calculation failed.",
+          );
+          return;
+        }
+      }
+      drawPorosityThicknessHistogram();
+    });
+    const swatch = document.createElement("span");
+    swatch.className = "porosity-result-swatch";
+    swatch.style.backgroundColor = type.overlayColor || "#ff0000";
+    const name = document.createElement("span");
+    name.textContent = type.name;
+    label.append(checkbox, swatch, name);
+    porosityThicknessGroups.append(label);
+  });
+}
+
+function confirmLargePorosityLocalThicknessCalculation(type, pixelCount) {
+  const megapixels = (pixelCount / 1000000).toFixed(1);
+  const limitMegapixels = (
+    POROSITY_LOCAL_THICKNESS_MAX_PIXELS / 1000000
+  ).toFixed(0);
+  return window.confirm(
+    `${type.name} has a ${megapixels}-megapixel analysis raster, above the recommended ${limitMegapixels}-megapixel local-thickness limit. This may take a long time and use substantial memory. Continue?`,
+  );
+}
+
+function calculatePorosityLocalThickness(type) {
+  const result = type?.result;
+  if (!result?.mask?.alphaData || !result.porePixels)
+    return Promise.resolve(null);
+  const methodValue = porosityThicknessMethod?.value || "exact";
+  const methodKey = methodValue === "exact" ? "exact" : `approx-${methodValue}`;
+  result.localThicknessCache ||= {};
+  result.propertiesCache ||= {};
+  if (result.localThicknessCache[methodKey]?.radiusValues) {
+    result.localThickness = result.localThicknessCache[methodKey];
+    result.properties =
+      result.propertiesCache[methodKey] || result.properties || null;
+    if (porosityThicknessOverlayEnabled)
+      porosityThicknessOverlayEnabled.disabled = false;
+    setPorosityThicknessStatus(
+      `${type.name}: cached ${methodKey} result ready.`,
+      100,
+    );
+    return Promise.resolve(result.localThickness);
+  }
+  if (result.mask.alphaData.length > POROSITY_LOCAL_THICKNESS_MAX_PIXELS) {
+    if (
+      !confirmLargePorosityLocalThicknessCalculation(
+        type,
+        result.mask.alphaData.length,
+      )
+    ) {
+      return Promise.resolve(null);
+    }
+  }
+  const mask = new Uint8Array(result.mask.alphaData.length);
+  for (let index = 0; index < mask.length; index += 1) {
+    mask[index] = result.mask.alphaData[index] > 0 ? 1 : 0;
+  }
+  showPorosityThicknessCanvasMessage(`Calculating ${type.name}…`);
+  setPorosityThicknessStatus(
+    `${type.name}: calculating ${methodValue === "exact" ? "Exact" : `Approx. ${methodValue}`} pore properties…`,
+    0,
+  );
+  return new Promise((resolve, reject) => {
+    const worker = new Worker("local-thickness-worker.js");
+    porosityThicknessWorker = worker;
+    worker.addEventListener("message", (event) => {
+      if (event.data.type === "progress") {
+        const percent = Math.round(event.data.progress * 100);
+        const phase = event.data.label || "Pore properties";
+        showPorosityThicknessCanvasMessage(
+          `${phase}: ${type.name}… ${percent}%`,
+        );
+        setPorosityThicknessStatus(
+          `${phase}: ${type.name}… ${percent}%`,
+          percent,
+        );
+        if (porosityThicknessSummary) {
+          porosityThicknessSummary.textContent = `Calculating ${type.name}… ${percent}%`;
+        }
+        return;
+      }
+      worker.terminate();
+      if (porosityThicknessWorker === worker) porosityThicknessWorker = null;
+      if (event.data.type === "error") {
+        reject(new Error(event.data.message));
+        return;
+      }
+      const localThickness = {
+        radiusValues: new Float32Array(event.data.valuesBuffer),
+        radii: event.data.radii,
+        maxRadius: event.data.maxRadius,
+        sizes: methodValue === "exact" ? null : Number(methodValue),
+        methodKey,
+      };
+      result.localThickness = localThickness;
+      result.localThicknessCache[methodKey] = localThickness;
+      result.properties = {
+        distanceToBoundary: new Float32Array(event.data.distanceBuffer),
+        componentLabels: new Int32Array(event.data.labelsBuffer),
+        components: event.data.components || [],
+        horizontalChords: new Float32Array(event.data.horizontalChordsBuffer),
+        verticalChords: new Float32Array(event.data.verticalChordsBuffer),
+        methodKey,
+      };
+      result.propertiesCache[methodKey] = result.properties;
+      if (porosityThicknessOverlayEnabled)
+        porosityThicknessOverlayEnabled.disabled = false;
+      setPorosityThicknessStatus(`${type.name}: pore properties ready.`, 100);
+      resolve(localThickness);
+    });
+    worker.addEventListener("error", (event) => {
+      worker.terminate();
+      if (porosityThicknessWorker === worker) porosityThicknessWorker = null;
+      reject(new Error(event.message || "Local thickness calculation failed."));
+    });
+    worker.postMessage(
+      {
+        maskBuffer: mask.buffer,
+        width: result.analysisWidth,
+        height: result.analysisHeight,
+        sizes: methodValue === "exact" ? 25 : Number(methodValue),
+        method: methodValue === "exact" ? "exact" : "approximate",
+      },
+      [mask.buffer],
+    );
+  });
+}
+
+function getPorosityThicknessScale(result) {
+  const sourcePixelScale =
+    1 / Math.max(Number.EPSILON, result.analysisScale || 1);
+  const micronScale = pixelsPerMicron();
+  return {
+    factor: micronScale ? sourcePixelScale / micronScale : sourcePixelScale,
+    unit: micronScale ? "µm" : "source px",
+  };
+}
+
+function getPorosityEdgeTouchingComponentIds(result) {
+  return new Set(
+    (result?.properties?.components || [])
+      .filter((component) => component.touchesEdge)
+      .map((component) => component.id),
+  );
+}
+
+function getPorosityThicknessGroupsForPlot() {
+  const sizeFactor = porosityThicknessSize?.value === "diameter" ? 2 : 1;
+  const useLogX = Boolean(porosityThicknessLogX?.checked);
+  const logBase = Number(porosityThicknessLogBase?.value) === 10 ? 10 : 2;
+  const plot = porosityPropertiesPlot?.value || "localThickness";
+  return getPorosityThicknessTypes()
+    .filter((type) => porosityThicknessSelectedTypeIds.has(type.id))
+    .filter((type) => type.result.properties)
+    .map((type) => {
+      const scale = getPorosityThicknessScale(type.result);
+      const excludeEdgeTouching =
+        porosityThicknessEdgeFilter?.value === "exclude" &&
+        plot !== "chord";
+      const edgeTouchingIds = excludeEdgeTouching
+        ? getPorosityEdgeTouchingComponentIds(type.result)
+        : null;
+      const componentLabels = type.result.properties.componentLabels;
+      const includePixel = (index) =>
+        !edgeTouchingIds || !edgeTouchingIds.has(componentLabels?.[index]);
+      const rawValues = [];
+      const rawWeights = [];
+      let unit = scale.unit;
+      if (plot === "distance") {
+        type.result.properties.distanceToBoundary?.forEach((value, index) => {
+          if (value > 0 && includePixel(index)) {
+            rawValues.push(value * scale.factor * sizeFactor);
+            rawWeights.push(1);
+          }
+        });
+      } else if (plot === "component") {
+        const property = porosityThicknessSize?.value || "area";
+        type.result.properties.components.forEach((component) => {
+          if (edgeTouchingIds?.has(component.id)) return;
+          let value = Number(component[property] ?? component.id);
+          if (property === "area") {
+            value *= scale.factor ** 2;
+            unit = scale.unit === "µm" ? "µm²" : "source px²";
+          } else if (
+            ["equivalentDiameter", "meanThickness", "maxThickness"].includes(
+              property,
+            )
+          ) {
+            value *=
+              scale.factor * (property.includes("Thickness") ? sizeFactor : 1);
+          } else if (property === "orientation") {
+            unit = "°";
+          } else {
+            unit = "";
+          }
+          if (Number.isFinite(value)) {
+            rawValues.push(value);
+            rawWeights.push(
+              porosityThicknessWeight?.value === "area"
+                ? component.area * scale.factor ** 2
+                : 1,
+            );
+          }
+        });
+      } else if (plot === "chord") {
+        const direction = porosityChordDirection?.value || "both";
+        const arrays =
+          direction === "horizontal"
+            ? [type.result.properties.horizontalChords]
+            : direction === "vertical"
+              ? [type.result.properties.verticalChords]
+              : [
+                  type.result.properties.horizontalChords,
+                  type.result.properties.verticalChords,
+                ];
+        arrays.forEach((array) =>
+          array?.forEach((value) => {
+            rawValues.push(value * scale.factor);
+            rawWeights.push(
+              porosityThicknessWeight?.value === "area" ? value : 1,
+            );
+          }),
+        );
+      } else {
+        type.result.localThickness?.radiusValues.forEach((radius, index) => {
+          if (radius > 0 && includePixel(index)) {
+            rawValues.push(radius * scale.factor * sizeFactor);
+            rawWeights.push(1);
+          }
+        });
+      }
+      return {
+        groupId: type.id,
+        groupName: type.name,
+        groupColor: type.overlayColor,
+        rawValues,
+        rawWeights,
+        values: useLogX
+          ? rawValues.map((value) => Math.log(value) / Math.log(logBase))
+          : [...rawValues],
+        weights: [...rawWeights],
+        unit,
+      };
+    });
+}
+
+function getPorosityThicknessInputValue(input) {
+  if (!input || input.value.trim() === "") return null;
+  const value = Number(input.value);
+  return Number.isFinite(value) ? value : null;
+}
+
+function updatePorosityThicknessLogControls() {
+  const orientationSelected =
+    porosityPropertiesPlot?.value === "component" &&
+    porosityThicknessSize?.value === "orientation";
+  if (orientationSelected && porosityThicknessLogX) {
+    porosityThicknessLogX.checked = false;
+  }
+  if (porosityThicknessLogX)
+    porosityThicknessLogX.disabled = orientationSelected;
+  if (porosityThicknessLogBase) {
+    porosityThicknessLogBase.disabled = !porosityThicknessLogX?.checked;
+  }
+  if (porosityChordDirection) {
+    porosityChordDirection.disabled = porosityPropertiesPlot?.value !== "chord";
+  }
+  if (porosityThicknessEdgeFilter) {
+    const unavailableForChordLengths = porosityPropertiesPlot?.value === "chord";
+    porosityThicknessEdgeFilter.disabled = unavailableForChordLengths;
+    porosityThicknessEdgeFilter.title = unavailableForChordLengths
+      ? "Chord lengths are not currently linked to individual pore components"
+      : "Include or exclude pores that touch the AOI analysis edge";
+  }
+}
+
+const POROSITY_COMPONENT_PROPERTY_OPTIONS = [
+  ["area", "Area"],
+  ["equivalentDiameter", "Equivalent diameter"],
+  ["meanThickness", "Mean thickness"],
+  ["maxThickness", "Max thickness"],
+  ["circularity", "Circularity"],
+  ["aspectRatio", "Aspect ratio"],
+  ["orientation", "Orientation"],
+  ["id", "Component ID"],
+];
+
+function getPorosityComponentPropertyLabel(property) {
+  return (
+    POROSITY_COMPONENT_PROPERTY_OPTIONS.find(([value]) => value === property)?.[1] ||
+    "property"
+  );
+}
+
+function updatePorosityPropertiesPlotControls() {
+  const plot = porosityPropertiesPlot?.value || "localThickness";
+  const titles = {
+    localThickness: "Local Thickness",
+    distance: "Distance to Boundary",
+    component: "Connected Components",
+    chord: "Chord Length",
+  };
+  if (porosityPropertiesPlotTitle)
+    porosityPropertiesPlotTitle.textContent = titles[plot];
+  if (porosityChordDirection)
+    porosityChordDirection.disabled = plot !== "chord";
+  if (!porosityThicknessSize) return;
+  const previous = porosityThicknessSize.value;
+  let options;
+  if (plot === "localThickness") {
+    options = [
+      ["radius", "Radius"],
+      ["diameter", "Diameter"],
+    ];
+    porosityThicknessSize.disabled = false;
+  } else if (plot === "component") {
+    options = POROSITY_COMPONENT_PROPERTY_OPTIONS;
+    porosityThicknessSize.disabled = false;
+  } else {
+    options = [[plot, plot === "distance" ? "Distance" : "Chord length"]];
+    porosityThicknessSize.disabled = true;
+  }
+  porosityThicknessSize.innerHTML = "";
+  options.forEach(([value, label]) => {
+    const option = document.createElement("option");
+    option.value = value;
+    option.textContent = label;
+    porosityThicknessSize.append(option);
+  });
+  porosityThicknessSize.value = options.some(([value]) => value === previous)
+    ? previous
+    : plot === "localThickness"
+      ? "diameter"
+      : options[0][0];
+  if (plot === "component" && porosityThicknessSize.value === "orientation") {
+    porosityThicknessLogX.checked = false;
+  }
+  updatePorosityThicknessLogControls();
+}
+
+function updatePorosityThicknessOverlayControls() {
+  const autoRange = porosityThicknessOverlayAutoRange?.checked !== false;
+  if (porosityThicknessOverlayMin)
+    porosityThicknessOverlayMin.disabled = autoRange;
+  if (porosityThicknessOverlayMax)
+    porosityThicknessOverlayMax.disabled = autoRange;
+  if (porosityCalculatedRasterShowLabel) {
+    porosityCalculatedRasterShowLabel.textContent = `Show ${getPorosityThicknessOverlaySettings().label.toLowerCase()}`;
+  }
+}
+
+function buildPorosityThicknessHistogramModel() {
+  const groups = getPorosityThicknessGroupsForPlot();
+  const values = groups.flatMap((group) => group.values);
+  const extent = getDefaultHistogramExtent(values);
+  const defaultBinWidth = porosityThicknessLogX?.checked
+    ? 0.5
+    : extent.binWidth || 1;
+  if (!porosityThicknessRangeEdited) {
+    porosityThicknessMin.value = formatHistogramInputValue(extent.min);
+    porosityThicknessMax.value = formatHistogramInputValue(extent.max);
+    porosityThicknessBin.value = formatHistogramInputValue(defaultBinWidth);
+  }
+  let min = getPorosityThicknessInputValue(porosityThicknessMin) ?? extent.min;
+  let max = getPorosityThicknessInputValue(porosityThicknessMax) ?? extent.max;
+  let binWidth =
+    getPorosityThicknessInputValue(porosityThicknessBin) ?? defaultBinWidth;
+  if (!(max > min)) ({ min, max } = extent);
+  if (!(binWidth > 0)) binWidth = defaultBinWidth;
+  let binCount = Math.max(1, Math.ceil((max - min) / binWidth));
+  if (binCount > 200) {
+    binCount = 200;
+    binWidth = (max - min) / binCount;
+  }
+  max = min + binCount * binWidth;
+  const bins = Array.from({ length: binCount }, (_, index) => ({
+    min: min + index * binWidth,
+    max: min + (index + 1) * binWidth,
+    count: 0,
+    groupCounts: new Map(),
+  }));
+  groups.forEach((group) =>
+    group.values.forEach((value, valueIndex) => {
+      if (value < min || value > max) return;
+      const weight = Number(group.weights[valueIndex]) || 0;
+      const index = Math.min(
+        binCount - 1,
+        Math.max(0, Math.floor((value - min) / binWidth)),
+      );
+      bins[index].count += weight;
+      bins[index].groupCounts.set(
+        group.groupId,
+        (bins[index].groupCounts.get(group.groupId) || 0) + weight,
+      );
+    }),
+  );
+  const totalWeight = groups.reduce(
+    (total, group) =>
+      total + group.weights.reduce((sum, weight) => sum + weight, 0),
+    0,
+  );
+  if (totalWeight > 0) {
+    bins.forEach((bin) => {
+      bin.count = (bin.count / totalWeight) * 100;
+      groups.forEach((group) => {
+        bin.groupCounts.set(
+          group.groupId,
+          ((bin.groupCounts.get(group.groupId) || 0) / totalWeight) * 100,
+        );
+      });
+    });
+  }
+  const mode = porosityThicknessMode?.value || "groups";
+  const stacked = Boolean(porosityThicknessStacked?.checked);
+  const rawYMax = Math.max(
+    1,
+    ...bins.map((bin) =>
+      mode === "groups" && !stacked
+        ? Math.max(
+            0,
+            ...groups.map((group) => bin.groupCounts.get(group.groupId) || 0),
+          )
+        : bin.count,
+    ),
+  );
+  const yMax = getNiceHistogramNumber(rawYMax, false);
+  const unit = groups[0]?.unit || (hasKnownScale() ? "µm" : "source px");
+  const sizeLabel =
+    porosityThicknessSize?.value === "diameter" ? "Diameter" : "Radius";
+  const logBase = Number(porosityThicknessLogBase?.value) === 10 ? 10 : 2;
+  const sum = values.reduce((total, value) => total + value, 0);
+  const plot = porosityPropertiesPlot?.value || "localThickness";
+  const baseLabel =
+    plot === "distance"
+      ? `Distance to boundary (${unit})`
+      : plot === "component"
+        ? `Component ${getPorosityComponentPropertyLabel(porosityThicknessSize?.value)} (${unit})`
+        : plot === "chord"
+          ? `Chord length (${unit})`
+          : `Local thickness ${sizeLabel.toLowerCase()} (${unit})`;
+  return {
+    parameterLabel: porosityThicknessLogX?.checked
+      ? `log${logBase} ${baseLabel}`
+      : baseLabel,
+    plotType: "histogram",
+    defaultColor: "#777777",
+    mode,
+    stacked,
+    groups,
+    values,
+    bins,
+    min,
+    max,
+    binWidth,
+    dataMin: extent.dataMin,
+    dataMax: extent.dataMax,
+    yMax,
+    rawYMax,
+    mean: values.length ? sum / values.length : null,
+    showCumulative: Boolean(porosityThicknessCumulative?.checked),
+    formatXAxisTick: porosityThicknessLogX?.checked
+      ? (value) => formatHistogramAxisNumber(logBase ** value)
+      : null,
+  };
+}
+
+function renderPorosityThicknessStats(model) {
+  if (!porosityThicknessStatsBody) return;
+  const entries =
+    model.mode === "groups"
+      ? model.groups.map((group) => ({
+          name: group.groupName,
+          values: group.rawValues,
+        }))
+      : [
+          {
+            name: "Combined",
+            values: model.groups.flatMap((group) => group.rawValues),
+          },
+        ];
+  porosityThicknessStatsBody.innerHTML = "";
+  entries
+    .filter((entry) => entry.values.length)
+    .forEach((entry) => {
+      const summary = summarizePorosityThicknessValues(entry.values);
+      const row = document.createElement("tr");
+      [
+        entry.name,
+        summary.n,
+        summary.mean,
+        summary.median,
+        summary.sd,
+        summary.min,
+        summary.max,
+      ].forEach((value, index) => {
+        const cell = document.createElement("td");
+        cell.textContent =
+          index < 2 ? String(value) : formatHistogramAxisNumber(value);
+        row.append(cell);
+      });
+      porosityThicknessStatsBody.append(row);
+    });
+  if (!porosityThicknessStatsBody.children.length) {
+    const row = document.createElement("tr");
+    row.innerHTML = '<td colspan="7">No results</td>';
+    porosityThicknessStatsBody.append(row);
+  }
+  const disabled = model.values.length === 0;
+  if (exportPorosityThicknessStatsButton)
+    exportPorosityThicknessStatsButton.disabled = disabled;
+  if (exportPorosityThicknessButton)
+    exportPorosityThicknessButton.disabled = disabled;
+}
+
+function exportPorosityThicknessStatsCSV() {
+  const model = buildPorosityThicknessHistogramModel();
+  const entries =
+    model.mode === "groups"
+      ? model.groups.map((group) => ({
+          name: group.groupName,
+          values: group.rawValues,
+        }))
+      : [
+          {
+            name: "Combined",
+            values: model.groups.flatMap((group) => group.rawValues),
+          },
+        ];
+  const rows = [
+    ["type", "n", "mean", "median", "sd", "min", "q1", "q3", "max"],
+  ];
+  entries
+    .filter((entry) => entry.values.length)
+    .forEach((entry) => {
+      const summary = summarizePorosityThicknessValues(entry.values);
+      rows.push([
+        entry.name,
+        summary.n,
+        summary.mean,
+        summary.median,
+        summary.sd,
+        summary.min,
+        summary.q1,
+        summary.q3,
+        summary.max,
+      ]);
+    });
+  if (rows.length === 1) return;
+  const csv = rows.map((row) => row.map(csvEscape).join(",")).join("\n");
+  saveAs(
+    new Blob([csv], { type: "text/csv;charset=utf-8" }),
+    "porosity-local-thickness-stats.csv",
+  );
+}
+
+function exportPorosityThicknessPDF() {
+  const model = buildPorosityThicknessHistogramModel();
+  if (!model.values.length) return;
+  saveAs(createMeasureHistogramPdf(model), "porosity-local-thickness.pdf");
+}
+
+function summarizePorosityThicknessValues(values) {
+  if (!values.length) return summarizeValues([]);
+  const counts = new Map();
+  let sum = 0;
+  let sumSquares = 0;
+  let min = Infinity;
+  let max = -Infinity;
+  for (const value of values) {
+    counts.set(value, (counts.get(value) || 0) + 1);
+    sum += value;
+    sumSquares += value * value;
+    if (value < min) min = value;
+    if (value > max) max = value;
+  }
+  const ordered = [...counts.entries()].sort((a, b) => a[0] - b[0]);
+  const valueAtIndex = (target) => {
+    let cumulative = 0;
+    for (const [value, count] of ordered) {
+      cumulative += count;
+      if (cumulative > target) return value;
+    }
+    return ordered[ordered.length - 1][0];
+  };
+  const quantile = (probability) => {
+    const position = (values.length - 1) * probability;
+    const lower = Math.floor(position);
+    const upper = Math.ceil(position);
+    const lowerValue = valueAtIndex(lower);
+    const upperValue = valueAtIndex(upper);
+    return lowerValue + (upperValue - lowerValue) * (position - lower);
+  };
+  const mean = sum / values.length;
+  const variance =
+    values.length > 1
+      ? Math.max(
+          0,
+          (sumSquares - values.length * mean * mean) / (values.length - 1),
+        )
+      : 0;
+  return {
+    n: values.length,
+    mean,
+    median: quantile(0.5),
+    sd: Math.sqrt(variance),
+    min,
+    q1: quantile(0.25),
+    q3: quantile(0.75),
+    max,
+  };
+}
+
+function drawPorosityThicknessCumulative(ctx, model, width, height) {
+  const padding = { left: 42, top: 20, right: 42, bottom: 42 };
+  const plotWidth = width - padding.left - padding.right;
+  const plotHeight = height - padding.top - padding.bottom;
+  const entries =
+    model.mode === "groups"
+      ? model.groups.map((group) => ({
+          color: getSafeMeasureGroupColor(group.groupColor),
+          values: group.values,
+          weights: group.weights,
+        }))
+      : [
+          {
+            color: model.defaultColor,
+            values: model.groups.flatMap((group) => group.values),
+            weights: model.groups.flatMap((group) => group.weights),
+          },
+        ];
+  const xForValue = (value) =>
+    padding.left + ((value - model.min) / (model.max - model.min)) * plotWidth;
+  const yForFraction = (fraction) =>
+    padding.top + plotHeight - fraction * plotHeight;
+  ctx.strokeStyle = "#444";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(padding.left + plotWidth, padding.top);
+  ctx.lineTo(padding.left + plotWidth, padding.top + plotHeight);
+  ctx.stroke();
+  ctx.fillStyle = "#333";
+  ctx.font = "10px sans-serif";
+  ctx.textAlign = "left";
+  ctx.textBaseline = "middle";
+  ctx.fillText("100%", padding.left + plotWidth + 4, padding.top);
+  ctx.fillText("0%", padding.left + plotWidth + 4, padding.top + plotHeight);
+  entries.forEach((entry) => {
+    const weightsByValue = new Map();
+    entry.values.forEach((value, index) => {
+      const weight = Number(entry.weights[index]) || 0;
+      if (Number.isFinite(value) && weight > 0) {
+        weightsByValue.set(value, (weightsByValue.get(value) || 0) + weight);
+      }
+    });
+    const observations = [...weightsByValue.entries()]
+      .map(([value, weight]) => ({ value, weight }))
+      .sort((a, b) => a.value - b.value);
+    const total = observations.reduce(
+      (sum, observation) => sum + observation.weight,
+      0,
+    );
+    if (!(total > 0)) return;
+    let cumulative = observations.reduce(
+      (sum, observation) =>
+        observation.value < model.min ? sum + observation.weight : sum,
+      0,
+    );
+    ctx.beginPath();
+    ctx.moveTo(padding.left, yForFraction(cumulative / total));
+    observations.forEach((observation) => {
+      if (observation.value < model.min || observation.value > model.max)
+        return;
+      const x = xForValue(observation.value);
+      ctx.lineTo(x, yForFraction(cumulative / total));
+      cumulative += observation.weight;
+      ctx.lineTo(x, yForFraction(cumulative / total));
+    });
+    ctx.lineTo(padding.left + plotWidth, yForFraction(cumulative / total));
+    ctx.strokeStyle = "#ffffff";
+    ctx.lineWidth = 3.6;
+    ctx.stroke();
+    ctx.strokeStyle = entry.color;
+    ctx.lineWidth = 1.7;
+    ctx.stroke();
+  });
+  ctx.lineWidth = 1;
+}
+
+function drawPorosityThicknessHistogram() {
+  if (!porosityThicknessCanvas || porosityThicknessMenu?.hidden) return;
+  const model = buildPorosityThicknessHistogramModel();
+  const rect = porosityThicknessCanvas.getBoundingClientRect();
+  const ratio = window.devicePixelRatio || 1;
+  const width = Math.max(320, Math.round(rect.width));
+  const height = Math.max(200, Math.round(rect.height));
+  porosityThicknessCanvas.width = Math.round(width * ratio);
+  porosityThicknessCanvas.height = Math.round(height * ratio);
+  const ctx = porosityThicknessCanvas.getContext("2d");
+  ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+  drawHistogramToCanvas(ctx, model, width, height);
+  if (model.showCumulative && model.values.length) {
+    drawPorosityThicknessCumulative(ctx, model, width, height);
+  }
+  if (porosityThicknessOverlayEnabled?.checked) drawPorosityOverlay();
+  renderPorosityThicknessStats(model);
+}
+
+function openPorosityThicknessMenu(button) {
+  if (!porosityThicknessMenu || !button) return;
+  if (porosityThicknessMenu.parentElement !== document.body)
+    document.body.appendChild(porosityThicknessMenu);
+  porosityThicknessRangeEdited = false;
+  if (porosityPropertiesPlot && porosityCalculatedRasterParameter) {
+    porosityPropertiesPlot.value = getPorosityThicknessOverlaySettings().parameter;
+  }
+  updatePorosityPropertiesPlotControls();
+  if (
+    porosityPropertiesPlot?.value === "component" &&
+    porosityThicknessSize
+  ) {
+    porosityThicknessSize.value =
+      getPorosityThicknessOverlaySettings().componentProperty;
+  }
+  renderPorosityThicknessTypeControls();
+  porosityThicknessMenu.hidden = false;
+  button.setAttribute("aria-expanded", "true");
+  const rect = button.getBoundingClientRect();
+  porosityThicknessMenu.style.left = `${Math.max(8, Math.min(rect.left, window.innerWidth - 418))}px`;
+  porosityThicknessMenu.style.top = `${Math.max(8, Math.min(rect.bottom + 4, window.innerHeight - 350))}px`;
+  drawPorosityThicknessHistogram();
+}
+
+function closePorosityThicknessMenu() {
+  if (!porosityThicknessMenu) return;
+  porosityThicknessMenu.hidden = true;
+  porosityThicknessButton?.setAttribute("aria-expanded", "false");
+  if (porosityThicknessWorker) {
+    porosityThicknessWorker.terminate();
+    porosityThicknessWorker = null;
+  }
+}
+
 function startPorosityAoiMode() {
   deactivateAnnotationModes();
   closeAnnotationSettingsPopover();
@@ -5722,6 +8475,7 @@ function startPorosityAoiMode() {
     stopMeasurementMode();
   }
 
+  porosityAoiHistoryState = clonePorosityState();
   porosityAoiModeActive = true;
   porosityPickModeActive = false;
   porosityAoiSelectedVertexIndex = null;
@@ -5730,6 +8484,7 @@ function startPorosityAoiMode() {
   porosityAoiVisible = true;
   porosityAoiImagePoints = [];
   porosityAoiComplete = false;
+  clearPorosityPreviews();
   porosityTypes.forEach((type) => {
     type.result = null;
   });
@@ -5753,9 +8508,11 @@ function finishPorosityAoi() {
   }
 
   porosityAoiModeActive = false;
+  porosityAoiHistoryState = null;
   porosityAoiDrawState = null;
   porosityAoiComplete = true;
   porosityAoiSelectedVertexIndex = null;
+  clearPorosityPreviews();
   porosityTypes.forEach((type) => {
     type.result = null;
   });
@@ -5776,7 +8533,10 @@ function getPorosityScreenPointFromImagePoint(imagePoint) {
   const image = viewer.world.getItemAt(0);
   if (!image || !imagePoint) return null;
 
-  const viewportPoint = image.imageToViewportCoordinates(imagePoint.x, imagePoint.y);
+  const viewportPoint = image.imageToViewportCoordinates(
+    imagePoint.x,
+    imagePoint.y,
+  );
   return viewer.viewport.viewportToViewerElementCoordinates(viewportPoint);
 }
 
@@ -5789,10 +8549,18 @@ function getPorosityAoiScreenPoints() {
 function getPorosityAoiImageBounds() {
   if (porosityAoiImagePoints.length < 3) return null;
 
-  const minX = Math.floor(Math.min(...porosityAoiImagePoints.map((point) => point.x)));
-  const minY = Math.floor(Math.min(...porosityAoiImagePoints.map((point) => point.y)));
-  const maxX = Math.ceil(Math.max(...porosityAoiImagePoints.map((point) => point.x)));
-  const maxY = Math.ceil(Math.max(...porosityAoiImagePoints.map((point) => point.y)));
+  const minX = Math.floor(
+    Math.min(...porosityAoiImagePoints.map((point) => point.x)),
+  );
+  const minY = Math.floor(
+    Math.min(...porosityAoiImagePoints.map((point) => point.y)),
+  );
+  const maxX = Math.ceil(
+    Math.max(...porosityAoiImagePoints.map((point) => point.x)),
+  );
+  const maxY = Math.ceil(
+    Math.max(...porosityAoiImagePoints.map((point) => point.y)),
+  );
   const width = maxX - minX;
   const height = maxY - minY;
   if (width < 1 || height < 1) return null;
@@ -5845,16 +8613,16 @@ function getPorosityAoiViewportBounds(imageBounds) {
   if (!image || !imageBounds) return null;
 
   const topLeft = image.imageToViewportCoordinates(
-    new OpenSeadragon.Point(imageBounds.minX, imageBounds.minY)
+    new OpenSeadragon.Point(imageBounds.minX, imageBounds.minY),
   );
   const bottomRight = image.imageToViewportCoordinates(
-    new OpenSeadragon.Point(imageBounds.maxX, imageBounds.maxY)
+    new OpenSeadragon.Point(imageBounds.maxX, imageBounds.maxY),
   );
   return new OpenSeadragon.Rect(
     Math.min(topLeft.x, bottomRight.x),
     Math.min(topLeft.y, bottomRight.y),
     Math.abs(bottomRight.x - topLeft.x),
-    Math.abs(bottomRight.y - topLeft.y)
+    Math.abs(bottomRight.y - topLeft.y),
   );
 }
 
@@ -5869,11 +8637,11 @@ function getPorosityAnalysisExportSize(imageBounds) {
   const sideScale = Math.min(
     1,
     settings.maxDimension / width,
-    settings.maxDimension / height
+    settings.maxDimension / height,
   );
   const areaScale = Math.min(
     1,
-    Math.sqrt(settings.maxPixels / (width * height))
+    Math.sqrt(settings.maxPixels / (width * height)),
   );
   const capScale = Math.min(sideScale, areaScale);
   if (capScale < 1) {
@@ -5890,11 +8658,21 @@ function getPorosityAnalysisExportSize(imageBounds) {
   };
 }
 
-async function renderPorosityAnalysisCanvas(imageBounds, exportSize, tileSetIndex) {
+async function renderPorosityAnalysisCanvas(
+  imageBounds,
+  exportSize,
+  tileSetIndex,
+) {
   const pixelDensity =
     OpenSeadragon.pixelDensityRatio || window.devicePixelRatio || 1;
-  const containerWidth = Math.max(1, Math.ceil(exportSize.width / pixelDensity));
-  const containerHeight = Math.max(1, Math.ceil(exportSize.height / pixelDensity));
+  const containerWidth = Math.max(
+    1,
+    Math.ceil(exportSize.width / pixelDensity),
+  );
+  const containerHeight = Math.max(
+    1,
+    Math.ceil(exportSize.height / pixelDensity),
+  );
   const viewportBounds = getPorosityAoiViewportBounds(imageBounds);
   const selectedTileSet = tileSets()[tileSetIndex];
 
@@ -5944,25 +8722,32 @@ async function renderPorosityAnalysisCanvas(imageBounds, exportSize, tileSetInde
           },
           error: (event) => {
             reject(
-              new Error(event?.message || `Could not load tile source: ${tile.uri}`)
+              new Error(
+                event?.message || `Could not load tile source: ${tile.uri}`,
+              ),
             );
           },
         });
       });
     }
 
+    // Preserve the displayed stage angle while choosing/interpolating optical
+    // tiles, then render those selected tiles in source-image coordinates.
     if (typeof exportViewer.viewport.setFlip === "function") {
-      exportViewer.viewport.setFlip(viewer.viewport.getFlip());
+      exportViewer.viewport.setFlip(false);
     }
     exportViewer.viewport.setRotation(viewer.viewport.getRotation(true), true);
-    exportViewer.viewport.fitBounds(viewportBounds, true);
-
     const activeTileImages = applySnapshotTileSetComposition(
       exportViewer,
       exportTileSet,
       1,
-      tileSetIndex
+      tileSetIndex,
     );
+    // Viewer rotation and flip are display transforms and must not be baked into
+    // the analysis canvas, otherwise the mask no longer aligns with image points
+    // or the rotation-aware overlay transform.
+    exportViewer.viewport.setRotation(0, true);
+    exportViewer.viewport.fitBounds(viewportBounds, true);
     await waitForExportViewerReady(exportViewer, activeTileImages, {
       outputPixels: exportSize.width * exportSize.height,
     });
@@ -5987,7 +8772,7 @@ async function renderPorosityAnalysisCanvas(imageBounds, exportSize, tileSetInde
       0,
       0,
       outputCanvas.width,
-      outputCanvas.height
+      outputCanvas.height,
     );
     return outputCanvas;
   } finally {
@@ -6020,6 +8805,13 @@ function addPorosityAoiPoint(event) {
     imagePoint = constrainPorosityAoiPointToPrevious(imagePoint);
   }
 
+  if (porosityAoiImagePoints.length === 0 && porosityAoiHistoryState) {
+    annotationHistory.pushPorosity(
+      "Draw porosity AOI",
+      porosityAoiHistoryState,
+    );
+    porosityAoiHistoryState = null;
+  }
   porosityAoiImagePoints.push(imagePoint);
   porosityTypes.forEach((type) => {
     type.result = null;
@@ -6056,15 +8848,21 @@ function isPorosityPixel(pixel, toleranceSquared) {
 
 function isPorosityPixelForType(pixel, type, toleranceSquared) {
   return (type?.colorSamples || []).some(
-    (sample) => getPorosityColorDistanceSquared(pixel, sample) <= toleranceSquared
+    (sample) =>
+      getPorosityColorDistanceSquared(pixel, sample) <= toleranceSquared,
   );
 }
 
-function isPorosityPixelForTileSet(pixel, type, tileSetIndex, toleranceSquared) {
+function isPorosityPixelForTileSet(
+  pixel,
+  type,
+  tileSetIndex,
+  toleranceSquared,
+) {
   return (type?.colorSamples || []).some(
     (sample) =>
       sample.tileSetIndex === tileSetIndex &&
-      getPorosityColorDistanceSquared(pixel, sample) <= toleranceSquared
+      getPorosityColorDistanceSquared(pixel, sample) <= toleranceSquared,
   );
 }
 
@@ -6084,8 +8882,8 @@ function getPorosityLinkedSampleSetsForTileSets(type, tileSetIndices) {
   return Array.from(groups.values())
     .filter((samplesByTileSet) =>
       requiredTileSetIndices.every((tileSetIndex) =>
-        samplesByTileSet.has(tileSetIndex)
-      )
+        samplesByTileSet.has(tileSetIndex),
+      ),
     )
     .map((samplesByTileSet) => ({
       samplesByTileSet,
@@ -6096,7 +8894,7 @@ function doesPixelMatchPorositySampleSet(
   pixelsByTileSet,
   sampleSet,
   tileSetIndices,
-  toleranceSquared
+  toleranceSquared,
 ) {
   return tileSetIndices.every((tileSetIndex) => {
     const pixel = pixelsByTileSet.get(tileSetIndex);
@@ -6113,15 +8911,15 @@ function doesPixelMatchLinkedPorositySamples(
   pixelsByTileSet,
   sampleSets,
   tileSetIndices,
-  toleranceSquared
+  toleranceSquared,
 ) {
   return sampleSets.some((sampleSet) =>
     doesPixelMatchPorositySampleSet(
       pixelsByTileSet,
       sampleSet,
       tileSetIndices,
-      toleranceSquared
-    )
+      toleranceSquared,
+    ),
   );
 }
 
@@ -6129,7 +8927,8 @@ function hasPorositySamplesForSelectedTileSets(type) {
   const selectedTileSetIndices = getPorositySelectedTileSetIndices();
   return (
     selectedTileSetIndices.length > 0 &&
-    getPorosityLinkedSampleSetsForTileSets(type, selectedTileSetIndices).length > 0
+    getPorosityLinkedSampleSetsForTileSets(type, selectedTileSetIndices)
+      .length > 0
   );
 }
 
@@ -6168,10 +8967,11 @@ function isPorosityImagePointInMask(imagePoint, mask) {
 function isPorosityImagePointClaimedByOtherType(
   imagePoint,
   targetTypeId,
-  resultOverrides = null
+  resultOverrides = null,
 ) {
   return porosityTypes.some((type) => {
     if (type.id === targetTypeId) return false;
+    if (isPorosityImagePointInsideManualPolygon(imagePoint, type)) return true;
     const overrideResult = resultOverrides?.get(type.id);
     const result = overrideResult || type.result;
     return isPorosityImagePointInMask(imagePoint, result?.mask);
@@ -6208,7 +9008,7 @@ async function addPorosityColorSample(event) {
       const sampleCanvas = await renderPorosityAnalysisCanvas(
         imageBounds,
         exportSize,
-        tileSetIndex
+        tileSetIndex,
       );
       const data = sampleCanvas
         .getContext("2d", { willReadFrequently: true })
@@ -6232,8 +9032,11 @@ async function addPorosityColorSample(event) {
       clearPorosityActivityStatus();
       return;
     }
+    annotationHistory.pushPorosity("Add porosity color sample");
     activeType.colorSamples.push(...pickedSamples);
     activeType.result = null;
+    activeType.previewResult = null;
+    activeType.previewTolerance = null;
     drawPorosityOverlay();
     renderPorositySamples();
     updatePorosityControls();
@@ -6245,6 +9048,80 @@ async function addPorosityColorSample(event) {
   }
 }
 
+async function estimateAllPorosityTypes(scope, estimateGeneration) {
+  syncActivePorosityTypeFromControls();
+  clearPorosityPreviews();
+  const aoiBounds = getPorosityAoiImageBounds();
+  const viewPolygon =
+    scope === "view" ? getPorosityCurrentViewImagePolygon() : [];
+  const imageBounds =
+    scope === "view"
+      ? getPorosityViewImageBounds(aoiBounds, viewPolygon)
+      : aoiBounds;
+  if (!porosityAoiComplete || !imageBounds) {
+    updatePorosityControls("Draw an AOI before estimating.");
+    return;
+  }
+  const incompleteType = porosityTypes.find(
+    (type) => !hasPorositySamplesForSelectedTileSets(type),
+  );
+  if (incompleteType) {
+    updatePorosityControls(
+      `Pick pore colors for ${incompleteType.name} before estimating.`,
+    );
+    return;
+  }
+  const exportSize = getPorosityAnalysisExportSize(imageBounds);
+  if (!exportSize) {
+    updatePorosityControls("Could not determine the AOI resolution.");
+    return;
+  }
+  const selectedTileSetIndices = getPorositySelectedTileSetIndices();
+  const analysisImages = [];
+  for (let index = 0; index < selectedTileSetIndices.length; index += 1) {
+    const tileSetIndex = selectedTileSetIndices[index];
+    setPorosityProgress(
+      `Rendering tile set ${index + 1} of ${selectedTileSetIndices.length} for all porosity types...`,
+      (index / Math.max(1, selectedTileSetIndices.length)) * 100,
+    );
+    const canvas = await renderPorosityAnalysisCanvas(
+      imageBounds,
+      exportSize,
+      tileSetIndex,
+    );
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    analysisImages.push({
+      tileSetIndex,
+      canvas,
+      imageData: ctx.getImageData(0, 0, canvas.width, canvas.height),
+    });
+  }
+  const nextResults = new Map();
+  for (const type of porosityTypes) {
+    const result = await estimatePorosity({
+      dryRun: true,
+      typeId: type.id,
+      resultOverrides: nextResults,
+      estimateGeneration,
+      scope,
+      analysisImages,
+      preserveStatus: true,
+    });
+    if (estimateGeneration !== porosityEstimateGeneration) return;
+    if (result) nextResults.set(type.id, result);
+  }
+  porosityTypes.forEach((type) => {
+    type.result = nextResults.get(type.id) || null;
+    type.previewResult = null;
+    type.previewTolerance = null;
+  });
+  drawPorosityOverlay();
+  updatePorosityControls(
+    `${porosityTypes.length} porosity type${porosityTypes.length === 1 ? "" : "s"} estimated.`,
+  );
+  setPorosityProgress("Porosity estimation complete.", 100);
+}
+
 async function estimatePorosity(options = {}) {
   const {
     dryRun = false,
@@ -6253,13 +9130,17 @@ async function estimatePorosity(options = {}) {
     typeId = activePorosityTypeId,
     estimateGeneration = porosityEstimateGeneration,
     scope = "aoi",
+    analysisImages: providedAnalysisImages = null,
   } = options;
   const targetType =
     porosityTypes.find((type) => type.id === typeId) || getActivePorosityType();
   const aoiBounds = getPorosityAoiImageBounds();
-  const viewPolygon = scope === "view" ? getPorosityCurrentViewImagePolygon() : [];
+  const viewPolygon =
+    scope === "view" ? getPorosityCurrentViewImagePolygon() : [];
   const imageBounds =
-    scope === "view" ? getPorosityViewImageBounds(aoiBounds, viewPolygon) : aoiBounds;
+    scope === "view"
+      ? getPorosityViewImageBounds(aoiBounds, viewPolygon)
+      : aoiBounds;
   if (!porosityAoiComplete || !imageBounds) {
     updatePorosityControls("Draw an AOI before estimating.");
     return;
@@ -6271,7 +9152,9 @@ async function estimatePorosity(options = {}) {
   normalizePorosityTypeSamples(targetType);
   const selectedTileSetIndices = getPorositySelectedTileSetIndices();
   if (!hasPorositySamplesForSelectedTileSets(targetType)) {
-    updatePorosityControls("Pick pore colors for each selected tile set first.");
+    updatePorosityControls(
+      "Pick pore colors for each selected tile set first.",
+    );
     return;
   }
 
@@ -6289,28 +9172,32 @@ async function estimatePorosity(options = {}) {
   const previousResult = targetType.result;
 
   try {
-    const analysisImages = [];
-    setPorosityProgress(
-      scope === "view"
-        ? "Rendering selected tile sets for view..."
-        : "Rendering selected tile sets for AOI..."
-    );
-    for (const tileSetIndex of selectedTileSetIndices) {
-      const canvas = await renderPorosityAnalysisCanvas(
-        imageBounds,
-        exportSize,
-        tileSetIndex
+    const analysisImages = providedAnalysisImages || [];
+    if (!providedAnalysisImages) {
+      setPorosityProgress(
+        scope === "view"
+          ? "Rendering selected tile sets for view..."
+          : "Rendering selected tile sets for AOI...",
       );
-      const ctx = canvas.getContext("2d", { willReadFrequently: true });
-      analysisImages.push({
-        tileSetIndex,
-        canvas,
-        imageData: ctx.getImageData(0, 0, canvas.width, canvas.height),
-      });
+      for (const tileSetIndex of selectedTileSetIndices) {
+        const canvas = await renderPorosityAnalysisCanvas(
+          imageBounds,
+          exportSize,
+          tileSetIndex,
+        );
+        const ctx = canvas.getContext("2d", { willReadFrequently: true });
+        analysisImages.push({
+          tileSetIndex,
+          canvas,
+          imageData: ctx.getImageData(0, 0, canvas.width, canvas.height),
+        });
+      }
     }
     const sourceCanvas = analysisImages[0]?.canvas;
     if (!sourceCanvas) {
-      throw new Error("Could not render selected tile sets for porosity estimation.");
+      throw new Error(
+        "Could not render selected tile sets for porosity estimation.",
+      );
     }
     const maskCanvas = document.createElement("canvas");
     maskCanvas.width = sourceCanvas.width;
@@ -6331,7 +9218,7 @@ async function estimatePorosity(options = {}) {
     const toleranceSquared = getPorosityToleranceValueForType(targetType) ** 2;
     const linkedSampleSets = getPorosityLinkedSampleSetsForTileSets(
       targetType,
-      selectedTileSetIndices
+      selectedTileSetIndices,
     );
     let porePixels = 0;
     let totalPixels = 0;
@@ -6342,9 +9229,9 @@ async function estimatePorosity(options = {}) {
         const percent = (y / sourceCanvas.height) * 100;
         setPorosityProgress(
           scope === "view"
-            ? `Estimating visible AOI... ${Math.round(percent)}%`
-            : `Estimating full AOI... ${Math.round(percent)}%`,
-          percent
+            ? `${targetType.name}: estimating visible AOI... ${Math.round(percent)}%`
+            : `${targetType.name}: estimating full AOI... ${Math.round(percent)}%`,
+          percent,
         );
         lastProgressUpdate = y;
         await wait(0);
@@ -6380,21 +9267,26 @@ async function estimatePorosity(options = {}) {
             b: data[sourceIndex + 2],
           });
         }
+        const isManualPolygonPorosity = isPorosityImagePointInsideManualPolygon(
+          imagePoint,
+          targetType,
+        );
         const matchesSelectedTileSets =
           hasPixelForEveryTileSet &&
           doesPixelMatchLinkedPorositySamples(
             pixelsByTileSet,
             linkedSampleSets,
             selectedTileSetIndices,
-            toleranceSquared
+            toleranceSquared,
           );
         if (
-          matchesSelectedTileSets &&
-          !isPorosityImagePointClaimedByOtherType(
-            imagePoint,
-            targetType.id,
-            resultOverrides
-          )
+          (isManualPolygonPorosity || matchesSelectedTileSets) &&
+          (isManualPolygonPorosity ||
+            !isPorosityImagePointClaimedByOtherType(
+              imagePoint,
+              targetType.id,
+              resultOverrides,
+            ))
         ) {
           const maskIndex = (y * sourceCanvas.width + x) * 4;
           const alphaIndex = y * sourceCanvas.width + x;
@@ -6433,6 +9325,7 @@ async function estimatePorosity(options = {}) {
       analysisHeight: exportSize.height,
       analysisResolutionMode: exportSize.mode,
       analysisResolutionLabel: exportSize.label,
+      tolerance: getPorosityToleranceValueForType(targetType),
       tileSetIndices: [...selectedTileSetIndices],
       scope,
     };
@@ -6453,7 +9346,9 @@ async function estimatePorosity(options = {}) {
     if (!dryRun) {
       if (targetType) targetType.result = previousResult || null;
       drawPorosityOverlay();
-      updatePorosityControls("Could not render the AOI for porosity estimation.");
+      updatePorosityControls(
+        "Could not render the AOI for porosity estimation.",
+      );
       clearPorosityProgress();
     }
     return previousResult || null;
@@ -6482,7 +9377,7 @@ function renderVisibleSnapshotBaseCanvas(sourceCanvas, sourceRect, exportSize) {
     0,
     0,
     outputCanvas.width,
-    outputCanvas.height
+    outputCanvas.height,
   );
   return outputCanvas;
 }
@@ -6490,21 +9385,21 @@ function renderVisibleSnapshotBaseCanvas(sourceCanvas, sourceRect, exportSize) {
 function getSnapshotViewportBounds(selectionRect) {
   const topLeft = viewer.viewport.pointFromPixel(
     new OpenSeadragon.Point(selectionRect.left, selectionRect.top),
-    true
+    true,
   );
   const bottomRight = viewer.viewport.pointFromPixel(
     new OpenSeadragon.Point(
       selectionRect.left + selectionRect.width,
-      selectionRect.top + selectionRect.height
+      selectionRect.top + selectionRect.height,
     ),
-    true
+    true,
   );
 
   return new OpenSeadragon.Rect(
     Math.min(topLeft.x, bottomRight.x),
     Math.min(topLeft.y, bottomRight.y),
     Math.abs(bottomRight.x - topLeft.x),
-    Math.abs(bottomRight.y - topLeft.y)
+    Math.abs(bottomRight.y - topLeft.y),
   );
 }
 
@@ -6512,12 +9407,18 @@ function getSnapshotScreenPointFromImagePoint(imagePoint) {
   const image = viewer.world.getItemAt(0);
   if (!image) return null;
   const viewportPoint = image.imageToViewportCoordinates(
-    new OpenSeadragon.Point(imagePoint[0], imagePoint[1])
+    new OpenSeadragon.Point(imagePoint[0], imagePoint[1]),
   );
   return viewer.viewport.viewportToViewerElementCoordinates(viewportPoint);
 }
 
-function drawSnapshotPath(ctx, coordinates, selectionRect, outputCanvas, closePath) {
+function drawSnapshotPath(
+  ctx,
+  coordinates,
+  selectionRect,
+  outputCanvas,
+  closePath,
+) {
   if (!coordinates?.length) return;
   const scaleX = outputCanvas.width / selectionRect.width;
   const scaleY = outputCanvas.height / selectionRect.height;
@@ -6557,12 +9458,16 @@ function applySnapshotFeatureStroke(ctx, feature, selectionRect, outputCanvas) {
   ctx.strokeStyle = applyOpacityToColor(lineColor, lineOpacity);
   ctx.lineWidth = Math.max(
     1,
-    lineWeight * (outputCanvas.width / selectionRect.width)
+    lineWeight * (outputCanvas.width / selectionRect.width),
   );
   if (lineStyle === "dashed") {
-    ctx.setLineDash([4, 2].map((value) => value * (outputCanvas.width / selectionRect.width)));
+    ctx.setLineDash(
+      [4, 2].map((value) => value * (outputCanvas.width / selectionRect.width)),
+    );
   } else if (lineStyle === "dotted") {
-    ctx.setLineDash([2, 2].map((value) => value * (outputCanvas.width / selectionRect.width)));
+    ctx.setLineDash(
+      [2, 2].map((value) => value * (outputCanvas.width / selectionRect.width)),
+    );
   } else {
     ctx.setLineDash([]);
   }
@@ -6582,8 +9487,11 @@ function drawSnapshotAnnotationShapes(ctx, outputCanvas, selectionRect) {
         drawSnapshotPath(ctx, ring, selectionRect, outputCanvas, true);
       });
       const fillColor =
-        feature.properties.fillColor || document.getElementById("fillColor").value;
-      const fillOpacity = Number.isFinite(Number(feature.properties.fillOpacity))
+        feature.properties.fillColor ||
+        document.getElementById("fillColor").value;
+      const fillOpacity = Number.isFinite(
+        Number(feature.properties.fillOpacity),
+      )
         ? Number(feature.properties.fillOpacity)
         : getAnnotationOpacityValue("fillOpacity");
       ctx.fillStyle = applyOpacityToColor(fillColor, fillOpacity);
@@ -6601,8 +9509,11 @@ function drawSnapshotAnnotationShapes(ctx, outputCanvas, selectionRect) {
         });
       });
       const fillColor =
-        feature.properties.fillColor || document.getElementById("fillColor").value;
-      const fillOpacity = Number.isFinite(Number(feature.properties.fillOpacity))
+        feature.properties.fillColor ||
+        document.getElementById("fillColor").value;
+      const fillOpacity = Number.isFinite(
+        Number(feature.properties.fillOpacity),
+      )
         ? Number(feature.properties.fillOpacity)
         : getAnnotationOpacityValue("fillOpacity");
       ctx.fillStyle = applyOpacityToColor(fillColor, fillOpacity);
@@ -6696,7 +9607,12 @@ function drawSnapshotAnnotationLabels(ctx, outputCanvas, selectionRect) {
     const label = feature.properties?.label;
     const labelX = Number(feature.properties?.xLabel);
     const labelY = Number(feature.properties?.yLabel);
-    if (!label || !label.trim() || !Number.isFinite(labelX) || !Number.isFinite(labelY)) {
+    if (
+      !label ||
+      !label.trim() ||
+      !Number.isFinite(labelX) ||
+      !Number.isFinite(labelY)
+    ) {
       return;
     }
 
@@ -6704,8 +9620,7 @@ function drawSnapshotAnnotationLabels(ctx, outputCanvas, selectionRect) {
     if (!screenPoint) return;
     const anchorX = (screenPoint.x - selectionRect.left) * scaleX;
     const anchorY = (screenPoint.y - selectionRect.top) * scaleY;
-    const fontSize =
-      (Number(feature.properties.labelFontSize) || 16) * scaleX;
+    const fontSize = (Number(feature.properties.labelFontSize) || 16) * scaleX;
     const paddingX = Math.max(4, fontSize * 0.3);
     const textHeight = Math.max(fontSize * 1.2, 12);
 
@@ -6727,8 +9642,8 @@ function drawSnapshotAnnotationLabels(ctx, outputCanvas, selectionRect) {
         feature.properties.labelBackgroundColor || "#000000",
         Number.isFinite(Number(feature.properties.labelBackgroundOpacity))
           ? Number(feature.properties.labelBackgroundOpacity)
-          : 0.5
-      )
+          : 0.5,
+      ),
     );
     ctx.fillStyle = feature.properties.labelFontColor || "#ffffff";
     ctx.textBaseline = "middle";
@@ -6764,7 +9679,7 @@ function populateSnapshotTileSetSelect() {
   const hasPrevious =
     previousValue !== "" &&
     Array.from(snapshotTileSetSelect.options).some(
-      (option) => option.value === previousValue
+      (option) => option.value === previousValue,
     );
   if (hasPrevious) {
     snapshotTileSetSelect.value = previousValue;
@@ -6772,7 +9687,7 @@ function populateSnapshotTileSetSelect() {
   }
 
   const checkedIndex = Array.from(
-    document.querySelectorAll(".image-checkbox")
+    document.querySelectorAll(".image-checkbox"),
   ).findIndex((checkbox) => checkbox.checked);
   snapshotTileSetSelect.value = String(checkedIndex >= 0 ? checkedIndex : 0);
 }
@@ -6800,32 +9715,32 @@ function getSnapshotImagePixelsPerScreenPixel(selectionRect) {
 
   const leftPoint = new OpenSeadragon.Point(
     selectionRect.left,
-    selectionRect.top + selectionRect.height / 2
+    selectionRect.top + selectionRect.height / 2,
   );
   const rightPoint = new OpenSeadragon.Point(
     selectionRect.left + selectionRect.width,
-    selectionRect.top + selectionRect.height / 2
+    selectionRect.top + selectionRect.height / 2,
   );
   const topPoint = new OpenSeadragon.Point(
     selectionRect.left + selectionRect.width / 2,
-    selectionRect.top
+    selectionRect.top,
   );
   const bottomPoint = new OpenSeadragon.Point(
     selectionRect.left + selectionRect.width / 2,
-    selectionRect.top + selectionRect.height
+    selectionRect.top + selectionRect.height,
   );
 
   const leftImage = image.viewportToImageCoordinates(
-    viewer.viewport.pointFromPixel(leftPoint)
+    viewer.viewport.pointFromPixel(leftPoint),
   );
   const rightImage = image.viewportToImageCoordinates(
-    viewer.viewport.pointFromPixel(rightPoint)
+    viewer.viewport.pointFromPixel(rightPoint),
   );
   const topImage = image.viewportToImageCoordinates(
-    viewer.viewport.pointFromPixel(topPoint)
+    viewer.viewport.pointFromPixel(topPoint),
   );
   const bottomImage = image.viewportToImageCoordinates(
-    viewer.viewport.pointFromPixel(bottomPoint)
+    viewer.viewport.pointFromPixel(bottomPoint),
   );
 
   return {
@@ -6848,7 +9763,7 @@ function getSnapshotExportSize(sourceRect = null) {
     resolutionMode === "0.25"
   ) {
     const imagePixelsPerScreenPixel = getSnapshotImagePixelsPerScreenPixel(
-      snapshotSelectionRect
+      snapshotSelectionRect,
     );
     if (!imagePixelsPerScreenPixel) return null;
     const scale = resolutionMode === "full" ? 1 : Number(resolutionMode);
@@ -6856,25 +9771,25 @@ function getSnapshotExportSize(sourceRect = null) {
       width: Math.max(
         1,
         Math.round(
-          snapshotSelectionRect.width * imagePixelsPerScreenPixel.x * scale
-        )
+          snapshotSelectionRect.width * imagePixelsPerScreenPixel.x * scale,
+        ),
       ),
       height: Math.max(
         1,
         Math.round(
-          snapshotSelectionRect.height * imagePixelsPerScreenPixel.y * scale
-        )
+          snapshotSelectionRect.height * imagePixelsPerScreenPixel.y * scale,
+        ),
       ),
     };
   }
 
   const baseWidth = Math.max(
     1,
-    Math.round(sourceRect?.width || snapshotSelectionRect.width)
+    Math.round(sourceRect?.width || snapshotSelectionRect.width),
   );
   const baseHeight = Math.max(
     1,
-    Math.round(sourceRect?.height || snapshotSelectionRect.height)
+    Math.round(sourceRect?.height || snapshotSelectionRect.height),
   );
   return {
     width: baseWidth,
@@ -6889,12 +9804,15 @@ function getSnapshotSelectionImageRect(selectionRect = snapshotSelectionRect) {
   const points = [
     [selectionRect.left, selectionRect.top],
     [selectionRect.left + selectionRect.width, selectionRect.top],
-    [selectionRect.left + selectionRect.width, selectionRect.top + selectionRect.height],
+    [
+      selectionRect.left + selectionRect.width,
+      selectionRect.top + selectionRect.height,
+    ],
     [selectionRect.left, selectionRect.top + selectionRect.height],
   ].map(([x, y]) =>
     image.viewportToImageCoordinates(
-      viewer.viewport.pointFromPixel(new OpenSeadragon.Point(x, y))
-    )
+      viewer.viewport.pointFromPixel(new OpenSeadragon.Point(x, y)),
+    ),
   );
 
   const xs = points.map((point) => point.x).filter(Number.isFinite);
@@ -6929,13 +9847,13 @@ async function applySnapshotExportFilter(outputCanvas, exportSize) {
     }
     const scale = Math.min(
       exportSize.width / imageRect.width,
-      exportSize.height / imageRect.height
+      exportSize.height / imageRect.height,
     );
     await applyAdvancedTransformToExportContext(
       context,
       transform,
       imageRect,
-      scale
+      scale,
     );
   } else {
     applyTileSetTransformToContext(context, transform);
@@ -6951,21 +9869,21 @@ function getSnapshotMetersPerOutputPixel(selectionRect, outputWidth) {
 
   const leftPoint = new OpenSeadragon.Point(
     selectionRect.left,
-    selectionRect.top + selectionRect.height / 2
+    selectionRect.top + selectionRect.height / 2,
   );
   const rightPoint = new OpenSeadragon.Point(
     selectionRect.left + selectionRect.width,
-    selectionRect.top + selectionRect.height / 2
+    selectionRect.top + selectionRect.height / 2,
   );
   const leftImage = image.viewportToImageCoordinates(
-    viewer.viewport.pointFromPixel(leftPoint)
+    viewer.viewport.pointFromPixel(leftPoint),
   );
   const rightImage = image.viewportToImageCoordinates(
-    viewer.viewport.pointFromPixel(rightPoint)
+    viewer.viewport.pointFromPixel(rightPoint),
   );
   const imagePixelDistance = Math.hypot(
     rightImage.x - leftImage.x,
-    rightImage.y - leftImage.y
+    rightImage.y - leftImage.y,
   );
 
   return imagePixelDistance / outputWidth / scale;
@@ -7047,7 +9965,7 @@ function getSnapshotZoomedScalebarScale(selectionRect, outputCanvas) {
 
   const fitScale = Math.min(
     bounds.width / selectionRect.width,
-    bounds.height / selectionRect.height
+    bounds.height / selectionRect.height,
   );
   const zoomedSelectionWidth = selectionRect.width * fitScale;
   const zoomedSelectionHeight = selectionRect.height * fitScale;
@@ -7066,13 +9984,13 @@ function drawSnapshotScalebar(ctx, outputCanvas, selectionRect) {
 
   const metersPerPixel = getSnapshotMetersPerOutputPixel(
     selectionRect,
-    outputCanvas.width
+    outputCanvas.width,
   );
   if (metersPerPixel === null) return false;
 
   const zoomedScale = getSnapshotZoomedScalebarScale(
     selectionRect,
-    outputCanvas
+    outputCanvas,
   );
   const outputPixelsPerMeter = 1 / metersPerPixel;
   const minWidth =
@@ -7083,13 +10001,14 @@ function drawSnapshotScalebar(ctx, outputCanvas, selectionRect) {
   const barWidth = scalebarProps?.size;
   if (!Number.isFinite(barWidth) || barWidth < 12) return false;
 
-  const lineColor = document.getElementById("scalebarColor")?.value || "#000000";
+  const lineColor =
+    document.getElementById("scalebarColor")?.value || "#000000";
   const fontColor =
     document.getElementById("scalebarFontColor")?.value || "#000000";
   const backgroundColor =
     document.getElementById("scalebarBackgroundColor")?.value || "#ffffff";
   const backgroundOpacity = Number(
-    document.getElementById("scalebarBackgroundOpacity")?.value || 0.65
+    document.getElementById("scalebarBackgroundOpacity")?.value || 0.65,
   );
   const lineWeight =
     Math.max(1, getSnapshotScalebarNumber("scalebarLineWeight", 2)) *
@@ -7128,7 +10047,7 @@ function drawSnapshotScalebar(ctx, outputCanvas, selectionRect) {
   ctx.textBaseline = "middle";
   ctx.fillStyle = applyOpacityToColor(
     backgroundColor,
-    Number.isFinite(backgroundOpacity) ? backgroundOpacity : 0.5
+    Number.isFinite(backgroundOpacity) ? backgroundOpacity : 0.5,
   );
   ctx.fillRect(x, y, barWidth, barHeight);
 
@@ -7182,7 +10101,7 @@ function getTileOpacityGetterForViewer(
   targetViewer,
   tileSet,
   tileSetOpacity = 1,
-  tileSetIndex = 0
+  tileSetIndex = 0,
 ) {
   const tiles = tileSet.tiles;
   const periodDegrees = tileSet.periodDegrees;
@@ -7194,11 +10113,13 @@ function getTileOpacityGetterForViewer(
   let rotation;
   if (rotateWithStage.checked) {
     rotation =
-      ((targetViewer.viewport.getRotation(true) % periodDegrees) + periodDegrees) %
+      ((targetViewer.viewport.getRotation(true) % periodDegrees) +
+        periodDegrees) %
       periodDegrees;
   } else {
     rotation =
-      ((parseFloat(document.getElementById("stageRotation").value) % periodDegrees) +
+      ((parseFloat(document.getElementById("stageRotation").value) %
+        periodDegrees) +
         periodDegrees) %
       periodDegrees;
   }
@@ -7250,7 +10171,7 @@ function applySnapshotTileSetComposition(
   targetViewer,
   tileSet,
   tileSetOpacity = 1,
-  tileSetIndex = 0
+  tileSetIndex = 0,
 ) {
   const activeTileImages = [];
   if (!tileSet) return activeTileImages;
@@ -7259,7 +10180,7 @@ function applySnapshotTileSetComposition(
     targetViewer,
     tileSet,
     tileSetOpacity,
-    tileSetIndex
+    tileSetIndex,
   );
   tileSet.tiles.forEach((tile, index) => {
     if (!tile.image) return;
@@ -7286,7 +10207,7 @@ function getExportViewerReadyTimeoutMs(outputPixels = 0) {
 async function waitForExportViewerReady(
   exportViewer,
   activeTileImages,
-  options = {}
+  options = {},
 ) {
   const startTime = Date.now();
   let lastActivity = Date.now();
@@ -7305,7 +10226,7 @@ async function waitForExportViewerReady(
       const relevantTilesLoaded = activeTileImages.every((image) =>
         image && typeof image.getFullyLoaded === "function"
           ? image.getFullyLoaded()
-          : Boolean(image)
+          : Boolean(image),
       );
       if (
         relevantTilesLoaded &&
@@ -7318,8 +10239,8 @@ async function waitForExportViewerReady(
     }
     throw new Error(
       `Timed out while loading image tiles after ${Math.round(
-        timeoutMs / 1000
-      )} seconds. Try a lower segmentation resolution or a smaller AOI.`
+        timeoutMs / 1000,
+      )} seconds. Try a lower segmentation resolution or a smaller AOI.`,
     );
   } finally {
     exportViewer.removeHandler("tile-loaded", markActivity);
@@ -7332,9 +10253,17 @@ async function waitForExportViewerReady(
 async function renderFullResolutionSnapshotBaseCanvas(exportSize) {
   const pixelDensity =
     OpenSeadragon.pixelDensityRatio || window.devicePixelRatio || 1;
-  const containerWidth = Math.max(1, Math.ceil(exportSize.width / pixelDensity));
-  const containerHeight = Math.max(1, Math.ceil(exportSize.height / pixelDensity));
-  const selectionViewportBounds = getSnapshotViewportBounds(snapshotSelectionRect);
+  const containerWidth = Math.max(
+    1,
+    Math.ceil(exportSize.width / pixelDensity),
+  );
+  const containerHeight = Math.max(
+    1,
+    Math.ceil(exportSize.height / pixelDensity),
+  );
+  const selectionViewportBounds = getSnapshotViewportBounds(
+    snapshotSelectionRect,
+  );
   const selectedTileSetIndex = getSnapshotTileSetIndex();
   const selectedTileSet = getSnapshotSelectedTileSet();
   const selectedTileSetOpacity = 1;
@@ -7380,21 +10309,23 @@ async function renderFullResolutionSnapshotBaseCanvas(exportSize) {
     }
 
     for (const tile of exportTileSet.tiles) {
-        const tileSource = await getTileSourceForExport(tile);
-        await new Promise((resolve, reject) => {
-          exportViewer.addTiledImage({
-            tileSource,
-            success: (event) => {
-              tile.image = event.item;
-              resolve();
-            },
-            error: (event) => {
-              reject(
-                new Error(event?.message || `Could not load tile source: ${tile.uri}`)
-              );
-            },
-          });
+      const tileSource = await getTileSourceForExport(tile);
+      await new Promise((resolve, reject) => {
+        exportViewer.addTiledImage({
+          tileSource,
+          success: (event) => {
+            tile.image = event.item;
+            resolve();
+          },
+          error: (event) => {
+            reject(
+              new Error(
+                event?.message || `Could not load tile source: ${tile.uri}`,
+              ),
+            );
+          },
         });
+      });
     }
 
     if (typeof exportViewer.viewport.setFlip === "function") {
@@ -7407,7 +10338,7 @@ async function renderFullResolutionSnapshotBaseCanvas(exportSize) {
       exportViewer,
       exportTileSet,
       selectedTileSetOpacity,
-      selectedTileSetIndex
+      selectedTileSetIndex,
     );
     await waitForExportViewerReady(exportViewer, activeTileImages, {
       outputPixels: exportSize.width * exportSize.height,
@@ -7433,7 +10364,7 @@ async function renderFullResolutionSnapshotBaseCanvas(exportSize) {
       0,
       0,
       outputCanvas.width,
-      outputCanvas.height
+      outputCanvas.height,
     );
     return outputCanvas;
   } finally {
@@ -7449,13 +10380,13 @@ function getViewportBoundsForImageRect(imageRect) {
   const topLeft = image.imageToViewportCoordinates(imageRect.x, imageRect.y);
   const bottomRight = image.imageToViewportCoordinates(
     imageRect.x + imageRect.width,
-    imageRect.y + imageRect.height
+    imageRect.y + imageRect.height,
   );
   return new OpenSeadragon.Rect(
     Math.min(topLeft.x, bottomRight.x),
     Math.min(topLeft.y, bottomRight.y),
     Math.abs(bottomRight.x - topLeft.x),
-    Math.abs(bottomRight.y - topLeft.y)
+    Math.abs(bottomRight.y - topLeft.y),
   );
 }
 
@@ -7463,7 +10394,7 @@ async function renderFullResolutionImageRectCanvas(
   imageRect,
   tileSetIndex = 0,
   outputScale = 1,
-  options = {}
+  options = {},
 ) {
   const renderScale = Math.max(0.05, Math.min(1, Number(outputScale) || 1));
   const exportSize = {
@@ -7472,8 +10403,14 @@ async function renderFullResolutionImageRectCanvas(
   };
   const pixelDensity =
     OpenSeadragon.pixelDensityRatio || window.devicePixelRatio || 1;
-  const containerWidth = Math.max(1, Math.ceil(exportSize.width / pixelDensity));
-  const containerHeight = Math.max(1, Math.ceil(exportSize.height / pixelDensity));
+  const containerWidth = Math.max(
+    1,
+    Math.ceil(exportSize.width / pixelDensity),
+  );
+  const containerHeight = Math.max(
+    1,
+    Math.ceil(exportSize.height / pixelDensity),
+  );
   const imageViewportBounds = getViewportBoundsForImageRect(imageRect);
   const selectedTileSet = tileSets()[tileSetIndex] || tileSets()[0] || null;
   const selectedTileSetOpacity = 1;
@@ -7527,7 +10464,9 @@ async function renderFullResolutionImageRectCanvas(
           },
           error: (event) => {
             reject(
-              new Error(event?.message || `Could not load tile source: ${tile.uri}`)
+              new Error(
+                event?.message || `Could not load tile source: ${tile.uri}`,
+              ),
             );
           },
         });
@@ -7549,7 +10488,7 @@ async function renderFullResolutionImageRectCanvas(
         exportViewer,
         exportTileSet,
         selectedTileSetOpacity,
-        tileSetIndex
+        tileSetIndex,
       );
     } else {
       activeTileImages = [];
@@ -7586,7 +10525,7 @@ async function renderFullResolutionImageRectCanvas(
       0,
       0,
       outputCanvas.width,
-      outputCanvas.height
+      outputCanvas.height,
     );
     return outputCanvas;
   } finally {
@@ -7611,7 +10550,7 @@ function getClassifyGroupOptionsSignature(groups) {
       group.groupColor,
       group.groupVisible !== false,
       group.groupLocked === true,
-    ])
+    ]),
   );
 }
 
@@ -7636,7 +10575,7 @@ function populateClassifyGroupOptions(groups = getAnnotationGroups()) {
   });
   if (
     Array.from(classifyScopeGroup.options).some(
-      (option) => option.value === previousValue
+      (option) => option.value === previousValue,
     )
   ) {
     classifyScopeGroup.value = previousValue;
@@ -7656,7 +10595,7 @@ function refreshClassifyGroupsFromAnnotations() {
   if (
     previousValue &&
     !Array.from(classifyScopeGroup.options).some(
-      (option) => option.value === previousValue
+      (option) => option.value === previousValue,
     )
   ) {
     invalidateClassifyFeatures();
@@ -7666,14 +10605,17 @@ function refreshClassifyGroupsFromAnnotations() {
 function populateClassifyTileSetSelect() {
   if (!classifyTileSetSelect) return;
   const previousValues = new Set(
-    Array.from(classifyTileSetSelect.selectedOptions).map((option) => option.value)
+    Array.from(classifyTileSetSelect.selectedOptions).map(
+      (option) => option.value,
+    ),
   );
   classifyTileSetSelect.innerHTML = "";
   tileSets().forEach((tileSet, index) => {
     const option = document.createElement("option");
     option.value = String(index);
     option.textContent = getSnapshotTileSetLabel(tileSet, index);
-    option.selected = previousValues.size === 0 || previousValues.has(option.value);
+    option.selected =
+      previousValues.size === 0 || previousValues.has(option.value);
     classifyTileSetSelect.append(option);
   });
 }
@@ -7720,7 +10662,8 @@ function updateClassifyActionState() {
   const hasFeatures = haveClassifyFeaturesForOptions();
   const options = getClassifyOptions();
   const canExtract =
-    options.tileSetIndices.length > 0 && getClassifyPolygonFeatures(options).length > 0;
+    options.tileSetIndices.length > 0 &&
+    getClassifyPolygonFeatures(options).length > 0;
   updateClassifyModelControls(options);
   if (classifyExtractFeaturesButton) {
     classifyExtractFeaturesButton.disabled = !canExtract;
@@ -7731,9 +10674,11 @@ function updateClassifyActionState() {
         : "No unlocked polygon annotations match the selected scope.";
   }
   if (classifyTrainPredictButton) {
-    classifyTrainPredictButton.disabled = !hasFeatures || classifyTrainingRunning;
+    classifyTrainPredictButton.disabled =
+      !hasFeatures || classifyTrainingRunning;
   }
-  if (classifyApplyGroupsButton) classifyApplyGroupsButton.disabled = !hasPrediction;
+  if (classifyApplyGroupsButton)
+    classifyApplyGroupsButton.disabled = !hasPrediction;
   if (classifyIncludeLowConfidence) {
     classifyIncludeLowConfidence.disabled = !hasPrediction;
   }
@@ -7771,7 +10716,8 @@ function setClassifyStatus(message, status = "") {
 }
 
 function setClassifyProgress(value, message = "") {
-  if (!classifyProgress || !classifyProgressBar || !classifyProgressText) return;
+  if (!classifyProgress || !classifyProgressBar || !classifyProgressText)
+    return;
   const percent = Math.max(0, Math.min(100, Number(value) || 0));
   classifyProgress.hidden = false;
   classifyProgressBar.style.width = "100%";
@@ -7780,7 +10726,8 @@ function setClassifyProgress(value, message = "") {
 }
 
 function clearClassifyProgress() {
-  if (!classifyProgress || !classifyProgressBar || !classifyProgressText) return;
+  if (!classifyProgress || !classifyProgressBar || !classifyProgressText)
+    return;
   classifyProgress.hidden = true;
   classifyProgressBar.style.width = "100%";
   classifyProgressBar.style.transform = "scaleX(0)";
@@ -7807,7 +10754,10 @@ function getClassifyFeatureColumnLabel(column) {
 function formatClassifyFeatureValue(value) {
   const number = Number(value);
   if (!Number.isFinite(number)) return "";
-  if (Math.abs(number) >= 1000 || (Math.abs(number) > 0 && Math.abs(number) < 0.01)) {
+  if (
+    Math.abs(number) >= 1000 ||
+    (Math.abs(number) > 0 && Math.abs(number) < 0.01)
+  ) {
     return number.toExponential(2);
   }
   return number.toLocaleString(undefined, {
@@ -7869,14 +10819,19 @@ function getClassifyFeatureTableColumns(options = {}) {
     },
   );
   if (options.includeFeatures) {
-    columns.push(...classifyFeatureColumns.map(getClassifyFeatureColumnDefinition));
+    columns.push(
+      ...classifyFeatureColumns.map(getClassifyFeatureColumnDefinition),
+    );
   }
   return columns;
 }
 
 function getClassifyPredictionByUuid() {
   return new Map(
-    (classifyLastPrediction?.results || []).map((result) => [result.uuid, result])
+    (classifyLastPrediction?.results || []).map((result) => [
+      result.uuid,
+      result,
+    ]),
   );
 }
 
@@ -7888,7 +10843,10 @@ function updateClassifyPredictionControls() {
   const counts = new Map();
   results.forEach((result) => {
     if (!result.predictedLabel) return;
-    counts.set(result.predictedLabel, (counts.get(result.predictedLabel) || 0) + 1);
+    counts.set(
+      result.predictedLabel,
+      (counts.get(result.predictedLabel) || 0) + 1,
+    );
   });
   if (counts.size === 0) {
     const option = document.createElement("option");
@@ -7911,7 +10869,7 @@ function updateClassifyPredictionControls() {
   if (
     previousValue &&
     Array.from(classifyPredictionSelect.options).some(
-      (option) => option.value === previousValue
+      (option) => option.value === previousValue,
     )
   ) {
     classifyPredictionSelect.value = previousValue;
@@ -7933,18 +10891,19 @@ function updateClassifyHighlightControls() {
       : "Highlight Prediction";
     classifySelectPredictionButton.setAttribute(
       "aria-pressed",
-      String(predictionHighlightActive)
+      String(predictionHighlightActive),
     );
   }
   const lowHighlightActive =
-    classifyHighlightMode === "low" && classifyHighlightedPredictionUuids.size > 0;
+    classifyHighlightMode === "low" &&
+    classifyHighlightedPredictionUuids.size > 0;
   if (classifySelectLowConfidenceButton) {
     classifySelectLowConfidenceButton.textContent = lowHighlightActive
       ? "Clear Low"
       : "Highlight Low";
     classifySelectLowConfidenceButton.setAttribute(
       "aria-pressed",
-      String(lowHighlightActive)
+      String(lowHighlightActive),
     );
   }
 }
@@ -7967,7 +10926,7 @@ function clearClassifyPredictionHighlight() {
 function isClassifyHighlightedFeature(feature) {
   return Boolean(
     feature?.properties?.uuid &&
-      classifyHighlightedPredictionUuids.has(feature.properties.uuid)
+    classifyHighlightedPredictionUuids.has(feature.properties.uuid),
   );
 }
 
@@ -7977,22 +10936,30 @@ function compareClassifyFeatureTableRows(a, b, column, context) {
   const aNumber = Number(aValue);
   const bNumber = Number(bValue);
   let comparison = 0;
-  if (column.numeric && (Number.isFinite(aNumber) || Number.isFinite(bNumber))) {
+  if (
+    column.numeric &&
+    (Number.isFinite(aNumber) || Number.isFinite(bNumber))
+  ) {
     if (!Number.isFinite(aNumber)) comparison = 1;
     else if (!Number.isFinite(bNumber)) comparison = -1;
     else comparison = aNumber - bNumber;
   } else {
-    comparison = String(aValue || "").localeCompare(String(bValue || ""), undefined, {
-      numeric: true,
-      sensitivity: "base",
-    });
+    comparison = String(aValue || "").localeCompare(
+      String(bValue || ""),
+      undefined,
+      {
+        numeric: true,
+        sensitivity: "base",
+      },
+    );
   }
   return classifyFeatureSort.direction === "desc" ? -comparison : comparison;
 }
 
 function getSortedClassifyFeatureRows(columns, context) {
   const sortColumn =
-    columns.find((column) => column.id === classifyFeatureSort.column) || columns[0];
+    columns.find((column) => column.id === classifyFeatureSort.column) ||
+    columns[0];
   return classifyFeatureRows
     .map((rowData, index) => ({ rowData, index }))
     .sort((a, b) => {
@@ -8000,7 +10967,7 @@ function getSortedClassifyFeatureRows(columns, context) {
         a.rowData,
         b.rowData,
         sortColumn,
-        context
+        context,
       );
       return comparison || a.index - b.index;
     })
@@ -8043,7 +11010,10 @@ function centerElementInScrollContainer(element) {
   const elementRect = element.getBoundingClientRect();
   const containerRect = container.getBoundingClientRect();
   const elementCenter =
-    elementRect.top - containerRect.top + container.scrollTop + elementRect.height / 2;
+    elementRect.top -
+    containerRect.top +
+    container.scrollTop +
+    elementRect.height / 2;
   const targetTop = Math.max(0, elementCenter - container.clientHeight / 2);
   container.scrollTop = targetTop;
 }
@@ -8051,7 +11021,7 @@ function centerElementInScrollContainer(element) {
 function scrollSelectedClassifyFeatureRowIntoView() {
   if (!selectedAnnotationUuid || !classifyFeatureBody) return;
   const row = classifyFeatureBody.querySelector(
-    `tr[data-annotation-uuid="${CSS.escape(selectedAnnotationUuid)}"]`
+    `tr[data-annotation-uuid="${CSS.escape(selectedAnnotationUuid)}"]`,
   );
   centerElementInScrollContainer(row);
 }
@@ -8066,7 +11036,7 @@ function renderClassifyFeatureTable() {
   tableColumns.forEach((column) => {
     const th = document.createElement("th");
     const isSorted = classifyFeatureSort.column === column.id;
-    th.textContent = `${column.label}${isSorted ? classifyFeatureSort.direction === "asc" ? " ↑" : " ↓" : ""}`;
+    th.textContent = `${column.label}${isSorted ? (classifyFeatureSort.direction === "asc" ? " ↑" : " ↓") : ""}`;
     th.title = column.title || column.definition || column.id;
     th.scope = "col";
     th.tabIndex = 0;
@@ -8076,7 +11046,7 @@ function renderClassifyFeatureTable() {
         ? classifyFeatureSort.direction === "asc"
           ? "ascending"
           : "descending"
-        : "none"
+        : "none",
     );
     th.addEventListener("click", () => setClassifyFeatureSort(column.id));
     th.addEventListener("keydown", (event) => {
@@ -8104,7 +11074,7 @@ function renderClassifyFeatureTable() {
   if (classifyFeatureTable) {
     classifyFeatureTable.style.minWidth = `${Math.max(
       180,
-      tableColumns.length * 58
+      tableColumns.length * 58,
     )}px`;
   }
   if (classifyExportCsvButton) classifyExportCsvButton.disabled = false;
@@ -8113,7 +11083,7 @@ function renderClassifyFeatureTable() {
     row.dataset.annotationUuid = rowData.uuid;
     row.classList.toggle(
       "classify-feature-row-selected",
-      selectedAnnotationUuids.has(rowData.uuid)
+      selectedAnnotationUuids.has(rowData.uuid),
     );
     row.addEventListener("click", () => {
       setAnnotationSelection([rowData.uuid], rowData.uuid, { pan: true });
@@ -8156,26 +11126,21 @@ function exportClassifyFeaturesCsv() {
   const dataRows = [
     columns.map((column) => column.label),
     ...rows.map((rowData) =>
-      columns.map((column) => column.getValue(rowData, context))
+      columns.map((column) => column.getValue(rowData, context)),
     ),
   ];
-  const csv = [
-    ...definitionRows,
-    [],
-    ["data"],
-    ...dataRows,
-  ]
+  const csv = [...definitionRows, [], ["data"], ...dataRows]
     .map((row) => row.map(csvEscape).join(","))
     .join("\n");
   saveAs(
     new Blob([csv], { type: "text/csv;charset=utf-8" }),
-    "classify-grain-features.csv"
+    "classify-grain-features.csv",
   );
 }
 
 function getClassifyOptions() {
   const selectedTileSetIndices = Array.from(
-    classifyTileSetSelect?.selectedOptions || []
+    classifyTileSetSelect?.selectedOptions || [],
   )
     .map((option) => Number.parseInt(option.value, 10))
     .filter((index) => Number.isFinite(index) && tileSets()[index]);
@@ -8191,10 +11156,13 @@ function getClassifyOptions() {
     resolutionMode: classifyResolution?.value || "0.25",
     includeShape: classifyIncludeShape?.checked !== false,
     modelType: classifyModelType?.value || "randomForest",
-    k: Math.max(1, Math.min(25, Math.trunc(Number(classifyK?.value || 5)) || 5)),
+    k: Math.max(
+      1,
+      Math.min(25, Math.trunc(Number(classifyK?.value || 5)) || 5),
+    ),
     minConfidence: Math.max(
       0,
-      Math.min(1, Number(classifyMinConfidence?.value || 0.65))
+      Math.min(1, Number(classifyMinConfidence?.value || 0.65)),
     ),
   };
 }
@@ -8247,7 +11215,7 @@ function getClassifyCombinedImageRect(features) {
       minY: Infinity,
       maxX: -Infinity,
       maxY: -Infinity,
-    }
+    },
   );
   if (
     !Number.isFinite(bounds.minX) ||
@@ -8279,11 +11247,14 @@ function getClassifyResolutionScale(imageRect, options) {
 function getClassifyRenderLimitError(imageRect, scale) {
   const width = Math.max(1, Math.round(imageRect.width * scale));
   const height = Math.max(1, Math.round(imageRect.height * scale));
-  if (width > SNAPSHOT_MAX_OUTPUT_DIMENSION || height > SNAPSHOT_MAX_OUTPUT_DIMENSION) {
+  if (
+    width > SNAPSHOT_MAX_OUTPUT_DIMENSION ||
+    height > SNAPSHOT_MAX_OUTPUT_DIMENSION
+  ) {
     return `Classification render would be ${width} x ${height} pixels. Choose a lower resolution or smaller polygon scope.`;
   }
   if (width * height > SNAPSHOT_MAX_OUTPUT_PIXELS) {
-    return `Classification render would contain ${(width * height / 1000000).toFixed(1)} megapixels. Choose a lower resolution or smaller polygon scope.`;
+    return `Classification render would contain ${((width * height) / 1000000).toFixed(1)} megapixels. Choose a lower resolution or smaller polygon scope.`;
   }
   return "";
 }
@@ -8346,7 +11317,7 @@ function classifyPointInFeatureGeometry(point, geometry) {
   }
   if (geometry?.type === "MultiPolygon") {
     return (geometry.coordinates || []).some((polygon) =>
-      polygonContainsImagePoint(point, polygon)
+      polygonContainsImagePoint(point, polygon),
     );
   }
   return false;
@@ -8361,19 +11332,19 @@ function getClassifyImageStatsForFeature(analysisImage, imageRect, feature) {
   if (!featureBounds) return {};
   const startX = Math.max(
     0,
-    Math.floor((featureBounds.minX - imageRect.x) / scaleX) - 1
+    Math.floor((featureBounds.minX - imageRect.x) / scaleX) - 1,
   );
   const endX = Math.min(
     width - 1,
-    Math.ceil((featureBounds.maxX - imageRect.x) / scaleX) + 1
+    Math.ceil((featureBounds.maxX - imageRect.x) / scaleX) + 1,
   );
   const startY = Math.max(
     0,
-    Math.floor((featureBounds.minY - imageRect.y) / scaleY) - 1
+    Math.floor((featureBounds.minY - imageRect.y) / scaleY) - 1,
   );
   const endY = Math.min(
     height - 1,
-    Math.ceil((featureBounds.maxY - imageRect.y) / scaleY) + 1
+    Math.ceil((featureBounds.maxY - imageRect.y) / scaleY) + 1,
   );
   if (endX < startX || endY < startY) return {};
   const sums = {
@@ -8402,7 +11373,8 @@ function getClassifyImageStatsForFeature(analysisImage, imageRect, feature) {
         x: imageRect.x + (x + 0.5) * scaleX,
         y: imageRect.y + (y + 0.5) * scaleY,
       };
-      if (!classifyPointInFeatureGeometry(imagePoint, feature.geometry)) continue;
+      if (!classifyPointInFeatureGeometry(imagePoint, feature.geometry))
+        continue;
 
       const offset = (y * width + x) * 4;
       const r = imageData[offset];
@@ -8468,7 +11440,10 @@ function getClassifyImageStatsForFeature(analysisImage, imageRect, feature) {
 }
 
 function getClassifyShapeFeatures(feature) {
-  const props = calculateGeometryMeasurementProperties("polygon", feature.geometry);
+  const props = calculateGeometryMeasurementProperties(
+    "polygon",
+    feature.geometry,
+  );
   return {
     areaM2: props.areaM2,
     perimeterM: props.perimeterM,
@@ -8496,17 +11471,20 @@ async function buildClassifyFeatureRows(features, options, runId) {
     throw new Error("Could not determine polygon image bounds.");
   }
   const renderScale = getClassifyResolutionScale(combinedImageRect, options);
-  const limitError = getClassifyRenderLimitError(combinedImageRect, renderScale);
+  const limitError = getClassifyRenderLimitError(
+    combinedImageRect,
+    renderScale,
+  );
   if (limitError) throw new Error(limitError);
   const cacheKey = getClassifyFeatureCacheKey(
     features,
     options,
     combinedImageRect,
-    renderScale
+    renderScale,
   );
   if (classifyFeatureCache?.key === cacheKey) {
     const cachedRows = new Map(
-      classifyFeatureCache.rows.map((row) => [row.uuid, row.values])
+      classifyFeatureCache.rows.map((row) => [row.uuid, row.values]),
     );
     setClassifyProgress(80, "Using cached image features");
     return features
@@ -8525,16 +11503,17 @@ async function buildClassifyFeatureRows(features, options, runId) {
   const tileSetCanvases = new Map();
 
   for (let index = 0; index < options.tileSetIndices.length; index += 1) {
-    if (runId !== classifyRunId) throw new Error("Classification run was canceled.");
+    if (runId !== classifyRunId)
+      throw new Error("Classification run was canceled.");
     const tileSetIndex = options.tileSetIndices[index];
     setClassifyProgress(
       ((index + 1) / Math.max(1, options.tileSetIndices.length)) * 55,
-      `Rendering tile set ${index + 1}/${options.tileSetIndices.length}`
+      `Rendering tile set ${index + 1}/${options.tileSetIndices.length}`,
     );
     const canvas = await renderFullResolutionImageRectCanvas(
       combinedImageRect,
       tileSetIndex,
-      renderScale
+      renderScale,
     );
     const ctx = canvas.getContext("2d", { willReadFrequently: true });
     if (!ctx) {
@@ -8548,21 +11527,34 @@ async function buildClassifyFeatureRows(features, options, runId) {
     await wait(0);
   }
 
-  for (let featureIndex = 0; featureIndex < features.length; featureIndex += 1) {
-    if (runId !== classifyRunId) throw new Error("Classification run was canceled.");
+  for (
+    let featureIndex = 0;
+    featureIndex < features.length;
+    featureIndex += 1
+  ) {
+    if (runId !== classifyRunId)
+      throw new Error("Classification run was canceled.");
     const feature = features[featureIndex];
     const featureValues = {};
 
     for (const tileSetIndex of options.tileSetIndices) {
       const analysisImage = tileSetCanvases.get(tileSetIndex);
       const stats = analysisImage
-        ? getClassifyImageStatsForFeature(analysisImage, combinedImageRect, feature)
+        ? getClassifyImageStatsForFeature(
+            analysisImage,
+            combinedImageRect,
+            feature,
+          )
         : {};
       addPrefixedNumericFeatures(featureValues, `ts${tileSetIndex}`, stats);
     }
 
     if (options.includeShape) {
-      addPrefixedNumericFeatures(featureValues, "shape", getClassifyShapeFeatures(feature));
+      addPrefixedNumericFeatures(
+        featureValues,
+        "shape",
+        getClassifyShapeFeatures(feature),
+      );
     }
 
     rows.push({
@@ -8573,7 +11565,7 @@ async function buildClassifyFeatureRows(features, options, runId) {
     });
     setClassifyProgress(
       55 + ((featureIndex + 1) / Math.max(1, features.length)) * 25,
-      `Sampling polygons ${featureIndex + 1}/${features.length}`
+      `Sampling polygons ${featureIndex + 1}/${features.length}`,
     );
     await wait(0);
   }
@@ -8596,7 +11588,9 @@ function getClassifyFeatureColumns(rows) {
 }
 
 function vectorizeClassifyRows(rows, columns) {
-  return rows.map((row) => columns.map((column) => Number(row.values[column]) || 0));
+  return rows.map((row) =>
+    columns.map((column) => Number(row.values[column]) || 0),
+  );
 }
 
 function getStandardization(vectors) {
@@ -8626,7 +11620,7 @@ function getStandardization(vectors) {
 function standardizeVector(vector, standardization) {
   return vector.map(
     (value, index) =>
-      (value - standardization.means[index]) / standardization.stds[index]
+      (value - standardization.means[index]) / standardization.stds[index],
   );
 }
 
@@ -8635,7 +11629,7 @@ function classifyKnnPredict(vector, trainingRows, k) {
     .map((row) => {
       const distanceSquared = row.vector.reduce(
         (sum, value, index) => sum + (value - vector[index]) ** 2,
-        0
+        0,
       );
       return {
         label: row.label,
@@ -8655,7 +11649,7 @@ function classifyKnnPredict(vector, trainingRows, k) {
   const probabilities = Object.fromEntries(
     [...votes.entries()]
       .map(([label, weight]) => [label, totalWeight ? weight / totalWeight : 0])
-      .sort((a, b) => b[1] - a[1])
+      .sort((a, b) => b[1] - a[1]),
   );
   const sorted = Object.entries(probabilities);
   return {
@@ -8673,9 +11667,13 @@ function classifyKnnPredict(vector, trainingRows, k) {
 
 function getClassifyLabelProbabilities(rows, labels) {
   const counts = new Map(labels.map((label) => [label, 0]));
-  rows.forEach((row) => counts.set(row.label, (counts.get(row.label) || 0) + 1));
+  rows.forEach((row) =>
+    counts.set(row.label, (counts.get(row.label) || 0) + 1),
+  );
   const total = Math.max(1, rows.length);
-  return Object.fromEntries(labels.map((label) => [label, (counts.get(label) || 0) / total]));
+  return Object.fromEntries(
+    labels.map((label) => [label, (counts.get(label) || 0) / total]),
+  );
 }
 
 function getClassifyGini(rows, labels) {
@@ -8684,9 +11682,17 @@ function getClassifyGini(rows, labels) {
   return 1 - labels.reduce((sum, label) => sum + probabilities[label] ** 2, 0);
 }
 
-function buildClassifyRandomForestTree(rows, labels, dimension, options, depth = 0) {
+function buildClassifyRandomForestTree(
+  rows,
+  labels,
+  dimension,
+  options,
+  depth = 0,
+) {
   const probabilities = getClassifyLabelProbabilities(rows, labels);
-  const sortedProbabilities = Object.entries(probabilities).sort((a, b) => b[1] - a[1]);
+  const sortedProbabilities = Object.entries(probabilities).sort(
+    (a, b) => b[1] - a[1],
+  );
   const predictedLabel = sortedProbabilities[0]?.[0] || "";
   if (
     depth >= options.maxDepth ||
@@ -8696,7 +11702,10 @@ function buildClassifyRandomForestTree(rows, labels, dimension, options, depth =
     return { type: "leaf", predictedLabel, probabilities };
   }
 
-  const featureCount = Math.max(1, Math.min(dimension, Math.ceil(Math.sqrt(dimension))));
+  const featureCount = Math.max(
+    1,
+    Math.min(dimension, Math.ceil(Math.sqrt(dimension))),
+  );
   const featureIndices = [];
   while (featureIndices.length < featureCount) {
     const index = Math.floor(Math.random() * dimension);
@@ -8720,7 +11729,10 @@ function buildClassifyRandomForestTree(rows, labels, dimension, options, depth =
       rows.forEach((row) => {
         (row.vector[featureIndex] <= threshold ? left : right).push(row);
       });
-      if (left.length < options.minLeafSize || right.length < options.minLeafSize) {
+      if (
+        left.length < options.minLeafSize ||
+        right.length < options.minLeafSize
+      ) {
         return;
       }
       const weightedGini =
@@ -8746,14 +11758,14 @@ function buildClassifyRandomForestTree(rows, labels, dimension, options, depth =
       labels,
       dimension,
       options,
-      depth + 1
+      depth + 1,
     ),
     right: buildClassifyRandomForestTree(
       bestSplit.right,
       labels,
       dimension,
       options,
-      depth + 1
+      depth + 1,
     ),
   };
 }
@@ -8762,23 +11774,29 @@ function predictClassifyRandomForestTree(tree, vector) {
   if (!tree || tree.type === "leaf") return tree?.probabilities || {};
   return predictClassifyRandomForestTree(
     vector[tree.featureIndex] <= tree.threshold ? tree.left : tree.right,
-    vector
+    vector,
   );
 }
 
 function trainClassifyRandomForest(trainingRows, labels, dimension) {
   const treeCount = 32;
   const options = {
-    maxDepth: Math.min(10, Math.max(3, Math.ceil(Math.log2(trainingRows.length)) + 3)),
+    maxDepth: Math.min(
+      10,
+      Math.max(3, Math.ceil(Math.log2(trainingRows.length)) + 3),
+    ),
     minLeafSize: Math.max(1, Math.floor(trainingRows.length * 0.02)),
     thresholdAttempts: 6,
   };
   const trees = [];
   for (let treeIndex = 0; treeIndex < treeCount; treeIndex += 1) {
-    const sample = Array.from({ length: trainingRows.length }, () =>
-      trainingRows[Math.floor(Math.random() * trainingRows.length)]
+    const sample = Array.from(
+      { length: trainingRows.length },
+      () => trainingRows[Math.floor(Math.random() * trainingRows.length)],
     );
-    trees.push(buildClassifyRandomForestTree(sample, labels, dimension, options));
+    trees.push(
+      buildClassifyRandomForestTree(sample, labels, dimension, options),
+    );
   }
   return { model: "randomForest", treeCount, options, labels, trees };
 }
@@ -8793,8 +11811,11 @@ function classifyRandomForestPredict(vector, forest) {
   });
   const probabilities = Object.fromEntries(
     forest.labels
-      .map((label) => [label, (totals.get(label) || 0) / Math.max(1, forest.trees.length)])
-      .sort((a, b) => b[1] - a[1])
+      .map((label) => [
+        label,
+        (totals.get(label) || 0) / Math.max(1, forest.trees.length),
+      ])
+      .sort((a, b) => b[1] - a[1]),
   );
   const sorted = Object.entries(probabilities);
   return {
@@ -8809,11 +11830,14 @@ function classifyRandomForestPredict(vector, forest) {
 function summarizeClassifyResults(results, minConfidence) {
   const predicted = results.filter((result) => result.predictedLabel);
   const lowConfidence = predicted.filter(
-    (result) => result.confidence < minConfidence
+    (result) => result.confidence < minConfidence,
   );
   const counts = new Map();
   predicted.forEach((result) => {
-    counts.set(result.predictedLabel, (counts.get(result.predictedLabel) || 0) + 1);
+    counts.set(
+      result.predictedLabel,
+      (counts.get(result.predictedLabel) || 0) + 1,
+    );
   });
   const classSummary = [...counts.entries()]
     .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
@@ -8841,10 +11865,13 @@ async function extractClassifyFeatures() {
     }
     const features = getClassifyPolygonFeatures(options);
     if (features.length === 0) {
-      throw new Error("No unlocked polygon annotations match the selected scope.");
+      throw new Error(
+        "No unlocked polygon annotations match the selected scope.",
+      );
     }
     setClassifyStatus("Extracting image features...", "busy");
-    if (classifyExtractFeaturesButton) classifyExtractFeaturesButton.disabled = true;
+    if (classifyExtractFeaturesButton)
+      classifyExtractFeaturesButton.disabled = true;
     if (classifyTrainPredictButton) classifyTrainPredictButton.disabled = true;
     const rows = await buildClassifyFeatureRows(features, options, runId);
     classifyFeatureRows = rows;
@@ -8861,7 +11888,7 @@ async function extractClassifyFeatures() {
     }
     setClassifyStatus(
       `${rows.length} polygon feature row${rows.length === 1 ? "" : "s"} ready. Select a model and click Train + Predict to create predictions.`,
-      "success"
+      "success",
     );
   } catch (error) {
     classifyFeatureRows = [];
@@ -8871,10 +11898,11 @@ async function extractClassifyFeatures() {
     renderClassifyFeatureTable();
     setClassifyStatus(
       `Feature extraction failed. ${error.message || "Could not extract features."}`,
-      "error"
+      "error",
     );
   } finally {
-    if (classifyExtractFeaturesButton) classifyExtractFeaturesButton.disabled = false;
+    if (classifyExtractFeaturesButton)
+      classifyExtractFeaturesButton.disabled = false;
     updateClassifyActionState();
     window.setTimeout(clearClassifyProgress, 900);
   }
@@ -8917,7 +11945,10 @@ async function runClassifyTrainPredict() {
     const modelType =
       options.modelType === "randomForest" ? "randomForest" : "knn";
     const modelLabel = modelType === "randomForest" ? "Random Forest" : "kNN";
-    setClassifyStatus(`Training ${modelLabel} classifier from extracted features...`, "busy");
+    setClassifyStatus(
+      `Training ${modelLabel} classifier from extracted features...`,
+      "busy",
+    );
     setClassifyProgress(80, "Training classifier");
     const vectors = vectorizeClassifyRows(rows, columns);
     const standardization = getStandardization(vectors);
@@ -8925,7 +11956,7 @@ async function runClassifyTrainPredict() {
       rows.map((row, index) => [
         row.uuid,
         standardizeVector(vectors[index], standardization),
-      ])
+      ]),
     );
     const standardizedTrainingRows = trainingRows.map((row) => ({
       ...row,
@@ -8937,7 +11968,7 @@ async function runClassifyTrainPredict() {
         ? trainClassifyRandomForest(
             standardizedTrainingRows,
             labelList,
-            columns.length
+            columns.length,
           )
         : null;
     setClassifyProgress(90, "Predicting classes");
@@ -8956,7 +11987,9 @@ async function runClassifyTrainPredict() {
         labelSource: options.labelSource,
         tileSetIndices: options.tileSetIndices,
         resolutionMode: options.resolutionMode,
-        ...(modelType === "knn" ? { k } : { treeCount: randomForest.treeCount }),
+        ...(modelType === "knn"
+          ? { k }
+          : { treeCount: randomForest.treeCount }),
         trainingLabel: row.label,
         predictedLabel: prediction.predictedLabel,
         confidence: prediction.confidence,
@@ -8990,14 +12023,14 @@ async function runClassifyTrainPredict() {
     setClassifyProgress(100, "Prediction complete");
     setClassifyStatus(
       `${modelLabel} trained on ${trainingRows.length} polygons across ${labelList.length} classes. ${summarizeClassifyResults(results, options.minConfidence)}`,
-      "success"
+      "success",
     );
   } catch (error) {
     classifyLastPrediction = null;
     renderClassifyFeatureTable();
     setClassifyStatus(
       `Classification failed. ${error.message || "Could not classify polygons."}`,
-      "error"
+      "error",
     );
   } finally {
     classifyTrainingRunning = false;
@@ -9011,7 +12044,10 @@ function applyClassifyPredictionsToGroups() {
   if (!prediction?.results?.length) return;
   const includeLowConfidence = Boolean(classifyIncludeLowConfidence?.checked);
   const groupCache = new Map(
-    getAnnotationGroups().map((group) => [group.groupName.toLowerCase(), group])
+    getAnnotationGroups().map((group) => [
+      group.groupName.toLowerCase(),
+      group,
+    ]),
   );
   let applied = 0;
   let skippedLowConfidence = 0;
@@ -9023,14 +12059,18 @@ function applyClassifyPredictionsToGroups() {
       skippedLowConfidence += 1;
       return;
     }
-    const group = getOrCreateCountSegmentGroup(result.predictedLabel, groupCache);
+    const group = getOrCreateCountSegmentGroup(
+      result.predictedLabel,
+      groupCache,
+    );
     Object.assign(
       result.feature.properties,
-      applyAnnotationGroupToProperties(result.feature.properties, group)
+      applyAnnotationGroupToProperties(result.feature.properties, group),
     );
     if (result.feature.properties.classification) {
       result.feature.properties.classification.appliedToGroup = true;
-      result.feature.properties.classification.appliedAt = new Date().toISOString();
+      result.feature.properties.classification.appliedAt =
+        new Date().toISOString();
     }
     applied += 1;
     if (result.lowConfidence) lowConfidenceApplied += 1;
@@ -9041,7 +12081,7 @@ function applyClassifyPredictionsToGroups() {
   unsavedAnnotations(true);
   setClassifyStatus(
     `${applied} prediction${applied === 1 ? "" : "s"} applied to groups${lowConfidenceApplied ? `, including ${lowConfidenceApplied} low-confidence prediction${lowConfidenceApplied === 1 ? "" : "s"}` : ""}${skippedLowConfidence ? `. ${skippedLowConfidence} low-confidence prediction${skippedLowConfidence === 1 ? "" : "s"} skipped.` : "."}`,
-    "success"
+    "success",
   );
 }
 
@@ -9068,7 +12108,7 @@ function highlightLowConfidenceClassifyPredictions() {
     uuids.length
       ? `${uuids.length} low-confidence polygon${uuids.length === 1 ? "" : "s"} highlighted in green.`
       : "No low-confidence predictions to highlight.",
-    uuids.length ? "success" : ""
+    uuids.length ? "success" : "",
   );
 }
 
@@ -9097,7 +12137,7 @@ function highlightClassifyPredictionGroup() {
     uuids.length
       ? `${uuids.length} ${label} prediction${uuids.length === 1 ? "" : "s"} highlighted in green.`
       : `No ${label} predictions to highlight.`,
-    uuids.length ? "success" : ""
+    uuids.length ? "success" : "",
   );
 }
 
@@ -9123,7 +12163,7 @@ async function exportSnapshotSelection(destination = "file") {
   const exportLimitError = getSnapshotExportLimitError(exportSize);
   if (exportLimitError) {
     updateSnapshotStatus(
-      `${exportLimitError} Zoom in or choose a lower resolution.`
+      `${exportLimitError} Zoom in or choose a lower resolution.`,
     );
     return;
   }
@@ -9137,11 +12177,13 @@ async function exportSnapshotSelection(destination = "file") {
       destination === "clipboard" ? "Copying…" : "Saving…";
   }
   updateSnapshotStatus(
-    `${destination === "clipboard" ? "Copying" : "Saving"} ${exportSize.width} x ${exportSize.height}px snapshot…`
+    `${destination === "clipboard" ? "Copying" : "Saving"} ${exportSize.width} x ${exportSize.height}px snapshot…`,
   );
 
   // Give the browser an opportunity to paint the busy state before rendering.
-  await new Promise((resolve) => requestAnimationFrame(() => setTimeout(resolve, 0)));
+  await new Promise((resolve) =>
+    requestAnimationFrame(() => setTimeout(resolve, 0)),
+  );
 
   let finalStatus = "";
   try {
@@ -9155,7 +12197,9 @@ async function exportSnapshotSelection(destination = "file") {
     }
     const filterApplied =
       getSnapshotResolutionMode() === "current"
-        ? Boolean(snapshotExportFilter?.checked && hasSnapshotExportableTransform())
+        ? Boolean(
+            snapshotExportFilter?.checked && hasSnapshotExportableTransform(),
+          )
         : await applySnapshotExportFilter(outputCanvas, exportSize);
 
     const contentMode = getSnapshotContentMode();
@@ -9179,27 +12223,28 @@ async function exportSnapshotSelection(destination = "file") {
             ? resolve(encodedBlob)
             : reject(new Error("Could not encode the JPG snapshot.")),
         "image/jpeg",
-        getSnapshotQuality()
-      )
+        getSnapshotQuality(),
+      ),
     );
     if (destination === "clipboard") {
       if (!window.electronAPI?.copyImageToClipboard) {
         throw new Error("Image clipboard access is unavailable.");
       }
       await window.electronAPI.copyImageToClipboard(
-        new Uint8Array(await blob.arrayBuffer())
+        new Uint8Array(await blob.arrayBuffer()),
       );
     } else {
       downloadSnapshotBlob(blob);
       clearSnapshotSelection();
     }
-    const action = destination === "clipboard" ? "copied to clipboard" : "saved";
+    const action =
+      destination === "clipboard" ? "copied to clipboard" : "saved";
     finalStatus =
       scalebarRequested && !scalebarDrawn
         ? `Snapshot ${action} without scalebar; scale unknown.`
         : filterApplied
-        ? `Snapshot ${action} with applied filter.`
-        : `Snapshot ${action}.`;
+          ? `Snapshot ${action} with applied filter.`
+          : `Snapshot ${action}.`;
   } catch (error) {
     console.error("Snapshot export failed:", error);
     finalStatus = error.message || "Snapshot export failed.";
@@ -9207,7 +12252,8 @@ async function exportSnapshotSelection(destination = "file") {
     snapshotExportInProgress = false;
     activeButton?.removeAttribute("aria-busy");
     if (snapshotExportButton) snapshotExportButton.textContent = "Save to JPG";
-    if (snapshotCopyButton) snapshotCopyButton.textContent = "Copy to Clipboard";
+    if (snapshotCopyButton)
+      snapshotCopyButton.textContent = "Copy to Clipboard";
     updateSnapshotStatus(finalStatus);
   }
 }
@@ -9239,7 +12285,7 @@ function toggleElectronActionTray() {
 
   if (willOpen) {
     const firstAction = electronActionTray.querySelector(
-      ".electron-action-item:not([hidden])"
+      ".electron-action-item:not([hidden])",
     );
     firstAction?.focus();
   }
@@ -9256,7 +12302,7 @@ function toggleViewerToolsTray() {
 
   if (willOpen) {
     const firstTool = viewerToolsTray.querySelector(
-      ".electron-action-item:not([hidden])"
+      ".electron-action-item:not([hidden])",
     );
     firstTool?.focus();
   }
@@ -9341,13 +12387,13 @@ if (hasSharedViewerMenus && openGridCountPaletteButton && gridCountPalette) {
   minimizeGridCountPaletteButton?.addEventListener("click", function () {
     toggleToolPaletteMinimized(
       gridCountPalette,
-      minimizeGridCountPaletteButton
+      minimizeGridCountPaletteButton,
     );
   });
   makeToolPaletteDraggable(
     gridCountPalette,
     gridCountPaletteHeader,
-    "petroImage.gridCountPalette"
+    "petroImage.gridCountPalette",
   );
   window.addEventListener("resize", function () {
     closeCountDropdowns();
@@ -9362,7 +12408,8 @@ if (window.ResizeObserver && controlsPanel) {
   controlsResizeObserver.observe(controlsPanel);
 }
 
-const paletteResizeViewerContainer = document.getElementById("viewer-container");
+const paletteResizeViewerContainer =
+  document.getElementById("viewer-container");
 if (window.ResizeObserver && paletteResizeViewerContainer) {
   const viewerResizeObserver = new ResizeObserver(() => {
     scheduleClampOpenToolPalettes();
@@ -9384,7 +12431,7 @@ if (controlsPanel && minimizeControlsButton) {
     minimizeControlsButton.setAttribute("aria-pressed", String(isMinimized));
     minimizeControlsButton.setAttribute(
       "aria-label",
-      isMinimized ? "Expand image controls" : "Minimize image controls"
+      isMinimized ? "Expand image controls" : "Minimize image controls",
     );
     minimizeControlsButton.title = isMinimized
       ? "Expand image controls"
@@ -9416,7 +12463,7 @@ if (hasSharedViewerMenus && openAnnotatePaletteButton && annotatePalette) {
   makeToolPaletteDraggable(
     annotatePalette,
     annotatePaletteHeader,
-    "petroImage.annotatePalette"
+    "petroImage.annotatePalette",
   );
   window.addEventListener("resize", function () {
     closeAnnotationSettingsPopover();
@@ -9441,7 +12488,7 @@ if (hasSharedViewerMenus && openMeasurePaletteButton && measurePalette) {
   makeToolPaletteDraggable(
     measurePalette,
     measurePaletteHeader,
-    "petroImage.measurePalette"
+    "petroImage.measurePalette",
   );
   window.addEventListener("resize", function () {
     closeReferenceCircleSettingsPopover();
@@ -9468,14 +12515,14 @@ if (hasSharedViewerMenus && openSnapshotPaletteButton && snapshotPalette) {
   snapshotDrawButton?.addEventListener("click", function () {
     restoreToolPaletteFromMinimized(
       snapshotPalette,
-      minimizeSnapshotPaletteButton
+      minimizeSnapshotPaletteButton,
     );
     startSnapshotDrawMode();
   });
   snapshotUseScreenExtentButton?.addEventListener("click", function () {
     restoreToolPaletteFromMinimized(
       snapshotPalette,
-      minimizeSnapshotPaletteButton
+      minimizeSnapshotPaletteButton,
     );
     useSnapshotScreenExtent();
   });
@@ -9492,7 +12539,7 @@ if (hasSharedViewerMenus && openSnapshotPaletteButton && snapshotPalette) {
   makeToolPaletteDraggable(
     snapshotPalette,
     snapshotPaletteHeader,
-    "petroImage.snapshotPalette"
+    "petroImage.snapshotPalette",
   );
   window.addEventListener("resize", function () {
     scheduleClampOpenToolPalettes();
@@ -9518,13 +12565,13 @@ if (
   minimizeTransformImageryPaletteButton?.addEventListener("click", function () {
     toggleToolPaletteMinimized(
       transformImageryPalette,
-      minimizeTransformImageryPaletteButton
+      minimizeTransformImageryPaletteButton,
     );
   });
   makeToolPaletteDraggable(
     transformImageryPalette,
     transformImageryPaletteHeader,
-    "petroImage.transformImageryPalette"
+    "petroImage.transformImageryPalette",
   );
   document
     .querySelectorAll('input[name="transformImageryRecipe"]')
@@ -9537,28 +12584,28 @@ if (
           scheduleTransformHistogramRefresh();
           return;
         }
-        resetTransformTileCaches(tileSets()[getSelectedTransformTileSetIndex()]);
+        resetTransformTileCaches(
+          tileSets()[getSelectedTransformTileSetIndex()],
+        );
         updateTransformControls();
         applyTransformControlsToSelectedTileSet();
         scheduleTransformHistogramRefresh();
       });
     });
-  [
-    transformTileSetSelect,
-    transformTypeSelect,
-    transformChannelSelect,
-  ].forEach((element) => {
-    element?.addEventListener("change", function () {
-      updateTransformControls();
-      if (!isRasterRecipe(getTransformOptionsFromControls())) {
-        applyTransformControlsToSelectedTileSet();
-      } else {
-        clearSelectedTransformPreviewForRasterEntry();
-      }
-      updateTransformControls();
-      scheduleTransformHistogramRefresh();
-    });
-  });
+  [transformTileSetSelect, transformTypeSelect, transformChannelSelect].forEach(
+    (element) => {
+      element?.addEventListener("change", function () {
+        updateTransformControls();
+        if (!isRasterRecipe(getTransformOptionsFromControls())) {
+          applyTransformControlsToSelectedTileSet();
+        } else {
+          clearSelectedTransformPreviewForRasterEntry();
+        }
+        updateTransformControls();
+        scheduleTransformHistogramRefresh();
+      });
+    },
+  );
   transformOutputSelect?.addEventListener("change", function () {
     updateTransformControls();
     if (isRasterRecipe(getTransformOptionsFromControls())) {
@@ -9624,13 +12671,16 @@ if (
         }
         scheduleTransformHistogramRefresh();
       });
-    }
+    },
   );
-  transformRasterCustomExpression?.addEventListener("beforeinput", function (event) {
-    if (!isAllowedRasterExpressionKeyboardInput(event)) {
-      event.preventDefault();
-    }
-  });
+  transformRasterCustomExpression?.addEventListener(
+    "beforeinput",
+    function (event) {
+      if (!isAllowedRasterExpressionKeyboardInput(event)) {
+        event.preventDefault();
+      }
+    },
+  );
   transformRasterCustomExpression?.addEventListener("input", function () {
     transformRasterCustomExpression.dataset.userEdited = "true";
     updateTransformAdvancedExpressionStatus();
@@ -9641,13 +12691,16 @@ if (
   transformRasterCustomExpression?.addEventListener("drop", function (event) {
     event.preventDefault();
   });
-  transformRasterCustomExpression?.addEventListener("keydown", function (event) {
-    if (event.key !== "Backspace" && event.key !== "Delete") return;
-    event.preventDefault();
-    deleteRasterCalculatorSelection(
-      event.key === "Delete" ? "forward" : "backward"
-    );
-  });
+  transformRasterCustomExpression?.addEventListener(
+    "keydown",
+    function (event) {
+      if (event.key !== "Backspace" && event.key !== "Delete") return;
+      event.preventDefault();
+      deleteRasterCalculatorSelection(
+        event.key === "Delete" ? "forward" : "backward",
+      );
+    },
+  );
   transformRasterBackspaceButton?.addEventListener("click", function () {
     deleteRasterCalculatorSelection();
   });
@@ -9656,7 +12709,10 @@ if (
     focusRasterCalculatorExpression();
     updateTransformAdvancedExpressionStatus();
   });
-  transformRasterPreviewButton?.addEventListener("click", applyRasterCalculatorPreview);
+  transformRasterPreviewButton?.addEventListener(
+    "click",
+    applyRasterCalculatorPreview,
+  );
   document.querySelectorAll("[data-raster-insert]").forEach((button) => {
     button.addEventListener("click", function () {
       insertRasterCalculatorText(button.dataset.rasterInsert || "");
@@ -9676,9 +12732,18 @@ if (
   transformOutputName?.addEventListener("input", function () {
     transformOutputName.dataset.autoValue = "false";
   });
-  transformResetPreviewButton?.addEventListener("click", resetSelectedTransformPreview);
-  transformResetDefaultButton?.addEventListener("click", resetTransformControlsToDefault);
-  transformGenerateButton?.addEventListener("click", generateTransformedTileSet);
+  transformResetPreviewButton?.addEventListener(
+    "click",
+    resetSelectedTransformPreview,
+  );
+  transformResetDefaultButton?.addEventListener(
+    "click",
+    resetTransformControlsToDefault,
+  );
+  transformGenerateButton?.addEventListener(
+    "click",
+    generateTransformedTileSet,
+  );
   window.electronAPI?.onDerivedDziProgress?.((progress) => {
     if (transformGenerationRunning && (progress?.percent || 0) < 100) {
       setTransformStatus("Writing transformed DZI tiles...");
@@ -9768,7 +12833,7 @@ if (hasSharedViewerMenus && openClassifyPaletteButton && classifyPalette) {
   makeToolPaletteDraggable(
     classifyPalette,
     classifyPaletteHeader,
-    "petroImage.classifyPalette"
+    "petroImage.classifyPalette",
   );
   window.addEventListener("resize", function () {
     scheduleClampOpenToolPalettes();
@@ -9776,6 +12841,27 @@ if (hasSharedViewerMenus && openClassifyPaletteButton && classifyPalette) {
 }
 
 if (hasSharedViewerMenus && openPorosityEstimatorButton && porosityPalette) {
+  porosityDefinePanel?.addEventListener("toggle", () => {
+    if (porosityDefinePanel.open && porosityCalculatePanel) {
+      porosityCalculatePanel.open = false;
+    }
+    if (porosityDefinePanel.open && porosityExportPanel) {
+      porosityExportPanel.open = false;
+    }
+  });
+  porosityCalculatePanel?.addEventListener("toggle", () => {
+    if (porosityCalculatePanel.open && porosityDefinePanel) {
+      porosityDefinePanel.open = false;
+    }
+    if (porosityCalculatePanel.open && porosityExportPanel) {
+      porosityExportPanel.open = false;
+    }
+  });
+  porosityExportPanel?.addEventListener("toggle", () => {
+    if (!porosityExportPanel.open) return;
+    if (porosityDefinePanel) porosityDefinePanel.open = false;
+    if (porosityCalculatePanel) porosityCalculatePanel.open = false;
+  });
   ensurePorosityTypes();
   renderPorosityTileSetSelect();
   renderPorosityTypeSelect();
@@ -9791,10 +12877,7 @@ if (hasSharedViewerMenus && openPorosityEstimatorButton && porosityPalette) {
     closePorosityEstimator();
   });
   minimizePorosityPaletteButton?.addEventListener("click", function () {
-    toggleToolPaletteMinimized(
-      porosityPalette,
-      minimizePorosityPaletteButton
-    );
+    toggleToolPaletteMinimized(porosityPalette, minimizePorosityPaletteButton);
   });
   porosityTypeSelect?.addEventListener("change", function () {
     activePorosityTypeId = porosityTypeSelect.value;
@@ -9804,10 +12887,11 @@ if (hasSharedViewerMenus && openPorosityEstimatorButton && porosityPalette) {
   });
   porosityTileSetSelect?.addEventListener("change", function () {
     porositySelectedTileSetIndices = Array.from(
-      porosityTileSetSelect.selectedOptions
+      porosityTileSetSelect.selectedOptions,
     )
       .map((option) => normalizePorosityTileSetIndex(option.value))
       .filter((index) => index !== null);
+    clearPorosityPreviews();
     porosityTypes.forEach((type) => {
       normalizePorosityTypeSamples(type);
       type.result = null;
@@ -9818,18 +12902,21 @@ if (hasSharedViewerMenus && openPorosityEstimatorButton && porosityPalette) {
   });
   porosityResolutionMode?.addEventListener("change", function () {
     porosityAnalysisResolutionMode = getPorosityAnalysisResolutionMode();
+    clearPorosityPreviews();
     porosityTypes.forEach((type) => {
       type.result = null;
     });
     drawPorosityOverlay();
     updatePorosityResolutionStatus();
-    updatePorosityControls("Estimate again after changing analysis resolution.");
+    updatePorosityControls(
+      "Estimate again after changing analysis resolution.",
+    );
   });
   porosityAddTypeButton?.addEventListener("click", function () {
     showPrompt(
       "Enter porosity type name:",
       (value) => addPorosityType(value),
-      `Porosity ${porosityTypes.length + 1}`
+      `Porosity ${porosityTypes.length + 1}`,
     );
   });
   porosityRenameTypeButton?.addEventListener("click", function () {
@@ -9839,7 +12926,7 @@ if (hasSharedViewerMenus && openPorosityEstimatorButton && porosityPalette) {
     showPrompt(
       "Rename porosity type:",
       (value) => renamePorosityType(activeType.id, value),
-      activeType.name
+      activeType.name,
     );
   });
   porosityDeleteTypeButton?.addEventListener("click", function () {
@@ -9848,7 +12935,7 @@ if (hasSharedViewerMenus && openPorosityEstimatorButton && porosityPalette) {
   porosityDrawAoiButton?.addEventListener("click", function () {
     restoreToolPaletteFromMinimized(
       porosityPalette,
-      minimizePorosityPaletteButton
+      minimizePorosityPaletteButton,
     );
     startPorosityAoiMode();
   });
@@ -9877,97 +12964,315 @@ if (hasSharedViewerMenus && openPorosityEstimatorButton && porosityPalette) {
     updatePorosityControls(
       porosityPickModeActive
         ? "Click pore-colored pixels anywhere in the image."
-        : "Color picking stopped."
+        : "Color picking stopped.",
     );
   });
+  importPorosityRecipeButton?.addEventListener("click", () => {
+    porosityRecipeFileInput?.click();
+  });
+  porosityRecipeFileInput?.addEventListener("change", () => {
+    const file = porosityRecipeFileInput.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async () => {
+      try {
+        const recipe = JSON.parse(String(reader.result || ""));
+        validatePorosityRecipeSource(recipe);
+        if (
+          !window.confirm(
+            "Importing this recipe will replace the current porosity setup. Continue?",
+          )
+        ) {
+          return;
+        }
+        const previousPorosityState = clonePorosityState();
+        importPorosityRecipe(recipe);
+        annotationHistory.pushPorosity(
+          "Import porosity recipe",
+          previousPorosityState,
+        );
+        porosityEstimateGeneration += 1;
+        const estimateGeneration = porosityEstimateGeneration;
+        await estimateAllPorosityTypes("aoi", estimateGeneration);
+        clearPorosityProgress();
+      } catch (error) {
+        const isSourceValidationError =
+          /This recipe was created for|different dimensions/.test(
+            error?.message || "",
+          );
+        if (!isSourceValidationError) {
+          console.error("Could not import porosity recipe:", error);
+        }
+        updatePorosityControls(
+          error.message || "Could not import porosity recipe.",
+        );
+      } finally {
+        porosityRecipeFileInput.value = "";
+      }
+    };
+    reader.readAsText(file);
+  });
+  exportPorosityRecipeButton?.addEventListener("click", exportPorosityRecipe);
+  exportPorosityResultsCsvButton?.addEventListener(
+    "click",
+    exportPorosityResultsCsv,
+  );
+  exportPorosityResultsJsonButton?.addEventListener(
+    "click",
+    exportPorosityResultsJson,
+  );
+  porosityRasterExportProduct?.addEventListener("change", () =>
+    updatePorosityControls(),
+  );
+  porosityRasterExportFormat?.addEventListener("change", () =>
+    updatePorosityControls(),
+  );
+  exportPorosityRasterButton?.addEventListener(
+    "click",
+    exportSelectedPorosityRaster,
+  );
+  porosityAddSelectedPolygonsButton?.addEventListener(
+    "click",
+    async function () {
+      const activeType = getActivePorosityType();
+      const selectedPolygons = getSelectedPorosityPolygonsInAoi();
+      if (!activeType || selectedPolygons.length === 0) {
+        updatePorosityControls(
+          "Select polygon annotations that intersect the AOI.",
+        );
+        return;
+      }
+
+      const previousUuids = [...(activeType.manualPolygonUuids || [])];
+      const existingPolygons = getPorosityManualPolygonSnapshots(activeType);
+      const existingKeys = new Set(
+        existingPolygons.map((polygon) =>
+          polygon.uuid || JSON.stringify(polygon.geometry),
+        ),
+      );
+      const addedPolygons = selectedPolygons
+        .map((feature) => ({
+          uuid: feature.properties?.uuid || null,
+          geometry: cloneData(feature.geometry),
+        }))
+        .filter((polygon) => isAnnotationPolygonGeometry({ geometry: polygon.geometry }))
+        .filter((polygon) => {
+          const key = polygon.uuid || JSON.stringify(polygon.geometry);
+          if (existingKeys.has(key)) return false;
+          existingKeys.add(key);
+          return true;
+        });
+      const addedCount = addedPolygons.length;
+      if (addedCount === 0) {
+        updatePorosityControls(
+          "Those selected polygons are already included as porosity.",
+        );
+        return;
+      }
+      annotationHistory.pushPorosity("Add polygons as porosity");
+      activeType.manualPolygonUuids = [
+        ...new Set([
+          ...previousUuids,
+          ...addedPolygons.map((polygon) => polygon.uuid).filter(Boolean),
+        ]),
+      ];
+      activeType.manualPolygons = [...existingPolygons, ...addedPolygons];
+      clearPorosityPreviews();
+      porosityPickModeActive = false;
+      porosityEstimateGeneration += 1;
+      const estimateGeneration = porosityEstimateGeneration;
+
+      if (
+        activeType.result &&
+        hasPorositySamplesForSelectedTileSets(activeType)
+      ) {
+        await reestimatePorosityTypesWithResults({
+          estimateGeneration,
+          scope: activeType.result.scope || "aoi",
+        });
+        clearPorosityProgress();
+        updatePorosityControls(
+          `${addedCount} selected polygon${addedCount === 1 ? "" : "s"} added as ${activeType.name}.`,
+        );
+        return;
+      }
+
+      updatePorosityControls(
+        `${addedCount} selected polygon${addedCount === 1 ? "" : "s"} will be included as ${activeType.name} on the next estimate.`,
+      );
+    },
+  );
   porosityEstimateViewButton?.addEventListener("click", async function () {
     porosityPickModeActive = false;
     porosityEstimateGeneration += 1;
     const estimateGeneration = porosityEstimateGeneration;
-    showPorosityActivityStatus("Estimating visible AOI...");
-    await estimatePorosity({ estimateGeneration, scope: "view" });
-    clearPorosityActivityStatus();
+    await estimateAllPorosityTypes("view", estimateGeneration);
     clearPorosityProgress();
   });
   porosityEstimateButton?.addEventListener("click", async function () {
     porosityPickModeActive = false;
     porosityEstimateGeneration += 1;
     const estimateGeneration = porosityEstimateGeneration;
-    showPorosityActivityStatus("Estimating full AOI...");
-    await estimatePorosity({ estimateGeneration, scope: "aoi" });
-    clearPorosityActivityStatus();
+    await estimateAllPorosityTypes("aoi", estimateGeneration);
     clearPorosityProgress();
   });
+  porosityThicknessButton?.addEventListener("click", function (event) {
+    event.stopPropagation();
+    if (porosityThicknessMenu?.hidden)
+      openPorosityThicknessMenu(event.currentTarget);
+    else closePorosityThicknessMenu();
+  });
+  closePorosityThicknessButton?.addEventListener(
+    "click",
+    closePorosityThicknessMenu,
+  );
+  porosityThicknessMenu?.addEventListener("click", (event) =>
+    event.stopPropagation(),
+  );
+  makeFixedElementDraggable(porosityThicknessMenu, porosityThicknessHeader);
+  [
+    porosityThicknessSize,
+    porosityThicknessMode,
+    porosityThicknessWeight,
+    porosityThicknessEdgeFilter,
+    porosityThicknessStacked,
+    porosityThicknessCumulative,
+    porosityThicknessLogX,
+    porosityThicknessLogBase,
+    porosityChordDirection,
+  ].forEach((control) =>
+    control?.addEventListener("change", () => {
+      porosityThicknessRangeEdited = false;
+      drawPorosityThicknessHistogram();
+    }),
+  );
+  porosityThicknessLogX?.addEventListener(
+    "change",
+    updatePorosityThicknessLogControls,
+  );
+  porosityPropertiesPlot?.addEventListener("change", () => {
+    porosityThicknessRangeEdited = false;
+    updatePorosityPropertiesPlotControls();
+    drawPorosityThicknessHistogram();
+  });
+  porosityThicknessSize?.addEventListener("change", () => {
+    if (porosityPropertiesPlot?.value === "component") {
+      updatePorosityPropertiesPlotControls();
+      porosityThicknessRangeEdited = false;
+      drawPorosityThicknessHistogram();
+    }
+  });
+  updatePorosityPropertiesPlotControls();
+  updatePorosityThicknessLogControls();
+  porosityThicknessOverlayEnabled?.addEventListener(
+    "change",
+    drawPorosityOverlay,
+  );
+  porosityThicknessCalculateButton?.addEventListener("click", async () => {
+    porosityThicknessCalculateButton.disabled = true;
+    if (porosityCalculatedRasterParameter) {
+      porosityCalculatedRasterParameter.value = "localThickness-diameter";
+    }
+    updatePorosityThicknessOverlayControls();
+    porosityThicknessOverlayEnabled.checked = true;
+    drawPorosityOverlay();
+    try {
+      const types = getPorosityThicknessTypes().filter(
+        (item) => item.visible !== false,
+      );
+      const skippedTypes = [];
+      for (const type of types) {
+        const calculation = await calculatePorosityLocalThickness(type);
+        if (!calculation) skippedTypes.push(type);
+      }
+      setPorosityThicknessStatus(
+        skippedTypes.length
+          ? `Pore-property calculation completed; skipped ${skippedTypes.map((type) => type.name).join(", ")}.`
+          : "Pore-property calculation complete.",
+        100,
+      );
+      porosityThicknessOverlayEnabled.disabled = types.length === 0;
+      renderPorosityThicknessTypeControls();
+      drawPorosityThicknessHistogram();
+      drawPorosityOverlay();
+      updatePorosityControls();
+    } catch (error) {
+      console.error("Local thickness calculation failed:", error);
+      setPorosityThicknessStatus(
+        error.message || "Local thickness calculation failed.",
+        0,
+      );
+    } finally {
+      porosityThicknessCalculateButton.disabled = false;
+    }
+  });
+  [
+    porosityThicknessOverlayScale,
+    porosityThicknessOverlayColormap,
+    porosityThicknessOverlayOpacity,
+    porosityThicknessOverlayMin,
+    porosityThicknessOverlayMax,
+    porosityCalculatedRasterParameter,
+  ].forEach((control) => {
+    control?.addEventListener("input", drawPorosityOverlay);
+    control?.addEventListener("change", drawPorosityOverlay);
+  });
+  porosityThicknessOverlayAutoRange?.addEventListener("change", () => {
+    updatePorosityThicknessOverlayControls();
+    drawPorosityOverlay();
+  });
+  porosityCalculatedRasterParameter?.addEventListener(
+    "change",
+    updatePorosityThicknessOverlayControls,
+  );
+  updatePorosityThicknessOverlayControls();
+  porosityThicknessMethod?.addEventListener("change", () => {
+    porosityThicknessOverlayEnabled.checked = false;
+    drawPorosityOverlay();
+    porosityThicknessRangeEdited = false;
+    const methodValue = porosityThicknessMethod.value || "25";
+    const methodKey =
+      methodValue === "exact" ? "exact" : `approx-${methodValue}`;
+    porosityTypes.forEach((type) => {
+      if (type.result) {
+        type.result.localThickness =
+          type.result.localThicknessCache?.[methodKey] || null;
+        type.result.properties =
+          type.result.propertiesCache?.[methodKey] || null;
+      }
+    });
+    clearPorosityThicknessDisplay("Calculate properties for this method");
+    renderPorosityThicknessTypeControls();
+    updatePorosityControls();
+  });
+  [porosityThicknessMin, porosityThicknessMax, porosityThicknessBin].forEach(
+    (input) =>
+      input?.addEventListener("input", () => {
+        porosityThicknessRangeEdited = true;
+        drawPorosityThicknessHistogram();
+      }),
+  );
+  exportPorosityThicknessStatsButton?.addEventListener(
+    "click",
+    exportPorosityThicknessStatsCSV,
+  );
+  exportPorosityThicknessButton?.addEventListener(
+    "click",
+    exportPorosityThicknessPDF,
+  );
   porosityClearButton?.addEventListener("click", function () {
+    annotationHistory.pushPorosity("Reset porosity");
     resetPorosityAnalysis({
-      undoable: true,
-      message: "Porosity analysis reset. Use Undo Reset to restore it.",
+      message: "Porosity analysis reset.",
     });
   });
-  porosityUndoColorButton?.addEventListener("click", function () {
-    const activeType = getActivePorosityType();
-    if (!activeType) return;
-    if (activeType.colorSamples.length === 0) {
-      undoPorosityReset();
-      return;
-    }
-
-    const lastSample = activeType.colorSamples[activeType.colorSamples.length - 1];
-    if (lastSample?.sampleSetId) {
-      activeType.colorSamples = activeType.colorSamples.filter(
-        (sample) => sample.sampleSetId !== lastSample.sampleSetId
-      );
-    } else {
-      activeType.colorSamples.pop();
-    }
-    activeType.result = null;
-    renderPorositySamples();
-    drawPorosityOverlay();
-    updatePorosityControls("Removed the last picked color.");
-  });
   porosityTolerance?.addEventListener("input", function () {
-    const activeType = syncActivePorosityTypeFromControls();
-    if (activeType?.result) {
-      porosityEstimateGeneration += 1;
-      const estimateGeneration = porosityEstimateGeneration;
-      showPorosityActivityStatus("Updating porosity estimation...");
-      if (porosityToleranceReestimateTimer !== null) {
-        window.clearTimeout(porosityToleranceReestimateTimer);
-      }
-      porosityToleranceReestimateTimer = window.setTimeout(async () => {
-        porosityToleranceReestimateTimer = null;
-        if (estimateGeneration !== porosityEstimateGeneration) return;
-        await reestimatePorosityTypesWithResults({
-          estimateGeneration,
-          scope: activeType.result?.scope || "aoi",
-        });
-        clearPorosityProgress();
-      }, 250);
-    } else {
-      updatePorosityControls();
-    }
+    syncActivePorosityTypeFromControls();
+    schedulePorosityTolerancePreview();
   });
   porosityToleranceValue?.addEventListener("change", function () {
-    const activeType = setPorosityToleranceControlValue(porosityToleranceValue.value);
-    if (activeType?.result) {
-      porosityEstimateGeneration += 1;
-      const estimateGeneration = porosityEstimateGeneration;
-      showPorosityActivityStatus("Updating porosity estimation...");
-      if (porosityToleranceReestimateTimer !== null) {
-        window.clearTimeout(porosityToleranceReestimateTimer);
-      }
-      porosityToleranceReestimateTimer = window.setTimeout(async () => {
-        porosityToleranceReestimateTimer = null;
-        if (estimateGeneration !== porosityEstimateGeneration) return;
-        await reestimatePorosityTypesWithResults({
-          estimateGeneration,
-          scope: activeType.result?.scope || "aoi",
-        });
-        clearPorosityProgress();
-      }, 250);
-    } else {
-      updatePorosityControls();
-    }
+    setPorosityToleranceControlValue(porosityToleranceValue.value);
+    schedulePorosityTolerancePreview();
   });
   porosityOverlayColor?.addEventListener("input", function () {
     syncActivePorosityTypeFromControls();
@@ -9988,7 +13293,7 @@ if (hasSharedViewerMenus && openPorosityEstimatorButton && porosityPalette) {
   makeToolPaletteDraggable(
     porosityPalette,
     porosityPaletteHeader,
-    "petroImage.porosityPalette"
+    "petroImage.porosityPalette",
   );
   window.addEventListener("resize", function () {
     scheduleClampOpenToolPalettes();
@@ -10145,7 +13450,7 @@ if (
   makeToolPaletteDraggable(
     segmentPalette,
     segmentPaletteHeader,
-    "petroImage.segmentPalette"
+    "petroImage.segmentPalette",
   );
   window.addEventListener("resize", function () {
     scheduleClampOpenToolPalettes();
@@ -10223,11 +13528,14 @@ if (openCountSegmentWorkflowButton) {
 }
 
 if (openAnnotationTransferWorkflowButton) {
-  openAnnotationTransferWorkflowButton.addEventListener("click", function (event) {
-    event.preventDefault();
-    closeElectronActionTray();
-    showAnnotationTransferDialog();
-  });
+  openAnnotationTransferWorkflowButton.addEventListener(
+    "click",
+    function (event) {
+      event.preventDefault();
+      closeElectronActionTray();
+      showAnnotationTransferDialog();
+    },
+  );
 }
 
 if (openLibraryEditorButton && window.electronAPI) {
@@ -10330,7 +13638,7 @@ function populateSampleDropdown(selectedGroup, options = {}) {
     // Automatically select the first sample in the group
     if (sampleDropdown.options.length > 0) {
       sampleDropdown.value = String(
-        getSampleIndexForGroupSelection(selectedGroup)
+        getSampleIndexForGroupSelection(selectedGroup),
       );
       if (autoSelect) {
         sampleDropdown.dispatchEvent(new Event("change")); // Trigger the change event
@@ -10494,6 +13802,12 @@ document
   .addEventListener("change", async function () {
     try {
       const previousTileSets = [...tileSets()];
+      if (porosityThicknessOverlayEnabled) {
+        porosityThicknessOverlayEnabled.checked = false;
+      }
+      clearPorosityThicknessDisplay(
+        "Estimate porosity to calculate local thickness",
+      );
       currentIndex = Number(this.value);
       rememberSelectedSampleForCurrentGroup(currentIndex);
       saveLastSamplePreference(currentIndex);
@@ -10502,7 +13816,7 @@ document
       stopSnapshotDrawMode({ clearSelection: true });
       porositySelectedTileSetIndices = [];
       if (porosityTileSetSelect) porosityTileSetSelect.innerHTML = "";
-      resetPorosityAnalysis();
+      resetPorosityAnalysis({ resetTypes: true });
       restoreCurrentSampleTileAppearancePreference();
       renderPorosityTileSetSelect();
       buildImageCheckboxes();
@@ -10547,7 +13861,7 @@ document
 
     // Check if the selected sample has annotations
     const annotationFileOptions = normalizeAnnotationFileOptions(
-      annotationFiles[title()]
+      annotationFiles[title()],
     );
     if (annotationFileOptions.length > 0) {
       hasAnnotationInJSON = true;
@@ -10559,7 +13873,8 @@ document
       annoJSONButtonContainer.appendChild(button);
 
       if (annotationFileOptions.length === 1) {
-        button.onclick = () => loadAnnotationsFromJSON(annotationFileOptions[0]);
+        button.onclick = () =>
+          loadAnnotationsFromJSON(annotationFileOptions[0]);
       } else {
         const dropdown = document.createElement("div");
         dropdown.id = "loadAnnoFromJSONDropdown";
@@ -10572,7 +13887,7 @@ document
           optionButton.textContent = getAnnotationFileLabel(
             file,
             index,
-            annotationFileOptions.length
+            annotationFileOptions.length,
           );
           optionButton.title = file;
           optionButton.addEventListener("click", () => {
@@ -10665,7 +13980,7 @@ function cycleTileSetImage(tileSetIndex, direction) {
 
 function canCycleTileSet(tileSet) {
   return Boolean(
-    tileSet && !tileSet.periodDegrees && (tileSet.tiles?.length || 0) > 1
+    tileSet && !tileSet.periodDegrees && (tileSet.tiles?.length || 0) > 1,
   );
 }
 
@@ -10691,12 +14006,14 @@ function updateImageCheckboxLabels() {
   const checkboxes = document.querySelectorAll(".image-checkbox");
 
   checkboxes.forEach((checkbox, i) => {
-    const label = checkbox.parentElement?.querySelector(".image-checkbox-label");
+    const label = checkbox.parentElement?.querySelector(
+      ".image-checkbox-label",
+    );
     const typeBadge = checkbox.parentElement?.parentElement?.querySelector(
-      ".tile-set-type-badge"
+      ".tile-set-type-badge",
     );
     const cycleControls = checkbox.parentElement?.parentElement?.querySelector(
-      ".tile-set-cycle-controls"
+      ".tile-set-cycle-controls",
     );
     const tileSet = tileSets()[i];
     if (!tileSet || !label) return;
@@ -10714,11 +14031,12 @@ function updateImageCheckboxLabels() {
         tileSet.periodDegrees && tiles.length > 1
           ? "Multiple images linked to rotation"
           : tiles.length > 1
-          ? "Multiple images selected one at a time"
-          : "Single image tile set";
+            ? "Multiple images selected one at a time"
+            : "Single image tile set";
     }
     if (cycleControls) {
-      cycleControls.hidden = Boolean(tileSet.periodDegrees) || tiles.length <= 1;
+      cycleControls.hidden =
+        Boolean(tileSet.periodDegrees) || tiles.length <= 1;
     }
   });
 }
@@ -10753,7 +14071,7 @@ function deselectAllButFirstImage() {
 // Function to update the label dynamically for opacity sliders
 function updateOpacitySliderLabels() {
   const sliderRows = document.querySelectorAll(
-    "#checkboxOpacityContainer > div"
+    "#checkboxOpacityContainer > div",
   );
 
   sliderRows.forEach((row, i) => {
@@ -10821,18 +14139,22 @@ function normalizeTransformValue(key, value) {
         ? valueKey
         : fallback;
     case "output":
-      return ["grayscale", "falseColor", "rgb"].includes(valueKey) ? valueKey : fallback;
+      return ["grayscale", "falseColor", "rgb"].includes(valueKey)
+        ? valueKey
+        : fallback;
     case "channel":
-      return ["red", "green", "blue", "luminance", "saturation", "hue"].includes(valueKey)
+      return [
+        "red",
+        "green",
+        "blue",
+        "luminance",
+        "saturation",
+        "hue",
+      ].includes(valueKey)
         ? valueKey
         : fallback;
     case "rasterExpression":
-      return (
-        stringValue
-          .trim()
-          .replace(/\s+/g, " ")
-          .slice(0, 200) || fallback
-      );
+      return stringValue.trim().replace(/\s+/g, " ").slice(0, 200) || fallback;
     case "rasterNormalize":
       return value !== false && value !== "false";
     case "rasterScale":
@@ -10871,20 +14193,20 @@ function normalizeTileSetTransform(transform = {}) {
     channel: normalizeTransformValue("channel", transform.channel),
     rasterExpression: normalizeTransformValue(
       "rasterExpression",
-      transform.rasterExpression
+      transform.rasterExpression,
     ),
     rasterNormalize: normalizeTransformValue(
       "rasterNormalize",
-      transform.rasterNormalize
+      transform.rasterNormalize,
     ),
     rasterScale: normalizeTransformValue("rasterScale", transform.rasterScale),
     rasterCustomMin: normalizeTransformValue(
       "rasterCustomMin",
-      transform.rasterCustomMin
+      transform.rasterCustomMin,
     ),
     rasterCustomMax: normalizeTransformValue(
       "rasterCustomMax",
-      transform.rasterCustomMax
+      transform.rasterCustomMax,
     ),
   };
 }
@@ -10908,7 +14230,9 @@ function isDefaultTileSetTransform(tileSet) {
 }
 
 function shouldProcessTileSet(tileSet) {
-  return !isDefaultTileSetAppearance(tileSet) || !isDefaultTileSetTransform(tileSet);
+  return (
+    !isDefaultTileSetAppearance(tileSet) || !isDefaultTileSetTransform(tileSet)
+  );
 }
 
 function getSelectedTransformTileSetIndex() {
@@ -10923,8 +14247,8 @@ function getTransformMode() {
 
 function getSelectedTransformRecipeType() {
   return (
-    document.querySelector('input[name="transformImageryRecipe"]:checked')?.value ||
-    "simple"
+    document.querySelector('input[name="transformImageryRecipe"]:checked')
+      ?.value || "simple"
   );
 }
 
@@ -10962,12 +14286,12 @@ function getTransformTypeLabel(type) {
 function syncRasterCustomRangeInputsFromState() {
   if (transformRasterCustomMinInput) {
     transformRasterCustomMinInput.value = formatTransformTooltipNumber(
-      transformRasterCustomRange.min
+      transformRasterCustomRange.min,
     );
   }
   if (transformRasterCustomMaxInput) {
     transformRasterCustomMaxInput.value = formatTransformTooltipNumber(
-      transformRasterCustomRange.max
+      transformRasterCustomRange.max,
     );
   }
 }
@@ -10976,18 +14300,20 @@ function syncRasterCustomRangeFromInputs(options = {}) {
   const minValue = Number(transformRasterCustomMinInput?.value);
   const maxValue = Number(transformRasterCustomMaxInput?.value);
   if (!Number.isFinite(minValue)) {
-    if (options.showErrors) setTransformStatus("Enter a numeric minimum value.", "error");
+    if (options.showErrors)
+      setTransformStatus("Enter a numeric minimum value.", "error");
     return false;
   }
   if (!Number.isFinite(maxValue)) {
-    if (options.showErrors) setTransformStatus("Enter a numeric maximum value.", "error");
+    if (options.showErrors)
+      setTransformStatus("Enter a numeric maximum value.", "error");
     return false;
   }
   if (maxValue <= minValue) {
     if (options.showErrors) {
       setTransformStatus(
         "Custom output maximum must be greater than the minimum.",
-        "error"
+        "error",
       );
     }
     return false;
@@ -11011,7 +14337,8 @@ function getTransformOptionsFromControls() {
       recipeType: "raster",
       output: transformOutputSelect?.value || "grayscale",
       rasterExpression:
-        getRasterExpressionText() || TILE_SET_TRANSFORM_DEFAULTS.rasterExpression,
+        getRasterExpressionText() ||
+        TILE_SET_TRANSFORM_DEFAULTS.rasterExpression,
       rasterNormalize: transformRasterNormalize?.checked !== false,
       rasterScale: transformRasterScaleSelect?.value || "auto",
       rasterCustomMin: transformRasterCustomRange.min,
@@ -11033,7 +14360,7 @@ function normalizeRasterTokenChannel(channel) {
   const value = String(channel || "").toLowerCase();
   if (TRANSFORM_RASTER_CHANNELS[value]) return value;
   const entry = Object.entries(TRANSFORM_RASTER_CHANNELS).find(
-    ([, channelName]) => channelName === value
+    ([, channelName]) => channelName === value,
   );
   return entry?.[0] || "l";
 }
@@ -11065,7 +14392,7 @@ function getRasterInputTileSetEntries() {
 function getRasterInputEntry(symbol) {
   const normalizedSymbol = String(symbol || "").toUpperCase();
   return getRasterInputTileSetEntries().find(
-    (entry) => entry.symbol === normalizedSymbol
+    (entry) => entry.symbol === normalizedSymbol,
   );
 }
 
@@ -11096,7 +14423,10 @@ function focusRasterCalculatorExpression(start = null, end = null) {
     start === null ? length : Math.max(0, Math.min(length, start));
   const selectionEnd =
     end === null ? selectionStart : Math.max(0, Math.min(length, end));
-  transformRasterCustomExpression.setSelectionRange(selectionStart, selectionEnd);
+  transformRasterCustomExpression.setSelectionRange(
+    selectionStart,
+    selectionEnd,
+  );
 }
 
 function insertRasterCalculatorText(text, selectOffset = 0) {
@@ -11120,13 +14450,19 @@ function deleteRasterCalculatorSelection(direction = "backward") {
   const end = input.selectionEnd ?? start;
 
   if (start !== end) {
-    setRasterCalculatorExpression(`${value.slice(0, start)}${value.slice(end)}`);
+    setRasterCalculatorExpression(
+      `${value.slice(0, start)}${value.slice(end)}`,
+    );
     focusRasterCalculatorExpression(start, start);
   } else if (direction === "forward" && start < value.length) {
-    setRasterCalculatorExpression(`${value.slice(0, start)}${value.slice(start + 1)}`);
+    setRasterCalculatorExpression(
+      `${value.slice(0, start)}${value.slice(start + 1)}`,
+    );
     focusRasterCalculatorExpression(start, start);
   } else if (direction !== "forward" && start > 0) {
-    setRasterCalculatorExpression(`${value.slice(0, start - 1)}${value.slice(start)}`);
+    setRasterCalculatorExpression(
+      `${value.slice(0, start - 1)}${value.slice(start)}`,
+    );
     focusRasterCalculatorExpression(start - 1, start - 1);
   }
 
@@ -11220,7 +14556,9 @@ function parseRasterExpressionTokens(tokens) {
   const consume = (type = null) => {
     const token = peek();
     if (!token || (type && token.type !== type)) {
-      throw new Error(type ? `Expected "${type}".` : "Unexpected end of expression.");
+      throw new Error(
+        type ? `Expected "${type}".` : "Unexpected end of expression.",
+      );
     }
     index += 1;
     return token;
@@ -11338,7 +14676,9 @@ function validateRasterExpressionAst(ast) {
           errors.push(`${node.set} is not an available tile set.`);
         }
         if (!isRecognizedRasterChannelToken(node.rawChannel)) {
-          errors.push(`${node.set}.${node.rawChannel} uses an unknown channel.`);
+          errors.push(
+            `${node.set}.${node.rawChannel} uses an unknown channel.`,
+          );
         }
         const key = getRasterVariableKey(node);
         const input = {
@@ -11348,7 +14688,10 @@ function validateRasterExpressionAst(ast) {
           channelName: TRANSFORM_RASTER_CHANNELS[node.channel],
           tileSetIndex: inputEntry?.tileSetIndex ?? -1,
           tileSetLabel: inputEntry
-            ? getSnapshotTileSetLabel(inputEntry.tileSet, inputEntry.tileSetIndex)
+            ? getSnapshotTileSetLabel(
+                inputEntry.tileSet,
+                inputEntry.tileSetIndex,
+              )
             : node.set,
           tileCount: inputEntry?.tileSet?.tiles?.length || 0,
         };
@@ -11371,8 +14714,9 @@ function validateRasterExpressionAst(ast) {
         visit(node.right, options);
         return;
       case "function": {
-        const isAggregate =
-          TRANSFORM_RASTER_AGGREGATE_FUNCTIONS.includes(node.name);
+        const isAggregate = TRANSFORM_RASTER_AGGREGATE_FUNCTIONS.includes(
+          node.name,
+        );
         const isScalar = TRANSFORM_RASTER_SCALAR_FUNCTIONS.includes(node.name);
         if (!isAggregate && !isScalar) {
           errors.push(`${node.name}() is not a supported function.`);
@@ -11406,7 +14750,9 @@ function validateRasterExpressionAst(ast) {
   };
 }
 
-function parseTransformRasterExpression(expression = getRasterExpressionText()) {
+function parseTransformRasterExpression(
+  expression = getRasterExpressionText(),
+) {
   const trimmedExpression = String(expression || "").trim();
   if (!trimmedExpression) {
     return {
@@ -11421,7 +14767,7 @@ function parseTransformRasterExpression(expression = getRasterExpressionText()) 
 
   try {
     const ast = parseRasterExpressionTokens(
-      tokenizeRasterExpression(trimmedExpression)
+      tokenizeRasterExpression(trimmedExpression),
     );
     return {
       expression: trimmedExpression,
@@ -11440,7 +14786,9 @@ function parseTransformRasterExpression(expression = getRasterExpressionText()) 
   }
 }
 
-function getTransformAdvancedExpressionPlan(expression = getRasterExpressionText()) {
+function getTransformAdvancedExpressionPlan(
+  expression = getRasterExpressionText(),
+) {
   const parsed = parseTransformRasterExpression(expression);
   return {
     ...parsed,
@@ -11464,7 +14812,7 @@ function evaluateRasterExpressionAstNode(
   node,
   inputMap,
   pixelOffset,
-  aggregateValues = {}
+  aggregateValues = {},
 ) {
   switch (node?.type) {
     case "number":
@@ -11477,7 +14825,7 @@ function evaluateRasterExpressionAstNode(
       return getChannelScalarValue(
         pixels,
         pixelOffset,
-        TRANSFORM_RASTER_CHANNELS[node.channel]
+        TRANSFORM_RASTER_CHANNELS[node.channel],
       );
     }
     case "unary": {
@@ -11485,7 +14833,7 @@ function evaluateRasterExpressionAstNode(
         node.argument,
         inputMap,
         pixelOffset,
-        aggregateValues
+        aggregateValues,
       );
       return node.operator === "-" ? -value : value;
     }
@@ -11494,13 +14842,13 @@ function evaluateRasterExpressionAstNode(
         node.left,
         inputMap,
         pixelOffset,
-        aggregateValues
+        aggregateValues,
       );
       const right = evaluateRasterExpressionAstNode(
         node.right,
         inputMap,
         pixelOffset,
-        aggregateValues
+        aggregateValues,
       );
       switch (node.operator) {
         case "+":
@@ -11517,11 +14865,18 @@ function evaluateRasterExpressionAstNode(
     case "function": {
       if (TRANSFORM_RASTER_AGGREGATE_FUNCTIONS.includes(node.name)) {
         const variableNode = node.args[0];
-        const aggregateKey = getRasterAggregateEvaluationKey(node.name, variableNode);
-        if (Object.prototype.hasOwnProperty.call(aggregateValues, aggregateKey)) {
+        const aggregateKey = getRasterAggregateEvaluationKey(
+          node.name,
+          variableNode,
+        );
+        if (
+          Object.prototype.hasOwnProperty.call(aggregateValues, aggregateKey)
+        ) {
           return aggregateValues[aggregateKey];
         }
-        throw new Error(`${node.name}(${getRasterVariableKey(variableNode)}) stack data is not available.`);
+        throw new Error(
+          `${node.name}(${getRasterVariableKey(variableNode)}) stack data is not available.`,
+        );
       }
 
       if (node.name === "abs") {
@@ -11530,8 +14885,8 @@ function evaluateRasterExpressionAstNode(
             node.args[0],
             inputMap,
             pixelOffset,
-            aggregateValues
-          )
+            aggregateValues,
+          ),
         );
       }
 
@@ -11540,13 +14895,13 @@ function evaluateRasterExpressionAstNode(
           node.args[0],
           inputMap,
           pixelOffset,
-          aggregateValues
+          aggregateValues,
         );
         const right = evaluateRasterExpressionAstNode(
           node.args[1],
           inputMap,
           pixelOffset,
-          aggregateValues
+          aggregateValues,
         );
         const denominator = left + right;
         return Math.abs(denominator) <= 0.0000001
@@ -11565,7 +14920,7 @@ function evaluateTransformRasterExpressionAtPixel(
   ast,
   inputMap,
   pixelOffset,
-  aggregateValues = {}
+  aggregateValues = {},
 ) {
   try {
     return {
@@ -11574,7 +14929,7 @@ function evaluateTransformRasterExpressionAtPixel(
         ast,
         inputMap,
         pixelOffset,
-        aggregateValues
+        aggregateValues,
       ),
     };
   } catch (error) {
@@ -11585,7 +14940,11 @@ function evaluateTransformRasterExpressionAtPixel(
   }
 }
 
-function getRasterAggregateValuesForPixel(plan, aggregateInputMap, pixelOffset) {
+function getRasterAggregateValuesForPixel(
+  plan,
+  aggregateInputMap,
+  pixelOffset,
+) {
   const values = {};
   const groupedInputs = new Map();
   (plan.aggregateInputs || []).forEach((input) => {
@@ -11614,7 +14973,7 @@ function getRasterAggregateValuesForPixel(plan, aggregateInputMap, pixelOffset) 
       const value = getChannelScalarValue(
         pixels,
         pixelOffset,
-        TRANSFORM_RASTER_CHANNELS[input.channel]
+        TRANSFORM_RASTER_CHANNELS[input.channel],
       );
       if (!Number.isFinite(value)) return;
       min = Math.min(min, value);
@@ -11659,8 +15018,7 @@ function runTransformRasterEvaluatorSelfCheck() {
   const results = checks.map(([expression, expected]) => {
     const ast = parseRasterExpressionAst(expression);
     const result = evaluateTransformRasterExpressionAtPixel(ast, inputMap, 0);
-    const passed =
-      result.ok && Math.abs(result.value - expected) <= 0.000001;
+    const passed = result.ok && Math.abs(result.value - expected) <= 0.000001;
     return {
       expression,
       expected,
@@ -11685,7 +15043,7 @@ function runTransformRasterEvaluatorSelfCheck() {
         { data: new Uint8ClampedArray([70, 70, 70, 255]) },
       ],
     },
-    0
+    0,
   );
   [
     ["range(A.l)", 60],
@@ -11699,7 +15057,7 @@ function runTransformRasterEvaluatorSelfCheck() {
       ast,
       inputMap,
       0,
-      aggregateValues
+      aggregateValues,
     );
     results.push({
       expression,
@@ -11727,14 +15085,16 @@ function getTransformAdvancedExpressionStatus(plan) {
   const visibleCount = plan.visibleInputs.length;
   const aggregateCount = plan.aggregateInputs.length;
   const degenerateCount = plan.aggregateInputs.filter(
-    (input) => input.degenerate
+    (input) => input.degenerate,
   ).length;
   const details = [
     `${visibleCount} visible input${visibleCount === 1 ? "" : "s"}`,
     `${aggregateCount} stack aggregate${aggregateCount === 1 ? "" : "s"}`,
   ];
   if (degenerateCount > 0) {
-    details.push(`${degenerateCount} single-image aggregate${degenerateCount === 1 ? "" : "s"}`);
+    details.push(
+      `${degenerateCount} single-image aggregate${degenerateCount === 1 ? "" : "s"}`,
+    );
   }
   return `Expression valid: ${details.join(", ")}.`;
 }
@@ -11742,14 +15102,14 @@ function getTransformAdvancedExpressionStatus(plan) {
 function getTransformAggregateWarning(plan) {
   if (!plan?.valid || !plan.aggregateInputs?.length) return "";
   const degenerateRangeInput = plan.aggregateInputs.find(
-    (input) => input.functionName === "range" && input.degenerate
+    (input) => input.functionName === "range" && input.degenerate,
   );
   if (!degenerateRangeInput) return "";
 
   const alternative = getRasterInputTileSetEntries().find(
     (entry) =>
       entry.symbol !== degenerateRangeInput.set &&
-      (entry.tileSet?.tiles?.length || 0) > 1
+      (entry.tileSet?.tiles?.length || 0) > 1,
   );
   const source = `${degenerateRangeInput.set}.${degenerateRangeInput.channel}`;
   const imageCount = Math.max(0, degenerateRangeInput.tileCount || 0);
@@ -11765,7 +15125,7 @@ function updateTransformAdvancedExpressionStatus() {
   const plan = getTransformAdvancedExpressionPlan();
   setTransformStatus(
     getTransformAdvancedExpressionStatus(plan),
-    plan.valid ? "ok" : "error"
+    plan.valid ? "ok" : "error",
   );
   return plan;
 }
@@ -11855,7 +15215,7 @@ function applyRasterCalculatorPreview() {
     tileSet,
     isTransformPreviewEnabled()
       ? transform
-      : { ...TILE_SET_TRANSFORM_DEFAULTS }
+      : { ...TILE_SET_TRANSFORM_DEFAULTS },
   );
   updateSnapshotStatus();
   updateAdvancedVisibleInputPreloadHints();
@@ -11891,7 +15251,7 @@ function drawTransformHistogramSeries(context, bins, width, height, color) {
       index * barWidth,
       plotHeight - barHeight,
       Math.max(1, barWidth),
-      barHeight
+      barHeight,
     );
   });
 }
@@ -11944,7 +15304,10 @@ function renderTransformHistogram() {
   if (!transformHistogramCanvas) return;
   const canvas = transformHistogramCanvas;
   const rect = canvas.getBoundingClientRect();
-  const cssWidth = Math.max(1, Math.round(rect.width || canvas.clientWidth || 1));
+  const cssWidth = Math.max(
+    1,
+    Math.round(rect.width || canvas.clientWidth || 1),
+  );
   const cssHeight = Math.max(1, Math.round(rect.height || 36));
   const scale = window.devicePixelRatio || 1;
   const width = Math.max(1, Math.round(cssWidth * scale));
@@ -11982,8 +15345,13 @@ function renderTransformHistogram() {
 
   const sampleCanvas = document.createElement("canvas");
   sampleCanvas.width = 192;
-  sampleCanvas.height = Math.max(36, Math.round(192 * (height / Math.max(width, 1))));
-  const sampleContext = sampleCanvas.getContext("2d", { willReadFrequently: true });
+  sampleCanvas.height = Math.max(
+    36,
+    Math.round(192 * (height / Math.max(width, 1))),
+  );
+  const sampleContext = sampleCanvas.getContext("2d", {
+    willReadFrequently: true,
+  });
   if (!sampleContext) {
     drawTransformHistogramAxisLabels(context, width, height);
     return;
@@ -11997,7 +15365,7 @@ function renderTransformHistogram() {
     0,
     0,
     sampleCanvas.width,
-    sampleCanvas.height
+    sampleCanvas.height,
   );
 
   let imageData = null;
@@ -12006,7 +15374,7 @@ function renderTransformHistogram() {
       0,
       0,
       sampleCanvas.width,
-      sampleCanvas.height
+      sampleCanvas.height,
     );
   } catch (error) {
     drawTransformHistogramAxisLabels(context, width, height);
@@ -12033,13 +15401,38 @@ function renderTransformHistogram() {
     drawTransformHistogramAxisLabels(context, width, height);
     return;
   }
-  const drawRgb = !forceScalarHistogram && (outputRequestsRgb || hasColorSamples);
+  const drawRgb =
+    !forceScalarHistogram && (outputRequestsRgb || hasColorSamples);
   if (drawRgb) {
-    drawTransformHistogramSeries(context, rgbBins[0], width, height, "rgba(220, 50, 47, 0.42)");
-    drawTransformHistogramSeries(context, rgbBins[1], width, height, "rgba(30, 160, 80, 0.42)");
-    drawTransformHistogramSeries(context, rgbBins[2], width, height, "rgba(38, 95, 220, 0.42)");
+    drawTransformHistogramSeries(
+      context,
+      rgbBins[0],
+      width,
+      height,
+      "rgba(220, 50, 47, 0.42)",
+    );
+    drawTransformHistogramSeries(
+      context,
+      rgbBins[1],
+      width,
+      height,
+      "rgba(30, 160, 80, 0.42)",
+    );
+    drawTransformHistogramSeries(
+      context,
+      rgbBins[2],
+      width,
+      height,
+      "rgba(38, 95, 220, 0.42)",
+    );
   } else {
-    drawTransformHistogramSeries(context, grayBins, width, height, "rgba(17, 17, 17, 0.82)");
+    drawTransformHistogramSeries(
+      context,
+      grayBins,
+      width,
+      height,
+      "rgba(17, 17, 17, 0.82)",
+    );
   }
   drawTransformHistogramAxisLabels(context, width, height);
 }
@@ -12082,7 +15475,7 @@ function populateTransformTileSetSelect() {
   const hasPrevious =
     previousValue !== "" &&
     Array.from(transformTileSetSelect.options).some(
-      (option) => option.value === previousValue
+      (option) => option.value === previousValue,
     );
   transformTileSetSelect.value = hasPrevious ? previousValue : "0";
   populateTransformRasterTileSetBSelect();
@@ -12099,20 +15492,19 @@ function populateTransformRasterTileSetBSelect() {
     const option = document.createElement("option");
     option.value = String(index);
     const label = getSnapshotTileSetLabel(tileSet, index);
-    option.textContent =
-      index === selectedAIndex ? `${label} (source)` : label;
+    option.textContent = index === selectedAIndex ? `${label} (source)` : label;
     transformRasterTileSetBSelect.append(option);
   });
 
   const fallbackBIndex = tileSets().findIndex(
-    (tileSet, index) => tileSet && index !== selectedAIndex
+    (tileSet, index) => tileSet && index !== selectedAIndex,
   );
   const preferredValue =
     previousValue !== ""
       ? previousValue
       : String(fallbackBIndex >= 0 ? fallbackBIndex : selectedAIndex);
   const hasPreferred = Array.from(transformRasterTileSetBSelect.options).some(
-    (option) => option.value === preferredValue
+    (option) => option.value === preferredValue,
   );
   transformRasterTileSetBSelect.value = hasPreferred
     ? preferredValue
@@ -12127,7 +15519,8 @@ function setTransformStatus(message, status = "") {
 }
 
 function setTransformProgress(value, message = "") {
-  if (!transformProgress || !transformProgressBar || !transformProgressText) return;
+  if (!transformProgress || !transformProgressBar || !transformProgressText)
+    return;
   const percent = Math.max(0, Math.min(100, Number(value) || 0));
   transformProgress.hidden = false;
   transformProgressBar.style.width = `${percent}%`;
@@ -12136,7 +15529,8 @@ function setTransformProgress(value, message = "") {
 }
 
 function clearTransformProgress() {
-  if (!transformProgress || !transformProgressBar || !transformProgressText) return;
+  if (!transformProgress || !transformProgressBar || !transformProgressText)
+    return;
   transformProgress.hidden = true;
   transformProgressBar.style.width = "0%";
   transformProgressBar.style.transform = "scaleX(0)";
@@ -12154,7 +15548,7 @@ function updateTransformPreviewProgress(stats) {
   const processed = Math.max(0, stats?.processed || 0);
   const missing = Math.max(
     0,
-    stats?.missingAdvancedInputs || stats?.missingRasterInputs || 0
+    stats?.missingAdvancedInputs || stats?.missingRasterInputs || 0,
   );
   if (total === 0) {
     setTransformProgress(8, "Waiting for source tiles...");
@@ -12170,8 +15564,8 @@ function updateTransformPreviewProgress(stats) {
     processed < total
       ? `${processed}/${total} tiles calculated`
       : missing > 0
-      ? `${completed}/${total} tiles calculated`
-      : "Preview calculated";
+        ? `${completed}/${total} tiles calculated`
+        : "Preview calculated";
   setTransformProgress(percent, label);
 }
 
@@ -12179,12 +15573,18 @@ function updateTransformOutputName() {
   if (!transformOutputName) return;
   const tileSet = tileSets()[getSelectedTransformTileSetIndex()];
   const transform = getTransformOptionsFromControls();
-  const sourceLabel = getSnapshotTileSetLabel(tileSet, getSelectedTransformTileSetIndex());
+  const sourceLabel = getSnapshotTileSetLabel(
+    tileSet,
+    getSelectedTransformTileSetIndex(),
+  );
   const suggestedName =
     transform.type === "none"
       ? `${sourceLabel} Copy`
       : `${sourceLabel} ${getTransformTypeLabel(transform.type)}`;
-  if (!transformOutputName.value || transformOutputName.dataset.autoValue === "true") {
+  if (
+    !transformOutputName.value ||
+    transformOutputName.dataset.autoValue === "true"
+  ) {
     transformOutputName.value = suggestedName;
     transformOutputName.dataset.autoValue = "true";
   }
@@ -12263,8 +15663,8 @@ function resetTransformTileCaches(tileSetToReset = null, options = {}) {
   const setsToReset = Array.isArray(tileSetToReset)
     ? tileSetToReset
     : tileSetToReset
-    ? [tileSetToReset]
-    : tileSets();
+      ? [tileSetToReset]
+      : tileSets();
   setsToReset.forEach((tileSet) => {
     forEachLoadedTileInTileSet(tileSet, (loadedTile) => {
       loadedTile.petroImageProcessedContext = null;
@@ -12289,11 +15689,9 @@ function updateTransformControls() {
   if (simpleFields) simpleFields.hidden = rasterRecipe;
   if (rasterFields) rasterFields.hidden = !rasterRecipe;
   if (transformActions) transformActions.hidden = rasterRecipe;
-  document
-    .querySelectorAll(".transform-range-field")
-    .forEach((field) => {
-      field.hidden = rasterRecipe;
-    });
+  document.querySelectorAll(".transform-range-field").forEach((field) => {
+    field.hidden = rasterRecipe;
+  });
   populateTransformRasterTileSetBSelect();
   populateTransformRasterInputTable();
 
@@ -12301,13 +15699,14 @@ function updateTransformControls() {
     !rasterRecipe && ["unsharp", "localContrast"].includes(transform.type);
   const channelField = document.querySelector(".transform-channel-field");
   if (transformChannelSelect) {
-    transformChannelSelect.disabled = rasterRecipe || transform.type !== "channelMap";
+    transformChannelSelect.disabled =
+      rasterRecipe || transform.type !== "channelMap";
   }
   if (channelField) {
     channelField.hidden = rasterRecipe;
     channelField.classList.toggle(
       "transform-field-disabled",
-      rasterRecipe || transform.type !== "channelMap"
+      rasterRecipe || transform.type !== "channelMap",
     );
   }
   if (transformRasterTileSetBSelect) {
@@ -12328,7 +15727,9 @@ function updateTransformControls() {
   }
   if (transformRasterCustomRangeFields) {
     const customRangeEnabled =
-      rasterRecipe && !transform.rasterNormalize && transform.rasterScale === "custom";
+      rasterRecipe &&
+      !transform.rasterNormalize &&
+      transform.rasterScale === "custom";
     transformRasterCustomRangeFields.hidden = !customRangeEnabled;
     transformRasterCustomRangeFields
       .querySelectorAll("input")
@@ -12356,8 +15757,7 @@ function updateTransformControls() {
         option.disabled = rasterRecipe || transform.type !== "localContrast";
       }
       if (option.value === "falseColor") {
-        option.disabled =
-          !rasterRecipe && transform.type !== "channelMap";
+        option.disabled = !rasterRecipe && transform.type !== "channelMap";
       }
       if (option.value === "grayscale") {
         option.disabled = !hasTransform && transform.type !== "none";
@@ -12372,7 +15772,8 @@ function updateTransformControls() {
   const usesIntensity =
     !rasterRecipe && hasTransform && !isChannelTransform(transform.type);
   if (transformIntensity) transformIntensity.disabled = !usesIntensity;
-  if (transformIntensityValue) transformIntensityValue.disabled = !usesIntensity;
+  if (transformIntensityValue)
+    transformIntensityValue.disabled = !usesIntensity;
   if (transformGenerateButton) {
     const canGenerateRasterRecipe =
       !rasterRecipe || planHasRenderableAdvancedExpression();
@@ -12441,7 +15842,10 @@ function applyTransformControlsToSelectedTileSet() {
   if (isRasterRecipe(transform) && planHasRenderableAdvancedExpression()) {
     setTransformStatus("Processing preview...");
     setTransformPreviewProgressStart();
-  } else if (!isRasterRecipe(transform) && (transform.type !== "none" || hadTransform)) {
+  } else if (
+    !isRasterRecipe(transform) &&
+    (transform.type !== "none" || hadTransform)
+  ) {
     setTransformStatus("Processing preview...");
     setTransformPreviewProgressStart();
   }
@@ -12451,7 +15855,7 @@ function applyTransformControlsToSelectedTileSet() {
 
 function isTransformSourceTileSetVisible() {
   const checkbox = document.querySelector(
-    `.image-checkbox[data-index="${getSelectedTransformTileSetIndex()}"]`
+    `.image-checkbox[data-index="${getSelectedTransformTileSetIndex()}"]`,
   );
   return Boolean(checkbox?.checked);
 }
@@ -12464,7 +15868,8 @@ function getTransformPreviewIdleStatus(tileSet) {
   ) {
     return "Preview transform is hidden.";
   }
-  if (isDefaultTileSetTransform(tileSet)) return "Preview transforms are temporary.";
+  if (isDefaultTileSetTransform(tileSet))
+    return "Preview transforms are temporary.";
   return isTransformSourceTileSetVisible()
     ? "Preview applied."
     : "Source tile set is not currently selected.";
@@ -12488,7 +15893,7 @@ function refreshTransformPreviewStatus() {
 function syncTransformControlsFromSettings(transform) {
   const normalized = normalizeTileSetTransform(transform);
   const recipeInput = document.querySelector(
-    `input[name="transformImageryRecipe"][value="${normalized.recipeType}"]`
+    `input[name="transformImageryRecipe"][value="${normalized.recipeType}"]`,
   );
   if (recipeInput) recipeInput.checked = true;
   if (transformTypeSelect) transformTypeSelect.value = normalized.type;
@@ -12508,7 +15913,8 @@ function syncTransformControlsFromSettings(transform) {
   };
   syncRasterCustomRangeInputsFromState();
   if (transformIntensity) transformIntensity.value = normalized.intensity;
-  if (transformIntensityValue) transformIntensityValue.value = normalized.intensity;
+  if (transformIntensityValue)
+    transformIntensityValue.value = normalized.intensity;
   if (transformRadius) transformRadius.value = normalized.radius;
   if (transformRadiusValue) transformRadiusValue.value = normalized.radius;
 }
@@ -12538,11 +15944,11 @@ function resetSelectedTransformPreview() {
 function resetTransformControlsToDefault() {
   const currentType = normalizeTransformValue(
     "type",
-    transformTypeSelect?.value || TILE_SET_TRANSFORM_DEFAULTS.type
+    transformTypeSelect?.value || TILE_SET_TRANSFORM_DEFAULTS.type,
   );
   const currentRecipeType = normalizeTransformValue(
     "recipeType",
-    getSelectedTransformRecipeType()
+    getSelectedTransformRecipeType(),
   );
   activeTransformPreviewSettings = {
     ...TILE_SET_TRANSFORM_DEFAULTS,
@@ -12579,7 +15985,10 @@ function getTransformGenerationResolution(imageRect) {
   const sourceHeight = Math.max(1, Math.round(imageRect?.height || 1));
   const sourcePixels = sourceWidth * sourceHeight;
   const pixelScale = Math.sqrt(tier.maxPixels / sourcePixels);
-  const sideScale = Math.min(tier.maxSide / sourceWidth, tier.maxSide / sourceHeight);
+  const sideScale = Math.min(
+    tier.maxSide / sourceWidth,
+    tier.maxSide / sourceHeight,
+  );
   const scale = Math.max(0.01, Math.min(1, pixelScale, sideScale));
   const width = Math.max(1, Math.round(sourceWidth * scale));
   const height = Math.max(1, Math.round(sourceHeight * scale));
@@ -12627,9 +16036,13 @@ async function persistCurrentLibraryAfterTileSetExport() {
   currentLibraryData = serializeLibraryDataForSave();
   if (currentLibraryPath && window.electronAPI?.writeJsonFile) {
     try {
-      await window.electronAPI.writeJsonFile(currentLibraryPath, currentLibraryData);
+      await window.electronAPI.writeJsonFile(
+        currentLibraryPath,
+        currentLibraryData,
+      );
       window.electronAPI?.setUnsavedState?.(
-        window.appState.hasUnsavedAnnotations || window.appState.hasUnsavedCounts
+        window.appState.hasUnsavedAnnotations ||
+          window.appState.hasUnsavedCounts,
       );
       return true;
     } catch (error) {
@@ -12645,7 +16058,7 @@ async function applyAdvancedTransformToExportContext(
   context,
   transform,
   imageRect,
-  scale
+  scale,
 ) {
   const plan = getTransformAdvancedExpressionPlan(transform.rasterExpression);
   if (!plan.valid) {
@@ -12669,7 +16082,7 @@ async function applyAdvancedTransformToExportContext(
     const inputCanvas = await renderFullResolutionImageRectCanvas(
       imageRect,
       input.tileSetIndex,
-      scale
+      scale,
     );
     const inputContext = inputCanvas.getContext("2d", {
       willReadFrequently: true,
@@ -12677,7 +16090,7 @@ async function applyAdvancedTransformToExportContext(
     const inputImageData = getContextImageDataMatchingSize(
       inputContext,
       width,
-      height
+      height,
     );
     if (!inputImageData) {
       throw new Error(`Could not render ${input.set} for export.`);
@@ -12693,12 +16106,16 @@ async function applyAdvancedTransformToExportContext(
     }
     const sourceTileSet = tileSets()[input.tileSetIndex];
     const stack = [];
-    for (let tileIndex = 0; tileIndex < (sourceTileSet?.tiles || []).length; tileIndex += 1) {
+    for (
+      let tileIndex = 0;
+      tileIndex < (sourceTileSet?.tiles || []).length;
+      tileIndex += 1
+    ) {
       const inputCanvas = await renderFullResolutionImageRectCanvas(
         imageRect,
         input.tileSetIndex,
         scale,
-        { tileIndex }
+        { tileIndex },
       );
       const inputContext = inputCanvas.getContext("2d", {
         willReadFrequently: true,
@@ -12706,16 +16123,20 @@ async function applyAdvancedTransformToExportContext(
       const inputImageData = getContextImageDataMatchingSize(
         inputContext,
         width,
-        height
+        height,
       );
       if (!inputImageData) {
-        throw new Error(`Could not render ${input.set} image ${tileIndex + 1} for export.`);
+        throw new Error(
+          `Could not render ${input.set} image ${tileIndex + 1} for export.`,
+        );
       }
       stack.push(inputImageData);
       await wait(0);
     }
     if (!stack.length) {
-      throw new Error(`${input.set} does not contain images for stack aggregation.`);
+      throw new Error(
+        `${input.set} does not contain images for stack aggregation.`,
+      );
     }
     aggregateInputMap[input.key] = stack;
   }
@@ -12734,10 +16155,12 @@ async function applyAdvancedTransformToExportContext(
       plan.ast,
       inputMap,
       offset,
-      getRasterAggregateValuesForPixel(plan, aggregateInputMap, offset)
+      getRasterAggregateValuesForPixel(plan, aggregateInputMap, offset),
     );
     if (!result.ok) {
-      throw new Error(result.error || "Advanced expression could not be evaluated.");
+      throw new Error(
+        result.error || "Advanced expression could not be evaluated.",
+      );
     }
     const value = Number(result.value);
     values[valueIndex] = Number.isFinite(value) ? value : 0;
@@ -12751,7 +16174,7 @@ async function applyAdvancedTransformToExportContext(
     offset += 4, valueIndex += 1
   ) {
     const value = clampColorValue(
-      mapAdvancedRasterValue(values[valueIndex], transform, minValue, maxValue)
+      mapAdvancedRasterValue(values[valueIndex], transform, minValue, maxValue),
     );
     if (transform.output === "falseColor") {
       const [red, green, blue] = getFalseColorRgb(value);
@@ -12783,7 +16206,10 @@ async function generateTransformedTileSet() {
   if (isRasterRecipe(transform)) {
     const plan = getTransformAdvancedExpressionPlan(transform.rasterExpression);
     if (!plan.valid) {
-      setTransformStatus(plan.errors[0] || "Advanced expression is not valid.", "error");
+      setTransformStatus(
+        plan.errors[0] || "Advanced expression is not valid.",
+        "error",
+      );
       return;
     }
   }
@@ -12792,7 +16218,10 @@ async function generateTransformedTileSet() {
     return;
   }
   if (!window.electronAPI?.createDerivedDzi) {
-    setTransformStatus("Derived tile-set generation requires the Electron app.", "error");
+    setTransformStatus(
+      "Derived tile-set generation requires the Electron app.",
+      "error",
+    );
     return;
   }
 
@@ -12809,12 +16238,12 @@ async function generateTransformedTileSet() {
     setTransformStatus("Rendering transformed source image...");
     setTransformProgress(
       8,
-      `Rendering ${getTransformGenerationResolutionLabel(resolution)}...`
+      `Rendering ${getTransformGenerationResolutionLabel(resolution)}...`,
     );
     const canvas = await renderFullResolutionImageRectCanvas(
       imageRect,
       tileSetIndex,
-      scale
+      scale,
     );
     setTransformStatus("Applying transform to export image...");
     setTransformProgress(45, "Applying transform...");
@@ -12827,7 +16256,7 @@ async function generateTransformedTileSet() {
         context,
         transform,
         imageRect,
-        scale
+        scale,
       );
     } else {
       applyTileSetTransformToContext(context, transform);
@@ -12884,11 +16313,14 @@ async function generateTransformedTileSet() {
       librarySaved
         ? `Added "${outputName}" as a new tile set and saved the library.`
         : `Added "${outputName}" as a new tile set. Automatic library save is unavailable for this library.`,
-      "ok"
+      "ok",
     );
   } catch (error) {
     console.error("Could not generate transformed tile set:", error);
-    setTransformStatus(error.message || "Could not generate tile set.", "error");
+    setTransformStatus(
+      error.message || "Could not generate tile set.",
+      "error",
+    );
   } finally {
     transformGenerationRunning = false;
     updateTransformControls();
@@ -12937,7 +16369,7 @@ function getSampleAppearanceStorageKey(sampleIndex = currentIndex) {
 function readTileAppearanceStorage() {
   try {
     const stored = JSON.parse(
-      localStorage.getItem(TILE_APPEARANCE_STORAGE_KEY) || "null"
+      localStorage.getItem(TILE_APPEARANCE_STORAGE_KEY) || "null",
     );
     if (!stored || stored.version !== 1 || typeof stored.samples !== "object") {
       return { version: 1, samples: {} };
@@ -12967,9 +16399,12 @@ function saveCurrentSampleTileAppearancePreference() {
 
   const tileSetSettings = {};
   tileSets().forEach((tileSet, index) => {
-    const appearance = normalizeTileSetAppearance(getTileSetAppearance(tileSet));
+    const appearance = normalizeTileSetAppearance(
+      getTileSetAppearance(tileSet),
+    );
     if (isDefaultAppearanceValue(appearance)) return;
-    tileSetSettings[getTileSetAppearanceStorageKey(tileSet, index)] = appearance;
+    tileSetSettings[getTileSetAppearanceStorageKey(tileSet, index)] =
+      appearance;
   });
 
   const storage = readTileAppearanceStorage();
@@ -13076,7 +16511,11 @@ function applyTileSetAppearanceToContext(context, appearance) {
 }
 
 function getPixelLuminance(pixels, offset) {
-  return 0.2126 * pixels[offset] + 0.7152 * pixels[offset + 1] + 0.0722 * pixels[offset + 2];
+  return (
+    0.2126 * pixels[offset] +
+    0.7152 * pixels[offset + 1] +
+    0.0722 * pixels[offset + 2]
+  );
 }
 
 function getClampedPixelOffset(width, height, x, y) {
@@ -13147,7 +16586,9 @@ function applyLaplacianTransformToContext(context, transform) {
       const left = getClampedPixelLuminance(source, width, height, x - 1, y);
       const right = getClampedPixelLuminance(source, width, height, x + 1, y);
       const bottom = getClampedPixelLuminance(source, width, height, x, y + 1);
-      const edge = clampColorValue(Math.abs(4 * center - top - left - right - bottom) * intensity);
+      const edge = clampColorValue(
+        Math.abs(4 * center - top - left - right - bottom) * intensity,
+      );
 
       if (grayscale) {
         output[offset] = edge;
@@ -13197,9 +16638,15 @@ function applyUnsharpTransformToContext(context, transform) {
         }
       }
 
-      output[offset] = clampColorValue(source[offset] + (source[offset] - r / count) * amount);
-      output[offset + 1] = clampColorValue(source[offset + 1] + (source[offset + 1] - g / count) * amount);
-      output[offset + 2] = clampColorValue(source[offset + 2] + (source[offset + 2] - b / count) * amount);
+      output[offset] = clampColorValue(
+        source[offset] + (source[offset] - r / count) * amount,
+      );
+      output[offset + 1] = clampColorValue(
+        source[offset + 1] + (source[offset + 1] - g / count) * amount,
+      );
+      output[offset + 2] = clampColorValue(
+        source[offset + 2] + (source[offset + 2] - b / count) * amount,
+      );
       output[offset + 3] = 255;
     }
   }
@@ -13226,7 +16673,13 @@ function applyLocalContrastTransformToContext(context, transform) {
 
       for (let yy = y - radius; yy <= y + radius; yy += 1) {
         for (let xx = x - radius; xx <= x + radius; xx += 1) {
-          const sampleLum = getClampedPixelLuminance(source, width, height, xx, yy);
+          const sampleLum = getClampedPixelLuminance(
+            source,
+            width,
+            height,
+            xx,
+            yy,
+          );
           minLum = Math.min(minLum, sampleLum);
           maxLum = Math.max(maxLum, sampleLum);
         }
@@ -13264,8 +16717,20 @@ function applyEmbossTransformToContext(context, transform) {
   for (let y = 0; y < height; y += 1) {
     for (let x = 0; x < width; x += 1) {
       const offset = (y * width + x) * 4;
-      const upperLeft = getClampedPixelLuminance(source, width, height, x - 1, y - 1);
-      const lowerRight = getClampedPixelLuminance(source, width, height, x + 1, y + 1);
+      const upperLeft = getClampedPixelLuminance(
+        source,
+        width,
+        height,
+        x - 1,
+        y - 1,
+      );
+      const lowerRight = getClampedPixelLuminance(
+        source,
+        width,
+        height,
+        x + 1,
+        y + 1,
+      );
       const relief = clampColorValue(128 + (lowerRight - upperLeft) * amount);
       output[offset] = relief;
       output[offset + 1] = relief;
@@ -13316,7 +16781,8 @@ function getFalseColorRgb(value) {
 
   for (let index = 1; index < stops.length; index += 1) {
     const [position, r, g, b] = stops[index];
-    const [previousPosition, previousR, previousG, previousB] = stops[index - 1];
+    const [previousPosition, previousR, previousG, previousB] =
+      stops[index - 1];
     if (t <= position) {
       const localT = (t - previousPosition) / (position - previousPosition);
       return [
@@ -13393,13 +16859,13 @@ function getChannelScalarValue(pixels, offset, channel) {
       return getSaturationChannelValue(
         pixels[offset],
         pixels[offset + 1],
-        pixels[offset + 2]
+        pixels[offset + 2],
       );
     case "hue":
       return getHueChannelValue(
         pixels[offset],
         pixels[offset + 1],
-        pixels[offset + 2]
+        pixels[offset + 2],
       );
     case "luminance":
     default:
@@ -13547,7 +17013,7 @@ function applyAdvancedVisibleTransformToContext(
   transform,
   loadedTile,
   sourceContext,
-  outputTileSet
+  outputTileSet,
 ) {
   const plan = getTransformAdvancedExpressionPlan(transform.rasterExpression);
   if (!plan.valid || !plan.ast) {
@@ -13564,7 +17030,9 @@ function applyAdvancedVisibleTransformToContext(
   const outputTileSetIndex = tileSets().indexOf(outputTileSet);
   const needsMatchedTile =
     plan.aggregateInputs.length > 0 ||
-    plan.visibleInputs.some((input) => input.tileSetIndex !== outputTileSetIndex);
+    plan.visibleInputs.some(
+      (input) => input.tileSetIndex !== outputTileSetIndex,
+    );
   const coordinates = needsMatchedTile
     ? getLoadedTileCoordinates(loadedTile)
     : null;
@@ -13579,7 +17047,10 @@ function applyAdvancedVisibleTransformToContext(
       inputContext = sourceContext;
     } else {
       const entry = getRasterInputEntry(input.set);
-      const matchingTile = findLoadedTileByCoordinates(entry?.tileSet, coordinates);
+      const matchingTile = findLoadedTileByCoordinates(
+        entry?.tileSet,
+        coordinates,
+      );
       inputContext = matchingTile
         ? getOriginalContextForLoadedTile(matchingTile)
         : null;
@@ -13587,7 +17058,7 @@ function applyAdvancedVisibleTransformToContext(
     const inputImageData = getContextImageDataMatchingSize(
       inputContext,
       width,
-      height
+      height,
     );
     if (!inputImageData) {
       context.petroImageAdvancedMissingInput = true;
@@ -13612,7 +17083,7 @@ function applyAdvancedVisibleTransformToContext(
       const inputImageData = getContextImageDataMatchingSize(
         inputContext,
         width,
-        height
+        height,
       );
       if (!inputImageData) {
         context.petroImageAdvancedMissingInput = true;
@@ -13640,7 +17111,7 @@ function applyAdvancedVisibleTransformToContext(
       plan.ast,
       inputMap,
       offset,
-      getRasterAggregateValuesForPixel(plan, aggregateInputMap, offset)
+      getRasterAggregateValuesForPixel(plan, aggregateInputMap, offset),
     );
     if (!result.ok) {
       context.petroImageAdvancedTransformError = result.error;
@@ -13658,7 +17129,7 @@ function applyAdvancedVisibleTransformToContext(
     offset += 4, valueIndex += 1
   ) {
     const value = clampColorValue(
-      mapAdvancedRasterValue(values[valueIndex], transform, minValue, maxValue)
+      mapAdvancedRasterValue(values[valueIndex], transform, minValue, maxValue),
     );
     if (transform.output === "falseColor") {
       const [r, g, b] = getFalseColorRgb(value);
@@ -13687,7 +17158,7 @@ function applyTileSetTransformToContext(
   transform,
   loadedTile = null,
   sourceContext = null,
-  outputTileSet = null
+  outputTileSet = null,
 ) {
   if (isRasterRecipe(transform)) {
     applyAdvancedVisibleTransformToContext(
@@ -13695,7 +17166,7 @@ function applyTileSetTransformToContext(
       transform,
       loadedTile,
       sourceContext,
-      outputTileSet
+      outputTileSet,
     );
     return;
   }
@@ -13803,10 +17274,11 @@ function createLowerResolutionTransformFallbackContext(
   outputTileSet,
   loadedTile,
   width,
-  height
+  height,
 ) {
   const entry = findTileEntryForLoadedTile(outputTileSet, loadedTile);
-  const coordinates = entry?.coordinates || getLoadedTileCoordinates(loadedTile);
+  const coordinates =
+    entry?.coordinates || getLoadedTileCoordinates(loadedTile);
   if (!entry?.tile || !coordinates || coordinates.level <= 0) return null;
 
   let parentCoordinates = {
@@ -13817,7 +17289,7 @@ function createLowerResolutionTransformFallbackContext(
   while (parentCoordinates.level >= 0) {
     const parentTile = findLoadedTileByCoordinatesInTile(
       entry.tile,
-      parentCoordinates
+      parentCoordinates,
     );
     const parentContext = getStableProcessedContextForLoadedTile(parentTile);
     if (parentContext?.canvas) {
@@ -13846,7 +17318,7 @@ function createLowerResolutionTransformFallbackContext(
         0,
         0,
         width,
-        height
+        height,
       );
       context.petroImageGeneratedPreviewContext = true;
       context.petroImageAdvancedMissingInput = true;
@@ -13875,7 +17347,7 @@ function createProcessedTileContext(
   appearance,
   transform,
   loadedTile = null,
-  outputTileSet = null
+  outputTileSet = null,
 ) {
   const context = createCanvasContextFromImage(sourceContext.canvas, {
     forceOpaque: true,
@@ -13890,7 +17362,7 @@ function createProcessedTileContext(
       transform,
       loadedTile,
       sourceContext,
-      outputTileSet
+      outputTileSet,
     );
   }
   if (context.petroImageAdvancedMissingInput) {
@@ -13898,7 +17370,7 @@ function createProcessedTileContext(
       outputTileSet,
       loadedTile,
       context.canvas.width,
-      context.canvas.height
+      context.canvas.height,
     );
     if (fallbackContext) {
       return fallbackContext;
@@ -13931,7 +17403,7 @@ function getCachedProcessedTileContext(
   originalContext,
   appearance,
   transform,
-  tileSet = null
+  tileSet = null,
 ) {
   const cacheKey = getTileProcessingCacheKey(appearance, transform);
   if (
@@ -13946,7 +17418,7 @@ function getCachedProcessedTileContext(
     appearance,
     transform,
     loadedTile,
-    tileSet
+    tileSet,
   );
   if (
     processedContext &&
@@ -13969,8 +17441,8 @@ function getCachedProcessedTileContext(
 function isUsableSourceTileContext(context) {
   return Boolean(
     context?.canvas &&
-      !context.petroImageGeneratedPreviewContext &&
-      !context.canvas?.petroImageGeneratedPreviewContext
+    !context.petroImageGeneratedPreviewContext &&
+    !context.canvas?.petroImageGeneratedPreviewContext,
   );
 }
 
@@ -13992,9 +17464,12 @@ function createSourceContextForLoadedTile(loadedTile) {
   }
 
   if (isUsableSourceTileContext(loadedTile.petroImageOriginalContext)) {
-    return createCanvasContextFromImage(loadedTile.petroImageOriginalContext.canvas, {
-      forceOpaque: true,
-    });
+    return createCanvasContextFromImage(
+      loadedTile.petroImageOriginalContext.canvas,
+      {
+        forceOpaque: true,
+      },
+    );
   }
 
   if (isUsableSourceTileContext(loadedTile.context2D)) {
@@ -14024,14 +17499,15 @@ function getOriginalContextForLoadedTile(loadedTile) {
     return loadedTile.petroImageOriginalContext;
   }
 
-  loadedTile.petroImageOriginalContext = createSourceContextForLoadedTile(loadedTile);
+  loadedTile.petroImageOriginalContext =
+    createSourceContextForLoadedTile(loadedTile);
   return loadedTile.petroImageOriginalContext;
 }
 
 function getTileSetForTiledImage(tiledImage) {
   if (!tiledImage) return null;
   return tileSets().find((tileSet) =>
-    (tileSet.tiles || []).some((tile) => tile.image === tiledImage)
+    (tileSet.tiles || []).some((tile) => tile.image === tiledImage),
   );
 }
 
@@ -14062,7 +17538,12 @@ function updateTileSetAppearanceRenderingHints(tileSet) {
   });
 }
 
-function processLoadedTileForPreview(tileSet, tiledImage, loadedTile, sourceData = null) {
+function processLoadedTileForPreview(
+  tileSet,
+  tiledImage,
+  loadedTile,
+  sourceData = null,
+) {
   if (!tileSet || !loadedTile || !shouldProcessTileSet(tileSet)) return false;
 
   ensureTileSourceOpaqueContextSupport(tiledImage);
@@ -14074,7 +17555,7 @@ function processLoadedTileForPreview(tileSet, tiledImage, loadedTile, sourceData
     if (sourceContext) {
       loadedTile.petroImageOriginalContext = createCanvasContextFromImage(
         sourceContext,
-        { forceOpaque: true }
+        { forceOpaque: true },
       );
     }
   }
@@ -14097,7 +17578,7 @@ function processLoadedTileForPreview(tileSet, tiledImage, loadedTile, sourceData
     originalContext,
     appearance,
     transform,
-    tileSet
+    tileSet,
   );
   if (!adjustedContext) return false;
   if (
@@ -14134,7 +17615,7 @@ function handleTileLoadedForAppearance(event) {
       tileSet,
       event.tiledImage,
       event.tile,
-      event.data
+      event.data,
     );
   } finally {
     completionCallback();
@@ -14151,7 +17632,7 @@ function handleTileDrawnForTransformPreview(event) {
   const changed = processLoadedTileForPreview(
     tileSet,
     event.tiledImage,
-    event.tile
+    event.tile,
   );
   if (changed) {
     viewer?.forceRedraw?.();
@@ -14173,9 +17654,10 @@ function scheduleAdvancedVisibleTransformDependents(loadedTileSet) {
     if (!isRasterRecipe(transform)) return;
     const plan = getTransformAdvancedExpressionPlan(transform.rasterExpression);
     if (!plan.valid) return;
-    const usesLoadedTileSet = [...plan.visibleInputs, ...plan.aggregateInputs].some(
-      (input) => input.tileSetIndex === loadedTileSetIndex
-    );
+    const usesLoadedTileSet = [
+      ...plan.visibleInputs,
+      ...plan.aggregateInputs,
+    ].some((input) => input.tileSetIndex === loadedTileSetIndex);
     if (usesLoadedTileSet) {
       scheduleTileAppearanceReprocess(tileSet);
     }
@@ -14217,7 +17699,7 @@ function processLoadedTileForScheduledReprocess(
   loadedTile,
   appearance,
   transform,
-  stats
+  stats,
 ) {
   const originalContext = getOriginalContextForLoadedTile(loadedTile);
   if (!originalContext) return;
@@ -14233,7 +17715,7 @@ function processLoadedTileForScheduledReprocess(
     originalContext,
     appearance,
     transform,
-    tileSet
+    tileSet,
   );
   if (!adjustedContext) return;
   if (
@@ -14247,7 +17729,8 @@ function processLoadedTileForScheduledReprocess(
     }
     if (adjustedContext.petroImageAdvancedTransformError) {
       stats.contextMessage =
-        adjustedContext.petroImageAdvancedTransformError || stats.contextMessage;
+        adjustedContext.petroImageAdvancedTransformError ||
+        stats.contextMessage;
     }
     return;
   }
@@ -14284,15 +17767,19 @@ function updateTransformPreviewAfterReprocess(tileSet, stats) {
     ? getTransformAdvancedExpressionPlan(transform.rasterExpression)
     : null;
   const aggregateWarning = getTransformAggregateWarning(plan);
-  const rawMin = Number.isFinite(stats.advancedRawMin) ? stats.advancedRawMin : null;
-  const rawMax = Number.isFinite(stats.advancedRawMax) ? stats.advancedRawMax : null;
+  const rawMin = Number.isFinite(stats.advancedRawMin)
+    ? stats.advancedRawMin
+    : null;
+  const rawMax = Number.isFinite(stats.advancedRawMax)
+    ? stats.advancedRawMax
+    : null;
 
   if (stats.contextMessage) {
     setTransformStatus(stats.contextMessage, "error");
   } else if (stats.missingAdvancedInputs > 0) {
     setTransformStatus(
       `Waiting for source stack tiles... ${stats.missingAdvancedInputs} pending`,
-      ""
+      "",
     );
   } else if (aggregateWarning) {
     setTransformStatus(aggregateWarning, "");
@@ -14304,13 +17791,17 @@ function updateTransformPreviewAfterReprocess(tileSet, stats) {
   ) {
     setTransformStatus(
       `Preview applied. Raw output is constant ${formatTransformTooltipNumber(rawMin)}.`,
-      "ok"
+      "ok",
     );
   } else if (
     transformStatus?.textContent === "Processing preview..." ||
     transformStatus?.textContent === "Waiting for source tiles..." ||
-    transformStatus?.textContent?.startsWith("Waiting for visible input tiles...") ||
-    transformStatus?.textContent?.startsWith("Waiting for source stack tiles...")
+    transformStatus?.textContent?.startsWith(
+      "Waiting for visible input tiles...",
+    ) ||
+    transformStatus?.textContent?.startsWith(
+      "Waiting for source stack tiles...",
+    )
   ) {
     const idleStatus = getTransformPreviewIdleStatus(tileSet);
     setTransformStatus(idleStatus, "ok");
@@ -14352,13 +17843,10 @@ async function reprocessLoadedTileSetTilesAsync(tileSet, token) {
         loadedTile,
         appearance,
         transform,
-        stats
+        stats,
       );
       index += 1;
-    } while (
-      index < loadedTiles.length &&
-      performance.now() - frameStart < 10
-    );
+    } while (index < loadedTiles.length && performance.now() - frameStart < 10);
 
     if (token !== tileAppearanceReprocessToken) return null;
 
@@ -14396,7 +17884,7 @@ function scheduleTileAppearanceReprocess(tileSet) {
 
 function updateTileAppearanceValueDisplay(key, value) {
   const controls = document.querySelectorAll(
-    `#tileAppearanceControls [data-appearance-key="${key}"]`
+    `#tileAppearanceControls [data-appearance-key="${key}"]`,
   );
   controls.forEach((control) => {
     control.value = value;
@@ -14496,7 +17984,9 @@ function populateTileAppearanceSelect() {
     option.textContent = getTileSetDisplayLabel(tileSet, index);
     select.appendChild(option);
   });
-  select.value = String(Math.min(selectedIndex, Math.max(tileSets().length - 1, 0)));
+  select.value = String(
+    Math.min(selectedIndex, Math.max(tileSets().length - 1, 0)),
+  );
 }
 
 function buildTileAppearanceControls() {
@@ -14542,7 +18032,11 @@ function buildTileAppearanceControls() {
     slider.step = step;
     slider.dataset.appearanceKey = key;
     slider.addEventListener("input", () => {
-      setTileSetAppearanceValue(getSelectedAppearanceTileSetIndex(), key, slider.value);
+      setTileSetAppearanceValue(
+        getSelectedAppearanceTileSetIndex(),
+        key,
+        slider.value,
+      );
     });
 
     const valueInput = document.createElement("input");
@@ -14663,7 +18157,7 @@ function buildSampleInfoPopover(sample) {
   appendSampleInfoRow(
     details,
     "Groups",
-    Array.isArray(sample?.groups) ? sample.groups.join(", ") : ""
+    Array.isArray(sample?.groups) ? sample.groups.join(", ") : "",
   );
   appendSampleInfoRow(details, "Scale", getSampleScaleLabel(sample));
   appendSampleInfoRow(details, "Annotations", getSampleAnnotationLabel(sample));
@@ -14690,10 +18184,13 @@ function positionSampleInfoPopover() {
   const popoverRect = sampleInfoPopover.getBoundingClientRect();
   const margin = 6;
   const maxLeft = window.innerWidth - popoverRect.width - margin;
-  const left = Math.max(margin, Math.min(buttonRect.right - popoverRect.width, maxLeft));
+  const left = Math.max(
+    margin,
+    Math.min(buttonRect.right - popoverRect.width, maxLeft),
+  );
   const top = Math.min(
     buttonRect.bottom + margin,
-    window.innerHeight - popoverRect.height - margin
+    window.innerHeight - popoverRect.height - margin,
   );
 
   sampleInfoPopover.style.left = `${left}px`;
@@ -14863,6 +18360,22 @@ const annotationHistory = {
     this.undoStack.push({
       label,
       state,
+      scope: "annotation",
+    });
+
+    if (this.undoStack.length > this.limit) {
+      this.undoStack.shift();
+    }
+
+    this.redoStack = [];
+    updateAnnotationHistoryControls();
+  },
+
+  pushPorosity(label, state = clonePorosityState()) {
+    this.undoStack.push({
+      label,
+      state,
+      scope: "porosity",
     });
 
     if (this.undoStack.length > this.limit) {
@@ -14885,11 +18398,19 @@ const annotationHistory = {
     const previous = this.undoStack.pop();
     this.redoStack.push({
       label: previous.label,
-      state: cloneAnnotationState(),
+      state:
+        previous.scope === "porosity"
+          ? clonePorosityState()
+          : cloneAnnotationState(),
+      scope: previous.scope || "annotation",
     });
-    restoreAnnotationState(previous.state);
-    unsavedAnnotations(true);
-    unsavedCounts(true);
+    if (previous.scope === "porosity") {
+      restorePorosityState(previous.state, `${previous.label} undone.`);
+    } else {
+      restoreAnnotationState(previous.state);
+      unsavedAnnotations(true);
+      unsavedCounts(true);
+    }
     updateAnnotationHistoryControls();
   },
 
@@ -14899,11 +18420,19 @@ const annotationHistory = {
     const next = this.redoStack.pop();
     this.undoStack.push({
       label: next.label,
-      state: cloneAnnotationState(),
+      state:
+        next.scope === "porosity"
+          ? clonePorosityState()
+          : cloneAnnotationState(),
+      scope: next.scope || "annotation",
     });
-    restoreAnnotationState(next.state);
-    unsavedAnnotations(true);
-    unsavedCounts(true);
+    if (next.scope === "porosity") {
+      restorePorosityState(next.state, `${next.label} redone.`);
+    } else {
+      restoreAnnotationState(next.state);
+      unsavedAnnotations(true);
+      unsavedCounts(true);
+    }
     updateAnnotationHistoryControls();
   },
 };
@@ -14944,7 +18473,7 @@ function cloneGridControlState() {
       if (!element) return [id, undefined];
       if (element.type === "checkbox") return [id, element.checked];
       return [id, element.value];
-    })
+    }),
   );
 }
 
@@ -15031,12 +18560,12 @@ function getDraftCursorImagePoint() {
   const rect = viewerContainer.getBoundingClientRect();
   const positionPoint = new OpenSeadragon.Point(
     mousePos.x - rect.left,
-    mousePos.y - rect.top
+    mousePos.y - rect.top,
   );
   const viewportPoint = viewer.viewport.pointFromPixel(positionPoint);
   const imagePoint = image.viewportToImageCoordinates(
     viewportPoint.x,
-    viewportPoint.y
+    viewportPoint.y,
   );
 
   return [imagePoint.x, imagePoint.y];
@@ -15046,7 +18575,10 @@ function getClosedDraftPolygonCoordinates(coordinates) {
   const draftCoordinates = coordinates.map((coordinate) => [...coordinate]);
   if (
     draftCoordinates.length > 1 &&
-    !coordinatesMatch(draftCoordinates[0], draftCoordinates[draftCoordinates.length - 1])
+    !coordinatesMatch(
+      draftCoordinates[0],
+      draftCoordinates[draftCoordinates.length - 1],
+    )
   ) {
     draftCoordinates.push([...draftCoordinates[0]]);
   }
@@ -15063,7 +18595,7 @@ function redrawAnnotationDraft() {
 
   if (activeAnnotationDraft === "poly" && clickImageCoordinates.length > 0) {
     currentPolyStyleColors = getCurrentAnnotationStyleColors(
-      currentPolyStyleColors
+      currentPolyStyleColors,
     );
     const draftCoordinates = cursorImagePoint
       ? [...clickImageCoordinates, cursorImagePoint]
@@ -15073,7 +18605,7 @@ function redrawAnnotationDraft() {
       labelFontColor: currentPolyStyleColors.labelFontColor,
       labelBackgroundColor: currentPolyStyleColors.labelBackgroundColor,
       labelBackgroundOpacity: getAnnotationOpacityValue(
-        "annoLabelBackgroundOpacity"
+        "annoLabelBackgroundOpacity",
       ),
       lineStyle: document.getElementById("lineStyle").value,
       lineWeight: Number(document.getElementById("lineWeight").value),
@@ -15086,7 +18618,7 @@ function redrawAnnotationDraft() {
       addPolygonToGeoJSON(
         annoJSONTemp,
         getClosedDraftPolygonCoordinates(draftCoordinates),
-        draftStyle
+        draftStyle,
       );
     } else {
       addPolylineToGeoJSON(annoJSONTemp, draftCoordinates, draftStyle);
@@ -15099,14 +18631,14 @@ function redrawAnnotationDraft() {
     cursorImagePoint
   ) {
     currentEllipseStyleColors = getCurrentAnnotationStyleColors(
-      currentEllipseStyleColors
+      currentEllipseStyleColors,
     );
     const commonStyle = {
       labelFontSize: Number(document.getElementById("annoLabelFontSize").value),
       labelFontColor: currentEllipseStyleColors.labelFontColor,
       labelBackgroundColor: currentEllipseStyleColors.labelBackgroundColor,
       labelBackgroundOpacity: getAnnotationOpacityValue(
-        "annoLabelBackgroundOpacity"
+        "annoLabelBackgroundOpacity",
       ),
       lineStyle: document.getElementById("lineStyle").value,
       lineWeight: Number(document.getElementById("lineWeight").value),
@@ -15185,10 +18717,7 @@ function redoAnnotationDraftPoint() {
     return true;
   }
 
-  if (
-    activeAnnotationDraft === "ellipse" &&
-    ellipseDraftRedoStack.length > 0
-  ) {
+  if (activeAnnotationDraft === "ellipse" && ellipseDraftRedoStack.length > 0) {
     const point = ellipseDraftRedoStack.pop();
     ellipseCoordinates.push(point.viewport);
     ellipseImageCoordinates.push(point.image);
@@ -15215,7 +18744,7 @@ function removeAnnotationOverlays() {
     (crosshair) => {
       viewer.removeOverlay(crosshair);
       crosshair.remove();
-    }
+    },
   );
 
   annotateLabels = [];
@@ -15252,7 +18781,7 @@ function renderAnnotationOverlaysFromJSON() {
 
     const props = feature.properties;
     const viewportPoint = image.imageToViewportCoordinates(
-      new OpenSeadragon.Point(props.xLabel, props.yLabel)
+      new OpenSeadragon.Point(props.xLabel, props.yLabel),
     );
 
     addText(
@@ -15263,7 +18792,7 @@ function renderAnnotationOverlaysFromJSON() {
       props.labelFontColor,
       Number(props.labelFontSize),
       props.labelBackgroundColor,
-      Number(props.labelBackgroundOpacity)
+      Number(props.labelBackgroundOpacity),
     );
 
     if (feature.geometry.type === "Point") {
@@ -15273,7 +18802,7 @@ function renderAnnotationOverlaysFromJSON() {
         "anno",
         props.lineColor,
         Number(props.lineWeight),
-        Number(props.lineOpacity)
+        Number(props.lineOpacity),
       );
     }
   });
@@ -15294,7 +18823,7 @@ function removeCountOverlays() {
     (crosshair) => {
       viewer.removeOverlay(crosshair);
       crosshair.remove();
-    }
+    },
   );
 }
 
@@ -15321,7 +18850,7 @@ function renderCountOverlaysFromJSON() {
     const props = feature.properties;
     const [x, y] = feature.geometry.coordinates;
     const viewportPoint = image.imageToViewportCoordinates(
-      new OpenSeadragon.Point(x, y)
+      new OpenSeadragon.Point(x, y),
     );
 
     addText(
@@ -15332,7 +18861,7 @@ function renderCountOverlaysFromJSON() {
       props.labelFontColor,
       props.labelFontSize,
       props.labelBackgroundColor,
-      props.labelBackgroundOpacity
+      props.labelBackgroundOpacity,
     );
     addCrosshairs(
       props.uuid,
@@ -15340,7 +18869,7 @@ function renderCountOverlaysFromJSON() {
       "grid",
       props.lineColor,
       props.lineWeight,
-      props.lineOpacity
+      props.lineOpacity,
     );
   });
 
@@ -15352,22 +18881,26 @@ function restoreCountGridState(state) {
   suppressUnsavedCountTracking = true;
   try {
     removeCountOverlays();
-    countJSON = cloneData(state.countJSON || { type: "FeatureCollection", features: [] });
-    grid = new Grid(state.grid || {
-      xMin: 20,
-      yMin: 10,
-      xMax: 80,
-      yMax: 90,
-      step: 1000,
-      noPoints: 600,
-    });
+    countJSON = cloneData(
+      state.countJSON || { type: "FeatureCollection", features: [] },
+    );
+    grid = new Grid(
+      state.grid || {
+        xMin: 20,
+        yMin: 10,
+        xMax: 80,
+        yMax: 90,
+        step: 1000,
+        noPoints: 600,
+      },
+    );
     gridApplied = Boolean(state.gridApplied);
     restoreGridControlState(state.gridControls);
     renderCountOverlaysFromJSON();
 
     const selectedId = Math.min(
       Number(state.selectedCountId) || 1,
-      countJSON.features.length || 1
+      countJSON.features.length || 1,
     );
     document.getElementById("count-id").value = selectedId;
 
@@ -15446,11 +18979,11 @@ function updateAnnotationHistoryControls() {
     undoButton.title = canUndoDraft
       ? "Undo drawing point"
       : canUndo
-      ? `Undo ${
-          annotationHistory.undoStack[annotationHistory.undoStack.length - 1]
-            .label
-        }`
-      : "Undo";
+        ? `Undo ${
+            annotationHistory.undoStack[annotationHistory.undoStack.length - 1]
+              .label
+          }`
+        : "Undo";
   }
 
   if (redoButton) {
@@ -15460,11 +18993,11 @@ function updateAnnotationHistoryControls() {
     redoButton.title = canRedoDraft
       ? "Redo drawing point"
       : canRedo
-      ? `Redo ${
-          annotationHistory.redoStack[annotationHistory.redoStack.length - 1]
-            .label
-        }`
-      : "Redo";
+        ? `Redo ${
+            annotationHistory.redoStack[annotationHistory.redoStack.length - 1]
+              .label
+          }`
+        : "Redo";
   }
 }
 
@@ -15631,7 +19164,7 @@ function addScalebar() {
 
   const scalebarBackgroundColorToPlot = applyOpacityToColor(
     scalebarBackgroundColor,
-    scalebarBackgroundOpacity
+    scalebarBackgroundOpacity,
   );
 
   // Remove previous scalebar DOM
@@ -15807,7 +19340,7 @@ async function confirmSampleTilesAvailable() {
   }
 
   const validationResult = await window.electronAPI.validateSampleTiles(
-    tileSets().map(serializeTileSetForLibrary)
+    tileSets().map(serializeTileSetForLibrary),
   );
   if (validationResult.ok) {
     return true;
@@ -15832,14 +19365,20 @@ async function loadTileSet() {
     for (let tile of tileSet.tiles) {
       tile.image = null;
       const tileSource = await getTileSource(tile.uri);
-      if (loadGeneration !== tileLoadGeneration || sampleIndex !== currentIndex) {
+      if (
+        loadGeneration !== tileLoadGeneration ||
+        sampleIndex !== currentIndex
+      ) {
         return;
       }
 
       viewer.addTiledImage({
         tileSource,
         success: (event) => {
-          if (loadGeneration !== tileLoadGeneration || sampleIndex !== currentIndex) {
+          if (
+            loadGeneration !== tileLoadGeneration ||
+            sampleIndex !== currentIndex
+          ) {
             return;
           }
 
@@ -15950,11 +19489,11 @@ function getRenderedViewerPixelTooltipSample(event) {
 
   const sampleX = Math.min(
     Math.max(Math.floor(xRatio * canvas.width), 0),
-    canvas.width - 1
+    canvas.width - 1,
   );
   const sampleY = Math.min(
     Math.max(Math.floor(yRatio * canvas.height), 0),
-    canvas.height - 1
+    canvas.height - 1,
   );
   const context = canvas.getContext("2d", { willReadFrequently: true });
   if (!context) return null;
@@ -15981,7 +19520,7 @@ function getTransformTooltipSample(event) {
   const rect = viewerContainer.getBoundingClientRect();
   const elementPoint = new OpenSeadragon.Point(
     event.clientX - rect.left,
-    event.clientY - rect.top
+    event.clientY - rect.top,
   );
   const viewportPoint = viewer.viewport.pointFromPixel(elementPoint, true);
   const tileSetIndex = getSelectedTransformTileSetIndex();
@@ -16006,11 +19545,11 @@ function getTransformTooltipSample(event) {
 
           const sampleX = Math.min(
             Math.max(Math.floor(xRatio * context.canvas.width), 0),
-            context.canvas.width - 1
+            context.canvas.width - 1,
           );
           const sampleY = Math.min(
             Math.max(Math.floor(yRatio * context.canvas.height), 0),
-            context.canvas.height - 1
+            context.canvas.height - 1,
           );
           const numericLevel = Number.parseInt(level, 10);
           const sample = {
@@ -16041,7 +19580,9 @@ function getTransformTooltipSample(event) {
     context.petroImageAdvancedRawWidth === context.canvas.width &&
     context.petroImageAdvancedRawHeight === context.canvas.height
   ) {
-    return formatTransformTooltipNumber(rawValues[y * context.canvas.width + x]);
+    return formatTransformTooltipNumber(
+      rawValues[y * context.canvas.width + x],
+    );
   }
 
   try {
@@ -16065,11 +19606,11 @@ function updateTransformValueTooltip(event) {
   const tooltipRect = transformValueTooltip.getBoundingClientRect();
   const left = Math.min(
     event.clientX + 12,
-    window.innerWidth - tooltipRect.width - 8
+    window.innerWidth - tooltipRect.width - 8,
   );
   const top = Math.min(
     event.clientY + 14,
-    window.innerHeight - tooltipRect.height - 8
+    window.innerHeight - tooltipRect.height - 8,
   );
   transformValueTooltip.style.left = `${Math.max(left, 8)}px`;
   transformValueTooltip.style.top = `${Math.max(top, 8)}px`;
@@ -16136,8 +19677,8 @@ const displayImages = () => {
       windowPolygon.push(
         new OpenSeadragon.Point(
           mousePos.x + radius * Math.cos(angle),
-          mousePos.y + radius * Math.sin(angle)
-        )
+          mousePos.y + radius * Math.sin(angle),
+        ),
       );
     }
 
@@ -16347,7 +19888,19 @@ function setupUndoableGridControl(id, label) {
     }
   });
   element.addEventListener("keydown", function (event) {
-    if (!element.undoState && ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "PageUp", "PageDown", "Home", "End"].includes(event.key)) {
+    if (
+      !element.undoState &&
+      [
+        "ArrowLeft",
+        "ArrowRight",
+        "ArrowUp",
+        "ArrowDown",
+        "PageUp",
+        "PageDown",
+        "Home",
+        "End",
+      ].includes(event.key)
+    ) {
       capture();
     }
     if (event.key === "Enter") {
@@ -16399,13 +19952,14 @@ document.addEventListener("change", function (event) {
 
   const currentState = cloneGridControlState();
   if (
-    JSON.stringify(currentState) !== JSON.stringify(lastCommittedGridControlState)
+    JSON.stringify(currentState) !==
+    JSON.stringify(lastCommittedGridControlState)
   ) {
     const undoState = cloneAnnotationState();
     undoState.gridControls = cloneData(lastCommittedGridControlState);
     annotationHistory.push(
       GRID_CONTROL_HISTORY_LABELS[id] || "Change grid setting",
-      undoState
+      undoState,
     );
     lastCommittedGridControlState = currentState;
   }
@@ -16481,7 +20035,7 @@ function buildImageCheckboxes() {
     previousButton.title = "Previous image";
     previousButton.setAttribute(
       "aria-label",
-      `Previous image for tile set ${i + 1}`
+      `Previous image for tile set ${i + 1}`,
     );
     previousButton.textContent = "<";
     previousButton.addEventListener("click", () => cycleTileSetImage(i, -1));
@@ -16490,10 +20044,7 @@ function buildImageCheckboxes() {
     nextButton.type = "button";
     nextButton.className = "tile-set-cycle-button";
     nextButton.title = "Next image";
-    nextButton.setAttribute(
-      "aria-label",
-      `Next image for tile set ${i + 1}`
-    );
+    nextButton.setAttribute("aria-label", `Next image for tile set ${i + 1}`);
     nextButton.textContent = ">";
     nextButton.addEventListener("click", () => cycleTileSetImage(i, 1));
 
@@ -16570,7 +20121,7 @@ function buildOpacitySliders() {
 function resetOpacitySliders() {
   // Find only opacity range sliders inside the image settings menu.
   const sliders = document.querySelectorAll(
-    "#checkboxOpacityContainer input.opacity-slider"
+    "#checkboxOpacityContainer input.opacity-slider",
   );
 
   sliders.forEach((sliderInput) => {
@@ -16625,7 +20176,7 @@ function resetOpacitySliders() {
 
 function updateOpacityImageSliderVisibility() {
   const sliderContainers = document.querySelectorAll(
-    "#checkboxOpacityContainer > div"
+    "#checkboxOpacityContainer > div",
   );
 
   sliderContainers.forEach((container, index) => {
@@ -16678,12 +20229,14 @@ let repeatButton = document.getElementById("repeatButton");
 let promptLabelButton = document.getElementById("promptLabelButton");
 let moveAnnotationButton = document.getElementById("moveAnnotationButton");
 let moveAnnotationLabelButton = document.getElementById(
-  "moveAnnotationLabelButton"
+  "moveAnnotationLabelButton",
 );
 let polygonButton = document.getElementById("polygonButton");
 let ellipseButton = document.getElementById("ellipseButton");
 let circleAnnotationButton = document.getElementById("circleAnnotationButton");
-let annotationBooleanButton = document.getElementById("annotationBooleanButton");
+let annotationBooleanButton = document.getElementById(
+  "annotationBooleanButton",
+);
 let annotationBooleanMenu = document.getElementById("annotationBooleanMenu");
 
 // Flags to track modes
@@ -16989,7 +20542,7 @@ function positionAnnotationSettingsPopover(menu, button) {
     ? Math.max(margin, buttonRect.top - menuRect.height - 4)
     : Math.min(
         buttonRect.bottom + 4,
-        window.innerHeight - menuRect.height - margin
+        window.innerHeight - menuRect.height - margin,
       );
 
   menu.style.left = `${left}px`;
@@ -17066,16 +20619,14 @@ function getCircleAnnotationOptionsElements() {
     diameterInput: document.getElementById("circleAnnotationDiameter"),
     unitsSelect: document.getElementById("circleAnnotationUnits"),
     scaleNote: document.getElementById("circleAnnotationScaleNote"),
-    modeInputs: [
-      ...document.getElementsByName("circleAnnotationMode"),
-    ],
+    modeInputs: [...document.getElementsByName("circleAnnotationMode")],
   };
 }
 
 function loadCircleAnnotationOptions() {
   try {
     const stored = JSON.parse(
-      localStorage.getItem(CIRCLE_ANNOTATION_OPTIONS_STORAGE_KEY) || "null"
+      localStorage.getItem(CIRCLE_ANNOTATION_OPTIONS_STORAGE_KEY) || "null",
     );
     if (!stored) return;
     circleAnnotationOptions = {
@@ -17097,7 +20648,7 @@ function saveCircleAnnotationOptions() {
   try {
     localStorage.setItem(
       CIRCLE_ANNOTATION_OPTIONS_STORAGE_KEY,
-      JSON.stringify(circleAnnotationOptions)
+      JSON.stringify(circleAnnotationOptions),
     );
   } catch (error) {
     console.warn("Could not save circle annotation options:", error);
@@ -17186,15 +20737,17 @@ function closeAnnotationBooleanPopover() {
 }
 
 // Show or hide the annotations settings menu when the gear button is clicked
-document.getElementById("gearButton").addEventListener("click", function (event) {
-  event.stopPropagation(); // Prevent click from reaching the window listener
-  const menu = document.getElementById("annoSettingsMenu");
-  if (menu.style.display === "block") {
-    closeAnnotationSettingsPopover();
-  } else {
-    openAnnotationSettingsPopover(event.currentTarget);
-  }
-});
+document
+  .getElementById("gearButton")
+  .addEventListener("click", function (event) {
+    event.stopPropagation(); // Prevent click from reaching the window listener
+    const menu = document.getElementById("annoSettingsMenu");
+    if (menu.style.display === "block") {
+      closeAnnotationSettingsPopover();
+    } else {
+      openAnnotationSettingsPopover(event.currentTarget);
+    }
+  });
 
 // Show or hide the measurement settings menu when the gear button is clicked
 document
@@ -17311,7 +20864,7 @@ window.addEventListener("click", function (event) {
   }
 
   const circleAnnotationMenu = document.getElementById(
-    "circleAnnotationOptionsMenu"
+    "circleAnnotationOptionsMenu",
   );
   if (
     circleAnnotationMenu?.style.display === "block" &&
@@ -17414,11 +20967,9 @@ function setupAnnotationOpacityControl(inputId) {
 }
 
 function setupAnnotationOpacityControls() {
-  [
-    "annoLabelBackgroundOpacity",
-    "lineOpacity",
-    "fillOpacity",
-  ].forEach(setupAnnotationOpacityControl);
+  ["annoLabelBackgroundOpacity", "lineOpacity", "fillOpacity"].forEach(
+    setupAnnotationOpacityControl,
+  );
 }
 
 setupAnnotationOpacityControls();
@@ -17543,7 +21094,8 @@ function updateSelectedAnnotationControls() {
   document.getElementById("anno-notes").disabled =
     !hasSelection || isAnnotationUuidLocked(selectedAnnotationUuid);
   document.getElementById("deleteButton").disabled = !hasUnlockedSelection;
-  document.getElementById("moveAnnotationButton").disabled = !hasUnlockedSelection;
+  document.getElementById("moveAnnotationButton").disabled =
+    !hasUnlockedSelection;
   document.getElementById("moveAnnotationLabelButton").disabled =
     !hasUnlockedSelection;
   document.getElementById("repeatButton").disabled = !hasSelection;
@@ -17569,8 +21121,14 @@ function setAnnotationMoveMode(enabled) {
     exitAnnotationShapeEditMode();
   }
   moveAnnotationButton.classList.toggle("active", isAnnotationMoveMode);
-  moveAnnotationButton.setAttribute("aria-pressed", String(isAnnotationMoveMode));
-  viewerContainer?.classList.toggle("annotation-move-mode", isAnnotationMoveMode);
+  moveAnnotationButton.setAttribute(
+    "aria-pressed",
+    String(isAnnotationMoveMode),
+  );
+  viewerContainer?.classList.toggle(
+    "annotation-move-mode",
+    isAnnotationMoveMode,
+  );
   if (!isAnnotationMoveMode) {
     annotationMoveDragState = null;
     viewerContainer?.classList.remove("annotation-moving");
@@ -17585,27 +21143,39 @@ function setAnnotationLabelMoveMode(enabled) {
     exitAnnotationVertexEditMode();
     exitAnnotationShapeEditMode();
   }
-  moveAnnotationLabelButton.classList.toggle("active", isAnnotationLabelMoveMode);
+  moveAnnotationLabelButton.classList.toggle(
+    "active",
+    isAnnotationLabelMoveMode,
+  );
   moveAnnotationLabelButton.setAttribute(
     "aria-pressed",
-    String(isAnnotationLabelMoveMode)
+    String(isAnnotationLabelMoveMode),
   );
   viewerContainer?.classList.toggle(
     "annotation-label-move-mode",
-    isAnnotationLabelMoveMode
+    isAnnotationLabelMoveMode,
   );
   if (!isAnnotationLabelMoveMode) {
     annotationLabelMoveDragState = null;
     viewerContainer?.classList.remove("annotation-label-moving");
-    window.removeEventListener("pointermove", handleAnnotationLabelWindowPointerMove);
-    window.removeEventListener("pointerup", handleAnnotationLabelWindowPointerUp);
-    window.removeEventListener("pointercancel", handleAnnotationLabelWindowPointerUp);
+    window.removeEventListener(
+      "pointermove",
+      handleAnnotationLabelWindowPointerMove,
+    );
+    window.removeEventListener(
+      "pointerup",
+      handleAnnotationLabelWindowPointerUp,
+    );
+    window.removeEventListener(
+      "pointercancel",
+      handleAnnotationLabelWindowPointerUp,
+    );
   }
 }
 
 function getAnnotationIndexByUuid(uuid) {
   return annoJSON.features.findIndex(
-    (feature) => feature.properties?.uuid === uuid
+    (feature) => feature.properties?.uuid === uuid,
   );
 }
 
@@ -17618,7 +21188,7 @@ function getAnnotationFeatureByUuidMap() {
   return new Map(
     annoJSON.features
       .filter((feature) => feature?.properties?.uuid)
-      .map((feature) => [feature.properties.uuid, feature])
+      .map((feature) => [feature.properties.uuid, feature]),
   );
 }
 
@@ -17626,7 +21196,7 @@ function getAnnotationIdByUuidMap() {
   return new Map(
     annoJSON.features
       .map((feature, index) => [feature?.properties?.uuid, index + 1])
-      .filter(([uuid]) => Boolean(uuid))
+      .filter(([uuid]) => Boolean(uuid)),
   );
 }
 
@@ -17634,7 +21204,7 @@ function getSelectedAnnotationUuids() {
   const existingUuids = new Set(
     annoJSON.features
       .map((feature) => feature.properties?.uuid)
-      .filter(Boolean)
+      .filter(Boolean),
   );
   return [...selectedAnnotationUuids].filter((uuid) => existingUuids.has(uuid));
 }
@@ -17665,7 +21235,8 @@ function isBooleanPolygonFeature(feature) {
   return (
     feature?.properties?.uuid &&
     !isAnnotationFeatureLocked(feature) &&
-    (feature.geometry?.type === "Polygon" || feature.geometry?.type === "MultiPolygon")
+    (feature.geometry?.type === "Polygon" ||
+      feature.geometry?.type === "MultiPolygon")
   );
 }
 
@@ -17679,7 +21250,7 @@ function isAnnotationPolygonGeometry(feature) {
 function isCoordinateOnRingBoundary(coordinate, ring) {
   const point = imagePointFromCoord(coordinate);
   return getRingSegments(ring).some(([start, end]) =>
-    pointOnImageSegment(point, start, end)
+    pointOnImageSegment(point, start, end),
   );
 }
 
@@ -17688,8 +21259,8 @@ function ringsIntersect(firstRing, secondRing) {
   const secondSegments = getRingSegments(secondRing);
   return firstSegments.some(([firstStart, firstEnd]) =>
     secondSegments.some(([secondStart, secondEnd]) =>
-      imageSegmentsIntersect(firstStart, firstEnd, secondStart, secondEnd)
-    )
+      imageSegmentsIntersect(firstStart, firstEnd, secondStart, secondEnd),
+    ),
   );
 }
 
@@ -17716,7 +21287,7 @@ function getPolygonHoleGeometryWarnings(polygon) {
 
     if (holeLeavesExterior || ringsIntersect(holeRing, exteriorRing)) {
       warnings.push(
-        "Invalid polygon hole; interior rings must stay inside the exterior ring."
+        "Invalid polygon hole; interior rings must stay inside the exterior ring.",
       );
     }
   });
@@ -17726,18 +21297,21 @@ function getPolygonHoleGeometryWarnings(polygon) {
     const holeCoordinates = getCoordinatesWithoutTrailingDuplicate(holeRing);
     interiorRings.slice(holeIndex + 1).forEach((otherRing) => {
       if (otherRing.length < 4) return;
-      const otherCoordinates = getCoordinatesWithoutTrailingDuplicate(otherRing);
+      const otherCoordinates =
+        getCoordinatesWithoutTrailingDuplicate(otherRing);
       const holesOverlap =
         ringsIntersect(holeRing, otherRing) ||
         holeCoordinates.some((coordinate) =>
-          isImagePointInRing(imagePointFromCoord(coordinate), otherRing)
+          isImagePointInRing(imagePointFromCoord(coordinate), otherRing),
         ) ||
         otherCoordinates.some((coordinate) =>
-          isImagePointInRing(imagePointFromCoord(coordinate), holeRing)
+          isImagePointInRing(imagePointFromCoord(coordinate), holeRing),
         );
 
       if (holesOverlap) {
-        warnings.push("Invalid polygon holes; interior rings must not overlap.");
+        warnings.push(
+          "Invalid polygon holes; interior rings must not overlap.",
+        );
       }
     });
   });
@@ -17794,7 +21368,8 @@ function getBooleanSelectionState() {
   const primaryFeature = getSelectedAnnotation();
   const primaryIsPolygon = isBooleanPolygonFeature(primaryFeature);
   const hasOnlyPolygonSelection =
-    selectedFeatures.length > 0 && polygonFeatures.length === selectedFeatures.length;
+    selectedFeatures.length > 0 &&
+    polygonFeatures.length === selectedFeatures.length;
 
   return {
     selectedFeatures,
@@ -17807,13 +21382,16 @@ function getBooleanSelectionState() {
 }
 
 function getBooleanFeatureInvalidGeometryStatus(feature) {
-  if (!isBooleanPolygonFeature(feature)) return { validGeometry: true, geometryWarning: "" };
+  if (!isBooleanPolygonFeature(feature))
+    return { validGeometry: true, geometryWarning: "" };
   return updateAnnotationGeometryStatus(feature);
 }
 
 function isRepairableBooleanFeature(feature) {
   if (!getPolygonClippingLibrary()) return false;
-  return getBooleanFeatureInvalidGeometryStatus(feature).validGeometry === false;
+  return (
+    getBooleanFeatureInvalidGeometryStatus(feature).validGeometry === false
+  );
 }
 
 function getBooleanOperationEnabled(operation) {
@@ -17862,7 +21440,7 @@ function getCoordinateToSegmentDistance(point, start, end) {
 
   const t = Math.max(
     0,
-    Math.min(1, ((px - x1) * dx + (py - y1) * dy) / (dx * dx + dy * dy))
+    Math.min(1, ((px - x1) * dx + (py - y1) * dy) / (dx * dx + dy * dy)),
   );
   return Math.hypot(px - (x1 + t * dx), py - (y1 + t * dy));
 }
@@ -17890,11 +21468,11 @@ function simplifyCoordinatePathDouglasPeucker(points, tolerancePx) {
 
   const first = simplifyCoordinatePathDouglasPeucker(
     points.slice(0, splitIndex + 1),
-    tolerancePx
+    tolerancePx,
   );
   const second = simplifyCoordinatePathDouglasPeucker(
     points.slice(splitIndex),
-    tolerancePx
+    tolerancePx,
   );
   return first.slice(0, -1).concat(second);
 }
@@ -17935,7 +21513,10 @@ function simplifyPolygonRing(ring, tolerancePx) {
   const [firstIndex, secondIndex] = getFarthestCoordinatePairIndices(points);
   const firstPath = getCyclicCoordinatePath(points, firstIndex, secondIndex);
   const secondPath = getCyclicCoordinatePath(points, secondIndex, firstIndex);
-  const simplified = simplifyCoordinatePathDouglasPeucker(firstPath, tolerancePx)
+  const simplified = simplifyCoordinatePathDouglasPeucker(
+    firstPath,
+    tolerancePx,
+  )
     .slice(0, -1)
     .concat(simplifyCoordinatePathDouglasPeucker(secondPath, tolerancePx));
   const simplifiedRing = getCleanCoordinateRing(simplified);
@@ -17952,7 +21533,10 @@ function simplifyPolygonCoordinates(polygon, tolerancePx) {
 
 function simplifyAnnotationGeometry(geometry, tolerancePx) {
   if (geometry?.type === "Polygon") {
-    const polygon = simplifyPolygonCoordinates(geometry.coordinates, tolerancePx);
+    const polygon = simplifyPolygonCoordinates(
+      geometry.coordinates,
+      tolerancePx,
+    );
     return polygon
       ? {
           type: "Polygon",
@@ -17986,10 +21570,11 @@ function countGeometryCoordinates(geometry) {
       total +
       polygon.reduce(
         (polygonTotal, ring) =>
-          polygonTotal + getCoordinatesWithoutTrailingDuplicate(ring || []).length,
-        0
+          polygonTotal +
+          getCoordinatesWithoutTrailingDuplicate(ring || []).length,
+        0,
       ),
-    0
+    0,
   );
 }
 
@@ -18000,7 +21585,10 @@ function normalizeBooleanRing(ring) {
   const uniquePoints = getCoordinatesWithoutTrailingDuplicate(cleaned);
   if (uniquePoints.length < 3) return null;
   if (calculateArea(cleaned) <= 0) return null;
-  return cleaned.map((coordinate) => [Number(coordinate[0]), Number(coordinate[1])]);
+  return cleaned.map((coordinate) => [
+    Number(coordinate[0]),
+    Number(coordinate[1]),
+  ]);
 }
 
 function normalizeBooleanPolygon(polygon) {
@@ -18052,7 +21640,7 @@ function getGeometryPolygons(geometry) {
 function calculateBooleanGeometryAreaPixels(geometry) {
   return getGeometryPolygons(geometry).reduce(
     (total, polygon) => total + calculatePolygonArea(polygon),
-    0
+    0,
   );
 }
 
@@ -18063,14 +21651,15 @@ function calculateBooleanGeometryPerimeterPixels(geometry) {
       polygon.reduce((polygonTotal, ring) => {
         return polygonTotal + calculatePerimeter(ring);
       }, 0),
-    0
+    0,
   );
 }
 
 function getBooleanGeometryLabelPoint(geometry, fallbackFeature) {
   const firstRing = getGeometryPolygons(geometry)[0]?.[0] || [];
   const labelCoordinates = getCoordinatesWithoutTrailingDuplicate(firstRing);
-  const topPoint = labelCoordinates.length > 0 ? getTopmostPoint(labelCoordinates) : null;
+  const topPoint =
+    labelCoordinates.length > 0 ? getTopmostPoint(labelCoordinates) : null;
   if (
     topPoint &&
     Number.isFinite(Number(topPoint[0])) &&
@@ -18089,7 +21678,9 @@ function getBooleanGeometryLabelPoint(geometry, fallbackFeature) {
 
 function updateGeometryMeasurementProperties(feature) {
   const areaPixels = calculateBooleanGeometryAreaPixels(feature.geometry);
-  const perimeterPixels = calculateBooleanGeometryPerimeterPixels(feature.geometry);
+  const perimeterPixels = calculateBooleanGeometryPerimeterPixels(
+    feature.geometry,
+  );
 
   feature.properties.area_m2 = squareMetersFromSquarePixels(areaPixels);
   feature.properties.perimeter_m = metersFromPixels(perimeterPixels);
@@ -18104,7 +21695,8 @@ function updateBooleanResultProperties(feature, options = {}) {
     y: Number(feature.properties?.yLabel),
   };
   const hasCurrentLabelPoint =
-    Number.isFinite(currentLabelPoint.x) && Number.isFinite(currentLabelPoint.y);
+    Number.isFinite(currentLabelPoint.x) &&
+    Number.isFinite(currentLabelPoint.y);
   const labelPoint =
     preserveLabelPosition && hasCurrentLabelPoint
       ? currentLabelPoint
@@ -18152,7 +21744,8 @@ function getBooleanOperationResult(operation, polygonFeatures) {
 
   try {
     if (operation === "union") return polygonClipping.union(...operands);
-    if (operation === "intersection") return polygonClipping.intersection(...operands);
+    if (operation === "intersection")
+      return polygonClipping.intersection(...operands);
     if (operation === "xor") return polygonClipping.xor(...operands);
     if (operation === "repair") return polygonClipping.union(...operands);
     if (operation === "difference") {
@@ -18160,7 +21753,9 @@ function getBooleanOperationResult(operation, polygonFeatures) {
     }
   } catch (error) {
     console.error("Boolean polygon operation failed:", error);
-    alert("The selected polygons could not be combined. Check for invalid geometry.");
+    alert(
+      "The selected polygons could not be combined. Check for invalid geometry.",
+    );
     return null;
   }
   return null;
@@ -18196,7 +21791,8 @@ function applyAnnotationBooleanOperation(operation) {
       ? [
           primaryFeature,
           ...state.polygonFeatures.filter(
-            (feature) => feature.properties.uuid !== primaryFeature.properties.uuid
+            (feature) =>
+              feature.properties.uuid !== primaryFeature.properties.uuid,
           ),
         ]
       : state.polygonFeatures;
@@ -18214,7 +21810,7 @@ function applyAnnotationBooleanOperation(operation) {
 
   const primaryUuid = primaryFeature.properties.uuid;
   const selectedPolygonUuids = new Set(
-    state.polygonFeatures.map((feature) => feature.properties.uuid)
+    state.polygonFeatures.map((feature) => feature.properties.uuid),
   );
   state.polygonFeatures.forEach((feature) => {
     if (feature.properties.uuid !== primaryUuid) {
@@ -18232,7 +21828,7 @@ function applyAnnotationBooleanOperation(operation) {
   annoJSON.features = annoJSON.features.filter(
     (feature) =>
       feature.properties?.uuid === primaryUuid ||
-      !selectedPolygonUuids.has(feature.properties?.uuid)
+      !selectedPolygonUuids.has(feature.properties?.uuid),
   );
 
   selectedAnnotationUuids = new Set([primaryUuid]);
@@ -18254,14 +21850,18 @@ function promptSimplifySelectedPolygons() {
     return;
   }
 
-  showPrompt("Maximum displacement in pixels:", (value) => {
-    const tolerancePx = Number(value);
-    if (!Number.isFinite(tolerancePx) || tolerancePx < 0) {
-      alert("Enter a non-negative pixel tolerance.");
-      return;
-    }
-    simplifySelectedPolygons(tolerancePx);
-  }, "2");
+  showPrompt(
+    "Maximum displacement in pixels:",
+    (value) => {
+      const tolerancePx = Number(value);
+      if (!Number.isFinite(tolerancePx) || tolerancePx < 0) {
+        alert("Enter a non-negative pixel tolerance.");
+        return;
+      }
+      simplifySelectedPolygons(tolerancePx);
+    },
+    "2",
+  );
 }
 
 function simplifySelectedPolygons(tolerancePx) {
@@ -18308,9 +21908,12 @@ function simplifySelectedPolygons(tolerancePx) {
     updateText(feature.properties.uuid, "anno", feature.properties.label || "");
   });
 
-  const selectedUuids = polygonFeatures.map((feature) => feature.properties.uuid);
+  const selectedUuids = polygonFeatures.map(
+    (feature) => feature.properties.uuid,
+  );
   selectedAnnotationUuids = new Set(selectedUuids);
-  selectedAnnotationUuid = state.primaryFeature?.properties?.uuid || selectedUuids[0];
+  selectedAnnotationUuid =
+    state.primaryFeature?.properties?.uuid || selectedUuids[0];
   annotationListSelectionAnchorUuid = selectedAnnotationUuid;
   drawShape(polyCanvas, [annoJSON, annoJSONTemp]);
   renderAnnotationList();
@@ -18383,7 +21986,7 @@ function splitPrimaryMultiPolygon() {
 
   const originalIndex = getAnnotationIndexByUuid(feature.properties.uuid);
   const splitFeatures = normalizedPolygons.map((polygon, index) =>
-    cloneSplitPolygonProperties(feature, polygon, index)
+    cloneSplitPolygonProperties(feature, polygon, index),
   );
   annoJSON.features.splice(originalIndex, 1, ...splitFeatures);
 
@@ -18392,7 +21995,7 @@ function splitPrimaryMultiPolygon() {
     if (!image) return;
     const props = splitFeature.properties;
     const viewportPoint = image.imageToViewportCoordinates(
-      new OpenSeadragon.Point(props.xLabel, props.yLabel)
+      new OpenSeadragon.Point(props.xLabel, props.yLabel),
     );
     addText(
       props.uuid,
@@ -18402,11 +22005,13 @@ function splitPrimaryMultiPolygon() {
       props.labelFontColor,
       Number(props.labelFontSize),
       props.labelBackgroundColor,
-      Number(props.labelBackgroundOpacity)
+      Number(props.labelBackgroundOpacity),
     );
   });
 
-  const splitUuids = splitFeatures.map((splitFeature) => splitFeature.properties.uuid);
+  const splitUuids = splitFeatures.map(
+    (splitFeature) => splitFeature.properties.uuid,
+  );
   selectedAnnotationUuids = new Set(splitUuids);
   selectedAnnotationUuid = splitUuids[0];
   annotationListSelectionAnchorUuid = splitUuids[0];
@@ -18430,14 +22035,15 @@ function updateAnnotationBooleanControls() {
   const canSimplify = getBooleanOperationEnabled("simplify");
   const canOpen = Boolean(
     (polygonClipping && state.hasEnoughPolygons) ||
-      canSplit ||
-      canRepair ||
-      canSimplify
+    canSplit ||
+    canRepair ||
+    canSimplify,
   );
   annotationBooleanButton.disabled = !canOpen;
-  annotationBooleanButton.title = polygonClipping || canSplit || canSimplify
-    ? "Polygon Operations"
-    : "Polygon Operations unavailable";
+  annotationBooleanButton.title =
+    polygonClipping || canSplit || canSimplify
+      ? "Polygon Operations"
+      : "Polygon Operations unavailable";
   if (!canOpen) {
     closeAnnotationBooleanPopover();
   }
@@ -18456,7 +22062,7 @@ function updateAnnotationBooleanControls() {
 function updateAnnotationListLabel(uuid, label) {
   if (!uuid) return;
   const row = document.querySelector(
-    `.annotation-list-row[data-annotation-uuid="${CSS.escape(uuid)}"]`
+    `.annotation-list-row[data-annotation-uuid="${CSS.escape(uuid)}"]`,
   );
   if (!row) return;
 
@@ -18465,9 +22071,15 @@ function updateAnnotationListLabel(uuid, label) {
   if (labelCell) labelCell.textContent = displayLabel;
 
   const indexText = row.querySelector(".annotation-list-index")?.textContent;
-  const geometryWarning = getAnnotationGeometryWarning(getAnnotationByUuid(uuid));
-  const titlePrefix = indexText ? `${indexText}. ${displayLabel}` : displayLabel;
-  row.title = geometryWarning ? `${titlePrefix} - ${geometryWarning}` : titlePrefix;
+  const geometryWarning = getAnnotationGeometryWarning(
+    getAnnotationByUuid(uuid),
+  );
+  const titlePrefix = indexText
+    ? `${indexText}. ${displayLabel}`
+    : displayLabel;
+  row.title = geometryWarning
+    ? `${titlePrefix} - ${geometryWarning}`
+    : titlePrefix;
 }
 
 function beginPendingAnnotationTextEdit(feature) {
@@ -18496,8 +22108,8 @@ function scrollSelectedAnnotationRowIntoView() {
   if (!selectedAnnotationUuid) return;
   const row = document.querySelector(
     `.annotation-list-row[data-annotation-uuid="${CSS.escape(
-      selectedAnnotationUuid
-    )}"]`
+      selectedAnnotationUuid,
+    )}"]`,
   );
   centerElementInScrollContainer(row);
 }
@@ -18510,7 +22122,7 @@ function setAnnotationSelection(uuids, primaryUuid = null, options = {}) {
   const featureByUuid = new Map(
     annoJSON.features
       .filter((feature) => feature?.properties?.uuid)
-      .map((feature) => [feature.properties.uuid, feature])
+      .map((feature) => [feature.properties.uuid, feature]),
   );
   const validUuids = uuids.filter((uuid) => {
     const feature = featureByUuid.get(uuid);
@@ -18550,7 +22162,7 @@ function setAnnotationSelection(uuids, primaryUuid = null, options = {}) {
     const image = viewer.world.getItemAt(0);
     const viewportPoint = image.imageToViewportCoordinates(
       feature.properties.xLabel,
-      feature.properties.yLabel
+      feature.properties.yLabel,
     );
     goToPoint(viewportPoint.x, viewportPoint.y);
   }
@@ -18560,11 +22172,18 @@ function setAnnotationSelection(uuids, primaryUuid = null, options = {}) {
   } else {
     updateSelectedAnnotationControls();
   }
-  if (classifyFeatureRows.length && classifyPalette && !classifyPalette.hidden) {
+  if (
+    classifyFeatureRows.length &&
+    classifyPalette &&
+    !classifyPalette.hidden
+  ) {
     renderClassifyFeatureTable();
   }
   if (classifyPalette && !classifyPalette.hidden) {
     updateClassifyActionState();
+  }
+  if (porosityPalette && !porosityPalette.hidden) {
+    updatePorosityControls();
   }
 }
 
@@ -18578,7 +22197,7 @@ function normalizeNewAnnotationProperties(properties = {}) {
   const usedUuids = new Set(
     annoJSON.features
       .map((feature) => feature?.properties?.uuid)
-      .filter(Boolean)
+      .filter(Boolean),
   );
   if (!normalized.uuid || usedUuids.has(normalized.uuid)) {
     normalized.uuid = generateUniqueAnnotationUuid(usedUuids, 12);
@@ -18661,7 +22280,7 @@ function getAnnotationGroups() {
   });
 
   return [...groups.values()].sort((a, b) =>
-    a.groupName.localeCompare(b.groupName)
+    a.groupName.localeCompare(b.groupName),
   );
 }
 
@@ -18685,7 +22304,7 @@ function getUnlockedSelectedAnnotationUuids() {
   const featureByUuid = new Map(
     annoJSON.features
       .filter((feature) => feature?.properties?.uuid)
-      .map((feature) => [feature.properties.uuid, feature])
+      .map((feature) => [feature.properties.uuid, feature]),
   );
   return [...selectedAnnotationUuids].filter((uuid) => {
     const feature = featureByUuid.get(uuid);
@@ -18713,7 +22332,7 @@ function getUnlockedAnnotationIdsForGroup(groupId) {
     .filter(
       ({ feature }) =>
         feature.properties?.groupId === groupId &&
-        !isAnnotationFeatureLocked(feature)
+        !isAnnotationFeatureLocked(feature),
     )
     .map(({ id }) => id);
 }
@@ -18769,7 +22388,8 @@ function createGeometryTypeIcon(type, shapeType) {
     icon.appendChild(line);
     if (type === "MultiLineString") {
       const secondLine = document.createElement("span");
-      secondLine.className = "annotation-geometry-line annotation-geometry-line-secondary";
+      secondLine.className =
+        "annotation-geometry-line annotation-geometry-line-secondary";
       icon.appendChild(secondLine);
     }
   } else if (type === "Polygon" || type === "MultiPolygon") {
@@ -18861,7 +22481,7 @@ function updateGroupControls() {
   }
 
   const visibilityButton = document.getElementById(
-    "annotationGroupVisibilityButton"
+    "annotationGroupVisibilityButton",
   );
   if (visibilityButton) {
     visibilityButton.innerHTML = "";
@@ -18871,7 +22491,7 @@ function updateGroupControls() {
       visibilityButton.title = isVisible ? "Hide group" : "Show group";
       visibilityButton.setAttribute(
         "aria-label",
-        isVisible ? "Hide group" : "Show group"
+        isVisible ? "Hide group" : "Show group",
       );
       visibilityButton.appendChild(createVisibilityIcon(isVisible));
     }
@@ -18886,7 +22506,7 @@ function updateGroupControls() {
       lockButton.title = isLocked ? "Unlock group" : "Lock group";
       lockButton.setAttribute(
         "aria-label",
-        isLocked ? "Unlock group" : "Lock group"
+        isLocked ? "Unlock group" : "Lock group",
       );
       lockButton.appendChild(createLockIcon(isLocked));
     }
@@ -18942,7 +22562,7 @@ function syncAnnotationListSelection() {
     row.setAttribute("aria-selected", String(isSelected));
     row.classList.toggle(
       "annotation-list-row-primary",
-      row.dataset.annotationUuid === selectedAnnotationUuid
+      row.dataset.annotationUuid === selectedAnnotationUuid,
     );
   });
 }
@@ -18958,7 +22578,10 @@ const ANNOTATION_LIST_COLUMNS = [
 ];
 
 function getAnnotationFeatureTypeValue(feature) {
-  return getGeometryTypeLabel(feature.geometry?.type, feature.properties?.shapeType);
+  return getGeometryTypeLabel(
+    feature.geometry?.type,
+    feature.properties?.shapeType,
+  );
 }
 
 function getAnnotationSortValue(feature, parameterId) {
@@ -18991,13 +22614,18 @@ function compareAnnotationFeatures(a, b, parameterId, direction = "asc") {
   if (typeof aValue === "number" && typeof bValue === "number") {
     return (aValue - bValue) * multiplier;
   }
-  return String(aValue).localeCompare(String(bValue), undefined, {
-    numeric: true,
-    sensitivity: "base",
-  }) * multiplier;
+  return (
+    String(aValue).localeCompare(String(bValue), undefined, {
+      numeric: true,
+      sensitivity: "base",
+    }) * multiplier
+  );
 }
 
-function annotationFeaturePassesFilters(feature, state = annotationFilterState) {
+function annotationFeaturePassesFilters(
+  feature,
+  state = annotationFilterState,
+) {
   const props = normalizeAnnotationFeature(feature)?.properties || {};
   if (state.groupId && props.groupId !== state.groupId) return false;
   if (state.type && getAnnotationFeatureTypeValue(feature) !== state.type) {
@@ -19040,7 +22668,7 @@ function getDisplayedAnnotationFeatures() {
         a.feature,
         b.feature,
         state.sortParameterId,
-        state.sortDirection
+        state.sortDirection,
       );
       return comparison || a.index - b.index;
     });
@@ -19050,17 +22678,17 @@ function getDisplayedAnnotationFeatures() {
 
 function getDisplayedAnnotationIndexByUuid(uuid) {
   return getDisplayedAnnotationFeatures().findIndex(
-    (feature) => feature.properties?.uuid === uuid
+    (feature) => feature.properties?.uuid === uuid,
   );
 }
 
 function getDisplayedAnnotationRangeUuids(anchorUuid, targetUuid) {
   const displayedFeatures = getDisplayedAnnotationFeatures();
   const anchorIndex = displayedFeatures.findIndex(
-    (feature) => feature.properties?.uuid === anchorUuid
+    (feature) => feature.properties?.uuid === anchorUuid,
   );
   const targetIndex = displayedFeatures.findIndex(
-    (feature) => feature.properties?.uuid === targetUuid
+    (feature) => feature.properties?.uuid === targetUuid,
   );
   if (anchorIndex < 0 || targetIndex < 0) return [];
   const start = Math.min(anchorIndex, targetIndex);
@@ -19076,7 +22704,8 @@ function isAnnotationColumnFiltered(columnId) {
   if (columnId === "type") return Boolean(annotationFilterState.type);
   if (columnId === "validity") return Boolean(annotationFilterState.validity);
   if (columnId === "label") return Boolean(annotationFilterState.label);
-  if (columnId === "visibility") return Boolean(annotationFilterState.visibility);
+  if (columnId === "visibility")
+    return Boolean(annotationFilterState.visibility);
   if (columnId === "locked") return Boolean(annotationFilterState.locked);
   return false;
 }
@@ -19117,7 +22746,9 @@ function closeAnnotationHeaderMenu() {
 
 function getAnnotationColumnSortLabel(column, direction) {
   if (column.id === "id") {
-    return direction === "asc" ? "Sort first created first" : "Sort last created first";
+    return direction === "asc"
+      ? "Sort first created first"
+      : "Sort last created first";
   }
   if (column.id === "label" || column.id === "group" || column.id === "type") {
     return direction === "asc" ? "Sort A to Z" : "Sort Z to A";
@@ -19222,7 +22853,7 @@ function selectDisplayedAnnotations() {
   setAnnotationSelection(
     displayedUuids,
     displayedUuids[displayedUuids.length - 1] || null,
-    { pan: false }
+    { pan: false },
   );
   annotationListSelectionAnchorUuid = displayedUuids[0] || null;
   closeAnnotationHeaderMenu();
@@ -19247,11 +22878,15 @@ function renderAnnotationHeaderMenu(column) {
   const menu = ensureAnnotationHeaderMenu();
   menu.innerHTML = "";
 
-  appendMeasureHeaderMenuButton(menu, getAnnotationColumnSortLabel(column, "asc"), () =>
-    applyAnnotationSort(column.id, "asc")
+  appendMeasureHeaderMenuButton(
+    menu,
+    getAnnotationColumnSortLabel(column, "asc"),
+    () => applyAnnotationSort(column.id, "asc"),
   );
-  appendMeasureHeaderMenuButton(menu, getAnnotationColumnSortLabel(column, "desc"), () =>
-    applyAnnotationSort(column.id, "desc")
+  appendMeasureHeaderMenuButton(
+    menu,
+    getAnnotationColumnSortLabel(column, "desc"),
+    () => applyAnnotationSort(column.id, "desc"),
   );
   appendMeasureHeaderMenuButton(menu, "Clear sort", clearAnnotationSort, {
     disabled: !isAnnotationColumnSorted(column.id),
@@ -19275,7 +22910,7 @@ function renderAnnotationHeaderMenu(column) {
         annotationFilterState = { ...annotationFilterState, groupId: value };
         closeAnnotationHeaderMenu();
         renderAnnotationList();
-      }
+      },
     );
   } else if (column.id === "type") {
     appendMeasureHeaderSelect(
@@ -19287,7 +22922,7 @@ function renderAnnotationHeaderMenu(column) {
         annotationFilterState = { ...annotationFilterState, type: value };
         closeAnnotationHeaderMenu();
         renderAnnotationList();
-      }
+      },
     );
   } else if (column.id === "validity") {
     appendMeasureHeaderSelect(
@@ -19303,7 +22938,7 @@ function renderAnnotationHeaderMenu(column) {
         annotationFilterState = { ...annotationFilterState, validity: value };
         closeAnnotationHeaderMenu();
         renderAnnotationList();
-      }
+      },
     );
   } else if (column.id === "label") {
     appendAnnotationHeaderTextFilter(menu);
@@ -19321,7 +22956,7 @@ function renderAnnotationHeaderMenu(column) {
         annotationFilterState = { ...annotationFilterState, visibility: value };
         closeAnnotationHeaderMenu();
         renderAnnotationList();
-      }
+      },
     );
   } else if (column.id === "locked") {
     appendMeasureHeaderSelect(
@@ -19337,7 +22972,7 @@ function renderAnnotationHeaderMenu(column) {
         annotationFilterState = { ...annotationFilterState, locked: value };
         closeAnnotationHeaderMenu();
         renderAnnotationList();
-      }
+      },
     );
   } else {
     const note = document.createElement("div");
@@ -19347,9 +22982,14 @@ function renderAnnotationHeaderMenu(column) {
   }
 
   appendMeasureHeaderMenuSeparator(menu);
-  appendMeasureHeaderMenuButton(menu, "Select shown", selectDisplayedAnnotations, {
-    disabled: getDisplayedAnnotationFeatures().length === 0,
-  });
+  appendMeasureHeaderMenuButton(
+    menu,
+    "Select shown",
+    selectDisplayedAnnotations,
+    {
+      disabled: getDisplayedAnnotationFeatures().length === 0,
+    },
+  );
   appendMeasureHeaderMenuButton(
     menu,
     "Clear this filter",
@@ -19358,7 +22998,7 @@ function renderAnnotationHeaderMenu(column) {
       closeAnnotationHeaderMenu();
       renderAnnotationList();
     },
-    { disabled: !isAnnotationColumnFiltered(column.id) }
+    { disabled: !isAnnotationColumnFiltered(column.id) },
   );
   appendMeasureHeaderMenuButton(menu, "Clear all", resetAnnotationFilters, {
     disabled:
@@ -19394,11 +23034,11 @@ function openAnnotationHeaderMenu(column, header) {
   const margin = 8;
   const left = Math.min(
     Math.max(buttonRect.left, margin),
-    window.innerWidth - menuRect.width - margin
+    window.innerWidth - menuRect.width - margin,
   );
   const top = Math.min(
     buttonRect.bottom + 4,
-    window.innerHeight - menuRect.height - margin
+    window.innerHeight - menuRect.height - margin,
   );
   menu.style.left = `${Math.max(margin, left)}px`;
   menu.style.top = `${Math.max(margin, top)}px`;
@@ -19483,7 +23123,7 @@ function handleAnnotationListRowClick(event, uuid) {
   if (event.shiftKey && annotationListSelectionAnchorUuid) {
     const rangeUuids = getDisplayedAnnotationRangeUuids(
       annotationListSelectionAnchorUuid,
-      uuid
+      uuid,
     );
     if (rangeUuids.length > 0) {
       setAnnotationSelection(rangeUuids, uuid, { pan: true });
@@ -19503,7 +23143,7 @@ function handleAnnotationListRowClick(event, uuid) {
 function focusAnnotationListRow(uuid) {
   if (!uuid) return;
   const row = document.querySelector(
-    `.annotation-list-row[data-annotation-uuid="${CSS.escape(uuid)}"]`
+    `.annotation-list-row[data-annotation-uuid="${CSS.escape(uuid)}"]`,
   );
   row?.focus({ preventScroll: true });
 }
@@ -19517,7 +23157,7 @@ function handleAnnotationListArrowKey(event, uuid) {
 
   const displayedFeatures = getDisplayedAnnotationFeatures();
   const selectableFeatures = displayedFeatures.filter(
-    (feature) => !isAnnotationFeatureLocked(feature)
+    (feature) => !isAnnotationFeatureLocked(feature),
   );
   if (selectableFeatures.length === 0) return true;
 
@@ -19556,7 +23196,7 @@ document
     const displayedFeatures = getDisplayedAnnotationFeatures();
     handleAnnotationListArrowKey(
       event,
-      selectedAnnotationUuid || displayedFeatures[0]?.properties?.uuid
+      selectedAnnotationUuid || displayedFeatures[0]?.properties?.uuid,
     );
   });
 
@@ -19576,7 +23216,7 @@ document.addEventListener(
 
     handleAnnotationListArrowKey(event, selectedAnnotationUuid);
   },
-  true
+  true,
 );
 
 function refreshAnnotationVisibilityViews() {
@@ -19604,12 +23244,16 @@ function setAnnotationLocked(uuid, locked) {
   feature.properties.locked = locked;
   if (locked && selectedAnnotationUuids.has(uuid)) {
     const nextSelection = getSelectedAnnotationUuids().filter(
-      (selectedUuid) => selectedUuid !== uuid
+      (selectedUuid) => selectedUuid !== uuid,
     );
-    setAnnotationSelection(nextSelection, nextSelection[nextSelection.length - 1], {
-      redraw: true,
-      scroll: false,
-    });
+    setAnnotationSelection(
+      nextSelection,
+      nextSelection[nextSelection.length - 1],
+      {
+        redraw: true,
+        scroll: false,
+      },
+    );
   }
   renderAnnotationList();
   updateSelectedAnnotationControls();
@@ -19617,7 +23261,9 @@ function setAnnotationLocked(uuid, locked) {
 }
 
 function setAnnotationGroupVisibility(groupId, visible) {
-  annotationHistory.push(visible ? "Show annotation group" : "Hide annotation group");
+  annotationHistory.push(
+    visible ? "Show annotation group" : "Hide annotation group",
+  );
   annoJSON.features.forEach((feature) => {
     normalizeAnnotationFeature(feature);
     if (feature.properties.groupId === groupId) {
@@ -19629,7 +23275,9 @@ function setAnnotationGroupVisibility(groupId, visible) {
 }
 
 function setAnnotationGroupLocked(groupId, locked) {
-  annotationHistory.push(locked ? "Lock annotation group" : "Unlock annotation group");
+  annotationHistory.push(
+    locked ? "Lock annotation group" : "Unlock annotation group",
+  );
   const lockedUuids = [];
   annoJSON.features.forEach((feature) => {
     normalizeAnnotationFeature(feature);
@@ -19641,12 +23289,16 @@ function setAnnotationGroupLocked(groupId, locked) {
   if (locked && lockedUuids.length > 0) {
     const lockedSet = new Set(lockedUuids);
     const nextSelection = getSelectedAnnotationUuids().filter(
-      (uuid) => !lockedSet.has(uuid)
+      (uuid) => !lockedSet.has(uuid),
     );
-    setAnnotationSelection(nextSelection, nextSelection[nextSelection.length - 1], {
-      redraw: true,
-      scroll: false,
-    });
+    setAnnotationSelection(
+      nextSelection,
+      nextSelection[nextSelection.length - 1],
+      {
+        redraw: true,
+        scroll: false,
+      },
+    );
   }
   renderAnnotationList();
   updateGroupControls();
@@ -19656,7 +23308,7 @@ function setAnnotationGroupLocked(groupId, locked) {
 
 function updateAnnotationGroupProperties(groupId, updates, historyLabel) {
   const group = getAnnotationGroups().find(
-    (candidate) => candidate.groupId === groupId
+    (candidate) => candidate.groupId === groupId,
   );
   if (!group) return false;
 
@@ -19681,7 +23333,7 @@ function renameAnnotationGroup(groupId, groupName) {
   const duplicateGroup = getAnnotationGroups().find(
     (group) =>
       group.groupId !== groupId &&
-      group.groupName.toLowerCase() === trimmedName.toLowerCase()
+      group.groupName.toLowerCase() === trimmedName.toLowerCase(),
   );
   if (duplicateGroup) {
     alert("A group with that name already exists.");
@@ -19691,7 +23343,7 @@ function renameAnnotationGroup(groupId, groupName) {
   updateAnnotationGroupProperties(
     groupId,
     { groupName: trimmedName },
-    "Rename annotation group"
+    "Rename annotation group",
   );
 }
 
@@ -19699,7 +23351,7 @@ function setAnnotationGroupColor(groupId, groupColor) {
   updateAnnotationGroupProperties(
     groupId,
     { groupColor: getSafeGroupColor(groupColor) },
-    "Recolor annotation group"
+    "Recolor annotation group",
   );
 }
 
@@ -19747,13 +23399,15 @@ function createAnnotationListRow(feature, annotationId) {
   const typeCell = document.createElement("span");
   typeCell.className = "annotation-list-type";
   typeCell.appendChild(
-    createGeometryTypeIcon(feature.geometry?.type, props.shapeType)
+    createGeometryTypeIcon(feature.geometry?.type, props.shapeType),
   );
 
   const warningCell = document.createElement("span");
   warningCell.className = "annotation-list-warning";
   if (geometryWarning) {
-    warningCell.appendChild(createAnnotationGeometryWarningIcon(geometryWarning));
+    warningCell.appendChild(
+      createAnnotationGeometryWarningIcon(geometryWarning),
+    );
   }
 
   const labelCell = document.createElement("span");
@@ -19771,7 +23425,7 @@ function createAnnotationListRow(feature, annotationId) {
   visibilityButton.title = isVisible ? "Hide annotation" : "Show annotation";
   visibilityButton.setAttribute(
     "aria-label",
-    isVisible ? "Hide annotation" : "Show annotation"
+    isVisible ? "Hide annotation" : "Show annotation",
   );
   visibilityButton.appendChild(createVisibilityIcon(isVisible));
   visibilityButton.addEventListener("click", function (event) {
@@ -19794,7 +23448,7 @@ function createAnnotationListRow(feature, annotationId) {
       ? "Locked by group"
       : isLocked
         ? "Unlock annotation"
-        : "Lock annotation"
+        : "Lock annotation",
   );
   lockButton.appendChild(createLockIcon(isLocked));
   lockButton.addEventListener("click", function (event) {
@@ -19809,7 +23463,7 @@ function createAnnotationListRow(feature, annotationId) {
     warningCell,
     labelCell,
     visibilityButton,
-    lockButton
+    lockButton,
   );
   return row;
 }
@@ -19819,7 +23473,9 @@ function canPatchAnnotationRowsAfterGroupAssignment() {
     annotationFilterState.groupId ||
     annotationFilterState.visibility ||
     annotationFilterState.locked ||
-    ["group", "visibility", "locked"].includes(annotationFilterState.sortParameterId)
+    ["group", "visibility", "locked"].includes(
+      annotationFilterState.sortParameterId,
+    )
   );
 }
 
@@ -19831,13 +23487,13 @@ function updateAnnotationListRowsForUuids(uuids) {
   for (const uuid of uuids) {
     const feature = getAnnotationByUuid(uuid);
     const row = list.querySelector(
-      `.annotation-list-row[data-annotation-uuid="${CSS.escape(uuid)}"]`
+      `.annotation-list-row[data-annotation-uuid="${CSS.escape(uuid)}"]`,
     );
     if (!feature || !row || !annotationFeaturePassesFilters(feature)) {
       return false;
     }
     row.replaceWith(
-      createAnnotationListRow(feature, annotationIdByUuid.get(uuid) || "")
+      createAnnotationListRow(feature, annotationIdByUuid.get(uuid) || ""),
     );
   }
 
@@ -19926,7 +23582,7 @@ function createAnnotationGroupForSelection(groupName) {
 
   const groups = getAnnotationGroups();
   const existingGroup = groups.find(
-    (group) => group.groupName.toLowerCase() === trimmedName.toLowerCase()
+    (group) => group.groupName.toLowerCase() === trimmedName.toLowerCase(),
   );
 
   assignSelectedAnnotationGroup(
@@ -19936,7 +23592,7 @@ function createAnnotationGroupForSelection(groupName) {
       groupColor: getAnnotationGroupColor(groups.length),
       groupVisible: true,
       groupLocked: false,
-    }
+    },
   );
 }
 
@@ -19944,7 +23600,7 @@ function syncSelectedAnnotationVisuals() {
   [...document.getElementsByClassName("annotate-label")].forEach((label) => {
     label.classList.toggle(
       "annotation-selected",
-      selectedAnnotationUuids.has(label.dataset.annotationUuid)
+      selectedAnnotationUuids.has(label.dataset.annotationUuid),
     );
   });
 
@@ -19952,9 +23608,9 @@ function syncSelectedAnnotationVisuals() {
     (crosshair) => {
       crosshair.classList.toggle(
         "annotation-selected",
-        selectedAnnotationUuids.has(crosshair.dataset.annotationUuid)
+        selectedAnnotationUuids.has(crosshair.dataset.annotationUuid),
       );
-    }
+    },
   );
   syncAnnotationListSelection();
   renderAnnotationGroupOptions();
@@ -19982,7 +23638,7 @@ document
   .getElementById("annotationGroupSelect")
   .addEventListener("change", function (event) {
     const group = getAnnotationGroups().find(
-      (candidate) => candidate.groupId === event.target.value
+      (candidate) => candidate.groupId === event.target.value,
     );
     if (getSelectedAnnotationUuids().length > 0) {
       assignSelectedAnnotationGroup(group);
@@ -20019,9 +23675,13 @@ document
   .addEventListener("click", function () {
     const group = getSelectedGroupFromDropdown();
     if (!group) return;
-    showPrompt("Rename group:", (value) => {
-      renameAnnotationGroup(group.groupId, value);
-    }, group.groupName);
+    showPrompt(
+      "Rename group:",
+      (value) => {
+        renameAnnotationGroup(group.groupId, value);
+      },
+      group.groupName,
+    );
   });
 
 document
@@ -20049,7 +23709,7 @@ function deleteSelectedAnnotations() {
   }
 
   annotationHistory.push(
-    selectedUuids.length === 1 ? "Delete annotation" : "Delete annotations"
+    selectedUuids.length === 1 ? "Delete annotation" : "Delete annotations",
   );
 
   const selectedSet = new Set(selectedUuids);
@@ -20058,7 +23718,7 @@ function deleteSelectedAnnotations() {
     deleteCrosshairs(uuid, "anno");
   });
   annoJSON.features = annoJSON.features.filter(
-    (feature) => !selectedSet.has(feature.properties?.uuid)
+    (feature) => !selectedSet.has(feature.properties?.uuid),
   );
   clearAnnotationSelection({ redraw: false, scroll: false });
   drawShape(polyCanvas, [annoJSON]);
@@ -20082,12 +23742,12 @@ function applyCurrentAnno(id, changeLabel = false, options = {}) {
   if (!feature || isAnnotationFeatureLocked(feature)) return;
 
   const labelFontSize = Number(
-    document.getElementById("annoLabelFontSize").value
+    document.getElementById("annoLabelFontSize").value,
   );
   const labelFontColor = getAnnotationLabelFontColor();
   const labelBackgroundColor = getAnnotationLabelBackgroundColor();
   const labelBackgroundOpacity = getAnnotationOpacityValue(
-    "annoLabelBackgroundOpacity"
+    "annoLabelBackgroundOpacity",
   );
   const lineWeight = Number(document.getElementById("lineWeight").value);
   const lineColor = getAnnotationLineColor();
@@ -20112,7 +23772,7 @@ function applyCurrentAnno(id, changeLabel = false, options = {}) {
         labelFontColor,
         labelFontSize,
         labelBackgroundColor,
-        labelBackgroundOpacity
+        labelBackgroundOpacity,
       );
     } else {
       annoJSON.features[id - 1].properties.lineWeight = lineWeight;
@@ -20136,7 +23796,7 @@ function applyCurrentAnno(id, changeLabel = false, options = {}) {
         String(labelFontColor),
         labelFontSize,
         labelBackgroundColor,
-        labelBackgroundOpacity
+        labelBackgroundOpacity,
       );
     } else {
       annoJSON.features[id - 1].properties.lineStyle = lineStyle;
@@ -20165,7 +23825,7 @@ function applyCurrentAnno(id, changeLabel = false, options = {}) {
         String(labelFontColor),
         labelFontSize,
         labelBackgroundColor,
-        labelBackgroundOpacity
+        labelBackgroundOpacity,
       );
     } else {
       annoJSON.features[id - 1].properties.lineStyle = lineStyle;
@@ -20190,36 +23850,36 @@ function finishAnnotationStyleBatch(redraw = false) {
 
 function applyCurrentGrid(id, changeLabel = false) {
   const labelFontSize = Number(
-    document.getElementById("gridLabelFontSize").value
+    document.getElementById("gridLabelFontSize").value,
   );
   const labelFontSizeAfter = Number(
-    document.getElementById("gridLabelFontSizeAfter").value
+    document.getElementById("gridLabelFontSizeAfter").value,
   );
   const labelFontColor = document.getElementById("gridLabelFontColor").value;
   const labelFontColorAfter = document.getElementById(
-    "gridLabelFontColorAfter"
+    "gridLabelFontColorAfter",
   ).value;
   const labelBackgroundColor = document.getElementById(
-    "gridLabelBackgroundColor"
+    "gridLabelBackgroundColor",
   ).value;
   const labelBackgroundColorAfter = document.getElementById(
-    "gridLabelBackgroundColorAfter"
+    "gridLabelBackgroundColorAfter",
   ).value;
   const labelBackgroundOpacity = Number(
-    document.getElementById("gridLabelBackgroundOpacity").value
+    document.getElementById("gridLabelBackgroundOpacity").value,
   );
   const labelBackgroundOpacityAfter = Number(
-    document.getElementById("gridLabelBackgroundOpacityAfter").value
+    document.getElementById("gridLabelBackgroundOpacityAfter").value,
   );
   const lineWeight = Number(document.getElementById("gridLineWeight").value);
   const lineWeightAfter = Number(
-    document.getElementById("gridLineWeightAfter").value
+    document.getElementById("gridLineWeightAfter").value,
   );
   const lineColor = document.getElementById("gridLineColor").value;
   const lineColorAfter = document.getElementById("gridLineColorAfter").value;
   const lineOpacity = Number(document.getElementById("gridLineOpacity").value);
   const lineOpacityAfter = Number(
-    document.getElementById("gridLineOpacityAfter").value
+    document.getElementById("gridLineOpacityAfter").value,
   );
   const uuid = countJSON.features[id - 1].properties.uuid;
   const type = countJSON.features[id - 1].geometry.type;
@@ -20246,7 +23906,7 @@ function applyCurrentGrid(id, changeLabel = false) {
         labelFontColor,
         labelFontSize,
         labelBackgroundColor,
-        labelBackgroundOpacity
+        labelBackgroundOpacity,
       );
     } else {
       countJSON.features[id - 1].properties.lineWeight = lineWeight;
@@ -20331,7 +23991,7 @@ document
     }
     const gridIds = Array.from(
       { length: countJSON.features.length },
-      (_, i) => i + 1
+      (_, i) => i + 1,
     );
     for (let i = 0; i < gridIds.length; i++) {
       applyCurrentGrid(gridIds[i], true);
@@ -20407,7 +24067,7 @@ document.getElementById("applyAllGrid").addEventListener("click", function () {
   }
   const gridIds = Array.from(
     { length: countJSON.features.length },
-    (_, i) => i + 1
+    (_, i) => i + 1,
   );
   for (let i = 0; i < gridIds.length; i++) {
     applyCurrentGrid(gridIds[i], false);
@@ -20428,7 +24088,7 @@ function focusSelectedAnnotationLabelInput() {
   openAnnotatePalette();
   restoreToolPaletteFromMinimized(
     annotatePalette,
-    minimizeAnnotatePaletteButton
+    minimizeAnnotatePaletteButton,
   );
 
   const annotateDetails = document.getElementById("annotateDetails");
@@ -20555,13 +24215,13 @@ document
 document
   .getElementById("anno-label")
   ?.addEventListener("change", () =>
-    commitAnnotationTextInput("Edit annotation label")
+    commitAnnotationTextInput("Edit annotation label"),
   );
 
 document
   .getElementById("anno-notes")
   ?.addEventListener("change", () =>
-    commitAnnotationTextInput("Edit annotation notes")
+    commitAnnotationTextInput("Edit annotation notes"),
   );
 
 document.addEventListener("keydown", function (event) {
@@ -20580,7 +24240,7 @@ function goToPoint(x, y) {
   // Center the viewport on the specified coordinates without changing the zoom level
   viewer.viewport.panTo(
     new OpenSeadragon.Point(x, y),
-    true // Animate the panning
+    true, // Animate the panning
   );
 }
 
@@ -20633,8 +24293,8 @@ function distanceToSegment(point, start, end) {
     Math.min(
       1,
       ((point.x - start.x) * dx + (point.y - start.y) * dy) /
-        (dx * dx + dy * dy)
-    )
+        (dx * dx + dy * dy),
+    ),
   );
   return Math.hypot(point.x - (start.x + t * dx), point.y - (start.y + t * dy));
 }
@@ -20736,7 +24396,7 @@ function lineCoordinatesIntersectMarquee(coordinates, marqueePolygon) {
 
   if (
     coordinates.some((coord) =>
-      imagePointInMarquee(imagePointFromCoord(coord), marqueePolygon)
+      imagePointInMarquee(imagePointFromCoord(coord), marqueePolygon),
     )
   ) {
     return true;
@@ -20744,8 +24404,8 @@ function lineCoordinatesIntersectMarquee(coordinates, marqueePolygon) {
 
   return lineSegments.some(([lineStart, lineEnd]) =>
     marqueeSegments.some(([marqueeStart, marqueeEnd]) =>
-      imageSegmentsIntersect(lineStart, lineEnd, marqueeStart, marqueeEnd)
-    )
+      imageSegmentsIntersect(lineStart, lineEnd, marqueeStart, marqueeEnd),
+    ),
   );
 }
 
@@ -20755,8 +24415,8 @@ function polygonIntersectsMarquee(polygon, marqueePolygon) {
   if (
     polygon.some((ring) =>
       ring.some((coord) =>
-        imagePointInMarquee(imagePointFromCoord(coord), marqueePolygon)
-      )
+        imagePointInMarquee(imagePointFromCoord(coord), marqueePolygon),
+      ),
     )
   ) {
     return true;
@@ -20764,7 +24424,7 @@ function polygonIntersectsMarquee(polygon, marqueePolygon) {
 
   if (
     marqueePolygon.some((coord) =>
-      polygonContainsImagePoint(imagePointFromCoord(coord), polygon)
+      polygonContainsImagePoint(imagePointFromCoord(coord), polygon),
     )
   ) {
     return true;
@@ -20773,9 +24433,9 @@ function polygonIntersectsMarquee(polygon, marqueePolygon) {
   return polygon.some((ring) =>
     getRingSegments(ring).some(([ringStart, ringEnd]) =>
       marqueeSegments.some(([marqueeStart, marqueeEnd]) =>
-        imageSegmentsIntersect(ringStart, ringEnd, marqueeStart, marqueeEnd)
-      )
-    )
+        imageSegmentsIntersect(ringStart, ringEnd, marqueeStart, marqueeEnd),
+      ),
+    ),
   );
 }
 
@@ -20785,11 +24445,14 @@ function annotationFeatureIntersectsMarquee(feature, marqueePolygon) {
 
   const { type, coordinates } = feature.geometry;
   if (type === "Point") {
-    return imagePointInMarquee(imagePointFromCoord(coordinates), marqueePolygon);
+    return imagePointInMarquee(
+      imagePointFromCoord(coordinates),
+      marqueePolygon,
+    );
   }
   if (type === "MultiPoint") {
     return coordinates.some((coord) =>
-      imagePointInMarquee(imagePointFromCoord(coord), marqueePolygon)
+      imagePointInMarquee(imagePointFromCoord(coord), marqueePolygon),
     );
   }
   if (type === "LineString") {
@@ -20797,7 +24460,7 @@ function annotationFeatureIntersectsMarquee(feature, marqueePolygon) {
   }
   if (type === "MultiLineString") {
     return coordinates.some((line) =>
-      lineCoordinatesIntersectMarquee(line, marqueePolygon)
+      lineCoordinatesIntersectMarquee(line, marqueePolygon),
     );
   }
   if (type === "Polygon") {
@@ -20805,7 +24468,7 @@ function annotationFeatureIntersectsMarquee(feature, marqueePolygon) {
   }
   if (type === "MultiPolygon") {
     return coordinates.some((polygon) =>
-      polygonIntersectsMarquee(polygon, marqueePolygon)
+      polygonIntersectsMarquee(polygon, marqueePolygon),
     );
   }
   return false;
@@ -20828,17 +24491,24 @@ function findAnnotationUuidAtViewerPoint(viewerPoint, options = {}) {
     const { type, coordinates } = feature.geometry;
     if (type === "Point") {
       const pointPixel = imageCoordToViewerPixel(image, coordinates);
-      if (Math.hypot(viewerPoint.x - pointPixel.x, viewerPoint.y - pointPixel.y) <= 10) {
+      if (
+        Math.hypot(
+          viewerPoint.x - pointPixel.x,
+          viewerPoint.y - pointPixel.y,
+        ) <= 10
+      ) {
         return feature.properties.uuid;
       }
     } else if (type === "LineString") {
-      if (isNearLineCoordinates(viewerPoint, image, coordinates, lineTolerance)) {
+      if (
+        isNearLineCoordinates(viewerPoint, image, coordinates, lineTolerance)
+      ) {
         return feature.properties.uuid;
       }
     } else if (type === "MultiLineString") {
       if (
         coordinates.some((line) =>
-          isNearLineCoordinates(viewerPoint, image, line, lineTolerance)
+          isNearLineCoordinates(viewerPoint, image, line, lineTolerance),
         )
       ) {
         return feature.properties.uuid;
@@ -20847,7 +24517,7 @@ function findAnnotationUuidAtViewerPoint(viewerPoint, options = {}) {
       if (
         polygonContainsImagePoint(imagePoint, coordinates) ||
         coordinates.some((ring) =>
-          isNearLineCoordinates(viewerPoint, image, ring, lineTolerance)
+          isNearLineCoordinates(viewerPoint, image, ring, lineTolerance),
         )
       ) {
         return feature.properties.uuid;
@@ -20858,8 +24528,8 @@ function findAnnotationUuidAtViewerPoint(viewerPoint, options = {}) {
           (polygon) =>
             polygonContainsImagePoint(imagePoint, polygon) ||
             polygon.some((ring) =>
-              isNearLineCoordinates(viewerPoint, image, ring, lineTolerance)
-            )
+              isNearLineCoordinates(viewerPoint, image, ring, lineTolerance),
+            ),
         )
       ) {
         return feature.properties.uuid;
@@ -20880,7 +24550,7 @@ function getImagePointFromViewerPixel(pixelPoint) {
 
 function getImagePointFromPointerEvent(event) {
   return getImagePointFromViewerPixel(
-    new OpenSeadragon.Point(event.clientX, event.clientY)
+    new OpenSeadragon.Point(event.clientX, event.clientY),
   );
 }
 
@@ -20896,7 +24566,9 @@ function translateCoordinateArray(coordinates, dx, dy) {
     return coordinates;
   }
 
-  coordinates.forEach((coordinate) => translateCoordinateArray(coordinate, dx, dy));
+  coordinates.forEach((coordinate) =>
+    translateCoordinateArray(coordinate, dx, dy),
+  );
   return coordinates;
 }
 
@@ -20928,7 +24600,10 @@ function refreshAnnotationAfterMove({ updateList = false } = {}) {
 }
 
 function startAnnotationMoveDrag(event) {
-  if (!isAnnotationMoveMode || getUnlockedSelectedAnnotationUuids().length === 0) {
+  if (
+    !isAnnotationMoveMode ||
+    getUnlockedSelectedAnnotationUuids().length === 0
+  ) {
     return false;
   }
   if (isAnnotationDrawingActive()) return false;
@@ -20936,7 +24611,7 @@ function startAnnotationMoveDrag(event) {
   const delta = event.delta || new OpenSeadragon.Point(0, 0);
   const startPixel = new OpenSeadragon.Point(
     event.position.x - delta.x,
-    event.position.y - delta.y
+    event.position.y - delta.y,
   );
   const uuidAtStart = findAnnotationUuidAtViewerPoint(startPixel);
   if (!uuidAtStart) return false;
@@ -20952,7 +24627,7 @@ function startAnnotationMoveDrag(event) {
   if (!startImagePoint || !currentImagePoint) return false;
 
   annotationHistory.push(
-    selectedAnnotationUuids.size === 1 ? "Move annotation" : "Move annotations"
+    selectedAnnotationUuids.size === 1 ? "Move annotation" : "Move annotations",
   );
   annotationMoveDragState = {
     lastImagePoint: startImagePoint,
@@ -21004,7 +24679,10 @@ function updateAnnotationLabelOverlayPosition(uuid) {
   if (!feature?.properties || !container || !image) return;
 
   const viewportPoint = image.imageToViewportCoordinates(
-    new OpenSeadragon.Point(feature.properties.xLabel, feature.properties.yLabel)
+    new OpenSeadragon.Point(
+      feature.properties.xLabel,
+      feature.properties.yLabel,
+    ),
   );
   viewer.updateOverlay(container, viewportPoint);
 }
@@ -21029,9 +24707,15 @@ function startAnnotationLabelMoveDrag(event, uuid) {
     moved: false,
   };
   viewerContainer?.classList.add("annotation-label-moving");
-  window.addEventListener("pointermove", handleAnnotationLabelWindowPointerMove);
+  window.addEventListener(
+    "pointermove",
+    handleAnnotationLabelWindowPointerMove,
+  );
   window.addEventListener("pointerup", handleAnnotationLabelWindowPointerUp);
-  window.addEventListener("pointercancel", handleAnnotationLabelWindowPointerUp);
+  window.addEventListener(
+    "pointercancel",
+    handleAnnotationLabelWindowPointerUp,
+  );
   return true;
 }
 
@@ -21061,9 +24745,15 @@ function finishAnnotationLabelMoveDrag() {
   const moved = annotationLabelMoveDragState.moved;
   annotationLabelMoveDragState = null;
   viewerContainer?.classList.remove("annotation-label-moving");
-  window.removeEventListener("pointermove", handleAnnotationLabelWindowPointerMove);
+  window.removeEventListener(
+    "pointermove",
+    handleAnnotationLabelWindowPointerMove,
+  );
   window.removeEventListener("pointerup", handleAnnotationLabelWindowPointerUp);
-  window.removeEventListener("pointercancel", handleAnnotationLabelWindowPointerUp);
+  window.removeEventListener(
+    "pointercancel",
+    handleAnnotationLabelWindowPointerUp,
+  );
   if (moved) {
     unsavedAnnotations(true);
     suppressAnnotationClickBriefly();
@@ -21081,14 +24771,18 @@ function isVertexEditableAnnotation(feature) {
     return false;
   }
 
-  return !["rectangle", "ellipse", "circle"].includes(feature.properties.shapeType);
+  return !["rectangle", "ellipse", "circle"].includes(
+    feature.properties.shapeType,
+  );
 }
 
 function isShapeEditableAnnotation(feature) {
   return (
     feature?.geometry?.type === "Point" ||
     (feature?.geometry?.type === "Polygon" &&
-      ["rectangle", "ellipse", "circle"].includes(feature.properties?.shapeType))
+      ["rectangle", "ellipse", "circle"].includes(
+        feature.properties?.shapeType,
+      ))
   );
 }
 
@@ -21109,12 +24803,14 @@ function isRotationEditableAnnotation(feature) {
 function getEditableVertexEntries(feature) {
   if (!isVertexEditableAnnotation(feature)) return [];
   if (feature.geometry.type === "LineString") {
-    return (feature.geometry.coordinates || []).map((coordinate, vertexIndex) => ({
-      coordinate,
-      vertexIndex,
-      polygonIndex: null,
-      ringIndex: null,
-    }));
+    return (feature.geometry.coordinates || []).map(
+      (coordinate, vertexIndex) => ({
+        coordinate,
+        vertexIndex,
+        polygonIndex: null,
+        ringIndex: null,
+      }),
+    );
   }
 
   const polygons =
@@ -21147,9 +24843,13 @@ function getEditableVertexCoordinates(feature) {
 
 function getVertexRing(feature, vertexContext = {}) {
   if (!isVertexEditableAnnotation(feature)) return null;
-  if (feature.geometry.type === "LineString") return feature.geometry.coordinates;
+  if (feature.geometry.type === "LineString")
+    return feature.geometry.coordinates;
   if (feature.geometry.type === "Polygon") {
-    return feature.geometry.coordinates?.[Number(vertexContext.ringIndex) || 0] || null;
+    return (
+      feature.geometry.coordinates?.[Number(vertexContext.ringIndex) || 0] ||
+      null
+    );
   }
   if (feature.geometry.type === "MultiPolygon") {
     return (
@@ -21169,7 +24869,9 @@ function getVertexContextFromHandle(handle) {
         ? null
         : Number(handle.dataset.polygonIndex),
     ringIndex:
-      handle.dataset.ringIndex === undefined ? null : Number(handle.dataset.ringIndex),
+      handle.dataset.ringIndex === undefined
+        ? null
+        : Number(handle.dataset.ringIndex),
   };
 }
 
@@ -21178,7 +24880,10 @@ function getVertexContextSelector(uuid, vertexContext) {
     `.annotation-vertex-handle[data-annotation-uuid="${CSS.escape(uuid)}"]`,
     `[data-vertex-index="${vertexContext.vertexIndex}"]`,
   ];
-  if (vertexContext.ringIndex !== null && vertexContext.ringIndex !== undefined) {
+  if (
+    vertexContext.ringIndex !== null &&
+    vertexContext.ringIndex !== undefined
+  ) {
     parts.push(`[data-ring-index="${vertexContext.ringIndex}"]`);
   }
   if (
@@ -21195,7 +24900,7 @@ function removeAnnotationVertexHandles() {
     (handle) => {
       viewer.removeOverlay(handle);
       handle.remove();
-    }
+    },
   );
 }
 
@@ -21216,7 +24921,7 @@ function addAnnotationEditMoveHandle(uuid, coordinate, image) {
   viewer.addOverlay({
     element: handle,
     location: image.imageToViewportCoordinates(
-      new OpenSeadragon.Point(coordinate.x, coordinate.y)
+      new OpenSeadragon.Point(coordinate.x, coordinate.y),
     ),
     checkResize: false,
     rotationMode: OpenSeadragon.OverlayRotationMode.NO_ROTATION,
@@ -21235,7 +24940,7 @@ function renderAnnotationVertexHandles() {
   addAnnotationEditMoveHandle(
     activeVertexEditUuid,
     getFeatureEditMoveCoordinate(feature),
-    image
+    image,
   );
 
   const rotationHandleCoordinate = getRotationHandleCoordinate(feature);
@@ -21247,7 +24952,7 @@ function renderAnnotationVertexHandles() {
     rotateHandle.title = "Rotate annotation. Hold Shift to snap.";
     rotateHandle.setAttribute(
       "aria-label",
-      "Rotate annotation. Hold Shift to snap."
+      "Rotate annotation. Hold Shift to snap.",
     );
     rotateHandle.dataset.annotationUuid = activeVertexEditUuid;
     rotateHandle.dataset.handleType = "rotate";
@@ -21260,8 +24965,8 @@ function renderAnnotationVertexHandles() {
       location: image.imageToViewportCoordinates(
         new OpenSeadragon.Point(
           rotationHandleCoordinate[0],
-          rotationHandleCoordinate[1]
-        )
+          rotationHandleCoordinate[1],
+        ),
       ),
       checkResize: false,
       rotationMode: OpenSeadragon.OverlayRotationMode.NO_ROTATION,
@@ -21279,7 +24984,7 @@ function renderAnnotationVertexHandles() {
     handle.title = "Drag vertex. Option-click to delete.";
     handle.setAttribute(
       "aria-label",
-      `Move vertex ${vertexIndex + 1}. Option-click to delete.`
+      `Move vertex ${vertexIndex + 1}. Option-click to delete.`,
     );
     handle.dataset.annotationUuid = activeVertexEditUuid;
     handle.dataset.vertexIndex = String(vertexIndex);
@@ -21300,7 +25005,7 @@ function renderAnnotationVertexHandles() {
     viewer.addOverlay({
       element: handle,
       location: image.imageToViewportCoordinates(
-        new OpenSeadragon.Point(coordinate[0], coordinate[1])
+        new OpenSeadragon.Point(coordinate[0], coordinate[1]),
       ),
       checkResize: false,
       rotationMode: OpenSeadragon.OverlayRotationMode.NO_ROTATION,
@@ -21331,11 +25036,20 @@ function exitAnnotationVertexEditMode() {
   removeAnnotationVertexHandles();
   viewerContainer?.classList.remove(
     "annotation-vertex-editing",
-    "annotation-vertex-dragging"
+    "annotation-vertex-dragging",
   );
-  window.removeEventListener("pointermove", handleAnnotationVertexWindowPointerMove);
-  window.removeEventListener("pointerup", handleAnnotationVertexWindowPointerUp);
-  window.removeEventListener("pointercancel", handleAnnotationVertexWindowPointerUp);
+  window.removeEventListener(
+    "pointermove",
+    handleAnnotationVertexWindowPointerMove,
+  );
+  window.removeEventListener(
+    "pointerup",
+    handleAnnotationVertexWindowPointerUp,
+  );
+  window.removeEventListener(
+    "pointercancel",
+    handleAnnotationVertexWindowPointerUp,
+  );
 }
 
 function coordinatesMatch(a, b) {
@@ -21353,7 +25067,7 @@ function getCoordinatesWithoutTrailingDuplicate(coordinates) {
     cleanedCoordinates.length > 1 &&
     coordinatesMatch(
       cleanedCoordinates[cleanedCoordinates.length - 1],
-      cleanedCoordinates[cleanedCoordinates.length - 2]
+      cleanedCoordinates[cleanedCoordinates.length - 2],
     )
   ) {
     cleanedCoordinates.pop();
@@ -21380,7 +25094,8 @@ function setAnnotationVertexCoordinate(feature, vertexContext, imagePoint) {
     const ring = getVertexRing(feature, vertexContext);
     if (!ring?.[vertexIndex]) return;
     const closingIndex = ring.length - 1;
-    const isClosed = ring.length > 1 && coordinatesMatch(ring[0], ring[closingIndex]);
+    const isClosed =
+      ring.length > 1 && coordinatesMatch(ring[0], ring[closingIndex]);
 
     oldCoordinate = [...ring[vertexIndex]];
     ring[vertexIndex] = nextCoordinate;
@@ -21394,7 +25109,7 @@ function setAnnotationVertexCoordinate(feature, vertexContext, imagePoint) {
     oldCoordinate &&
     coordinatesMatch(
       [feature.properties.xLabel, feature.properties.yLabel],
-      oldCoordinate
+      oldCoordinate,
     )
   ) {
     feature.properties.xLabel = nextCoordinate[0];
@@ -21415,11 +25130,17 @@ function getMinimumEditableVertexCount(feature) {
   return 0;
 }
 
-function setEditableVertexCoordinates(feature, coordinates, vertexContext = {}) {
+function setEditableVertexCoordinates(
+  feature,
+  coordinates,
+  vertexContext = {},
+) {
   if (!isVertexEditableAnnotation(feature)) return false;
 
   if (feature.geometry.type === "LineString") {
-    feature.geometry.coordinates = coordinates.map((coordinate) => [...coordinate]);
+    feature.geometry.coordinates = coordinates.map((coordinate) => [
+      ...coordinate,
+    ]);
     invalidateFeatureImageBounds(feature);
     return true;
   }
@@ -21429,10 +25150,7 @@ function setEditableVertexCoordinates(feature, coordinates, vertexContext = {}) 
     feature.geometry.type === "MultiPolygon"
   ) {
     const ring = coordinates.map((coordinate) => [...coordinate]);
-    if (
-      ring.length > 0 &&
-      !coordinatesMatch(ring[0], ring[ring.length - 1])
-    ) {
+    if (ring.length > 0 && !coordinatesMatch(ring[0], ring[ring.length - 1])) {
       ring.push([...ring[0]]);
     }
     if (feature.geometry.type === "Polygon") {
@@ -21510,7 +25228,7 @@ function coordToPoint(coord) {
 
 function getVisiblePolygonRing(feature) {
   const ring = getCoordinatesWithoutTrailingDuplicate(
-    feature.geometry.coordinates?.[0] || []
+    feature.geometry.coordinates?.[0] || [],
   );
   if (ring.length > 1 && coordinatesMatch(ring[0], ring[ring.length - 1])) {
     ring.pop();
@@ -21525,7 +25243,7 @@ function getCoordinateCenter(coordinates) {
       x: acc.x + Number(coord[0]) / coordinates.length,
       y: acc.y + Number(coord[1]) / coordinates.length,
     }),
-    { x: 0, y: 0 }
+    { x: 0, y: 0 },
   );
   if (!Number.isFinite(center.x) || !Number.isFinite(center.y)) return null;
   return center;
@@ -21577,12 +25295,12 @@ function getImageDistanceForViewerPixels(center, pixelDistance) {
   if (!image || !center) return pixelDistance;
 
   const centerViewport = image.imageToViewportCoordinates(
-    new OpenSeadragon.Point(center.x, center.y)
+    new OpenSeadragon.Point(center.x, center.y),
   );
   const centerPixel =
     viewer.viewport.viewportToViewerElementCoordinates(centerViewport);
   const offsetViewport = viewer.viewport.viewerElementToViewportCoordinates(
-    new OpenSeadragon.Point(centerPixel.x, centerPixel.y - pixelDistance)
+    new OpenSeadragon.Point(centerPixel.x, centerPixel.y - pixelDistance),
   );
   const offsetImage = image.viewportToImageCoordinates(offsetViewport);
   return Math.hypot(offsetImage.x - center.x, offsetImage.y - center.y);
@@ -21598,9 +25316,11 @@ function getRotationHandleCoordinate(feature) {
   const maxRadius = coordinates.reduce((maxDistance, coordinate) => {
     const distance = Math.hypot(
       Number(coordinate[0]) - center.x,
-      Number(coordinate[1]) - center.y
+      Number(coordinate[1]) - center.y,
     );
-    return Number.isFinite(distance) ? Math.max(maxDistance, distance) : maxDistance;
+    return Number.isFinite(distance)
+      ? Math.max(maxDistance, distance)
+      : maxDistance;
   }, 0);
   const handleOffset = getImageDistanceForViewerPixels(center, 28);
   return [center.x, center.y - maxRadius - handleOffset];
@@ -21622,7 +25342,7 @@ function getRectangleEditModel(feature) {
       x: acc.x + Number(coord[0]) / 4,
       y: acc.y + Number(coord[1]) / 4,
     }),
-    { x: 0, y: 0 }
+    { x: 0, y: 0 },
   );
   const projections = ring.slice(0, 4).map((coord) => {
     const point = coordToPoint(coord);
@@ -21647,24 +25367,36 @@ function getRectangleEditModel(feature) {
 function getRectangleCoordinatesFromModel(model) {
   return [
     addScaledVector(
-      { x: model.center.x + model.v.x * model.minV, y: model.center.y + model.v.y * model.minV },
+      {
+        x: model.center.x + model.v.x * model.minV,
+        y: model.center.y + model.v.y * model.minV,
+      },
       model.u,
-      model.minU
+      model.minU,
     ),
     addScaledVector(
-      { x: model.center.x + model.v.x * model.minV, y: model.center.y + model.v.y * model.minV },
+      {
+        x: model.center.x + model.v.x * model.minV,
+        y: model.center.y + model.v.y * model.minV,
+      },
       model.u,
-      model.maxU
+      model.maxU,
     ),
     addScaledVector(
-      { x: model.center.x + model.v.x * model.maxV, y: model.center.y + model.v.y * model.maxV },
+      {
+        x: model.center.x + model.v.x * model.maxV,
+        y: model.center.y + model.v.y * model.maxV,
+      },
       model.u,
-      model.maxU
+      model.maxU,
     ),
     addScaledVector(
-      { x: model.center.x + model.v.x * model.maxV, y: model.center.y + model.v.y * model.maxV },
+      {
+        x: model.center.x + model.v.x * model.maxV,
+        y: model.center.y + model.v.y * model.maxV,
+      },
       model.u,
-      model.minU
+      model.minU,
     ),
   ];
 }
@@ -21678,7 +25410,7 @@ function getEllipseEditModel(feature) {
       x: acc.x + Number(coord[0]) / ring.length,
       y: acc.y + Number(coord[1]) / ring.length,
     }),
-    { x: 0, y: 0 }
+    { x: 0, y: 0 },
   );
   const majorEndpoint = coordToPoint(ring[0]);
   const u = normalizeVector({
@@ -21743,7 +25475,7 @@ function getCircleEditModel(feature) {
         x: acc.x + Number(coord[0]) / ring.length,
         y: acc.y + Number(coord[1]) / ring.length,
       }),
-      { x: 0, y: 0 }
+      { x: 0, y: 0 },
     );
   }
 
@@ -21767,7 +25499,9 @@ function getShapeEditHandles(feature) {
   if (!isShapeEditableAnnotation(feature)) return [];
   if (feature.geometry.type === "Point") {
     const center = getFeatureEditMoveCoordinate(feature);
-    return center ? [{ handleType: "center", coordinate: [center.x, center.y] }] : [];
+    return center
+      ? [{ handleType: "center", coordinate: [center.x, center.y] }]
+      : [];
   }
   const shapeType = feature.properties.shapeType;
 
@@ -21782,7 +25516,7 @@ function getShapeEditHandles(feature) {
           y: center.y + v.y * vValue,
         },
         u,
-        uValue
+        uValue,
       );
     const handles = [
       { handleType: "center", coordinate: [center.x, center.y] },
@@ -21797,7 +25531,10 @@ function getShapeEditHandles(feature) {
     ];
     const rotationHandleCoordinate = getRotationHandleCoordinate(feature);
     if (rotationHandleCoordinate) {
-      handles.push({ handleType: "rotate", coordinate: rotationHandleCoordinate });
+      handles.push({
+        handleType: "rotate",
+        coordinate: rotationHandleCoordinate,
+      });
     }
     return handles;
   }
@@ -21808,12 +25545,21 @@ function getShapeEditHandles(feature) {
     const { center, u, v, majorRadius, minorRadius } = model;
     const handles = [
       { handleType: "center", coordinate: [center.x, center.y] },
-      { handleType: "major-radius", coordinate: addScaledVector(center, u, majorRadius) },
-      { handleType: "minor-radius", coordinate: addScaledVector(center, v, minorRadius) },
+      {
+        handleType: "major-radius",
+        coordinate: addScaledVector(center, u, majorRadius),
+      },
+      {
+        handleType: "minor-radius",
+        coordinate: addScaledVector(center, v, minorRadius),
+      },
     ];
     const rotationHandleCoordinate = getRotationHandleCoordinate(feature);
     if (rotationHandleCoordinate) {
-      handles.push({ handleType: "rotate", coordinate: rotationHandleCoordinate });
+      handles.push({
+        handleType: "rotate",
+        coordinate: rotationHandleCoordinate,
+      });
     }
     return handles;
   }
@@ -21854,7 +25600,7 @@ function removeAnnotationShapeHandles() {
     (handle) => {
       viewer.removeOverlay(handle);
       handle.remove();
-    }
+    },
   );
 }
 
@@ -21868,7 +25614,10 @@ function renderAnnotationShapeHandles() {
 
   getShapeEditHandles(feature).forEach(({ handleType, coordinate }) => {
     const handle = document.createElement("button");
-    const handleLabel = getShapeHandleLabel(feature.properties.shapeType, handleType);
+    const handleLabel = getShapeHandleLabel(
+      feature.properties.shapeType,
+      handleType,
+    );
     handle.type = "button";
     handle.className = `annotation-vertex-handle annotation-shape-handle annotation-shape-handle-${handleType}`;
     handle.title = handleLabel;
@@ -21882,7 +25631,7 @@ function renderAnnotationShapeHandles() {
     viewer.addOverlay({
       element: handle,
       location: image.imageToViewportCoordinates(
-        new OpenSeadragon.Point(coordinate[0], coordinate[1])
+        new OpenSeadragon.Point(coordinate[0], coordinate[1]),
       ),
       checkResize: false,
       rotationMode: OpenSeadragon.OverlayRotationMode.NO_ROTATION,
@@ -21914,11 +25663,17 @@ function exitAnnotationShapeEditMode() {
   removeAnnotationShapeHandles();
   viewerContainer?.classList.remove(
     "annotation-shape-editing",
-    "annotation-shape-dragging"
+    "annotation-shape-dragging",
   );
-  window.removeEventListener("pointermove", handleAnnotationShapeWindowPointerMove);
+  window.removeEventListener(
+    "pointermove",
+    handleAnnotationShapeWindowPointerMove,
+  );
   window.removeEventListener("pointerup", handleAnnotationShapeWindowPointerUp);
-  window.removeEventListener("pointercancel", handleAnnotationShapeWindowPointerUp);
+  window.removeEventListener(
+    "pointercancel",
+    handleAnnotationShapeWindowPointerUp,
+  );
 }
 
 function updatePolygonFeatureCoordinates(feature, coordinates) {
@@ -21928,15 +25683,22 @@ function updatePolygonFeatureCoordinates(feature, coordinates) {
   }
   feature.geometry.coordinates[0] = ring;
   feature.properties.area_m2 = squareMetersFromSquarePixels(
-    calculatePolygonArea([ring])
+    calculatePolygonArea([ring]),
   );
   feature.properties.perimeter_m = metersFromPixels(
-    calculatePolygonExteriorPerimeter([ring])
+    calculatePolygonExteriorPerimeter([ring]),
   );
 }
 
-function updateDefaultShapeLabelPosition(feature, oldLabelPoint, newLabelPoint) {
-  const currentLabelPoint = [feature.properties.xLabel, feature.properties.yLabel];
+function updateDefaultShapeLabelPosition(
+  feature,
+  oldLabelPoint,
+  newLabelPoint,
+) {
+  const currentLabelPoint = [
+    feature.properties.xLabel,
+    feature.properties.yLabel,
+  ];
   if (coordinatesMatch(currentLabelPoint, oldLabelPoint)) {
     feature.properties.xLabel = newLabelPoint[0];
     feature.properties.yLabel = newLabelPoint[1];
@@ -21947,7 +25709,8 @@ function updateDefaultShapeLabelPosition(feature, oldLabelPoint, newLabelPoint) 
 function getDefaultShapeLabelPoint(feature) {
   const shapeType = feature.properties?.shapeType;
   if (feature.geometry?.type === "Point") return feature.geometry.coordinates;
-  if (feature.geometry?.type === "LineString") return feature.geometry.coordinates?.[0];
+  if (feature.geometry?.type === "LineString")
+    return feature.geometry.coordinates?.[0];
   if (feature.geometry?.type === "MultiPolygon") {
     return feature.geometry.coordinates?.[0]?.[0]?.[0];
   }
@@ -21963,7 +25726,12 @@ function updateAnnotationPointOverlayPosition(uuid) {
   const feature = getAnnotationByUuid(uuid);
   const crosshair = document.getElementById(`annotate-crosshair-${uuid}`);
   const image = viewer.world.getItemAt(0);
-  if (!feature?.geometry || feature.geometry.type !== "Point" || !crosshair || !image) {
+  if (
+    !feature?.geometry ||
+    feature.geometry.type !== "Point" ||
+    !crosshair ||
+    !image
+  ) {
     return;
   }
 
@@ -21972,9 +25740,9 @@ function updateAnnotationPointOverlayPosition(uuid) {
     image.imageToViewportCoordinates(
       new OpenSeadragon.Point(
         feature.geometry.coordinates[0],
-        feature.geometry.coordinates[1]
-      )
-    )
+        feature.geometry.coordinates[1],
+      ),
+    ),
   );
 }
 
@@ -21982,7 +25750,10 @@ function moveAnnotationFeatureCenterToImagePoint(feature, imagePoint) {
   const currentCenter = getFeatureEditMoveCoordinate(feature);
   if (!currentCenter || !imagePoint) return false;
 
-  const pointerOffset = annotationShapeDragState?.pointerOffset || { x: 0, y: 0 };
+  const pointerOffset = annotationShapeDragState?.pointerOffset || {
+    x: 0,
+    y: 0,
+  };
   const targetCenter = {
     x: imagePoint.x - pointerOffset.x,
     y: imagePoint.y - pointerOffset.y,
@@ -21990,7 +25761,7 @@ function moveAnnotationFeatureCenterToImagePoint(feature, imagePoint) {
   translateAnnotationFeature(
     feature,
     targetCenter.x - currentCenter.x,
-    targetCenter.y - currentCenter.y
+    targetCenter.y - currentCenter.y,
   );
   updateAnnotationLabelOverlayPosition(feature.properties.uuid);
   updateAnnotationPointOverlayPosition(feature.properties.uuid);
@@ -22014,17 +25785,21 @@ function updateRectangleShapeFromDrag(feature, handleType, imagePoint) {
   const projectedV = dotVector(relativePoint, model.v);
   const minSize = 1;
 
-  if (handleType.includes("left")) model.minU = Math.min(projectedU, model.maxU - minSize);
-  if (handleType.includes("right")) model.maxU = Math.max(projectedU, model.minU + minSize);
-  if (handleType.includes("top")) model.minV = Math.min(projectedV, model.maxV - minSize);
-  if (handleType.includes("bottom")) model.maxV = Math.max(projectedV, model.minV + minSize);
+  if (handleType.includes("left"))
+    model.minU = Math.min(projectedU, model.maxU - minSize);
+  if (handleType.includes("right"))
+    model.maxU = Math.max(projectedU, model.minU + minSize);
+  if (handleType.includes("top"))
+    model.minV = Math.min(projectedV, model.maxV - minSize);
+  if (handleType.includes("bottom"))
+    model.maxV = Math.max(projectedV, model.minV + minSize);
 
   const coordinates = getRectangleCoordinatesFromModel(model);
   updatePolygonFeatureCoordinates(feature, coordinates);
   updateDefaultShapeLabelPosition(
     feature,
     oldLabelPoint,
-    getDefaultShapeLabelPoint(feature)
+    getDefaultShapeLabelPoint(feature),
   );
   return true;
 }
@@ -22049,13 +25824,19 @@ function updateEllipseShapeFromDrag(feature, handleType, imagePoint) {
       x: imagePoint.x - model.center.x,
       y: imagePoint.y - model.center.y,
     };
-    model.majorRadius = Math.max(minRadius, Math.abs(dotVector(relativePoint, model.u)));
+    model.majorRadius = Math.max(
+      minRadius,
+      Math.abs(dotVector(relativePoint, model.u)),
+    );
   } else if (handleType === "minor-radius") {
     const relativePoint = {
       x: imagePoint.x - model.center.x,
       y: imagePoint.y - model.center.y,
     };
-    model.minorRadius = Math.max(minRadius, Math.abs(dotVector(relativePoint, model.v)));
+    model.minorRadius = Math.max(
+      minRadius,
+      Math.abs(dotVector(relativePoint, model.v)),
+    );
   }
 
   const coordinates = getEllipsePoints([
@@ -22067,7 +25848,7 @@ function updateEllipseShapeFromDrag(feature, handleType, imagePoint) {
   updateDefaultShapeLabelPosition(
     feature,
     oldLabelPoint,
-    getDefaultShapeLabelPoint(feature)
+    getDefaultShapeLabelPoint(feature),
   );
   return true;
 }
@@ -22087,14 +25868,14 @@ function updateCircleShapeFromDrag(feature, handleType, imagePoint) {
       getVectorLength({
         x: imagePoint.x - model.center.x,
         y: imagePoint.y - model.center.y,
-      })
+      }),
     );
   }
 
   const coordinates = getCircleCoordinatesInImageSpace(
     model.center.x,
     model.center.y,
-    model.radius * 2
+    model.radius * 2,
   );
   updatePolygonFeatureCoordinates(feature, coordinates);
   feature.properties.circleCenterX = model.center.x;
@@ -22104,7 +25885,7 @@ function updateCircleShapeFromDrag(feature, handleType, imagePoint) {
   updateDefaultShapeLabelPosition(
     feature,
     oldLabelPoint,
-    getDefaultShapeLabelPoint(feature)
+    getDefaultShapeLabelPoint(feature),
   );
   return true;
 }
@@ -22116,7 +25897,7 @@ function getAnnotationRotationStartState(feature, center, startImagePoint) {
 
   const startAngle = Math.atan2(
     startImagePoint.y - center.y,
-    startImagePoint.x - center.x
+    startImagePoint.x - center.x,
   );
 
   return {
@@ -22134,9 +25915,14 @@ function getAnnotationRotationStartState(feature, center, startImagePoint) {
   };
 }
 
-function rotateLineStringFeature(feature, startCoordinates, center, angleRadians) {
+function rotateLineStringFeature(
+  feature,
+  startCoordinates,
+  center,
+  angleRadians,
+) {
   feature.geometry.coordinates = startCoordinates.map((coordinate) =>
-    rotatePointAroundCenter(coordinate, center, angleRadians)
+    rotatePointAroundCenter(coordinate, center, angleRadians),
   );
   invalidateFeatureImageBounds(feature);
 }
@@ -22146,7 +25932,7 @@ function rotatePolygonFeature(feature, startCoordinates, center, angleRadians) {
   feature.geometry.coordinates = rotateCoordinateTree(
     startCoordinates,
     center,
-    angleRadians
+    angleRadians,
   );
   invalidateFeatureImageBounds(feature);
   updateGeometryMeasurementProperties(feature);
@@ -22164,16 +25950,21 @@ function rotateCoordinateTree(coordinates, center, angleRadians) {
   }
   if (!Array.isArray(coordinates)) return coordinates;
   return coordinates.map((coordinate) =>
-    rotateCoordinateTree(coordinate, center, angleRadians)
+    rotateCoordinateTree(coordinate, center, angleRadians),
   );
 }
 
-function rotateMultiPolygonFeature(feature, startCoordinates, center, angleRadians) {
+function rotateMultiPolygonFeature(
+  feature,
+  startCoordinates,
+  center,
+  angleRadians,
+) {
   if (!Array.isArray(startCoordinates)) return false;
   feature.geometry.coordinates = rotateCoordinateTree(
     startCoordinates,
     center,
-    angleRadians
+    angleRadians,
   );
   invalidateFeatureImageBounds(feature);
   updateGeometryMeasurementProperties(feature);
@@ -22186,7 +25977,7 @@ function rotateAnnotationFeatureFromDrag(feature, imagePoint, options = {}) {
 
   const currentAngle = Math.atan2(
     imagePoint.y - rotationState.center.y,
-    imagePoint.x - rotationState.center.x
+    imagePoint.x - rotationState.center.x,
   );
   let angleDelta = currentAngle - rotationState.startAngle;
   if (options.snap) {
@@ -22200,14 +25991,17 @@ function rotateAnnotationFeatureFromDrag(feature, imagePoint, options = {}) {
       feature,
       rotationState.coordinates,
       rotationState.center,
-      angleDelta
+      angleDelta,
     );
   } else if (feature.properties?.shapeType === "rectangle") {
     const model = cloneRectangleEditModel(rotationState.rectangleModel);
     if (!model) return false;
     model.u = rotateVector(model.u, angleDelta);
     model.v = rotateVector(model.v, angleDelta);
-    updatePolygonFeatureCoordinates(feature, getRectangleCoordinatesFromModel(model));
+    updatePolygonFeatureCoordinates(
+      feature,
+      getRectangleCoordinatesFromModel(model),
+    );
   } else if (feature.properties?.shapeType === "ellipse") {
     const model = cloneEllipseEditModel(rotationState.ellipseModel);
     if (!model) return false;
@@ -22225,7 +26019,7 @@ function rotateAnnotationFeatureFromDrag(feature, imagePoint, options = {}) {
         feature,
         rotationState.coordinates,
         rotationState.center,
-        angleDelta
+        angleDelta,
       )
     ) {
       return false;
@@ -22236,7 +26030,7 @@ function rotateAnnotationFeatureFromDrag(feature, imagePoint, options = {}) {
         feature,
         rotationState.coordinates,
         rotationState.center,
-        angleDelta
+        angleDelta,
       )
     ) {
       return false;
@@ -22248,7 +26042,7 @@ function rotateAnnotationFeatureFromDrag(feature, imagePoint, options = {}) {
   updateDefaultShapeLabelPosition(
     feature,
     oldLabelPoint,
-    getDefaultShapeLabelPoint(feature)
+    getDefaultShapeLabelPoint(feature),
   );
   return true;
 }
@@ -22288,12 +26082,10 @@ function startAnnotationShapeDrag(event, uuid, handleType) {
 
   const imagePoint = getImagePointFromPointerEvent(event);
   if (!imagePoint) return false;
-  const moveCenter = handleType === "center"
-    ? getFeatureEditMoveCoordinate(feature)
-    : null;
-  const rotationCenter = handleType === "rotate"
-    ? getFeatureEditMoveCoordinate(feature)
-    : null;
+  const moveCenter =
+    handleType === "center" ? getFeatureEditMoveCoordinate(feature) : null;
+  const rotationCenter =
+    handleType === "rotate" ? getFeatureEditMoveCoordinate(feature) : null;
   const ellipseModel =
     feature.properties.shapeType === "ellipse"
       ? getEllipseEditModel(feature)
@@ -22320,9 +26112,15 @@ function startAnnotationShapeDrag(event, uuid, handleType) {
     moved: false,
   };
   viewerContainer?.classList.add("annotation-shape-dragging");
-  window.addEventListener("pointermove", handleAnnotationShapeWindowPointerMove);
+  window.addEventListener(
+    "pointermove",
+    handleAnnotationShapeWindowPointerMove,
+  );
   window.addEventListener("pointerup", handleAnnotationShapeWindowPointerUp);
-  window.addEventListener("pointercancel", handleAnnotationShapeWindowPointerUp);
+  window.addEventListener(
+    "pointercancel",
+    handleAnnotationShapeWindowPointerUp,
+  );
   return true;
 }
 
@@ -22342,10 +26140,11 @@ function moveAnnotationShapeHandleToImagePoint(imagePoint, options = {}) {
   if (!annotationShapeDragState.moved) {
     annotationHistory.push(
       handleType === "rotate" ? "Rotate annotation" : "Edit annotation shape",
-      annotationShapeDragState.undoState
+      annotationShapeDragState.undoState,
     );
   }
-  if (!updateShapeFromDrag(feature, handleType, imagePoint, options)) return false;
+  if (!updateShapeFromDrag(feature, handleType, imagePoint, options))
+    return false;
   annotationShapeDragState.moved = true;
   drawShape(polyCanvas, [annoJSON, annoJSONTemp]);
   if (activeVertexEditUuid === uuid && !activeShapeEditUuid) {
@@ -22363,9 +26162,15 @@ function finishAnnotationShapeDrag() {
   const uuid = annotationShapeDragState.uuid;
   annotationShapeDragState = null;
   viewerContainer?.classList.remove("annotation-shape-dragging");
-  window.removeEventListener("pointermove", handleAnnotationShapeWindowPointerMove);
+  window.removeEventListener(
+    "pointermove",
+    handleAnnotationShapeWindowPointerMove,
+  );
   window.removeEventListener("pointerup", handleAnnotationShapeWindowPointerUp);
-  window.removeEventListener("pointercancel", handleAnnotationShapeWindowPointerUp);
+  window.removeEventListener(
+    "pointercancel",
+    handleAnnotationShapeWindowPointerUp,
+  );
   if (moved) {
     updateAnnotationGeometryStatus(getAnnotationByUuid(uuid));
     unsavedAnnotations(true);
@@ -22410,17 +26215,27 @@ function deleteAnnotationVertex(uuid, vertexContext) {
   if (!ring) return false;
   const coordinates = getCoordinatesWithoutTrailingDuplicate(ring);
   const vertexIndex = Number(vertexContext?.vertexIndex);
-  if (coordinates.length <= getMinimumEditableVertexCount(feature)) return false;
+  if (coordinates.length <= getMinimumEditableVertexCount(feature))
+    return false;
   if (!coordinates[vertexIndex]) return false;
 
   const undoState = cloneAnnotationState();
   coordinates.splice(vertexIndex, 1);
-  if (!setEditableVertexCoordinates(feature, coordinates, vertexContext)) return false;
-  finishAnnotationVertexGeometryEdit(uuid, "Delete annotation vertex", undoState);
+  if (!setEditableVertexCoordinates(feature, coordinates, vertexContext))
+    return false;
+  finishAnnotationVertexGeometryEdit(
+    uuid,
+    "Delete annotation vertex",
+    undoState,
+  );
   return true;
 }
 
-function getNearestEditableSegmentAtViewerPoint(feature, viewerPoint, tolerance = 10) {
+function getNearestEditableSegmentAtViewerPoint(
+  feature,
+  viewerPoint,
+  tolerance = 10,
+) {
   if (!isVertexEditableAnnotation(feature)) return null;
 
   const image = viewer.world.getItemAt(0);
@@ -22436,7 +26251,7 @@ function getNearestEditableSegmentAtViewerPoint(feature, viewerPoint, tolerance 
             groups[key] ||= [];
             groups[key].push(entry);
             return groups;
-          }, {})
+          }, {}),
         );
   let nearestSegment = null;
 
@@ -22456,10 +26271,13 @@ function getNearestEditableSegmentAtViewerPoint(feature, viewerPoint, tolerance 
       const distance = distanceToSegment(
         viewerPoint,
         imageCoordToViewerPixel(image, startEntry.coordinate),
-        imageCoordToViewerPixel(image, endEntry.coordinate)
+        imageCoordToViewerPixel(image, endEntry.coordinate),
       );
 
-      if (distance <= tolerance && (!nearestSegment || distance < nearestSegment.distance)) {
+      if (
+        distance <= tolerance &&
+        (!nearestSegment || distance < nearestSegment.distance)
+      ) {
         nearestSegment = {
           distance,
           insertIndex: startEntry.vertexIndex + 1,
@@ -22481,7 +26299,7 @@ function insertAnnotationVertexAtViewerPoint(uuid, viewerPoint) {
   const nearestSegment = getNearestEditableSegmentAtViewerPoint(
     feature,
     viewerPoint,
-    12
+    12,
   );
   if (!nearestSegment) return false;
 
@@ -22492,7 +26310,10 @@ function insertAnnotationVertexAtViewerPoint(uuid, viewerPoint) {
   if (!ring) return false;
   const coordinates = getCoordinatesWithoutTrailingDuplicate(ring);
   const undoState = cloneAnnotationState();
-  coordinates.splice(nearestSegment.insertIndex, 0, [imagePoint.x, imagePoint.y]);
+  coordinates.splice(nearestSegment.insertIndex, 0, [
+    imagePoint.x,
+    imagePoint.y,
+  ]);
   setEditableVertexCoordinates(feature, coordinates, nearestSegment);
   finishAnnotationVertexGeometryEdit(uuid, "Add annotation vertex", undoState);
   return true;
@@ -22502,15 +26323,17 @@ function updateAnnotationVertexHandlePosition(uuid, vertexContext) {
   const feature = getAnnotationByUuid(uuid);
   const ring = getVertexRing(feature, vertexContext);
   const coordinate = ring?.[Number(vertexContext?.vertexIndex)];
-  const handle = document.querySelector(getVertexContextSelector(uuid, vertexContext));
+  const handle = document.querySelector(
+    getVertexContextSelector(uuid, vertexContext),
+  );
   const image = viewer.world.getItemAt(0);
   if (!coordinate || !handle || !image) return;
 
   viewer.updateOverlay(
     handle,
     image.imageToViewportCoordinates(
-      new OpenSeadragon.Point(coordinate[0], coordinate[1])
-    )
+      new OpenSeadragon.Point(coordinate[0], coordinate[1]),
+    ),
   );
 }
 
@@ -22518,7 +26341,7 @@ function updateAnnotationEditMoveHandlePosition(uuid) {
   const feature = getAnnotationByUuid(uuid);
   const coordinate = getFeatureEditMoveCoordinate(feature);
   const handle = document.querySelector(
-    `.annotation-shape-handle-center[data-annotation-uuid="${CSS.escape(uuid)}"]`
+    `.annotation-shape-handle-center[data-annotation-uuid="${CSS.escape(uuid)}"]`,
   );
   const image = viewer.world.getItemAt(0);
   if (!coordinate || !handle || !image) return;
@@ -22526,8 +26349,8 @@ function updateAnnotationEditMoveHandlePosition(uuid) {
   viewer.updateOverlay(
     handle,
     image.imageToViewportCoordinates(
-      new OpenSeadragon.Point(coordinate.x, coordinate.y)
-    )
+      new OpenSeadragon.Point(coordinate.x, coordinate.y),
+    ),
   );
 }
 
@@ -22554,16 +26377,23 @@ function startAnnotationVertexDrag(event, uuid, vertexContext) {
     moved: false,
   };
   viewerContainer?.classList.add("annotation-vertex-dragging");
-  window.addEventListener("pointermove", handleAnnotationVertexWindowPointerMove);
+  window.addEventListener(
+    "pointermove",
+    handleAnnotationVertexWindowPointerMove,
+  );
   window.addEventListener("pointerup", handleAnnotationVertexWindowPointerUp);
-  window.addEventListener("pointercancel", handleAnnotationVertexWindowPointerUp);
+  window.addEventListener(
+    "pointercancel",
+    handleAnnotationVertexWindowPointerUp,
+  );
   return true;
 }
 
 function moveAnnotationVertexToImagePoint(imagePoint) {
   if (!annotationVertexDragState || !imagePoint) return false;
 
-  const { uuid, vertexIndex, polygonIndex, ringIndex } = annotationVertexDragState;
+  const { uuid, vertexIndex, polygonIndex, ringIndex } =
+    annotationVertexDragState;
   const feature = getAnnotationByUuid(uuid);
   if (!isVertexEditableAnnotation(feature)) return false;
   const vertexContext = { vertexIndex, polygonIndex, ringIndex };
@@ -22575,7 +26405,7 @@ function moveAnnotationVertexToImagePoint(imagePoint) {
   if (!annotationVertexDragState.moved) {
     annotationHistory.push(
       "Move annotation vertex",
-      annotationVertexDragState.undoState
+      annotationVertexDragState.undoState,
     );
   }
   setAnnotationVertexCoordinate(feature, vertexContext, adjustedImagePoint);
@@ -22592,9 +26422,18 @@ function finishAnnotationVertexDrag() {
   const moved = annotationVertexDragState.moved;
   annotationVertexDragState = null;
   viewerContainer?.classList.remove("annotation-vertex-dragging");
-  window.removeEventListener("pointermove", handleAnnotationVertexWindowPointerMove);
-  window.removeEventListener("pointerup", handleAnnotationVertexWindowPointerUp);
-  window.removeEventListener("pointercancel", handleAnnotationVertexWindowPointerUp);
+  window.removeEventListener(
+    "pointermove",
+    handleAnnotationVertexWindowPointerMove,
+  );
+  window.removeEventListener(
+    "pointerup",
+    handleAnnotationVertexWindowPointerUp,
+  );
+  window.removeEventListener(
+    "pointercancel",
+    handleAnnotationVertexWindowPointerUp,
+  );
   if (moved) {
     unsavedAnnotations(true);
     renderAnnotationList();
@@ -22674,14 +26513,20 @@ function resolveNewAnnotationLabel(callback) {
 
 const ANNOTATION_COORDINATE_DECIMALS = 2;
 
-function roundCoordinateNumber(value, decimals = ANNOTATION_COORDINATE_DECIMALS) {
+function roundCoordinateNumber(
+  value,
+  decimals = ANNOTATION_COORDINATE_DECIMALS,
+) {
   const number = Number(value);
   if (!Number.isFinite(number)) return value;
   const factor = 10 ** decimals;
   return Math.round(number * factor) / factor;
 }
 
-function roundCoordinateTree(coordinates, decimals = ANNOTATION_COORDINATE_DECIMALS) {
+function roundCoordinateTree(
+  coordinates,
+  decimals = ANNOTATION_COORDINATE_DECIMALS,
+) {
   if (!Array.isArray(coordinates)) return coordinates;
   if (
     coordinates.length >= 2 &&
@@ -22691,15 +26536,18 @@ function roundCoordinateTree(coordinates, decimals = ANNOTATION_COORDINATE_DECIM
     return coordinates.map((value) => roundCoordinateNumber(value, decimals));
   }
   return coordinates.map((coordinate) =>
-    roundCoordinateTree(coordinate, decimals)
+    roundCoordinateTree(coordinate, decimals),
   );
 }
 
-function roundFeatureCoordinates(feature, decimals = ANNOTATION_COORDINATE_DECIMALS) {
+function roundFeatureCoordinates(
+  feature,
+  decimals = ANNOTATION_COORDINATE_DECIMALS,
+) {
   if (!feature?.geometry?.coordinates) return feature;
   feature.geometry.coordinates = roundCoordinateTree(
     feature.geometry.coordinates,
-    decimals
+    decimals,
   );
   invalidateFeatureImageBounds(feature);
   return feature;
@@ -22713,7 +26561,7 @@ function cloneFeaturesWithRoundedCoordinates(features) {
 function addPointToGeoJSON(x, y, metadata) {
   annotationHistory.push("Add annotation");
   const properties = normalizeNewAnnotationProperties(
-    applyActiveAnnotationGroup(metadata)
+    applyActiveAnnotationGroup(metadata),
   );
 
   // Create a GeoJSON point feature
@@ -22823,7 +26671,7 @@ function generateUniqueAnnotationUuid(usedUuids = null, length = 12) {
     new Set(
       annoJSON.features
         .map((feature) => feature?.properties?.uuid)
-        .filter(Boolean)
+        .filter(Boolean),
     );
   let uuid = generateUniqueId(length);
   while (used.has(uuid)) {
@@ -22856,10 +26704,11 @@ function ensureUniqueAnnotationUuids(options = {}) {
   if (selectedAnnotationUuid && !getAnnotationByUuid(selectedAnnotationUuid)) {
     selectedAnnotationUuid = getSelectedAnnotationUuid();
   }
-  annotationListSelectionAnchorUuid =
-    selectedAnnotationUuids.has(annotationListSelectionAnchorUuid)
-      ? annotationListSelectionAnchorUuid
-      : selectedAnnotationUuid;
+  annotationListSelectionAnchorUuid = selectedAnnotationUuids.has(
+    annotationListSelectionAnchorUuid,
+  )
+    ? annotationListSelectionAnchorUuid
+    : selectedAnnotationUuid;
   classifyFeatureCache = null;
   if (classifyFeatureRows.length) {
     invalidateClassifyFeatures();
@@ -23015,15 +26864,17 @@ viewer.addHandler("canvas-click", function (event) {
     let viewportPoint = viewer.viewport.pointFromPixel(event.position); // Get viewport coordinates
     let imagePoint = image.viewportToImageCoordinates(
       viewportPoint.x,
-      viewportPoint.y
+      viewportPoint.y,
     ); // Get image coordinates
     const uniqueID = generateUniqueId(8);
     const labelFontSize = Number(
-      document.getElementById("annoLabelFontSize").value
+      document.getElementById("annoLabelFontSize").value,
     );
     const labelFontColor = getAnnotationLabelFontColor();
     const labelBackgroundColor = getAnnotationLabelBackgroundColor();
-    const labelBackgroundOpacity = getAnnotationOpacityValue("annoLabelBackgroundOpacity");
+    const labelBackgroundOpacity = getAnnotationOpacityValue(
+      "annoLabelBackgroundOpacity",
+    );
     const lineWeight = Number(document.getElementById("lineWeight").value);
     const lineColor = getAnnotationLineColor();
     const lineOpacity = getAnnotationOpacityValue("lineOpacity");
@@ -23054,7 +26905,7 @@ viewer.addHandler("canvas-click", function (event) {
         labelFontColor,
         labelFontSize,
         labelBackgroundColor,
-        labelBackgroundOpacity
+        labelBackgroundOpacity,
       );
 
       addCrosshairs(
@@ -23063,7 +26914,7 @@ viewer.addHandler("canvas-click", function (event) {
         "anno",
         lineColor,
         lineWeight,
-        lineOpacity
+        lineOpacity,
       );
     });
     // Store annotation
@@ -23206,7 +27057,7 @@ function getTopCenterPoint(points) {
       maxX: Math.max(acc.maxX, point[0]),
       minY: Math.min(acc.minY, point[1]),
     }),
-    { minX: Infinity, maxX: -Infinity, minY: Infinity }
+    { minX: Infinity, maxX: -Infinity, minY: Infinity },
   );
 
   return [(bounds.minX + bounds.maxX) / 2, bounds.minY];
@@ -23214,7 +27065,7 @@ function getTopCenterPoint(points) {
 
 function getTopmostPoint(points) {
   return points.reduce((topmostPoint, point) =>
-    point[1] < topmostPoint[1] ? point : topmostPoint
+    point[1] < topmostPoint[1] ? point : topmostPoint,
   );
 }
 
@@ -23233,20 +27084,22 @@ viewer.addHandler("canvas-click", function (event) {
     const viewportPoint = viewer.viewport.pointFromPixel(event.position);
     const imagePoint = image.viewportToImageCoordinates(
       viewportPoint.x,
-      viewportPoint.y
+      viewportPoint.y,
     );
     const x = viewportPoint.x;
     const y = viewportPoint.y;
     const uniqueID = generateUniqueId(8);
     const labelFontSize = Number(
-      document.getElementById("annoLabelFontSize").value
+      document.getElementById("annoLabelFontSize").value,
     );
     currentEllipseStyleColors = getCurrentAnnotationStyleColors(
-      currentEllipseStyleColors
+      currentEllipseStyleColors,
     );
     const labelFontColor = currentEllipseStyleColors.labelFontColor;
     const labelBackgroundColor = currentEllipseStyleColors.labelBackgroundColor;
-    const labelBackgroundOpacity = getAnnotationOpacityValue("annoLabelBackgroundOpacity");
+    const labelBackgroundOpacity = getAnnotationOpacityValue(
+      "annoLabelBackgroundOpacity",
+    );
     const lineWeight = Number(document.getElementById("lineWeight").value);
     const lineColor = currentEllipseStyleColors.lineColor;
     const lineStyle = document.getElementById("lineStyle").value;
@@ -23285,7 +27138,7 @@ viewer.addHandler("canvas-click", function (event) {
             viewer.viewport.pointFromPixel(positionPoint);
           const subeventImagePoint = image.viewportToImageCoordinates(
             subeventViewportPoint.x,
-            subeventViewportPoint.y
+            subeventViewportPoint.y,
           );
 
           const points = [
@@ -23323,7 +27176,7 @@ viewer.addHandler("canvas-click", function (event) {
             viewer.viewport.pointFromPixel(positionPoint);
           const subeventImagePoint = image.viewportToImageCoordinates(
             subeventViewportPoint.x,
-            subeventViewportPoint.y
+            subeventViewportPoint.y,
           );
           const ellipseTempCoordinates = [
             ellipseImageCoordinates[0],
@@ -23364,7 +27217,7 @@ viewer.addHandler("canvas-click", function (event) {
           lineColor,
           lineOpacity,
           fillColor,
-          fillOpacity
+          fillOpacity,
         );
         drawPath(polyCanvas, [annoJSON]);
       });
@@ -23386,13 +27239,13 @@ function finalizeEllipseAnnotation(
   lineColor,
   lineOpacity,
   fillColor,
-  fillOpacity
+  fillOpacity,
 ) {
   const ellipsePoints = getEllipsePoints(ellipseImageCoordinates);
   const labelImagePoint = getTopmostPoint(ellipsePoints);
   const labelViewportPoint = image.imageToViewportCoordinates(
     labelImagePoint[0],
-    labelImagePoint[1]
+    labelImagePoint[1],
   );
   const areaPixels2 = calculatePolygonArea([ellipsePoints]);
   const areaM2 = squareMetersFromSquarePixels(areaPixels2);
@@ -23433,7 +27286,7 @@ function finalizeEllipseAnnotation(
     labelFontColor,
     labelFontSize,
     labelBackgroundColor,
-    labelBackgroundOpacity
+    labelBackgroundOpacity,
   );
 
   ellipseCoordinates = [];
@@ -23457,7 +27310,10 @@ function finalizeEllipseAnnotation(
 }
 
 function getCircleRadiusPixels(center, perimeterPoint) {
-  return Math.hypot(perimeterPoint[0] - center[0], perimeterPoint[1] - center[1]);
+  return Math.hypot(
+    perimeterPoint[0] - center[0],
+    perimeterPoint[1] - center[1],
+  );
 }
 
 function getCircleAnnotationUnitConversion() {
@@ -23478,7 +27334,7 @@ function getFixedCircleAnnotationDiameterPixels() {
 
 function getAnnotationCircleStyle() {
   currentCircleAnnotationStyleColors = getCurrentAnnotationStyleColors(
-    currentCircleAnnotationStyleColors
+    currentCircleAnnotationStyleColors,
   );
 
   return {
@@ -23487,7 +27343,7 @@ function getAnnotationCircleStyle() {
     labelBackgroundColor:
       currentCircleAnnotationStyleColors.labelBackgroundColor,
     labelBackgroundOpacity: getAnnotationOpacityValue(
-      "annoLabelBackgroundOpacity"
+      "annoLabelBackgroundOpacity",
     ),
     lineStyle: document.getElementById("lineStyle").value,
     lineWeight: Number(document.getElementById("lineWeight").value),
@@ -23503,12 +27359,12 @@ function previewCircleAnnotation(perimeterImagePoint) {
 
   const radiusPixels = getCircleRadiusPixels(
     circleAnnotationCenterImage,
-    perimeterImagePoint
+    perimeterImagePoint,
   );
   const coordinates = getCircleCoordinatesInImageSpace(
     circleAnnotationCenterImage[0],
     circleAnnotationCenterImage[1],
-    radiusPixels * 2
+    radiusPixels * 2,
   );
   const style = getAnnotationCircleStyle();
 
@@ -23538,7 +27394,7 @@ function finalizeCircleAnnotation(
   image,
   imageSize,
   perimeterImagePoint,
-  options = {}
+  options = {},
 ) {
   const style = getAnnotationCircleStyle();
   const fixedDiameterPixels = Number(options.fixedDiameterPixels);
@@ -23549,12 +27405,12 @@ function finalizeCircleAnnotation(
   const coordinates = getCircleCoordinatesInImageSpace(
     circleAnnotationCenterImage[0],
     circleAnnotationCenterImage[1],
-    radiusPixels * 2
+    radiusPixels * 2,
   );
   const labelImagePoint = getTopCenterPoint(coordinates);
   const labelViewportPoint = image.imageToViewportCoordinates(
     labelImagePoint[0],
-    labelImagePoint[1]
+    labelImagePoint[1],
   );
   const areaPixels2 = calculatePolygonArea([coordinates]);
   const areaM2 = squareMetersFromSquarePixels(areaPixels2);
@@ -23606,7 +27462,7 @@ function finalizeCircleAnnotation(
     style.labelFontColor,
     style.labelFontSize,
     style.labelBackgroundColor,
-    style.labelBackgroundOpacity
+    style.labelBackgroundOpacity,
   );
 
   circleAnnotationCenter = null;
@@ -23637,7 +27493,7 @@ viewer.addHandler("canvas-click", function (event) {
   const viewportPoint = viewer.viewport.pointFromPixel(event.position);
   const imagePoint = image.viewportToImageCoordinates(
     viewportPoint.x,
-    viewportPoint.y
+    viewportPoint.y,
   );
   const imageCoordinates = [imagePoint.x, imagePoint.y];
   const fixedDiameterPixels = getFixedCircleAnnotationDiameterPixels();
@@ -23648,10 +27504,16 @@ viewer.addHandler("canvas-click", function (event) {
     currentCircleAnnotationUniqueId = generateUniqueId(8);
     currentCircleAnnotationStyleColors = null;
     resolveNewAnnotationLabel((circleLabel) => {
-      finalizeCircleAnnotation(circleLabel, image, imageSize, imageCoordinates, {
-        circleMode: "fixed",
-        fixedDiameterPixels,
-      });
+      finalizeCircleAnnotation(
+        circleLabel,
+        image,
+        imageSize,
+        imageCoordinates,
+        {
+          circleMode: "fixed",
+          fixedDiameterPixels,
+        },
+      );
     });
     return;
   }
@@ -23680,12 +27542,12 @@ viewerContainer.addEventListener("mousemove", function (event) {
   const rect = viewerContainer.getBoundingClientRect();
   const positionPoint = new OpenSeadragon.Point(
     event.clientX - rect.left,
-    event.clientY - rect.top
+    event.clientY - rect.top,
   );
   const viewportPoint = viewer.viewport.pointFromPixel(positionPoint);
   const imagePoint = image.viewportToImageCoordinates(
     viewportPoint.x,
-    viewportPoint.y
+    viewportPoint.y,
   );
   previewCircleAnnotation([imagePoint.x, imagePoint.y]);
 });
@@ -23708,44 +27570,78 @@ const scaleWizardStatus = document.getElementById("scaleWizardStatus");
 const scaleWizardLength = document.getElementById("scaleWizardLength");
 const scaleWizardUnits = document.getElementById("scaleWizardUnits");
 const scaleWizardResult = document.getElementById("scaleWizardResult");
-const applyScaleWizardButton = document.getElementById("applyScaleWizardButton");
-const resetScaleWizardButton = document.getElementById("resetScaleWizardButton");
-const cancelScaleWizardButton = document.getElementById("cancelScaleWizardButton");
-const closeScaleWizardButton = document.getElementById("closeScaleWizardButton");
+const applyScaleWizardButton = document.getElementById(
+  "applyScaleWizardButton",
+);
+const resetScaleWizardButton = document.getElementById(
+  "resetScaleWizardButton",
+);
+const cancelScaleWizardButton = document.getElementById(
+  "cancelScaleWizardButton",
+);
+const closeScaleWizardButton = document.getElementById(
+  "closeScaleWizardButton",
+);
 const libraryEditor = document.getElementById("libraryEditor");
 const libraryEditorSummary = document.getElementById("libraryEditorSummary");
 const libraryEditorRows = document.getElementById("libraryEditorRows");
 const libraryEditorSearch = document.getElementById("libraryEditorSearch");
 const libraryEditorForm = document.getElementById("libraryEditorForm");
 let overlayRedrawFrame = null;
-const libraryEditorTitleInput = document.getElementById("libraryEditorTitleInput");
+const libraryEditorTitleInput = document.getElementById(
+  "libraryEditorTitleInput",
+);
 const libraryEditorDescriptionInput = document.getElementById(
-  "libraryEditorDescriptionInput"
+  "libraryEditorDescriptionInput",
 );
-const libraryEditorGroupsInput = document.getElementById("libraryEditorGroupsInput");
-const libraryEditorScaleInput = document.getElementById("libraryEditorScaleInput");
+const libraryEditorGroupsInput = document.getElementById(
+  "libraryEditorGroupsInput",
+);
+const libraryEditorScaleInput = document.getElementById(
+  "libraryEditorScaleInput",
+);
 const libraryEditorAnnotationsInput = document.getElementById(
-  "libraryEditorAnnotationsInput"
+  "libraryEditorAnnotationsInput",
 );
-const libraryEditorTileSetCount = document.getElementById("libraryEditorTileSetCount");
-const libraryEditorDeleteButton = document.getElementById("libraryEditorDeleteButton");
+const libraryEditorTileSetCount = document.getElementById(
+  "libraryEditorTileSetCount",
+);
+const libraryEditorDeleteButton = document.getElementById(
+  "libraryEditorDeleteButton",
+);
 const libraryEditorStatus = document.getElementById("libraryEditorStatus");
-const cancelLibraryEditorButton = document.getElementById("cancelLibraryEditorButton");
-const saveAsLibraryEditorButton = document.getElementById("saveAsLibraryEditorButton");
-const saveLibraryEditorButton = document.getElementById("saveLibraryEditorButton");
-const applyCloseLibraryEditorButton = document.getElementById(
-  "applyCloseLibraryEditorButton"
+const cancelLibraryEditorButton = document.getElementById(
+  "cancelLibraryEditorButton",
 );
-const closeLibraryEditorButton = document.getElementById("closeLibraryEditorButton");
-const openTileSetEditorButton = document.getElementById("openTileSetEditorButton");
+const saveAsLibraryEditorButton = document.getElementById(
+  "saveAsLibraryEditorButton",
+);
+const saveLibraryEditorButton = document.getElementById(
+  "saveLibraryEditorButton",
+);
+const applyCloseLibraryEditorButton = document.getElementById(
+  "applyCloseLibraryEditorButton",
+);
+const closeLibraryEditorButton = document.getElementById(
+  "closeLibraryEditorButton",
+);
+const openTileSetEditorButton = document.getElementById(
+  "openTileSetEditorButton",
+);
 const tileSetEditor = document.getElementById("tileSetEditor");
 const tileSetEditorTitle = document.getElementById("tileSetEditorTitle");
 const tileSetEditorSummary = document.getElementById("tileSetEditorSummary");
 const tileSetEditorRows = document.getElementById("tileSetEditorRows");
 const tileSetEditorStatus = document.getElementById("tileSetEditorStatus");
-const cancelTileSetEditorButton = document.getElementById("cancelTileSetEditorButton");
-const saveTileSetEditorButton = document.getElementById("saveTileSetEditorButton");
-const closeTileSetEditorButton = document.getElementById("closeTileSetEditorButton");
+const cancelTileSetEditorButton = document.getElementById(
+  "cancelTileSetEditorButton",
+);
+const saveTileSetEditorButton = document.getElementById(
+  "saveTileSetEditorButton",
+);
+const closeTileSetEditorButton = document.getElementById(
+  "closeTileSetEditorButton",
+);
 const scaleWizardState = {
   active: false,
   points: [],
@@ -23780,7 +27676,7 @@ function openLibraryEditor() {
   libraryEditorState.samples = cloneLibraryValue(libraryData.samples || []);
   libraryEditorState.selectedIndex = Math.min(
     Math.max(currentIndex, 0),
-    Math.max(libraryEditorState.samples.length - 1, 0)
+    Math.max(libraryEditorState.samples.length - 1, 0),
   );
   if (libraryEditorSearch) libraryEditorSearch.value = "";
   setLibraryEditorStatus("");
@@ -23875,7 +27771,10 @@ function renderLibraryEditorRows() {
       button.dataset.action = action;
       button.dataset.index = String(index);
       button.title = titleText;
-      button.setAttribute("aria-label", `${titleText}: ${sample.title || "sample"}`);
+      button.setAttribute(
+        "aria-label",
+        `${titleText}: ${sample.title || "sample"}`,
+      );
       const icon = document.createElement("img");
       icon.src = iconPath;
       icon.alt = "";
@@ -23920,7 +27819,8 @@ function renderLibraryEditorForm() {
     return;
   }
 
-  if (libraryEditorTitleInput) libraryEditorTitleInput.value = selectedSample.title || "";
+  if (libraryEditorTitleInput)
+    libraryEditorTitleInput.value = selectedSample.title || "";
   if (libraryEditorDescriptionInput) {
     libraryEditorDescriptionInput.value = selectedSample.description || "";
   }
@@ -23935,10 +27835,13 @@ function renderLibraryEditorForm() {
         : String(selectedSample.pixelsPerMeter);
   }
   if (libraryEditorAnnotationsInput) {
-    libraryEditorAnnotationsInput.value = formatLibraryEditorAnnotations(selectedSample);
+    libraryEditorAnnotationsInput.value =
+      formatLibraryEditorAnnotations(selectedSample);
   }
   if (libraryEditorTileSetCount) {
-    libraryEditorTileSetCount.textContent = String((selectedSample.tileSets || []).length);
+    libraryEditorTileSetCount.textContent = String(
+      (selectedSample.tileSets || []).length,
+    );
   }
 }
 
@@ -23947,7 +27850,8 @@ function updateLibraryEditorSelectedSample() {
   if (!selectedSample) return;
 
   selectedSample.title = libraryEditorTitleInput?.value.trim() || "";
-  selectedSample.description = libraryEditorDescriptionInput?.value.trim() || "";
+  selectedSample.description =
+    libraryEditorDescriptionInput?.value.trim() || "";
 
   const groups = (libraryEditorGroupsInput?.value || "")
     .split(";")
@@ -23983,7 +27887,7 @@ function selectLibraryEditorSample(index) {
   updateLibraryEditorSelectedSample();
   libraryEditorState.selectedIndex = Math.min(
     Math.max(index, 0),
-    Math.max(libraryEditorState.samples.length - 1, 0)
+    Math.max(libraryEditorState.samples.length - 1, 0),
   );
   setLibraryEditorStatus("");
   renderLibraryEditor();
@@ -24011,14 +27915,14 @@ function deleteLibraryEditorSample() {
 
   const titleText = selectedSample.title || "this sample";
   const shouldDelete = window.confirm(
-    `Delete "${titleText}" from this library? Image and annotation files will not be deleted.`
+    `Delete "${titleText}" from this library? Image and annotation files will not be deleted.`,
   );
   if (!shouldDelete) return;
 
   libraryEditorState.samples.splice(libraryEditorState.selectedIndex, 1);
   libraryEditorState.selectedIndex = Math.min(
     libraryEditorState.selectedIndex,
-    libraryEditorState.samples.length - 1
+    libraryEditorState.samples.length - 1,
   );
   setLibraryEditorStatus(`Deleted "${titleText}". Apply to keep this change.`);
   renderLibraryEditor();
@@ -24101,7 +28005,10 @@ async function saveLibraryEditor({
     }
   } catch (error) {
     console.error("Could not save library edits:", error);
-    setLibraryEditorStatus(error.message || "Could not save library changes.", true);
+    setLibraryEditorStatus(
+      error.message || "Could not save library changes.",
+      true,
+    );
   } finally {
     libraryEditorState.saving = false;
     [
@@ -24121,11 +28028,12 @@ function selectSampleAfterLibraryEdit(previousTitle) {
 
   const nextIndex = Math.max(
     samples.findIndex((sample) => sample.title === previousTitle),
-    0
+    0,
   );
   const groupForSample =
-    Object.keys(groupMapping).find((group) => groupMapping[group].includes(nextIndex)) ||
-    "All";
+    Object.keys(groupMapping).find((group) =>
+      groupMapping[group].includes(nextIndex),
+    ) || "All";
   groupDropdown.value = groupForSample;
   populateSampleDropdown(groupForSample, { autoSelect: false });
   sampleDropdown.value = String(nextIndex);
@@ -24134,7 +28042,7 @@ function selectSampleAfterLibraryEdit(previousTitle) {
 
 async function saveLibraryData(
   jsonData,
-  { forceSaveAs = false, canceledMessage = "Library was not saved." } = {}
+  { forceSaveAs = false, canceledMessage = "Library was not saved." } = {},
 ) {
   currentLibraryData = jsonData;
 
@@ -24142,11 +28050,15 @@ async function saveLibraryData(
     try {
       await window.electronAPI.writeJsonFile(currentLibraryPath, jsonData);
       window.electronAPI.setUnsavedState?.(
-        window.appState.hasUnsavedAnnotations || window.appState.hasUnsavedCounts
+        window.appState.hasUnsavedAnnotations ||
+          window.appState.hasUnsavedCounts,
       );
       return;
     } catch (error) {
-      console.warn("Could not write current library; falling back to Save As.", error);
+      console.warn(
+        "Could not write current library; falling back to Save As.",
+        error,
+      );
     }
   }
 
@@ -24154,13 +28066,16 @@ async function saveLibraryData(
     throw new Error("No Electron save API is available.");
   }
 
-  const result = await window.electronAPI.saveJsonFileAs("library.json", jsonData);
+  const result = await window.electronAPI.saveJsonFileAs(
+    "library.json",
+    jsonData,
+  );
   if (result?.canceled) {
     throw new Error(canceledMessage);
   }
   currentLibraryPath = result.filePath || currentLibraryPath;
   window.electronAPI.setUnsavedState?.(
-    window.appState.hasUnsavedAnnotations || window.appState.hasUnsavedCounts
+    window.appState.hasUnsavedAnnotations || window.appState.hasUnsavedCounts,
   );
 }
 
@@ -24191,7 +28106,8 @@ function openTileSetEditor() {
     tileSetEditorTitle.textContent = "Edit Tile Sets";
   }
   if (tileSetEditorSummary) {
-    tileSetEditorSummary.textContent = selectedSample.title || "(Untitled sample)";
+    tileSetEditorSummary.textContent =
+      selectedSample.title || "(Untitled sample)";
   }
 
   tileSetEditor.hidden = false;
@@ -24218,19 +28134,23 @@ function isTileSetEditorLocalImagePath(uri) {
   return (
     typeof uri === "string" &&
     !/^[a-z][a-z0-9+.-]*:\/\//i.test(uri) &&
-    /\.(jpe?g|png|tiff?|webp|gif|avif|hei[cf]|svg|v|vips|jp2|j2k|jpf|jpx|jpm|mj2)$/i.test(uri)
+    /\.(jpe?g|png|tiff?|webp|gif|avif|hei[cf]|svg|v|vips|jp2|j2k|jpf|jpx|jpm|mj2)$/i.test(
+      uri,
+    )
   );
 }
 
 function getFileNameFromPath(filePath) {
-  return String(filePath || "").split(/[\\/]/).pop();
+  return String(filePath || "")
+    .split(/[\\/]/)
+    .pop();
 }
 
 function updateTileSetEditorSaveButtonLabel() {
   if (!saveTileSetEditorButton) return;
 
   const hasPendingImage = Array.from(
-    tileSetEditorRows?.querySelectorAll(".tile-image-editor-uri-input") || []
+    tileSetEditorRows?.querySelectorAll(".tile-image-editor-uri-input") || [],
   ).some((input) => isTileSetEditorLocalImagePath(input.value.trim()));
 
   saveTileSetEditorButton.textContent =
@@ -24248,7 +28168,7 @@ function getTileSetEditorDziUris(tileSet) {
     ...new Set(
       (tileSet?.tiles || [])
         .map((tile) => tile?.uri || "")
-        .filter(isTileSetEditorDziUri)
+        .filter(isTileSetEditorDziUri),
     ),
   ];
 }
@@ -24288,7 +28208,8 @@ function getSkippedReferencedQueuedDziUris() {
 }
 
 async function deleteQueuedTileSetDziFiles() {
-  if (!window.electronAPI?.deleteProjectDzi) return { deleted: [], skipped: [] };
+  if (!window.electronAPI?.deleteProjectDzi)
+    return { deleted: [], skipped: [] };
 
   const uris = getUnreferencedQueuedDziUris();
   if (!uris.length) {
@@ -24300,7 +28221,7 @@ async function deleteQueuedTileSetDziFiles() {
       "Move the associated DZI files and tile folders to the trash?",
       "",
       ...uris.map((uri) => `- ${uri}`),
-    ].join("\n")
+    ].join("\n"),
   );
   if (!confirmed) {
     return {
@@ -24324,13 +28245,15 @@ function getDziDeletionSummary(result, referencedSkips = []) {
 
   const messages = [];
   if (deletedCount > 0) {
-    messages.push(`Moved ${deletedCount} DZI item${deletedCount === 1 ? "" : "s"} to the trash.`);
+    messages.push(
+      `Moved ${deletedCount} DZI item${deletedCount === 1 ? "" : "s"} to the trash.`,
+    );
   }
   if (skipped.length > 0) {
     messages.push(
       `Skipped ${skipped.length} DZI item${skipped.length === 1 ? "" : "s"}: ${skipped
         .map((item) => item.uri)
-        .join(", ")}`
+        .join(", ")}`,
     );
   }
   return messages.join(" ");
@@ -24340,7 +28263,9 @@ function renderTileSetEditor(tileSets) {
   if (!tileSetEditorRows) return;
 
   tileSetEditorRows.innerHTML = "";
-  const rows = tileSets.length ? tileSets : [{ label: "", tiles: [{ uri: "" }] }];
+  const rows = tileSets.length
+    ? tileSets
+    : [{ label: "", tiles: [{ uri: "" }] }];
   rows.forEach((tileSet) => {
     tileSetEditorRows.appendChild(createTileSetEditorRow(tileSet));
   });
@@ -24363,10 +28288,30 @@ function createTileSetEditorRow(tileSet = {}) {
   const headerActions = document.createElement("div");
   headerActions.className = "tile-set-editor-row-actions";
   [
-    ["move-tile-set-top", "Move tile set to top", "assets/2_go_to_first.png", "top"],
-    ["move-tile-set-up", "Move tile set up", "assets/2_go_to_previous.png", "up"],
-    ["move-tile-set-down", "Move tile set down", "assets/2_go_to_next.png", "down"],
-    ["move-tile-set-bottom", "Move tile set to bottom", "assets/2_go_to_last.png", "bottom"],
+    [
+      "move-tile-set-top",
+      "Move tile set to top",
+      "assets/2_go_to_first.png",
+      "top",
+    ],
+    [
+      "move-tile-set-up",
+      "Move tile set up",
+      "assets/2_go_to_previous.png",
+      "up",
+    ],
+    [
+      "move-tile-set-down",
+      "Move tile set down",
+      "assets/2_go_to_next.png",
+      "down",
+    ],
+    [
+      "move-tile-set-bottom",
+      "Move tile set to bottom",
+      "assets/2_go_to_last.png",
+      "bottom",
+    ],
   ].forEach(([action, titleText, iconPath, iconClass]) => {
     const button = createTileSetEditorButton(titleText, "", action);
     const icon = document.createElement("img");
@@ -24376,11 +28321,15 @@ function createTileSetEditorRow(tileSet = {}) {
     button.appendChild(icon);
     headerActions.appendChild(button);
   });
-  const addButton = createTileSetEditorButton("Add tile set", "+", "add-tile-set");
+  const addButton = createTileSetEditorButton(
+    "Add tile set",
+    "+",
+    "add-tile-set",
+  );
   const removeButton = createTileSetEditorButton(
     "Remove tile set",
     "-",
-    "remove-tile-set"
+    "remove-tile-set",
   );
   headerActions.append(addButton, removeButton);
   header.append(heading, headerActions);
@@ -24434,14 +28383,17 @@ function createTileSetEditorRow(tileSet = {}) {
 
   const cleanupWrap = document.createElement("label");
   cleanupWrap.className = "tile-set-editor-cleanup-wrap";
-  cleanupWrap.hidden = originalDziUris.length === 0 || !window.electronAPI?.deleteProjectDzi;
+  cleanupWrap.hidden =
+    originalDziUris.length === 0 || !window.electronAPI?.deleteProjectDzi;
   const cleanupInput = document.createElement("input");
   cleanupInput.className = "tile-set-editor-cleanup-input";
   cleanupInput.type = "checkbox";
   cleanupInput.disabled = cleanupWrap.hidden;
   cleanupWrap.append(
     cleanupInput,
-    document.createTextNode(" Delete local DZI files if this tile set is removed")
+    document.createTextNode(
+      " Delete local DZI files if this tile set is removed",
+    ),
   );
 
   row.append(header, typeSelect, labelWrap, periodWrap, images, cleanupWrap);
@@ -24481,16 +28433,32 @@ function createTileImageEditorRow(tile = {}, type = "individual") {
   uriInput.placeholder = "images/sample.dzi";
   uriInput.value = tile.uri || "";
 
-  const chooseButton = createTileSetEditorButton("Choose image", "Choose image", "choose-image");
+  const chooseButton = createTileSetEditorButton(
+    "Choose image",
+    "Choose image",
+    "choose-image",
+  );
   chooseButton.disabled = !window.electronAPI?.selectImageFile;
 
   const addButton = createTileSetEditorButton("Add image", "+", "add-image");
-  const removeButton = createTileSetEditorButton("Remove image", "-", "remove-image");
+  const removeButton = createTileSetEditorButton(
+    "Remove image",
+    "-",
+    "remove-image",
+  );
 
   const status = document.createElement("div");
   status.className = "tile-image-editor-status";
 
-  row.append(labelInput, angleLabel, uriInput, chooseButton, addButton, removeButton, status);
+  row.append(
+    labelInput,
+    angleLabel,
+    uriInput,
+    chooseButton,
+    addButton,
+    removeButton,
+    status,
+  );
   updateTileImageEditorRowForType(row, type);
   return row;
 }
@@ -24505,7 +28473,8 @@ function createTileSetEditorButton(title, text, action) {
 }
 
 function updateTileSetEditorType(tileSetRow) {
-  const type = tileSetRow.querySelector(".tile-set-editor-type")?.value || "individual";
+  const type =
+    tileSetRow.querySelector(".tile-set-editor-type")?.value || "individual";
   const labelWrap = tileSetRow.querySelector(".tile-set-editor-label-wrap");
   const periodWrap = tileSetRow.querySelector(".tile-set-editor-period-wrap");
   const images = tileSetRow.querySelector(".tile-set-editor-images");
@@ -24513,16 +28482,20 @@ function updateTileSetEditorType(tileSetRow) {
   if (labelWrap) labelWrap.hidden = type === "multiple";
   if (periodWrap) periodWrap.hidden = type !== "rotation";
 
-  const imageRows = Array.from(images?.querySelectorAll(".tile-image-editor-row") || []);
+  const imageRows = Array.from(
+    images?.querySelectorAll(".tile-image-editor-row") || [],
+  );
   if (type === "individual") {
     imageRows.slice(1).forEach((row) => row.remove());
   } else if (imageRows.length < 2) {
     images.appendChild(createTileImageEditorRow({}, type));
   }
 
-  Array.from(images?.querySelectorAll(".tile-image-editor-row") || []).forEach((row) => {
-    updateTileImageEditorRowForType(row, type);
-  });
+  Array.from(images?.querySelectorAll(".tile-image-editor-row") || []).forEach(
+    (row) => {
+      updateTileImageEditorRowForType(row, type);
+    },
+  );
   updateTileSetEditorButtons();
 }
 
@@ -24535,7 +28508,9 @@ function updateTileImageEditorRowForType(row, type) {
 }
 
 function renumberTileSetEditorRows() {
-  const rows = Array.from(tileSetEditorRows?.querySelectorAll(".tile-set-editor-row") || []);
+  const rows = Array.from(
+    tileSetEditorRows?.querySelectorAll(".tile-set-editor-row") || [],
+  );
   rows.forEach((row, index) => {
     const heading = row.querySelector("h3");
     if (heading) heading.textContent = `Tile Set ${index + 1}`;
@@ -24545,11 +28520,11 @@ function renumberTileSetEditorRows() {
 
 function updateTileSetEditorButtons() {
   const tileSetRows = Array.from(
-    tileSetEditorRows?.querySelectorAll(".tile-set-editor-row") || []
+    tileSetEditorRows?.querySelectorAll(".tile-set-editor-row") || [],
   );
   tileSetRows.forEach((tileSetRow, index) => {
     const removeTileSetButton = tileSetRow.querySelector(
-      'button[data-action="remove-tile-set"]'
+      'button[data-action="remove-tile-set"]',
     );
     if (removeTileSetButton) {
       removeTileSetButton.hidden = index === 0;
@@ -24561,17 +28536,24 @@ function updateTileSetEditorButtons() {
       ["move-tile-set-down", index === tileSetRows.length - 1],
       ["move-tile-set-bottom", index === tileSetRows.length - 1],
     ].forEach(([action, disabled]) => {
-      const button = tileSetRow.querySelector(`button[data-action="${action}"]`);
+      const button = tileSetRow.querySelector(
+        `button[data-action="${action}"]`,
+      );
       if (button) button.disabled = disabled;
     });
 
     const imageRows = Array.from(
-      tileSetRow.querySelectorAll(".tile-image-editor-row")
+      tileSetRow.querySelectorAll(".tile-image-editor-row"),
     );
-    const type = tileSetRow.querySelector(".tile-set-editor-type")?.value || "individual";
+    const type =
+      tileSetRow.querySelector(".tile-set-editor-type")?.value || "individual";
     imageRows.forEach((imageRow) => {
-      const addButton = imageRow.querySelector('button[data-action="add-image"]');
-      const removeButton = imageRow.querySelector('button[data-action="remove-image"]');
+      const addButton = imageRow.querySelector(
+        'button[data-action="add-image"]',
+      );
+      const removeButton = imageRow.querySelector(
+        'button[data-action="remove-image"]',
+      );
       if (addButton) addButton.hidden = type === "individual";
       if (removeButton) {
         removeButton.hidden = type === "individual";
@@ -24599,16 +28581,21 @@ function removeTileSetEditorRow(row) {
 function moveTileSetEditorRow(row, targetIndex) {
   if (!tileSetEditorRows || !row) return;
 
-  const rows = Array.from(tileSetEditorRows.querySelectorAll(".tile-set-editor-row"));
+  const rows = Array.from(
+    tileSetEditorRows.querySelectorAll(".tile-set-editor-row"),
+  );
   const currentIndex = rows.indexOf(row);
   if (currentIndex === -1) return;
 
-  const clampedTargetIndex = Math.min(Math.max(targetIndex, 0), rows.length - 1);
+  const clampedTargetIndex = Math.min(
+    Math.max(targetIndex, 0),
+    rows.length - 1,
+  );
   if (currentIndex === clampedTargetIndex) return;
 
   row.remove();
   const remainingRows = Array.from(
-    tileSetEditorRows.querySelectorAll(".tile-set-editor-row")
+    tileSetEditorRows.querySelectorAll(".tile-set-editor-row"),
   );
   if (clampedTargetIndex >= remainingRows.length) {
     tileSetEditorRows.appendChild(row);
@@ -24620,7 +28607,8 @@ function moveTileSetEditorRow(row, targetIndex) {
 
 function addTileImageEditorRow(afterRow) {
   const tileSetRow = afterRow.closest(".tile-set-editor-row");
-  const type = tileSetRow.querySelector(".tile-set-editor-type")?.value || "individual";
+  const type =
+    tileSetRow.querySelector(".tile-set-editor-type")?.value || "individual";
   const row = createTileImageEditorRow({}, type);
   afterRow.after(row);
   updateTileSetEditorType(tileSetRow);
@@ -24629,7 +28617,8 @@ function addTileImageEditorRow(afterRow) {
 
 function removeTileImageEditorRow(row) {
   const tileSetRow = row.closest(".tile-set-editor-row");
-  const imageRows = tileSetRow?.querySelectorAll(".tile-image-editor-row") || [];
+  const imageRows =
+    tileSetRow?.querySelectorAll(".tile-image-editor-row") || [];
   if (imageRows.length <= 1) return;
   row.remove();
   updateTileSetEditorType(tileSetRow);
@@ -24647,18 +28636,23 @@ function parseTileSetEditorJson(datasetValue) {
 
 function collectTileSetsFromEditor() {
   const tileSetRows = Array.from(
-    tileSetEditorRows?.querySelectorAll(".tile-set-editor-row") || []
+    tileSetEditorRows?.querySelectorAll(".tile-set-editor-row") || [],
   );
 
   return tileSetRows.map((tileSetRow) => {
-    const type = tileSetRow.querySelector(".tile-set-editor-type")?.value || "individual";
-    const originalTileSet = parseTileSetEditorJson(tileSetRow.dataset.originalTileSet);
+    const type =
+      tileSetRow.querySelector(".tile-set-editor-type")?.value || "individual";
+    const originalTileSet = parseTileSetEditorJson(
+      tileSetRow.dataset.originalTileSet,
+    );
     const tileSet = { ...originalTileSet };
     delete tileSet.tiles;
     delete tileSet.label;
     delete tileSet.periodDegrees;
 
-    const label = tileSetRow.querySelector(".tile-set-editor-label-input")?.value.trim();
+    const label = tileSetRow
+      .querySelector(".tile-set-editor-label-input")
+      ?.value.trim();
     const periodValue = tileSetRow
       .querySelector(".tile-set-editor-period-input")
       ?.value.trim();
@@ -24671,16 +28665,19 @@ function collectTileSetsFromEditor() {
     }
 
     tileSet.tiles = Array.from(
-      tileSetRow.querySelectorAll(".tile-image-editor-row")
+      tileSetRow.querySelectorAll(".tile-image-editor-row"),
     ).map((imageRow) => {
-      const originalTile = parseTileSetEditorJson(imageRow.dataset.originalTile);
+      const originalTile = parseTileSetEditorJson(
+        imageRow.dataset.originalTile,
+      );
       const tile = { ...originalTile };
       delete tile.uri;
       delete tile.label;
       delete tile.angleDegrees;
 
       tile.uri =
-        imageRow.querySelector(".tile-image-editor-uri-input")?.value.trim() || "";
+        imageRow.querySelector(".tile-image-editor-uri-input")?.value.trim() ||
+        "";
       if (type === "multiple") {
         const imageLabel = imageRow
           .querySelector(".tile-image-editor-label-input")
@@ -24689,7 +28686,7 @@ function collectTileSetsFromEditor() {
       }
       if (type === "rotation") {
         tile.angleDegrees = Number(
-          imageRow.querySelector(".tile-image-editor-angle-input")?.value || 0
+          imageRow.querySelector(".tile-image-editor-angle-input")?.value || 0,
         );
       }
       return tile;
@@ -24717,7 +28714,7 @@ function validateTileSetsForEditor(tileSets) {
 
     for (const [tileIndex, tile] of tileSet.tiles.entries()) {
       if (!tile.uri) {
-      return `${label}, image ${tileIndex + 1} needs a URI or converted image.`;
+        return `${label}, image ${tileIndex + 1} needs a URI or converted image.`;
       }
       if (tile.angleDegrees !== undefined) {
         const angle = Number(tile.angleDegrees);
@@ -24735,9 +28732,10 @@ async function convertPendingTileSetEditorImages() {
   if (!window.electronAPI?.convertImageToDzi) return;
 
   const rows = Array.from(
-    tileSetEditorRows?.querySelectorAll(".tile-image-editor-row") || []
+    tileSetEditorRows?.querySelectorAll(".tile-image-editor-row") || [],
   ).filter((row) => {
-    const uri = row.querySelector(".tile-image-editor-uri-input")?.value.trim() || "";
+    const uri =
+      row.querySelector(".tile-image-editor-uri-input")?.value.trim() || "";
     return isTileSetEditorLocalImagePath(uri);
   });
 
@@ -24759,12 +28757,15 @@ async function convertPendingTileSetEditorImages() {
     tileSetEditorState.convertingRow = row;
     setTileImageRowStatus(
       row,
-      `Converting ${index + 1}/${rows.length}: ${getFileNameFromPath(sourcePath)}`
+      `Converting ${index + 1}/${rows.length}: ${getFileNameFromPath(sourcePath)}`,
     );
-    setTileSetEditorStatus(`Converting image ${index + 1} of ${rows.length}...`);
+    setTileSetEditorStatus(
+      `Converting image ${index + 1} of ${rows.length}...`,
+    );
 
     const conversion = await window.electronAPI.convertImageToDzi(sourcePath);
-    const convertedUri = conversion?.relativeDziPath || conversion?.dziPath || "";
+    const convertedUri =
+      conversion?.relativeDziPath || conversion?.dziPath || "";
     if (!convertedUri) {
       throw new Error(`Could not convert ${getFileNameFromPath(sourcePath)}.`);
     }
@@ -24791,7 +28792,7 @@ async function saveTileSetEditorDraft() {
   }
 
   const pendingImages = Array.from(
-    tileSetEditorRows?.querySelectorAll(".tile-image-editor-uri-input") || []
+    tileSetEditorRows?.querySelectorAll(".tile-image-editor-uri-input") || [],
   ).some((input) => isTileSetEditorLocalImagePath(input.value.trim()));
   if (pendingImages && !window.electronAPI?.convertImageToDzi) {
     setTileSetEditorStatus("Image conversion is unavailable.", true);
@@ -24808,7 +28809,10 @@ async function saveTileSetEditorDraft() {
       await convertPendingTileSetEditorImages();
     } catch (error) {
       console.error("Could not convert image:", error);
-      setTileSetEditorStatus(error.message || "Could not convert image file(s).", true);
+      setTileSetEditorStatus(
+        error.message || "Could not convert image file(s).",
+        true,
+      );
       return;
     } finally {
       tileSetEditorState.convertingRow = null;
@@ -24834,9 +28838,12 @@ async function saveTileSetEditorDraft() {
   renderLibraryEditorRows();
   renderLibraryEditorForm();
   setLibraryEditorStatus(
-    ["Tile set changes saved to the draft. Apply to write them.", deletionSummary]
+    [
+      "Tile set changes saved to the draft. Apply to write them.",
+      deletionSummary,
+    ]
       .filter(Boolean)
-      .join(" ")
+      .join(" "),
   );
 }
 
@@ -24883,18 +28890,23 @@ function handleTileSetEditorConversionProgress(progress) {
   if (!row || !progress) return;
 
   const percent = Number(progress.percent);
-  const percentLabel = Number.isFinite(percent) ? ` ${Math.round(percent)}%` : "";
+  const percentLabel = Number.isFinite(percent)
+    ? ` ${Math.round(percent)}%`
+    : "";
   setTileImageRowStatus(row, `Converting image to DZI...${percentLabel}`);
 }
 
 if (window.electronAPI?.onDziConversionProgress) {
-  tileSetEditorState.progressUnsubscribe = window.electronAPI.onDziConversionProgress(
-    handleTileSetEditorConversionProgress
-  );
+  tileSetEditorState.progressUnsubscribe =
+    window.electronAPI.onDziConversionProgress(
+      handleTileSetEditorConversionProgress,
+    );
 }
 
 if (window.electronAPI?.onSegmenteverygrainProgress) {
-  window.electronAPI.onSegmenteverygrainProgress(handleSegmenteverygrainProgress);
+  window.electronAPI.onSegmenteverygrainProgress(
+    handleSegmenteverygrainProgress,
+  );
 }
 
 tileSetEditorRows?.addEventListener("change", function (event) {
@@ -24922,7 +28934,9 @@ tileSetEditorRows?.addEventListener("click", function (event) {
   } else if (action.startsWith("move-tile-set-")) {
     const row = button.closest(".tile-set-editor-row");
     if (!row) return;
-    const rows = Array.from(tileSetEditorRows.querySelectorAll(".tile-set-editor-row"));
+    const rows = Array.from(
+      tileSetEditorRows.querySelectorAll(".tile-set-editor-row"),
+    );
     const index = rows.indexOf(row);
     const lastIndex = rows.length - 1;
     const targetIndex =
@@ -24978,10 +28992,12 @@ libraryEditorRows?.addEventListener("click", function (event) {
   element?.addEventListener("input", function () {
     updateLibraryEditorSelectedSample();
     renderLibraryEditorRows();
-  })
+  }),
 );
 libraryEditorSearch?.addEventListener("input", renderLibraryEditorRows);
-libraryEditorForm?.addEventListener("submit", (event) => event.preventDefault());
+libraryEditorForm?.addEventListener("submit", (event) =>
+  event.preventDefault(),
+);
 libraryEditorDeleteButton?.addEventListener("click", deleteLibraryEditorSample);
 cancelLibraryEditorButton?.addEventListener("click", closeLibraryEditor);
 closeLibraryEditorButton?.addEventListener("click", closeLibraryEditor);
@@ -24991,10 +29007,10 @@ closeTileSetEditorButton?.addEventListener("click", closeTileSetEditor);
 saveTileSetEditorButton?.addEventListener("click", saveTileSetEditorDraft);
 saveLibraryEditorButton?.addEventListener("click", () => saveLibraryEditor());
 saveAsLibraryEditorButton?.addEventListener("click", () =>
-  saveLibraryEditor({ forceSaveAs: true })
+  saveLibraryEditor({ forceSaveAs: true }),
 );
 applyCloseLibraryEditorButton?.addEventListener("click", () =>
-  saveLibraryEditor({ closeAfterSave: true })
+  saveLibraryEditor({ closeAfterSave: true }),
 );
 
 function openScaleWizard() {
@@ -25029,7 +29045,8 @@ function resetScaleWizard(keepLength = true) {
 }
 
 function updateScaleWizardStatus() {
-  if (!scaleWizardStatus || !scaleWizardResult || !applyScaleWizardButton) return;
+  if (!scaleWizardStatus || !scaleWizardResult || !applyScaleWizardButton)
+    return;
 
   const selectedCount = scaleWizardState.points.length;
   const nextPoint = selectedCount === 0 ? "start" : "end";
@@ -25071,7 +29088,7 @@ function calculateScaleWizardPixelsPerMeter() {
 
   const pixelLength = calculateDistance(
     scaleWizardState.points[0],
-    scaleWizardState.points[1]
+    scaleWizardState.points[1],
   );
   if (!Number.isFinite(pixelLength) || pixelLength <= 0) return null;
 
@@ -25181,7 +29198,7 @@ viewer.addHandler("canvas-click", function (event) {
   const viewportPoint = viewer.viewport.pointFromPixel(event.position);
   const imagePoint = image.viewportToImageCoordinates(
     viewportPoint.x,
-    viewportPoint.y
+    viewportPoint.y,
   );
 
   if (scaleWizardState.points.length >= 2) {
@@ -25192,10 +29209,9 @@ viewer.addHandler("canvas-click", function (event) {
   drawScaleWizardOverlay();
 });
 
-[
-  scaleWizardLength,
-  scaleWizardUnits,
-].forEach((element) => element?.addEventListener("input", updateScaleWizardStatus));
+[scaleWizardLength, scaleWizardUnits].forEach((element) =>
+  element?.addEventListener("input", updateScaleWizardStatus),
+);
 resetScaleWizardButton?.addEventListener("click", () => resetScaleWizard(true));
 cancelScaleWizardButton?.addEventListener("click", closeScaleWizard);
 closeScaleWizardButton?.addEventListener("click", closeScaleWizard);
@@ -25210,20 +29226,22 @@ viewer.addHandler("canvas-click", function (event) {
     const viewportPoint = viewer.viewport.pointFromPixel(event.position);
     const imagePoint = image.viewportToImageCoordinates(
       viewportPoint.x,
-      viewportPoint.y
+      viewportPoint.y,
     );
     const x = viewportPoint.x;
     const y = viewportPoint.y;
     const uniqueID = generateUniqueId(8);
     const labelFontSize = Number(
-      document.getElementById("annoLabelFontSize").value
+      document.getElementById("annoLabelFontSize").value,
     );
     currentPolyStyleColors = getCurrentAnnotationStyleColors(
-      currentPolyStyleColors
+      currentPolyStyleColors,
     );
     const labelFontColor = currentPolyStyleColors.labelFontColor;
     const labelBackgroundColor = currentPolyStyleColors.labelBackgroundColor;
-    const labelBackgroundOpacity = getAnnotationOpacityValue("annoLabelBackgroundOpacity");
+    const labelBackgroundOpacity = getAnnotationOpacityValue(
+      "annoLabelBackgroundOpacity",
+    );
     const lineWeight = Number(document.getElementById("lineWeight").value);
     const lineColor = currentPolyStyleColors.lineColor;
     const lineStyle = document.getElementById("lineStyle").value;
@@ -25238,7 +29256,7 @@ viewer.addHandler("canvas-click", function (event) {
       for (let i = 0; i < clickCoordinates.length; i++) {
         const viewportPoint = new OpenSeadragon.Point(
           clickCoordinates[i].x,
-          clickCoordinates[i].y
+          clickCoordinates[i].y,
         );
       }
       // Draw the polyline (polyline or polygon)
@@ -25297,8 +29315,13 @@ viewer.addHandler("canvas-click", function (event) {
     const currentTime = new Date().getTime();
     if (currentTime - lastClickTime < clickDelay) {
       suppressAnnotationDoubleClickBriefly();
-      clickImageCoordinates = getCoordinatesWithoutTrailingDuplicate(clickImageCoordinates);
-      clickCoordinates = clickCoordinates.slice(0, clickImageCoordinates.length);
+      clickImageCoordinates = getCoordinatesWithoutTrailingDuplicate(
+        clickImageCoordinates,
+      );
+      clickCoordinates = clickCoordinates.slice(
+        0,
+        clickImageCoordinates.length,
+      );
       // Check whether z or x keys were being held at time of double click
       let ZWasPressed = false;
       let XWasPressed = false;
@@ -25318,11 +29341,11 @@ viewer.addHandler("canvas-click", function (event) {
       const image = viewer.world.getItemAt(0);
       const labelViewportPoint = new OpenSeadragon.Point(
         clickCoordinates[0].x,
-        clickCoordinates[0].y
+        clickCoordinates[0].y,
       );
       const labelImagePoint = image.viewportToImageCoordinates(
         labelViewportPoint.x,
-        labelViewportPoint.y
+        labelViewportPoint.y,
       );
 
       const rectAreaPixels2 = calculatePolygonArea([clickImageCoordinates]);
@@ -25358,7 +29381,7 @@ viewer.addHandler("canvas-click", function (event) {
           XWasPressed,
           isPolylineMode,
           ZWasPressed,
-          clickImageCoordinates
+          clickImageCoordinates,
         );
         drawPath(polyCanvas, [annoJSON]);
         // Reset the coordinates array for the next set of clicks
@@ -25420,16 +29443,17 @@ function finalizePolyAnnotation(
   XWasPressed,
   isPolylineMode,
   ZWasPressed,
-  clickImageCoordinates
+  clickImageCoordinates,
 ) {
   if (isPolygonMode || XWasPressed) {
-    const polygonCoordinates =
-      getCoordinatesWithoutTrailingDuplicate(clickImageCoordinates);
+    const polygonCoordinates = getCoordinatesWithoutTrailingDuplicate(
+      clickImageCoordinates,
+    );
     if (
       polygonCoordinates.length > 1 &&
       !coordinatesMatch(
         polygonCoordinates[0],
-        polygonCoordinates[polygonCoordinates.length - 1]
+        polygonCoordinates[polygonCoordinates.length - 1],
       )
     ) {
       polygonCoordinates.push([...polygonCoordinates[0]]);
@@ -25462,32 +29486,29 @@ function finalizePolyAnnotation(
     }
   }
   if (isPolylineMode || ZWasPressed) {
-    const polylineCoordinates =
-      getCoordinatesWithoutTrailingDuplicate(clickImageCoordinates);
-    addPolylineToGeoJSON(
-      annoJSON,
-      polylineCoordinates,
-      {
-        uuid: uuid,
-        label: constPolylineLabel,
-        xLabel: labelImagePoint.x,
-        yLabel: labelImagePoint.y,
-        imageTitle: title(),
-        pixelsPerMeter: pixelsPerMeter(),
-        imageWidth: imageSize.x,
-        imageHeight: imageSize.y,
-        labelFontSize: labelFontSize,
-        labelFontColor: labelFontColor,
-        labelBackgroundColor: labelBackgroundColor,
-        labelBackgroundOpacity: labelBackgroundOpacity,
-        lineStyle: lineStyle,
-        lineWeight: lineWeight,
-        lineColor: lineColor,
-        lineOpacity: lineOpacity,
-        length_m: lineLengthM,
-        // canvasDraw: true,
-      }
+    const polylineCoordinates = getCoordinatesWithoutTrailingDuplicate(
+      clickImageCoordinates,
     );
+    addPolylineToGeoJSON(annoJSON, polylineCoordinates, {
+      uuid: uuid,
+      label: constPolylineLabel,
+      xLabel: labelImagePoint.x,
+      yLabel: labelImagePoint.y,
+      imageTitle: title(),
+      pixelsPerMeter: pixelsPerMeter(),
+      imageWidth: imageSize.x,
+      imageHeight: imageSize.y,
+      labelFontSize: labelFontSize,
+      labelFontColor: labelFontColor,
+      labelBackgroundColor: labelBackgroundColor,
+      labelBackgroundOpacity: labelBackgroundOpacity,
+      lineStyle: lineStyle,
+      lineWeight: lineWeight,
+      lineColor: lineColor,
+      lineOpacity: lineOpacity,
+      length_m: lineLengthM,
+      // canvasDraw: true,
+    });
   }
   drawShape(polyCanvas, [annoJSON]);
 
@@ -25500,7 +29521,7 @@ function finalizePolyAnnotation(
     labelFontColor,
     labelFontSize,
     labelBackgroundColor,
-    labelBackgroundOpacity
+    labelBackgroundOpacity,
   );
 }
 
@@ -25520,15 +29541,15 @@ function updateViewerElementCoordinates(canvas, viewportPoint) {
 function isLiveOverlayInteractionActive() {
   return Boolean(
     isAnnotationDraftActive() ||
-      isAnnotationDrawingActive() ||
-      annotationMoveDragState ||
-      annotationLabelMoveDragState ||
-      activeVertexEditUuid ||
-      activeShapeEditUuid ||
-      measurementModeActive ||
-      circleModeActive ||
-      segmentBoxModeActive ||
-      unsupervisedAoiModeActive
+    isAnnotationDrawingActive() ||
+    annotationMoveDragState ||
+    annotationLabelMoveDragState ||
+    activeVertexEditUuid ||
+    activeShapeEditUuid ||
+    measurementModeActive ||
+    circleModeActive ||
+    segmentBoxModeActive ||
+    unsupervisedAoiModeActive,
   );
 }
 
@@ -25595,7 +29616,9 @@ function expandCoordinateBounds(coordinates, bounds) {
     return bounds;
   }
 
-  coordinates.forEach((coordinate) => expandCoordinateBounds(coordinate, bounds));
+  coordinates.forEach((coordinate) =>
+    expandCoordinateBounds(coordinate, bounds),
+  );
   return bounds;
 }
 
@@ -25692,14 +29715,15 @@ viewerContainer.addEventListener("mousemove", (event) => {
   if (event.shiftKey && porosityAoiImagePoints.length > 0) {
     const imagePoint = getPorosityImagePointFromClientPoint(
       event.clientX,
-      event.clientY
+      event.clientY,
     );
     const constrainedPoint = constrainPorosityAoiPointToPrevious(imagePoint);
-    porosityAoiMousePoint =
-      getPorosityScreenPointFromImagePoint(constrainedPoint) || {
-        x: event.clientX - rect.left,
-        y: event.clientY - rect.top,
-      };
+    porosityAoiMousePoint = getPorosityScreenPointFromImagePoint(
+      constrainedPoint,
+    ) || {
+      x: event.clientX - rect.left,
+      y: event.clientY - rect.top,
+    };
   } else {
     porosityAoiMousePoint = {
       x: event.clientX - rect.left,
@@ -25715,7 +29739,7 @@ viewerContainer.addEventListener(
     if (event.target?.closest?.(".segment-aoi-vertex-handle")) return;
     startPorosityAoiVertexDrag(event);
   },
-  true
+  true,
 );
 
 viewerContainer.addEventListener(
@@ -25724,7 +29748,7 @@ viewerContainer.addEventListener(
     updateUnsupervisedAoiVertexDrag(event);
     updatePorosityAoiVertexDrag(event);
   },
-  true
+  true,
 );
 
 viewerContainer.addEventListener(
@@ -25733,7 +29757,7 @@ viewerContainer.addEventListener(
     finishUnsupervisedAoiVertexDrag(event);
     finishPorosityAoiVertexDrag(event);
   },
-  true
+  true,
 );
 
 viewerContainer.addEventListener(
@@ -25742,7 +29766,7 @@ viewerContainer.addEventListener(
     finishUnsupervisedAoiVertexDrag(event);
     finishPorosityAoiVertexDrag(event);
   },
-  true
+  true,
 );
 
 viewerContainer.addEventListener("mouseleave", () => {
@@ -25766,7 +29790,9 @@ viewer.addHandler("canvas-double-click", function (event) {
   }
 
   if (activeVertexEditUuid && !isAnnotationDraftActive()) {
-    if (insertAnnotationVertexAtViewerPoint(activeVertexEditUuid, event.position)) {
+    if (
+      insertAnnotationVertexAtViewerPoint(activeVertexEditUuid, event.position)
+    ) {
       event.preventDefaultAction = true;
       suppressAnnotationClickBriefly();
       return;
@@ -25826,7 +29852,9 @@ function drawShape(canvas, JSONArray) {
     // Only process features that have geometry and properties
     if (feature.geometry && feature.properties) {
       if (!isAnnotationFeatureVisible(feature)) return;
-      if (!boundsIntersect(getFeatureImageBounds(feature), visibleImageBounds)) {
+      if (
+        !boundsIntersect(getFeatureImageBounds(feature), visibleImageBounds)
+      ) {
         return;
       }
       const coordinates = feature.geometry.coordinates;
@@ -25859,7 +29887,7 @@ function drawSegmentPromptPoint(ctx, coordinates, image, feature) {
 
   const viewportPoint = image.imageToViewportCoordinates(
     coordinates[0],
-    coordinates[1]
+    coordinates[1],
   );
   const screenPoint =
     viewer.viewport.viewportToViewerElementCoordinates(viewportPoint);
@@ -25903,7 +29931,7 @@ function drawPolygon(ctx, coordinates, image, feature) {
   ) {
     const fillColorToPlot = applyOpacityToColor(
       feature.properties.fillColor,
-      feature.properties.fillOpacity
+      feature.properties.fillOpacity,
     );
     ctx.fillStyle = fillColorToPlot;
     ctx.fill("evenodd");
@@ -25920,7 +29948,7 @@ function drawPolygon(ctx, coordinates, image, feature) {
   if (feature.properties.lineColor && feature.properties.lineOpacity) {
     const lineColorToPlot = applyOpacityToColor(
       feature.properties.lineColor,
-      feature.properties.lineOpacity
+      feature.properties.lineOpacity,
     );
     ctx.strokeStyle = lineColorToPlot;
   } else {
@@ -26000,7 +30028,7 @@ function drawPath(ctx, coordinates, image, shape, closePath) {
 
   const startingViewportPoint = image.imageToViewportCoordinates(
     coordinates[0][0],
-    coordinates[0][1]
+    coordinates[0][1],
   );
   const startingViewerElementPoint =
     viewer.viewport.viewportToViewerElementCoordinates(startingViewportPoint);
@@ -26009,7 +30037,7 @@ function drawPath(ctx, coordinates, image, shape, closePath) {
   for (let i = 1; i < coordinates.length; i++) {
     const nextViewportPoint = image.imageToViewportCoordinates(
       coordinates[i][0],
-      coordinates[i][1]
+      coordinates[i][1],
     );
     const nextViewerElementPoint =
       viewer.viewport.viewportToViewerElementCoordinates(nextViewportPoint);
@@ -26036,7 +30064,7 @@ function drawPath(ctx, coordinates, image, shape, closePath) {
   if (shape.properties.lineColor && shape.properties.lineOpacity) {
     const lineColorToPlot = applyOpacityToColor(
       shape.properties.lineColor,
-      shape.properties.lineOpacity
+      shape.properties.lineOpacity,
     );
     ctx.strokeStyle = lineColorToPlot;
   } else {
@@ -26120,7 +30148,9 @@ function isRectangleDrawGesture(event) {
 }
 
 function isSegmentBoxDrawGesture(event) {
-  return segmentBoxModeActive || (segmentModeActive && event.originalEvent?.altKey);
+  return (
+    segmentBoxModeActive || (segmentModeActive && event.originalEvent?.altKey)
+  );
 }
 
 function isUnsupervisedAoiDrawGesture() {
@@ -26179,9 +30209,10 @@ function hideAnnotationMarquee() {
 
 function toggleAnnotationsInMarquee(marqueePolygon) {
   const touchedUuids = annoJSON.features
-    .filter((feature) =>
-      !isAnnotationFeatureLocked(feature) &&
-      annotationFeatureIntersectsMarquee(feature, marqueePolygon)
+    .filter(
+      (feature) =>
+        !isAnnotationFeatureLocked(feature) &&
+        annotationFeatureIntersectsMarquee(feature, marqueePolygon),
     )
     .map((feature) => feature.properties.uuid);
 
@@ -26212,16 +30243,19 @@ viewer.addHandler("canvas-drag", function (event) {
       porosityAoiDrawState = {
         startPixel: new OpenSeadragon.Point(
           event.position.x - delta.x,
-          event.position.y - delta.y
+          event.position.y - delta.y,
         ),
       };
     }
-    const aoiRect = imageRectFromPixelBox(
+    const aoiPoints = imagePointsFromPixelBox(
       porosityAoiDrawState.startPixel,
-      event.position
+      event.position,
     );
-    if (aoiRect && aoiRect.width > 0 && aoiRect.height > 0) {
-      porosityAoiImagePoints = imageRectToPoints(aoiRect);
+    if (
+      aoiPoints &&
+      isPixelBoxLargeEnough(porosityAoiDrawState.startPixel, event.position, 1)
+    ) {
+      porosityAoiImagePoints = aoiPoints;
       porosityAoiMousePoint = null;
       porosityTypes.forEach((type) => {
         type.result = null;
@@ -26238,13 +30272,13 @@ viewer.addHandler("canvas-drag", function (event) {
       unsupervisedAoiDragState = {
         startPixel: new OpenSeadragon.Point(
           event.position.x - delta.x,
-          event.position.y - delta.y
+          event.position.y - delta.y,
         ),
       };
     }
     const aoiRect = imageRectFromPixelBox(
       unsupervisedAoiDragState.startPixel,
-      event.position
+      event.position,
     );
     if (aoiRect && aoiRect.width > 0 && aoiRect.height > 0) {
       unsupervisedAoiRect = aoiRect;
@@ -26261,13 +30295,13 @@ viewer.addHandler("canvas-drag", function (event) {
       segmentBoxDragState = {
         startPixel: new OpenSeadragon.Point(
           event.position.x - delta.x,
-          event.position.y - delta.y
+          event.position.y - delta.y,
         ),
       };
     }
     const promptRect = imageRectFromPixelBox(
       segmentBoxDragState.startPixel,
-      event.position
+      event.position,
     );
     if (promptRect && promptRect.width > 0 && promptRect.height > 0) {
       segmentPromptBox = promptRect;
@@ -26283,7 +30317,7 @@ viewer.addHandler("canvas-drag", function (event) {
       snapshotDragState = {
         startPixel: new OpenSeadragon.Point(
           event.position.x - delta.x,
-          event.position.y - delta.y
+          event.position.y - delta.y,
         ),
       };
     }
@@ -26326,15 +30360,15 @@ viewer.addHandler("canvas-drag", function (event) {
     const viewportPoint = viewer.viewport.pointFromPixel(event.position);
 
     const labelFontSize = Number(
-      document.getElementById("annoLabelFontSize").value
+      document.getElementById("annoLabelFontSize").value,
     );
     currentRectStyleColors = getCurrentAnnotationStyleColors(
-      currentRectStyleColors
+      currentRectStyleColors,
     );
     const labelFontColor = currentRectStyleColors.labelFontColor;
     const labelBackgroundColor = currentRectStyleColors.labelBackgroundColor;
     const labelBackgroundOpacity = getAnnotationOpacityValue(
-      "annoLabelBackgroundOpacity"
+      "annoLabelBackgroundOpacity",
     );
     const lineWeight = Number(document.getElementById("lineWeight").value);
     const lineColor = currentRectStyleColors.lineColor;
@@ -26365,16 +30399,16 @@ viewer.addHandler("canvas-drag", function (event) {
       const bottom = Math.max(startPixel.y, canvasPoint.y);
 
       const topLeftVP = viewer.viewport.pointFromPixel(
-        new OpenSeadragon.Point(left, top)
+        new OpenSeadragon.Point(left, top),
       );
       const topRightVP = viewer.viewport.pointFromPixel(
-        new OpenSeadragon.Point(right, top)
+        new OpenSeadragon.Point(right, top),
       );
       const bottomRightVP = viewer.viewport.pointFromPixel(
-        new OpenSeadragon.Point(right, bottom)
+        new OpenSeadragon.Point(right, bottom),
       );
       const bottomLeftVP = viewer.viewport.pointFromPixel(
-        new OpenSeadragon.Point(left, bottom)
+        new OpenSeadragon.Point(left, bottom),
       );
 
       // 4. Convert to image coordinates if needed
@@ -26422,14 +30456,16 @@ viewer.addHandler("canvas-drag", function (event) {
 viewer.addHandler("canvas-release", function (event) {
   if (isPorosityAoiDrawGesture(event)) {
     event.preventDefaultAction = true;
-    const aoiRect =
-      porosityAoiDrawState
-        ? imageRectFromPixelBox(porosityAoiDrawState.startPixel, event.position)
-        : null;
+    const aoiPoints = porosityAoiDrawState
+      ? imagePointsFromPixelBox(porosityAoiDrawState.startPixel, event.position)
+      : null;
+    const isLargeEnough =
+      porosityAoiDrawState &&
+      isPixelBoxLargeEnough(porosityAoiDrawState.startPixel, event.position);
     porosityAoiDrawState = null;
     porosityAoiMousePoint = null;
 
-    if (!aoiRect || aoiRect.width < 4 || aoiRect.height < 4) {
+    if (!aoiPoints || !isLargeEnough) {
       porosityAoiImagePoints = [];
       porosityAoiComplete = false;
       updatePorosityControls("Draw a larger AOI.");
@@ -26437,17 +30473,19 @@ viewer.addHandler("canvas-release", function (event) {
       return;
     }
 
-    porosityAoiImagePoints = imageRectToPoints(aoiRect);
+    porosityAoiImagePoints = aoiPoints;
     finishPorosityAoi();
     return;
   }
 
   if (isUnsupervisedAoiDrawGesture(event)) {
     event.preventDefaultAction = true;
-    const aoiRect =
-      unsupervisedAoiDragState
-        ? imageRectFromPixelBox(unsupervisedAoiDragState.startPixel, event.position)
-        : null;
+    const aoiRect = unsupervisedAoiDragState
+      ? imageRectFromPixelBox(
+          unsupervisedAoiDragState.startPixel,
+          event.position,
+        )
+      : null;
     unsupervisedAoiModeActive = false;
     unsupervisedAoiDragState = null;
 
@@ -26461,7 +30499,7 @@ viewer.addHandler("canvas-release", function (event) {
     unsupervisedAoiSelectedVertexIndex = null;
     updateUnsupervisedAoiPreview();
     setUnsupervisedSegmentStatus(
-      "AOI ready. Drag vertices to refine it, or run segmentation."
+      "AOI ready. Drag vertices to refine it, or run segmentation.",
     );
     updateUnsupervisedSegmentControls();
     return;
@@ -26469,10 +30507,9 @@ viewer.addHandler("canvas-release", function (event) {
 
   if (isSegmentBoxDrawGesture(event)) {
     event.preventDefaultAction = true;
-    const promptRect =
-      segmentBoxDragState
-        ? imageRectFromPixelBox(segmentBoxDragState.startPixel, event.position)
-        : null;
+    const promptRect = segmentBoxDragState
+      ? imageRectFromPixelBox(segmentBoxDragState.startPixel, event.position)
+      : null;
     segmentBoxModeActive = false;
     segmentBoxDragState = null;
     updateSegmentControls();
@@ -26512,7 +30549,7 @@ viewer.addHandler("canvas-release", function (event) {
     suppressAnnotationClickBriefly();
     const marqueePolygon = getImageMarqueePolygon(
       annotationMarqueeState.startPixel,
-      event.position
+      event.position,
     );
     if (marqueePolygon) {
       toggleAnnotationsInMarquee(marqueePolygon);
@@ -26533,16 +30570,16 @@ viewer.addHandler("canvas-release", function (event) {
     const bottom = Math.max(startPixel.y, event.position.y);
 
     const topLeftVP = viewer.viewport.pointFromPixel(
-      new OpenSeadragon.Point(left, top)
+      new OpenSeadragon.Point(left, top),
     );
     const topRightVP = viewer.viewport.pointFromPixel(
-      new OpenSeadragon.Point(right, top)
+      new OpenSeadragon.Point(right, top),
     );
     const bottomRightVP = viewer.viewport.pointFromPixel(
-      new OpenSeadragon.Point(right, bottom)
+      new OpenSeadragon.Point(right, bottom),
     );
     const bottomLeftVP = viewer.viewport.pointFromPixel(
-      new OpenSeadragon.Point(left, bottom)
+      new OpenSeadragon.Point(left, bottom),
     );
 
     // 4. Convert to image coordinates if needed
@@ -26563,11 +30600,11 @@ viewer.addHandler("canvas-release", function (event) {
     const endPoint = viewer.viewport.pointFromPixel(event.position);
     const imageStartPoint = image.viewportToImageCoordinates(
       startPoint.x,
-      startPoint.y
+      startPoint.y,
     ); // Get image coordinates
     const imageEndPoint = image.viewportToImageCoordinates(
       endPoint.x,
-      endPoint.y
+      endPoint.y,
     );
 
     const width = imageEndPoint.x - imageStartPoint.x;
@@ -26586,14 +30623,16 @@ viewer.addHandler("canvas-release", function (event) {
 
     // Get the plotting options
     const labelFontSize = Number(
-      document.getElementById("annoLabelFontSize").value
+      document.getElementById("annoLabelFontSize").value,
     );
     currentRectStyleColors = getCurrentAnnotationStyleColors(
-      currentRectStyleColors
+      currentRectStyleColors,
     );
     const labelFontColor = currentRectStyleColors.labelFontColor;
     const labelBackgroundColor = currentRectStyleColors.labelBackgroundColor;
-    const labelBackgroundOpacity = getAnnotationOpacityValue("annoLabelBackgroundOpacity");
+    const labelBackgroundOpacity = getAnnotationOpacityValue(
+      "annoLabelBackgroundOpacity",
+    );
     const lineWeight = Number(document.getElementById("lineWeight").value);
     const lineColor = currentRectStyleColors.lineColor;
     const lineStyle = document.getElementById("lineStyle").value;
@@ -26618,7 +30657,7 @@ viewer.addHandler("canvas-release", function (event) {
         lineColor,
         lineOpacity,
         fillColor,
-        fillOpacity
+        fillOpacity,
       );
       annoJSONTemp = {
         type: "FeatureCollection",
@@ -26650,7 +30689,7 @@ function finalizeRectAnnotationWithCoords(
   lineColor,
   lineOpacity,
   fillColor,
-  fillOpacity
+  fillOpacity,
 ) {
   const image = viewer.world.getItemAt(0); // Get image to use for drawing
 
@@ -26694,7 +30733,7 @@ function finalizeRectAnnotationWithCoords(
   // Add label at top-left point
   const finalPoint = image.imageToViewportCoordinates(
     coordinates[0][0],
-    coordinates[0][1]
+    coordinates[0][1],
   );
   addText(
     currentRectUniqueId,
@@ -26704,7 +30743,7 @@ function finalizeRectAnnotationWithCoords(
     labelFontColor,
     labelFontSize,
     labelBackgroundColor,
-    labelBackgroundOpacity
+    labelBackgroundOpacity,
   );
 }
 
@@ -26722,7 +30761,7 @@ function addText(
   color = "#FFFFFF",
   fontSize = 16,
   backgroundColor = "#000000",
-  backgroundOpacity = 0.5
+  backgroundOpacity = 0.5,
 ) {
   const labelText = label === undefined || label === null ? "" : String(label);
   if (type === "anno" && labelText.trim() === "") {
@@ -26762,7 +30801,7 @@ function addText(
 
   const backgroundColorToPlot = applyOpacityToColor(
     backgroundColor,
-    backgroundOpacity
+    backgroundOpacity,
   );
 
   // CSS custom properties for styling; applied to the inner label
@@ -26864,7 +30903,7 @@ function deleteText(uuid, type = "anno") {
     if (type === "anno") {
       // TODO: Is this code necessary?
       annotateLabels = annotateLabels.filter(
-        (label) => label.id !== `annotate-label-${uuid}`
+        (label) => label.id !== `annotate-label-${uuid}`,
       ); // Clean up the array
       // window.appState.hasUnsavedAnnotations = true;
       unsavedAnnotations(true);
@@ -26883,7 +30922,7 @@ function updateText(
   color = undefined,
   fontSize = undefined,
   backgroundColor = undefined,
-  backgroundOpacity = undefined
+  backgroundOpacity = undefined,
 ) {
   // Find the label element by id
   let pointLabel;
@@ -26913,16 +30952,21 @@ function updateText(
         Number.isFinite(labelX) &&
         Number.isFinite(labelY)
       ) {
-        const labelFontSize = fontSize ?? Number(feature.properties.labelFontSize);
+        const labelFontSize =
+          fontSize ?? Number(feature.properties.labelFontSize);
         addText(
           uuid,
           nextLabel,
-          image.imageToViewportCoordinates(new OpenSeadragon.Point(labelX, labelY)),
+          image.imageToViewportCoordinates(
+            new OpenSeadragon.Point(labelX, labelY),
+          ),
           type,
           color ?? feature.properties.labelFontColor ?? "#FFFFFF",
           Number.isFinite(labelFontSize) ? labelFontSize : 16,
-          backgroundColor ?? feature.properties.labelBackgroundColor ?? "#000000",
-          backgroundOpacity ?? feature.properties.labelBackgroundOpacity ?? 0.5
+          backgroundColor ??
+            feature.properties.labelBackgroundColor ??
+            "#000000",
+          backgroundOpacity ?? feature.properties.labelBackgroundOpacity ?? 0.5,
         );
       }
       return;
@@ -26950,7 +30994,7 @@ function updateText(
     if (backgroundColor !== undefined && backgroundOpacity !== undefined) {
       const backgroundColorToPlot = applyOpacityToColor(
         backgroundColor,
-        backgroundOpacity
+        backgroundOpacity,
       );
       pointLabel.style.setProperty("--background-color", backgroundColorToPlot);
     }
@@ -26963,7 +31007,7 @@ function addCrosshairs(
   type = "anno", // Options: "anno", "grid"
   color = "purple",
   lineWeight = 2,
-  opacity = 1
+  opacity = 1,
 ) {
   const crosshair = document.createElement("div");
   if (type === "anno") {
@@ -26990,7 +31034,7 @@ function addCrosshairs(
   crosshair.style.setProperty("--crosshair-color", color);
   crosshair.style.setProperty(
     "--crosshair-line-weight",
-    `${Number(lineWeight)}px`
+    `${Number(lineWeight)}px`,
   );
   crosshair.style.setProperty("--crosshair-opacity", Number(opacity));
 
@@ -27014,7 +31058,7 @@ function updateCrosshair(
   type = "anno",
   newColor,
   newLineWeight,
-  newOpacity
+  newOpacity,
 ) {
   // Find the existing crosshair element by its ID
   let crosshairElement;
@@ -27035,7 +31079,7 @@ function updateCrosshair(
   if (newLineWeight !== undefined) {
     crosshairElement.style.setProperty(
       "--crosshair-line-weight",
-      `${newLineWeight}px`
+      `${newLineWeight}px`,
     );
   }
   if (newOpacity !== undefined) {
@@ -27054,7 +31098,7 @@ function deleteCrosshairs(uuid, type = "anno") {
     viewer.removeOverlay(overlayElement); // Remove the overlay using the element
     if (type === "anno") {
       annotatePoints = annotatePoints.filter(
-        (label) => label.id !== `annotate-crosshair-${uuid}`
+        (label) => label.id !== `annotate-crosshair-${uuid}`,
       ); // Clean up the array
     }
   }
@@ -27134,7 +31178,7 @@ function handleCount(coords, properties) {
   }
   const image = viewer.world.getItemAt(0);
   const viewportPoint = image.imageToViewportCoordinates(
-    new OpenSeadragon.Point(x, y)
+    new OpenSeadragon.Point(x, y),
   );
 
   const fontColor =
@@ -27163,7 +31207,7 @@ function handleCount(coords, properties) {
     fontColor, // Font color
     fontSize, // Font size
     fontBackgroundColor, // Background color
-    fontBackgroundOpacity // Background size
+    fontBackgroundOpacity, // Background size
   );
   addCrosshairs(
     properties.uuid,
@@ -27171,7 +31215,7 @@ function handleCount(coords, properties) {
     "grid",
     crosshairColor, // lineColor
     crosshairLineWeight, // lineWeight
-    crosshairOpacity // lineOpacity
+    crosshairOpacity, // lineOpacity
   );
   saveCountToJSON("Point", coords, properties);
 }
@@ -27210,7 +31254,7 @@ let pendingAnnotationImport = null;
 function getOrCreateAnnotationGroup(groupName) {
   const trimmedName = (groupName || DEFAULT_ANNOTATION_GROUP.groupName).trim();
   const existingGroup = getAnnotationGroups().find(
-    (group) => group.groupName.toLowerCase() === trimmedName.toLowerCase()
+    (group) => group.groupName.toLowerCase() === trimmedName.toLowerCase(),
   );
   if (existingGroup) return existingGroup;
 
@@ -27248,7 +31292,9 @@ function applyAnnotationGroupToProperties(properties, group) {
 function applyActiveAnnotationGroup(properties = {}) {
   if (hasExplicitAnnotationGroup(properties)) return properties;
   const group = getSelectedGroupFromDropdown();
-  return group ? applyAnnotationGroupToProperties(properties, group) : properties;
+  return group
+    ? applyAnnotationGroupToProperties(properties, group)
+    : properties;
 }
 
 function getPreservedImportGroup(properties = {}, preservedGroups) {
@@ -27265,24 +31311,23 @@ function getPreservedImportGroup(properties = {}, preservedGroups) {
   const existingGroup = getAnnotationGroups().find(
     (group) =>
       (properties.groupId && group.groupId === properties.groupId) ||
-      group.groupName.toLowerCase() === groupName.toLowerCase()
+      group.groupName.toLowerCase() === groupName.toLowerCase(),
   );
-  const group =
-    existingGroup || {
-      groupId: properties.groupId || `group-${generateUniqueId(8)}`,
-      groupName,
-      groupColor:
-        properties.groupColor ||
-        getAnnotationGroupColor(getAnnotationGroups().length),
-      groupVisible:
-        properties.groupVisible === undefined
-          ? true
-          : Boolean(properties.groupVisible),
-      groupLocked:
-        properties.groupLocked === undefined
-          ? false
-          : Boolean(properties.groupLocked),
-    };
+  const group = existingGroup || {
+    groupId: properties.groupId || `group-${generateUniqueId(8)}`,
+    groupName,
+    groupColor:
+      properties.groupColor ||
+      getAnnotationGroupColor(getAnnotationGroups().length),
+    groupVisible:
+      properties.groupVisible === undefined
+        ? true
+        : Boolean(properties.groupVisible),
+    groupLocked:
+      properties.groupLocked === undefined
+        ? false
+        : Boolean(properties.groupLocked),
+  };
 
   preservedGroups.set(key, group);
   return group;
@@ -27292,7 +31337,9 @@ function getAnnotationFeaturesFromGeoJSON(geoJSONData) {
   const geoJSON = parseJSON(geoJSONData);
   if (!geoJSON) return [];
   if (geoJSON.type === "FeatureCollection") {
-    return Array.isArray(geoJSON.features) ? geoJSON.features.filter(Boolean) : [];
+    return Array.isArray(geoJSON.features)
+      ? geoJSON.features.filter(Boolean)
+      : [];
   }
   if (geoJSON.type === "Feature") return [geoJSON];
   const features = Array.isArray(geoJSON)
@@ -27338,7 +31385,7 @@ function applyInferredAnnotationLabelPoint(properties = {}, geometry) {
 
 function annotationImportHasExplicitGroups(features) {
   return features.some((feature) =>
-    hasExplicitAnnotationGroup(feature.properties)
+    hasExplicitAnnotationGroup(feature.properties),
   );
 }
 
@@ -27357,9 +31404,8 @@ function showAnnotationImportDialog(geoJSONData, options = {}) {
   const hasGroups = annotationImportHasExplicitGroups(features);
   pendingAnnotationImport = { geoJSONData, sourceName };
 
-  document.getElementById(
-    "annotationImportSource"
-  ).textContent = `${features.length} feature${features.length === 1 ? "" : "s"} from ${sourceName}`;
+  document.getElementById("annotationImportSource").textContent =
+    `${features.length} feature${features.length === 1 ? "" : "s"} from ${sourceName}`;
 
   const groupSelect = document.getElementById("annotationImportGroupSelect");
   groupSelect.innerHTML = "";
@@ -27376,10 +31422,10 @@ function showAnnotationImportDialog(geoJSONData, options = {}) {
   groupSelect.value = DEFAULT_ANNOTATION_GROUP.groupId;
 
   const assignMode = document.querySelector(
-    'input[name="annotationImportMode"][value="assign"]'
+    'input[name="annotationImportMode"][value="assign"]',
   );
   const preserveMode = document.querySelector(
-    'input[name="annotationImportMode"][value="preserve"]'
+    'input[name="annotationImportMode"][value="preserve"]',
   );
   preserveMode.disabled = !hasGroups;
   preserveMode.checked = hasGroups;
@@ -27390,9 +31436,9 @@ function showAnnotationImportDialog(geoJSONData, options = {}) {
     selectImportedAnnotationsPreference;
   resetAnnotationImportProgress();
   setAnnotationImportBusy(false);
-  document.getElementById("annotationImportDialog").classList.remove(
-    "modal-prompt-hidden"
-  );
+  document
+    .getElementById("annotationImportDialog")
+    .classList.remove("modal-prompt-hidden");
   document
     .getElementById("annotationImportDialog")
     .classList.add("modal-prompt-visible");
@@ -27402,9 +31448,9 @@ function hideAnnotationImportDialog() {
   pendingAnnotationImport = null;
   resetAnnotationImportProgress();
   setAnnotationImportBusy(false);
-  document.getElementById("annotationImportDialog").classList.remove(
-    "modal-prompt-visible"
-  );
+  document
+    .getElementById("annotationImportDialog")
+    .classList.remove("modal-prompt-visible");
   document
     .getElementById("annotationImportDialog")
     .classList.add("modal-prompt-hidden");
@@ -27417,7 +31463,7 @@ async function confirmAnnotationImport() {
     document.querySelector('input[name="annotationImportMode"]:checked')
       ?.value || "assign";
   const selectImported = document.getElementById(
-    "annotationImportSelectAfter"
+    "annotationImportSelectAfter",
   ).checked;
   selectImportedAnnotationsPreference = selectImported;
   const loadOptions = {
@@ -27432,10 +31478,10 @@ async function confirmAnnotationImport() {
       selectedGroupId === "__new__"
         ? getOrCreateAnnotationGroup(
             pendingAnnotationImport.newGroupName ||
-              getDefaultImportGroupName(pendingAnnotationImport.sourceName)
+              getDefaultImportGroupName(pendingAnnotationImport.sourceName),
           )
         : getAnnotationGroups().find(
-            (candidate) => candidate.groupId === selectedGroupId
+            (candidate) => candidate.groupId === selectedGroupId,
           );
     loadOptions.groupMode = "assign";
     loadOptions.group = group;
@@ -27454,7 +31500,10 @@ async function confirmAnnotationImport() {
     }, 450);
   } catch (error) {
     console.error("Annotation import failed:", error);
-    setAnnotationImportProgress(100, error.message || "Annotation import failed.");
+    setAnnotationImportProgress(
+      100,
+      error.message || "Annotation import failed.",
+    );
     setAnnotationImportBusy(false);
   }
 }
@@ -27469,14 +31518,18 @@ function promptForAnnotationImportGroupName() {
         value.trim() ||
         getDefaultImportGroupName(pendingAnnotationImport.sourceName);
       pendingAnnotationImport.newGroupName = groupName;
-      const groupSelect = document.getElementById("annotationImportGroupSelect");
-      const newGroupOption = groupSelect.querySelector('option[value="__new__"]');
+      const groupSelect = document.getElementById(
+        "annotationImportGroupSelect",
+      );
+      const newGroupOption = groupSelect.querySelector(
+        'option[value="__new__"]',
+      );
       if (newGroupOption) {
         newGroupOption.textContent = `New group: ${groupName}`;
       }
       groupSelect.value = "__new__";
       document.querySelector(
-        'input[name="annotationImportMode"][value="assign"]'
+        'input[name="annotationImportMode"][value="assign"]',
       ).checked = true;
       updateAnnotationImportGroupInputs();
       document
@@ -27486,7 +31539,7 @@ function promptForAnnotationImportGroupName() {
         .getElementById("annotationImportDialog")
         .classList.add("modal-prompt-visible");
     },
-    getDefaultImportGroupName(pendingAnnotationImport.sourceName)
+    getDefaultImportGroupName(pendingAnnotationImport.sourceName),
   );
 }
 
@@ -27498,7 +31551,11 @@ function updateAnnotationImportGroupInputs() {
     document.getElementById("annotationImportGroupSelect").value === "__new__";
   document.getElementById("annotationImportGroupSelect").disabled =
     mode !== "assign";
-  if (mode === "assign" && isNewGroup && pendingAnnotationImport?.newGroupName) {
+  if (
+    mode === "assign" &&
+    isNewGroup &&
+    pendingAnnotationImport?.newGroupName
+  ) {
     document.getElementById("annotationImportGroupSelect").title =
       pendingAnnotationImport.newGroupName;
   } else {
@@ -27555,12 +31612,10 @@ function waitForAnnotationImportPaint() {
 async function loadAnnotations(geoJSONData, options = {}) {
   const features = getAnnotationFeaturesFromGeoJSON(geoJSONData);
   const assignedGroup =
-    options.groupMode === "assign" && options.group
-      ? options.group
-      : null;
+    options.groupMode === "assign" && options.group ? options.group : null;
   const preservedImportGroups = new Map();
   const existingUuids = new Set(
-    annoJSON.features.map((feature) => feature.properties.uuid)
+    annoJSON.features.map((feature) => feature.properties.uuid),
   );
   const addedUuids = [];
   annotationHistory.push("Import annotations");
@@ -27582,7 +31637,7 @@ async function loadAnnotations(geoJSONData, options = {}) {
           ? applyAnnotationGroupToProperties(sourceProperties, preservedGroup)
           : sourceProperties;
       const properties = normalizeAnnotationProperties(
-        applyInferredAnnotationLabelPoint(groupedProperties, geometry)
+        applyInferredAnnotationLabelPoint(groupedProperties, geometry),
       );
       if (!geometry || !properties) {
         // Invalid feature, skipping
@@ -27620,7 +31675,7 @@ async function loadAnnotations(geoJSONData, options = {}) {
         const percent = Math.round(((index + 1) / features.length) * 90);
         setAnnotationImportProgress(
           percent,
-          `Importing annotations... ${index + 1} of ${features.length}`
+          `Importing annotations... ${index + 1} of ${features.length}`,
         );
         await waitForAnnotationImportPaint();
       }
@@ -27641,7 +31696,10 @@ async function loadAnnotations(geoJSONData, options = {}) {
       selectAnnotationByUuid(annoJSON.features[0].properties.uuid);
     }
     annoLabelToText();
-    setAnnotationImportProgress(100, `Imported ${addedUuids.length} annotation${addedUuids.length === 1 ? "" : "s"}.`);
+    setAnnotationImportProgress(
+      100,
+      `Imported ${addedUuids.length} annotation${addedUuids.length === 1 ? "" : "s"}.`,
+    );
   } finally {
     annotationHistoryPaused = false;
     updateAnnotationHistoryControls();
@@ -27657,7 +31715,7 @@ function handlePoint(coords, properties) {
   }
   const image = viewer.world.getItemAt(0);
   const viewportPoint = image.imageToViewportCoordinates(
-    new OpenSeadragon.Point(x, y)
+    new OpenSeadragon.Point(x, y),
   );
   addText(
     properties.uuid,
@@ -27667,7 +31725,7 @@ function handlePoint(coords, properties) {
     properties.labelFontColor,
     Number(properties.labelFontSize),
     properties.labelBackgroundColor,
-    Number(properties.labelBackgroundOpacity)
+    Number(properties.labelBackgroundOpacity),
   );
   addCrosshairs(
     properties.uuid,
@@ -27675,7 +31733,7 @@ function handlePoint(coords, properties) {
     "anno",
     properties.lineColor,
     Number(properties.lineWeight),
-    Number(properties.lineOpacity)
+    Number(properties.lineOpacity),
   );
   saveAnnotationToJSON("Point", coords, properties);
 }
@@ -27709,7 +31767,7 @@ function handleMultiPoint(coords, properties) {
 
     // Convert the point to viewport coordinates
     const viewportPoint = image.imageToViewportCoordinates(
-      new OpenSeadragon.Point(x, y)
+      new OpenSeadragon.Point(x, y),
     );
 
     // Add text annotation
@@ -27721,7 +31779,7 @@ function handleMultiPoint(coords, properties) {
       properties.labelFontColor,
       Number(properties.labelFontSize),
       properties.labelBackgroundColor,
-      Number(properties.labelBackgroundOpacity)
+      Number(properties.labelBackgroundOpacity),
     );
 
     // Add crosshairs for the point
@@ -27731,7 +31789,7 @@ function handleMultiPoint(coords, properties) {
       "anno",
       properties.lineColor,
       Number(properties.lineWeight),
-      Number(properties.lineOpacity)
+      Number(properties.lineOpacity),
     );
 
     // Save annotation data as GeoJSON
@@ -27743,7 +31801,7 @@ function handleMultiPoint(coords, properties) {
 function handleLineString(coords, properties) {
   const image = viewer.world.getItemAt(0);
   const viewportPoint = image.imageToViewportCoordinates(
-    new OpenSeadragon.Point(properties.xLabel, properties.yLabel)
+    new OpenSeadragon.Point(properties.xLabel, properties.yLabel),
   );
   addText(
     properties.uuid,
@@ -27753,7 +31811,7 @@ function handleLineString(coords, properties) {
     properties.labelFontColor,
     Number(properties.labelFontSize),
     properties.labelBackgroundColor,
-    Number(properties.labelBackgroundOpacity)
+    Number(properties.labelBackgroundOpacity),
   );
   saveAnnotationToJSON("LineString", coords, properties);
 }
@@ -27761,7 +31819,7 @@ function handleLineString(coords, properties) {
 function handleMultiLineString(coords, properties) {
   const image = viewer.world.getItemAt(0);
   const viewportPoint = image.imageToViewportCoordinates(
-    new OpenSeadragon.Point(properties.xLabel, properties.yLabel)
+    new OpenSeadragon.Point(properties.xLabel, properties.yLabel),
   );
   addText(
     properties.uuid,
@@ -27771,7 +31829,7 @@ function handleMultiLineString(coords, properties) {
     properties.labelFontColor,
     Number(properties.labelFontSize),
     properties.labelBackgroundColor,
-    Number(properties.labelBackgroundOpacity)
+    Number(properties.labelBackgroundOpacity),
   );
   saveAnnotationToJSON("MultiLineString", coords, properties);
 }
@@ -27779,7 +31837,7 @@ function handleMultiLineString(coords, properties) {
 function handlePolygon(coords, properties) {
   const image = viewer.world.getItemAt(0);
   const viewportPoint = image.imageToViewportCoordinates(
-    new OpenSeadragon.Point(properties.xLabel, properties.yLabel)
+    new OpenSeadragon.Point(properties.xLabel, properties.yLabel),
   );
   addText(
     properties.uuid,
@@ -27789,7 +31847,7 @@ function handlePolygon(coords, properties) {
     properties.labelFontColor,
     Number(properties.labelFontSize),
     properties.labelBackgroundColor,
-    Number(properties.labelBackgroundOpacity)
+    Number(properties.labelBackgroundOpacity),
   );
   saveAnnotationToJSON("Polygon", coords, properties);
 }
@@ -27797,7 +31855,7 @@ function handlePolygon(coords, properties) {
 function handleMultiPolygon(coords, properties) {
   const image = viewer.world.getItemAt(0);
   const viewportPoint = image.imageToViewportCoordinates(
-    new OpenSeadragon.Point(properties.xLabel, properties.yLabel)
+    new OpenSeadragon.Point(properties.xLabel, properties.yLabel),
   );
   addText(
     properties.uuid,
@@ -27807,7 +31865,7 @@ function handleMultiPolygon(coords, properties) {
     properties.labelFontColor,
     Number(properties.labelFontSize),
     properties.labelBackgroundColor,
-    Number(properties.labelBackgroundOpacity)
+    Number(properties.labelBackgroundOpacity),
   );
   saveAnnotationToJSON("MultiPolygon", coords, properties);
 }
@@ -27816,7 +31874,7 @@ function handleMultiPolygon(coords, properties) {
 function saveAnnotationToJSON(type, coordinates, properties) {
   annotationHistory.push("Add annotation");
   const normalizedProperties = normalizeNewAnnotationProperties(
-    applyActiveAnnotationGroup(properties)
+    applyActiveAnnotationGroup(properties),
   );
 
   const geoJSONFeature = {
@@ -27824,11 +31882,15 @@ function saveAnnotationToJSON(type, coordinates, properties) {
     geometry: { type, coordinates: roundCoordinateTree(coordinates) },
     properties: {
       ...normalizedProperties,
-      pixelsPerMeter: normalizePixelsPerMeter(normalizedProperties.pixelsPerMeter),
+      pixelsPerMeter: normalizePixelsPerMeter(
+        normalizedProperties.pixelsPerMeter,
+      ),
       imageWidth: Number(normalizedProperties.imageWidth),
       imageHeight: Number(normalizedProperties.imageHeight),
       labelFontSize: Number(normalizedProperties.labelFontSize),
-      labelBackgroundOpacity: Number(normalizedProperties.labelBackgroundOpacity),
+      labelBackgroundOpacity: Number(
+        normalizedProperties.labelBackgroundOpacity,
+      ),
       lineWeight: Number(normalizedProperties.lineWeight),
       lineOpacity: Number(normalizedProperties.lineOpacity),
       fillOpacity: Number(normalizedProperties.fillOpacity),
@@ -27866,12 +31928,12 @@ document
   .getElementById("annotationImportGroupSelect")
   .addEventListener("change", function () {
     document.querySelector(
-      'input[name="annotationImportMode"][value="assign"]'
+      'input[name="annotationImportMode"][value="assign"]',
     ).checked = true;
     if (this.value === "__new__") {
-      document.getElementById("annotationImportDialog").classList.remove(
-        "modal-prompt-visible"
-      );
+      document
+        .getElementById("annotationImportDialog")
+        .classList.remove("modal-prompt-visible");
       document
         .getElementById("annotationImportDialog")
         .classList.add("modal-prompt-hidden");
@@ -27914,7 +31976,7 @@ function showAnnotationExportDialog() {
     row.className = "annotation-export-group-row";
     row.classList.toggle(
       "annotation-export-group-row-hidden",
-      group.groupVisible === false
+      group.groupVisible === false,
     );
 
     const checkbox = document.createElement("input");
@@ -27941,28 +32003,28 @@ function showAnnotationExportDialog() {
 
   const selectedUuids = getSelectedAnnotationUuids();
   const selectionOption = document.querySelector(
-    'input[name="annotationExportScope"][value="selection"]'
+    'input[name="annotationExportScope"][value="selection"]',
   );
   selectionOption.disabled = selectedUuids.length === 0;
   selectionOption.parentElement.title =
     selectedUuids.length === 0 ? "No annotations are selected" : "";
   document.querySelector(
-    'input[name="annotationExportScope"][value="groups"]'
+    'input[name="annotationExportScope"][value="groups"]',
   ).checked = true;
   document.getElementById("annotationExportIncludeHidden").checked = true;
 
-  document.getElementById("annotationExportDialog").classList.remove(
-    "modal-prompt-hidden"
-  );
+  document
+    .getElementById("annotationExportDialog")
+    .classList.remove("modal-prompt-hidden");
   document
     .getElementById("annotationExportDialog")
     .classList.add("modal-prompt-visible");
 }
 
 function hideAnnotationExportDialog() {
-  document.getElementById("annotationExportDialog").classList.remove(
-    "modal-prompt-visible"
-  );
+  document
+    .getElementById("annotationExportDialog")
+    .classList.remove("modal-prompt-visible");
   document
     .getElementById("annotationExportDialog")
     .classList.add("modal-prompt-hidden");
@@ -27973,7 +32035,7 @@ function getAnnotationExportFeatures() {
     document.querySelector('input[name="annotationExportScope"]:checked')
       ?.value || "groups";
   const includeHidden = document.getElementById(
-    "annotationExportIncludeHidden"
+    "annotationExportIncludeHidden",
   ).checked;
 
   if (scope === "selection") {
@@ -27990,7 +32052,7 @@ function getAnnotationExportFeatures() {
   const selectedGroupIds = new Set(
     [...document.getElementsByClassName("annotation-export-group-checkbox")]
       .filter((checkbox) => checkbox.checked)
-      .map((checkbox) => checkbox.value)
+      .map((checkbox) => checkbox.value),
   );
   return annoJSON.features.filter((feature) => {
     normalizeAnnotationFeature(feature);
@@ -28029,26 +32091,26 @@ function confirmAnnotationExport() {
 document
   .getElementById("annotationExportSelectAllButton")
   .addEventListener("click", function () {
-    [...document.getElementsByClassName("annotation-export-group-checkbox")].forEach(
-      (checkbox) => {
-        checkbox.checked = true;
-      }
-    );
+    [
+      ...document.getElementsByClassName("annotation-export-group-checkbox"),
+    ].forEach((checkbox) => {
+      checkbox.checked = true;
+    });
     document.querySelector(
-      'input[name="annotationExportScope"][value="groups"]'
+      'input[name="annotationExportScope"][value="groups"]',
     ).checked = true;
   });
 
 document
   .getElementById("annotationExportSelectNoneButton")
   .addEventListener("click", function () {
-    [...document.getElementsByClassName("annotation-export-group-checkbox")].forEach(
-      (checkbox) => {
-        checkbox.checked = false;
-      }
-    );
+    [
+      ...document.getElementsByClassName("annotation-export-group-checkbox"),
+    ].forEach((checkbox) => {
+      checkbox.checked = false;
+    });
     document.querySelector(
-      'input[name="annotationExportScope"][value="groups"]'
+      'input[name="annotationExportScope"][value="groups"]',
     ).checked = true;
   });
 
@@ -28057,7 +32119,7 @@ document
   .addEventListener("change", function (event) {
     if (event.target.classList.contains("annotation-export-group-checkbox")) {
       document.querySelector(
-        'input[name="annotationExportScope"][value="groups"]'
+        'input[name="annotationExportScope"][value="groups"]',
       ).checked = true;
     }
   });
@@ -28075,7 +32137,7 @@ function createAnnotationGroupChecklistRow(group, count, checkboxClass) {
   row.className = "annotation-export-group-row";
   row.classList.toggle(
     "annotation-export-group-row-hidden",
-    group.groupVisible === false
+    group.groupVisible === false,
   );
 
   const checkbox = document.createElement("input");
@@ -28111,34 +32173,34 @@ function showAnnotationClearDialog() {
       createAnnotationGroupChecklistRow(
         group,
         counts.get(group.groupId) || 0,
-        "annotation-clear-group-checkbox"
-      )
+        "annotation-clear-group-checkbox",
+      ),
     );
   });
 
   const selectedUuids = getSelectedAnnotationUuids();
   const selectionOption = document.querySelector(
-    'input[name="annotationClearScope"][value="selection"]'
+    'input[name="annotationClearScope"][value="selection"]',
   );
   selectionOption.disabled = selectedUuids.length === 0;
   selectionOption.parentElement.title =
     selectedUuids.length === 0 ? "No annotations are selected" : "";
   document.querySelector(
-    'input[name="annotationClearScope"][value="groups"]'
+    'input[name="annotationClearScope"][value="groups"]',
   ).checked = true;
 
-  document.getElementById("annotationClearDialog").classList.remove(
-    "modal-prompt-hidden"
-  );
+  document
+    .getElementById("annotationClearDialog")
+    .classList.remove("modal-prompt-hidden");
   document
     .getElementById("annotationClearDialog")
     .classList.add("modal-prompt-visible");
 }
 
 function hideAnnotationClearDialog() {
-  document.getElementById("annotationClearDialog").classList.remove(
-    "modal-prompt-visible"
-  );
+  document
+    .getElementById("annotationClearDialog")
+    .classList.remove("modal-prompt-visible");
   document
     .getElementById("annotationClearDialog")
     .classList.add("modal-prompt-hidden");
@@ -28155,7 +32217,7 @@ function removeAnnotationFeatureOverlays(feature) {
 
 function clearAnnotationFeatures(featuresToClear) {
   featuresToClear = featuresToClear.filter(
-    (feature) => !isAnnotationFeatureLocked(feature)
+    (feature) => !isAnnotationFeatureLocked(feature),
   );
   if (featuresToClear.length === 0) return;
 
@@ -28170,11 +32232,11 @@ function clearAnnotationFeatures(featuresToClear) {
   }
 
   const clearSet = new Set(
-    featuresToClear.map((feature) => feature.properties?.uuid).filter(Boolean)
+    featuresToClear.map((feature) => feature.properties?.uuid).filter(Boolean),
   );
   featuresToClear.forEach(removeAnnotationFeatureOverlays);
   annoJSON.features = annoJSON.features.filter(
-    (feature) => !clearSet.has(feature.properties?.uuid)
+    (feature) => !clearSet.has(feature.properties?.uuid),
   );
   clearAnnotationSelection({ redraw: false, scroll: false });
   drawShape(polyCanvas, [annoJSON]);
@@ -28190,14 +32252,14 @@ function getAnnotationClearFeatures() {
   if (scope === "selection") {
     const selectedUuids = new Set(getSelectedAnnotationUuids());
     return annoJSON.features.filter((feature) =>
-      selectedUuids.has(feature.properties?.uuid)
+      selectedUuids.has(feature.properties?.uuid),
     );
   }
 
   const selectedGroupIds = new Set(
     [...document.getElementsByClassName("annotation-clear-group-checkbox")]
       .filter((checkbox) => checkbox.checked)
-      .map((checkbox) => checkbox.value)
+      .map((checkbox) => checkbox.value),
   );
   return annoJSON.features.filter((feature) => {
     normalizeAnnotationFeature(feature);
@@ -28212,7 +32274,7 @@ function confirmAnnotationClear() {
     return;
   }
   const unlockedFeatures = features.filter(
-    (feature) => !isAnnotationFeatureLocked(feature)
+    (feature) => !isAnnotationFeatureLocked(feature),
   );
   if (unlockedFeatures.length === 0) {
     alert("The matching annotations are locked.");
@@ -28222,7 +32284,7 @@ function confirmAnnotationClear() {
   annotationHistory.push(
     unlockedFeatures.length === annoJSON.features.length
       ? "Clear annotations"
-      : "Clear annotation group"
+      : "Clear annotation group",
   );
   hideAnnotationClearDialog();
   clearAnnotationFeatures(unlockedFeatures);
@@ -28231,26 +32293,26 @@ function confirmAnnotationClear() {
 document
   .getElementById("annotationClearSelectAllButton")
   .addEventListener("click", function () {
-    [...document.getElementsByClassName("annotation-clear-group-checkbox")].forEach(
-      (checkbox) => {
-        checkbox.checked = true;
-      }
-    );
+    [
+      ...document.getElementsByClassName("annotation-clear-group-checkbox"),
+    ].forEach((checkbox) => {
+      checkbox.checked = true;
+    });
     document.querySelector(
-      'input[name="annotationClearScope"][value="groups"]'
+      'input[name="annotationClearScope"][value="groups"]',
     ).checked = true;
   });
 
 document
   .getElementById("annotationClearSelectNoneButton")
   .addEventListener("click", function () {
-    [...document.getElementsByClassName("annotation-clear-group-checkbox")].forEach(
-      (checkbox) => {
-        checkbox.checked = false;
-      }
-    );
+    [
+      ...document.getElementsByClassName("annotation-clear-group-checkbox"),
+    ].forEach((checkbox) => {
+      checkbox.checked = false;
+    });
     document.querySelector(
-      'input[name="annotationClearScope"][value="groups"]'
+      'input[name="annotationClearScope"][value="groups"]',
     ).checked = true;
   });
 
@@ -28259,7 +32321,7 @@ document
   .addEventListener("change", function (event) {
     if (event.target.classList.contains("annotation-clear-group-checkbox")) {
       document.querySelector(
-        'input[name="annotationClearScope"][value="groups"]'
+        'input[name="annotationClearScope"][value="groups"]',
       ).checked = true;
     }
   });
@@ -28280,12 +32342,9 @@ function setCountSegmentPreviewStatus(message, status = "") {
   previewEl.textContent = message;
   previewEl.classList.toggle(
     "count-segment-preview-success",
-    status === "success"
+    status === "success",
   );
-  previewEl.classList.toggle(
-    "count-segment-preview-error",
-    status === "error"
-  );
+  previewEl.classList.toggle("count-segment-preview-error", status === "error");
 }
 
 function updateCountSegmentApplyState() {
@@ -28317,7 +32376,7 @@ function saveCountSegmentDictionaryPreference(dictionaryText) {
     if (dictionaryText.trim()) {
       localStorage.setItem(
         COUNT_SEGMENT_DICTIONARY_STORAGE_KEY,
-        dictionaryText.trim()
+        dictionaryText.trim(),
       );
     } else {
       localStorage.removeItem(COUNT_SEGMENT_DICTIONARY_STORAGE_KEY);
@@ -28333,14 +32392,14 @@ function showCountSegmentDialog() {
   loadCountSegmentDictionaryPreference();
   pendingCountSegmentPreview = null;
   setCountSegmentPreviewStatus(
-    "Preview runs the point-in-polygon join without changing annotations."
+    "Preview runs the point-in-polygon join without changing annotations.",
   );
   updateCountSegmentApplyState();
   updateCountSegmentScopeControls();
   updateCountSegmentParseControls();
-  document.getElementById("countSegmentDialog").classList.remove(
-    "modal-prompt-hidden"
-  );
+  document
+    .getElementById("countSegmentDialog")
+    .classList.remove("modal-prompt-hidden");
   document
     .getElementById("countSegmentDialog")
     .classList.add("modal-prompt-visible");
@@ -28349,9 +32408,9 @@ function showCountSegmentDialog() {
 function hideCountSegmentDialog() {
   pendingCountSegmentPreview = null;
   updateCountSegmentApplyState();
-  document.getElementById("countSegmentDialog").classList.remove(
-    "modal-prompt-visible"
-  );
+  document
+    .getElementById("countSegmentDialog")
+    .classList.remove("modal-prompt-visible");
   document
     .getElementById("countSegmentDialog")
     .classList.add("modal-prompt-hidden");
@@ -28374,7 +32433,8 @@ function populateCountSegmentGroupOptions() {
 }
 
 function updateCountSegmentScopeControls() {
-  const scope = document.getElementById("countSegmentGrainScope")?.value || "all";
+  const scope =
+    document.getElementById("countSegmentGrainScope")?.value || "all";
   const groupSelect = document.getElementById("countSegmentSourceGroup");
   if (groupSelect) groupSelect.disabled = scope !== "group";
   pendingCountSegmentPreview = null;
@@ -28392,7 +32452,11 @@ function getCountSegmentOptions() {
     } catch (error) {
       throw new Error("Dictionary must be valid JSON.");
     }
-    if (!dictionary || Array.isArray(dictionary) || typeof dictionary !== "object") {
+    if (
+      !dictionary ||
+      Array.isArray(dictionary) ||
+      typeof dictionary !== "object"
+    ) {
       throw new Error("Dictionary must be a JSON object.");
     }
   }
@@ -28401,13 +32465,14 @@ function getCountSegmentOptions() {
   return {
     scope: document.getElementById("countSegmentGrainScope").value,
     sourceGroupId: document.getElementById("countSegmentSourceGroup").value,
-    useSelectedLabels: document.getElementById(
-      "countSegmentUseSelectedLabels"
-    ).checked,
+    useSelectedLabels: document.getElementById("countSegmentUseSelectedLabels")
+      .checked,
     parseMode: document.getElementById("countSegmentParseMode").value,
     parseIndex: Math.max(
       0,
-      Math.trunc(Number(document.getElementById("countSegmentParseIndex").value)) - 1
+      Math.trunc(
+        Number(document.getElementById("countSegmentParseIndex").value),
+      ) - 1,
     ),
     dictionary,
     reviewGroupName:
@@ -28499,7 +32564,7 @@ function grainFeatureContainsCountPoint(grainFeature, countFeature) {
   }
   if (grainFeature.geometry.type === "MultiPolygon") {
     return grainFeature.geometry.coordinates.some((polygon) =>
-      polygonContainsImagePoint(point, polygon)
+      polygonContainsImagePoint(point, polygon),
     );
   }
   return false;
@@ -28525,7 +32590,9 @@ function summarizeCountSegmentMatches(matches) {
 
 function buildCountJoinMetadata(matches, status) {
   const interpretedLabels = matches.map((match) => match.interpretedCountLabel);
-  const uniqueInterpretedLabels = [...new Set(interpretedLabels.filter(Boolean))];
+  const uniqueInterpretedLabels = [
+    ...new Set(interpretedLabels.filter(Boolean)),
+  ];
   const labelCounts = summarizeCountSegmentMatches(matches);
   return {
     workflow: "countSegmentClassification",
@@ -28547,13 +32614,15 @@ function buildCountSegmentPreview(options) {
   const grainFeatures = getCountSegmentGrainFeatures(options);
   const counts = getPointCountFeatures(options);
   if (grainFeatures.length === 0) {
-    throw new Error("No unlocked polygon grain annotations match the selected scope.");
+    throw new Error(
+      "No unlocked polygon grain annotations match the selected scope.",
+    );
   }
   if (counts.length === 0) {
     throw new Error(
       options.useSelectedLabels
         ? "No selected point-count labels are available."
-        : "No point counts are available."
+        : "No point counts are available.",
     );
   }
 
@@ -28578,7 +32647,7 @@ function buildCountSegmentPreview(options) {
       });
       matchCountsByCountUuid.set(
         countUuid,
-        (matchCountsByCountUuid.get(countUuid) || 0) + 1
+        (matchCountsByCountUuid.get(countUuid) || 0) + 1,
       );
     });
   });
@@ -28587,7 +32656,7 @@ function buildCountSegmentPreview(options) {
     grainResult.status = getCountSegmentStatus(grainResult.matches);
     grainResult.countJoin = buildCountJoinMetadata(
       grainResult.matches,
-      grainResult.status
+      grainResult.status,
     );
   });
 
@@ -28596,11 +32665,12 @@ function buildCountSegmentPreview(options) {
       acc[result.status] += 1;
       return acc;
     },
-    { matched: 0, conflict: 0, uncounted: 0 }
+    { matched: 0, conflict: 0, uncounted: 0 },
   );
-  const outsideCounts = counts.length - [...matchCountsByCountUuid.keys()].length;
+  const outsideCounts =
+    counts.length - [...matchCountsByCountUuid.keys()].length;
   const ambiguousCounts = [...matchCountsByCountUuid.values()].filter(
-    (count) => count > 1
+    (count) => count > 1,
   ).length;
 
   return {
@@ -28633,13 +32703,13 @@ function previewCountSegmentWorkflow() {
     pendingCountSegmentPreview = buildCountSegmentPreview(options);
     setCountSegmentPreviewStatus(
       `Preview complete. ${formatCountSegmentPreview(pendingCountSegmentPreview)}`,
-      "success"
+      "success",
     );
   } catch (error) {
     pendingCountSegmentPreview = null;
     setCountSegmentPreviewStatus(
       `Preview failed. ${error.message || "Could not preview workflow."}`,
-      "error"
+      "error",
     );
   }
   updateCountSegmentApplyState();
@@ -28666,13 +32736,16 @@ function applyCountSegmentWorkflow() {
   let preview = pendingCountSegmentPreview;
   try {
     const options = getCountSegmentOptions();
-    if (!preview || JSON.stringify(preview.options) !== JSON.stringify(options)) {
+    if (
+      !preview ||
+      JSON.stringify(preview.options) !== JSON.stringify(options)
+    ) {
       preview = buildCountSegmentPreview(options);
     }
   } catch (error) {
     setCountSegmentPreviewStatus(
       `Apply failed. ${error.message || "Could not apply workflow."}`,
-      "error"
+      "error",
     );
     pendingCountSegmentPreview = null;
     updateCountSegmentApplyState();
@@ -28681,12 +32754,18 @@ function applyCountSegmentWorkflow() {
 
   const changedFeatures = preview.grainResults;
   if (changedFeatures.length === 0) {
-    setCountSegmentPreviewStatus("No grain annotations need updates.", "success");
+    setCountSegmentPreviewStatus(
+      "No grain annotations need updates.",
+      "success",
+    );
     return;
   }
 
   const groupCache = new Map(
-    getAnnotationGroups().map((group) => [group.groupName.toLowerCase(), group])
+    getAnnotationGroups().map((group) => [
+      group.groupName.toLowerCase(),
+      group,
+    ]),
   );
   annotationHistory.push("Classify grain segments from point counts");
 
@@ -28704,10 +32783,10 @@ function applyCountSegmentWorkflow() {
     feature.properties.countJoin = result.countJoin;
     if (targetGroupName) {
       const group = getOrCreateCountSegmentGroup(targetGroupName, groupCache);
-      Object.assign(feature.properties, applyAnnotationGroupToProperties(
+      Object.assign(
         feature.properties,
-        group
-      ));
+        applyAnnotationGroupToProperties(feature.properties, group),
+      );
     }
   });
 
@@ -28717,7 +32796,7 @@ function applyCountSegmentWorkflow() {
   unsavedAnnotations(true);
   setCountSegmentPreviewStatus(
     `${changedFeatures.length} grain annotation${changedFeatures.length === 1 ? "" : "s"} updated. ${formatCountSegmentPreview(preview)}`,
-    "success"
+    "success",
   );
   pendingCountSegmentPreview = preview;
   updateCountSegmentApplyState();
@@ -28768,11 +32847,11 @@ function setAnnotationTransferPreviewStatus(message, status = "") {
   previewEl.textContent = message;
   previewEl.classList.toggle(
     "annotation-transfer-preview-success",
-    status === "success"
+    status === "success",
   );
   previewEl.classList.toggle(
     "annotation-transfer-preview-error",
-    status === "error"
+    status === "error",
   );
 }
 
@@ -28782,28 +32861,31 @@ function updateAnnotationTransferApplyState() {
 }
 
 function populateAnnotationTransferGroupOptions() {
-  [
-    "annotationTransferSourceGroup",
-    "annotationTransferTargetGroup",
-  ].forEach((id) => {
-    const select = document.getElementById(id);
-    if (!select) return;
-    const previousValue = select.value;
-    select.innerHTML = "";
-    getAnnotationGroups().forEach((group) => {
-      const option = document.createElement("option");
-      option.value = group.groupId;
-      option.textContent = group.groupName;
-      select.appendChild(option);
-    });
-    if ([...select.options].some((option) => option.value === previousValue)) {
-      select.value = previousValue;
-    }
-  });
+  ["annotationTransferSourceGroup", "annotationTransferTargetGroup"].forEach(
+    (id) => {
+      const select = document.getElementById(id);
+      if (!select) return;
+      const previousValue = select.value;
+      select.innerHTML = "";
+      getAnnotationGroups().forEach((group) => {
+        const option = document.createElement("option");
+        option.value = group.groupId;
+        option.textContent = group.groupName;
+        select.appendChild(option);
+      });
+      if (
+        [...select.options].some((option) => option.value === previousValue)
+      ) {
+        select.value = previousValue;
+      }
+    },
+  );
 }
 
 function loadAnnotationTransferDictionaryPreference() {
-  const dictionaryInput = document.getElementById("annotationTransferDictionary");
+  const dictionaryInput = document.getElementById(
+    "annotationTransferDictionary",
+  );
   if (!dictionaryInput) return;
   try {
     dictionaryInput.value =
@@ -28818,7 +32900,7 @@ function saveAnnotationTransferDictionaryPreference(dictionaryText) {
     if (dictionaryText.trim()) {
       localStorage.setItem(
         ANNOTATION_TRANSFER_DICTIONARY_STORAGE_KEY,
-        dictionaryText.trim()
+        dictionaryText.trim(),
       );
     } else {
       localStorage.removeItem(ANNOTATION_TRANSFER_DICTIONARY_STORAGE_KEY);
@@ -28832,7 +32914,8 @@ function updateAnnotationTransferScopeControls() {
   const sourceScope =
     document.getElementById("annotationTransferSourceScope")?.value || "group";
   const targetScope =
-    document.getElementById("annotationTransferTargetScope")?.value || "selection";
+    document.getElementById("annotationTransferTargetScope")?.value ||
+    "selection";
   const sourceGroup = document.getElementById("annotationTransferSourceGroup");
   const targetGroup = document.getElementById("annotationTransferTargetGroup");
   if (sourceGroup) sourceGroup.disabled = sourceScope !== "group";
@@ -28846,13 +32929,13 @@ function showAnnotationTransferDialog() {
   loadAnnotationTransferDictionaryPreference();
   pendingAnnotationTransferPreview = null;
   setAnnotationTransferPreviewStatus(
-    "Preview runs the center-in-polygon transfer without changing annotations."
+    "Preview runs the center-in-polygon transfer without changing annotations.",
   );
   updateAnnotationTransferApplyState();
   updateAnnotationTransferScopeControls();
-  document.getElementById("annotationTransferDialog").classList.remove(
-    "modal-prompt-hidden"
-  );
+  document
+    .getElementById("annotationTransferDialog")
+    .classList.remove("modal-prompt-hidden");
   document
     .getElementById("annotationTransferDialog")
     .classList.add("modal-prompt-visible");
@@ -28861,9 +32944,9 @@ function showAnnotationTransferDialog() {
 function hideAnnotationTransferDialog() {
   pendingAnnotationTransferPreview = null;
   updateAnnotationTransferApplyState();
-  document.getElementById("annotationTransferDialog").classList.remove(
-    "modal-prompt-visible"
-  );
+  document
+    .getElementById("annotationTransferDialog")
+    .classList.remove("modal-prompt-visible");
   document
     .getElementById("annotationTransferDialog")
     .classList.add("modal-prompt-hidden");
@@ -28880,7 +32963,11 @@ function getAnnotationTransferOptions() {
     } catch (error) {
       throw new Error("Dictionary must be valid JSON.");
     }
-    if (!dictionary || Array.isArray(dictionary) || typeof dictionary !== "object") {
+    if (
+      !dictionary ||
+      Array.isArray(dictionary) ||
+      typeof dictionary !== "object"
+    ) {
       throw new Error("Dictionary must be a JSON object.");
     }
   }
@@ -28888,17 +32975,24 @@ function getAnnotationTransferOptions() {
 
   return {
     sourceScope: document.getElementById("annotationTransferSourceScope").value,
-    sourceGroupId: document.getElementById("annotationTransferSourceGroup").value,
+    sourceGroupId: document.getElementById("annotationTransferSourceGroup")
+      .value,
     targetScope: document.getElementById("annotationTransferTargetScope").value,
-    targetGroupId: document.getElementById("annotationTransferTargetGroup").value,
-    readProperty: document.getElementById("annotationTransferReadProperty").value,
-    writeProperty: document.getElementById("annotationTransferWriteProperty").value,
+    targetGroupId: document.getElementById("annotationTransferTargetGroup")
+      .value,
+    readProperty: document.getElementById("annotationTransferReadProperty")
+      .value,
+    writeProperty: document.getElementById("annotationTransferWriteProperty")
+      .value,
     dictionary,
-    conflictMode: document.getElementById("annotationTransferConflictMode").value,
-    existingMode: document.getElementById("annotationTransferExistingMode").value,
+    conflictMode: document.getElementById("annotationTransferConflictMode")
+      .value,
+    existingMode: document.getElementById("annotationTransferExistingMode")
+      .value,
     reviewGroupName:
-      document.getElementById("annotationTransferReviewGroupName").value.trim() ||
-      "Review",
+      document
+        .getElementById("annotationTransferReviewGroupName")
+        .value.trim() || "Review",
   };
 }
 
@@ -28960,7 +33054,7 @@ function annotationTransferTargetContainsSource(targetFeature, sourceFeature) {
   }
   if (targetFeature.geometry.type === "MultiPolygon") {
     return targetFeature.geometry.coordinates.some((polygon) =>
-      polygonContainsImagePoint(point, polygon)
+      polygonContainsImagePoint(point, polygon),
     );
   }
   return false;
@@ -28969,7 +33063,7 @@ function annotationTransferTargetContainsSource(targetFeature, sourceFeature) {
 function getAnnotationTransferRawValue(feature, readProperty) {
   if (readProperty === "group") {
     return String(
-      feature?.properties?.groupName || DEFAULT_ANNOTATION_GROUP.groupName
+      feature?.properties?.groupName || DEFAULT_ANNOTATION_GROUP.groupName,
     ).trim();
   }
   return String(feature?.properties?.[readProperty] ?? "").trim();
@@ -29005,7 +33099,7 @@ function interpretAnnotationTransferValue(rawValue, options) {
 function getAnnotationTransferStatus(matches) {
   if (matches.length === 0) return "unmatched";
   const values = new Set(
-    matches.map((match) => match.transferredValue).filter(Boolean)
+    matches.map((match) => match.transferredValue).filter(Boolean),
   );
   if (values.size === 0) return "unmatched";
   return values.size === 1 ? "matched" : "conflict";
@@ -29022,7 +33116,12 @@ function getAnnotationTransferAppliedValue(matches, status, options) {
   return "";
 }
 
-function buildAnnotationTransferMetadata(matches, status, appliedValue, options) {
+function buildAnnotationTransferMetadata(
+  matches,
+  status,
+  appliedValue,
+  options,
+) {
   const rawValues = matches.map((match) => match.rawValue);
   const transferredValues = matches.map((match) => match.transferredValue);
   return {
@@ -29051,7 +33150,9 @@ function buildAnnotationTransferPreview(options) {
     throw new Error("No unlocked source annotations match the selected scope.");
   }
   if (targetFeatures.length === 0) {
-    throw new Error("No unlocked polygon target annotations match the selected scope.");
+    throw new Error(
+      "No unlocked polygon target annotations match the selected scope.",
+    );
   }
 
   const targetResults = targetFeatures.map((targetFeature) => ({
@@ -29065,12 +33166,15 @@ function buildAnnotationTransferPreview(options) {
   sourceFeatures.forEach((sourceFeature) => {
     const rawValue = getAnnotationTransferRawValue(
       sourceFeature,
-      options.readProperty
+      options.readProperty,
     );
     const interpretation = interpretAnnotationTransferValue(rawValue, options);
     targetResults.forEach((targetResult) => {
       if (
-        !annotationTransferTargetContainsSource(targetResult.feature, sourceFeature)
+        !annotationTransferTargetContainsSource(
+          targetResult.feature,
+          sourceFeature,
+        )
       ) {
         return;
       }
@@ -29083,7 +33187,7 @@ function buildAnnotationTransferPreview(options) {
       });
       matchCountsBySourceUuid.set(
         sourceUuid,
-        (matchCountsBySourceUuid.get(sourceUuid) || 0) + 1
+        (matchCountsBySourceUuid.get(sourceUuid) || 0) + 1,
       );
     });
   });
@@ -29093,13 +33197,13 @@ function buildAnnotationTransferPreview(options) {
     targetResult.appliedValue = getAnnotationTransferAppliedValue(
       targetResult.matches,
       targetResult.status,
-      options
+      options,
     );
     targetResult.annotationJoin = buildAnnotationTransferMetadata(
       targetResult.matches,
       targetResult.status,
       targetResult.appliedValue,
-      options
+      options,
     );
   });
 
@@ -29108,12 +33212,12 @@ function buildAnnotationTransferPreview(options) {
       acc[result.status] += 1;
       return acc;
     },
-    { matched: 0, conflict: 0, unmatched: 0 }
+    { matched: 0, conflict: 0, unmatched: 0 },
   );
   const outsideSources =
     sourceFeatures.length - [...matchCountsBySourceUuid.keys()].length;
   const ambiguousSources = [...matchCountsBySourceUuid.values()].filter(
-    (count) => count > 1
+    (count) => count > 1,
   ).length;
 
   return {
@@ -29147,13 +33251,13 @@ function previewAnnotationTransferWorkflow() {
     pendingAnnotationTransferPreview = buildAnnotationTransferPreview(options);
     setAnnotationTransferPreviewStatus(
       `Preview complete. ${formatAnnotationTransferPreview(pendingAnnotationTransferPreview)}`,
-      "success"
+      "success",
     );
   } catch (error) {
     pendingAnnotationTransferPreview = null;
     setAnnotationTransferPreviewStatus(
       `Preview failed. ${error.message || "Could not preview workflow."}`,
-      "error"
+      "error",
     );
   }
   updateAnnotationTransferApplyState();
@@ -29163,7 +33267,11 @@ function getOrCreateAnnotationTransferGroup(groupName, groupCache) {
   return getOrCreateCountSegmentGroup(groupName, groupCache);
 }
 
-function getAnnotationTransferTextValue(currentValue, appliedValue, existingMode) {
+function getAnnotationTransferTextValue(
+  currentValue,
+  appliedValue,
+  existingMode,
+) {
   const current = String(currentValue ?? "");
   const next = String(appliedValue ?? "");
   if (!next) return current;
@@ -29178,13 +33286,16 @@ function applyAnnotationTransferWorkflow() {
   let preview = pendingAnnotationTransferPreview;
   try {
     const options = getAnnotationTransferOptions();
-    if (!preview || JSON.stringify(preview.options) !== JSON.stringify(options)) {
+    if (
+      !preview ||
+      JSON.stringify(preview.options) !== JSON.stringify(options)
+    ) {
       preview = buildAnnotationTransferPreview(options);
     }
   } catch (error) {
     setAnnotationTransferPreviewStatus(
       `Apply failed. ${error.message || "Could not apply workflow."}`,
-      "error"
+      "error",
     );
     pendingAnnotationTransferPreview = null;
     updateAnnotationTransferApplyState();
@@ -29195,13 +33306,16 @@ function applyAnnotationTransferWorkflow() {
   if (changedResults.length === 0) {
     setAnnotationTransferPreviewStatus(
       "No target annotations need updates.",
-      "success"
+      "success",
     );
     return;
   }
 
   const groupCache = new Map(
-    getAnnotationGroups().map((group) => [group.groupName.toLowerCase(), group])
+    getAnnotationGroups().map((group) => [
+      group.groupName.toLowerCase(),
+      group,
+    ]),
   );
   annotationHistory.push("Transfer annotation values to polygons");
 
@@ -29213,11 +33327,11 @@ function applyAnnotationTransferWorkflow() {
     if (result.status === "conflict" && options.conflictMode === "review") {
       const group = getOrCreateAnnotationTransferGroup(
         options.reviewGroupName,
-        groupCache
+        groupCache,
       );
       Object.assign(
         feature.properties,
-        applyAnnotationGroupToProperties(feature.properties, group)
+        applyAnnotationGroupToProperties(feature.properties, group),
       );
       return;
     }
@@ -29226,11 +33340,11 @@ function applyAnnotationTransferWorkflow() {
     if (options.writeProperty === "group") {
       const group = getOrCreateAnnotationTransferGroup(
         result.appliedValue,
-        groupCache
+        groupCache,
       );
       Object.assign(
         feature.properties,
-        applyAnnotationGroupToProperties(feature.properties, group)
+        applyAnnotationGroupToProperties(feature.properties, group),
       );
       return;
     }
@@ -29238,15 +33352,25 @@ function applyAnnotationTransferWorkflow() {
     feature.properties[options.writeProperty] = getAnnotationTransferTextValue(
       feature.properties[options.writeProperty],
       result.appliedValue,
-      options.existingMode
+      options.existingMode,
     );
     if (options.writeProperty === "label") {
-      const labelPoint = getBooleanGeometryLabelPoint(feature.geometry, feature);
+      const labelPoint = getBooleanGeometryLabelPoint(
+        feature.geometry,
+        feature,
+      );
       feature.properties.xLabel = labelPoint.x;
       feature.properties.yLabel = labelPoint.y;
-      updateText(feature.properties.uuid, "anno", feature.properties.label || "");
+      updateText(
+        feature.properties.uuid,
+        "anno",
+        feature.properties.label || "",
+      );
       updateAnnotationLabelOverlayPosition(feature.properties.uuid);
-      updateAnnotationListLabel(feature.properties.uuid, feature.properties.label || "");
+      updateAnnotationListLabel(
+        feature.properties.uuid,
+        feature.properties.label || "",
+      );
     }
   });
 
@@ -29256,20 +33380,19 @@ function applyAnnotationTransferWorkflow() {
   unsavedAnnotations(true);
   setAnnotationTransferPreviewStatus(
     `${changedResults.length} target annotation${changedResults.length === 1 ? "" : "s"} updated. ${formatAnnotationTransferPreview(preview)}`,
-    "success"
+    "success",
   );
   pendingAnnotationTransferPreview = preview;
   updateAnnotationTransferApplyState();
 }
 
-[
-  "annotationTransferSourceScope",
-  "annotationTransferTargetScope",
-].forEach((id) => {
-  document
-    .getElementById(id)
-    ?.addEventListener("change", updateAnnotationTransferScopeControls);
-});
+["annotationTransferSourceScope", "annotationTransferTargetScope"].forEach(
+  (id) => {
+    document
+      .getElementById(id)
+      ?.addEventListener("change", updateAnnotationTransferScopeControls);
+  },
+);
 
 [
   "annotationTransferSourceGroup",
@@ -29326,7 +33449,7 @@ const clearAnnotations = () => {
   exitAnnotationShapeEditMode();
   const annoIds = Array.from(
     { length: annoJSON.features.length },
-    (_, i) => i + 1
+    (_, i) => i + 1,
   );
   if (annoIds.length === 0) {
     return; // Nothing to remove
@@ -29337,7 +33460,7 @@ const clearAnnotations = () => {
       if (type === "Point") {
         deleteCrosshairs(
           annoJSON.features[annoIds[i] - 1].properties.uuid,
-          "anno"
+          "anno",
         );
       }
     }
@@ -29399,9 +33522,6 @@ document.addEventListener("keydown", (event) => {
       annotationHistory.redo();
     }
   } else {
-    if (porosityPalette && !porosityPalette.hidden && undoPorosityReset()) {
-      return;
-    }
     if (!undoAnnotationDraftPoint()) {
       annotationHistory.undo();
     }
@@ -29410,6 +33530,7 @@ document.addEventListener("keydown", (event) => {
 
 document.addEventListener("keydown", (event) => {
   if (event.key !== "Delete" && event.key !== "Backspace") return;
+  if (event.defaultPrevented) return;
   if (!porosityPalette || porosityPalette.hidden) return;
   if (porosityAoiSelectedVertexIndex === null) return;
 
@@ -29434,7 +33555,12 @@ document.addEventListener("keydown", (event) => {
 
 document.addEventListener("keydown", (event) => {
   if (event.key !== "Delete" && event.key !== "Backspace") return;
-  if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey) {
+  if (
+    event.defaultPrevented ||
+    event.metaKey ||
+    event.ctrlKey ||
+    event.altKey
+  ) {
     return;
   }
 
@@ -29687,7 +33813,7 @@ function prepareGridSettings() {
       y_min_um,
       y_max_um,
       nextGrid.step,
-      nextGrid.noPoints
+      nextGrid.noPoints,
     );
     return { image, imageSize, grid: nextGrid, points };
   } catch (error) {
@@ -29722,10 +33848,10 @@ const applyGridSettings = (preparedGrid) => {
     const labelFontSize = document.getElementById("gridLabelFontSize").value;
     const labelFontColor = document.getElementById("gridLabelFontColor").value;
     const labelBackgroundColor = document.getElementById(
-      "gridLabelBackgroundColor"
+      "gridLabelBackgroundColor",
     ).value;
     const labelBackgroundOpacity = document.getElementById(
-      "gridLabelBackgroundOpacity"
+      "gridLabelBackgroundOpacity",
     ).value;
     const lineWeight = document.getElementById("gridLineWeight").value;
     const lineColor = document.getElementById("gridLineColor").value;
@@ -29768,7 +33894,7 @@ const applyGridSettings = (preparedGrid) => {
       labelFontColor,
       labelFontSize,
       labelBackgroundColor,
-      labelBackgroundOpacity
+      labelBackgroundOpacity,
     );
     addCrosshairs(
       properties.uuid,
@@ -29776,7 +33902,7 @@ const applyGridSettings = (preparedGrid) => {
       "grid",
       lineColor,
       lineWeight,
-      lineOpacity
+      lineOpacity,
     );
   }
 
@@ -29797,7 +33923,7 @@ const applyGridSettings = (preparedGrid) => {
 const clearGrid = () => {
   const gridIds = Array.from(
     { length: countJSON.features.length },
-    (_, i) => i + 1
+    (_, i) => i + 1,
   );
   if (gridIds.length === 0) {
     return; // Nothing to remove
@@ -29808,7 +33934,7 @@ const clearGrid = () => {
       if (type === "Point") {
         deleteCrosshairs(
           countJSON.features[gridIds[i] - 1].properties.uuid,
-          "grid"
+          "grid",
         );
       }
     }
@@ -29893,7 +34019,7 @@ function pointMatrix(
   y_max,
   step_size,
   i_ini = 1,
-  reverse = false
+  reverse = false,
 ) {
   // Return x coordinates, y coordinates, and point count labels
   // Units of x and y must be same as step_size
@@ -29918,14 +34044,14 @@ function pointMatrix(
 
   if (n_y_rows * n_x_cols > MAX_GRID_CANDIDATE_POINTS) {
     throw new Error(
-      "Grid step size is too small for this image scale and area. Increase the step size or reduce the area of interest."
+      "Grid step size is too small for this image scale and area. Increase the step size or reduce the area of interest.",
     );
   }
 
   // Make 1D x-axis array that reflects snaking increments from top left to bottom right
   let x_vals = Array.from(
     { length: n_x_cols },
-    (_, i) => x_min + i * step_size
+    (_, i) => x_min + i * step_size,
   );
   let X = Array(n_y_rows)
     .fill(0)
@@ -29938,7 +34064,7 @@ function pointMatrix(
   // Make 1D y-axis values for the same array
   let y_vals = Array.from(
     { length: n_y_rows },
-    (_, i) => y_min + i * step_size
+    (_, i) => y_min + i * step_size,
   );
   let Y = [].concat(...y_vals.map((y) => Array(n_x_cols).fill(y)));
 
@@ -29954,9 +34080,7 @@ function pointMatrix(
 
 function makePoints(x_min, x_max, y_min, y_max, step_size, num_points) {
   if (!Number.isInteger(num_points) || num_points < MIN_GRID_POINTS) {
-    throw new Error(
-      `Number of points must be at least ${MIN_GRID_POINTS}.`
-    );
+    throw new Error(`Number of points must be at least ${MIN_GRID_POINTS}.`);
   }
 
   let c = 0; // Counter for total number of points logged
@@ -29978,14 +34102,14 @@ function makePoints(x_min, x_max, y_min, y_max, step_size, num_points) {
       y_max,
       step_size * d,
       c,
-      reverse
+      reverse,
     );
 
     // Remove overlapping points
     let newPoints = X.map((x, i) => [x, Y[i]]);
     let existingPoints = Xs.map((x, i) => [x, Ys[i]]);
     let idxToRemove = newPoints.filter((p) =>
-      existingPoints.some((e) => e[0] === p[0] && e[1] === p[1])
+      existingPoints.some((e) => e[0] === p[0] && e[1] === p[1]),
     );
     let filteredPoints = newPoints.filter((p) => !idxToRemove.includes(p));
 
@@ -30062,7 +34186,7 @@ function updateAoiRectangle() {
     // Update the existing AOI overlay
     viewer.updateOverlay(
       aoiOverlay,
-      new OpenSeadragon.Rect(topLeft.x, topLeft.y, width, height)
+      new OpenSeadragon.Rect(topLeft.x, topLeft.y, width, height),
     );
   }
 }
@@ -30094,7 +34218,7 @@ function applyAllAnnoLabel(idBase) {
 
   const featureByUuid = getAnnotationFeatureByUuidMap();
   unlockedUuids.forEach((uuid) =>
-    applyAnnoLabel(idBase, uuid, { feature: featureByUuid.get(uuid) })
+    applyAnnoLabel(idBase, uuid, { feature: featureByUuid.get(uuid) }),
   );
   if (unlockedUuids.length > 0) {
     finishAnnotationStyleBatch(false);
@@ -30133,7 +34257,7 @@ function applyCurrentAnnoLabel(idBase) {
   annotationHistory.push("Style annotation label");
   const featureByUuid = getAnnotationFeatureByUuidMap();
   selectedUuids.forEach((uuid) =>
-    applyAnnoLabel(idBase, uuid, { feature: featureByUuid.get(uuid) })
+    applyAnnoLabel(idBase, uuid, { feature: featureByUuid.get(uuid) }),
   );
   finishAnnotationStyleBatch(false);
 }
@@ -30168,17 +34292,17 @@ function applyAnnoLabel(idBase, uuid, options = {}) {
   };
 
   const feature =
-    options.feature || annoJSON.features.find((f) => f.properties.uuid === uuid);
+    options.feature ||
+    annoJSON.features.find((f) => f.properties.uuid === uuid);
   if (!feature || isAnnotationFeatureLocked(feature)) return;
   const props = feature.properties;
   const input = document.getElementById(idBase);
   const value =
-    idBase === "annoLabelFontColor" ||
-    idBase === "annoLabelBackgroundColor"
+    idBase === "annoLabelFontColor" || idBase === "annoLabelBackgroundColor"
       ? getAnnotationColor(idBase)
       : idBase === "annoLabelBackgroundOpacity"
         ? getAnnotationOpacityValue(idBase)
-      : input.value;
+        : input.value;
   feature.properties[formattingMap[idBase]] = value;
 
   // Apply visual formatting immediately
@@ -30190,18 +34314,10 @@ function applyAnnoLabel(idBase, uuid, options = {}) {
       undefined,
       input.value,
       undefined,
-      undefined
+      undefined,
     );
   } else if (idBase === "annoLabelFontColor") {
-    updateText(
-      uuid,
-      "anno",
-      undefined,
-      value,
-      undefined,
-      undefined,
-      undefined
-    );
+    updateText(uuid, "anno", undefined, value, undefined, undefined, undefined);
   } else if (idBase === "annoLabelBackgroundColor") {
     // Need both backgroundColor and backgroundOpacity to apply background
     const bgColor = value;
@@ -30217,7 +34333,7 @@ function applyAnnoLabel(idBase, uuid, options = {}) {
       undefined,
       undefined,
       bgColor,
-      bgOpacity
+      bgOpacity,
     );
   } else if (idBase === "annoLabelBackgroundOpacity") {
     // Need both backgroundColor and backgroundOpacity to apply background
@@ -30235,14 +34351,15 @@ function applyAnnoLabel(idBase, uuid, options = {}) {
       undefined,
       undefined,
       bgColor,
-      bgOpacity
+      bgOpacity,
     );
   }
 }
 
 function applyAnnoFeature(idBase, uuid, options = {}) {
   const feature =
-    options.feature || annoJSON.features.find((f) => f.properties.uuid === uuid);
+    options.feature ||
+    annoJSON.features.find((f) => f.properties.uuid === uuid);
   if (!feature || isAnnotationFeatureLocked(feature)) return;
   const props = feature.properties;
   const input = document.getElementById(idBase);
@@ -30251,7 +34368,7 @@ function applyAnnoFeature(idBase, uuid, options = {}) {
       ? getAnnotationColor(idBase)
       : idBase === "lineOpacity" || idBase === "fillOpacity"
         ? getAnnotationOpacityValue(idBase)
-      : input.value;
+        : input.value;
   if (feature.geometry.type === "Point") {
     // Update crosshair if the feature is a Point
     const lineWeight = props.lineWeight;
@@ -30386,7 +34503,7 @@ function applyGridLabel(idBase, id) {
       undefined,
       undefined,
       bgColor,
-      bgOpacity
+      bgOpacity,
     );
   } else if (idBase === "gridLabelBackgroundOpacity") {
     // Need both backgroundColor and backgroundOpacity to apply background
@@ -30409,7 +34526,7 @@ function applyGridLabel(idBase, id) {
       undefined,
       undefined,
       bgColor,
-      bgOpacity
+      bgOpacity,
     );
   }
 }
@@ -30535,7 +34652,7 @@ function applyFormattingAfterCount(countJSON, uuid, what = "both") {
       labelFontColor,
       labelFontSize,
       labelBackgroundColor,
-      labelBackgroundOpacity
+      labelBackgroundOpacity,
     );
   }
 
@@ -30552,7 +34669,7 @@ document.getElementById("count-first").addEventListener("click", function () {
   const imagePoint = countJSON.features[0].geometry.coordinates;
   const viewportPoint = image.imageToViewportCoordinates(
     imagePoint[0],
-    imagePoint[1]
+    imagePoint[1],
   );
   goToPoint(viewportPoint.x, viewportPoint.y);
   inputSampleLabelFromOverlay();
@@ -30569,7 +34686,7 @@ document.getElementById("count-prev").addEventListener("click", function () {
     const imagePoint = countJSON.features[input.value - 1].geometry.coordinates;
     const viewportPoint = image.imageToViewportCoordinates(
       imagePoint[0],
-      imagePoint[1]
+      imagePoint[1],
     );
     // const overlay = viewer.getOverlayById(`grid-label-${input.value - 1}`);
     goToPoint(viewportPoint.x, viewportPoint.y);
@@ -30593,7 +34710,7 @@ document.getElementById("count-next").addEventListener("click", function () {
   const imagePoint = countJSON.features[input.value - 1].geometry.coordinates;
   const viewportPoint = image.imageToViewportCoordinates(
     imagePoint[0],
-    imagePoint[1]
+    imagePoint[1],
   );
   // const overlay = viewer.getOverlayById(`grid-label-${gridInput.value - 1}`);
   goToPoint(viewportPoint.x, viewportPoint.y);
@@ -30611,7 +34728,7 @@ document.getElementById("count-last").addEventListener("click", function () {
     countJSON.features[parseInt(input.value) - 1].geometry.coordinates;
   const viewportPoint = image.imageToViewportCoordinates(
     imagePoint[0],
-    imagePoint[1]
+    imagePoint[1],
   );
   goToPoint(viewportPoint.x, viewportPoint.y);
 
@@ -30631,7 +34748,7 @@ document.addEventListener("keydown", function (event) {
       countJSON.features[parseInt(gridInput.value) - 1].geometry.coordinates;
     const viewportPoint = image.imageToViewportCoordinates(
       imagePoint[0],
-      imagePoint[1]
+      imagePoint[1],
     );
     // const overlay = viewer.getOverlayById(`grid-label-${gridInput.value - 1}`);
 
@@ -30927,7 +35044,7 @@ function processCSVData(data) {
   filteredData.forEach((row) => {
     const viewportPoint = image.imageToViewportCoordinates(
       row["X_px"],
-      row["Y_px"]
+      row["Y_px"],
     );
     const properties = {
       uuid: generateUniqueId(16),
@@ -30941,13 +35058,13 @@ function processCSVData(data) {
       imageWidth: imageSize.x,
       imageHeight: imageSize.y,
       labelFontSize: parseFloat(
-        document.getElementById("gridLabelFontSize").value
+        document.getElementById("gridLabelFontSize").value,
       ),
       labelFontColor: document.getElementById("gridLabelFontColor").value,
       labelBackgroundColor: document.getElementById("gridLabelBackgroundColor")
         .value,
       labelBackgroundOpacity: parseFloat(
-        document.getElementById("gridLabelBackgroundOpacity").value
+        document.getElementById("gridLabelBackgroundOpacity").value,
       ),
       lineColor: document.getElementById("gridLineColor").value,
       lineWeight: parseFloat(document.getElementById("gridLineWeight").value),
@@ -30963,7 +35080,7 @@ function processCSVData(data) {
       properties.labelFontColor,
       properties.labelFontSize,
       properties.labelBackgroundColor,
-      properties.labelBackgroundOpacity
+      properties.labelBackgroundOpacity,
     );
     addCrosshairs(
       properties.uuid,
@@ -30971,7 +35088,7 @@ function processCSVData(data) {
       "grid",
       properties.lineColor,
       properties.lineWeight,
-      properties.lineOpacity
+      properties.lineOpacity,
     );
   });
   applyFormattingAfterCountAll(countJSON, "both");
@@ -31107,13 +35224,13 @@ function getResults(noPoints) {
 
   // Filter labelCounts to include only selected labels
   const filteredCounts = Object.entries(labelCounts).filter(([label]) =>
-    selectedLabels.includes(label)
+    selectedLabels.includes(label),
   );
 
   // Calculate total count for selected labels
   const filteredTotalCount = filteredCounts.reduce(
     (sum, [, count]) => sum + count,
-    0
+    0,
   );
 
   // Header with total count
@@ -31166,7 +35283,7 @@ function positionCountDropdown(dropdown, button) {
     ? Math.max(margin, buttonRect.top - dropdownRect.height - 4)
     : Math.min(
         buttonRect.bottom + 4,
-        window.innerHeight - dropdownRect.height - margin
+        window.innerHeight - dropdownRect.height - margin,
       );
 
   dropdown.style.left = `${left}px`;
@@ -31186,20 +35303,22 @@ function openCountDropdown(dropdown, button) {
 }
 
 // Attach event listener to the filterButton
-document.getElementById("filterButton").addEventListener("click", function (event) {
-  event.stopPropagation();
-  populateFilterDropdown();
-  const includeDropdown = document.getElementById("includeDropdown");
-  const countFilterDropdown = document.getElementById("countFilterDropdown");
-  closeCountDropdown(countFilterDropdown);
+document
+  .getElementById("filterButton")
+  .addEventListener("click", function (event) {
+    event.stopPropagation();
+    populateFilterDropdown();
+    const includeDropdown = document.getElementById("includeDropdown");
+    const countFilterDropdown = document.getElementById("countFilterDropdown");
+    closeCountDropdown(countFilterDropdown);
 
-  // Toggle visibility of the dropdown menu
-  if (includeDropdown.style.display === "block") {
-    closeCountDropdown(includeDropdown);
-  } else {
-    openCountDropdown(includeDropdown, event.currentTarget);
-  }
-});
+    // Toggle visibility of the dropdown menu
+    if (includeDropdown.style.display === "block") {
+      closeCountDropdown(includeDropdown);
+    } else {
+      openCountDropdown(includeDropdown, event.currentTarget);
+    }
+  });
 
 document
   .getElementById("countFilterButton")
@@ -31517,25 +35636,25 @@ viewerContainer.addEventListener("mousemove", function (event) {
   const viewportPoint = viewer.viewport.pointFromPixel(positionPoint);
   const imagePoint = image.viewportToImageCoordinates(
     viewportPoint.x,
-    viewportPoint.y
+    viewportPoint.y,
   );
   const coordinates = getCircleCoordinatesInImageSpace(
     imagePoint.x,
     imagePoint.y,
-    circleDiameter * (scale / circleConversion) // Convert physical units to pixels
+    circleDiameter * (scale / circleConversion), // Convert physical units to pixels
   );
 
   const lineColor = document.getElementById("circleLineColor").value;
   const lineWeight = parseFloat(
-    document.getElementById("circleLineWeight").value
+    document.getElementById("circleLineWeight").value,
   );
   const lineOpacity = parseFloat(
-    document.getElementById("circleLineOpacity").value
+    document.getElementById("circleLineOpacity").value,
   );
   const lineStyle = document.getElementById("circleLineStyle").value;
   const fillColor = document.getElementById("circleFillColor").value;
   const fillOpacity = parseFloat(
-    document.getElementById("circleFillOpacity").value
+    document.getElementById("circleFillOpacity").value,
   );
 
   const properties = {
@@ -31647,81 +35766,103 @@ const measureResultsTable = document.getElementById("measureResultsTable");
 const measureResultsHeader = document.getElementById("measureResultsHeader");
 const measureLengthHeader = document.getElementById("measureLengthHeader");
 const measureAreaHeader = document.getElementById("measureAreaHeader");
-const measurePerimeterHeader = document.getElementById("measurePerimeterHeader");
+const measurePerimeterHeader = document.getElementById(
+  "measurePerimeterHeader",
+);
 const measureECDHeader = document.getElementById("measureECDHeader");
 const measureWidthHeader = document.getElementById("measureWidthHeader");
 const measureLiveReadout = document.getElementById("measure-live-readout");
 const measureToolButtons = document.getElementById("measureToolButtons");
 const measureSelectedAnnotationsButton = document.getElementById(
-  "measureSelectedAnnotationsButton"
+  "measureSelectedAnnotationsButton",
 );
 const measureGroupSelect = document.getElementById("measureGroupSelect");
-const measureGroupColorInput = document.getElementById("measureGroupColorInput");
-const renameMeasureGroupButton = document.getElementById("renameMeasureGroupButton");
+const measureGroupColorInput = document.getElementById(
+  "measureGroupColorInput",
+);
+const renameMeasureGroupButton = document.getElementById(
+  "renameMeasureGroupButton",
+);
 const newMeasureGroupButton = document.getElementById("newMeasureGroupButton");
-const measureScaleAuditButton = document.getElementById("measureScaleAuditButton");
-const measureScaleAuditPopover = document.getElementById("measureScaleAuditPopover");
+const measureScaleAuditButton = document.getElementById(
+  "measureScaleAuditButton",
+);
+const measureScaleAuditPopover = document.getElementById(
+  "measureScaleAuditPopover",
+);
 const exportMeasurementsButton = document.getElementById(
-  "exportMeasurementsButton"
+  "exportMeasurementsButton",
 );
 const clearMeasurementsButton = document.getElementById(
-  "clearMeasurementsButton"
+  "clearMeasurementsButton",
 );
 const deleteMeasurementButton = document.getElementById(
-  "deleteMeasurementButton"
+  "deleteMeasurementButton",
 );
 const measureColumnsButton = document.getElementById("measureColumnsButton");
 const measureColumnsMenu = document.getElementById("measureColumnsMenu");
 const measureColumnsList = document.getElementById("measureColumnsList");
 const restoreMeasureColumnsButton = document.getElementById(
-  "restoreMeasureColumnsButton"
+  "restoreMeasureColumnsButton",
 );
 const measureHelpButton = document.getElementById("measureHelpButton");
 const measureHelpDialog = document.getElementById("measureHelpDialog");
 const measureHelpHeader = document.getElementById("measureHelpHeader");
-const closeMeasureHelpButton = document.getElementById("closeMeasureHelpButton");
-const measureHistogramButton = document.getElementById("measureHistogramButton");
-const measureHistogramMenu = document.getElementById("measureHistogramMenu");
-const measureHistogramHeader = document.getElementById("measureHistogramHeader");
-const measureHistogramParameter = document.getElementById(
-  "measureHistogramParameter"
+const closeMeasureHelpButton = document.getElementById(
+  "closeMeasureHelpButton",
 );
-const measureHistogramPlotType = document.getElementById("measureHistogramPlotType");
+const measureHistogramButton = document.getElementById(
+  "measureHistogramButton",
+);
+const measureHistogramMenu = document.getElementById("measureHistogramMenu");
+const measureHistogramHeader = document.getElementById(
+  "measureHistogramHeader",
+);
+const measureHistogramParameter = document.getElementById(
+  "measureHistogramParameter",
+);
+const measureHistogramPlotType = document.getElementById(
+  "measureHistogramPlotType",
+);
 const measureHistogramMode = document.getElementById("measureHistogramMode");
-const measureHistogramGroups = document.getElementById("measureHistogramGroups");
-const measureHistogramCanvas = document.getElementById("measureHistogramCanvas");
+const measureHistogramGroups = document.getElementById(
+  "measureHistogramGroups",
+);
+const measureHistogramCanvas = document.getElementById(
+  "measureHistogramCanvas",
+);
 const measureHistogramStatsBody = document.getElementById(
-  "measureHistogramStatsBody"
+  "measureHistogramStatsBody",
 );
 const measureHistogramStatsMeanHeader = document.getElementById(
-  "measureHistogramStatsMeanHeader"
+  "measureHistogramStatsMeanHeader",
 );
 const measureHistogramStatsMedianHeader = document.getElementById(
-  "measureHistogramStatsMedianHeader"
+  "measureHistogramStatsMedianHeader",
 );
 const measureHistogramStatsSdHeader = document.getElementById(
-  "measureHistogramStatsSdHeader"
+  "measureHistogramStatsSdHeader",
 );
 const measureHistogramStatsMinHeader = document.getElementById(
-  "measureHistogramStatsMinHeader"
+  "measureHistogramStatsMinHeader",
 );
 const measureHistogramStatsMaxHeader = document.getElementById(
-  "measureHistogramStatsMaxHeader"
+  "measureHistogramStatsMaxHeader",
 );
 const exportMeasureHistogramButton = document.getElementById(
-  "exportMeasureHistogramButton"
+  "exportMeasureHistogramButton",
 );
 const exportMeasureHistogramStatsButton = document.getElementById(
-  "exportMeasureHistogramStatsButton"
+  "exportMeasureHistogramStatsButton",
 );
 const measureScatterButton = document.getElementById("measureScatterButton");
 const measureScatterMenu = document.getElementById("measureScatterMenu");
 const measureScatterHeader = document.getElementById("measureScatterHeader");
 const measureScatterXParameter = document.getElementById(
-  "measureScatterXParameter"
+  "measureScatterXParameter",
 );
 const measureScatterYParameter = document.getElementById(
-  "measureScatterYParameter"
+  "measureScatterYParameter",
 );
 const measureScatterMode = document.getElementById("measureScatterMode");
 const measureScatterGroups = document.getElementById("measureScatterGroups");
@@ -31731,27 +35872,35 @@ const measureScatterYMinInput = document.getElementById("measureScatterYMin");
 const measureScatterYMaxInput = document.getElementById("measureScatterYMax");
 const measureScatterColorInput = document.getElementById("measureScatterColor");
 const measureScatterOpacityRange = document.getElementById(
-  "measureScatterOpacityRange"
+  "measureScatterOpacityRange",
 );
-const measureScatterOpacityInput = document.getElementById("measureScatterOpacity");
+const measureScatterOpacityInput = document.getElementById(
+  "measureScatterOpacity",
+);
 const measureScatterCanvas = document.getElementById("measureScatterCanvas");
-const measureScatterStatsBody = document.getElementById("measureScatterStatsBody");
+const measureScatterStatsBody = document.getElementById(
+  "measureScatterStatsBody",
+);
 const measureScatterMeanXHeader = document.getElementById(
-  "measureScatterMeanXHeader"
+  "measureScatterMeanXHeader",
 );
 const measureScatterMeanYHeader = document.getElementById(
-  "measureScatterMeanYHeader"
+  "measureScatterMeanYHeader",
 );
-const measureScatterSdXHeader = document.getElementById("measureScatterSdXHeader");
-const measureScatterSdYHeader = document.getElementById("measureScatterSdYHeader");
+const measureScatterSdXHeader = document.getElementById(
+  "measureScatterSdXHeader",
+);
+const measureScatterSdYHeader = document.getElementById(
+  "measureScatterSdYHeader",
+);
 const exportMeasureScatterButton = document.getElementById(
-  "exportMeasureScatterButton"
+  "exportMeasureScatterButton",
 );
 const exportMeasureScatterStatsButton = document.getElementById(
-  "exportMeasureScatterStatsButton"
+  "exportMeasureScatterStatsButton",
 );
 const closeMeasureScatterButton = document.getElementById(
-  "closeMeasureScatterButton"
+  "closeMeasureScatterButton",
 );
 const measureRoseButton = document.getElementById("measureRoseButton");
 const measureRoseMenu = document.getElementById("measureRoseMenu");
@@ -31761,71 +35910,91 @@ const measureRoseMode = document.getElementById("measureRoseMode");
 const measureRoseColorInput = document.getElementById("measureRoseColor");
 const measureRoseBinSizeInput = document.getElementById("measureRoseBinSize");
 const measureRoseBidirectionalInput = document.getElementById(
-  "measureRoseBidirectional"
+  "measureRoseBidirectional",
 );
 const measureRoseStackedInput = document.getElementById("measureRoseStacked");
 const measureRoseGroups = document.getElementById("measureRoseGroups");
 const measureRoseCanvas = document.getElementById("measureRoseCanvas");
 const measureRoseStatsBody = document.getElementById("measureRoseStatsBody");
-const exportMeasureRoseButton = document.getElementById("exportMeasureRoseButton");
+const exportMeasureRoseButton = document.getElementById(
+  "exportMeasureRoseButton",
+);
 const exportMeasureRoseStatsButton = document.getElementById(
-  "exportMeasureRoseStatsButton"
+  "exportMeasureRoseStatsButton",
 );
-const closeMeasureRoseButton = document.getElementById("closeMeasureRoseButton");
+const closeMeasureRoseButton = document.getElementById(
+  "closeMeasureRoseButton",
+);
 const measureParticleSizeButton = document.getElementById(
-  "measureParticleSizeButton"
+  "measureParticleSizeButton",
 );
-const measureParticleSizeMenu = document.getElementById("measureParticleSizeMenu");
+const measureParticleSizeMenu = document.getElementById(
+  "measureParticleSizeMenu",
+);
 const measureParticleSizeHeader = document.getElementById(
-  "measureParticleSizeHeader"
+  "measureParticleSizeHeader",
 );
 const measureParticleSizeParameter = document.getElementById(
-  "measureParticleSizeParameter"
+  "measureParticleSizeParameter",
 );
 const measureParticleSizeWeight = document.getElementById(
-  "measureParticleSizeWeight"
+  "measureParticleSizeWeight",
 );
-const measureParticleSizeMode = document.getElementById("measureParticleSizeMode");
+const measureParticleSizeMode = document.getElementById(
+  "measureParticleSizeMode",
+);
 const measureParticleSizeGroups = document.getElementById(
-  "measureParticleSizeGroups"
+  "measureParticleSizeGroups",
 );
 const measureParticleShowHistogram = document.getElementById(
-  "measureParticleShowHistogram"
+  "measureParticleShowHistogram",
 );
 const measureParticleShowCumulative = document.getElementById(
-  "measureParticleShowCumulative"
+  "measureParticleShowCumulative",
 );
-const measureParticleStacked = document.getElementById("measureParticleStacked");
-const measureParticlePhiMinInput = document.getElementById("measureParticlePhiMin");
-const measureParticlePhiMaxInput = document.getElementById("measureParticlePhiMax");
-const measureParticlePhiBinInput = document.getElementById("measureParticlePhiBin");
-const measureParticleColorInput = document.getElementById("measureParticleColor");
+const measureParticleStacked = document.getElementById(
+  "measureParticleStacked",
+);
+const measureParticlePhiMinInput = document.getElementById(
+  "measureParticlePhiMin",
+);
+const measureParticlePhiMaxInput = document.getElementById(
+  "measureParticlePhiMax",
+);
+const measureParticlePhiBinInput = document.getElementById(
+  "measureParticlePhiBin",
+);
+const measureParticleColorInput = document.getElementById(
+  "measureParticleColor",
+);
 const measureParticleSizeCanvas = document.getElementById(
-  "measureParticleSizeCanvas"
+  "measureParticleSizeCanvas",
 );
 const measureParticleSizeStatsBody = document.getElementById(
-  "measureParticleSizeStatsBody"
+  "measureParticleSizeStatsBody",
 );
 const exportMeasureParticleSizeButton = document.getElementById(
-  "exportMeasureParticleSizeButton"
+  "exportMeasureParticleSizeButton",
 );
 const exportMeasureParticleSizeStatsButton = document.getElementById(
-  "exportMeasureParticleSizeStatsButton"
+  "exportMeasureParticleSizeStatsButton",
 );
 const closeMeasureParticleSizeButton = document.getElementById(
-  "closeMeasureParticleSizeButton"
+  "closeMeasureParticleSizeButton",
 );
 const closeMeasureHistogramButton = document.getElementById(
-  "closeMeasureHistogramButton"
+  "closeMeasureHistogramButton",
 );
 const measureHistogramMinInput = document.getElementById("measureHistogramMin");
 const measureHistogramMaxInput = document.getElementById("measureHistogramMax");
 const measureHistogramBinSizeInput = document.getElementById(
-  "measureHistogramBinSize"
+  "measureHistogramBinSize",
 );
-const measureHistogramColorInput = document.getElementById("measureHistogramColor");
+const measureHistogramColorInput = document.getElementById(
+  "measureHistogramColor",
+);
 const measureHistogramStackedInput = document.getElementById(
-  "measureHistogramStacked"
+  "measureHistogramStacked",
 );
 
 let measureImageCoordinates = [];
@@ -31904,9 +36073,7 @@ function getECDUnitInfo() {
     { label: "mm", factor: 1e3 },
     { label: "µm", factor: 1e6 },
   ];
-  return (
-    units[parseInt(ECDUnits.value, 10)] || units[1]
-  );
+  return units[parseInt(ECDUnits.value, 10)] || units[1];
 }
 
 function formatCompactNumber(value, maximumFractionDigits = 3) {
@@ -32004,11 +36171,11 @@ function openMeasureScaleAuditPopover() {
   const margin = 8;
   const left = Math.min(
     Math.max(buttonRect.left, margin),
-    window.innerWidth - menuRect.width - margin
+    window.innerWidth - menuRect.width - margin,
   );
   const top = Math.min(
     buttonRect.bottom + 4,
-    window.innerHeight - menuRect.height - margin
+    window.innerHeight - menuRect.height - margin,
   );
   measureScaleAuditPopover.style.left = `${Math.max(margin, left)}px`;
   measureScaleAuditPopover.style.top = `${Math.max(margin, top)}px`;
@@ -32056,11 +36223,11 @@ function ensureMeasureGroup(group = DEFAULT_MEASURE_GROUP) {
   const existing = measureGroups.find(
     (candidate) =>
       candidate.groupId === normalized.groupId ||
-      candidate.groupName.toLowerCase() === normalized.groupName.toLowerCase()
+      candidate.groupName.toLowerCase() === normalized.groupName.toLowerCase(),
   );
   if (existing) {
     existing.groupColor = getSafeMeasureGroupColor(
-      normalized.groupColor || existing.groupColor
+      normalized.groupColor || existing.groupColor,
     );
     return existing;
   }
@@ -32094,7 +36261,7 @@ function rebuildMeasureGroupsFromRows() {
   });
 
   measureGroups = [...groups.values()].sort((a, b) =>
-    a.groupName.localeCompare(b.groupName)
+    a.groupName.localeCompare(b.groupName),
   );
 }
 
@@ -32145,11 +36312,15 @@ function updateMeasureGroupControls() {
   const group = getMeasureGroupById(activeMeasureGroupId);
   if (measureGroupColorInput) {
     measureGroupColorInput.value = getSafeMeasureGroupColor(group?.groupColor);
-    measureGroupColorInput.title = group ? `Color: ${group.groupName}` : "Group Color";
+    measureGroupColorInput.title = group
+      ? `Color: ${group.groupName}`
+      : "Group Color";
   }
   if (renameMeasureGroupButton) {
     renameMeasureGroupButton.disabled = !group;
-    renameMeasureGroupButton.title = group ? `Rename ${group.groupName}` : "Rename Group";
+    renameMeasureGroupButton.title = group
+      ? `Rename ${group.groupName}`
+      : "Rename Group";
   }
 }
 
@@ -32201,7 +36372,7 @@ function renameMeasureGroup(groupId, groupName) {
   const duplicate = measureGroups.find(
     (group) =>
       group.groupId !== groupId &&
-      group.groupName.toLowerCase() === trimmedName.toLowerCase()
+      group.groupName.toLowerCase() === trimmedName.toLowerCase(),
   );
   if (duplicate) {
     alert("A measurement group with that name already exists.");
@@ -32214,7 +36385,7 @@ function createMeasureGroup(groupName) {
   const trimmedName = groupName.trim();
   if (!trimmedName) return;
   const existing = measureGroups.find(
-    (group) => group.groupName.toLowerCase() === trimmedName.toLowerCase()
+    (group) => group.groupName.toLowerCase() === trimmedName.toLowerCase(),
   );
   const group =
     existing ||
@@ -32234,7 +36405,7 @@ function getImagePointFromMeasureEventPosition(position) {
   const viewportPoint = viewer.viewport.pointFromPixel(position);
   const imagePoint = image.viewportToImageCoordinates(
     viewportPoint.x,
-    viewportPoint.y
+    viewportPoint.y,
   );
   return [imagePoint.x, imagePoint.y];
 }
@@ -32243,7 +36414,7 @@ function getImagePointFromMeasureMouseEvent(event) {
   const rect = viewerContainer.getBoundingClientRect();
   const position = new OpenSeadragon.Point(
     event.clientX - rect.left,
-    event.clientY - rect.top
+    event.clientY - rect.top,
   );
   return getImagePointFromMeasureEventPosition(position);
 }
@@ -32320,7 +36491,7 @@ function getPolygonSelfIntersectionStatus(coordinates) {
           imagePointFromCoord(aStart),
           imagePointFromCoord(aEnd),
           imagePointFromCoord(bStart),
-          imagePointFromCoord(bEnd)
+          imagePointFromCoord(bEnd),
         )
       ) {
         return {
@@ -32352,9 +36523,11 @@ function crossProduct(origin, a, b) {
 }
 
 function getConvexHull(points) {
-  const uniquePoints = [...new Map(
-    points.map((point) => [`${point[0]},${point[1]}`, point])
-  ).values()].sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  const uniquePoints = [
+    ...new Map(
+      points.map((point) => [`${point[0]},${point[1]}`, point]),
+    ).values(),
+  ].sort((a, b) => a[0] - b[0] || a[1] - b[1]);
 
   if (uniquePoints.length <= 1) return uniquePoints;
 
@@ -32458,7 +36631,7 @@ function getOrientedAxisProperties(coordinates) {
     aspectRatio: longAxisPx === 0 ? null : shortAxisPx / longAxisPx,
     longAxisAzimuthDeg: normalizeAxisAzimuthDegrees(
       Math.cos(longAxisAngle),
-      Math.sin(longAxisAngle)
+      Math.sin(longAxisAngle),
     ),
   };
 }
@@ -32547,7 +36720,9 @@ function calculateMeasurementProperties(type, coordinates) {
   };
 
   if (type === "line") {
-    properties.lengthM = metersFromPixels(calculateLineStringLength(coordinates));
+    properties.lengthM = metersFromPixels(
+      calculateLineStringLength(coordinates),
+    );
     return properties;
   }
 
@@ -32572,7 +36747,8 @@ function calculateMeasurementProperties(type, coordinates) {
         (properties.perimeterM * properties.perimeterM);
 
   const hull = getConvexHull(getCoordinatesWithoutTrailingDuplicate(closed));
-  const hullAreaPixels = hull.length >= 3 ? calculateRingAreaFromCoordinates(hull) : 0;
+  const hullAreaPixels =
+    hull.length >= 3 ? calculateRingAreaFromCoordinates(hull) : 0;
   properties.solidity =
     properties.areaM2 === null || hullAreaPixels === 0
       ? null
@@ -32643,10 +36819,7 @@ function getGeometryCoordinatePoints(geometry) {
 
 function calculateGeometryMeasurementProperties(type, geometry) {
   if (geometry?.type === "LineString" && Array.isArray(geometry.coordinates)) {
-    return calculateMeasurementProperties(
-      type,
-      geometry.coordinates
-    );
+    return calculateMeasurementProperties(type, geometry.coordinates);
   }
 
   const properties = {
@@ -32676,7 +36849,7 @@ function calculateGeometryMeasurementProperties(type, geometry) {
   if (type === "line") {
     const lengthPixels = getGeometryLineCoordinates(geometry).reduce(
       (total, line) => total + calculateLineStringLength(line || []),
-      0
+      0,
     );
     properties.lengthM = metersFromPixels(lengthPixels);
     return properties;
@@ -32762,7 +36935,7 @@ function calculateGeometryMeasurementProperties(type, geometry) {
 }
 
 function updateMeasurementSummaryFields(
-  result = measureResults[measureResults.length - 1]
+  result = measureResults[measureResults.length - 1],
 ) {
   const linearUnit = getLinearUnitInfo();
   const areaUnit = getAreaUnitInfo();
@@ -32827,14 +37000,14 @@ function updateMeasureLiveReadout(event, type, measurement) {
   const label =
     type === "polygon" && measurement.validGeometry === false
       ? measurement.geometryWarning
-    : type === "polygon"
-      ? `Area: ${formatMeasurementValue(measurement.areaM2, areaUnit)}`
-      : `Length: ${formatMeasurementValue(measurement.lengthM, linearUnit)}`;
+      : type === "polygon"
+        ? `Area: ${formatMeasurementValue(measurement.areaM2, areaUnit)}`
+        : `Length: ${formatMeasurementValue(measurement.lengthM, linearUnit)}`;
 
   measureLiveReadout.textContent = label;
   measureLiveReadout.classList.toggle(
     "measure-live-readout-warning",
-    type === "polygon" && measurement.validGeometry === false
+    type === "polygon" && measurement.validGeometry === false,
   );
   measureLiveReadout.style.left = `${event.clientX + 14}px`;
   measureLiveReadout.style.top = `${event.clientY + 14}px`;
@@ -32848,7 +37021,10 @@ function createMeasureTypeIcon(type) {
   svg.setAttribute("aria-hidden", "true");
 
   if (type === "point") {
-    const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    const circle = document.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "circle",
+    );
     circle.setAttribute("cx", "12");
     circle.setAttribute("cy", "12");
     circle.setAttribute("r", "3");
@@ -32867,7 +37043,10 @@ function createMeasureTypeIcon(type) {
   }
 
   if (type === "circle") {
-    const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    const circle = document.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "circle",
+    );
     circle.setAttribute("cx", "12");
     circle.setAttribute("cy", "12");
     circle.setAttribute("r", "7");
@@ -32876,7 +37055,10 @@ function createMeasureTypeIcon(type) {
   }
 
   if (type === "ellipse") {
-    const ellipse = document.createElementNS("http://www.w3.org/2000/svg", "ellipse");
+    const ellipse = document.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "ellipse",
+    );
     ellipse.setAttribute("cx", "12");
     ellipse.setAttribute("cy", "12");
     ellipse.setAttribute("rx", "8");
@@ -32886,13 +37068,19 @@ function createMeasureTypeIcon(type) {
   }
 
   if (type === "polygon") {
-    const polygon = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+    const polygon = document.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "polygon",
+    );
     polygon.setAttribute("points", "12 4 19 9 16.5 18 7.5 18 5 9");
     svg.appendChild(polygon);
     return svg;
   }
 
-  const polyline = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
+  const polyline = document.createElementNS(
+    "http://www.w3.org/2000/svg",
+    "polyline",
+  );
   polyline.setAttribute("points", "4,18 9,10 15,14 20,5");
   svg.appendChild(polyline);
   return svg;
@@ -32909,7 +37097,7 @@ function createMeasureGroupColor(group) {
 function getNextMeasurementId(source) {
   const prefix = source === "annotation" ? "A" : "M";
   const count = measureResults.filter((result) =>
-    String(result.id || "").startsWith(prefix)
+    String(result.id || "").startsWith(prefix),
   ).length;
   return `${prefix}${count + 1}`;
 }
@@ -32924,19 +37112,17 @@ function getMeasureFeatureByUuid(uuid) {
   return measureJSON.features.find(
     (feature) =>
       feature.properties?.uuid === uuid &&
-      ["manual", "annotation"].includes(feature.properties?.source)
+      ["manual", "annotation"].includes(feature.properties?.source),
   );
 }
 
 function getSelectableMeasurementUuids() {
-  return measureResults
-    .map((result) => result.measurementUuid)
-    .filter(Boolean);
+  return measureResults.map((result) => result.measurementUuid).filter(Boolean);
 }
 
 function getMeasurementResultIndexByUuid(uuid) {
   return getDisplayedMeasureResults().findIndex(
-    (result) => result.measurementUuid === uuid
+    (result) => result.measurementUuid === uuid,
   );
 }
 
@@ -32944,7 +37130,7 @@ function focusMeasurementRow(uuid) {
   if (!uuid) return;
   requestAnimationFrame(() => {
     const row = document.querySelector(
-      `#measureResultsBody tr[data-measurement-uuid="${CSS.escape(uuid)}"]`
+      `#measureResultsBody tr[data-measurement-uuid="${CSS.escape(uuid)}"]`,
     );
     if (!row) return;
     row.focus({ preventScroll: true });
@@ -32954,7 +37140,9 @@ function focusMeasurementRow(uuid) {
 
 function setMeasurementSelection(uuids = [], options = {}) {
   const selectable = new Set(getSelectableMeasurementUuids());
-  selectedMeasurementUuids = new Set(uuids.filter((uuid) => selectable.has(uuid)));
+  selectedMeasurementUuids = new Set(
+    uuids.filter((uuid) => selectable.has(uuid)),
+  );
   if (
     measurementSelectionAnchorUuid &&
     !selectable.has(measurementSelectionAnchorUuid)
@@ -32967,7 +37155,7 @@ function setMeasurementSelection(uuids = [], options = {}) {
       ? options.primaryUuid
       : selectedUuids[selectedUuids.length - 1];
   const primaryResult = measureResults.find(
-    (result) => result.measurementUuid === primaryUuid
+    (result) => result.measurementUuid === primaryUuid,
   );
   if (primaryResult?.groupId) {
     activeMeasureGroupId = primaryResult.groupId;
@@ -33023,7 +37211,7 @@ function handleMeasureResultRowClick(event, uuid) {
 
   if (event.shiftKey && measurementSelectionAnchorUuid) {
     const anchorIndex = getMeasurementResultIndexByUuid(
-      measurementSelectionAnchorUuid
+      measurementSelectionAnchorUuid,
     );
     if (anchorIndex >= 0) {
       const displayedResults = getDisplayedMeasureResults();
@@ -33033,7 +37221,10 @@ function handleMeasureResultRowClick(event, uuid) {
         .slice(start, end + 1)
         .map((result) => result.measurementUuid)
         .filter(Boolean);
-      setMeasurementSelection(rangeUuids, { focusUuid: uuid, primaryUuid: uuid });
+      setMeasurementSelection(rangeUuids, {
+        focusUuid: uuid,
+        primaryUuid: uuid,
+      });
       return;
     }
   }
@@ -33057,12 +37248,12 @@ function selectAdjacentMeasurementRow(currentUuid, direction) {
   const selectedUuids = [...selectedMeasurementUuids];
   const selectedUuid = currentUuid || selectedUuids[selectedUuids.length - 1];
   const matchedIndex = rows.findIndex(
-    (row) => row.dataset.measurementUuid === selectedUuid
+    (row) => row.dataset.measurementUuid === selectedUuid,
   );
   const currentIndex = matchedIndex >= 0 ? matchedIndex : -direction;
   const nextIndex = Math.min(
     rows.length - 1,
-    Math.max(0, currentIndex + direction)
+    Math.max(0, currentIndex + direction),
   );
   const nextUuid = rows[nextIndex].dataset.measurementUuid;
   measurementSelectionAnchorUuid = nextUuid;
@@ -33073,10 +37264,10 @@ function deleteSelectedMeasurement() {
   if (selectedMeasurementUuids.size === 0) return;
   const selected = new Set(selectedMeasurementUuids);
   measureJSON.features = measureJSON.features.filter(
-    (feature) => !selected.has(feature.properties?.uuid)
+    (feature) => !selected.has(feature.properties?.uuid),
   );
   measureResults = measureResults.filter(
-    (result) => !selected.has(result.measurementUuid)
+    (result) => !selected.has(result.measurementUuid),
   );
   selectedMeasurementUuids = new Set();
   measurementSelectionAnchorUuid = null;
@@ -33094,23 +37285,22 @@ function findMeasurementUuidAtViewerPoint(viewerPoint, options = {}) {
 
   for (let i = measureJSON.features.length - 1; i >= 0; i--) {
     const feature = measureJSON.features[i];
-    if (
-      !feature.geometry ||
-      feature.properties?.source !== "manual"
-    ) {
+    if (!feature.geometry || feature.properties?.source !== "manual") {
       continue;
     }
 
     const { type, coordinates } = feature.geometry;
     if (type === "LineString") {
-      if (isNearLineCoordinates(viewerPoint, image, coordinates, lineTolerance)) {
+      if (
+        isNearLineCoordinates(viewerPoint, image, coordinates, lineTolerance)
+      ) {
         return feature.properties.uuid;
       }
     } else if (type === "Polygon") {
       if (
         polygonContainsImagePoint(imagePoint, coordinates) ||
         coordinates.some((ring) =>
-          isNearLineCoordinates(viewerPoint, image, ring, lineTolerance)
+          isNearLineCoordinates(viewerPoint, image, ring, lineTolerance),
         )
       ) {
         return feature.properties.uuid;
@@ -33122,10 +37312,7 @@ function findMeasurementUuidAtViewerPoint(viewerPoint, options = {}) {
 }
 
 function measurementFeatureIntersectsMarquee(feature, marqueePolygon) {
-  if (
-    !feature.geometry ||
-    feature.properties?.source !== "manual"
-  ) {
+  if (!feature.geometry || feature.properties?.source !== "manual") {
     return false;
   }
 
@@ -33141,7 +37328,9 @@ function measurementFeatureIntersectsMarquee(feature, marqueePolygon) {
 
 function toggleMeasurementsInMarquee(marqueePolygon) {
   const touchedUuids = measureJSON.features
-    .filter((feature) => measurementFeatureIntersectsMarquee(feature, marqueePolygon))
+    .filter((feature) =>
+      measurementFeatureIntersectsMarquee(feature, marqueePolygon),
+    )
     .map((feature) => feature.properties.uuid);
 
   if (touchedUuids.length === 0) return;
@@ -33187,11 +37376,15 @@ function getLineLengthM(result) {
 }
 
 function getLongAxisM(result) {
-  return result?.longAxisM ?? (result?.type !== "line" ? result?.lengthM : null);
+  return (
+    result?.longAxisM ?? (result?.type !== "line" ? result?.lengthM : null)
+  );
 }
 
 function getShortAxisM(result) {
-  return result?.shortAxisM ?? (result?.type !== "line" ? result?.widthM : null);
+  return (
+    result?.shortAxisM ?? (result?.type !== "line" ? result?.widthM : null)
+  );
 }
 
 const MEASURE_COLUMN_DEFINITIONS = [
@@ -33331,7 +37524,7 @@ const MEASURE_COLUMN_DEFINITIONS = [
     tableValue: (result, units) =>
       getInvalidMeasurementText(
         result,
-        formatMeasurementNumber(result.areaM2, units.area)
+        formatMeasurementNumber(result.areaM2, units.area),
       ),
     csvValue: (result) => result.areaM2 ?? "",
   },
@@ -33357,7 +37550,7 @@ const MEASURE_COLUMN_DEFINITIONS = [
     tableValue: (result, units) =>
       getInvalidMeasurementText(
         result,
-        formatMeasurementNumber(result.ecdM, units.linear)
+        formatMeasurementNumber(result.ecdM, units.linear),
       ),
     csvValue: (result) => result.ecdM ?? "",
   },
@@ -33463,7 +37656,7 @@ let measureHeaderMenuElement = null;
 
 function getMeasureParameterById(parameterId) {
   return getMeasureNumericFilterParameters().find(
-    (parameter) => parameter.id === parameterId
+    (parameter) => parameter.id === parameterId,
   );
 }
 
@@ -33488,13 +37681,17 @@ function getMeasureDisplayParameterValue(result, parameter) {
 }
 
 function getMeasureSortValue(result, parameterId) {
-  if (parameterId === "group") return getMeasureGroupForResult(result).groupName || "";
+  if (parameterId === "group")
+    return getMeasureGroupForResult(result).groupName || "";
   if (parameterId === "type") return result.typeLabel || result.type || "";
   if (parameterId === "id") return result.id || "";
   if (parameterId === "validGeometry") {
     return result.validGeometry === false ? "Invalid" : "Valid";
   }
-  return getMeasureDisplayParameterValue(result, getMeasureParameterById(parameterId));
+  return getMeasureDisplayParameterValue(
+    result,
+    getMeasureParameterById(parameterId),
+  );
 }
 
 function compareMeasureResults(a, b, parameterId, direction = "asc") {
@@ -33509,10 +37706,12 @@ function compareMeasureResults(a, b, parameterId, direction = "asc") {
   if (typeof aValue === "number" && typeof bValue === "number") {
     return (aValue - bValue) * multiplier;
   }
-  return String(aValue).localeCompare(String(bValue), undefined, {
-    numeric: true,
-    sensitivity: "base",
-  }) * multiplier;
+  return (
+    String(aValue).localeCompare(String(bValue), undefined, {
+      numeric: true,
+      sensitivity: "base",
+    }) * multiplier
+  );
 }
 
 function getMeasureFilterState() {
@@ -33522,13 +37721,15 @@ function getMeasureFilterState() {
 function measureResultPassesFilters(result, state = getMeasureFilterState()) {
   if (state.groupId && result.groupId !== state.groupId) return false;
   if (state.type && result.type !== state.type) return false;
-  if (state.validity === "valid" && result.validGeometry === false) return false;
-  if (state.validity === "invalid" && result.validGeometry !== false) return false;
+  if (state.validity === "valid" && result.validGeometry === false)
+    return false;
+  if (state.validity === "invalid" && result.validGeometry !== false)
+    return false;
 
   if (state.parameterId && (state.min !== null || state.max !== null)) {
     const value = getMeasureDisplayParameterValue(
       result,
-      getMeasureParameterById(state.parameterId)
+      getMeasureParameterById(state.parameterId),
     );
     if (!Number.isFinite(value)) return false;
     if (state.min !== null && value < state.min) return false;
@@ -33540,7 +37741,9 @@ function measureResultPassesFilters(result, state = getMeasureFilterState()) {
 
 function getFilteredMeasureResults() {
   const state = getMeasureFilterState();
-  return measureResults.filter((result) => measureResultPassesFilters(result, state));
+  return measureResults.filter((result) =>
+    measureResultPassesFilters(result, state),
+  );
 }
 
 function hasFilteredMeasureResults() {
@@ -33550,11 +37753,11 @@ function hasFilteredMeasureResults() {
 function getDisplayedMeasureResults() {
   const state = getMeasureFilterState();
   const results = measureResults.filter((result) =>
-    measureResultPassesFilters(result, state)
+    measureResultPassesFilters(result, state),
   );
   if (state.sortParameterId) {
     results.sort((a, b) =>
-      compareMeasureResults(a, b, state.sortParameterId, state.sortDirection)
+      compareMeasureResults(a, b, state.sortParameterId, state.sortDirection),
     );
   }
   return results;
@@ -33599,7 +37802,7 @@ function getDefaultMeasureColumnState() {
         table: column.defaultTable,
         csv: column.defaultCsv,
       },
-    ])
+    ]),
   );
 }
 
@@ -33614,10 +37817,7 @@ function normalizeMeasureColumnState(state = {}) {
           : typeof saved.table === "boolean"
             ? saved.table
             : defaults[column.id].table,
-      csv:
-        typeof saved.csv === "boolean"
-          ? saved.csv
-          : defaults[column.id].csv,
+      csv: typeof saved.csv === "boolean" ? saved.csv : defaults[column.id].csv,
     };
   });
   return defaults;
@@ -33626,7 +37826,7 @@ function normalizeMeasureColumnState(state = {}) {
 function loadMeasureColumnState() {
   try {
     return normalizeMeasureColumnState(
-      JSON.parse(localStorage.getItem(MEASURE_COLUMNS_STORAGE_KEY) || "{}")
+      JSON.parse(localStorage.getItem(MEASURE_COLUMNS_STORAGE_KEY) || "{}"),
     );
   } catch (error) {
     console.warn("Could not load measurement column settings:", error);
@@ -33638,7 +37838,7 @@ function saveMeasureColumnState() {
   try {
     localStorage.setItem(
       MEASURE_COLUMNS_STORAGE_KEY,
-      JSON.stringify(measureColumnState)
+      JSON.stringify(measureColumnState),
     );
   } catch (error) {
     console.warn("Could not save measurement column settings:", error);
@@ -33648,14 +37848,14 @@ function saveMeasureColumnState() {
 function getVisibleMeasureTableColumns() {
   const columns = MEASURE_COLUMN_DEFINITIONS.filter(
     (column) =>
-      column.tableEligible !== false && measureColumnState[column.id]?.table
+      column.tableEligible !== false && measureColumnState[column.id]?.table,
   );
   return columns.length > 0 ? columns : [MEASURE_COLUMN_DEFINITIONS[0]];
 }
 
 function getVisibleMeasureCsvColumns() {
   const columns = MEASURE_COLUMN_DEFINITIONS.filter(
-    (column) => measureColumnState[column.id]?.csv
+    (column) => measureColumnState[column.id]?.csv,
   );
   return columns.length > 0 ? columns : [MEASURE_COLUMN_DEFINITIONS[0]];
 }
@@ -33670,7 +37870,8 @@ function getMeasureColumnUnits() {
 function getMeasureColumnHeader(column, units) {
   if (column.id === "group") return "";
   if (column.id === "azimuthDeg") return "Long axis<br>azimuth (°)";
-  if (column.unit === "linear") return `${column.label}<br>(${units.linear.label})`;
+  if (column.unit === "linear")
+    return `${column.label}<br>(${units.linear.label})`;
   if (column.unit === "area") return `${column.label}<br>(${units.area.label})`;
   if (column.unit === "degrees") return `${column.label}<br>(°)`;
   return column.label;
@@ -33756,11 +37957,11 @@ function openGridCountHelpDialog(button = gridCountHelpButton) {
   const margin = 8;
   const left = Math.min(
     Math.max(buttonRect.right - dialogRect.width, margin),
-    window.innerWidth - dialogRect.width - margin
+    window.innerWidth - dialogRect.width - margin,
   );
   const top = Math.min(
     Math.max(buttonRect.bottom + 4, margin),
-    window.innerHeight - dialogRect.height - margin
+    window.innerHeight - dialogRect.height - margin,
   );
   gridCountHelpDialog.style.left = `${Math.max(margin, left)}px`;
   gridCountHelpDialog.style.top = `${Math.max(margin, top)}px`;
@@ -33823,11 +38024,11 @@ function openSegmentHelpDialog(button = segmentHelpButton) {
   const margin = 8;
   const left = Math.min(
     Math.max(buttonRect.right - dialogRect.width, margin),
-    window.innerWidth - dialogRect.width - margin
+    window.innerWidth - dialogRect.width - margin,
   );
   const top = Math.min(
     Math.max(buttonRect.bottom + 4, margin),
-    window.innerHeight - dialogRect.height - margin
+    window.innerHeight - dialogRect.height - margin,
   );
   segmentHelpDialog.style.left = `${Math.max(margin, left)}px`;
   segmentHelpDialog.style.top = `${Math.max(margin, top)}px`;
@@ -33854,11 +38055,11 @@ function openSnapshotHelpDialog(button = snapshotHelpButton) {
   const margin = 8;
   const left = Math.min(
     Math.max(buttonRect.right - dialogRect.width, margin),
-    window.innerWidth - dialogRect.width - margin
+    window.innerWidth - dialogRect.width - margin,
   );
   const top = Math.min(
     Math.max(buttonRect.bottom + 4, margin),
-    window.innerHeight - dialogRect.height - margin
+    window.innerHeight - dialogRect.height - margin,
   );
   snapshotHelpDialog.style.left = `${Math.max(margin, left)}px`;
   snapshotHelpDialog.style.top = `${Math.max(margin, top)}px`;
@@ -33878,11 +38079,11 @@ function openControlsHelpDialog(button = controlsHelpButton) {
   const margin = 8;
   const left = Math.min(
     Math.max(buttonRect.right - dialogRect.width, margin),
-    window.innerWidth - dialogRect.width - margin
+    window.innerWidth - dialogRect.width - margin,
   );
   const top = Math.min(
     Math.max(buttonRect.bottom + 4, margin),
-    window.innerHeight - dialogRect.height - margin
+    window.innerHeight - dialogRect.height - margin,
   );
   controlsHelpDialog.style.left = `${Math.max(margin, left)}px`;
   controlsHelpDialog.style.top = `${Math.max(margin, top)}px`;
@@ -33901,11 +38102,11 @@ function openClassifyHelpDialog(button = classifyHelpButton) {
   const margin = 8;
   const left = Math.min(
     Math.max(buttonRect.right - dialogRect.width, margin),
-    window.innerWidth - dialogRect.width - margin
+    window.innerWidth - dialogRect.width - margin,
   );
   const top = Math.min(
     Math.max(buttonRect.bottom + 4, margin),
-    window.innerHeight - dialogRect.height - margin
+    window.innerHeight - dialogRect.height - margin,
   );
   classifyHelpDialog.style.left = `${Math.max(margin, left)}px`;
   classifyHelpDialog.style.top = `${Math.max(margin, top)}px`;
@@ -33924,11 +38125,11 @@ function openTransformImageryHelpDialog(button = transformImageryHelpButton) {
   const margin = 8;
   const left = Math.min(
     Math.max(buttonRect.right - dialogRect.width, margin),
-    window.innerWidth - dialogRect.width - margin
+    window.innerWidth - dialogRect.width - margin,
   );
   const top = Math.min(
     Math.max(buttonRect.bottom + 4, margin),
-    window.innerHeight - dialogRect.height - margin
+    window.innerHeight - dialogRect.height - margin,
   );
   transformImageryHelpDialog.style.left = `${Math.max(margin, left)}px`;
   transformImageryHelpDialog.style.top = `${Math.max(margin, top)}px`;
@@ -33947,11 +38148,11 @@ function openPorosityHelpDialog(button = porosityHelpButton) {
   const margin = 8;
   const left = Math.min(
     Math.max(buttonRect.right - dialogRect.width, margin),
-    window.innerWidth - dialogRect.width - margin
+    window.innerWidth - dialogRect.width - margin,
   );
   const top = Math.min(
     Math.max(buttonRect.bottom + 4, margin),
-    window.innerHeight - dialogRect.height - margin
+    window.innerHeight - dialogRect.height - margin,
   );
   porosityHelpDialog.style.left = `${Math.max(margin, left)}px`;
   porosityHelpDialog.style.top = `${Math.max(margin, top)}px`;
@@ -34014,11 +38215,11 @@ function openAnnotateHelpDialog(button = annotateHelpButton) {
   const margin = 8;
   const left = Math.min(
     Math.max(buttonRect.right - dialogRect.width, margin),
-    window.innerWidth - dialogRect.width - margin
+    window.innerWidth - dialogRect.width - margin,
   );
   const top = Math.min(
     Math.max(buttonRect.bottom + 4, margin),
-    window.innerHeight - dialogRect.height - margin
+    window.innerHeight - dialogRect.height - margin,
   );
   annotateHelpDialog.style.left = `${Math.max(margin, left)}px`;
   annotateHelpDialog.style.top = `${Math.max(margin, top)}px`;
@@ -34057,11 +38258,11 @@ function openMeasureHelpDialog(button = measureHelpButton) {
   const margin = 8;
   const left = Math.min(
     Math.max(buttonRect.right - dialogRect.width, margin),
-    window.innerWidth - dialogRect.width - margin
+    window.innerWidth - dialogRect.width - margin,
   );
   const top = Math.min(
     Math.max(buttonRect.bottom + 4, margin),
-    window.innerHeight - dialogRect.height - margin
+    window.innerHeight - dialogRect.height - margin,
   );
   measureHelpDialog.style.left = `${Math.max(margin, left)}px`;
   measureHelpDialog.style.top = `${Math.max(margin, top)}px`;
@@ -34141,7 +38342,8 @@ function appendMeasureHeaderSelect(menu, label, options, value, onChange) {
 }
 
 function appendMeasureHeaderNumericFilter(menu, column) {
-  const current = measureFilterState.parameterId === column.id ? measureFilterState : {};
+  const current =
+    measureFilterState.parameterId === column.id ? measureFilterState : {};
   const minInput = document.createElement("input");
   minInput.type = "number";
   minInput.step = "any";
@@ -34184,11 +38386,15 @@ function renderMeasureHeaderMenu(column) {
   const menu = ensureMeasureHeaderMenu();
   menu.innerHTML = "";
 
-  appendMeasureHeaderMenuButton(menu, getMeasureColumnSortLabel(column, "asc"), () =>
-    applyMeasureSort(column.id, "asc")
+  appendMeasureHeaderMenuButton(
+    menu,
+    getMeasureColumnSortLabel(column, "asc"),
+    () => applyMeasureSort(column.id, "asc"),
   );
-  appendMeasureHeaderMenuButton(menu, getMeasureColumnSortLabel(column, "desc"), () =>
-    applyMeasureSort(column.id, "desc")
+  appendMeasureHeaderMenuButton(
+    menu,
+    getMeasureColumnSortLabel(column, "desc"),
+    () => applyMeasureSort(column.id, "desc"),
   );
   appendMeasureHeaderMenuButton(menu, "Clear sort", clearMeasureSort, {
     disabled: !isMeasureColumnSorted(column.id),
@@ -34211,7 +38417,7 @@ function renderMeasureHeaderMenu(column) {
         measureFilterState = { ...measureFilterState, groupId: value };
         closeMeasureHeaderMenu();
         renderMeasureResults();
-      }
+      },
     );
   } else if (column.id === "type") {
     appendMeasureHeaderSelect(
@@ -34231,7 +38437,7 @@ function renderMeasureHeaderMenu(column) {
         measureFilterState = { ...measureFilterState, type: value };
         closeMeasureHeaderMenu();
         renderMeasureResults();
-      }
+      },
     );
   } else if (column.id === "validGeometry") {
     appendMeasureHeaderSelect(
@@ -34247,7 +38453,7 @@ function renderMeasureHeaderMenu(column) {
         measureFilterState = { ...measureFilterState, validity: value };
         closeMeasureHeaderMenu();
         renderMeasureResults();
-      }
+      },
     );
   } else if (getMeasureParameterById(column.id)) {
     appendMeasureHeaderNumericFilter(menu, column);
@@ -34267,7 +38473,7 @@ function renderMeasureHeaderMenu(column) {
       closeMeasureHeaderMenu();
       renderMeasureResults();
     },
-    { disabled: !isMeasureColumnFiltered(column.id) }
+    { disabled: !isMeasureColumnFiltered(column.id) },
   );
   appendMeasureHeaderMenuButton(menu, "Clear all", resetMeasureFilters, {
     disabled:
@@ -34281,7 +38487,10 @@ function renderMeasureHeaderMenu(column) {
 
 function openMeasureHeaderMenu(column, header) {
   if (!header) return;
-  if (measureHeaderMenuColumnId === column.id && !measureHeaderMenuElement?.hidden) {
+  if (
+    measureHeaderMenuColumnId === column.id &&
+    !measureHeaderMenuElement?.hidden
+  ) {
     closeMeasureHeaderMenu();
     return;
   }
@@ -34302,11 +38511,11 @@ function openMeasureHeaderMenu(column, header) {
   const margin = 8;
   const left = Math.min(
     Math.max(buttonRect.right - menuRect.width, margin),
-    window.innerWidth - menuRect.width - margin
+    window.innerWidth - menuRect.width - margin,
   );
   const top = Math.min(
     buttonRect.bottom + 4,
-    window.innerHeight - menuRect.height - margin
+    window.innerHeight - menuRect.height - margin,
   );
   menu.style.left = `${Math.max(margin, left)}px`;
   menu.style.top = `${Math.max(margin, top)}px`;
@@ -34409,7 +38618,7 @@ function openMeasureColumnsMenu(button) {
   const maxLeft = window.innerWidth - menuRect.width - margin;
   const left = Math.min(
     Math.max(buttonRect.right - menuRect.width, margin),
-    maxLeft
+    maxLeft,
   );
   const spaceAbove = buttonRect.top - margin;
   const opensUp = spaceAbove >= menuRect.height;
@@ -34417,7 +38626,7 @@ function openMeasureColumnsMenu(button) {
     ? buttonRect.top - menuRect.height - 4
     : Math.min(
         buttonRect.bottom + 4,
-        window.innerHeight - menuRect.height - margin
+        window.innerHeight - menuRect.height - margin,
       );
 
   measureColumnsMenu.style.left = `${left}px`;
@@ -34436,7 +38645,7 @@ function renderMeasureResults() {
   if (measureResultsTable) {
     measureResultsTable.style.minWidth = `${Math.max(
       240,
-      visibleColumns.length * 62
+      visibleColumns.length * 62,
     )}px`;
   }
   measureResultsBody.innerHTML = "";
@@ -34447,10 +38656,14 @@ function renderMeasureResults() {
     cell.colSpan = visibleColumns.length;
     cell.className = "measure-results-empty";
     cell.textContent =
-      measureResults.length === 0 ? "No results" : "No measurements match filters";
+      measureResults.length === 0
+        ? "No results"
+        : "No measurements match filters";
     row.appendChild(cell);
     measureResultsBody.appendChild(row);
-    updateMeasurementSummaryFields(displayedResults[displayedResults.length - 1] || null);
+    updateMeasurementSummaryFields(
+      displayedResults[displayedResults.length - 1] || null,
+    );
     updateDeleteMeasurementButton();
     updateMeasureHistogramAvailability();
     renderMeasureHistogramMenu();
@@ -34469,7 +38682,7 @@ function renderMeasureResults() {
     if (result.measurementUuid) row.tabIndex = 0;
     row.classList.toggle(
       "measure-result-row-selected",
-      selectedMeasurementUuids.has(result.measurementUuid)
+      selectedMeasurementUuids.has(result.measurementUuid),
     );
     row.addEventListener("click", (event) => {
       event.stopPropagation();
@@ -34485,7 +38698,7 @@ function renderMeasureResults() {
       event.preventDefault();
       selectAdjacentMeasurementRow(
         result.measurementUuid,
-        event.key === "ArrowDown" ? 1 : -1
+        event.key === "ArrowDown" ? 1 : -1,
       );
     });
 
@@ -34523,13 +38736,16 @@ function addMeasureFeature(
   coordinates,
   source = "manual",
   sourceFeature = null,
-  options = {}
+  options = {},
 ) {
   const normalizedCoordinates =
     type === "line"
       ? getCoordinatesWithoutTrailingDuplicate(coordinates)
       : closeCoordinates(coordinates);
-  const measurement = calculateMeasurementProperties(type, normalizedCoordinates);
+  const measurement = calculateMeasurementProperties(
+    type,
+    normalizedCoordinates,
+  );
   const id = options.id || getNextMeasurementId(source);
   const style = getMeasureStyle();
   const measurementUuid = generateUniqueId(16);
@@ -34590,7 +38806,11 @@ function addMeasureFeature(
   selectedMeasurementUuids = new Set([measurementUuid]);
   if (!options.deferRender) {
     renderMeasureResults();
-    drawShape(measureCanvas, [measureJSON, measureAreaJSONTemp, measureJSONTemp]);
+    drawShape(measureCanvas, [
+      measureJSON,
+      measureAreaJSONTemp,
+      measureJSONTemp,
+    ]);
   }
   return measurementUuid;
 }
@@ -34600,7 +38820,7 @@ function addMeasureGeometry(
   geometry,
   source = "annotation",
   sourceFeature = null,
-  options = {}
+  options = {},
 ) {
   const measurement = calculateGeometryMeasurementProperties(type, geometry);
   const id = options.id || getNextMeasurementId(source);
@@ -34663,7 +38883,11 @@ function addMeasureGeometry(
   selectedMeasurementUuids = new Set([measurementUuid]);
   if (!options.deferRender) {
     renderMeasureResults();
-    drawShape(measureCanvas, [measureJSON, measureAreaJSONTemp, measureJSONTemp]);
+    drawShape(measureCanvas, [
+      measureJSON,
+      measureAreaJSONTemp,
+      measureJSONTemp,
+    ]);
   }
   return measurementUuid;
 }
@@ -34726,7 +38950,11 @@ function refreshMeasureDrawingPreview(event) {
 function setActiveMeasureTool(tool) {
   if (activeMeasureTool === tool && measurementModeActive) {
     stopMeasurementMode();
-    drawShape(measureCanvas, [measureJSON, measureAreaJSONTemp, measureJSONTemp]);
+    drawShape(measureCanvas, [
+      measureJSON,
+      measureAreaJSONTemp,
+      measureJSONTemp,
+    ]);
     return;
   }
 
@@ -34752,7 +38980,7 @@ function updateMeasureValueControls() {
   [...document.querySelectorAll("[data-measure-tool]")].forEach((button) => {
     button.classList.toggle(
       "active",
-      measurementModeActive && button.dataset.measureTool === activeMeasureTool
+      measurementModeActive && button.dataset.measureTool === activeMeasureTool,
     );
   });
 }
@@ -34856,7 +39084,7 @@ viewerContainer.addEventListener("click", function (event) {
   const rect = viewerContainer.getBoundingClientRect();
   const viewerPoint = new OpenSeadragon.Point(
     event.clientX - rect.left,
-    event.clientY - rect.top
+    event.clientY - rect.top,
   );
   if (handleMeasurementSelectionClick(viewerPoint, event)) {
     event.preventDefault();
@@ -34866,7 +39094,10 @@ viewerContainer.addEventListener("click", function (event) {
 viewerContainer.addEventListener("mousemove", refreshMeasureDrawingPreview);
 
 viewer.addHandler("canvas-double-click", function (event) {
-  if (!measurementModeActive || !["line", "polygon"].includes(activeMeasureTool)) {
+  if (
+    !measurementModeActive ||
+    !["line", "polygon"].includes(activeMeasureTool)
+  ) {
     return;
   }
   event.preventDefaultAction = true;
@@ -34880,13 +39111,17 @@ document.addEventListener(
     event.preventDefault();
     event.stopPropagation();
     stopMeasurementMode();
-    drawShape(measureCanvas, [measureJSON, measureAreaJSONTemp, measureJSONTemp]);
+    drawShape(measureCanvas, [
+      measureJSON,
+      measureAreaJSONTemp,
+      measureJSONTemp,
+    ]);
   },
-  true
+  true,
 );
 
 function resetMeasurements(hardReset = false) {
-	  if (hardReset) {
+  if (hardReset) {
     stopMeasurementMode();
   }
 
@@ -34918,15 +39153,23 @@ function resetMeasurements(hardReset = false) {
     areaElement.value = 0;
     if (ECDElement) ECDElement.value = 0;
     renderMeasureResults();
-    drawShape(measureCanvas, [measureJSON, measureAreaJSONTemp, measureJSONTemp]);
+    drawShape(measureCanvas, [
+      measureJSON,
+      measureAreaJSONTemp,
+      measureJSONTemp,
+    ]);
   }
 }
 
-document.getElementById("areaUnits").addEventListener("change", renderMeasureResults);
+document
+  .getElementById("areaUnits")
+  .addEventListener("change", renderMeasureResults);
 document
   .getElementById("distanceUnits")
   .addEventListener("change", renderMeasureResults);
-document.getElementById("ECDUnits")?.addEventListener("change", renderMeasureResults);
+document
+  .getElementById("ECDUnits")
+  ?.addEventListener("change", renderMeasureResults);
 updateMeasureValueControls();
 
 function getMeasurementTypeForAnnotation(feature) {
@@ -34937,7 +39180,10 @@ function getMeasurementTypeForAnnotation(feature) {
   if (shapeType === "ellipse") return "ellipse";
   if (shapeType === "polygon") return "polygon";
   if (shapeType === "line" || shapeType === "polyline") return "line";
-  if (geometryType === "LineString" && isClosedCoordinateRing(feature.geometry.coordinates)) {
+  if (
+    geometryType === "LineString" &&
+    isClosedCoordinateRing(feature.geometry.coordinates)
+  ) {
     return "polygon";
   }
   if (geometryType === "LineString" || geometryType === "MultiLineString") {
@@ -34946,7 +39192,9 @@ function getMeasurementTypeForAnnotation(feature) {
   if (geometryType === "Polygon" || geometryType === "MultiPolygon") {
     return "polygon";
   }
-  return geometryType === "Point" || geometryType === "MultiPoint" ? "point" : "";
+  return geometryType === "Point" || geometryType === "MultiPoint"
+    ? "point"
+    : "";
 }
 
 function isClosedCoordinateRing(coordinates) {
@@ -34963,7 +39211,11 @@ function getAnnotationMeasurementCoordinates(feature, measurementType = "") {
   if (type === "Polygon") return coordinates[0] || [];
   if (type === "MultiLineString") {
     if (measurementType === "polygon") {
-      return coordinates.find((line) => isClosedCoordinateRing(line)) || coordinates[0] || [];
+      return (
+        coordinates.find((line) => isClosedCoordinateRing(line)) ||
+        coordinates[0] ||
+        []
+      );
     }
     return coordinates.flat();
   }
@@ -35065,7 +39317,7 @@ function measureSelectedAnnotations() {
         {
           deferRender: true,
           id: `A${nextAnnotationMeasureIndex++}`,
-        }
+        },
       );
       if (measurementUuid) addedMeasurementUuids.push(measurementUuid);
       return;
@@ -35078,7 +39330,7 @@ function measureSelectedAnnotations() {
       {
         deferRender: true,
         id: `A${nextAnnotationMeasureIndex++}`,
-      }
+      },
     );
     if (measurementUuid) addedMeasurementUuids.push(measurementUuid);
   });
@@ -35109,13 +39361,16 @@ function exportMeasurementsCSV() {
   const columns = getVisibleMeasureCsvColumns();
   const headers = columns.map((column) => column.csvHeader);
   const rows = results.map((result) =>
-    columns.map((column) => column.csvValue(result))
+    columns.map((column) => column.csvValue(result)),
   );
 
   const csv = [headers, ...rows]
     .map((row) => row.map(csvEscape).join(","))
     .join("\n");
-  saveAs(new Blob([csv], { type: "text/csv;charset=utf-8" }), "measurements.csv");
+  saveAs(
+    new Blob([csv], { type: "text/csv;charset=utf-8" }),
+    "measurements.csv",
+  );
 }
 
 const MEASURE_HISTOGRAM_PARAMETERS = [
@@ -35138,10 +39393,10 @@ function getMeasureHistogramParameter() {
   const parameterId = measureHistogramParameter?.value;
   return (
     MEASURE_HISTOGRAM_PARAMETERS.find(
-      (parameter) => parameter.id === parameterId
+      (parameter) => parameter.id === parameterId,
     ) ||
     MEASURE_HISTOGRAM_PARAMETERS.find(
-      (parameter) => parameter.id === DEFAULT_MEASURE_HISTOGRAM_PARAMETER_ID
+      (parameter) => parameter.id === DEFAULT_MEASURE_HISTOGRAM_PARAMETER_ID,
     ) ||
     MEASURE_HISTOGRAM_PARAMETERS[0]
   );
@@ -35350,7 +39605,7 @@ function exportMeasureHistogramStatsCSV() {
     .join("\n");
   saveAs(
     new Blob([csv], { type: "text/csv;charset=utf-8" }),
-    "measurement-histogram-stats.csv"
+    "measurement-histogram-stats.csv",
   );
 }
 
@@ -35361,7 +39616,7 @@ function getMeasureHistogramGroupsInUse() {
     groups.set(group.groupId, group);
   });
   return [...groups.values()].sort((a, b) =>
-    a.groupName.localeCompare(b.groupName)
+    a.groupName.localeCompare(b.groupName),
   );
 }
 
@@ -35375,8 +39630,8 @@ function syncMeasureHistogramGroupSelection(groups) {
   measureHistogramKnownGroupIds = groupIds;
   measureHistogramSelectedGroupIds = new Set(
     [...measureHistogramSelectedGroupIds].filter((groupId) =>
-      groupIds.has(groupId)
-    )
+      groupIds.has(groupId),
+    ),
   );
 }
 
@@ -35390,7 +39645,7 @@ function getMeasureHistogramValues(parameter) {
         ...group,
         values: [],
       },
-    ])
+    ]),
   );
 
   getFilteredMeasureResults().forEach((result) => {
@@ -35404,7 +39659,7 @@ function getMeasureHistogramValues(parameter) {
   });
 
   const enabledGroups = [...groupedValues.values()].filter((group) =>
-    measureHistogramSelectedGroupIds.has(group.groupId)
+    measureHistogramSelectedGroupIds.has(group.groupId),
   );
   const values = enabledGroups.flatMap((group) => group.values);
   return { groups: enabledGroups, values };
@@ -35421,8 +39676,22 @@ function getDefaultHistogramExtent(values) {
     };
   }
 
-  const dataMin = Math.min(...values);
-  const dataMax = Math.max(...values);
+  let dataMin = Infinity;
+  let dataMax = -Infinity;
+  for (const value of values) {
+    if (!Number.isFinite(value)) continue;
+    if (value < dataMin) dataMin = value;
+    if (value > dataMax) dataMax = value;
+  }
+  if (!Number.isFinite(dataMin) || !Number.isFinite(dataMax)) {
+    return {
+      min: 0,
+      max: 0,
+      binWidth: 0,
+      dataMin: null,
+      dataMax: null,
+    };
+  }
   let min = dataMin;
   let max = dataMax;
   if (min === max) {
@@ -35431,7 +39700,10 @@ function getDefaultHistogramExtent(values) {
     max += padding;
   }
 
-  const binCount = Math.min(20, Math.max(5, Math.ceil(Math.sqrt(values.length))));
+  const binCount = Math.min(
+    20,
+    Math.max(5, Math.ceil(Math.sqrt(values.length))),
+  );
   const binWidth = getNiceHistogramNumber((max - min) / binCount, true);
   min = Math.floor(min / binWidth) * binWidth;
   max = Math.ceil(max / binWidth) * binWidth;
@@ -35467,7 +39739,10 @@ function createHistogramTicks(min, max, targetCount = 6, integer = false) {
   if (!Number.isFinite(min) || !Number.isFinite(max) || max <= min) {
     return [min, max].filter(Number.isFinite);
   }
-  let step = getNiceHistogramNumber((max - min) / Math.max(1, targetCount - 1), true);
+  let step = getNiceHistogramNumber(
+    (max - min) / Math.max(1, targetCount - 1),
+    true,
+  );
   if (integer) step = Math.max(1, Math.round(step));
   const first = Math.ceil(min / step) * step;
   const ticks = [];
@@ -35494,7 +39769,9 @@ function getMeasureHistogramNumberInputValue(input) {
 }
 
 function getMeasureHistogramBinSizeInputValue() {
-  const value = getMeasureHistogramNumberInputValue(measureHistogramBinSizeInput);
+  const value = getMeasureHistogramNumberInputValue(
+    measureHistogramBinSizeInput,
+  );
   return Number.isFinite(value) && value > 0 ? value : null;
 }
 
@@ -35507,27 +39784,34 @@ function getDefaultMeasureHistogramBinWidth() {
 
 function validateMeasureHistogramBinSizeInput() {
   if (!measureHistogramBinSizeInput) return;
-  const value = getMeasureHistogramNumberInputValue(measureHistogramBinSizeInput);
+  const value = getMeasureHistogramNumberInputValue(
+    measureHistogramBinSizeInput,
+  );
   const invalid =
     measureHistogramBinSizeInput.value.trim() !== "" &&
     (!Number.isFinite(value) || value <= 0);
   measureHistogramBinSizeInput.setCustomValidity(
-    invalid ? "Bin size must be greater than 0." : ""
+    invalid ? "Bin size must be greater than 0." : "",
   );
 }
 
 function normalizeMeasureHistogramBinSizeInput() {
   if (!measureHistogramBinSizeInput) return;
-  const value = getMeasureHistogramNumberInputValue(measureHistogramBinSizeInput);
+  const value = getMeasureHistogramNumberInputValue(
+    measureHistogramBinSizeInput,
+  );
   if (measureHistogramBinSizeInput.value.trim() === "") return;
   if (Number.isFinite(value) && value > 0) return;
   measureHistogramBinSizeInput.value = formatHistogramInputValue(
-    getDefaultMeasureHistogramBinWidth()
+    getDefaultMeasureHistogramBinWidth(),
   );
   measureHistogramBinSizeInput.setCustomValidity("");
 }
 
-function validatePositiveNumberInput(input, message = "Value must be greater than 0.") {
+function validatePositiveNumberInput(
+  input,
+  message = "Value must be greater than 0.",
+) {
   if (!input) return;
   const value = getMeasureHistogramNumberInputValue(input);
   const invalid =
@@ -35561,7 +39845,7 @@ function updateMeasureHistogramRangeInputs(defaultExtent) {
   measureHistogramMinInput.value = formatHistogramInputValue(defaultExtent.min);
   measureHistogramMaxInput.value = formatHistogramInputValue(defaultExtent.max);
   measureHistogramBinSizeInput.value = formatHistogramInputValue(
-    defaultExtent.binWidth
+    defaultExtent.binWidth,
   );
 }
 
@@ -35638,15 +39922,12 @@ function buildMeasureHistogramModel() {
         histogram.binWidth === 0
           ? 0
           : Math.floor((value - histogram.min) / histogram.binWidth);
-      const index = Math.min(
-        histogram.bins.length - 1,
-        Math.max(0, rawIndex)
-      );
+      const index = Math.min(histogram.bins.length - 1, Math.max(0, rawIndex));
       const bin = histogram.bins[index];
       bin.count += 1;
       bin.groupCounts.set(
         group.groupId,
-        (bin.groupCounts.get(group.groupId) || 0) + 1
+        (bin.groupCounts.get(group.groupId) || 0) + 1,
       );
     });
   });
@@ -35657,12 +39938,15 @@ function buildMeasureHistogramModel() {
       mode === "groups" && !stacked
         ? Math.max(
             0,
-            ...groups.map((group) => bin.groupCounts.get(group.groupId) || 0)
+            ...groups.map((group) => bin.groupCounts.get(group.groupId) || 0),
           )
-        : bin.count
-    )
+        : bin.count,
+    ),
   );
-  const yTickStep = Math.max(1, Math.round(getNiceHistogramNumber(rawYMax / 4, true)));
+  const yTickStep = Math.max(
+    1,
+    Math.round(getNiceHistogramNumber(rawYMax / 4, true)),
+  );
   const yMax = Math.max(yTickStep, Math.ceil(rawYMax / yTickStep) * yTickStep);
   const sum = values.reduce((total, value) => total + value, 0);
   return {
@@ -35702,7 +39986,7 @@ function renderMeasureHistogramParameters() {
     measureHistogramParameter.appendChild(option);
   });
   measureHistogramParameter.value = MEASURE_HISTOGRAM_PARAMETERS.some(
-    (parameter) => parameter.id === previous
+    (parameter) => parameter.id === previous,
   )
     ? previous
     : DEFAULT_MEASURE_HISTOGRAM_PARAMETER_ID;
@@ -35793,9 +40077,11 @@ function drawMeasureValueAxis(ctx, model, padding, plotWidth, plotHeight) {
     ctx.textAlign = "center";
     ctx.textBaseline = "top";
     ctx.fillText(
-      formatHistogramAxisNumber(tick),
+      model.formatXAxisTick
+        ? model.formatXAxisTick(tick)
+        : formatHistogramAxisNumber(tick),
       x,
-      padding.top + plotHeight + 8
+      padding.top + plotHeight + 8,
     );
   });
 }
@@ -35803,7 +40089,8 @@ function drawMeasureValueAxis(ctx, model, padding, plotWidth, plotHeight) {
 function getMeasureValueX(value, model, padding, plotWidth) {
   const clampedValue = Math.min(model.max, Math.max(model.min, value));
   return (
-    padding.left + ((clampedValue - model.min) / (model.max - model.min)) * plotWidth
+    padding.left +
+    ((clampedValue - model.min) / (model.max - model.min)) * plotWidth
   );
 }
 
@@ -35836,7 +40123,9 @@ function drawHistogramBars(ctx, model, padding, plotWidth, plotHeight) {
     const x = padding.left + index * binWidth + binGap / 2;
     const fullBarWidth = Math.max(1, binWidth - binGap);
     if (model.mode === "groups") {
-      const activeGroups = model.groups.filter((group) => group.values.length > 0);
+      const activeGroups = model.groups.filter(
+        (group) => group.values.length > 0,
+      );
       if (model.stacked) {
         let stackedOffset = 0;
         activeGroups.forEach((group) => {
@@ -35848,7 +40137,7 @@ function drawHistogramBars(ctx, model, padding, plotWidth, plotHeight) {
             x,
             padding.top + plotHeight - stackedOffset - barHeight,
             fullBarWidth,
-            barHeight
+            barHeight,
           );
           ctx.globalAlpha = 1;
           ctx.strokeStyle = "#000";
@@ -35856,7 +40145,7 @@ function drawHistogramBars(ctx, model, padding, plotWidth, plotHeight) {
             x,
             padding.top + plotHeight - stackedOffset - barHeight,
             fullBarWidth,
-            barHeight
+            barHeight,
           );
           stackedOffset += barHeight;
         });
@@ -35871,7 +40160,7 @@ function drawHistogramBars(ctx, model, padding, plotWidth, plotHeight) {
             x + groupIndex * groupWidth,
             padding.top + plotHeight - barHeight,
             Math.max(1, groupWidth - 1),
-            barHeight
+            barHeight,
           );
           ctx.globalAlpha = 1;
           ctx.strokeStyle = "#000";
@@ -35879,7 +40168,7 @@ function drawHistogramBars(ctx, model, padding, plotWidth, plotHeight) {
             x + groupIndex * groupWidth,
             padding.top + plotHeight - barHeight,
             Math.max(1, groupWidth - 1),
-            barHeight
+            barHeight,
           );
         });
       }
@@ -35891,14 +40180,14 @@ function drawHistogramBars(ctx, model, padding, plotWidth, plotHeight) {
         x,
         padding.top + plotHeight - barHeight,
         fullBarWidth,
-        barHeight
+        barHeight,
       );
       ctx.strokeStyle = "#000";
       ctx.strokeRect(
         x,
         padding.top + plotHeight - barHeight,
         fullBarWidth,
-        barHeight
+        barHeight,
       );
     }
   });
@@ -35921,10 +40210,20 @@ function drawBoxPlot(ctx, model, padding, plotWidth, plotHeight) {
     ctx.strokeStyle = entry.color;
     ctx.fillStyle = entry.color;
     ctx.globalAlpha = 0.22;
-    ctx.fillRect(q1X, centerY - boxHeight / 2, Math.max(1, q3X - q1X), boxHeight);
+    ctx.fillRect(
+      q1X,
+      centerY - boxHeight / 2,
+      Math.max(1, q3X - q1X),
+      boxHeight,
+    );
     ctx.globalAlpha = 1;
     ctx.lineWidth = 2;
-    ctx.strokeRect(q1X, centerY - boxHeight / 2, Math.max(1, q3X - q1X), boxHeight);
+    ctx.strokeRect(
+      q1X,
+      centerY - boxHeight / 2,
+      Math.max(1, q3X - q1X),
+      boxHeight,
+    );
     ctx.beginPath();
     ctx.moveTo(minX, centerY);
     ctx.lineTo(q1X, centerY);
@@ -35980,11 +40279,10 @@ function getViolinDensityPoints(values, model, sampleCount = 120) {
   if (values.length === 0 || model.max <= model.min) return [];
   const bandwidth = getViolinBandwidth(values, model.min, model.max);
   const visibleValues = values.filter(
-    (value) => value >= model.min && value <= model.max
+    (value) => value >= model.min && value <= model.max,
   );
   const densityValues = visibleValues.length > 0 ? visibleValues : values;
-  const normalizer =
-    densityValues.length * bandwidth * Math.sqrt(2 * Math.PI);
+  const normalizer = densityValues.length * bandwidth * Math.sqrt(2 * Math.PI);
   return Array.from({ length: sampleCount }, (_, index) => {
     const t = sampleCount === 1 ? 0 : index / (sampleCount - 1);
     const value = model.min + t * (model.max - model.min);
@@ -36008,7 +40306,10 @@ function drawViolinPlot(ctx, model, padding, plotWidth, plotHeight) {
     const centerY = padding.top + rowHeight * (index + 0.5);
     const maxHalfHeight = Math.min(32, rowHeight * 0.38);
     const densityPoints = getViolinDensityPoints(entry.values, model);
-    const maxDensity = Math.max(0, ...densityPoints.map((point) => point.density));
+    const maxDensity = Math.max(
+      0,
+      ...densityPoints.map((point) => point.density),
+    );
     const topPoints = [];
     const bottomPoints = [];
     densityPoints.forEach((point) => {
@@ -36051,7 +40352,7 @@ function drawHistogramToCanvas(ctx, model, width, height) {
   const padding = {
     left: model.plotType === "histogram" ? 42 : 58,
     top: 20,
-    right: 16,
+    right: model.showCumulative ? 42 : 16,
     bottom: 42,
   };
   const plotWidth = width - padding.left - padding.right;
@@ -36139,7 +40440,7 @@ function positionMeasureHistogramMenu(button) {
   const margin = 8;
   const left = Math.min(
     Math.max(buttonRect.left, margin),
-    window.innerWidth - menuRect.width - margin
+    window.innerWidth - menuRect.width - margin,
   );
   const spaceAbove = buttonRect.top - margin;
   const top =
@@ -36147,7 +40448,7 @@ function positionMeasureHistogramMenu(button) {
       ? buttonRect.top - menuRect.height - 4
       : Math.min(
           buttonRect.bottom + 4,
-          window.innerHeight - menuRect.height - margin
+          window.innerHeight - menuRect.height - margin,
         );
   measureHistogramMenu.style.left = `${left}px`;
   measureHistogramMenu.style.top = `${Math.max(margin, top)}px`;
@@ -36198,11 +40499,11 @@ function makeFixedElementDraggable(element, handle) {
     const maxTop = Math.max(margin, window.innerHeight - rect.height - margin);
     const left = Math.min(
       Math.max(event.clientX - dragState.offsetX, margin),
-      maxLeft
+      maxLeft,
     );
     const top = Math.min(
       Math.max(event.clientY - dragState.offsetY, margin),
-      maxTop
+      maxTop,
     );
     element.style.left = `${left}px`;
     element.style.top = `${top}px`;
@@ -36230,18 +40531,21 @@ function pdfText(value) {
 }
 
 function escapePdfString(value) {
-  return pdfText(value).replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)");
+  return pdfText(value)
+    .replace(/\\/g, "\\\\")
+    .replace(/\(/g, "\\(")
+    .replace(/\)/g, "\\)");
 }
 
 function addPdfText(commands, label, x, y, size = 10, pageHeight = 432) {
   commands.push(
-    `BT /F1 ${size} Tf ${x.toFixed(2)} ${(pageHeight - y).toFixed(2)} Td (${escapePdfString(label)}) Tj ET`
+    `BT /F1 ${size} Tf ${x.toFixed(2)} ${(pageHeight - y).toFixed(2)} Td (${escapePdfString(label)}) Tj ET`,
   );
 }
 
 function addPdfRotatedText(commands, label, x, y, size = 10, pageHeight = 432) {
   commands.push(
-    `BT /F1 ${size} Tf 0 1 -1 0 ${x.toFixed(2)} ${(pageHeight - y).toFixed(2)} Tm (${escapePdfString(label)}) Tj ET`
+    `BT /F1 ${size} Tf 0 1 -1 0 ${x.toFixed(2)} ${(pageHeight - y).toFixed(2)} Tm (${escapePdfString(label)}) Tj ET`,
   );
 }
 
@@ -36262,26 +40566,41 @@ function createMeasureHistogramPdf(model) {
   const commands = [];
   const pdfY = (y) => height - y;
   const text = (label, x, y, size = 10) => {
-    commands.push(`BT /F1 ${size} Tf ${x.toFixed(2)} ${pdfY(y).toFixed(2)} Td (${escapePdfString(label)}) Tj ET`);
+    commands.push(
+      `BT /F1 ${size} Tf ${x.toFixed(2)} ${pdfY(y).toFixed(2)} Td (${escapePdfString(label)}) Tj ET`,
+    );
   };
   const rotatedText = (label, x, y, size = 10) => {
-    commands.push(`BT /F1 ${size} Tf 0 1 -1 0 ${x.toFixed(2)} ${pdfY(y).toFixed(2)} Tm (${escapePdfString(label)}) Tj ET`);
+    commands.push(
+      `BT /F1 ${size} Tf 0 1 -1 0 ${x.toFixed(2)} ${pdfY(y).toFixed(2)} Tm (${escapePdfString(label)}) Tj ET`,
+    );
   };
   const rect = (x, y, w, h, color) => {
     if (w <= 0 || h <= 0) return;
-    commands.push(`${hexToPdfRgb(color)} rg ${x.toFixed(2)} ${pdfY(y + h).toFixed(2)} ${w.toFixed(2)} ${h.toFixed(2)} re f`);
+    commands.push(
+      `${hexToPdfRgb(color)} rg ${x.toFixed(2)} ${pdfY(y + h).toFixed(2)} ${w.toFixed(2)} ${h.toFixed(2)} re f`,
+    );
   };
   const strokedRect = (x, y, w, h, color) => {
     if (w <= 0 || h <= 0) return;
-    commands.push(`${hexToPdfRgb(color)} rg 0 0 0 RG ${x.toFixed(2)} ${pdfY(y + h).toFixed(2)} ${w.toFixed(2)} ${h.toFixed(2)} re B`);
+    commands.push(
+      `${hexToPdfRgb(color)} rg 0 0 0 RG ${x.toFixed(2)} ${pdfY(y + h).toFixed(2)} ${w.toFixed(2)} ${h.toFixed(2)} re B`,
+    );
   };
   commands.push("1 1 1 rg 0 0 612 432 re f");
   commands.push("0.15 0.15 0.15 RG 1 w");
-  commands.push(`${padding.left} ${pdfY(padding.top)} m ${padding.left} ${pdfY(padding.top + plotHeight)} l ${padding.left + plotWidth} ${pdfY(padding.top + plotHeight)} l S`);
+  commands.push(
+    `${padding.left} ${pdfY(padding.top)} m ${padding.left} ${pdfY(padding.top + plotHeight)} l ${padding.left + plotWidth} ${pdfY(padding.top + plotHeight)} l S`,
+  );
   text(model.parameterLabel, padding.left + plotWidth / 2 - 65, 24, 13);
 
   if (model.values.length === 0 || model.bins.length === 0) {
-    text("No plottable measurements", padding.left + 150, padding.top + plotHeight / 2, 12);
+    text(
+      "No plottable measurements",
+      padding.left + 150,
+      padding.top + plotHeight / 2,
+      12,
+    );
   } else {
     const binGap = 2;
     const binWidth = plotWidth / model.bins.length;
@@ -36289,7 +40608,9 @@ function createMeasureHistogramPdf(model) {
       const x = padding.left + index * binWidth + binGap / 2;
       const fullBarWidth = Math.max(1, binWidth - binGap);
       if (model.mode === "groups") {
-        const activeGroups = model.groups.filter((group) => group.values.length > 0);
+        const activeGroups = model.groups.filter(
+          (group) => group.values.length > 0,
+        );
         if (model.stacked) {
           let stackedOffset = 0;
           activeGroups.forEach((group) => {
@@ -36300,7 +40621,7 @@ function createMeasureHistogramPdf(model) {
               padding.top + plotHeight - stackedOffset - barHeight,
               fullBarWidth,
               barHeight,
-              group.groupColor
+              group.groupColor,
             );
             stackedOffset += barHeight;
           });
@@ -36314,7 +40635,7 @@ function createMeasureHistogramPdf(model) {
               padding.top + plotHeight - barHeight,
               Math.max(1, groupWidth - 1),
               barHeight,
-              group.groupColor
+              group.groupColor,
             );
           });
         }
@@ -36325,21 +40646,27 @@ function createMeasureHistogramPdf(model) {
           padding.top + plotHeight - barHeight,
           fullBarWidth,
           barHeight,
-          model.defaultColor
+          model.defaultColor,
         );
       }
     });
     text(String(model.yMax), padding.left - 28, padding.top + 3, 9);
     text("0", padding.left - 16, padding.top + plotHeight + 3, 9);
-    text(formatHistogramAxisNumber(model.min), padding.left, padding.top + plotHeight + 18, 9);
-    text(formatHistogramAxisNumber(model.max), padding.left + plotWidth - 48, padding.top + plotHeight + 18, 9);
+    const formatX = model.formatXAxisTick || formatHistogramAxisNumber;
+    text(formatX(model.min), padding.left, padding.top + plotHeight + 18, 9);
+    text(
+      formatX(model.max),
+      padding.left + plotWidth - 48,
+      padding.top + plotHeight + 18,
+      9,
+    );
   }
 
   text(
     `n = ${model.values.length}; mean = ${formatHistogramAxisNumber(model.mean)}; min = ${formatHistogramAxisNumber(model.dataMin)}; max = ${formatHistogramAxisNumber(model.dataMax)}`,
     padding.left,
     height - 24,
-    10
+    10,
   );
 
   if (model.mode === "groups") {
@@ -36387,8 +40714,13 @@ function exportMeasureHistogramPDF() {
     alert("No plottable measurements to export.");
     return;
   }
-  const parameter = pdfText(model.parameter.label).toLowerCase().replace(/\W+/g, "-");
-  saveAs(createMeasureHistogramPdf(model), `measurement-histogram-${parameter}.pdf`);
+  const parameter = pdfText(model.parameter.label)
+    .toLowerCase()
+    .replace(/\W+/g, "-");
+  saveAs(
+    createMeasureHistogramPdf(model),
+    `measurement-histogram-${parameter}.pdf`,
+  );
 }
 
 function getMeasureParameterValue(result, parameter) {
@@ -36421,7 +40753,7 @@ function renderMeasureParameterOptions(select, fallbackId) {
     select.appendChild(option);
   });
   select.value = MEASURE_HISTOGRAM_PARAMETERS.some(
-    (parameter) => parameter.id === previous
+    (parameter) => parameter.id === previous,
   )
     ? previous
     : fallbackId;
@@ -36431,7 +40763,7 @@ function getMeasureScatterParameter(select, fallbackIndex) {
   const parameterId = select?.value;
   return (
     MEASURE_HISTOGRAM_PARAMETERS.find(
-      (parameter) => parameter.id === parameterId
+      (parameter) => parameter.id === parameterId,
     ) || MEASURE_HISTOGRAM_PARAMETERS[fallbackIndex]
   );
 }
@@ -36466,7 +40798,6 @@ function setMeasureScatterOpacityControlValue(value) {
   return opacity;
 }
 
-
 function syncMeasureScatterGroupSelection(groups) {
   const groupIds = new Set(groups.map((group) => group.groupId));
   groupIds.forEach((groupId) => {
@@ -36476,7 +40807,9 @@ function syncMeasureScatterGroupSelection(groups) {
   });
   measureScatterKnownGroupIds = groupIds;
   measureScatterSelectedGroupIds = new Set(
-    [...measureScatterSelectedGroupIds].filter((groupId) => groupIds.has(groupId))
+    [...measureScatterSelectedGroupIds].filter((groupId) =>
+      groupIds.has(groupId),
+    ),
   );
 }
 
@@ -36490,7 +40823,7 @@ function getMeasureScatterPoints(xParameter, yParameter) {
         ...group,
         points: [],
       },
-    ])
+    ]),
   );
 
   getFilteredMeasureResults().forEach((result) => {
@@ -36503,7 +40836,7 @@ function getMeasureScatterPoints(xParameter, yParameter) {
   });
 
   const enabledGroups = [...groupedPoints.values()].filter((group) =>
-    measureScatterSelectedGroupIds.has(group.groupId)
+    measureScatterSelectedGroupIds.has(group.groupId),
   );
   const points = enabledGroups.flatMap((group) => group.points);
   return { groups: enabledGroups, points };
@@ -36641,9 +40974,12 @@ function drawScatterToCanvas(ctx, model, width, height) {
   const plotWidth = width - padding.left - padding.right;
   const plotHeight = height - padding.top - padding.bottom;
   const xScale = (value) =>
-    padding.left + ((value - model.xMin) / (model.xMax - model.xMin)) * plotWidth;
+    padding.left +
+    ((value - model.xMin) / (model.xMax - model.xMin)) * plotWidth;
   const yScale = (value) =>
-    padding.top + plotHeight - ((value - model.yMin) / (model.yMax - model.yMin)) * plotHeight;
+    padding.top +
+    plotHeight -
+    ((value - model.yMin) / (model.yMax - model.yMin)) * plotHeight;
 
   ctx.clearRect(0, 0, width, height);
   ctx.fillStyle = "#fff";
@@ -36661,7 +40997,11 @@ function drawScatterToCanvas(ctx, model, width, height) {
   ctx.fillStyle = "#222";
   ctx.font = "12px sans-serif";
   ctx.textAlign = "center";
-  ctx.fillText(`${model.yLabel} vs ${model.xLabel}`, padding.left + plotWidth / 2, 15);
+  ctx.fillText(
+    `${model.yLabel} vs ${model.xLabel}`,
+    padding.left + plotWidth / 2,
+    15,
+  );
   ctx.save();
   ctx.translate(12, padding.top + plotHeight / 2);
   ctx.rotate(-Math.PI / 2);
@@ -36694,7 +41034,7 @@ function drawScatterToCanvas(ctx, model, width, height) {
   if (model.mode === "groups") {
     model.groups.forEach((group) => {
       group.points.forEach((point) =>
-        drawPoint(point, getSafeMeasureGroupColor(group.groupColor))
+        drawPoint(point, getSafeMeasureGroupColor(group.groupColor)),
       );
     });
   } else {
@@ -36713,7 +41053,11 @@ function drawScatterToCanvas(ctx, model, width, height) {
     ctx.stroke();
     ctx.textAlign = "center";
     ctx.textBaseline = "top";
-    ctx.fillText(formatHistogramAxisNumber(tick), x, padding.top + plotHeight + 8);
+    ctx.fillText(
+      formatHistogramAxisNumber(tick),
+      x,
+      padding.top + plotHeight + 8,
+    );
   });
   createHistogramTicks(model.yMin, model.yMax, 6).forEach((tick) => {
     const y = yScale(tick);
@@ -36735,7 +41079,15 @@ function drawScatterToCanvas(ctx, model, width, height) {
 function summarizeScatterPoints(points) {
   const n = points.length;
   if (n === 0) {
-    return { n: 0, meanX: null, meanY: null, sdX: null, sdY: null, r: null, r2: null };
+    return {
+      n: 0,
+      meanX: null,
+      meanY: null,
+      sdX: null,
+      sdY: null,
+      r: null,
+      r2: null,
+    };
   }
   const meanX = points.reduce((sum, point) => sum + point.x, 0) / n;
   const meanY = points.reduce((sum, point) => sum + point.y, 0) / n;
@@ -36751,11 +41103,12 @@ function summarizeScatterPoints(points) {
       acc.xy += dx * dy;
       return acc;
     },
-    { xx: 0, yy: 0, xy: 0 }
+    { xx: 0, yy: 0, xy: 0 },
   );
   const sdX = Math.sqrt(sums.xx / (n - 1));
   const sdY = Math.sqrt(sums.yy / (n - 1));
-  const r = sums.xx > 0 && sums.yy > 0 ? sums.xy / Math.sqrt(sums.xx * sums.yy) : null;
+  const r =
+    sums.xx > 0 && sums.yy > 0 ? sums.xy / Math.sqrt(sums.xx * sums.yy) : null;
   return {
     n,
     meanX,
@@ -36871,7 +41224,7 @@ function exportMeasureScatterStatsCSV() {
     .join("\n");
   saveAs(
     new Blob([csv], { type: "text/csv;charset=utf-8" }),
-    "scatterplot-statistics.csv"
+    "scatterplot-statistics.csv",
   );
 }
 
@@ -36913,7 +41266,7 @@ function positionFixedAnalysisMenu(menu, button) {
   const margin = 8;
   const left = Math.min(
     Math.max(buttonRect.left, margin),
-    window.innerWidth - menuRect.width - margin
+    window.innerWidth - menuRect.width - margin,
   );
   const spaceAbove = buttonRect.top - margin;
   const top =
@@ -36921,7 +41274,7 @@ function positionFixedAnalysisMenu(menu, button) {
       ? buttonRect.top - menuRect.height - 4
       : Math.min(
           buttonRect.bottom + 4,
-          window.innerHeight - menuRect.height - margin
+          window.innerHeight - menuRect.height - margin,
         );
   menu.style.left = `${left}px`;
   menu.style.top = `${Math.max(margin, top)}px`;
@@ -36995,22 +41348,34 @@ function createMeasureScatterPdf(model) {
   const commands = [];
   const pdfY = (y) => height - y;
   const text = (label, x, y, size = 10) => {
-    commands.push(`BT /F1 ${size} Tf ${x.toFixed(2)} ${pdfY(y).toFixed(2)} Td (${escapePdfString(label)}) Tj ET`);
+    commands.push(
+      `BT /F1 ${size} Tf ${x.toFixed(2)} ${pdfY(y).toFixed(2)} Td (${escapePdfString(label)}) Tj ET`,
+    );
   };
   const square = (x, y, size, color) => {
     commands.push(
-      `${hexToPdfRgb(color)} rg ${(x - size / 2).toFixed(2)} ${pdfY(y + size / 2).toFixed(2)} ${size.toFixed(2)} ${size.toFixed(2)} re f`
+      `${hexToPdfRgb(color)} rg ${(x - size / 2).toFixed(2)} ${pdfY(y + size / 2).toFixed(2)} ${size.toFixed(2)} ${size.toFixed(2)} re f`,
     );
   };
   const xScale = (value) =>
-    padding.left + ((value - model.xMin) / (model.xMax - model.xMin)) * plotWidth;
+    padding.left +
+    ((value - model.xMin) / (model.xMax - model.xMin)) * plotWidth;
   const yScale = (value) =>
-    padding.top + plotHeight - ((value - model.yMin) / (model.yMax - model.yMin)) * plotHeight;
+    padding.top +
+    plotHeight -
+    ((value - model.yMin) / (model.yMax - model.yMin)) * plotHeight;
 
   commands.push("1 1 1 rg 0 0 612 432 re f");
   commands.push("0.15 0.15 0.15 RG 1 w");
-  commands.push(`${padding.left} ${pdfY(padding.top)} m ${padding.left} ${pdfY(padding.top + plotHeight)} l ${padding.left + plotWidth} ${pdfY(padding.top + plotHeight)} l S`);
-  text(`${model.yLabel} vs ${model.xLabel}`, padding.left + plotWidth / 2 - 80, 24, 13);
+  commands.push(
+    `${padding.left} ${pdfY(padding.top)} m ${padding.left} ${pdfY(padding.top + plotHeight)} l ${padding.left + plotWidth} ${pdfY(padding.top + plotHeight)} l S`,
+  );
+  text(
+    `${model.yLabel} vs ${model.xLabel}`,
+    padding.left + plotWidth / 2 - 80,
+    24,
+    13,
+  );
 
   const drawPoint = (point, color) => {
     if (
@@ -37033,12 +41398,21 @@ function createMeasureScatterPdf(model) {
 
   createHistogramTicks(model.xMin, model.xMax, 6).forEach((tick) => {
     const x = xScale(tick);
-    commands.push(`0.25 0.25 0.25 RG 0.8 w ${x.toFixed(2)} ${pdfY(padding.top + plotHeight).toFixed(2)} m ${x.toFixed(2)} ${pdfY(padding.top + plotHeight + 4).toFixed(2)} l S`);
-    text(formatHistogramAxisNumber(tick), x - 8, padding.top + plotHeight + 18, 8);
+    commands.push(
+      `0.25 0.25 0.25 RG 0.8 w ${x.toFixed(2)} ${pdfY(padding.top + plotHeight).toFixed(2)} m ${x.toFixed(2)} ${pdfY(padding.top + plotHeight + 4).toFixed(2)} l S`,
+    );
+    text(
+      formatHistogramAxisNumber(tick),
+      x - 8,
+      padding.top + plotHeight + 18,
+      8,
+    );
   });
   createHistogramTicks(model.yMin, model.yMax, 6).forEach((tick) => {
     const y = yScale(tick);
-    commands.push(`0.25 0.25 0.25 RG 0.8 w ${(padding.left - 4).toFixed(2)} ${pdfY(y).toFixed(2)} m ${padding.left.toFixed(2)} ${pdfY(y).toFixed(2)} l S`);
+    commands.push(
+      `0.25 0.25 0.25 RG 0.8 w ${(padding.left - 4).toFixed(2)} ${pdfY(y).toFixed(2)} m ${padding.left.toFixed(2)} ${pdfY(y).toFixed(2)} l S`,
+    );
     text(formatHistogramAxisNumber(tick), padding.left - 46, y + 3, 8);
   });
   text(model.xLabel, padding.left + plotWidth / 2 - 45, height - 42, 10);
@@ -37048,9 +41422,14 @@ function createMeasureScatterPdf(model) {
     22,
     padding.top + plotHeight / 2 + 45,
     10,
-    height
+    height,
   );
-  text(`n = ${model.points.length}; x ${formatHistogramAxisNumber(model.xDataMin)}-${formatHistogramAxisNumber(model.xDataMax)}; y ${formatHistogramAxisNumber(model.yDataMin)}-${formatHistogramAxisNumber(model.yDataMax)}`, padding.left, height - 24, 10);
+  text(
+    `n = ${model.points.length}; x ${formatHistogramAxisNumber(model.xDataMin)}-${formatHistogramAxisNumber(model.xDataMax)}; y ${formatHistogramAxisNumber(model.yDataMin)}-${formatHistogramAxisNumber(model.yDataMax)}`,
+    padding.left,
+    height - 24,
+    10,
+  );
 
   if (model.mode === "groups") {
     let legendX = padding.left;
@@ -37058,7 +41437,9 @@ function createMeasureScatterPdf(model) {
     model.groups
       .filter((group) => group.points.length > 0)
       .forEach((group) => {
-        commands.push(`${hexToPdfRgb(group.groupColor)} rg ${legendX.toFixed(2)} ${pdfY(legendY).toFixed(2)} 8 8 re f`);
+        commands.push(
+          `${hexToPdfRgb(group.groupColor)} rg ${legendX.toFixed(2)} ${pdfY(legendY).toFixed(2)} 8 8 re f`,
+        );
         text(group.groupName, legendX + 12, legendY + 8, 8);
         legendX += Math.min(110, 18 + group.groupName.length * 5);
       });
@@ -37100,7 +41481,7 @@ const MEASURE_ROSE_DEFAULT_BIN_SIZE = 10;
 
 function getMeasureRoseParameters() {
   return MEASURE_HISTOGRAM_PARAMETERS.filter(
-    (parameter) => parameter.unit === "degrees"
+    (parameter) => parameter.unit === "degrees",
   );
 }
 
@@ -37116,7 +41497,7 @@ function renderMeasureRoseParameters() {
     measureRoseParameter.appendChild(option);
   });
   measureRoseParameter.value = parameters.some(
-    (parameter) => parameter.id === previous
+    (parameter) => parameter.id === previous,
   )
     ? previous
     : parameters[0]?.id || "";
@@ -37143,7 +41524,8 @@ function getMeasureRoseDefaultColor() {
 
 function getMeasureRoseBinSize() {
   const value = Number(measureRoseBinSizeInput?.value);
-  if (!Number.isFinite(value) || value <= 0) return MEASURE_ROSE_DEFAULT_BIN_SIZE;
+  if (!Number.isFinite(value) || value <= 0)
+    return MEASURE_ROSE_DEFAULT_BIN_SIZE;
   return Math.min(90, value);
 }
 
@@ -37169,7 +41551,7 @@ function syncMeasureRoseGroupSelection(groups) {
   });
   measureRoseKnownGroupIds = groupIds;
   measureRoseSelectedGroupIds = new Set(
-    [...measureRoseSelectedGroupIds].filter((groupId) => groupIds.has(groupId))
+    [...measureRoseSelectedGroupIds].filter((groupId) => groupIds.has(groupId)),
   );
 }
 
@@ -37215,7 +41597,7 @@ function getMeasureRoseAngles(parameter) {
         ...group,
         angles: [],
       },
-    ])
+    ]),
   );
 
   if (!parameter) return { groups: [...groupedAngles.values()], angles: [] };
@@ -37231,7 +41613,7 @@ function getMeasureRoseAngles(parameter) {
   });
 
   const enabledGroups = [...groupedAngles.values()].filter((group) =>
-    measureRoseSelectedGroupIds.has(group.groupId)
+    measureRoseSelectedGroupIds.has(group.groupId),
   );
   const angles = enabledGroups.flatMap((group) => group.angles);
   return { groups: enabledGroups, angles };
@@ -37297,13 +41679,11 @@ function summarizeRoseAngles(angles, bidirectional) {
   const meanDeg = normalizeDegrees((meanRadians * 180) / Math.PI, meanRange);
   const resultantLength = Math.min(
     1,
-    Math.max(0, Math.sqrt(sinSum ** 2 + cosSum ** 2) / n)
+    Math.max(0, Math.sqrt(sinSum ** 2 + cosSum ** 2) / n),
   );
   const circularSdDeg =
     resultantLength > 0
-      ? (Math.sqrt(-2 * Math.log(resultantLength)) * 180) /
-        Math.PI /
-        multiplier
+      ? (Math.sqrt(-2 * Math.log(resultantLength)) * 180) / Math.PI / multiplier
       : null;
   return { n, meanDeg, resultantLength, circularSdDeg };
 }
@@ -37330,16 +41710,16 @@ function buildMeasureRoseModel() {
         ...combinedBins.map((_, binIndex) =>
           groupDistributions.reduce(
             (sum, group) => sum + (group.bins[binIndex]?.count || 0),
-            0
-          )
-        )
+            0,
+          ),
+        ),
       );
     } else {
       maxCount = Math.max(
         1,
         ...groupDistributions.flatMap((group) =>
-          group.bins.map((bin) => bin.count)
-        )
+          group.bins.map((bin) => bin.count),
+        ),
       );
     }
   }
@@ -37386,7 +41766,8 @@ function renderMeasureRoseStats(model) {
     cell.textContent = "No results";
     row.appendChild(cell);
     measureRoseStatsBody.appendChild(row);
-    if (exportMeasureRoseStatsButton) exportMeasureRoseStatsButton.disabled = true;
+    if (exportMeasureRoseStatsButton)
+      exportMeasureRoseStatsButton.disabled = true;
     return;
   }
   rows.forEach((stats) => {
@@ -37404,10 +41785,20 @@ function renderMeasureRoseStats(model) {
     });
     measureRoseStatsBody.appendChild(row);
   });
-  if (exportMeasureRoseStatsButton) exportMeasureRoseStatsButton.disabled = false;
+  if (exportMeasureRoseStatsButton)
+    exportMeasureRoseStatsButton.disabled = false;
 }
 
-function drawRoseWedge(ctx, cx, cy, innerRadius, outerRadius, startDeg, endDeg, color) {
+function drawRoseWedge(
+  ctx,
+  cx,
+  cy,
+  innerRadius,
+  outerRadius,
+  startDeg,
+  endDeg,
+  color,
+) {
   if (outerRadius <= innerRadius) return;
   const start = ((startDeg - 90) * Math.PI) / 180;
   const end = ((endDeg - 90) * Math.PI) / 180;
@@ -37427,7 +41818,9 @@ function drawRoseWedge(ctx, cx, cy, innerRadius, outerRadius, startDeg, endDeg, 
 }
 
 function drawRoseDistribution(ctx, model, cx, cy, radius) {
-  const groupsWithAngles = model.groups.filter((group) => group.angles.length > 0);
+  const groupsWithAngles = model.groups.filter(
+    (group) => group.angles.length > 0,
+  );
   if (model.mode === "groups" && groupsWithAngles.length > 0) {
     model.bins.forEach((_, binIndex) => {
       const binMin = binIndex * model.binSize;
@@ -37445,7 +41838,7 @@ function drawRoseDistribution(ctx, model, cx, cy, radius) {
             Math.min(radius, outerRadius),
             binMin,
             binMax,
-            getSafeMeasureGroupColor(group.groupColor)
+            getSafeMeasureGroupColor(group.groupColor),
           );
           innerRadius = outerRadius;
         });
@@ -37462,7 +41855,7 @@ function drawRoseDistribution(ctx, model, cx, cy, radius) {
             outerRadius,
             binMin + groupIndex * sliceSize,
             binMin + (groupIndex + 1) * sliceSize,
-            getSafeMeasureGroupColor(group.groupColor)
+            getSafeMeasureGroupColor(group.groupColor),
           );
         });
       }
@@ -37480,7 +41873,7 @@ function drawRoseDistribution(ctx, model, cx, cy, radius) {
       outerRadius,
       bin.min,
       bin.max,
-      model.defaultColor
+      model.defaultColor,
     );
   });
 }
@@ -37509,7 +41902,10 @@ function drawRoseToCanvas(ctx, model, width, height) {
     const radians = ((angle - 90) * Math.PI) / 180;
     ctx.beginPath();
     ctx.moveTo(cx, cy);
-    ctx.lineTo(cx + Math.cos(radians) * radius, cy + Math.sin(radians) * radius);
+    ctx.lineTo(
+      cx + Math.cos(radians) * radius,
+      cy + Math.sin(radians) * radius,
+    );
     ctx.stroke();
   }
 
@@ -37528,12 +41924,16 @@ function drawRoseToCanvas(ctx, model, width, height) {
   ctx.fillText("180°", cx, cy + radius + 15);
   ctx.fillText("270°", cx - radius - 19, cy + 3);
   ctx.textAlign = "left";
-  ctx.fillText(`Bin ${formatHistogramAxisNumber(model.binSize)}°`, 10, height - 10);
+  ctx.fillText(
+    `Bin ${formatHistogramAxisNumber(model.binSize)}°`,
+    10,
+    height - 10,
+  );
   ctx.textAlign = "right";
   ctx.fillText(
     model.bidirectional ? "Bidirectional" : "Directional",
     width - 10,
-    height - 10
+    height - 10,
   );
 }
 
@@ -37632,7 +42032,7 @@ function exportMeasureRoseStatsCSV() {
     .join("\n");
   saveAs(
     new Blob([csv], { type: "text/csv;charset=utf-8" }),
-    "rose-diagram-statistics.csv"
+    "rose-diagram-statistics.csv",
   );
 }
 
@@ -37645,11 +42045,21 @@ function addPdfPolygon(commands, points, color) {
         .slice(1)
         .map((point) => `${point.x.toFixed(2)} ${point.y.toFixed(2)} l`)
         .join(" ") +
-      " h f"
+      " h f",
   );
 }
 
-function addPdfRoseWedge(commands, pageHeight, cx, cy, innerRadius, outerRadius, startDeg, endDeg, color) {
+function addPdfRoseWedge(
+  commands,
+  pageHeight,
+  cx,
+  cy,
+  innerRadius,
+  outerRadius,
+  startDeg,
+  endDeg,
+  color,
+) {
   if (outerRadius <= innerRadius) return;
   const steps = Math.max(3, Math.ceil(Math.abs(endDeg - startDeg) / 5));
   const points = [];
@@ -37692,7 +42102,7 @@ function addPdfCircleApprox(commands, pageHeight, cx, cy, radius) {
         .slice(1)
         .map((point) => `${point.x.toFixed(2)} ${point.y.toFixed(2)} l`)
         .join(" ") +
-      " S"
+      " S",
   );
 }
 
@@ -37704,7 +42114,14 @@ function createMeasureRosePdf(model) {
   const cy = 178;
   const radius = 118;
   commands.push("1 1 1 rg 0 0 612 432 re f");
-  addPdfText(commands, `${model.parameterLabel} Rose Diagram`, 226, 28, 13, height);
+  addPdfText(
+    commands,
+    `${model.parameterLabel} Rose Diagram`,
+    226,
+    28,
+    13,
+    height,
+  );
   commands.push("0.82 0.82 0.82 RG 1 w");
   [0.25, 0.5, 0.75, 1].forEach((fraction) => {
     addPdfCircleApprox(commands, height, cx, cy, radius * fraction);
@@ -37714,11 +42131,13 @@ function createMeasureRosePdf(model) {
     const x = cx + Math.cos(radians) * radius;
     const y = cy + Math.sin(radians) * radius;
     commands.push(
-      `${cx.toFixed(2)} ${(height - cy).toFixed(2)} m ${x.toFixed(2)} ${(height - y).toFixed(2)} l S`
+      `${cx.toFixed(2)} ${(height - cy).toFixed(2)} m ${x.toFixed(2)} ${(height - y).toFixed(2)} l S`,
     );
   }
   if (model.angles.length > 0) {
-    const groupsWithAngles = model.groups.filter((group) => group.angles.length > 0);
+    const groupsWithAngles = model.groups.filter(
+      (group) => group.angles.length > 0,
+    );
     if (model.mode === "groups" && groupsWithAngles.length > 0) {
       model.bins.forEach((_, binIndex) => {
         const binMin = binIndex * model.binSize;
@@ -37729,7 +42148,7 @@ function createMeasureRosePdf(model) {
             const count = group.bins[binIndex]?.count || 0;
             const outerRadius = Math.min(
               radius,
-              innerRadius + (count / model.maxCount) * radius
+              innerRadius + (count / model.maxCount) * radius,
             );
             addPdfRoseWedge(
               commands,
@@ -37740,7 +42159,7 @@ function createMeasureRosePdf(model) {
               outerRadius,
               binMin,
               binMax,
-              getSafeMeasureGroupColor(group.groupColor)
+              getSafeMeasureGroupColor(group.groupColor),
             );
             innerRadius = outerRadius;
           });
@@ -37757,7 +42176,7 @@ function createMeasureRosePdf(model) {
               (count / model.maxCount) * radius,
               binMin + groupIndex * sliceSize,
               binMin + (groupIndex + 1) * sliceSize,
-              getSafeMeasureGroupColor(group.groupColor)
+              getSafeMeasureGroupColor(group.groupColor),
             );
           });
         }
@@ -37773,12 +42192,19 @@ function createMeasureRosePdf(model) {
           (bin.count / model.maxCount) * radius,
           bin.min,
           bin.max,
-          model.defaultColor
+          model.defaultColor,
         );
       });
     }
   } else {
-    addPdfText(commands, "No plottable azimuth measurements", 228, cy, 11, height);
+    addPdfText(
+      commands,
+      "No plottable azimuth measurements",
+      228,
+      cy,
+      11,
+      height,
+    );
   }
   addPdfText(commands, "0 deg", cx - 12, cy - radius - 12, 9, height);
   addPdfText(commands, "90 deg", cx + radius + 10, cy + 3, 9, height);
@@ -37790,21 +42216,37 @@ function createMeasureRosePdf(model) {
     42,
     332,
     10,
-    height
+    height,
   );
   addPdfText(commands, "Set", 42, 356, 9, height);
   addPdfText(commands, "n", 190, 356, 9, height);
   addPdfText(commands, "Mean deg", 232, 356, 9, height);
   addPdfText(commands, "R", 316, 356, 9, height);
   addPdfText(commands, "Circular SD deg", 370, 356, 9, height);
-  getMeasureRoseStatsRows(model).slice(0, 5).forEach((row, index) => {
-    const y = 374 + index * 14;
-    addPdfText(commands, row.set.slice(0, 24), 42, y, 9, height);
-    addPdfText(commands, String(row.n), 190, y, 9, height);
-    addPdfText(commands, formatRoseStat(row.meanDeg), 232, y, 9, height);
-    addPdfText(commands, formatRoseStat(row.resultantLength, 3), 316, y, 9, height);
-    addPdfText(commands, formatRoseStat(row.circularSdDeg), 370, y, 9, height);
-  });
+  getMeasureRoseStatsRows(model)
+    .slice(0, 5)
+    .forEach((row, index) => {
+      const y = 374 + index * 14;
+      addPdfText(commands, row.set.slice(0, 24), 42, y, 9, height);
+      addPdfText(commands, String(row.n), 190, y, 9, height);
+      addPdfText(commands, formatRoseStat(row.meanDeg), 232, y, 9, height);
+      addPdfText(
+        commands,
+        formatRoseStat(row.resultantLength, 3),
+        316,
+        y,
+        9,
+        height,
+      );
+      addPdfText(
+        commands,
+        formatRoseStat(row.circularSdDeg),
+        370,
+        y,
+        9,
+        height,
+      );
+    });
 
   const stream = commands.join("\n");
   const objects = [
@@ -37890,10 +42332,10 @@ function getParticleSizeMeasurements() {
           : parameter.id === "shortAxisM"
             ? getShortAxisM(result)
             : result[parameter.id];
-      const sizeMm = Number.isFinite(sizeM)
-        ? sizeM * 1000
+      const sizeMm = Number.isFinite(sizeM) ? sizeM * 1000 : null;
+      const areaMm2 = Number.isFinite(result.areaM2)
+        ? result.areaM2 * 1e6
         : null;
-      const areaMm2 = Number.isFinite(result.areaM2) ? result.areaM2 * 1e6 : null;
       if (
         !Number.isFinite(sizeMm) ||
         sizeMm <= 0 ||
@@ -37918,7 +42360,7 @@ function getParticleSizeGroupsInUse(measurements) {
     groups.set(measurement.group.groupId, measurement.group);
   });
   return [...groups.values()].sort((a, b) =>
-    a.groupName.localeCompare(b.groupName)
+    a.groupName.localeCompare(b.groupName),
   );
 }
 
@@ -37932,12 +42374,14 @@ function syncParticleSizeGroupSelection(groups) {
   measureParticleSizeKnownGroupIds = groupIds;
   measureParticleSizeSelectedGroupIds = new Set(
     [...measureParticleSizeSelectedGroupIds].filter((groupId) =>
-      groupIds.has(groupId)
-    )
+      groupIds.has(groupId),
+    ),
   );
 }
 
-function renderParticleSizeGroupControls(measurements = getParticleSizeMeasurements()) {
+function renderParticleSizeGroupControls(
+  measurements = getParticleSizeMeasurements(),
+) {
   if (!measureParticleSizeGroups) return;
   const groups = getParticleSizeGroupsInUse(measurements);
   syncParticleSizeGroupSelection(groups);
@@ -38030,11 +42474,22 @@ function updateParticleSizeRangeInputs(defaults) {
   }
   measureParticlePhiMinInput.value = formatHistogramInputValue(defaults.phiMin);
   measureParticlePhiMaxInput.value = formatHistogramInputValue(defaults.phiMax);
-  measureParticlePhiBinInput.value = formatHistogramInputValue(defaults.binSize);
+  measureParticlePhiBinInput.value = formatHistogramInputValue(
+    defaults.binSize,
+  );
 }
 
-function buildParticleDistribution(measurements, weightMode, phiMin, phiMax, binSize) {
-  const binCount = Math.min(200, Math.max(1, Math.ceil((phiMax - phiMin) / binSize)));
+function buildParticleDistribution(
+  measurements,
+  weightMode,
+  phiMin,
+  phiMax,
+  binSize,
+) {
+  const binCount = Math.min(
+    200,
+    Math.max(1, Math.ceil((phiMax - phiMin) / binSize)),
+  );
   const adjustedPhiMax = phiMin + binCount * binSize;
   const bins = Array.from({ length: binCount }, (_, index) => {
     const min = phiMin + index * binSize;
@@ -38057,7 +42512,7 @@ function buildParticleDistribution(measurements, weightMode, phiMin, phiMax, bin
     if (measurement.phi < phiMin || measurement.phi > adjustedPhiMax) return;
     const index = Math.min(
       binCount - 1,
-      Math.max(0, Math.floor((measurement.phi - phiMin) / binSize))
+      Math.max(0, Math.floor((measurement.phi - phiMin) / binSize)),
     );
     bins[index].areaMm2 += measurement.areaMm2;
     bins[index].count += 1;
@@ -38066,7 +42521,10 @@ function buildParticleDistribution(measurements, weightMode, phiMin, phiMax, bin
   const binnedWeight = bins.reduce((sum, bin) => sum + bin.weight, 0);
   const meanPhi =
     binnedWeight > 0
-      ? bins.reduce((sum, bin) => sum + bin.center * (bin.weight / binnedWeight), 0)
+      ? bins.reduce(
+          (sum, bin) => sum + bin.center * (bin.weight / binnedWeight),
+          0,
+        )
       : null;
   const sortingPhi =
     binnedWeight > 0 && Number.isFinite(meanPhi)
@@ -38074,8 +42532,8 @@ function buildParticleDistribution(measurements, weightMode, phiMin, phiMax, bin
           bins.reduce(
             (sum, bin) =>
               sum + (bin.weight / binnedWeight) * (bin.center - meanPhi) ** 2,
-            0
-          )
+            0,
+          ),
         )
       : null;
   const skewnessPhi =
@@ -38083,7 +42541,7 @@ function buildParticleDistribution(measurements, weightMode, phiMin, phiMax, bin
       ? bins.reduce(
           (sum, bin) =>
             sum + (bin.weight / binnedWeight) * (bin.center - meanPhi) ** 3,
-          0
+          0,
         ) /
         sortingPhi ** 3
       : null;
@@ -38123,7 +42581,7 @@ function buildParticleSizeModel() {
   const groupsInUse = getParticleSizeGroupsInUse(allMeasurements);
   syncParticleSizeGroupSelection(groupsInUse);
   const measurements = allMeasurements.filter((measurement) =>
-    measureParticleSizeSelectedGroupIds.has(measurement.group.groupId)
+    measureParticleSizeSelectedGroupIds.has(measurement.group.groupId),
   );
   const phiValues = measurements.map((measurement) => measurement.phi);
   const defaultPhiMin =
@@ -38157,7 +42615,7 @@ function buildParticleSizeModel() {
     weightMode,
     phiMin,
     phiMax,
-    binSize
+    binSize,
   );
   phiMax = combined.phiMax;
   const groupDistributions = groupsInUse
@@ -38166,12 +42624,12 @@ function buildParticleSizeModel() {
       ...group,
       ...buildParticleDistribution(
         measurements.filter(
-          (measurement) => measurement.group.groupId === group.groupId
+          (measurement) => measurement.group.groupId === group.groupId,
         ),
         weightMode,
         phiMin,
         phiMax,
-        binSize
+        binSize,
       ),
     }));
 
@@ -38203,11 +42661,17 @@ function buildParticleSizeModel() {
   };
 }
 
-function traceParticleCumulativeStepPath(ctx, cumulative, model, xScale, yScale) {
+function traceParticleCumulativeStepPath(
+  ctx,
+  cumulative,
+  model,
+  xScale,
+  yScale,
+) {
   if (cumulative.length === 0) return false;
   const startFraction = cumulative.reduce(
     (fraction, point) => (point.phi < model.phiMin ? point.fraction : fraction),
-    0
+    0,
   );
   let currentFraction = startFraction;
   ctx.beginPath();
@@ -38229,7 +42693,8 @@ function drawParticleSizeToCanvas(ctx, model, width, height) {
   const plotWidth = width - padding.left - padding.right;
   const plotHeight = height - padding.top - padding.bottom;
   const xScale = (phi) =>
-    padding.left + ((phi - model.phiMin) / (model.phiMax - model.phiMin)) * plotWidth;
+    padding.left +
+    ((phi - model.phiMin) / (model.phiMax - model.phiMin)) * plotWidth;
   const yScale = (fraction) => padding.top + plotHeight - fraction * plotHeight;
   const getBinDisplayValue = (bin) =>
     model.weightMode === "area" && model.totalWeight > 0
@@ -38244,14 +42709,16 @@ function drawParticleSizeToCanvas(ctx, model, width, height) {
           if (model.stacked) {
             return activeGroups.reduce(
               (sum, group) => sum + getBinDisplayValue(group.bins[binIndex]),
-              0
+              0,
             );
           }
           return Math.max(
             0,
-            ...activeGroups.map((group) => getBinDisplayValue(group.bins[binIndex]))
+            ...activeGroups.map((group) =>
+              getBinDisplayValue(group.bins[binIndex]),
+            ),
           );
-        })
+        }),
       )
     : 1;
 
@@ -38276,11 +42743,19 @@ function drawParticleSizeToCanvas(ctx, model, width, height) {
   ctx.fillStyle = "#222";
   ctx.font = "12px sans-serif";
   ctx.textAlign = "center";
-  ctx.fillText(`${model.weightMode === "area" ? "Area-weighted" : "Unweighted"} ${model.parameter.label} grain size`, padding.left + plotWidth / 2, 15);
+  ctx.fillText(
+    `${model.weightMode === "area" ? "Area-weighted" : "Unweighted"} ${model.parameter.label} grain size`,
+    padding.left + plotWidth / 2,
+    15,
+  );
 
   if (model.measurements.length === 0 || model.binnedWeight <= 0) {
     ctx.fillStyle = "#666";
-    ctx.fillText(`No valid ${model.parameter.label} measurements`, width / 2, height / 2);
+    ctx.fillText(
+      `No valid ${model.parameter.label} measurements`,
+      width / 2,
+      height / 2,
+    );
     return;
   }
 
@@ -38307,7 +42782,7 @@ function drawParticleSizeToCanvas(ctx, model, width, height) {
               x,
               padding.top + plotHeight - stackedOffset - barHeight,
               fullBarWidth,
-              barHeight
+              barHeight,
             );
             ctx.globalAlpha = 1;
             ctx.strokeStyle = "#000";
@@ -38315,7 +42790,7 @@ function drawParticleSizeToCanvas(ctx, model, width, height) {
               x,
               padding.top + plotHeight - stackedOffset - barHeight,
               fullBarWidth,
-              barHeight
+              barHeight,
             );
             stackedOffset += barHeight;
           });
@@ -38330,7 +42805,7 @@ function drawParticleSizeToCanvas(ctx, model, width, height) {
               x + groupIndex * groupWidth,
               padding.top + plotHeight - barHeight,
               Math.max(1, groupWidth - 1),
-              barHeight
+              barHeight,
             );
             ctx.globalAlpha = 1;
             ctx.strokeStyle = "#000";
@@ -38338,7 +42813,7 @@ function drawParticleSizeToCanvas(ctx, model, width, height) {
               x + groupIndex * groupWidth,
               padding.top + plotHeight - barHeight,
               Math.max(1, groupWidth - 1),
-              barHeight
+              barHeight,
             );
           });
         }
@@ -38346,9 +42821,19 @@ function drawParticleSizeToCanvas(ctx, model, width, height) {
       } else {
         const barHeight = (getBinDisplayValue(bin) / yMax) * plotHeight;
         ctx.fillStyle = model.defaultColor;
-        ctx.fillRect(x, padding.top + plotHeight - barHeight, fullBarWidth, barHeight);
+        ctx.fillRect(
+          x,
+          padding.top + plotHeight - barHeight,
+          fullBarWidth,
+          barHeight,
+        );
         ctx.strokeStyle = "#000";
-        ctx.strokeRect(x, padding.top + plotHeight - barHeight, fullBarWidth, barHeight);
+        ctx.strokeRect(
+          x,
+          padding.top + plotHeight - barHeight,
+          fullBarWidth,
+          barHeight,
+        );
       }
     });
   }
@@ -38357,12 +42842,16 @@ function drawParticleSizeToCanvas(ctx, model, width, height) {
     const drawCumulative = (cumulative, color) => {
       if (cumulative.length === 0) return;
       ctx.lineJoin = "round";
-      if (traceParticleCumulativeStepPath(ctx, cumulative, model, xScale, yScale)) {
+      if (
+        traceParticleCumulativeStepPath(ctx, cumulative, model, xScale, yScale)
+      ) {
         ctx.strokeStyle = "#fff";
         ctx.lineWidth = 3.6;
         ctx.stroke();
       }
-      if (!traceParticleCumulativeStepPath(ctx, cumulative, model, xScale, yScale)) {
+      if (
+        !traceParticleCumulativeStepPath(ctx, cumulative, model, xScale, yScale)
+      ) {
         return;
       }
       ctx.strokeStyle = color;
@@ -38372,7 +42861,10 @@ function drawParticleSizeToCanvas(ctx, model, width, height) {
     };
     if (model.mode === "groups") {
       activeGroups.forEach((group) =>
-        drawCumulative(group.cumulative, getSafeMeasureGroupColor(group.groupColor))
+        drawCumulative(
+          group.cumulative,
+          getSafeMeasureGroupColor(group.groupColor),
+        ),
       );
     } else {
       drawCumulative(model.cumulative, model.defaultColor);
@@ -38407,17 +42899,25 @@ function drawParticleSizeToCanvas(ctx, model, width, height) {
         ? `${formatHistogramAxisNumber(yMax)}%`
         : formatHistogramAxisNumber(yMax),
       padding.left - 5,
-      padding.top + 4
+      padding.top + 4,
     );
     ctx.fillText("0", padding.left - 5, padding.top + plotHeight + 3);
   }
   if (model.showCumulative) {
     ctx.textAlign = "left";
     ctx.fillText("100%", padding.left + plotWidth + 5, padding.top + 4);
-    ctx.fillText("0", padding.left + plotWidth + 5, padding.top + plotHeight + 3);
+    ctx.fillText(
+      "0",
+      padding.left + plotWidth + 5,
+      padding.top + plotHeight + 3,
+    );
   }
   ctx.textAlign = "center";
-  ctx.fillText(`${model.parameter.label} (ɸ)`, padding.left + plotWidth / 2, height - 10);
+  ctx.fillText(
+    `${model.parameter.label} (ɸ)`,
+    padding.left + plotWidth / 2,
+    height - 10,
+  );
 
   const firstTick = Math.ceil(model.phiMin);
   const lastTick = Math.floor(model.phiMax);
@@ -38457,7 +42957,11 @@ function getParticleMeasurementWeight(measurement, weightMode) {
   return weightMode === "area" ? measurement.areaMm2 : 1;
 }
 
-function getWeightedParticlePhiPercentile(measurements, weightMode, probability) {
+function getWeightedParticlePhiPercentile(
+  measurements,
+  weightMode,
+  probability,
+) {
   const weighted = measurements
     .map((measurement) => ({
       phi: measurement.phi,
@@ -38467,7 +42971,7 @@ function getWeightedParticlePhiPercentile(measurements, weightMode, probability)
       (entry) =>
         Number.isFinite(entry.phi) &&
         Number.isFinite(entry.weight) &&
-        entry.weight > 0
+        entry.weight > 0,
     )
     .sort((a, b) => a.phi - b.phi);
   if (weighted.length === 0) return null;
@@ -38518,7 +43022,7 @@ function getParticleSizeExportRows(model) {
       const phi = getWeightedParticlePhiPercentile(
         distribution?.measurements || [],
         model.weightMode,
-        percentileValue / 100
+        percentileValue / 100,
       );
       const key = `d${String(percentileValue).padStart(2, "0")}`;
       row[`${key}_phi`] = phi;
@@ -38596,12 +43100,13 @@ function exportMeasureParticleSizeStatsCSV() {
     .join("\n");
   saveAs(
     new Blob([csv], { type: "text/csv;charset=utf-8" }),
-    "particle-size-statistics.csv"
+    "particle-size-statistics.csv",
   );
 }
 
 function drawMeasureParticleSize() {
-  if (!measureParticleSizeCanvas || measureParticleSizeMenu?.hidden) return null;
+  if (!measureParticleSizeCanvas || measureParticleSizeMenu?.hidden)
+    return null;
   const model = buildParticleSizeModel();
   const rect = measureParticleSizeCanvas.getBoundingClientRect();
   const ratio = window.devicePixelRatio || 1;
@@ -38616,7 +43121,8 @@ function drawMeasureParticleSize() {
   if (exportMeasureParticleSizeButton) {
     exportMeasureParticleSizeButton.disabled =
       model.measurements.length === 0 || model.binnedWeight <= 0;
-    exportMeasureParticleSizeButton.title = "Export particle size analysis as PDF";
+    exportMeasureParticleSizeButton.title =
+      "Export particle size analysis as PDF";
   }
   return model;
 }
@@ -38631,13 +43137,15 @@ function renderMeasureParticleSizeMenu() {
 function updateParticleSizeControlState() {
   if (measureParticleStacked && measureParticleSizeMode) {
     measureParticleStacked.disabled =
-      measureParticleSizeMode.value !== "groups" || !shouldShowParticleHistogram();
+      measureParticleSizeMode.value !== "groups" ||
+      !shouldShowParticleHistogram();
   }
 }
 
 function updateMeasureParticleSizeAvailability() {
   if (!measureParticleSizeButton) return;
-  measureParticleSizeButton.disabled = getParticleSizeMeasurements().length === 0;
+  measureParticleSizeButton.disabled =
+    getParticleSizeMeasurements().length === 0;
 }
 
 function openMeasureParticleSizeMenu(button) {
@@ -38669,7 +43177,8 @@ function createMeasureParticleSizePdf(model) {
   const commands = [];
   const pdfY = (y) => height - y;
   const xScale = (phi) =>
-    padding.left + ((phi - model.phiMin) / (model.phiMax - model.phiMin)) * plotWidth;
+    padding.left +
+    ((phi - model.phiMin) / (model.phiMax - model.phiMin)) * plotWidth;
   const yScale = (fraction) => padding.top + plotHeight - fraction * plotHeight;
   const getBinDisplayValue = (bin) =>
     model.weightMode === "area" && model.totalWeight > 0
@@ -38679,8 +43188,9 @@ function createMeasureParticleSizePdf(model) {
   const getCumulativePdfPath = (cumulative) => {
     if (cumulative.length === 0) return "";
     const startFraction = cumulative.reduce(
-      (fraction, point) => (point.phi < model.phiMin ? point.fraction : fraction),
-      0
+      (fraction, point) =>
+        point.phi < model.phiMin ? point.fraction : fraction,
+      0,
     );
     let currentFraction = startFraction;
     const parts = [
@@ -38694,22 +43204,26 @@ function createMeasureParticleSizePdf(model) {
       currentFraction = point.fraction;
     });
     parts.push(
-      `${xScale(model.phiMax).toFixed(2)} ${pdfY(yScale(currentFraction)).toFixed(2)} l`
+      `${xScale(model.phiMax).toFixed(2)} ${pdfY(yScale(currentFraction)).toFixed(2)} l`,
     );
     return parts.join(" ");
   };
 
   commands.push("1 1 1 rg 0 0 612 432 re f");
   commands.push("0.15 0.15 0.15 RG 1 w");
-  commands.push(`${padding.left} ${pdfY(padding.top)} m ${padding.left} ${pdfY(padding.top + plotHeight)} l ${padding.left + plotWidth} ${pdfY(padding.top + plotHeight)} l S`);
-  commands.push(`${padding.left + plotWidth} ${pdfY(padding.top)} m ${padding.left + plotWidth} ${pdfY(padding.top + plotHeight)} l S`);
+  commands.push(
+    `${padding.left} ${pdfY(padding.top)} m ${padding.left} ${pdfY(padding.top + plotHeight)} l ${padding.left + plotWidth} ${pdfY(padding.top + plotHeight)} l S`,
+  );
+  commands.push(
+    `${padding.left + plotWidth} ${pdfY(padding.top)} m ${padding.left + plotWidth} ${pdfY(padding.top + plotHeight)} l S`,
+  );
   addPdfText(
     commands,
     `${model.weightMode === "area" ? "Area-weighted" : "Unweighted"} ${model.parameter.label} grain size`,
     padding.left + plotWidth / 2 - 100,
     24,
     13,
-    height
+    height,
   );
 
   if (model.measurements.length > 0 && model.binnedWeight > 0) {
@@ -38718,30 +43232,63 @@ function createMeasureParticleSizePdf(model) {
         const x = xScale(bin.min);
         const nextX = xScale(bin.max);
         const barHeight = (getBinDisplayValue(bin) / yMax) * plotHeight;
-        commands.push(`${hexToPdfRgb(model.defaultColor)} rg 0 0 0 RG ${x.toFixed(2)} ${pdfY(padding.top + plotHeight).toFixed(2)} ${Math.max(1, nextX - x - 1).toFixed(2)} ${barHeight.toFixed(2)} re B`);
+        commands.push(
+          `${hexToPdfRgb(model.defaultColor)} rg 0 0 0 RG ${x.toFixed(2)} ${pdfY(padding.top + plotHeight).toFixed(2)} ${Math.max(1, nextX - x - 1).toFixed(2)} ${barHeight.toFixed(2)} re B`,
+        );
       });
     }
     if (model.showCumulative) {
       const cumulativePath = getCumulativePdfPath(model.cumulative);
       if (cumulativePath) {
         commands.push(`1 1 1 RG 3.6 w ${cumulativePath} S`);
-        commands.push(`${hexToPdfRgb(model.defaultColor)} RG 1.5 w ${cumulativePath} S`);
+        commands.push(
+          `${hexToPdfRgb(model.defaultColor)} RG 1.5 w ${cumulativePath} S`,
+        );
       }
     }
     if (Number.isFinite(model.meanPhi)) {
       const x = xScale(model.meanPhi);
       commands.push("0.820 0.184 0.184 RG 1.5 w");
-      commands.push(`${x.toFixed(2)} ${pdfY(padding.top).toFixed(2)} m ${x.toFixed(2)} ${pdfY(padding.top + plotHeight).toFixed(2)} l S`);
+      commands.push(
+        `${x.toFixed(2)} ${pdfY(padding.top).toFixed(2)} m ${x.toFixed(2)} ${pdfY(padding.top + plotHeight).toFixed(2)} l S`,
+      );
     }
   }
 
-  for (let tick = Math.ceil(model.phiMin); tick <= Math.floor(model.phiMax); tick += 1) {
+  for (
+    let tick = Math.ceil(model.phiMin);
+    tick <= Math.floor(model.phiMax);
+    tick += 1
+  ) {
     const x = xScale(tick);
-    commands.push(`0.45 0.45 0.45 RG 0.8 w ${x.toFixed(2)} ${pdfY(padding.top + plotHeight).toFixed(2)} m ${x.toFixed(2)} ${pdfY(padding.top + plotHeight + 4).toFixed(2)} l S`);
-    addPdfText(commands, String(tick), x - 3, padding.top + plotHeight + 30, 8, height);
+    commands.push(
+      `0.45 0.45 0.45 RG 0.8 w ${x.toFixed(2)} ${pdfY(padding.top + plotHeight).toFixed(2)} m ${x.toFixed(2)} ${pdfY(padding.top + plotHeight + 4).toFixed(2)} l S`,
+    );
+    addPdfText(
+      commands,
+      String(tick),
+      x - 3,
+      padding.top + plotHeight + 30,
+      8,
+      height,
+    );
   }
-  addPdfText(commands, `${model.parameter.label} (phi)`, padding.left + plotWidth / 2 - 30, height - 42, 10, height);
-  addPdfRotatedText(commands, model.yAxisLabel, 24, padding.top + plotHeight / 2 + 28, 10, height);
+  addPdfText(
+    commands,
+    `${model.parameter.label} (phi)`,
+    padding.left + plotWidth / 2 - 30,
+    height - 42,
+    10,
+    height,
+  );
+  addPdfRotatedText(
+    commands,
+    model.yAxisLabel,
+    24,
+    padding.top + plotHeight / 2 + 28,
+    10,
+    height,
+  );
   addPdfText(
     commands,
     model.weightMode === "area"
@@ -38750,10 +43297,24 @@ function createMeasureParticleSizePdf(model) {
     padding.left - 36,
     padding.top + 4,
     9,
-    height
+    height,
   );
-  addPdfText(commands, "100%", padding.left + plotWidth + 8, padding.top + 4, 9, height);
-  addPdfText(commands, `n = ${model.measurements.length}; mean = ${formatHistogramAxisNumber(model.meanPhi)} phi (${model.meanCategory}); sorting = ${formatHistogramAxisNumber(model.sortingPhi)} phi (${model.sortingCategory}); skewness = ${formatHistogramAxisNumber(model.skewnessPhi)} (${model.skewnessCategory})`, padding.left, height - 24, 9, height);
+  addPdfText(
+    commands,
+    "100%",
+    padding.left + plotWidth + 8,
+    padding.top + 4,
+    9,
+    height,
+  );
+  addPdfText(
+    commands,
+    `n = ${model.measurements.length}; mean = ${formatHistogramAxisNumber(model.meanPhi)} phi (${model.meanCategory}); sorting = ${formatHistogramAxisNumber(model.sortingPhi)} phi (${model.sortingCategory}); skewness = ${formatHistogramAxisNumber(model.skewnessPhi)} (${model.skewnessCategory})`,
+    padding.left,
+    height - 24,
+    9,
+    height,
+  );
 
   const stream = commands.join("\n");
   const objects = [
@@ -38787,7 +43348,10 @@ function exportMeasureParticleSizePDF() {
   saveAs(createMeasureParticleSizePdf(model), "particle-size-analysis.pdf");
 }
 
-measureSelectedAnnotationsButton?.addEventListener("click", measureSelectedAnnotations);
+measureSelectedAnnotationsButton?.addEventListener(
+  "click",
+  measureSelectedAnnotations,
+);
 measureScaleAuditButton?.addEventListener("click", function (event) {
   event.stopPropagation();
   toggleMeasureScaleAuditPopover();
@@ -38812,9 +43376,13 @@ measureGroupColorInput?.addEventListener("change", function (event) {
 renameMeasureGroupButton?.addEventListener("click", function () {
   const group = getMeasureGroupById(activeMeasureGroupId);
   if (!group) return;
-  showPrompt("Rename group:", (value) => {
-    renameMeasureGroup(group.groupId, value);
-  }, group.groupName);
+  showPrompt(
+    "Rename group:",
+    (value) => {
+      renameMeasureGroup(group.groupId, value);
+    },
+    group.groupName,
+  );
 });
 newMeasureGroupButton?.addEventListener("click", function () {
   showPrompt("Enter the group name:", createMeasureGroup);
@@ -38862,10 +43430,13 @@ transformImageryHelpButton?.addEventListener("click", function (event) {
 transformImageryHelpDialog?.addEventListener("click", function (event) {
   event.stopPropagation();
 });
-makeFixedElementDraggable(transformImageryHelpDialog, transformImageryHelpHeader);
+makeFixedElementDraggable(
+  transformImageryHelpDialog,
+  transformImageryHelpHeader,
+);
 closeTransformImageryHelpButton?.addEventListener(
   "click",
-  closeTransformImageryHelpDialog
+  closeTransformImageryHelpDialog,
 );
 porosityHelpButton?.addEventListener("click", function (event) {
   event.stopPropagation();
@@ -38949,7 +43520,10 @@ measureHistogramMenu?.addEventListener("click", function (event) {
   event.stopPropagation();
 });
 makeFixedElementDraggable(measureHistogramMenu, measureHistogramHeader);
-closeMeasureHistogramButton?.addEventListener("click", closeMeasureHistogramMenu);
+closeMeasureHistogramButton?.addEventListener(
+  "click",
+  closeMeasureHistogramMenu,
+);
 measureHistogramParameter?.addEventListener("change", function () {
   measureHistogramRangeEdited = false;
   drawMeasureHistogram();
@@ -38982,10 +43556,13 @@ measureHistogramBinSizeInput?.addEventListener("change", function () {
 });
 measureHistogramStackedInput?.addEventListener("change", drawMeasureHistogram);
 measureHistogramColorInput?.addEventListener("input", drawMeasureHistogram);
-exportMeasureHistogramButton?.addEventListener("click", exportMeasureHistogramPDF);
+exportMeasureHistogramButton?.addEventListener(
+  "click",
+  exportMeasureHistogramPDF,
+);
 exportMeasureHistogramStatsButton?.addEventListener(
   "click",
-  exportMeasureHistogramStatsCSV
+  exportMeasureHistogramStatsCSV,
 );
 measureScatterButton?.addEventListener("click", function (event) {
   event.stopPropagation();
@@ -39046,7 +43623,7 @@ measureScatterOpacityInput?.addEventListener("change", function () {
 exportMeasureScatterButton?.addEventListener("click", exportMeasureScatterPDF);
 exportMeasureScatterStatsButton?.addEventListener(
   "click",
-  exportMeasureScatterStatsCSV
+  exportMeasureScatterStatsCSV,
 );
 measureRoseButton?.addEventListener("click", function (event) {
   event.stopPropagation();
@@ -39078,14 +43655,14 @@ measureRoseColorInput?.addEventListener("input", drawMeasureRose);
 measureRoseBinSizeInput?.addEventListener("input", function () {
   validatePositiveNumberInput(
     measureRoseBinSizeInput,
-    "Rose bin size must be greater than 0."
+    "Rose bin size must be greater than 0.",
   );
   drawMeasureRose();
 });
 measureRoseBinSizeInput?.addEventListener("change", function () {
   normalizePositiveNumberInput(
     measureRoseBinSizeInput,
-    MEASURE_ROSE_DEFAULT_BIN_SIZE
+    MEASURE_ROSE_DEFAULT_BIN_SIZE,
   );
   drawMeasureRose();
 });
@@ -39094,7 +43671,7 @@ measureRoseStackedInput?.addEventListener("change", drawMeasureRose);
 exportMeasureRoseButton?.addEventListener("click", exportMeasureRosePDF);
 exportMeasureRoseStatsButton?.addEventListener(
   "click",
-  exportMeasureRoseStatsCSV
+  exportMeasureRoseStatsCSV,
 );
 measureParticleSizeButton?.addEventListener("click", function (event) {
   event.stopPropagation();
@@ -39118,7 +43695,7 @@ measureParticleSizeMenu?.addEventListener("click", function (event) {
 makeFixedElementDraggable(measureParticleSizeMenu, measureParticleSizeHeader);
 closeMeasureParticleSizeButton?.addEventListener(
   "click",
-  closeMeasureParticleSizeMenu
+  closeMeasureParticleSizeMenu,
 );
 measureParticleSizeParameter?.addEventListener("change", function () {
   measureParticleSizeRangeEdited = false;
@@ -39140,7 +43717,10 @@ measureParticleShowHistogram?.addEventListener("change", function () {
   updateParticleSizeControlState();
   drawMeasureParticleSize();
 });
-measureParticleShowCumulative?.addEventListener("change", drawMeasureParticleSize);
+measureParticleShowCumulative?.addEventListener(
+  "change",
+  drawMeasureParticleSize,
+);
 measureParticleStacked?.addEventListener("change", drawMeasureParticleSize);
 measureParticleColorInput?.addEventListener("input", drawMeasureParticleSize);
 [
@@ -39153,7 +43733,7 @@ measureParticleColorInput?.addEventListener("input", drawMeasureParticleSize);
     if (input === measureParticlePhiBinInput) {
       validatePositiveNumberInput(
         measureParticlePhiBinInput,
-        "Particle size bin size must be greater than 0."
+        "Particle size bin size must be greater than 0.",
       );
     }
     drawMeasureParticleSize();
@@ -39166,11 +43746,11 @@ measureParticlePhiBinInput?.addEventListener("change", function () {
 });
 exportMeasureParticleSizeButton?.addEventListener(
   "click",
-  exportMeasureParticleSizePDF
+  exportMeasureParticleSizePDF,
 );
 exportMeasureParticleSizeStatsButton?.addEventListener(
   "click",
-  exportMeasureParticleSizeStatsCSV
+  exportMeasureParticleSizeStatsCSV,
 );
 window.addEventListener("click", function (event) {
   if (
@@ -39295,7 +43875,7 @@ document.addEventListener(
     closeMeasureRoseMenu();
     closeMeasureParticleSizeMenu();
   },
-  true
+  true,
 );
 window.addEventListener("resize", refreshOpenMeasureAnalysisMenus);
 clearMeasurementsButton?.addEventListener("click", function () {
@@ -39381,10 +43961,13 @@ function refreshAnnotationFloaters(event = {}) {
     measurementModeActive && activeMeasureTool === "line";
   const isMeasurePolygonFloater =
     measurementModeActive && activeMeasureTool === "polygon";
-  polylineFloater.classList.toggle("measure-floater-active", isMeasureLineFloater);
+  polylineFloater.classList.toggle(
+    "measure-floater-active",
+    isMeasureLineFloater,
+  );
   polygonFloater.classList.toggle(
     "measure-floater-active",
-    isMeasurePolygonFloater
+    isMeasurePolygonFloater,
   );
 
   if (isQPressed || isPointMode) {
@@ -39427,7 +44010,7 @@ viewer.addHandler("canvas-drag", function (event) {
       "points",
       `${x + 5},${y + -5} ${x + 15},${y + -5} ${x + 15},${y + 5} ${x + 5},${
         y + 5
-      } ${x + 5},${y + -5}`
+      } ${x + 5},${y + -5}`,
     );
   }
 });
@@ -39461,7 +44044,7 @@ function togglePolylineFloaterOn(enable) {
     const y = currentMousePos.y;
     polylineFloater.setAttribute(
       "points",
-      `${x + 5},${y + -5} ${x + 15},${y + 5}`
+      `${x + 5},${y + -5} ${x + 15},${y + 5}`,
     );
   }
 }
@@ -39476,7 +44059,7 @@ function toggleRectFloaterOn(enable) {
       "points",
       `${x + 5},${y + -5} ${x + 15},${y + -5} ${x + 15},${y + 5} ${x + 5},${
         y + 5
-      } ${x + 5},${y + -5}`
+      } ${x + 5},${y + -5}`,
     );
   }
 }
@@ -39501,7 +44084,7 @@ function togglePolygonFloaterOn(enable) {
       "points",
       `${x + 5},${y + -5} ${x + 20},${y + -5} ${x + 15},${y + 5} ${x + 5},${
         y + 5
-      } ${x + 5},${y + -5}`
+      } ${x + 5},${y + -5}`,
     );
   }
 }
@@ -39531,7 +44114,7 @@ function toggleEllipseFloaterOn(enable) {
        ${x + 5.55 + xoffset},${y + -1.18 + yoffset}
        ${x + 7.36 + xoffset},${y + 2.1 + yoffset}
        ${x + 7.9 + xoffset},${y + 5.02 + yoffset}
-       ${x + 7.07 + xoffset},${y + 7.07 + yoffset}`
+       ${x + 7.07 + xoffset},${y + 7.07 + yoffset}`,
     );
   }
 }
@@ -39834,7 +44417,7 @@ stageRotationValue.addEventListener("change", () => {
 
 function updateStageRotationCheck() {
   enableStageRotation = samples[currentIndex].tileSets.some(
-    (tileSet) => "periodDegrees" in tileSet
+    (tileSet) => "periodDegrees" in tileSet,
   );
 
   const stageSlider = document.getElementById("stageRotation");
@@ -39895,7 +44478,7 @@ viewer.addHandler("canvas-scroll", function (event) {
 
     const delta = e.deltaY;
     const currentRotation = parseInt(
-      document.getElementById("stageRotation").value
+      document.getElementById("stageRotation").value,
     );
     const newRotation = currentRotation + delta * ROTATION_SENSITIVITY;
     const positiveRotation = ((newRotation % 360) + 360) % 360;
@@ -39936,13 +44519,13 @@ viewer.addHandler("canvas-scroll", function (event) {
 // Attempt to improve performance when adding annotations
 // Only once during initialization:
 document.addEventListener("keydown", function (event) {
-	  if (event.key === "Escape") {
-	    setAnnotationMoveMode(false);
-	    setAnnotationLabelMoveMode(false);
-	    exitAnnotationVertexEditMode();
-	    exitAnnotationShapeEditMode();
-	    removeTemporaryPoints();
-	  }
+  if (event.key === "Escape") {
+    setAnnotationMoveMode(false);
+    setAnnotationLabelMoveMode(false);
+    exitAnnotationVertexEditMode();
+    exitAnnotationShapeEditMode();
+    removeTemporaryPoints();
+  }
 });
 
 viewerContainer.addEventListener("mousemove", function (subevent) {
@@ -39961,23 +44544,28 @@ viewerContainer.addEventListener("mousemove", function (subevent) {
   const image = viewer.world.getItemAt(0);
   const imagePoint = image.viewportToImageCoordinates(
     viewportPoint.x,
-    viewportPoint.y
+    viewportPoint.y,
   );
 
   const labelFontSize = Number(
-    document.getElementById("annoLabelFontSize").value
+    document.getElementById("annoLabelFontSize").value,
   );
   currentPolyStyleColors = getCurrentAnnotationStyleColors(
-    currentPolyStyleColors
+    currentPolyStyleColors,
   );
   const labelFontColor = currentPolyStyleColors.labelFontColor;
   const labelBackgroundColor = currentPolyStyleColors.labelBackgroundColor;
-  const labelBackgroundOpacity = getAnnotationOpacityValue("annoLabelBackgroundOpacity");
+  const labelBackgroundOpacity = getAnnotationOpacityValue(
+    "annoLabelBackgroundOpacity",
+  );
   const lineWeight = Number(document.getElementById("lineWeight").value);
   const lineColor = currentPolyStyleColors.lineColor;
   const lineStyle = document.getElementById("lineStyle").value;
   const lineOpacity = getAnnotationOpacityValue("lineOpacity");
-  const draftCoordinates = [...clickImageCoordinates, [imagePoint.x, imagePoint.y]];
+  const draftCoordinates = [
+    ...clickImageCoordinates,
+    [imagePoint.x, imagePoint.y],
+  ];
   const draftStyle = {
     labelFontSize,
     labelFontColor,
@@ -39995,7 +44583,7 @@ viewerContainer.addEventListener("mousemove", function (subevent) {
     addPolygonToGeoJSON(
       annoJSONTemp,
       getClosedDraftPolygonCoordinates(draftCoordinates),
-      draftStyle
+      draftStyle,
     );
   } else {
     addPolylineToGeoJSON(annoJSONTemp, draftCoordinates, draftStyle);
@@ -40012,7 +44600,8 @@ function recordGridControlHistory(label = "Change grid setting") {
   }
 
   if (
-    JSON.stringify(currentState) === JSON.stringify(lastCommittedGridControlState)
+    JSON.stringify(currentState) ===
+    JSON.stringify(lastCommittedGridControlState)
   ) {
     return;
   }
@@ -40030,7 +44619,7 @@ setTimeout(() => {
     if (!element) return;
     element.addEventListener("change", () => {
       recordGridControlHistory(
-        GRID_CONTROL_HISTORY_LABELS[id] || "Change grid setting"
+        GRID_CONTROL_HISTORY_LABELS[id] || "Change grid setting",
       );
     });
   });

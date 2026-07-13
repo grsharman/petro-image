@@ -6,7 +6,7 @@
   "main": "main.js",
   "scripts": {
     "start": "electron-forge start",
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "node --test test/*.test.cjs",
     "package": "electron-forge package",
     "make": "electron-forge make",
     "dist": "electron-builder"

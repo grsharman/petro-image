@@ -3786,6 +3786,180 @@ input[type="range"] {
   padding: 2px;
 }
 
+.porosity-analysis-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 4px;
+}
+
+.porosity-analysis-actions #porosityThicknessButton {
+  width: 24px;
+  min-width: 24px;
+  padding: 2px;
+}
+
+.porosity-thickness-menu .measure-histogram-range-controls {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.porosity-thickness-menu .measure-histogram-controls {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.porosity-thickness-options {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.porosity-thickness-log-base {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+}
+
+.porosity-thickness-log-base select {
+  height: 22px;
+  padding: 1px 14px 1px 4px;
+  font-size: 11px;
+}
+
+.porosity-thickness-overlay-panel {
+  margin-top: 6px;
+  font-size: 11px;
+}
+
+.porosity-thickness-overlay-panel > label,
+.porosity-thickness-overlay-grid label,
+.porosity-thickness-overlay-range label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.porosity-thickness-overlay-actions {
+  display: grid;
+  gap: 5px;
+  margin: 5px 0;
+}
+
+.porosity-thickness-calculate-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 24px;
+  gap: 5px;
+}
+
+.porosity-thickness-calculate-row > button {
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+  padding-inline: 3px;
+  white-space: normal;
+  font-size: 10px;
+}
+
+.porosity-thickness-calculate-row #porosityThicknessButton {
+  width: 24px;
+  min-width: 24px;
+  padding: 2px;
+}
+
+.porosity-thickness-method {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 82px;
+  align-items: center;
+  gap: 6px;
+}
+
+.porosity-thickness-method > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.porosity-thickness-method select {
+  width: 82px;
+  min-width: 0;
+  max-width: 100%;
+  height: 22px;
+  font-size: 11px;
+}
+
+.porosity-thickness-overlay-actions label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.porosity-thickness-status-panel {
+  margin-top: 6px;
+  padding: 6px;
+  border: 1px solid #d0d0d0;
+  border-radius: 3px;
+  background: #f7f7f7;
+  color: #333;
+  font-size: 11px;
+}
+
+.porosity-thickness-status-track {
+  height: 5px;
+  margin-top: 5px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: #dddddd;
+}
+
+.porosity-thickness-status-track span {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: #2f80ed;
+  transition: width 120ms linear;
+}
+
+.porosity-thickness-overlay-grid,
+.porosity-thickness-overlay-range {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px 8px;
+  margin: 5px 0;
+}
+
+.porosity-thickness-overlay-grid,
+.porosity-thickness-overlay-range {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 4px;
+}
+
+.porosity-thickness-overlay-grid label,
+.porosity-thickness-overlay-range label {
+  justify-content: space-between;
+}
+
+.porosity-thickness-overlay-grid select,
+.porosity-thickness-overlay-grid input,
+.porosity-thickness-overlay-range input {
+  box-sizing: border-box;
+  width: 96px;
+  max-width: 58%;
+  min-width: 0;
+  height: 22px;
+  font-size: 11px;
+}
+
+.porosity-thickness-overlay-gradient {
+  height: 10px;
+  margin-top: 5px;
+  border: 1px solid #999;
+  background: linear-gradient(90deg, #440154, #21918c, #fde725);
+}
+
+.porosity-thickness-overlay-legend-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+}
+
 .measure-histogram-menu,
 .measure-scatter-menu,
 .measure-rose-menu,
@@ -3831,6 +4005,15 @@ input[type="range"] {
 .measure-histogram-header #closeMeasureScatterButton,
 .measure-histogram-header #closeMeasureRoseButton,
 .measure-histogram-header #closeMeasureParticleSizeButton {
+  width: 22px;
+  min-width: 22px;
+  height: 22px;
+  margin-left: auto;
+  padding: 0;
+  line-height: 1;
+}
+
+.measure-histogram-header #closePorosityThicknessButton {
   width: 22px;
   min-width: 22px;
   height: 22px;
@@ -4048,6 +4231,12 @@ input[type="range"] {
 #exportMeasureRoseStatsButton,
 #exportMeasureParticleSizeStatsButton,
 #exportMeasureParticleSizeButton {
+  width: 100%;
+  font-size: 11px;
+}
+
+#exportPorosityThicknessButton,
+#exportPorosityThicknessStatsButton {
   width: 100%;
   font-size: 11px;
 }
@@ -4633,6 +4822,64 @@ input[type="range"] {
   min-width: 0;
 }
 
+.porosity-palette-body > *,
+.porosity-workflow-panel > *,
+.porosity-thickness-overlay-panel,
+.porosity-thickness-overlay-panel > * {
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.porosity-palette-body button,
+.porosity-palette-body input,
+.porosity-palette-body select,
+.porosity-palette-body label,
+.porosity-palette-body span {
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+.porosity-palette-body label,
+.porosity-palette-body span {
+  overflow-wrap: anywhere;
+}
+
+.porosity-palette-body .snapshot-field,
+.porosity-palette-body .snapshot-field > input,
+.porosity-palette-body .snapshot-field > select,
+.porosity-palette-body .snapshot-field > span:last-child {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.porosity-workflow-panel {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  padding: 4px 5px 5px;
+  border: 1px solid #d2d2d2;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.66);
+}
+
+.porosity-workflow-panel > summary {
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.porosity-workflow-panel[open] > summary {
+  margin-bottom: 5px;
+}
+
+.porosity-workflow-panel[open] {
+  display: grid;
+  gap: 4px;
+}
+
 .porosity-type-row {
   display: flex;
   align-items: end;
@@ -4640,11 +4887,15 @@ input[type="range"] {
 }
 
 .porosity-type-field {
-  flex: 1 1 auto;
+  flex: 0 1 70px;
+  width: 70px;
   min-width: 0;
+  overflow: hidden;
 }
 
 .porosity-type-field select {
+  width: 100%;
+  max-width: 100%;
   min-width: 0;
 }
 
@@ -4663,7 +4914,6 @@ input[type="range"] {
 .porosity-tile-set-field select {
   width: 100%;
   min-width: 0;
-  max-width: none;
 }
 
 .porosity-icon-button {
@@ -4710,20 +4960,30 @@ input[type="range"] {
 
 .porosity-actions {
   display: grid;
-  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 4px;
 }
 
 .porosity-estimate-row {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: 54px minmax(0, 1fr) minmax(0, 1fr);
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
   gap: 4px;
+  align-items: center;
 }
 
 .porosity-estimate-row button {
+  box-sizing: border-box;
   width: 100%;
   min-width: 0;
-  padding: 2px 6px;
+  max-width: 100%;
+  overflow: hidden;
+  padding: 2px 3px;
+  white-space: normal;
+  text-overflow: ellipsis;
   font: inherit;
 }
 
@@ -4733,6 +4993,57 @@ input[type="range"] {
   min-width: 0;
   margin: 0;
   padding: 0;
+}
+
+.porosity-recipe-panel {
+  display: grid;
+  gap: 3px;
+}
+
+.porosity-recipe-actions,
+.porosity-export-actions {
+  display: grid;
+  gap: 4px;
+}
+
+.porosity-raster-export {
+  display: grid;
+  gap: 4px;
+  margin-top: 4px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(17, 17, 17, 0.15);
+}
+
+.porosity-raster-export-title {
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.porosity-raster-export label {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+}
+
+.porosity-raster-export select {
+  min-width: 0;
+}
+
+.porosity-raster-export-note {
+  margin: 0;
+  color: rgba(17, 17, 17, 0.68);
+  font-size: 10px;
+  line-height: 1.25;
+}
+
+.porosity-export-summary,
+.porosity-recipe-note {
+  margin: 0;
+  color: rgba(17, 17, 17, 0.68);
+  font-size: 11px;
+  line-height: 1.25;
 }
 
 .porosity-palette-body .porosity-resolution-panel {
@@ -4747,11 +5058,20 @@ input[type="range"] {
 }
 
 .porosity-resolution-panel .snapshot-field {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  gap: 2px;
   margin-top: 2px;
 }
 
 .porosity-resolution-panel select {
-  flex: 1 1 auto;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
   min-width: 0;
 }
 
@@ -4779,10 +5099,14 @@ input[type="range"] {
   opacity: 0.45;
 }
 
+.porosity-polygon-action button {
+  width: 100%;
+}
+
 .porosity-workflow-disabled .porosity-type-row,
 .porosity-workflow-disabled .porosity-tile-set-field,
 .porosity-workflow-disabled .porosity-actions,
-.porosity-workflow-disabled .porosity-opacity-controls,
+.porosity-workflow-disabled .porosity-opacity-field,
 .porosity-workflow-disabled .porosity-samples,
 .porosity-workflow-disabled .porosity-estimate-row,
 .porosity-workflow-disabled .porosity-tolerance-field,
@@ -4806,18 +5130,36 @@ input[type="range"] {
 }
 
 .porosity-tolerance-field {
+  display: grid;
+  grid-template-columns: 54px 58px minmax(42px, 1fr);
+  align-items: center;
   gap: 4px;
+  width: 100%;
+  min-width: 0;
 }
 
 .porosity-tolerance-field > span {
-  flex-basis: 58px;
+  min-width: 0;
+}
+
+.porosity-palette-body .porosity-tolerance-field input[type="range"] {
+  width: 100%;
+  min-width: 0;
 }
 
 .porosity-tolerance-value {
-  flex: 0 0 36px;
-  width: 36px;
+  width: 100%;
+  min-width: 0;
   padding: 2px 4px;
   font: inherit;
+}
+
+.porosity-preview-status {
+  min-height: 1.2em;
+  margin: 0;
+  color: rgba(17, 17, 17, 0.68);
+  font-size: 11px;
+  line-height: 1.2;
 }
 
 .porosity-palette-body
@@ -4836,26 +5178,6 @@ input[type="range"] {
   min-height: 20px;
 }
 
-.porosity-opacity-controls {
-  display: flex;
-  align-items: center;
-  flex: 1 1 auto;
-  min-width: 0;
-  gap: 4px;
-}
-
-.porosity-opacity-controls input[type="range"] {
-  flex: 1 1 84px;
-  min-width: 64px;
-}
-
-.porosity-opacity-value {
-  flex: 0 0 36px;
-  width: 36px;
-  padding: 2px 4px;
-  font: inherit;
-}
-
 .porosity-pick-active {
   background: #fff0c2;
   border-color: #b87900;
@@ -4863,43 +5185,69 @@ input[type="range"] {
 
 .porosity-samples {
   display: grid;
-  min-height: 18px;
-  gap: 3px;
+  min-height: 0;
 }
 
-.porosity-sample-row {
-  display: grid;
-  grid-template-columns: minmax(54px, 0.35fr) minmax(0, 1fr);
-  align-items: center;
-  gap: 4px;
-  min-width: 0;
+.porosity-sample-table-wrap {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 2px;
+}
+
+.porosity-sample-table {
+  border-spacing: 4px 3px;
+  border-collapse: separate;
+}
+
+.porosity-sample-table th,
+.porosity-sample-table td {
+  padding: 0;
 }
 
 .porosity-sample-label {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  min-width: 54px;
+  padding-right: 4px !important;
   overflow: hidden;
+  background: rgba(255, 255, 255, 0.9);
   color: rgba(17, 17, 17, 0.7);
   font-size: 12px;
+  font-weight: 400;
+  text-align: left;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.porosity-sample-swatches {
-  display: flex;
-  flex-wrap: nowrap;
-  min-width: 0;
-  overflow-x: auto;
-  overflow-y: hidden;
-  gap: 4px;
-  padding-bottom: 2px;
-}
-
 .porosity-sample {
   box-sizing: border-box;
-  flex: 0 0 18px;
   width: 18px;
   height: 18px;
+  display: block;
+  margin: 0;
+  padding: 0;
   border: 1px solid rgba(17, 17, 17, 0.5);
   border-radius: 3px;
+  cursor: pointer;
+}
+
+.porosity-sample.is-selected {
+  border: 2px solid #2f80ed;
+  box-shadow: 0 0 0 1px #fff, 0 0 0 3px #2f80ed;
+}
+
+.porosity-sample:focus-visible {
+  outline: 2px solid #2f80ed;
+  outline-offset: 2px;
+}
+
+.porosity-sample-placeholder {
+  cursor: default;
+  border-style: dashed;
+  background: rgba(17, 17, 17, 0.06);
 }
 
 .porosity-results {
@@ -4918,7 +5266,7 @@ input[type="range"] {
 .porosity-result-row,
 .porosity-result-total-row {
   display: grid;
-  grid-template-columns: 20px minmax(0, 1fr) minmax(54px, 0.42fr);
+  grid-template-columns: 20px minmax(0, 1fr) minmax(64px, 0.42fr);
   align-items: center;
   gap: 3px;
   min-height: 22px;
@@ -4992,7 +5340,7 @@ input[type="range"] {
 }
 
 .porosity-result-area-cell {
-  min-width: 56px;
+  min-width: 64px;
 }
 
 .porosity-result-bar {
@@ -5013,7 +5361,12 @@ input[type="range"] {
 .porosity-progress {
   display: grid;
   gap: 3px;
-  color: rgba(17, 17, 17, 0.72);
+  min-height: 31px;
+  padding: 6px;
+  border: 1px solid #d0d0d0;
+  border-radius: 3px;
+  background: #f7f7f7;
+  color: rgba(17, 17, 17, 0.78);
   font-size: 12px;
   line-height: 1.2;
 }
