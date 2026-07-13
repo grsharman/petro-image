@@ -2306,7 +2306,7 @@
               <select id="segmentTileSetSelect"></select>
             </label>
             <label class="segment-field segment-inline-field segment-resolution-field">
-              <span>Resolution</span>
+              <span title="Resolution used for segmentation. Lower resolutions process fewer pixels and run faster, but may miss small grains or fine boundaries.">Resolution</span>
               <select id="segmentResolutionSelect">
                 <option value="1">Full resolution</option>
                 <option value="0.5">1/2 resolution</option>
@@ -2363,7 +2363,7 @@
                 type="number"
                 min="0"
                 max="100"
-                step="0.5"
+                step="1"
                 value="2"
                 title="Higher values remove more vertices."
               />
@@ -2447,7 +2447,7 @@
             <div class="segment-simplify-row">
               <label class="segment-option">
                 <input id="unsupervisedSimplifyEnabled" type="checkbox" checked />
-                <span>Simplify polygons</span>
+                <span title="Reduce the number of vertices in returned grain outlines before adding annotations.">Simplify polygons</span>
               </label>
               <input
                 id="unsupervisedSimplifyEpsilon"
@@ -2455,72 +2455,83 @@
                 type="number"
                 min="0"
                 max="100"
-                step="0.5"
+                step="1"
                 value="2"
-                title="Higher values remove more vertices before adding annotations."
+                title="Polygon simplification tolerance in processed-image pixels. Higher values remove more vertices."
               />
             </div>
             <label class="segment-option">
               <input id="unsupervisedUseSamRefinement" type="checkbox" checked />
-              <span>SAM refinement</span>
+              <span title="Refine U-Net grain proposals with SAM 2.1. This generally improves boundaries but takes substantially longer.">SAM refinement</span>
             </label>
             <div class="segment-parameter-grid">
               <label class="segment-field segment-compact-number-field">
-                <span>Patch (px)</span>
+                <span title="Width and height of each processing patch. Larger patches reduce patch overhead but require more memory.">Patch (px)</span>
                 <input
                   id="unsupervisedPatchSize"
                   type="number"
                   min="256"
                   max="8000"
                   step="128"
-                  value="2000"
+                  value="3000"
                 />
               </label>
               <label class="segment-field segment-compact-number-field">
-                <span>Overlap (px)</span>
+                <span title="Overlap between adjacent patches. Use an overlap comparable to the largest grains to reduce boundary artifacts.">Overlap (px)</span>
                 <input
                   id="unsupervisedOverlap"
                   type="number"
                   min="0"
                   max="4000"
                   step="50"
-                  value="300"
+                  value="600"
                 />
               </label>
               <label class="segment-field segment-compact-number-field">
-                <span>Min area</span>
+                <span title="Minimum grain area in processed-image pixels. Smaller returned polygons are discarded.">Min area</span>
                 <input
                   id="unsupervisedMinArea"
                   type="number"
                   min="0"
                   max="1000000"
                   step="10"
-                  value="50"
+                  value="400"
                 />
               </label>
               <label class="segment-field segment-compact-number-field">
-                <span>Dilation</span>
+                <span title="Expand U-Net grain labels by this many pixels. This can compensate for boundary-channel pixel loss, especially without SAM refinement.">Dilation</span>
                 <input
                   id="unsupervisedDilation"
                   type="number"
                   min="0"
                   max="25"
                   step="1"
-                  value="0"
+                  value="3"
+                />
+              </label>
+              <label class="segment-field segment-compact-number-field">
+                <span title="Maximum clustering distance used to generate grain prompts. Lower values can create more prompts when grains are being missed.">DBS distance</span>
+                <input
+                  id="unsupervisedDbsMaxDist"
+                  type="number"
+                  min="0"
+                  max="10000"
+                  step="10"
+                  value="100"
                 />
               </label>
             </div>
             <label class="segment-option">
               <input id="unsupervisedShowPatchGrid" type="checkbox" />
-              <span>Show patch grid</span>
+              <span title="Preview the patch layout over the AOI. This display option does not change the segmentation.">Show patch grid</span>
             </label>
             <label class="segment-option">
-              <input id="unsupervisedRemoveEdgeGrains" type="checkbox" checked />
-              <span>Remove edge grains</span>
+              <input id="unsupervisedRemoveEdgeGrains" type="checkbox" />
+              <span title="Discard grains that touch the outer boundary of the processed AOI.">Remove edge grains</span>
             </label>
             <div class="segment-run-actions">
               <button id="runUnsupervisedSegmentationButton" type="button" disabled>
-                Run segmenteverygrain
+                Run segmentation
               </button>
               <button id="cancelUnsupervisedSegmentationButton" type="button" disabled hidden>
                 Cancel
@@ -4663,9 +4674,9 @@
               <input
                 type="number"
                 id="lineWeight"
-                placeholder="2"
+                placeholder="1"
                 maxlength="3"
-                value="2"
+                value="1"
                 min="1"
                 max="10"
               />
@@ -4809,7 +4820,7 @@
               </div>
             </div>
             <div class="setting-row">
-              <input type="color" id="lineColor" value="#008000" />
+              <input type="color" id="lineColor" value="#000000" />
               <label for="lineColor">Color</label>
               <input type="checkbox" id="lineColorRandom" />
               <label class="random-label" for="lineColorRandom">random</label>
@@ -4942,9 +4953,9 @@
             </div>
             <h4>Fill</h4>
             <div class="setting-row">
-              <input type="color" id="fillColor" value="#FFFFFF" />
+              <input type="color" id="fillColor" value="#FFFFFF" disabled />
               <label for="fillColor">Color</label>
-              <input type="checkbox" id="fillColorRandom" />
+              <input type="checkbox" id="fillColorRandom" checked />
               <label class="random-label" for="fillColorRandom">random</label>
               <div class="button-group">
                 <button
@@ -5008,7 +5019,7 @@
                 <input
                   id="fillOpacityRange"
                   type="range"
-                  value="0"
+                  value="50"
                   min="0"
                   max="100"
                   step="1"
@@ -5018,9 +5029,9 @@
                   type="number"
                   class="wide-number-input"
                   id="fillOpacity"
-                  placeholder="0"
+                  placeholder="50"
                   maxlength="3"
-                  value="0"
+                  value="50"
                   min="0"
                   max="100"
                   step="1"

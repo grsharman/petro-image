@@ -29,6 +29,9 @@ class ProgressStdout:
         self.last_current_by_label = {}
         self.pass_by_label = {}
         self.last_overall_percent = 0
+        self.overall_patch_current = 0
+        self.overall_patch_total = 0
+        self.announced_overall_patch = 0
 
     def write(self, text):
         self.wrapped.write(text)
@@ -46,6 +49,34 @@ class ProgressStdout:
         self.wrapped.flush()
 
     def _emit_progress_from_text(self, text):
+        overall_patch_match = re.search(
+            r"(?:processed\s+patch\s+#?(\d+)\s+out\s+of\s+(\d+)\s+patch(?:es)?|patch\s+(\d+)\s*/\s*(\d+))",
+            text,
+            re.IGNORECASE,
+        )
+        if overall_patch_match:
+            current = int(overall_patch_match.group(1) or overall_patch_match.group(3))
+            total = max(
+                1,
+                int(overall_patch_match.group(2) or overall_patch_match.group(4)),
+            )
+            self.overall_patch_current = current
+            self.overall_patch_total = total
+            self.announced_overall_patch = current
+            percent = 20 + (current / total) * 70
+            self.last_overall_percent = max(self.last_overall_percent, percent)
+            emit(
+                {
+                    "type": "progress",
+                    "stage": "Segmentation",
+                    "message": f"Segmentation: patch {current} of {total} complete.",
+                    "percent": self.last_overall_percent,
+                    "overallPatchCurrent": current,
+                    "overallPatchTotal": total,
+                }
+            )
+            return
+
         tqdm_match = re.search(r"(\d{1,3})%\|", text)
         label_match = re.search(r"([^:\r\n]*):\s*(\d{1,3})%", text)
         count_match = re.search(r"(\d+)\s*/\s*(\d+)", text)
@@ -56,6 +87,25 @@ class ProgressStdout:
             label = label_match.group(1).strip().lower() or "processing"
             percent = max(0, min(100, int(label_match.group(2))))
         else:
+            return
+
+        if self.overall_patch_total:
+            next_patch = min(
+                self.overall_patch_current + 1,
+                self.overall_patch_total,
+            )
+            if next_patch != self.announced_overall_patch:
+                self.announced_overall_patch = next_patch
+                emit(
+                    {
+                        "type": "progress",
+                        "stage": "Segmentation",
+                        "message": f"Segmentation: processing patch {next_patch} of {self.overall_patch_total}.",
+                        "percent": self.last_overall_percent,
+                        "overallPatchCurrent": self.overall_patch_current,
+                        "overallPatchTotal": self.overall_patch_total,
+                    }
+                )
             return
         current = int(count_match.group(1)) if count_match else None
         total = int(count_match.group(2)) if count_match else None
@@ -376,138 +426,184 @@ def stitch_dzi_tile_job(tile_job_path, output_path):
     }
 
 
-def main():
+def load_models(model_path, use_sam, sam_checkpoint, sam_model_type, requested_device):
+    import segmenteverygrain as seg
+
+    device = choose_device(requested_device) if use_sam else None
+    sam_model = None
+    sam_model_config = ""
+    if use_sam:
+        sam_model, sam_model_config = load_sam2_model(
+            sam_checkpoint,
+            sam_model_type,
+            device,
+        )
+    model = load_segmenteverygrain_model(seg, model_path)
+    return seg, model, sam_model, sam_model_config, device
+
+
+def run_segmentation(args, seg, model, sam_model, sam_model_config, device):
+    stitched_info = {}
+    image_path = args.image
+    if args.tile_job:
+        image_path = args.stitch_output or os.path.join(
+            os.path.dirname(args.tile_job),
+            "aoi.png",
+        )
+        stitched_info = stitch_dzi_tile_job(args.tile_job, image_path)
+    if not image_path:
+        raise ValueError("Either --image or --tile-job is required.")
+
+    from PIL import Image
+
+    with Image.open(image_path) as image:
+        image_width, image_height = image.size
+    step_size = max(1, args.patch_size - args.overlap)
+    patch_rows = max(
+        1,
+        (image_height - args.patch_size + step_size) // step_size + 1,
+    )
+    patch_columns = max(
+        1,
+        (image_width - args.patch_size + step_size) // step_size + 1,
+    )
+    total_patches = patch_rows * patch_columns
+
+    emit(
+        {
+            "type": "progress",
+            "stage": "Segmentation",
+            "message": f"Segmentation: processing patch 1 of {total_patches}.",
+            "percent": 20,
+            "overallPatchCurrent": 0,
+            "overallPatchTotal": total_patches,
+        }
+    )
+    progress_stdout = ProgressStdout(sys.stdout)
+    progress_stdout.overall_patch_total = total_patches
+    progress_stdout.announced_overall_patch = 1
+    prediction_options = {
+        "sam": sam_model,
+        "min_area": args.min_area,
+        "patch_size": args.patch_size,
+        "overlap": args.overlap,
+        "min_grain_area": args.min_area,
+        "remove_edge_grains": args.remove_edge_grains,
+        "use_sam": args.use_sam,
+        "dilation": args.dilation,
+        "dbs_max_dist": args.dbs_max_dist,
+    }
+    try:
+        import inspect
+
+        if "verbose" in inspect.signature(seg.predict_large_image).parameters:
+            prediction_options["verbose"] = False
+    except (TypeError, ValueError):
+        pass
+    with contextlib.redirect_stdout(progress_stdout):
+        result = seg.predict_large_image(
+            image_path,
+            model,
+            **prediction_options,
+        )
+    emit(
+        {
+            "type": "progress",
+            "stage": "Polygons",
+            "message": "Converting polygons...",
+            "percent": 92,
+        }
+    )
+    grains = result[0] if isinstance(result, tuple) else result
+    polygons = []
+    for grain in grains:
+        geometry = grain
+        if args.simplify_epsilon > 0:
+            geometry = geometry.simplify(
+                args.simplify_epsilon,
+                preserve_topology=True,
+            )
+        if not geometry.is_valid:
+            geometry = geometry.buffer(0)
+        if geometry.is_empty or geometry.area < args.min_area:
+            continue
+        for ring in polygon_to_rings(geometry):
+            polygons.append(
+                {
+                    "coordinates": ring,
+                    "area": float(geometry.area),
+                }
+            )
+
+    emit(
+        {
+            "type": "progress",
+            "stage": "Complete",
+            "message": "Segmentation complete.",
+            "percent": 100,
+        }
+    )
+    return {
+        "ok": True,
+        "polygons": polygons,
+        "count": len(polygons),
+        "useSam": bool(args.use_sam),
+        "samModelType": args.sam_model_type if args.use_sam else "",
+        "samModelConfig": sam_model_config,
+        "device": device or "",
+        **stitched_info,
+    }
+
+
+def build_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument("--image", default="")
     parser.add_argument("--tile-job", default="")
     parser.add_argument("--stitch-output", default="")
     parser.add_argument("--model", required=True)
     parser.add_argument("--simplify-epsilon", type=float, default=2.0)
-    parser.add_argument("--min-area", type=float, default=50.0)
-    parser.add_argument("--patch-size", type=int, default=2000)
-    parser.add_argument("--overlap", type=int, default=300)
-    parser.add_argument("--dilation", type=int, default=0)
+    parser.add_argument("--min-area", type=float, default=400.0)
+    parser.add_argument("--patch-size", type=int, default=3000)
+    parser.add_argument("--overlap", type=int, default=600)
+    parser.add_argument("--dilation", type=int, default=3)
+    parser.add_argument("--dbs-max-dist", type=float, default=100.0)
     parser.add_argument("--remove-edge-grains", action="store_true")
     parser.add_argument("--use-sam", action="store_true")
     parser.add_argument("--sam-checkpoint", default="")
     parser.add_argument("--sam-model-type", default="base_plus")
     parser.add_argument("--device", default="auto")
-    args = parser.parse_args()
+    return parser
+
+
+def main():
+    args = build_parser().parse_args()
 
     try:
-        import segmenteverygrain as seg
-
-        stitched_info = {}
-        image_path = args.image
-        if args.tile_job:
-            image_path = args.stitch_output or os.path.join(
-                os.path.dirname(args.tile_job),
-                "aoi.png",
-            )
-            stitched_info = stitch_dzi_tile_job(args.tile_job, image_path)
-        if not image_path:
-            raise ValueError("Either --image or --tile-job is required.")
-        loading_percent = 18 if args.tile_job else 5
-        sam_loading_percent = 19 if args.tile_job else 8
-
         emit(
             {
                 "type": "progress",
                 "stage": "Loading",
                 "message": "Loading models...",
-                "percent": loading_percent,
+                "percent": 18 if args.tile_job else 5,
             }
         )
-        device = choose_device(args.device) if args.use_sam else None
-        sam_model = None
-        sam_model_config = ""
         if args.use_sam:
             emit(
                 {
                     "type": "progress",
                     "stage": "Loading SAM",
                     "message": "Loading SAM 2.1...",
-                    "percent": sam_loading_percent,
+                    "percent": 19 if args.tile_job else 8,
                 }
             )
-            sam_model, sam_model_config = load_sam2_model(
-                args.sam_checkpoint,
-                args.sam_model_type,
-                device,
-            )
-
-        model = load_segmenteverygrain_model(seg, args.model)
-        emit(
-            {
-                "type": "progress",
-                "stage": "Segmentation",
-                "message": "Running patch prediction...",
-                "percent": 20,
-            }
+        runtime = load_models(
+            args.model,
+            args.use_sam,
+            args.sam_checkpoint,
+            args.sam_model_type,
+            args.device,
         )
-        progress_stdout = ProgressStdout(sys.stdout)
-        with contextlib.redirect_stdout(progress_stdout):
-            result = seg.predict_large_image(
-                image_path,
-                model,
-                sam=sam_model,
-                min_area=args.min_area,
-                patch_size=args.patch_size,
-                overlap=args.overlap,
-                min_grain_area=args.min_area,
-                remove_edge_grains=args.remove_edge_grains,
-                use_sam=args.use_sam,
-                dilation=args.dilation,
-            )
-        emit(
-            {
-                "type": "progress",
-                "stage": "Polygons",
-                "message": "Converting polygons...",
-                "percent": 92,
-            }
-        )
-        grains = result[0] if isinstance(result, tuple) else result
-        polygons = []
-        for grain in grains:
-            geometry = grain
-            if args.simplify_epsilon > 0:
-                geometry = geometry.simplify(
-                    args.simplify_epsilon,
-                    preserve_topology=True,
-                )
-            if not geometry.is_valid:
-                geometry = geometry.buffer(0)
-            if geometry.is_empty or geometry.area < args.min_area:
-                continue
-            for ring in polygon_to_rings(geometry):
-                polygons.append(
-                    {
-                        "coordinates": ring,
-                        "area": float(geometry.area),
-                    }
-                )
-
-        emit(
-            {
-                "type": "progress",
-                "stage": "Complete",
-                "message": "Segmentation complete.",
-                "percent": 100,
-            }
-        )
-        emit(
-            {
-                "ok": True,
-                "polygons": polygons,
-                "count": len(polygons),
-                "useSam": bool(args.use_sam),
-                "samModelType": args.sam_model_type if args.use_sam else "",
-                "samModelConfig": sam_model_config,
-                "device": device or "",
-                **stitched_info,
-            }
-        )
+        emit(run_segmentation(args, *runtime))
     except Exception:
         emit(
             {

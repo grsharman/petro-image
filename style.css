@@ -1117,6 +1117,18 @@ body.import-wizard-page {
   display: none;
 }
 
+#runUnsupervisedSegmentationButton {
+  border-color: #1b5e20;
+  background: #2e7d32;
+  color: #fff;
+  font-weight: 600;
+}
+
+#runUnsupervisedSegmentationButton:hover:not(:disabled),
+#runUnsupervisedSegmentationButton:focus-visible:not(:disabled) {
+  background: #256428;
+}
+
 .segment-padding-row {
   display: grid;
   grid-template-columns: 72px 52px 52px;

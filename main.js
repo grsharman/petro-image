@@ -26,6 +26,7 @@ let hasUnsavedWork = false; // main process copy
 let localFileServer;
 let localFileServerPort;
 let samWorker = null;
+let segmenteverygrainWorker = null;
 let activeSegmenteverygrainChild = null;
 const localFileServerToken = randomUUID();
 const grantedLocalRoots = [];
@@ -689,9 +690,23 @@ function parseJsonProcessOutput(stdout) {
 }
 
 function tryParseJsonLine(line) {
+  const text = String(line);
   try {
-    return JSON.parse(line);
+    return JSON.parse(text);
   } catch {
+    // Recover protocol messages if a third-party library wrote an unterminated
+    // stdout message immediately before our JSON payload.
+    for (
+      let index = text.indexOf("{");
+      index >= 0;
+      index = text.indexOf("{", index + 1)
+    ) {
+      try {
+        return JSON.parse(text.slice(index));
+      } catch {
+        // Keep looking for the beginning of the outer JSON object.
+      }
+    }
     return null;
   }
 }
@@ -1328,6 +1343,338 @@ async function runSamSegmentation(request = {}) {
   }
 }
 
+function getSegmenteverygrainWorkerKey(
+  samSettings,
+  segSettings,
+  useSam,
+  device = "auto",
+) {
+  return JSON.stringify({
+    pythonPath: samSettings.pythonPath,
+    modelPath: segSettings.modelPath,
+    useSam,
+    checkpointPath: useSam ? samSettings.checkpointPath : "",
+    modelType: useSam ? samSettings.modelType : "",
+    device: useSam ? device : "",
+  });
+}
+
+function appendSegmenteverygrainWorkerStderr(worker, text) {
+  worker.stderr += text;
+  const maxLength = 200000;
+  if (worker.stderr.length > maxLength) {
+    worker.stderr = worker.stderr.slice(-maxLength);
+  }
+}
+
+function resolveSegmenteverygrainWorkerPending(worker, result) {
+  for (const pending of worker.pending.values()) {
+    clearTimeout(pending.timer);
+    pending.resolve({
+      ...result,
+      stderr: worker.stderr,
+    });
+  }
+  worker.pending.clear();
+  worker.activeJobId = null;
+}
+
+function stopSegmenteverygrainWorker(options = {}) {
+  if (!segmenteverygrainWorker) return;
+
+  const { force = false, reason = "segmenteverygrain worker stopped." } = options;
+  const worker = segmenteverygrainWorker;
+  segmenteverygrainWorker = null;
+  resolveSegmenteverygrainWorkerPending(worker, { ok: false, error: reason });
+  if (worker.child.killed) return;
+
+  if (force) {
+    worker.child.kill();
+    return;
+  }
+  try {
+    worker.child.stdin.write(JSON.stringify({ type: "shutdown" }) + "\n");
+    worker.child.stdin.end();
+  } catch {
+    worker.child.kill();
+  }
+}
+
+function getActiveSegmenteverygrainPending(worker) {
+  return worker.activeJobId === null
+    ? null
+    : worker.pending.get(worker.activeJobId) || null;
+}
+
+function forwardSegmenteverygrainWorkerProgress(worker, payload) {
+  const pending = getActiveSegmenteverygrainPending(worker);
+  if (pending?.onProgress) {
+    pending.onProgress(payload);
+  } else {
+    worker.startupProgress?.(payload);
+  }
+}
+
+function handleSegmenteverygrainWorkerLine(worker, line) {
+  const payload = tryParseJsonLine(line);
+  if (!payload) {
+    appendSegmenteverygrainWorkerStderr(worker, `${line}\n`);
+    return;
+  }
+
+  if (payload.type === "progress") {
+    const overallPatchCurrent = Number(payload.overallPatchCurrent);
+    const overallPatchTotal = Number(payload.overallPatchTotal);
+    if (
+      Number.isFinite(overallPatchCurrent) &&
+      Number.isFinite(overallPatchTotal) &&
+      overallPatchTotal > 0
+    ) {
+      worker.overallPatchCurrent = overallPatchCurrent;
+      worker.overallPatchTotal = overallPatchTotal;
+      worker.announcedOverallPatch = overallPatchCurrent;
+    }
+    forwardSegmenteverygrainWorkerProgress(worker, payload);
+    return;
+  }
+  if (payload.type === "ready") {
+    clearTimeout(worker.readyTimer);
+    worker.startupProgress = null;
+    if (payload.ok) {
+      worker.readyResolve(payload);
+    } else {
+      worker.readyReject(
+        new Error(payload.error || "segmenteverygrain worker failed to start."),
+      );
+    }
+    return;
+  }
+
+  const pending = worker.pending.get(payload.id);
+  if (!pending) return;
+  clearTimeout(pending.timer);
+  worker.pending.delete(payload.id);
+  worker.activeJobId = null;
+  pending.resolve({
+    ...payload,
+    stderr: worker.stderr,
+  });
+}
+
+async function getSegmenteverygrainWorker(
+  samSettings,
+  segSettings,
+  useSam,
+  device = "auto",
+  onProgress = null,
+) {
+  const key = getSegmenteverygrainWorkerKey(
+    samSettings,
+    segSettings,
+    useSam,
+    device,
+  );
+  if (
+    segmenteverygrainWorker &&
+    segmenteverygrainWorker.key === key &&
+    !segmenteverygrainWorker.exited
+  ) {
+    await segmenteverygrainWorker.ready;
+    return segmenteverygrainWorker;
+  }
+
+  stopSegmenteverygrainWorker({ force: true });
+  const scriptPath = path.join(
+    __dirname,
+    "scripts",
+    "segmenteverygrain_worker.py",
+  );
+  const args = [scriptPath, "--model", segSettings.modelPath];
+  if (useSam) {
+    args.push(
+      "--use-sam",
+      "--sam-checkpoint",
+      samSettings.checkpointPath,
+      "--sam-model-type",
+      samSettings.modelType || "base_plus",
+      "--device",
+      device,
+    );
+  }
+  const matplotlibConfigDirectory = path.join(
+    app.getPath("temp"),
+    "petro-image-matplotlib",
+  );
+  await fs.mkdir(matplotlibConfigDirectory, { recursive: true });
+  const child = spawn(samSettings.pythonPath, args, {
+    windowsHide: true,
+    stdio: ["pipe", "pipe", "pipe"],
+    env: {
+      ...process.env,
+      MPLCONFIGDIR: matplotlibConfigDirectory,
+      TF_CPP_MIN_LOG_LEVEL: "2",
+    },
+  });
+  activeSegmenteverygrainChild = child;
+
+  let readyResolve;
+  let readyReject;
+  const worker = {
+    key,
+    child,
+    pending: new Map(),
+    nextId: 1,
+    activeJobId: null,
+    stdoutBuffer: "",
+    stderrBuffer: "",
+    stderr: "",
+    overallPatchCurrent: 0,
+    overallPatchTotal: 0,
+    announcedOverallPatch: 0,
+    exited: false,
+    startupProgress: onProgress,
+    ready: new Promise((resolve, reject) => {
+      readyResolve = resolve;
+      readyReject = reject;
+    }),
+    readyResolve,
+    readyReject,
+    readyTimer: null,
+  };
+  segmenteverygrainWorker = worker;
+  worker.readyTimer = setTimeout(() => {
+    worker.exited = true;
+    worker.readyReject(
+      new Error("segmenteverygrain worker did not become ready within 5 minutes."),
+    );
+    if (!worker.child.killed) worker.child.kill();
+  }, 5 * 60 * 1000);
+
+  child.stdout.on("data", (chunk) => {
+    worker.stdoutBuffer += chunk.toString();
+    const lines = worker.stdoutBuffer.split(/\r?\n/);
+    worker.stdoutBuffer = lines.pop() || "";
+    lines
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .forEach((line) => handleSegmenteverygrainWorkerLine(worker, line));
+  });
+  child.stderr.on("data", (chunk) => {
+    worker.stderrBuffer += chunk.toString();
+    const lines = worker.stderrBuffer.split(/\r|\n/);
+    worker.stderrBuffer = lines.pop() || "";
+    lines
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .forEach((line) => {
+        appendSegmenteverygrainWorkerStderr(worker, `${line}\n`);
+        const progress = parseSegmenteverygrainTextProgress(line);
+        if (!progress) return;
+        if (worker.overallPatchTotal > 0) {
+          const nextPatch = Math.min(
+            worker.overallPatchCurrent + 1,
+            worker.overallPatchTotal,
+          );
+          if (nextPatch === worker.announcedOverallPatch) return;
+          worker.announcedOverallPatch = nextPatch;
+          forwardSegmenteverygrainWorkerProgress(worker, {
+            type: "progress",
+            stage: "Segmentation",
+            message: `Segmentation: processing patch ${nextPatch} of ${worker.overallPatchTotal}.`,
+            percent:
+              20 +
+              (worker.overallPatchCurrent / worker.overallPatchTotal) * 70,
+          });
+          return;
+        }
+        forwardSegmenteverygrainWorkerProgress(worker, progress);
+      });
+  });
+  child.on("error", (error) => {
+    clearTimeout(worker.readyTimer);
+    worker.exited = true;
+    worker.readyReject(error);
+    resolveSegmenteverygrainWorkerPending(worker, {
+      ok: false,
+      error: error.message,
+    });
+  });
+  child.on("close", (exitCode) => {
+    clearTimeout(worker.readyTimer);
+    worker.exited = true;
+    const canceled = Boolean(worker.child._petroImageCanceled);
+    const message = canceled
+      ? "segmenteverygrain canceled."
+      : `segmenteverygrain worker exited${
+          exitCode === null ? "" : ` with code ${exitCode}`
+        }.`;
+    worker.readyReject(new Error(message));
+    resolveSegmenteverygrainWorkerPending(worker, {
+      ok: false,
+      canceled,
+      error: message,
+    });
+    if (segmenteverygrainWorker === worker) {
+      segmenteverygrainWorker = null;
+    }
+    if (activeSegmenteverygrainChild === worker.child) {
+      activeSegmenteverygrainChild = null;
+    }
+  });
+
+  await worker.ready;
+  return worker;
+}
+
+function segmentWithSegmenteverygrainWorker(worker, job, options = {}) {
+  return new Promise((resolve) => {
+    if (worker.activeJobId !== null) {
+      resolve({
+        ok: false,
+        error: "segmenteverygrain is already running.",
+      });
+      return;
+    }
+    const id = worker.nextId++;
+    worker.activeJobId = id;
+    worker.stderr = "";
+    worker.overallPatchCurrent = 0;
+    worker.overallPatchTotal = 0;
+    worker.announcedOverallPatch = 0;
+    const requestedTimeoutMs = Number(options.timeoutMs);
+    const timer =
+      Number.isFinite(requestedTimeoutMs) && requestedTimeoutMs > 0
+        ? setTimeout(() => {
+            worker.pending.delete(id);
+            worker.activeJobId = null;
+            worker.exited = true;
+            if (segmenteverygrainWorker === worker) {
+              segmenteverygrainWorker = null;
+            }
+            resolve({
+              ok: false,
+              error: "segmenteverygrain timed out.",
+              stderr: worker.stderr,
+            });
+            if (!worker.child.killed) worker.child.kill();
+          }, requestedTimeoutMs)
+        : null;
+    worker.pending.set(id, {
+      resolve,
+      timer,
+      onProgress: options.onProgress || null,
+    });
+    try {
+      worker.child.stdin.write(JSON.stringify({ id, ...job }) + "\n");
+    } catch (error) {
+      clearTimeout(timer);
+      worker.pending.delete(id);
+      worker.activeJobId = null;
+      resolve({ ok: false, error: error.message, stderr: worker.stderr });
+    }
+  });
+}
+
 async function runSegmenteverygrainSegmentation(request = {}, event = null) {
   const samSettings = await writeSamSettings(request.samSettings || {});
   const segSettings = await writeSegmenteverygrainSettings(
@@ -1356,7 +1703,6 @@ async function runSegmenteverygrainSegmentation(request = {}, event = null) {
     path.join(app.getPath("temp"), "petro-image-seg-"),
   );
   const cropPath = path.join(tempDirectory, "aoi.png");
-  const scriptPath = path.join(__dirname, "scripts", "segmenteverygrain_segment.py");
 
   try {
     let tileJobPath = "";
@@ -1378,45 +1724,15 @@ async function runSegmenteverygrainSegmentation(request = {}, event = null) {
     } else {
       await fs.writeFile(cropPath, decodePngDataUrl(request.cropPngDataUrl));
     }
-    const args = [
-      scriptPath,
-      "--model",
-      segSettings.modelPath,
-      "--simplify-epsilon",
-      String(Number(request.simplifyEpsilon) || 0),
-      "--min-area",
-      String(Number(request.minArea) || 50),
-      "--patch-size",
-      String(Number(request.patchSize) || 2000),
-      "--overlap",
-      String(Number(request.overlap) || 300),
-      "--dilation",
-      String(Number(request.dilation) || 0),
-    ];
-    if (tileJobPath) {
-      args.push("--tile-job", tileJobPath, "--stitch-output", cropPath);
-    } else {
-      args.push("--image", cropPath);
-    }
-    if (request.useSam !== false) {
-      args.push(
-        "--use-sam",
-        "--sam-checkpoint",
-        samSettings.checkpointPath,
-        "--sam-model-type",
-        samSettings.modelType || "base_plus",
-        "--device",
-        request.device || "auto",
-      );
-    }
-    if (request.removeEdgeGrains) {
-      args.push("--remove-edge-grains");
-    }
 
     let lastSegmenteverygrainProgressAt = Date.now();
+    let latestSegmenteverygrainProgressMessage = "Starting segmenteverygrain...";
     const sendProgress = (payload, options = {}) => {
       if (!options.heartbeat) {
         lastSegmenteverygrainProgressAt = Date.now();
+        if (payload?.message) {
+          latestSegmenteverygrainProgressMessage = String(payload.message);
+        }
       }
       const webContents = event?.sender || mainWindow?.webContents;
       if (!webContents || webContents.isDestroyed()) return;
@@ -1443,33 +1759,46 @@ async function runSegmenteverygrainSegmentation(request = {}, event = null) {
         {
           type: "progress",
           stage: "Running",
-          message: `segmenteverygrain is still running... ${elapsedLabel} elapsed`,
+          message: `${latestSegmenteverygrainProgressMessage.replace(/[.\s]+$/, "")} — ${elapsedLabel} elapsed.`,
         },
         { heartbeat: true },
       );
     }, 5000);
     let result;
     try {
-      result = await runProcessWithProgress(samSettings.pythonPath, args, {
-        timeoutMs: 30 * 60 * 1000,
-        env: {
-          MPLCONFIGDIR: tempDirectory,
-          TF_CPP_MIN_LOG_LEVEL: "2",
-        },
-        onStdoutLine: (line) => {
-          const parsed = tryParseJsonLine(line);
-          if (parsed?.type === "progress") {
-            sendProgress(parsed);
-          }
-        },
-        onStderrLine: (line) => {
-          const progress = parseSegmenteverygrainTextProgress(line);
-          if (progress) sendProgress(progress);
-        },
-        onChild: (child) => {
-          activeSegmenteverygrainChild = child;
-        },
+      const useSam = request.useSam !== false;
+      const worker = await getSegmenteverygrainWorker(
+        samSettings,
+        segSettings,
+        useSam,
+        request.device || "auto",
+        sendProgress,
+      );
+      activeSegmenteverygrainChild = worker.child;
+      const numberOrDefault = (value, fallback) => {
+        const number = Number(value);
+        return Number.isFinite(number) ? number : fallback;
+      };
+      result = await segmentWithSegmenteverygrainWorker(worker, {
+        image: tileJobPath ? "" : cropPath,
+        tileJob: tileJobPath,
+        stitchOutput: tileJobPath ? cropPath : "",
+        simplifyEpsilon: numberOrDefault(request.simplifyEpsilon, 0),
+        minArea: numberOrDefault(request.minArea, 400),
+        patchSize: numberOrDefault(request.patchSize, 3000),
+        overlap: numberOrDefault(request.overlap, 600),
+        dilation: numberOrDefault(request.dilation, 3),
+        dbsMaxDist: numberOrDefault(request.dbsMaxDist, 100),
+        removeEdgeGrains: Boolean(request.removeEdgeGrains),
+      }, {
+        timeoutMs: 0,
+        onProgress: sendProgress,
       });
+    } catch (error) {
+      result = {
+        ok: false,
+        error: error.message || "Could not start segmenteverygrain.",
+      };
     } finally {
       clearInterval(heartbeat);
       activeSegmenteverygrainChild = null;
@@ -1483,24 +1812,7 @@ async function runSegmenteverygrainSegmentation(request = {}, event = null) {
       };
     }
 
-    let parsed;
-    try {
-      parsed = parseJsonProcessOutput(result.stdout);
-    } catch (error) {
-      return {
-        ok: false,
-        error: "Python did not return valid segmenteverygrain JSON.",
-        exitCode: result.exitCode,
-        stdout: result.stdout,
-        stderr: result.stderr,
-      };
-    }
-
-    return {
-      ...parsed,
-      exitCode: result.exitCode,
-      stderr: result.stderr,
-    };
+    return result;
   } finally {
     await fs.rm(tempDirectory, { recursive: true, force: true });
   }
@@ -2600,4 +2912,5 @@ app.whenReady().then(async () => {
 
 app.on("before-quit", () => {
   stopSamWorker();
+  stopSegmenteverygrainWorker({ force: true });
 });

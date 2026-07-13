@@ -741,6 +741,9 @@ const unsupervisedOverlapInput = document.getElementById("unsupervisedOverlap");
 const unsupervisedDilationInput = document.getElementById(
   "unsupervisedDilation",
 );
+const unsupervisedDbsMaxDistInput = document.getElementById(
+  "unsupervisedDbsMaxDist",
+);
 const unsupervisedShowPatchGridInput = document.getElementById(
   "unsupervisedShowPatchGrid",
 );
@@ -2950,24 +2953,30 @@ function updateUnsupervisedAoiStats() {
 
 function getUnsupervisedSegmentationOptions() {
   const patchSize = Math.round(
-    getSegmentNumberInput(unsupervisedPatchSizeInput, 2000, 256, 8000),
+    getSegmentNumberInput(unsupervisedPatchSizeInput, 3000, 256, 8000),
   );
   const overlap = Math.round(
     getSegmentNumberInput(
       unsupervisedOverlapInput,
-      300,
+      600,
       0,
       Math.max(0, patchSize - 1),
     ),
   );
   const minArea = getSegmentNumberInput(
     unsupervisedMinAreaInput,
-    50,
+    400,
     0,
     1000000,
   );
   const dilation = Math.round(
-    getSegmentNumberInput(unsupervisedDilationInput, 0, 0, 25),
+    getSegmentNumberInput(unsupervisedDilationInput, 3, 0, 25),
+  );
+  const dbsMaxDist = getSegmentNumberInput(
+    unsupervisedDbsMaxDistInput,
+    100,
+    0,
+    10000,
   );
 
   return {
@@ -2976,6 +2985,7 @@ function getUnsupervisedSegmentationOptions() {
     patchSize,
     overlap,
     dilation,
+    dbsMaxDist,
     removeEdgeGrains: Boolean(unsupervisedRemoveEdgeGrainsInput?.checked),
   };
 }
@@ -3157,30 +3167,10 @@ function getSegmentAnnotationGroup() {
 }
 
 function imageRectFromPixelBox(startPixel, endPixel) {
-  const image = viewer.world.getItemAt(0);
-  if (!image) return null;
-
-  const left = Math.min(startPixel.x, endPixel.x);
-  const top = Math.min(startPixel.y, endPixel.y);
-  const right = Math.max(startPixel.x, endPixel.x);
-  const bottom = Math.max(startPixel.y, endPixel.y);
-
-  const topLeft = image.viewportToImageCoordinates(
-    viewer.viewport.pointFromPixel(new OpenSeadragon.Point(left, top)),
-  );
-  const bottomRight = image.viewportToImageCoordinates(
-    viewer.viewport.pointFromPixel(new OpenSeadragon.Point(right, bottom)),
-  );
-  const x0 = Math.min(topLeft.x, bottomRight.x);
-  const y0 = Math.min(topLeft.y, bottomRight.y);
-  const x1 = Math.max(topLeft.x, bottomRight.x);
-  const y1 = Math.max(topLeft.y, bottomRight.y);
-  return {
-    x: x0,
-    y: y0,
-    width: x1 - x0,
-    height: y1 - y0,
-  };
+  // A viewer-aligned box becomes a quadrilateral in image coordinates when
+  // the viewport is rotated. Using only two opposite corners can therefore
+  // omit most of the selected image area (especially near 90 degrees).
+  return imageBoundsFromPoints(imagePointsFromPixelBox(startPixel, endPixel));
 }
 
 function imageRectToPolygon(rect) {
@@ -4012,6 +4002,7 @@ async function runUnsupervisedSegmentation() {
       patchSize: options.patchSize,
       overlap: options.overlap,
       dilation: options.dilation,
+      dbsMaxDist: options.dbsMaxDist,
       removeEdgeGrains: options.removeEdgeGrains,
       useSam: options.useSam,
       device: "auto",
@@ -10473,11 +10464,13 @@ async function renderFullResolutionImageRectCanvas(
       });
     }
 
+    // Preserve the stage angle long enough to choose/interpolate optical
+    // tiles. Rotation and flip themselves are display transforms and must not
+    // be baked into a crop whose request and response use image coordinates.
     if (typeof exportViewer.viewport.setFlip === "function") {
-      exportViewer.viewport.setFlip(viewer.viewport.getFlip());
+      exportViewer.viewport.setFlip(false);
     }
     exportViewer.viewport.setRotation(viewer.viewport.getRotation(true), true);
-    exportViewer.viewport.fitBounds(imageViewportBounds, true);
 
     let activeTileImages;
     const onlyTileIndex = Number.isInteger(options.tileIndex)
@@ -10501,6 +10494,8 @@ async function renderFullResolutionImageRectCanvas(
       });
       exportViewer.forceRedraw();
     }
+    exportViewer.viewport.setRotation(0, true);
+    exportViewer.viewport.fitBounds(imageViewportBounds, true);
     await waitForExportViewerReady(exportViewer, activeTileImages, {
       outputPixels: exportSize.width * exportSize.height,
     });
@@ -13398,6 +13393,7 @@ if (
     unsupervisedPatchSizeInput,
     unsupervisedOverlapInput,
     unsupervisedDilationInput,
+    unsupervisedDbsMaxDistInput,
     unsupervisedShowPatchGridInput,
     unsupervisedRemoveEdgeGrainsInput,
   ].forEach((input) => {
@@ -30276,13 +30272,16 @@ viewer.addHandler("canvas-drag", function (event) {
         ),
       };
     }
-    const aoiRect = imageRectFromPixelBox(
+    const aoiPoints = imagePointsFromPixelBox(
       unsupervisedAoiDragState.startPixel,
       event.position,
     );
+    const aoiRect = imageBoundsFromPoints(aoiPoints);
     if (aoiRect && aoiRect.width > 0 && aoiRect.height > 0) {
       unsupervisedAoiRect = aoiRect;
-      unsupervisedAoiImagePoints = imageRectToPoints(aoiRect);
+      // Keep the actual viewer-aligned AOI for filtering returned grains. The
+      // bounding image rect is used only to render/stitch the source crop.
+      unsupervisedAoiImagePoints = aoiPoints;
       updateUnsupervisedAoiPreview();
     }
     return;
@@ -30480,12 +30479,13 @@ viewer.addHandler("canvas-release", function (event) {
 
   if (isUnsupervisedAoiDrawGesture(event)) {
     event.preventDefaultAction = true;
-    const aoiRect = unsupervisedAoiDragState
-      ? imageRectFromPixelBox(
+    const aoiPoints = unsupervisedAoiDragState
+      ? imagePointsFromPixelBox(
           unsupervisedAoiDragState.startPixel,
           event.position,
         )
       : null;
+    const aoiRect = imageBoundsFromPoints(aoiPoints);
     unsupervisedAoiModeActive = false;
     unsupervisedAoiDragState = null;
 
@@ -30495,7 +30495,7 @@ viewer.addHandler("canvas-release", function (event) {
     }
 
     unsupervisedAoiRect = aoiRect;
-    unsupervisedAoiImagePoints = imageRectToPoints(aoiRect);
+    unsupervisedAoiImagePoints = aoiPoints;
     unsupervisedAoiSelectedVertexIndex = null;
     updateUnsupervisedAoiPreview();
     setUnsupervisedSegmentStatus(
