@@ -31,14 +31,25 @@ body.import-wizard-page {
 }
 
 #viewer-container {
+  /* Viewer content layers. Keep application chrome and dialogs at 3000+. */
+  --viewer-z-analysis: 100;
+  --viewer-z-annotations: 200;
+  --viewer-z-reference: 300;
+  --viewer-z-editing: 400;
+  --viewer-z-scalebar: 500;
+  --viewer-z-active: 600;
+  --viewer-z-controls: 3000;
+  --viewer-z-control-tray: 3200;
+  --viewer-z-tooltip: 3300;
   position: relative;
+  isolation: isolate;
   width: 100%;
   height: 100%;
 }
 
 .transform-value-tooltip {
   position: fixed;
-  z-index: 3300;
+  z-index: var(--viewer-z-tooltip);
   max-width: 180px;
   padding: 4px 6px;
   border: 1px solid rgba(17, 17, 17, 0.2);
@@ -63,7 +74,7 @@ body.import-wizard-page {
   display: flex;
   gap: 6px;
   align-items: flex-start;
-  z-index: 3200;
+  z-index: var(--viewer-z-control-tray);
 }
 
 .viewer-corner-button {
@@ -165,7 +176,7 @@ body.import-wizard-page {
   position: absolute;
   top: 40px;
   right: 0;
-  z-index: 3210;
+  z-index: var(--viewer-z-control-tray);
   width: min(260px, calc(100vw - 16px));
   padding: 6px;
   border: 1px solid rgba(20, 20, 20, 0.28);
@@ -201,6 +212,12 @@ body.import-wizard-page {
   outline: none;
 }
 
+.electron-action-separator {
+  height: 1px;
+  margin: 5px 6px;
+  background: rgba(20, 20, 20, 0.18);
+}
+
 .electron-action-icon {
   width: 34px;
   height: 34px;
@@ -227,6 +244,234 @@ body.import-wizard-page {
   stroke-linejoin: round;
 }
 
+.about-action-icon span {
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.about-dialog {
+  position: fixed;
+  inset: 0;
+  z-index: 5000;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  background: rgba(0, 0, 0, 0.42);
+  color: #222;
+  font:
+    13px/1.4 system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+
+.about-dialog[hidden] {
+  display: none;
+}
+
+.about-dialog-panel {
+  width: min(560px, calc(100vw - 36px));
+  max-height: calc(100vh - 36px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid rgba(20, 20, 20, 0.34);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 20px 54px rgba(0, 0, 0, 0.34);
+}
+
+.about-dialog button,
+.about-dialog input,
+.about-dialog select,
+.about-dialog textarea {
+  font: inherit;
+}
+
+.about-dialog-header,
+.about-dialog-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  background: #fff;
+}
+
+.about-dialog-header {
+  border-bottom: 1px solid rgba(20, 20, 20, 0.16);
+}
+
+.about-brand {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.about-brand img {
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+}
+
+.about-brand h2 {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.1;
+}
+
+.about-brand p {
+  margin: 3px 0 0;
+  color: #555;
+  font-size: 12px;
+}
+
+#closeAboutButton {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  border: 0;
+  border-radius: 4px;
+  padding: 0;
+  background: transparent;
+  color: #555;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+#closeAboutButton:hover,
+#closeAboutButton:focus-visible {
+  background: rgba(0, 0, 0, 0.08);
+  outline: none;
+}
+
+.about-dialog-body {
+  min-height: 0;
+  padding: 14px;
+  overflow: auto;
+}
+
+.about-dialog-body > :first-child {
+  margin-top: 0;
+}
+
+.about-dialog-body > :last-child {
+  margin-bottom: 0;
+}
+
+.about-version {
+  color: #555;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.about-dialog-body section {
+  margin-top: 15px;
+}
+
+.about-dialog-body h3 {
+  margin: 0 0 5px;
+  font-size: 13px;
+  line-height: 1.2;
+}
+
+.about-dialog-body p {
+  margin: 6px 0;
+}
+
+.about-dialog a {
+  color: #1f5f9f;
+}
+
+.about-dialog a:hover,
+.about-dialog a:focus-visible {
+  color: #123f6d;
+}
+
+.about-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.about-section-heading h3 {
+  margin: 0;
+}
+
+#copyAboutCitationButton,
+#dismissAboutButton {
+  min-height: 28px;
+  border: 1px solid #777;
+  border-radius: 4px;
+  padding: 4px 9px;
+  background: #f4f4f4;
+  color: #222;
+  cursor: pointer;
+}
+
+#copyAboutCitationButton:hover,
+#copyAboutCitationButton:focus-visible,
+#dismissAboutButton:hover,
+#dismissAboutButton:focus-visible {
+  background: #dedede;
+  outline: none;
+}
+
+.about-citation {
+  padding: 9px 10px;
+  border-left: 3px solid #59799a;
+  background: #f3f6f8;
+  color: #333;
+}
+
+.about-copy-status {
+  min-height: 1.2em;
+  color: #397c50;
+  font-size: 11px;
+}
+
+.about-project-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px 14px;
+}
+
+.about-license {
+  color: #555;
+  font-size: 12px;
+}
+
+.about-dialog-footer {
+  justify-content: flex-end;
+  border-top: 1px solid rgba(20, 20, 20, 0.16);
+}
+
+@media (max-width: 520px) {
+  .about-dialog {
+    padding: 8px;
+  }
+
+  .about-dialog-panel {
+    width: calc(100vw - 16px);
+    max-height: calc(100vh - 16px);
+  }
+}
+
 .czi-import-dialog {
   width: min(680px, calc(100vw - 40px));
   max-height: calc(100vh - 48px);
@@ -238,7 +483,12 @@ body.import-wizard-page {
   background: #f7f7f5;
   color: #222;
   box-shadow: 0 24px 70px rgba(0, 0, 0, 0.35);
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font:
+    13px/1.35 system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
 }
 
 .czi-import-dialog::backdrop {
@@ -488,7 +738,7 @@ body.import-wizard-page {
   position: absolute;
   top: 56px;
   left: 5px;
-  z-index: 3000;
+  z-index: var(--viewer-z-controls);
   box-sizing: border-box;
   width: min(198px, calc(100vw - 24px));
   max-height: min(680px, calc(100vh - 72px));
@@ -1550,7 +1800,7 @@ body.import-wizard-page {
   top: 0;
   width: 0;
   height: 0;
-  z-index: 2200;
+  z-index: var(--viewer-z-active);
   pointer-events: none;
   color: rgba(0, 214, 214, 0.9);
 }
@@ -1655,7 +1905,7 @@ body.import-wizard-page {
     BlinkMacSystemFont,
     "Segoe UI",
     sans-serif;
-  z-index: 3000;
+  z-index: var(--viewer-z-controls);
 }
 
 .controls-header {
@@ -1818,7 +2068,6 @@ body.import-wizard-page {
   background-color: var(--background-color, rgba(0, 0, 0, 0.5));
   white-space: nowrap;
   font-size: var(--font-size, 16px);
-  z-index: 1001;
 }
 
 .annotate-label {
@@ -1830,7 +2079,6 @@ body.import-wizard-page {
   background-color: var(--background-color, rgba(0, 0, 0, 0.5));
   white-space: nowrap;
   font-size: var(--font-size, 16px);
-  z-index: 1002;
   user-select: none;
   -webkit-user-select: none;
   touch-action: none;
@@ -1865,6 +2113,7 @@ body.import-wizard-page {
 
 .annotate-crosshairs {
   position: absolute;
+  z-index: var(--viewer-z-annotations);
   transform: translate(-50%, -50%);
 }
 
@@ -2879,6 +3128,7 @@ body.import-wizard-page {
 .aoi-rectangle {
   border: 2px solid red; /* Add a visible border */
   position: absolute; /* Ensure it's positioned correctly */
+  z-index: var(--viewer-z-reference);
 }
 
 .button-container {
@@ -3034,7 +3284,7 @@ body.import-wizard-page {
   transform: translate(-50%, -50%);
   cursor: grab;
   touch-action: none;
-  z-index: 1004;
+  z-index: var(--viewer-z-editing);
 }
 
 .annotation-vertex-handle:hover,
@@ -3060,7 +3310,7 @@ body.import-wizard-page {
   transform: translate(-50%, -50%);
   cursor: grab;
   touch-action: none;
-  z-index: 1004;
+  z-index: var(--viewer-z-editing);
 }
 
 .segment-aoi-vertex-handle:hover,
@@ -3234,11 +3484,25 @@ input[type="range"] {
   left: 50px;
   width: 220px;
   padding: 10px;
-  border: 1px solid #000000;
+  border: 1px solid rgba(20, 20, 20, 0.32);
   border-radius: 5px;
-  background-color: #fff;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  background-color: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.18);
+  color: #222;
+  font:
+    12px/1.2 system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
   z-index: 1000;
+}
+
+#imageSettingsMenu button,
+#imageSettingsMenu input,
+#imageSettingsMenu select,
+#imageSettingsMenu textarea {
+  font: inherit;
 }
 
 #imageSettingsMenu h4 {
@@ -3397,11 +3661,25 @@ input[type="range"] {
   left: 50px;
   width: 220px;
   padding: 10px;
-  border: 1px solid #000000;
+  border: 1px solid rgba(20, 20, 20, 0.32);
   border-radius: 5px;
-  background-color: #fff;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  background-color: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.18);
+  color: #222;
+  font:
+    12px/1.2 system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
   z-index: 1000;
+}
+
+.hiddenSettingsMenu button,
+.hiddenSettingsMenu input,
+.hiddenSettingsMenu select,
+.hiddenSettingsMenu textarea {
+  font: inherit;
 }
 
 .hiddenSettingsMenu h4 {
@@ -3422,6 +3700,17 @@ input[type="range"] {
   padding: 1px;
 }
 
+.hiddenSettingsMenu input[type="text"],
+.hiddenSettingsMenu input[type="number"],
+.hiddenSettingsMenu select {
+  box-sizing: border-box;
+  min-height: 24px;
+  border: 1px solid #777;
+  border-radius: 3px;
+  background: #fff;
+  color: #222;
+}
+
 .hiddenSettingsMenu button {
   margin-top: 15px;
   padding: 5px;
@@ -3439,7 +3728,7 @@ input[type="range"] {
 .hiddenSettingsMenu.annotation-settings-popover {
   position: fixed;
   box-sizing: border-box;
-  width: min(620px, calc(100vw - 16px));
+  width: min(640px, calc(100vw - 16px));
   max-height: min(420px, calc(100vh - 24px));
   overflow: auto;
   z-index: 4200;
@@ -3448,26 +3737,32 @@ input[type="range"] {
 .annotation-settings-popover .annotation-settings-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 12px;
+  gap: 8px;
 }
 
 .annotation-settings-popover .annotation-settings-section {
   min-width: 0;
   display: grid;
   align-content: start;
-  gap: 2px;
+  gap: 4px;
+  padding: 7px;
+  border: 1px solid rgba(20, 20, 20, 0.16);
+  border-radius: 4px;
+  background: rgba(248, 248, 248, 0.9);
 }
 
 .annotation-settings-popover h3 {
-  margin: 0 0 2px;
-  font-size: 14px;
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
   line-height: 1.2;
 }
 
 .annotation-settings-popover h4 {
-  margin: 3px 0 0;
+  margin: 4px 0 0;
   color: #555;
-  font-size: 12px;
+  font-size: 11px;
+  font-weight: 700;
   line-height: 1.2;
 }
 
@@ -3479,6 +3774,7 @@ input[type="range"] {
 
 .annotation-settings-popover .setting-row label {
   margin-top: 0;
+  margin-left: 0;
 }
 
 .annotation-settings-popover .setting-row .random-label {
@@ -3512,20 +3808,32 @@ input[type="range"] {
 }
 
 .annotation-settings-popover .apply-current-btn {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   margin-top: 0;
   padding: 0;
+  border: 1px solid rgba(20, 20, 20, 0.3);
+  background: #f3f3f3;
+  color: #222;
 }
 
 .annotation-settings-popover .apply-current-btn svg path {
+  stroke: currentColor;
   stroke-width: 3.4px;
+}
+
+.annotation-settings-popover .apply-current-btn:hover,
+.annotation-settings-popover .apply-current-btn:focus-visible {
+  background: #dedede;
+  outline: none;
 }
 
 .annotation-settings-popover .annotation-settings-actions {
   display: flex;
   gap: 5px;
-  margin-top: 4px;
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(20, 20, 20, 0.14);
 }
 
 .annotation-settings-popover .annotation-settings-actions button {
@@ -3649,10 +3957,10 @@ input[type="range"] {
 
 .measure-settings-popover > div {
   display: grid;
-  grid-template-columns: 78px max-content;
+  grid-template-columns: 74px max-content;
   align-items: center;
-  gap: 5px;
-  margin-bottom: 4px;
+  gap: 7px;
+  margin-bottom: 5px;
 }
 
 .measure-settings-popover > div:last-child {
@@ -3669,7 +3977,7 @@ input[type="range"] {
 }
 
 .measure-settings-popover select {
-  width: 74px;
+  width: 72px;
 }
 
 .measure-show-row {
@@ -3900,6 +4208,20 @@ input[type="range"] {
   border-radius: 4px;
   background: rgba(255, 255, 255, 0.98);
   box-shadow: 0 8px 22px rgba(0, 0, 0, 0.18);
+  color: #222;
+  font:
+    12px/1.2 system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+
+.measure-help-dialog button,
+.measure-help-dialog input,
+.measure-help-dialog select,
+.measure-help-dialog textarea {
+  font: inherit;
 }
 
 .measure-help-dialog[hidden] {
@@ -4817,27 +5139,49 @@ input[type="range"] {
   display: none;
 } */
 
-#measurement-overlay {
+#measurement-overlay,
+#annotation-overlay,
+#circle-overlay,
+#scale-overlay,
+#porosity-overlay {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  z-index: 1000; /* Above viewer */
+  pointer-events: none;
 }
 
 #annotation-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 1000; /* Above viewer */
+  z-index: var(--viewer-z-annotations);
+}
+
+/* OpenSeadragon positions point symbols and labels as HTML overlays rather
+   than drawing them on #annotation-overlay. These classes keep both forms in
+   the same named viewer tiers. */
+.viewer-overlay-annotation,
+.annotate-crosshairs {
+  z-index: var(--viewer-z-annotations);
+}
+
+.viewer-overlay-reference,
+.grid-crosshairs,
+.aoi-rectangle {
+  z-index: var(--viewer-z-reference);
+}
+
+.viewer-overlay-active,
+.annotate-crosshairs.annotation-selected {
+  z-index: var(--viewer-z-active);
+}
+
+#measurement-overlay {
+  z-index: var(--viewer-z-reference);
 }
 
 .annotation-marquee {
   position: absolute;
-  z-index: 1003;
+  z-index: var(--viewer-z-editing);
   box-sizing: border-box;
   border: 1px solid rgba(30, 110, 255, 0.95);
   background: rgba(30, 110, 255, 0.16);
@@ -4846,7 +5190,7 @@ input[type="range"] {
 
 .snapshot-selection {
   position: absolute;
-  z-index: 1004;
+  z-index: var(--viewer-z-active);
   box-sizing: border-box;
   border: 1px solid rgba(255, 193, 7, 0.98);
   background: rgba(255, 193, 7, 0.14);
@@ -4956,28 +5300,19 @@ input[type="range"] {
 }
 
 #circle-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 1000; /* Above viewer */
+  z-index: var(--viewer-z-active);
 }
 
 #scale-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  z-index: var(--viewer-z-active);
 }
 
 #porosity-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  z-index: var(--viewer-z-analysis);
+}
+
+.petro-image-scalebar {
+  z-index: var(--viewer-z-scalebar);
 }
 
 #viewer-container.porosity-pick-cursor,
@@ -5214,10 +5549,6 @@ input[type="range"] {
   height: 20px;
   min-width: 20px;
   padding: 1px;
-}
-
-.porosity-delete-button svg {
-  stroke: #8a1f1f;
 }
 
 .porosity-icon-button.is-off {
@@ -6589,7 +6920,21 @@ input[type="range"] {
   display: flex;
   justify-content: center;
   align-items: center;
+  color: #222;
+  font:
+    13px/1.35 system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
   z-index: 9999;
+}
+
+.modal-prompt button,
+.modal-prompt input,
+.modal-prompt select,
+.modal-prompt textarea {
+  font: inherit;
 }
 
 .modal-prompt-content {

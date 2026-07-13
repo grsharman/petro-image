@@ -310,57 +310,11 @@
       </div>
     </div>
     <div id="viewer-container">
-      <canvas
-        id="annotation-overlay"
-        style="
-          position: absolute;
-          top: 0;
-          left: 0;
-          z-index: 1000;
-          pointer-events: none;
-        "
-      ></canvas>
-      <canvas
-        id="measurement-overlay"
-        style="
-          position: absolute;
-          top: 0;
-          left: 0;
-          z-index: 1000;
-          pointer-events: none;
-        "
-      ></canvas>
-      <canvas
-        id="circle-overlay"
-        style="
-          position: absolute;
-          top: 0;
-          left: 0;
-          z-index: 1001;
-          pointer-events: none;
-        "
-      ></canvas>
-      <canvas
-        id="scale-overlay"
-        class="electron-only"
-        style="
-          position: absolute;
-          top: 0;
-          left: 0;
-          z-index: 1002;
-          pointer-events: none;
-        "
-      ></canvas>
-      <canvas
-        id="porosity-overlay"
-        style="
-          position: absolute;
-          top: 0;
-          left: 0;
-          z-index: 999;
-          pointer-events: none;
-        "
-      ></canvas>
+      <canvas id="annotation-overlay"></canvas>
+      <canvas id="measurement-overlay"></canvas>
+      <canvas id="circle-overlay"></canvas>
+      <canvas id="scale-overlay" class="electron-only"></canvas>
+      <canvas id="porosity-overlay"></canvas>
       <div id="segment-reticle" class="segment-reticle" hidden>
         <span class="segment-reticle-line segment-reticle-line-horizontal"></span>
         <span class="segment-reticle-line segment-reticle-line-vertical"></span>
@@ -837,6 +791,90 @@
               <span class="electron-action-description">Reorder and update samples</span>
             </span>
           </button>
+          <div class="electron-action-separator" role="separator"></div>
+          <button
+            id="openAboutButton"
+            class="electron-action-item"
+            type="button"
+            role="menuitem"
+          >
+            <span class="electron-action-icon about-action-icon" aria-hidden="true">
+              <span>i</span>
+            </span>
+            <span>
+              <span class="electron-action-title">About petro-image</span>
+              <span class="electron-action-description">Version, authors, citation, and links</span>
+            </span>
+          </button>
+        </div>
+      </div>
+      <div
+        id="aboutDialog"
+        class="about-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="aboutDialogTitle"
+        hidden
+      >
+        <div class="about-dialog-panel">
+          <header class="about-dialog-header">
+            <div class="about-brand">
+              <img src="assets/favicon-32x32.png" alt="" />
+              <div>
+                <h2 id="aboutDialogTitle">petro-image</h2>
+                <p>Open and accessible digital microscopy</p>
+              </div>
+            </div>
+            <button id="closeAboutButton" type="button" aria-label="Close About">×</button>
+          </header>
+          <div class="about-dialog-body">
+            <p class="about-version">Version <span id="aboutVersion">Loading…</span></p>
+            <p>
+              petro-image is an open-source platform for viewing, comparing,
+              annotating, and analyzing high-resolution microscopic images.
+            </p>
+
+            <section>
+              <h3>Authors</h3>
+              <p>
+                Created by
+                <a href="https://github.com/grsharman" target="_blank" rel="noopener noreferrer">Glenn R. Sharman</a>
+                and
+                <a href="https://github.com/jonathansharman" target="_blank" rel="noopener noreferrer">Jonathan P. Sharman</a>.
+              </p>
+            </section>
+
+            <section>
+              <div class="about-section-heading">
+                <h3>How to cite</h3>
+                <button id="copyAboutCitationButton" type="button">Copy citation</button>
+              </div>
+              <p id="aboutCitation" class="about-citation">
+                Sharman, G., and Sharman, J., 2025, petro-image: A web-based
+                platform for open and accessible digital microscopy: Geological
+                Society of America Abstracts with Programs, v. 57, no. 6,
+                <a href="https://doi.org/10.1130/abs/2025AM-7921" target="_blank" rel="noopener noreferrer">https://doi.org/10.1130/abs/2025AM-7921</a>.
+              </p>
+              <p id="aboutCopyStatus" class="about-copy-status" aria-live="polite"></p>
+            </section>
+
+            <section>
+              <h3>Project</h3>
+              <div class="about-project-links">
+                <a href="https://grsharman.github.io/petro-image/" target="_blank" rel="noopener noreferrer">Website</a>
+                <a href="https://github.com/grsharman/petro-image" target="_blank" rel="noopener noreferrer">GitHub</a>
+                <a href="https://github.com/grsharman/petro-image/blob/main/README.md" target="_blank" rel="noopener noreferrer">Documentation</a>
+              </div>
+            </section>
+
+            <p class="about-license">
+              Licensed under the
+              <a href="https://www.gnu.org/licenses/gpl-3.0.html" target="_blank" rel="noopener noreferrer">GNU General Public License v3.0</a>.
+            </p>
+          </div>
+          <footer class="about-dialog-footer">
+            <button id="dismissAboutButton" type="button">Close</button>
+          </footer>
         </div>
       </div>
       <dialog
@@ -1923,7 +1961,7 @@
             />
             <button
               id="porosityDeleteTypeButton"
-              class="porosity-icon-button porosity-delete-button"
+              class="porosity-icon-button"
               type="button"
               title="Delete porosity type"
               aria-label="Delete porosity type"
@@ -2074,7 +2112,7 @@
             <div class="porosity-thickness-overlay-grid">
               <label><span>Parameter</span><select id="porosityCalculatedRasterParameter"><optgroup label="Local thickness"><option value="localThickness-radius">Radius</option><option value="localThickness-diameter" selected>Diameter</option></optgroup><optgroup label="Distance"><option value="distance">Distance to boundary</option></optgroup><optgroup label="Component property"><option value="component-area">Area</option><option value="component-equivalentDiameter">Equivalent diameter</option><option value="component-meanThickness">Mean thickness</option><option value="component-maxThickness">Max thickness</option><option value="component-circularity">Circularity</option><option value="component-aspectRatio">Aspect ratio</option><option value="component-orientation">Orientation</option><option value="component-id">Component ID</option></optgroup></select></label>
               <label><span>Scale</span><select id="porosityThicknessOverlayScale"><option value="linear">Linear</option><option value="log2" selected>Log2</option><option value="log10">Log10</option></select></label>
-              <label><span>Colors</span><select id="porosityThicknessOverlayColormap"><option value="viridis" selected>Viridis</option><option value="inferno">Inferno</option><option value="turbo">Turbo</option><option value="gray">Grayscale</option></select></label>
+              <label><span>Colors</span><select id="porosityThicknessOverlayColormap"><option value="viridis" selected>Viridis</option><option value="inferno">Inferno</option><option value="turbo">Turbo</option><option value="blues">Blues</option><option value="gray">Grayscale</option></select></label>
               <label><span>Opacity</span><input id="porosityThicknessOverlayOpacity" type="number" min="5" max="100" step="1" value="80" /></label>
             </div>
             <label><input id="porosityThicknessOverlayAutoRange" type="checkbox" checked /><span>Auto range</span></label>
@@ -5242,6 +5280,7 @@
           <div id="measureToolButtons" class="measure-tool-grid">
             <div class="measure-tool-row">
               <button
+                id="measureLineButton"
                 type="button"
                 class="custom-button"
                 data-measure-tool="line"
@@ -5261,6 +5300,7 @@
             </div>
             <div class="measure-tool-row">
               <button
+                id="measurePolygonButton"
                 type="button"
                 class="custom-button"
                 data-measure-tool="polygon"

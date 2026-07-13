@@ -1,6 +1,7 @@
 const { contextBridge, ipcRenderer } = require("electron");
 
 contextBridge.exposeInMainWorld("electronAPI", {
+  getAppVersion: () => ipcRenderer.invoke("get-app-version"),
   setUnsavedState: (state) => ipcRenderer.send("set-unsaved-state", state),
   openImportWizard: () => ipcRenderer.invoke("open-import-wizard"),
   resizeImportWizardToContent: (size) =>

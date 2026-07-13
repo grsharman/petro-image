@@ -11,7 +11,7 @@ import {
 import { fileURLToPath } from "url";
 import path from "path";
 import fs from "fs/promises";
-import { createReadStream } from "fs";
+import { createReadStream, writeFileSync } from "fs";
 import { spawn } from "child_process";
 import http from "http";
 import { randomUUID } from "crypto";
@@ -23,6 +23,8 @@ const __dirname = path.dirname(__filename);
 let mainWindow;
 let importWizardWindow;
 let hasUnsavedWork = false; // main process copy
+let unsavedWorkLabels = [];
+let closeWarningInProgress = false;
 let localFileServer;
 let localFileServerPort;
 let samWorker = null;
@@ -30,11 +32,13 @@ let segmenteverygrainWorker = null;
 let activeSegmenteverygrainChild = null;
 let activeCziConversionChild = null;
 let activeCziConversionOutput = "";
+let windowStateSaveTimer = null;
 const localFileServerToken = randomUUID();
 const grantedLocalRoots = [];
 const APP_TITLE = "petro-image";
 const WELCOME_LIBRARY_FILE_NAME = "welcome_library.json";
 const USER_LIBRARY_FILE_NAME = "library.json";
+const WINDOW_STATE_FILE_NAME = "window-state.json";
 const DZI_FOLDER_NAME = "dzi";
 const CZI_WORKER_PATH = path.join(__dirname, "scripts", "axioscan_czi_worker.py");
 const CZI_RESOLUTION_SCALES = new Set([1, 0.5, 0.25, 0.125, 0.0625, 0.03125, 0.015625]);
@@ -2188,13 +2192,110 @@ function getDefaultWindowBounds() {
   };
 }
 
-const createWindow = () => {
+function getWindowStatePath() {
+  return path.join(app.getPath("userData"), WINDOW_STATE_FILE_NAME);
+}
+
+function getRectIntersectionArea(first, second) {
+  const left = Math.max(first.x, second.x);
+  const top = Math.max(first.y, second.y);
+  const right = Math.min(first.x + first.width, second.x + second.width);
+  const bottom = Math.min(first.y + first.height, second.y + second.height);
+  return Math.max(0, right - left) * Math.max(0, bottom - top);
+}
+
+async function getRestoredWindowState() {
+  try {
+    const stored = JSON.parse(await fs.readFile(getWindowStatePath(), "utf8"));
+    const values = [stored?.x, stored?.y, stored?.width, stored?.height];
+    if (!values.every(Number.isFinite)) return null;
+
+    const candidate = {
+      x: Math.round(stored.x),
+      y: Math.round(stored.y),
+      width: Math.max(800, Math.round(stored.width)),
+      height: Math.max(600, Math.round(stored.height)),
+    };
+    const displays = screen.getAllDisplays();
+    const bestDisplay = displays
+      .map((display) => ({
+        display,
+        area: getRectIntersectionArea(candidate, display.workArea),
+      }))
+      .sort((a, b) => b.area - a.area)[0];
+    if (!bestDisplay || bestDisplay.area <= 0) return null;
+
+    const workArea = bestDisplay.display.workArea;
+    const width = Math.min(candidate.width, workArea.width);
+    const height = Math.min(candidate.height, workArea.height);
+    return {
+      x: Math.min(
+        Math.max(candidate.x, workArea.x),
+        workArea.x + workArea.width - width,
+      ),
+      y: Math.min(
+        Math.max(candidate.y, workArea.y),
+        workArea.y + workArea.height - height,
+      ),
+      width,
+      height,
+      maximized: Boolean(stored.maximized),
+    };
+  } catch (error) {
+    if (error?.code !== "ENOENT") {
+      console.warn("Could not restore the main window state:", error);
+    }
+    return null;
+  }
+}
+
+function saveMainWindowState() {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  try {
+    const bounds = mainWindow.getNormalBounds();
+    writeFileSync(
+      getWindowStatePath(),
+      JSON.stringify(
+        {
+          x: bounds.x,
+          y: bounds.y,
+          width: bounds.width,
+          height: bounds.height,
+          maximized: mainWindow.isMaximized(),
+        },
+        null,
+        2,
+      ),
+      "utf8",
+    );
+  } catch (error) {
+    console.warn("Could not save the main window state:", error);
+  }
+}
+
+function scheduleMainWindowStateSave() {
+  if (windowStateSaveTimer !== null) clearTimeout(windowStateSaveTimer);
+  windowStateSaveTimer = setTimeout(() => {
+    windowStateSaveTimer = null;
+    saveMainWindowState();
+  }, 250);
+}
+
+const createWindow = async () => {
   const defaultBounds = getDefaultWindowBounds();
+  const restoredState = await getRestoredWindowState();
+  const initialBounds = restoredState
+    ? {
+        x: restoredState.x,
+        y: restoredState.y,
+        width: restoredState.width,
+        height: restoredState.height,
+      }
+    : defaultBounds;
 
   mainWindow = new BrowserWindow({
     title: APP_TITLE,
-    width: defaultBounds.width,
-    height: defaultBounds.height,
+    ...initialBounds,
     minWidth: 800,
     minHeight: 600,
     webPreferences: {
@@ -2204,23 +2305,56 @@ const createWindow = () => {
     },
   });
 
+  if (restoredState?.maximized) mainWindow.maximize();
+
+  ["move", "resize", "maximize", "unmaximize"].forEach((eventName) => {
+    mainWindow.on(eventName, scheduleMainWindowStateSave);
+  });
+
   mainWindow.setMenuBarVisibility(false);
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    try {
+      const protocol = new URL(url).protocol;
+      if (protocol === "http:" || protocol === "https:") {
+        shell.openExternal(url);
+      }
+    } catch (error) {
+      console.warn("Could not open external link:", error);
+    }
+    return { action: "deny" };
+  });
   mainWindow.loadFile("index.html");
 
   mainWindow.on("close", async (e) => {
+    if (windowStateSaveTimer !== null) {
+      clearTimeout(windowStateSaveTimer);
+      windowStateSaveTimer = null;
+    }
+    saveMainWindowState();
     console.log("closing window, unsaved work?", hasUnsavedWork);
     if (hasUnsavedWork) {
       e.preventDefault();
-      const result = await dialog.showMessageBox(mainWindow, {
-        type: "warning",
-        buttons: ["Cancel", "Quit Without Saving"],
-        defaultId: 1,
-        cancelId: 0,
-        message: "You have unsaved changes. Are you sure you want to quit?",
-      });
-      if (result.response === 1) {
-        hasUnsavedWork = false; // allow closing next time
-        mainWindow.destroy();
+      if (closeWarningInProgress) return;
+      closeWarningInProgress = true;
+      try {
+        const detail = unsavedWorkLabels.length
+          ? `Unsaved: ${unsavedWorkLabels.join(", ")}.`
+          : "";
+        const result = await dialog.showMessageBox(mainWindow, {
+          type: "warning",
+          buttons: ["Cancel", "Quit Without Saving"],
+          defaultId: 1,
+          cancelId: 0,
+          message: "You have unsaved changes. Are you sure you want to quit?",
+          detail,
+        });
+        if (result.response === 1) {
+          hasUnsavedWork = false; // allow closing next time
+          unsavedWorkLabels = [];
+          mainWindow.destroy();
+        }
+      } finally {
+        closeWarningInProgress = false;
       }
     }
   });
@@ -2228,9 +2362,18 @@ const createWindow = () => {
 
 // IPC listener to update unsaved work state
 ipcMain.on("set-unsaved-state", (event, state) => {
-  console.log("Main process received unsaved state:", state);
-  hasUnsavedWork = state;
+  const payload = state && typeof state === "object" ? state : null;
+  hasUnsavedWork = payload ? Boolean(payload.dirty) : Boolean(state);
+  unsavedWorkLabels = payload
+    ? (payload.labels || []).filter((label) => typeof label === "string")
+    : [];
+  console.log("Main process received unsaved state:", {
+    dirty: hasUnsavedWork,
+    labels: unsavedWorkLabels,
+  });
 });
+
+ipcMain.handle("get-app-version", () => app.getVersion());
 
 ipcMain.handle("open-import-wizard", () => {
   if (importWizardWindow && !importWizardWindow.isDestroyed()) {
@@ -3234,7 +3377,7 @@ ipcMain.handle("complete-sample-import", (event, { jsonData, selectedTitle }) =>
 
 app.whenReady().then(async () => {
   await startLocalFileServer();
-  createWindow();
+  await createWindow();
 });
 
 app.on("before-quit", () => {

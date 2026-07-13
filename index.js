@@ -8,6 +8,7 @@ let currentLibraryPath = "";
 let annotationFiles = {}; // For loading predefined annotations
 let groupMapping = {}; // To map groups to sample indices
 let lastSelectedSampleByGroup = {};
+let committedGroupSelection = "";
 let scrollIndex = 1e6; // Prevents indexing error if starting at 0, due to negative numbers
 let tileSetScrollIndices = [];
 let enableStageRotation = false;
@@ -298,6 +299,7 @@ async function processJSON(data, options = {}) {
   annotationFiles = {}; // For loading predefined annotations
   groupMapping = {}; // To map groups to sample indices
   lastSelectedSampleByGroup = {};
+  committedGroupSelection = "";
 
   samples.forEach((sample, index) => {
     annotationFiles[sample.title] = sample.annotations;
@@ -363,25 +365,31 @@ async function processJSON(data, options = {}) {
 
 // Automatically load the default JSON file when the page loads
 document.addEventListener("DOMContentLoaded", async () => {
+  let libraryLoaded = false;
   if (window.electronAPI?.initializeProjectLibrary) {
     try {
       const result = await window.electronAPI.initializeProjectLibrary();
       currentLibraryPath = result?.filePath || "";
       await loadSampleJSON(result.jsonData);
-      return;
+      libraryLoaded = true;
     } catch (error) {
       console.error("Could not initialize project library:", error);
     }
   }
 
-  loadSampleJSON("samples.json");
+  if (!libraryLoaded) {
+    await loadSampleJSON("samples.json");
+  }
+  initializeToolPaletteWorkspacePersistence();
 });
 
 async function loadLibraryWithElectronDialog() {
+  if (!confirmDiscardUnsavedWork("Loading another library")) return;
   try {
     const result = await window.electronAPI.selectExistingJsonFile();
     if (result?.canceled) return;
 
+    clearUnsavedWork();
     currentLibraryPath = result.filePath || "";
     await loadSampleJSON(result.jsonData);
   } catch (error) {
@@ -394,10 +402,12 @@ async function loadLibraryWithElectronDialog() {
 }
 
 async function changeProjectWithElectronDialog() {
+  if (!confirmDiscardUnsavedWork("Changing projects")) return;
   try {
     const result = await window.electronAPI.changeProjectLibrary();
     if (!result?.jsonData) return;
 
+    clearUnsavedWork();
     currentLibraryPath = result.filePath || "";
     await loadSampleJSON(result.jsonData);
   } catch (error) {
@@ -445,6 +455,15 @@ const startCziConversionButton = document.getElementById(
 );
 const electronActionButton = document.getElementById("electronActionButton");
 const electronActionTray = document.getElementById("electronActionTray");
+const openAboutButton = document.getElementById("openAboutButton");
+const aboutDialog = document.getElementById("aboutDialog");
+const closeAboutButton = document.getElementById("closeAboutButton");
+const dismissAboutButton = document.getElementById("dismissAboutButton");
+const aboutVersion = document.getElementById("aboutVersion");
+const copyAboutCitationButton = document.getElementById(
+  "copyAboutCitationButton",
+);
+const aboutCopyStatus = document.getElementById("aboutCopyStatus");
 const viewerToolsButton = document.getElementById("viewerToolsButton");
 const viewerToolsTray = document.getElementById("viewerToolsTray");
 const changeProjectButton = document.getElementById("changeProjectButton");
@@ -1082,6 +1101,8 @@ const openAnnotationTransferWorkflowButton = document.getElementById(
   "openAnnotationTransferWorkflowButton",
 );
 const hasElectronActions = Boolean(window.electronAPI);
+const PETRO_IMAGE_CITATION =
+  "Sharman, G., and Sharman, J., 2025, petro-image: A web-based platform for open and accessible digital microscopy: Geological Society of America Abstracts with Programs, v. 57, no. 6, https://doi.org/10.1130/abs/2025AM-7921.";
 const hasSharedViewerMenus = Boolean(
   electronActionButton &&
   electronActionTray &&
@@ -1200,7 +1221,9 @@ const TOOL_PALETTE_EDGE_MARGIN = 5;
 const TOOL_PALETTE_MIN_VISIBLE_WIDTH = 80;
 const TOOL_PALETTE_MIN_VISIBLE_HEIGHT = 32;
 const TOOL_PALETTE_EDGE_SNAP_DISTANCE = 18;
+const TOOL_PALETTE_WORKSPACE_STORAGE_KEY = "petroImage.toolPaletteWorkspace";
 let toolPaletteClampFrame = null;
+let toolPaletteWorkspaceObserver = null;
 
 function getToolPaletteEdgeAffinity(palette, containerRect, paletteRect) {
   const left = Number.parseFloat(
@@ -1652,13 +1675,14 @@ function makeToolPaletteDraggable(palette, handle, storageKey) {
   handle.addEventListener("pointercancel", stopDrag);
 }
 
-function toggleToolPaletteMinimized(palette, button) {
+function setToolPaletteMinimized(palette, button, minimized) {
   if (!palette || !button) return;
 
   const title =
     document.getElementById(palette.getAttribute("aria-labelledby"))
       ?.textContent || "panel";
-  const isMinimized = palette.classList.toggle("tool-palette-minimized");
+  const isMinimized = Boolean(minimized);
+  palette.classList.toggle("tool-palette-minimized", isMinimized);
   button.setAttribute("aria-pressed", String(isMinimized));
   button.setAttribute(
     "aria-label",
@@ -1668,9 +1692,140 @@ function toggleToolPaletteMinimized(palette, button) {
   clampToolPaletteToViewer(palette);
 }
 
+function toggleToolPaletteMinimized(palette, button) {
+  if (!palette || !button) return;
+  setToolPaletteMinimized(
+    palette,
+    button,
+    !palette.classList.contains("tool-palette-minimized"),
+  );
+}
+
 function restoreToolPaletteFromMinimized(palette, button) {
   if (!palette?.classList.contains("tool-palette-minimized")) return;
   toggleToolPaletteMinimized(palette, button);
+}
+
+function getToolPaletteWorkspaceEntries() {
+  return [
+    {
+      key: "gridCount",
+      palette: gridCountPalette,
+      button: minimizeGridCountPaletteButton,
+      openButton: openGridCountPaletteButton,
+      open: openGridCountPalette,
+    },
+    {
+      key: "annotate",
+      palette: annotatePalette,
+      button: minimizeAnnotatePaletteButton,
+      openButton: openAnnotatePaletteButton,
+      open: openAnnotatePalette,
+    },
+    {
+      key: "measure",
+      palette: measurePalette,
+      button: minimizeMeasurePaletteButton,
+      openButton: openMeasurePaletteButton,
+      open: openMeasurePalette,
+    },
+    {
+      key: "snapshot",
+      palette: snapshotPalette,
+      button: minimizeSnapshotPaletteButton,
+      openButton: openSnapshotPaletteButton,
+      open: openSnapshotPalette,
+    },
+    {
+      key: "transformImagery",
+      palette: transformImageryPalette,
+      button: minimizeTransformImageryPaletteButton,
+      openButton: openTransformImageryPaletteButton,
+      open: openTransformImageryPalette,
+    },
+    {
+      key: "classify",
+      palette: classifyPalette,
+      button: minimizeClassifyPaletteButton,
+      openButton: openClassifyPaletteButton,
+      open: openClassifyPalette,
+    },
+    {
+      key: "porosity",
+      palette: porosityPalette,
+      button: minimizePorosityPaletteButton,
+      openButton: openPorosityEstimatorButton,
+      open: openPorosityEstimator,
+    },
+    {
+      key: "segment",
+      palette: segmentPalette,
+      button: minimizeSegmentPaletteButton,
+      openButton: openSegmentPaletteButton,
+      open: openSegmentPalette,
+    },
+  ].filter((entry) => entry.palette && entry.button && entry.openButton);
+}
+
+function readToolPaletteWorkspaceState() {
+  try {
+    const state = JSON.parse(
+      localStorage.getItem(TOOL_PALETTE_WORKSPACE_STORAGE_KEY) || "{}",
+    );
+    return state && typeof state === "object" ? state : {};
+  } catch (error) {
+    console.warn("Could not read the tool palette workspace:", error);
+    return {};
+  }
+}
+
+function saveToolPaletteWorkspaceState() {
+  const state = readToolPaletteWorkspaceState();
+  getToolPaletteWorkspaceEntries().forEach((entry) => {
+    if (entry.openButton.hidden) return;
+    state[entry.key] = {
+      open: !entry.palette.hidden,
+      minimized: entry.palette.classList.contains("tool-palette-minimized"),
+    };
+  });
+  try {
+    localStorage.setItem(
+      TOOL_PALETTE_WORKSPACE_STORAGE_KEY,
+      JSON.stringify(state),
+    );
+  } catch (error) {
+    console.warn("Could not save the tool palette workspace:", error);
+  }
+}
+
+function initializeToolPaletteWorkspacePersistence() {
+  if (toolPaletteWorkspaceObserver || !hasSharedViewerMenus) return;
+
+  const entries = getToolPaletteWorkspaceEntries().filter(
+    (entry) => !entry.openButton.hidden,
+  );
+  const savedState = readToolPaletteWorkspaceState();
+  entries.forEach((entry) => {
+    const state = savedState[entry.key];
+    if (!state?.open) return;
+    entry.open();
+    setToolPaletteMinimized(entry.palette, entry.button, state.minimized);
+  });
+
+  toolPaletteWorkspaceObserver = new MutationObserver(() => {
+    saveToolPaletteWorkspaceState();
+  });
+  entries.forEach((entry) => {
+    toolPaletteWorkspaceObserver.observe(entry.palette, {
+      attributes: true,
+      attributeFilter: ["hidden", "class"],
+    });
+  });
+  saveToolPaletteWorkspaceState();
+  requestAnimationFrame(() => {
+    clampOpenToolPalettes();
+    requestAnimationFrame(clampOpenToolPalettes);
+  });
 }
 
 function clampOpenToolPalettes() {
@@ -5013,6 +5168,7 @@ function exportPorosityRecipe() {
     new Blob([json], { type: "application/json;charset=utf-8" }),
     getPorosityExportFilename("recipe", "json"),
   );
+  unsavedPorosity(false);
 }
 
 function exportPorosityResultsJson() {
@@ -6259,6 +6415,7 @@ function addPorosityType(name) {
   renderPorosityTypeSelect(type.id);
   syncPorosityControlsFromActiveType();
   drawPorosityOverlay();
+  unsavedPorosity(true);
 }
 
 function renamePorosityType(typeId, name) {
@@ -6280,6 +6437,7 @@ function renamePorosityType(typeId, name) {
   type.name = trimmedName;
   renderPorosityTypeSelect(type.id);
   updatePorosityControls(`${type.name} renamed.`);
+  unsavedPorosity(true);
 }
 
 function deletePorosityType(typeId = activePorosityTypeId) {
@@ -6302,6 +6460,7 @@ function deletePorosityType(typeId = activePorosityTypeId) {
   syncPorosityControlsFromActiveType();
   drawPorosityOverlay();
   updatePorosityControls(`${removedType.name} deleted.`);
+  unsavedPorosity(true);
 }
 
 function drawPorosityMask(ctx, mask) {
@@ -6360,6 +6519,13 @@ const POROSITY_THICKNESS_COLORMAPS = {
     [34, 208, 139],
     [249, 190, 31],
     [122, 4, 3],
+  ],
+  blues: [
+    [247, 251, 255],
+    [198, 219, 239],
+    [107, 174, 214],
+    [33, 113, 181],
+    [8, 48, 107],
   ],
   gray: [
     [0, 0, 0],
@@ -12548,6 +12714,7 @@ function selectImportedCziSample(titleText) {
 async function startCziConversion() {
   const inspection = cziImportState.inspection;
   if (!inspection?.isSupportedProfile || cziImportState.converting) return;
+  if (!confirmDiscardUnsavedWork("Importing and opening a CZI sample")) return;
   const titleText = getUniqueCziSampleTitle(cziSampleTitle.value);
   cziSampleTitle.value = titleText;
   const createNewLibrary = cziLibraryMode.value === "create";
@@ -12586,6 +12753,7 @@ async function startCziConversion() {
           samples: [...samples.map(serializeSampleForLibrary), result.sample],
         };
     await saveLibraryData(jsonData, { targetPath: newLibraryPath });
+    clearUnsavedWork();
     await loadSampleJSON(jsonData, { autoLoadSample: false });
     selectImportedCziSample(titleText);
     cziProgressBar.value = 100;
@@ -12627,6 +12795,102 @@ function openCziImportDialog() {
 function closeCziImportDialog() {
   if (cziImportState.converting) return;
   cziImportDialog?.close();
+}
+
+async function resolveAboutVersion() {
+  if (window.electronAPI?.getAppVersion) {
+    try {
+      return await window.electronAPI.getAppVersion();
+    } catch (error) {
+      console.warn("Could not read the Electron app version:", error);
+    }
+  }
+
+  try {
+    const response = await fetch("package.json", { cache: "no-store" });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const packageData = await response.json();
+    if (packageData?.version) return packageData.version;
+  } catch (error) {
+    console.warn("Could not read the web app version:", error);
+  }
+
+  return "Development build";
+}
+
+async function updateAboutVersion() {
+  if (!aboutVersion || aboutVersion.dataset.loaded === "true") return;
+  aboutVersion.textContent = await resolveAboutVersion();
+  aboutVersion.dataset.loaded = "true";
+}
+
+function openAboutDialog() {
+  if (!aboutDialog) return;
+  closeElectronActionTray();
+  closeViewerToolsTray();
+  if (aboutCopyStatus) aboutCopyStatus.textContent = "";
+  aboutDialog.hidden = false;
+  updateAboutVersion();
+  closeAboutButton?.focus();
+}
+
+function closeAboutDialog() {
+  if (!aboutDialog || aboutDialog.hidden) return;
+  aboutDialog.hidden = true;
+  if (aboutCopyStatus) aboutCopyStatus.textContent = "";
+  openAboutButton?.focus();
+}
+
+function trapAboutDialogFocus(event) {
+  if (event.key !== "Tab" || !aboutDialog || aboutDialog.hidden) return;
+  const focusable = Array.from(
+    aboutDialog.querySelectorAll(
+      'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+    ),
+  ).filter((element) => !element.hidden);
+  if (focusable.length === 0) return;
+
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first.focus();
+  }
+}
+
+async function copyTextToClipboard(text) {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.setAttribute("readonly", "");
+  textarea.style.position = "fixed";
+  textarea.style.opacity = "0";
+  document.body.appendChild(textarea);
+  textarea.select();
+  const copied = document.execCommand("copy");
+  textarea.remove();
+  if (!copied) throw new Error("Clipboard access is unavailable.");
+}
+
+async function copyAboutCitation() {
+  if (!copyAboutCitationButton || !aboutCopyStatus) return;
+  copyAboutCitationButton.disabled = true;
+  try {
+    await copyTextToClipboard(PETRO_IMAGE_CITATION);
+    aboutCopyStatus.textContent = "Citation copied to clipboard.";
+  } catch (error) {
+    console.error("Could not copy the petro-image citation:", error);
+    aboutCopyStatus.textContent = "Could not copy the citation.";
+  } finally {
+    copyAboutCitationButton.disabled = false;
+  }
 }
 
 function closeElectronActionTray() {
@@ -12707,12 +12971,25 @@ if (hasSharedViewerMenus) {
     event.stopPropagation();
   });
 
+  openAboutButton?.addEventListener("click", function (event) {
+    event.preventDefault();
+    openAboutDialog();
+  });
+  closeAboutButton?.addEventListener("click", closeAboutDialog);
+  dismissAboutButton?.addEventListener("click", closeAboutDialog);
+  copyAboutCitationButton?.addEventListener("click", copyAboutCitation);
+  aboutDialog?.addEventListener("click", function (event) {
+    if (event.target === aboutDialog) closeAboutDialog();
+  });
+  aboutDialog?.addEventListener("keydown", trapAboutDialogFocus);
+
   document.addEventListener("click", function () {
     closeElectronActionTray();
     closeViewerToolsTray();
   });
   document.addEventListener("keydown", function (event) {
     if (event.key === "Escape") {
+      closeAboutDialog();
       closeElectronActionTray();
       closeViewerToolsTray();
       closeGridCountPalette();
@@ -13304,6 +13581,7 @@ if (hasSharedViewerMenus && openPorosityEstimatorButton && porosityPalette) {
     drawPorosityOverlay();
     renderPorositySamples();
     updatePorosityControls("Estimate again after changing tile sets.");
+    unsavedPorosity(true);
   });
   porosityResolutionMode?.addEventListener("change", function () {
     porosityAnalysisResolutionMode = getPorosityAnalysisResolutionMode();
@@ -13316,6 +13594,7 @@ if (hasSharedViewerMenus && openPorosityEstimatorButton && porosityPalette) {
     updatePorosityControls(
       "Estimate again after changing analysis resolution.",
     );
+    unsavedPorosity(true);
   });
   porosityAddTypeButton?.addEventListener("click", function () {
     showPrompt(
@@ -13400,6 +13679,7 @@ if (hasSharedViewerMenus && openPorosityEstimatorButton && porosityPalette) {
         const estimateGeneration = porosityEstimateGeneration;
         await estimateAllPorosityTypes("aoi", estimateGeneration);
         clearPorosityProgress();
+        unsavedPorosity(false);
       } catch (error) {
         const isSourceValidationError =
           /This recipe was created for|different dimensions/.test(
@@ -13674,14 +13954,17 @@ if (hasSharedViewerMenus && openPorosityEstimatorButton && porosityPalette) {
   porosityTolerance?.addEventListener("input", function () {
     syncActivePorosityTypeFromControls();
     schedulePorosityTolerancePreview();
+    unsavedPorosity(true);
   });
   porosityToleranceValue?.addEventListener("change", function () {
     setPorosityToleranceControlValue(porosityToleranceValue.value);
     schedulePorosityTolerancePreview();
+    unsavedPorosity(true);
   });
   porosityOverlayColor?.addEventListener("input", function () {
     syncActivePorosityTypeFromControls();
     schedulePorosityMaskRecolor();
+    unsavedPorosity(true);
   });
   porosityOverlayOpacity?.addEventListener("input", function () {
     if (porosityOverlayOpacityValue) {
@@ -13689,11 +13972,13 @@ if (hasSharedViewerMenus && openPorosityEstimatorButton && porosityPalette) {
     }
     syncActivePorosityTypeFromControls();
     schedulePorosityMaskRecolor();
+    unsavedPorosity(true);
   });
   porosityOverlayOpacityValue?.addEventListener("change", function () {
     setPorosityOverlayOpacityControlValue(porosityOverlayOpacityValue.value);
     syncActivePorosityTypeFromControls();
     schedulePorosityMaskRecolor();
+    unsavedPorosity(true);
   });
   makeToolPaletteDraggable(
     porosityPalette,
@@ -13971,6 +14256,11 @@ loadLibraryInput.addEventListener("change", function (event) {
 
     try {
       const parsedJSON = JSON.parse(sampleJSON);
+      if (!confirmDiscardUnsavedWork("Loading another library")) {
+        fileInput.value = "";
+        return;
+      }
+      clearUnsavedWork();
       loadSampleJSON(parsedJSON);
     } catch (error) {
       console.error("Error parsing JSON file:", error);
@@ -14007,6 +14297,20 @@ function populateGroupDropdown() {
     const selectedGroup = this.value;
     populateSampleDropdown(selectedGroup);
   };
+}
+
+function restoreCommittedSampleSelection() {
+  const groupDropdown = document.getElementById("groupDropdown");
+  const sampleDropdown = document.getElementById("sampleDropdown");
+  const fallbackGroup = Object.keys(groupMapping).find((group) =>
+    groupMapping[group]?.includes(currentIndex),
+  );
+  const group = groupMapping[committedGroupSelection]?.includes(currentIndex)
+    ? committedGroupSelection
+    : fallbackGroup || "All";
+  groupDropdown.value = group;
+  populateSampleDropdown(group, { autoSelect: false });
+  sampleDropdown.value = String(currentIndex);
 }
 
 function rememberSelectedSampleForGroup(group, sampleIndex) {
@@ -14058,7 +14362,12 @@ const viewer = OpenSeadragon({
   maxZoomPixelRatio: 100,
   id: "viewer-container",
   prefixUrl: "js/images/",
-  zoomPerClick: 1, // Disable zoom on click (or shift+click)
+  gestureSettingsMouse: {
+    clickToZoom: false,
+  },
+  gestureSettingsPen: {
+    clickToZoom: false,
+  },
   sequenceMode: false,
   showNavigationControl: false, // Disable the default navigation controls
   crossOriginPolicy: "Anonymous",
@@ -14206,6 +14515,17 @@ function getLocalTilePathFromUrl(url) {
 document
   .getElementById("sampleDropdown")
   .addEventListener("change", async function () {
+    const requestedIndex = Number(this.value);
+    const sampleChanged = requestedIndex !== currentIndex;
+    if (
+      sampleChanged &&
+      !confirmDiscardUnsavedWork("Changing samples")
+    ) {
+      restoreCommittedSampleSelection();
+      return;
+    }
+    if (sampleChanged) clearUnsavedWork();
+
     try {
       const previousTileSets = [...tileSets()];
       if (porosityThicknessOverlayEnabled) {
@@ -14214,7 +14534,9 @@ document
       clearPorosityThicknessDisplay(
         "Estimate porosity to calculate local thickness",
       );
-      currentIndex = Number(this.value);
+      currentIndex = requestedIndex;
+      committedGroupSelection =
+        document.getElementById("groupDropdown")?.value || "All";
       rememberSelectedSampleForCurrentGroup(currentIndex);
       saveLastSamplePreference(currentIndex);
       hideSampleInfoPopover();
@@ -14229,7 +14551,7 @@ document
       buildOpacitySliders();
       buildTileAppearanceControls();
       resetTransformImageryForSampleChange(previousTileSets);
-      clearAnnotations();
+      clearAnnotations({ markUnsaved: false });
       annotationHistory.reset();
       updateImageCheckboxLabels();
       clearGrid();
@@ -16446,17 +16768,14 @@ async function persistCurrentLibraryAfterTileSetExport() {
         currentLibraryPath,
         currentLibraryData,
       );
-      window.electronAPI?.setUnsavedState?.(
-        window.appState.hasUnsavedAnnotations ||
-          window.appState.hasUnsavedCounts,
-      );
+      setUnsavedWork("library", false);
       return true;
     } catch (error) {
       console.warn("Could not save library after tile-set export:", error);
     }
   }
 
-  window.electronAPI?.setUnsavedState?.(true);
+  setUnsavedWork("library", true);
   return false;
 }
 
@@ -18684,13 +19003,79 @@ window.onclick = function (event) {
   }
 };
 
-// A message to discourage loss of data upon reload
-// let hasUnsavedAnnotations = false;
-// let hasUnsavedCounts = false;
+// Track user work that would be lost when leaving the current workspace.
+// Keep this registry about data, not UI state: drawing overlays, opening
+// palettes, and other rendering operations must not change it.
+const UNSAVED_WORK_LABELS = Object.freeze({
+  annotations: "annotations",
+  counts: "point counts",
+  porosity: "porosity work",
+  library: "library changes",
+});
+const unsavedWorkRegistry = new Set();
+
+function getUnsavedWorkDomains() {
+  return [...unsavedWorkRegistry];
+}
+
+function hasUnsavedWork() {
+  return unsavedWorkRegistry.size > 0;
+}
+
+function syncUnsavedWorkState() {
+  window.appState.hasUnsavedAnnotations = unsavedWorkRegistry.has("annotations");
+  window.appState.hasUnsavedCounts = unsavedWorkRegistry.has("counts");
+  window.appState.hasUnsavedPorosity = unsavedWorkRegistry.has("porosity");
+  window.electronAPI?.setUnsavedState?.({
+    dirty: hasUnsavedWork(),
+    domains: getUnsavedWorkDomains(),
+    labels: getUnsavedWorkDomains().map(
+      (domain) => UNSAVED_WORK_LABELS[domain] || domain,
+    ),
+  });
+}
+
+function setUnsavedWork(domain, value) {
+  if (!UNSAVED_WORK_LABELS[domain]) {
+    console.warn(`Unknown unsaved-work domain: ${domain}`);
+    return;
+  }
+  const changed = value
+    ? !unsavedWorkRegistry.has(domain)
+    : unsavedWorkRegistry.has(domain);
+  if (value) unsavedWorkRegistry.add(domain);
+  else unsavedWorkRegistry.delete(domain);
+  if (changed) syncUnsavedWorkState();
+}
+
+function clearUnsavedWork() {
+  if (unsavedWorkRegistry.size === 0) return;
+  unsavedWorkRegistry.clear();
+  syncUnsavedWorkState();
+}
+
+function formatUnsavedWorkList() {
+  const labels = getUnsavedWorkDomains().map(
+    (domain) => UNSAVED_WORK_LABELS[domain] || domain,
+  );
+  if (labels.length <= 1) return labels[0] || "work";
+  if (labels.length === 2) return `${labels[0]} and ${labels[1]}`;
+  return `${labels.slice(0, -1).join(", ")}, and ${labels.at(-1)}`;
+}
+
+function confirmDiscardUnsavedWork(action = "continue") {
+  if (!hasUnsavedWork()) return true;
+  return window.confirm(
+    `You have unsaved ${formatUnsavedWorkList()}. ${action} will discard it. Continue?`,
+  );
+}
+
 window.appState = {
   hasUnsavedAnnotations: false,
   hasUnsavedCounts: false,
+  hasUnsavedPorosity: false,
 };
+syncUnsavedWorkState();
 
 let suppressUnsavedAnnotationTracking = false;
 let suppressUnsavedCountTracking = false;
@@ -18760,13 +19145,14 @@ const annotationHistory = {
   undoStack: [],
   redoStack: [],
 
-  push(label, state = cloneAnnotationState()) {
+  push(label, state = cloneAnnotationState(), dirtyDomains = ["annotations"]) {
     if (annotationHistoryPaused || suppressUnsavedAnnotationTracking) return;
 
     this.undoStack.push({
       label,
       state,
       scope: "annotation",
+      dirtyDomains,
     });
 
     if (this.undoStack.length > this.limit) {
@@ -18782,6 +19168,7 @@ const annotationHistory = {
       label,
       state,
       scope: "porosity",
+      dirtyDomains: ["porosity"],
     });
 
     if (this.undoStack.length > this.limit) {
@@ -18790,6 +19177,7 @@ const annotationHistory = {
 
     this.redoStack = [];
     updateAnnotationHistoryControls();
+    unsavedPorosity(true);
   },
 
   reset() {
@@ -18809,13 +19197,16 @@ const annotationHistory = {
           ? clonePorosityState()
           : cloneAnnotationState(),
       scope: previous.scope || "annotation",
+      dirtyDomains: previous.dirtyDomains || ["annotations"],
     });
     if (previous.scope === "porosity") {
       restorePorosityState(previous.state, `${previous.label} undone.`);
+      unsavedPorosity(true);
     } else {
       restoreAnnotationState(previous.state);
-      unsavedAnnotations(true);
-      unsavedCounts(true);
+      (previous.dirtyDomains || ["annotations"]).forEach((domain) =>
+        setUnsavedWork(domain, true),
+      );
     }
     updateAnnotationHistoryControls();
   },
@@ -18831,13 +19222,16 @@ const annotationHistory = {
           ? clonePorosityState()
           : cloneAnnotationState(),
       scope: next.scope || "annotation",
+      dirtyDomains: next.dirtyDomains || ["annotations"],
     });
     if (next.scope === "porosity") {
       restorePorosityState(next.state, `${next.label} redone.`);
+      unsavedPorosity(true);
     } else {
       restoreAnnotationState(next.state);
-      unsavedAnnotations(true);
-      unsavedCounts(true);
+      (next.dirtyDomains || ["annotations"]).forEach((domain) =>
+        setUnsavedWork(domain, true),
+      );
     }
     updateAnnotationHistoryControls();
   },
@@ -19434,52 +19828,22 @@ function setupAnnotationHistoryControls() {
 
 setupAnnotationHistoryControls();
 
-// TOOD: A new function for changing hasUnsavedAnnotations
 function unsavedAnnotations(value) {
   if (suppressUnsavedAnnotationTracking) return;
-
-  if (value) {
-    window.appState.hasUnsavedAnnotations = true;
-  } else {
-    window.appState.hasUnsavedAnnotations = false;
-  }
-  if (window.electronAPI) {
-    const unsaved =
-      window.appState.hasUnsavedAnnotations || window.appState.hasUnsavedCounts;
-    window.electronAPI.setUnsavedState(unsaved);
-  }
+  setUnsavedWork("annotations", value);
 }
 
 function unsavedCounts(value) {
   if (suppressUnsavedCountTracking) return;
+  setUnsavedWork("counts", value);
+}
 
-  if (value) {
-    window.appState.hasUnsavedCounts = true;
-  } else {
-    window.appState.hasUnsavedCounts = false;
-  }
-  if (window.electronAPI) {
-    const unsaved =
-      window.appState.hasUnsavedAnnotations || window.appState.hasUnsavedCounts;
-    window.electronAPI.setUnsavedState(unsaved);
-  }
+function unsavedPorosity(value) {
+  setUnsavedWork("porosity", value);
 }
 
 window.addEventListener("beforeunload", function (e) {
-  // Detect if running in Electron
-  const isElectron = navigator.userAgent.toLowerCase().includes("electron");
-
-  if (isElectron) {
-    // Let Electron handle the close — do NOT block
-    return;
-  }
-
-  // Check if there's unsaved data or any other condition for triggering the warning
-  if (
-    window.appState.hasUnsavedAnnotations ||
-    window.appState.hasUnsavedCounts
-  ) {
-    // Browser case: warn the user
+  if (hasUnsavedWork()) {
     e.preventDefault();
     e.returnValue = ""; // Required for Chrome to show the confirmation dialog
   }
@@ -19491,6 +19855,10 @@ window.addEventListener("beforeunload", function (e) {
 
 // Initialize the scalebar, except for pixelsPerMeter, which depends on the grid
 // settings.
+function assignScalebarViewerLayer() {
+  viewer.scalebarInstance?.divElt?.classList.add("petro-image-scalebar");
+}
+
 function removeScalebar() {
   if (viewer.scalebarInstance) {
     viewer.scalebar({
@@ -19498,6 +19866,7 @@ function removeScalebar() {
       pixelsPerMeter: null,
       location: 0,
     });
+    assignScalebarViewerLayer();
   }
   updateSnapshotStatus();
 }
@@ -19594,6 +19963,7 @@ function addScalebar() {
     barThickness: parseInt(scalebarBarThickness),
     pixelsPerMeter: scale,
   });
+  assignScalebarViewerLayer();
   scheduleScalebarRefresh();
   updateSnapshotStatus();
 }
@@ -19634,6 +20004,7 @@ function restoreScalebarDefaults() {
     barThickness: 2,
     pixelsPerMeter: scale,
   });
+  assignScalebarViewerLayer();
   updateSnapshotStatus();
 }
 
@@ -19688,6 +20059,8 @@ function updateScaleDependentControls() {
   ];
   const measurementControlIds = [
     "show-measure",
+    "measureLineButton",
+    "measurePolygonButton",
     "toggleCircleButton",
     "measureGearButton",
     "referenceCircleGearButton",
@@ -19710,6 +20083,7 @@ function updateScaleDependentControls() {
   measurementControlIds.forEach((id) => {
     setControlDisabled(id, !hasScale, disabledTitle);
   });
+  if (!hasScale && measurementModeActive) stopMeasurementMode();
   updateCircleAnnotationOptionsControls();
 
   if (!hasScale) {
@@ -20244,7 +20618,7 @@ function setGridSliderValue(slider, valueInput, value) {
     const undoState = cloneAnnotationState();
     undoState.gridControls[slider.id] = previousSliderValue;
     undoState.gridControls[valueInput.id] = previousSliderValue;
-    annotationHistory.push("Change AOI", undoState);
+    annotationHistory.push("Change AOI", undoState, []);
   }
 
   slider.value = nextValue;
@@ -20278,7 +20652,7 @@ function setupUndoableGridControl(id, label) {
       if (!element.undoState && element.committedGridControls) {
         undoState.gridControls = cloneData(element.committedGridControls);
       }
-      annotationHistory.push(label, undoState);
+      annotationHistory.push(label, undoState, []);
       gridControlHistoryCommittedThisEvent = true;
     }
     element.committedGridControls = cloneGridControlState();
@@ -24004,10 +24378,11 @@ function createAnnotationGroupForSelection(groupName) {
 
 function syncSelectedAnnotationVisuals() {
   [...document.getElementsByClassName("annotate-label")].forEach((label) => {
-    label.classList.toggle(
-      "annotation-selected",
-      selectedAnnotationUuids.has(label.dataset.annotationUuid),
-    );
+    const selected = selectedAnnotationUuids.has(label.dataset.annotationUuid);
+    label.classList.toggle("annotation-selected", selected);
+    label
+      .closest(".annotation-overlay")
+      ?.classList.toggle("viewer-overlay-active", selected);
   });
 
   [...document.getElementsByClassName("annotate-crosshairs")].forEach(
@@ -24365,7 +24740,7 @@ document
   .addEventListener("click", function () {
     const id = parseInt(document.getElementById("count-id").value);
     if (countJSON.features[id - 1]) {
-      annotationHistory.push("Style count label");
+      annotationHistory.push("Style count label", undefined, []);
     }
     const uuid = countJSON.features[id - 1].properties.uuid;
     applyCurrentGrid(id, true);
@@ -24393,7 +24768,7 @@ document
   .getElementById("applyAllGridLabel")
   .addEventListener("click", function () {
     if (countJSON.features.length > 0) {
-      annotationHistory.push("Style count labels");
+      annotationHistory.push("Style count labels", undefined, []);
     }
     const gridIds = Array.from(
       { length: countJSON.features.length },
@@ -24445,7 +24820,7 @@ document
   .addEventListener("click", function () {
     const id = parseInt(document.getElementById("count-id").value);
     if (countJSON.features[id - 1]) {
-      annotationHistory.push("Style count point");
+      annotationHistory.push("Style count point", undefined, []);
     }
     const uuid = countJSON.features[id - 1].properties.uuid;
     applyCurrentGrid(id, false);
@@ -24469,7 +24844,7 @@ document.getElementById("applyAllAnno").addEventListener("click", function () {
 // Apply all grid feature style
 document.getElementById("applyAllGrid").addEventListener("click", function () {
   if (countJSON.features.length > 0) {
-    annotationHistory.push("Style count points");
+    annotationHistory.push("Style count points", undefined, []);
   }
   const gridIds = Array.from(
     { length: countJSON.features.length },
@@ -26984,6 +27359,7 @@ function addPointToGeoJSON(x, y, metadata) {
 
   // Add the point feature to the annoJSON under the provided id
   annoJSON.features.push(pointFeature);
+  unsavedAnnotations(true);
   renderAnnotationList();
   selectAnnotationByUuid(properties.uuid, { redraw: false });
 }
@@ -27012,6 +27388,7 @@ function addPolylineToGeoJSON(JSON, coordinates, metadata) {
   // Add the point feature to the annoJSON under the provided id
   JSON.features.push(polylineFeature);
   if (JSON === annoJSON) {
+    unsavedAnnotations(true);
     renderAnnotationList();
     selectAnnotationByUuid(properties.uuid, { redraw: false });
   }
@@ -27042,6 +27419,7 @@ function addPolygonToGeoJSON(JSON, coordinates, metadata) {
   // Add the point feature to the annoJSON under the provided id
   JSON.features.push(polygonFeature);
   if (JSON === annoJSON) {
+    unsavedAnnotations(true);
     renderAnnotationList();
     selectAnnotationByUuid(properties.uuid, { redraw: false });
   }
@@ -28371,6 +28749,7 @@ async function saveLibraryEditor({
   closeAfterSave = false,
 } = {}) {
   if (libraryEditorState.saving) return;
+  if (!confirmDiscardUnsavedWork("Applying library changes")) return;
 
   updateLibraryEditorSelectedSample();
   const validationMessage = validateLibraryEditorSamples();
@@ -28400,6 +28779,7 @@ async function saveLibraryEditor({
       forceSaveAs,
       canceledMessage: "Library changes were not saved.",
     });
+    clearUnsavedWork();
     await loadSampleJSON(jsonData, { autoLoadSample: false });
     selectSampleAfterLibraryEdit(previousTitle);
     if (closeAfterSave) {
@@ -28459,19 +28839,14 @@ async function saveLibraryData(
   if (targetPath && window.electronAPI?.writeJsonFile) {
     await window.electronAPI.writeJsonFile(targetPath, jsonData);
     currentLibraryPath = targetPath;
-    window.electronAPI.setUnsavedState?.(
-      window.appState.hasUnsavedAnnotations || window.appState.hasUnsavedCounts,
-    );
+    setUnsavedWork("library", false);
     return;
   }
 
   if (!forceSaveAs && currentLibraryPath && window.electronAPI?.writeJsonFile) {
     try {
       await window.electronAPI.writeJsonFile(currentLibraryPath, jsonData);
-      window.electronAPI.setUnsavedState?.(
-        window.appState.hasUnsavedAnnotations ||
-          window.appState.hasUnsavedCounts,
-      );
+      setUnsavedWork("library", false);
       return;
     } catch (error) {
       console.warn(
@@ -28493,9 +28868,7 @@ async function saveLibraryData(
     throw new Error(canceledMessage);
   }
   currentLibraryPath = result.filePath || currentLibraryPath;
-  window.electronAPI.setUnsavedState?.(
-    window.appState.hasUnsavedAnnotations || window.appState.hasUnsavedCounts,
-  );
+  setUnsavedWork("library", false);
 }
 
 function inferTileSetEditorType(tileSet) {
@@ -29580,7 +29953,7 @@ async function applyScaleWizard() {
     updateMeasureScaleAudit();
     addScalebar();
     closeScaleWizard();
-    window.electronAPI?.setUnsavedState?.(true);
+    setUnsavedWork("library", true);
     await saveCurrentLibraryForScaleUpdate();
   } catch (error) {
     samples[currentIndex].pixelsPerMeter = previousPixelsPerMeter;
@@ -31090,7 +31463,6 @@ viewer.addHandler("canvas-release", function (event) {
     });
   }
   enableAnnoButtons();
-  window.appState.hasUnsavedAnnotations = true; // TODO: Turn off button between each annotation???
   if (!rectButton.classList.contains("active")) {
     toggleRectFloaterOn(false);
   }
@@ -31168,6 +31540,7 @@ function finalizeRectAnnotationWithCoords(
     labelBackgroundColor,
     labelBackgroundOpacity,
   );
+  unsavedAnnotations(true);
 }
 
 // Clear annotations & grid
@@ -31200,7 +31573,9 @@ function addText(
 
   // Outer container — this is the element OSD will position (do NOT rotate this)
   const container = document.createElement("div");
-  container.className = "annotation-overlay"; // optional helper class
+  container.className = `annotation-overlay ${
+    type === "anno" ? "viewer-overlay-annotation" : "viewer-overlay-reference"
+  }`;
 
   // Inner element — put your actual text here and rotate this to cancel viewer rotation
   const pointLabel = document.createElement("div");
@@ -31249,7 +31624,6 @@ function addText(
   // keep reference to the INNER label so we can rotate it later
   if (type === "anno") {
     annotateLabels.push(pointLabel);
-    unsavedAnnotations(true);
     updateRepeatButton();
   }
   syncSelectedAnnotationVisuals();
@@ -31328,8 +31702,6 @@ function deleteText(uuid, type = "anno") {
       annotateLabels = annotateLabels.filter(
         (label) => label.id !== `annotate-label-${uuid}`,
       ); // Clean up the array
-      // window.appState.hasUnsavedAnnotations = true;
-      unsavedAnnotations(true);
     }
     // Finally remove the element from DOM
     overlayContainer?.remove();
@@ -31401,11 +31773,6 @@ function updateText(
       pointLabel.textContent = String(newLabel);
     }
 
-    if (type === "anno") {
-      // window.appState.hasUnsavedAnnotations = true;
-      unsavedAnnotations(true);
-    }
-
     // Update the CSS variables if new values are provided
     if (color !== undefined) {
       const colorToPlot = applyOpacityToColor(color, 1.0);
@@ -31468,8 +31835,6 @@ function addCrosshairs(
   });
   if (type === "anno") {
     annotatePoints.push(crosshair);
-    // window.appState.hasUnsavedAnnotations = true;
-    unsavedAnnotations(true);
     updateRepeatButton();
   }
   syncSelectedAnnotationVisuals();
@@ -31565,7 +31930,7 @@ function loadCounts(geoJSONData) {
   const geoJSON = parseJSON(geoJSONData);
   if (!geoJSON) {
     alert("Could not parse count GeoJSON.");
-    return;
+    return false;
   }
 
   const features = geoJSON.features || Object.values(geoJSON); // Supports both formats
@@ -31591,6 +31956,7 @@ function loadCounts(geoJSONData) {
   populateDropdown(); // Repopulate dropdown for filtering
   populateFilterDropdown(); // Repopulate filter dropdown
   applyFormattingAfterCountAll(countJSON, "both");
+  return true;
 }
 
 // Helper functions for specific geometry types
@@ -32320,6 +32686,7 @@ function saveAnnotationToJSON(type, coordinates, properties) {
     },
   };
   annoJSON.features.push(geoJSONFeature);
+  unsavedAnnotations(true);
 }
 
 // New loading code
@@ -33866,7 +34233,7 @@ document.getElementById("save-counts").addEventListener("click", function () {
   unsavedCounts(false);
 });
 
-const clearAnnotations = () => {
+const clearAnnotations = ({ markUnsaved = true } = {}) => {
   pendingAnnotationTextEdit = null;
   exitAnnotationVertexEditMode();
   exitAnnotationShapeEditMode();
@@ -33907,8 +34274,7 @@ const clearAnnotations = () => {
   annoNotes.value = "";
   syncSelectedAnnotationVisuals();
   renderAnnotationList();
-  // window.appState.hasUnsavedAnnotations = false;
-  unsavedAnnotations(false);
+  if (markUnsaved) unsavedAnnotations(true);
 };
 
 viewerContainer.addEventListener("pointermove", (event) => {
@@ -34157,7 +34523,7 @@ document
     const preparedGrid = prepareGridSettings();
     if (!preparedGrid) return;
 
-    annotationHistory.push("Apply grid");
+    annotationHistory.push("Apply grid", undefined, []);
     applyGridSettings(preparedGrid);
   });
 
@@ -34398,7 +34764,7 @@ const clearGridOverlayCrosshairs = () => {
 };
 
 document.getElementById("clear-grid").addEventListener("click", function () {
-  annotationHistory.push("Clear grid");
+  annotationHistory.push("Clear grid", undefined, ["counts"]);
   clearGrid();
   unsavedCounts(true);
 });
@@ -34810,7 +35176,7 @@ function applyAnnoFeature(idBase, uuid, options = {}) {
 // Functionality for applying specific formatting for grid attributes
 function applyAllGridLabel(idBase) {
   if (countJSON.features.length > 0) {
-    annotationHistory.push("Style count labels");
+    annotationHistory.push("Style count labels", undefined, []);
   }
 
   // Loop through all features in the countJSON
@@ -34823,7 +35189,7 @@ function applyAllGridLabel(idBase) {
 
 function applyAllGridCrosshair(idBase) {
   if (countJSON.features.length > 0) {
-    annotationHistory.push("Style count points");
+    annotationHistory.push("Style count points", undefined, []);
   }
 
   // Loop through all features in the countJSON
@@ -34844,7 +35210,7 @@ function applyAllGridCrosshair(idBase) {
 function applyCurrentGridLabel(idBase) {
   const id = document.getElementById("count-id").value;
   if (countJSON.features[id - 1]) {
-    annotationHistory.push("Style count label");
+    annotationHistory.push("Style count label", undefined, []);
   }
   applyGridLabel(idBase, id);
 }
@@ -34852,7 +35218,7 @@ function applyCurrentGridLabel(idBase) {
 function applyCurrentGridCrosshair(idBase) {
   const id = document.getElementById("count-id").value;
   if (countJSON.features[id - 1]) {
-    annotationHistory.push("Style count point");
+    annotationHistory.push("Style count point", undefined, []);
   }
   applyGridCrosshair(idBase, id);
 }
@@ -35247,7 +35613,7 @@ function inputSampleLabel() {
   if (!feature) return;
 
   if (feature.properties.id !== textInput.value) {
-    annotationHistory.push("Edit count identifier");
+    annotationHistory.push("Edit count identifier", undefined, ["counts"]);
   }
 
   // Store the text in the geoJSON
@@ -35264,7 +35630,7 @@ function inputNotesText() {
   if (!feature) return;
 
   if (feature.properties.notes !== textInput.value) {
-    annotationHistory.push("Edit count notes");
+    annotationHistory.push("Edit count notes", undefined, ["counts"]);
   }
 
   // Store the text in the object with sampleNumber as key
@@ -35361,14 +35727,14 @@ document
       return;
     }
 
-    annotationHistory.push("Import count JSON");
+    annotationHistory.push("Import count JSON", undefined, []);
     clearGrid();
 
     if (file) {
       const reader = new FileReader();
       reader.onload = function (event) {
         const geoJSONData = event.target.result;
-        loadCounts(geoJSONData);
+        if (loadCounts(geoJSONData)) unsavedCounts(false);
         fileInput.value = "";
       };
       reader.readAsText(file);
@@ -35396,7 +35762,7 @@ document
       return;
     }
 
-    annotationHistory.push("Import count CSV");
+    annotationHistory.push("Import count CSV", undefined, []);
     // Clear existing grid
     clearGrid();
 
@@ -35410,6 +35776,7 @@ document
         complete: function (results) {
           const parsedData = results.data;
           processCSVData(parsedData);
+          unsavedCounts(false);
         },
       });
       // Reset file input to allow reloading the same file
@@ -39371,6 +39738,7 @@ function refreshMeasureDrawingPreview(event) {
 }
 
 function setActiveMeasureTool(tool) {
+  if (!hasKnownScale()) return;
   if (activeMeasureTool === tool && measurementModeActive) {
     stopMeasurementMode();
     drawShape(measureCanvas, [
@@ -39410,7 +39778,7 @@ function updateMeasureValueControls() {
 
 measureToolButtons?.addEventListener("click", function (event) {
   const button = event.target.closest("[data-measure-tool]");
-  if (!button) return;
+  if (!button || button.disabled || !hasKnownScale()) return;
   setActiveMeasureTool(button.dataset.measureTool);
 });
 
