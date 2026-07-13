@@ -59,6 +59,29 @@ Hovering your curser over the <img src="assets/0_description.png" alt="icon" hei
 > [!NOTE]
 > You must know pixel dimensions of your image(s).
 
+### AxioScan 7 CZI Import (Desktop Beta)
+
+The Electron desktop app has an **Actions → Import AxioScan 7 CZI** workflow for the supported Geo polarization profile: one 2D scene containing one Brightfield channel, one CPL channel, six XPL angles, and six PPL angles. The workflow reads the scanner metadata, preserves a shared registered extent, offers reduced-resolution output, generates the DZI pyramids in the active project's `dzi` folder, and can add the resulting four tile sets to the current library or create a new library.
+
+Packaged desktop releases include a platform-specific, one-folder CZI worker containing Python, `pylibCZIrw`, NumPy, and Pillow. Users of a packaged release do not need to install or configure Python.
+
+Running the app directly from the source tree still uses a configured Python environment. For development, install the dependencies before launching petro-image:
+
+```sh
+python3 -m pip install pylibCZIrw==6.1.0 numpy Pillow
+```
+
+Release builds create the standalone worker automatically before packaging:
+
+```sh
+npm run build:czi-worker
+npm run package
+```
+
+The first build creates `.venv-czi-build`, installs the pinned dependencies from `scripts/czi-worker-requirements.txt`, and writes the generated resource to `build/czi-worker`. Workers are native artifacts and must be built separately on each supported operating system and processor architecture. Z-stacks, time series, multiple scenes, and other general CZI layouts are rejected by this targeted beta.
+
+macOS development packages are ad-hoc signed after all native worker resources are added. For a distributable release, set `PETRO_IMAGE_MAC_SIGN_IDENTITY` to the installed Developer ID Application identity; Apple notarization remains a separate release-credential step.
+
 ## Tools
 
 ### Table of Contents

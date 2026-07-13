@@ -1,0 +1,5 @@
+pylibCZIrw==6.1.0
+numpy==2.0.2
+Pillow==11.3.0
+PyInstaller==6.16.0
+pyinstaller-hooks-contrib==2026.6

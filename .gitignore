@@ -4,3 +4,8 @@ out
 .ipynb_checkpoints/
 __pycache__/
 *.py[cod]
+.venv-czi-build/
+build/czi-worker/
+build/czi-worker-cache/
+build/czi-worker-spec/
+build/czi-worker-work/

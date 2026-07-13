@@ -28,12 +28,16 @@ let localFileServerPort;
 let samWorker = null;
 let segmenteverygrainWorker = null;
 let activeSegmenteverygrainChild = null;
+let activeCziConversionChild = null;
+let activeCziConversionOutput = "";
 const localFileServerToken = randomUUID();
 const grantedLocalRoots = [];
 const APP_TITLE = "petro-image";
 const WELCOME_LIBRARY_FILE_NAME = "welcome_library.json";
 const USER_LIBRARY_FILE_NAME = "library.json";
 const DZI_FOLDER_NAME = "dzi";
+const CZI_WORKER_PATH = path.join(__dirname, "scripts", "axioscan_czi_worker.py");
+const CZI_RESOLUTION_SCALES = new Set([1, 0.5, 0.25, 0.125, 0.0625, 0.03125, 0.015625]);
 const SEGMENTEVERYGRAIN_MODEL_EXTENSIONS = new Set([".h5", ".keras"]);
 
 function setMainWindowTitle(projectDirectory, libraryPath = "") {
@@ -822,6 +826,280 @@ function runProcessWithProgress(command, args, options = {}) {
       });
     });
   });
+}
+
+async function getCziWorkerRuntime() {
+  const executableName =
+    process.platform === "win32"
+      ? "axioscan-czi-worker.exe"
+      : "axioscan-czi-worker";
+  const configuredWorker = process.env.PETRO_IMAGE_CZI_WORKER || "";
+  const bundledWorker = path.join(
+    process.resourcesPath,
+    "czi-worker",
+    "axioscan-czi-worker",
+    executableName,
+  );
+  const standaloneWorker =
+    configuredWorker || (app.isPackaged ? bundledWorker : "");
+  if (standaloneWorker) {
+    if (!(await pathExists(standaloneWorker))) {
+      throw new Error(
+        app.isPackaged
+          ? "The bundled AxioScan CZI worker is missing from this petro-image installation."
+          : `The configured AxioScan CZI worker could not be found: ${standaloneWorker}`,
+      );
+    }
+    return {
+      command: standaloneWorker,
+      workerArgs: [],
+      env: {},
+      bundled: true,
+    };
+  }
+
+  const settings = await readProjectSettings();
+  const samSettings = normalizeSamSettings(settings);
+  const pythonPath =
+    process.env.PETRO_IMAGE_CZI_PYTHON ||
+    settings.czi?.pythonPath ||
+    samSettings.pythonPath ||
+    (process.platform === "win32" ? "python" : "python3");
+  const modulePath =
+    process.env.PETRO_IMAGE_CZI_PYTHONPATH || settings.czi?.modulePath || "";
+  const env = modulePath
+    ? {
+        PYTHONPATH: [modulePath, process.env.PYTHONPATH]
+          .filter(Boolean)
+          .join(path.delimiter),
+        PYTHONPYCACHEPREFIX: path.join(app.getPath("temp"), "petro-image-pycache"),
+      }
+    : {
+        PYTHONPYCACHEPREFIX: path.join(app.getPath("temp"), "petro-image-pycache"),
+      };
+  return {
+    command: pythonPath,
+    workerArgs: [CZI_WORKER_PATH],
+    env,
+    bundled: false,
+  };
+}
+
+function getCziWorkerError(result, fallback) {
+  const detail = String(result?.stderr || result?.error || "").trim();
+  if (/pylibCZIrw|No module named ['\"]?(numpy|PIL)/i.test(detail)) {
+    return "The AxioScan CZI reader is not installed for the configured Python environment. Install pylibCZIrw, numpy, and Pillow, then try again.";
+  }
+  if (result?.timedOut) return "CZI metadata inspection timed out.";
+  return detail ? `${fallback}: ${detail.split(/\r?\n/).slice(-1)[0]}` : fallback;
+}
+
+async function inspectAxioScanCzi(sourcePath) {
+  if (!sourcePath || path.extname(sourcePath).toLowerCase() !== ".czi") {
+    throw new Error("Choose a .czi file.");
+  }
+  if (!(await pathExists(sourcePath))) {
+    throw new Error("The selected CZI file could not be found.");
+  }
+
+  const runtime = await getCziWorkerRuntime();
+  let inspection = null;
+  const result = await runProcessWithProgress(
+    runtime.command,
+    [...runtime.workerArgs, sourcePath, "--inspect"],
+    {
+      timeoutMs: 120000,
+      env: runtime.env,
+      onStdoutLine: (line) => {
+        const event = tryParseJsonLine(line);
+        if (event?.type === "inspection") inspection = event.inspection;
+      },
+    },
+  );
+
+  if (result.exitCode !== 0 || !inspection) {
+    throw new Error(getCziWorkerError(result, "Could not inspect the CZI file"));
+  }
+  return inspection;
+}
+
+function sanitizeCziOutputName(value) {
+  return (
+    String(value || "axioscan-czi")
+      .replace(/\.[^.]+$/, "")
+      .replace(/[^a-z0-9._-]+/gi, "-")
+      .replace(/^-+|-+$/g, "") || "axioscan-czi"
+  );
+}
+
+async function getAvailableCziDestination(dziDirectory, fileName) {
+  const parsed = path.parse(fileName);
+  for (let index = 1; index < 10000; index += 1) {
+    const suffix = index === 1 ? "" : `-${index}`;
+    const baseName = `${parsed.name}${suffix}`;
+    const descriptorPath = path.join(dziDirectory, `${baseName}${parsed.ext}`);
+    const tileDirectory = path.join(dziDirectory, `${baseName}_files`);
+    if (!(await pathExists(descriptorPath)) && !(await pathExists(tileDirectory))) {
+      return { descriptorPath, tileDirectory };
+    }
+  }
+  throw new Error(`Could not choose an available DZI name for ${fileName}.`);
+}
+
+async function moveCziSampleIntoProject(
+  sample,
+  stagingDirectory,
+  projectDirectory,
+  movedOutputPaths,
+) {
+  const rewritten = JSON.parse(JSON.stringify(sample));
+  const projectDziDirectory = path.join(projectDirectory, DZI_FOLDER_NAME);
+  for (const tileSet of rewritten.tileSets || []) {
+    for (const tile of tileSet.tiles || []) {
+      const fileName = path.basename(tile.uri || "");
+      if (!fileName.toLowerCase().endsWith(".dzi")) {
+        throw new Error(`The CZI worker returned an invalid DZI path: ${tile.uri}`);
+      }
+      const sourceDescriptor = path.join(
+        stagingDirectory,
+        DZI_FOLDER_NAME,
+        fileName,
+      );
+      const sourceParsed = path.parse(sourceDescriptor);
+      const sourceTileDirectory = path.join(
+        sourceParsed.dir,
+        `${sourceParsed.name}_files`,
+      );
+      if (
+        !(await pathExists(sourceDescriptor)) ||
+        !(await pathExists(sourceTileDirectory))
+      ) {
+        throw new Error(`The completed CZI output is missing files for ${fileName}.`);
+      }
+
+      const destination = await getAvailableCziDestination(
+        projectDziDirectory,
+        fileName,
+      );
+      await fs.rename(sourceDescriptor, destination.descriptorPath);
+      movedOutputPaths.push(destination.descriptorPath);
+      await fs.rename(sourceTileDirectory, destination.tileDirectory);
+      movedOutputPaths.push(destination.tileDirectory);
+      tile.uri = path
+        .relative(projectDirectory, destination.descriptorPath)
+        .split(path.sep)
+        .join("/");
+    }
+  }
+  return rewritten;
+}
+
+async function runAxioScanCziConversion(request, event) {
+  if (activeCziConversionChild) {
+    throw new Error("An AxioScan CZI conversion is already running.");
+  }
+
+  const settings = await readProjectSettings();
+  const projectDirectory = settings.projectDirectory;
+  if (!projectDirectory) {
+    throw new Error("Open a petro-image project before importing a CZI file.");
+  }
+
+  const sourcePath = String(request?.sourcePath || "");
+  const bounds = request?.bounds || {};
+  const roi = [bounds.x, bounds.y, bounds.width, bounds.height].map(Number);
+  if (!sourcePath || path.extname(sourcePath).toLowerCase() !== ".czi") {
+    throw new Error("Choose a valid CZI source file.");
+  }
+  if (!roi.every(Number.isFinite) || roi[2] <= 0 || roi[3] <= 0) {
+    throw new Error("The CZI conversion bounds are invalid.");
+  }
+
+  const resolutionScale = Number(request?.resolutionScale);
+  if (!CZI_RESOLUTION_SCALES.has(resolutionScale)) {
+    throw new Error("Choose a supported CZI output resolution.");
+  }
+  const quality = Math.max(1, Math.min(100, Math.round(Number(request?.quality) || 90)));
+  const sourceName = path.basename(sourcePath);
+  const stagingDirectory = path.join(
+    projectDirectory,
+    DZI_FOLDER_NAME,
+    `.czi-import-${sanitizeCziOutputName(sourceName)}-${Date.now()}`,
+  );
+  const runtime = await getCziWorkerRuntime();
+  let resultEvent = null;
+  let canceled = false;
+  const movedOutputPaths = [];
+  activeCziConversionOutput = stagingDirectory;
+
+  try {
+    const result = await runProcessWithProgress(
+      runtime.command,
+      [
+        ...runtime.workerArgs,
+        sourcePath,
+        stagingDirectory,
+        "--roi",
+        ...roi.map(String),
+        "--downsample",
+        String(resolutionScale),
+        "--quality",
+        String(quality),
+      ],
+      {
+        timeoutMs: 24 * 60 * 60 * 1000,
+        env: runtime.env,
+        onChild: (child) => {
+          activeCziConversionChild = child;
+        },
+        onStdoutLine: (line) => {
+          const workerEvent = tryParseJsonLine(line);
+          if (!workerEvent) return;
+          if (workerEvent.type === "result") resultEvent = workerEvent;
+          if (["channel", "progress"].includes(workerEvent.type)) {
+            event.sender.send("czi-conversion-progress", workerEvent);
+          }
+        },
+      },
+    );
+    canceled = Boolean(result.canceled || activeCziConversionChild?._petroImageCanceled);
+    if (canceled) throw new Error("CZI conversion canceled.");
+    if (result.exitCode !== 0 || !resultEvent?.libraryPath) {
+      throw new Error(getCziWorkerError(result, "CZI conversion failed"));
+    }
+
+    const libraryText = await fs.readFile(resultEvent.libraryPath, "utf8");
+    const generatedLibrary = JSON.parse(libraryText);
+    const generatedSample = generatedLibrary.samples?.[0];
+    if (!generatedSample) {
+      throw new Error("The CZI worker did not return a sample.");
+    }
+    const sample = await moveCziSampleIntoProject(
+      generatedSample,
+      stagingDirectory,
+      projectDirectory,
+      movedOutputPaths,
+    );
+    sample.title = String(request?.title || sample.title || sourceName).trim();
+    await fs.rm(stagingDirectory, { recursive: true, force: true });
+    return {
+      ok: true,
+      sample,
+      outputDirectory: path.join(projectDirectory, DZI_FOLDER_NAME),
+      width: resultEvent.width,
+      height: resultEvent.height,
+      totalTiles: resultEvent.totalTiles,
+    };
+  } catch (error) {
+    for (const outputPath of movedOutputPaths.reverse()) {
+      await fs.rm(outputPath, { recursive: true, force: true });
+    }
+    await fs.rm(stagingDirectory, { recursive: true, force: true });
+    throw error;
+  } finally {
+    activeCziConversionChild = null;
+    activeCziConversionOutput = "";
+  }
 }
 
 const SAM_PROBE_SCRIPT = String.raw`
@@ -2043,6 +2321,39 @@ ipcMain.handle("select-image-file", async () => {
   };
 });
 
+ipcMain.handle("select-axioscan-czi", async (event) => {
+  const { canceled, filePaths } = await dialog.showOpenDialog(
+    getOwnerWindow(event),
+    {
+      title: "Select AxioScan 7 CZI file",
+      properties: ["openFile"],
+      filters: [
+        { name: "Zeiss CZI", extensions: ["czi"] },
+        { name: "All Files", extensions: ["*"] },
+      ],
+    },
+  );
+  if (canceled || !filePaths.length) return { canceled: true };
+  return { canceled: false, sourcePath: filePaths[0] };
+});
+
+ipcMain.handle("inspect-axioscan-czi", async (event, sourcePath) => {
+  return inspectAxioScanCzi(sourcePath);
+});
+
+ipcMain.handle("convert-axioscan-czi", async (event, request) => {
+  return runAxioScanCziConversion(request || {}, event);
+});
+
+ipcMain.handle("cancel-axioscan-czi", async () => {
+  if (!activeCziConversionChild || activeCziConversionChild.killed) {
+    return { ok: true, canceled: false };
+  }
+  activeCziConversionChild._petroImageCanceled = true;
+  activeCziConversionChild.kill();
+  return { ok: true, canceled: true, outputDirectory: activeCziConversionOutput };
+});
+
 ipcMain.handle("initialize-project-library", async () => initializeProjectLibrary());
 
 ipcMain.handle("change-project-library", async () => changeProjectLibrary());
@@ -2253,6 +2564,22 @@ ipcMain.handle("write-json-file", async (event, { filePath, jsonData }) => {
   await fs.writeFile(filePath, JSON.stringify(jsonData, null, 2), "utf8");
   await rememberLastLibraryPath(filePath);
   return { ok: true };
+});
+
+ipcMain.handle("choose-new-library-path", async (event, defaultFileName) => {
+  const ownerWindow = BrowserWindow.getFocusedWindow() || mainWindow;
+  const settings = await readProjectSettings();
+  const { canceled, filePath } = await dialog.showSaveDialog(ownerWindow, {
+    title: "Create library JSON",
+    defaultPath: path.join(
+      settings.projectDirectory || app.getPath("documents"),
+      ensureJsonExtension(defaultFileName || USER_LIBRARY_FILE_NAME),
+    ),
+    filters: [{ name: "JSON Files", extensions: ["json"] }],
+  });
+  return canceled || !filePath
+    ? { canceled: true }
+    : { canceled: false, filePath };
 });
 
 ipcMain.handle("save-json-file-as", async (event, { defaultFileName, jsonData }) => {

@@ -120,7 +120,7 @@ function serializeTileSetForLibrary(tileSet) {
   return {
     ...tileSet,
     tiles: (tileSet.tiles || []).map((tile) => {
-      const { image, ...libraryTile } = tile;
+      const { image, tileSource, ...libraryTile } = tile;
       return libraryTile;
     }),
   };
@@ -413,6 +413,35 @@ const loadLibraryInput = document.getElementById("load-sample-JSON");
 const loadLibraryButton = document.getElementById("loadLibraryButton");
 const actionLoadLibraryButton = document.getElementById(
   "actionLoadLibraryButton",
+);
+const openCziImportButton = document.getElementById("openCziImportButton");
+const cziImportDialog = document.getElementById("cziImportDialog");
+const closeCziImportButton = document.getElementById("closeCziImportButton");
+const selectCziFileButton = document.getElementById("selectCziFileButton");
+const cziSourcePath = document.getElementById("cziSourcePath");
+const cziInspectionPanel = document.getElementById("cziInspectionPanel");
+const cziProfileBadge = document.getElementById("cziProfileBadge");
+const cziSourceName = document.getElementById("cziSourceName");
+const cziSourceDimensions = document.getElementById("cziSourceDimensions");
+const cziPhysicalScale = document.getElementById("cziPhysicalScale");
+const cziChannelCount = document.getElementById("cziChannelCount");
+const cziPixelFormat = document.getElementById("cziPixelFormat");
+const cziChannelSummary = document.getElementById("cziChannelSummary");
+const cziSampleTitle = document.getElementById("cziSampleTitle");
+const cziLibraryMode = document.getElementById("cziLibraryMode");
+const cziResolutionSelect = document.getElementById("cziResolutionSelect");
+const cziJpegQuality = document.getElementById("cziJpegQuality");
+const cziOutputEstimate = document.getElementById("cziOutputEstimate");
+const cziProgressPanel = document.getElementById("cziProgressPanel");
+const cziProgressBar = document.getElementById("cziProgressBar");
+const cziProgressMessage = document.getElementById("cziProgressMessage");
+const cziProgressPercent = document.getElementById("cziProgressPercent");
+const cziImportStatus = document.getElementById("cziImportStatus");
+const cancelCziConversionButton = document.getElementById(
+  "cancelCziConversionButton",
+);
+const startCziConversionButton = document.getElementById(
+  "startCziConversionButton",
 );
 const electronActionButton = document.getElementById("electronActionButton");
 const electronActionTray = document.getElementById("electronActionTray");
@@ -803,6 +832,9 @@ const snapshotExportPixelCount = document.getElementById(
 const snapshotStatus = document.getElementById("snapshotStatus");
 const snapshotIncludeScalebar = document.getElementById(
   "snapshotIncludeScalebar",
+);
+const snapshotExportPorosityOverlay = document.getElementById(
+  "snapshotExportPorosityOverlay",
 );
 const snapshotExportFilter = document.getElementById("snapshotExportFilter");
 const snapshotTileSetSelect = document.getElementById("snapshotTileSetSelect");
@@ -4361,6 +4393,33 @@ function updateSnapshotFilterAvailability() {
   }
 }
 
+function hasSnapshotExportablePorosityOverlay() {
+  if (!porosityOverlay) return false;
+
+  return porosityTypes.some((type) => {
+    if (type.visible === false) return false;
+    const hasCurrentPreview = Boolean(
+      type.id === activePorosityTypeId &&
+        type.previewResult?.mask?.canvas &&
+        type.previewTolerance === type.tolerance,
+    );
+    return hasCurrentPreview || Boolean(type.result?.mask?.canvas);
+  });
+}
+
+function updateSnapshotPorosityOverlayAvailability() {
+  if (!snapshotExportPorosityOverlay) return;
+
+  const hasOverlay = hasSnapshotExportablePorosityOverlay();
+  snapshotExportPorosityOverlay.disabled = !hasOverlay;
+  snapshotExportPorosityOverlay.title = hasOverlay
+    ? ""
+    : "Compute and display a porosity overlay before exporting it.";
+  if (!hasOverlay) {
+    snapshotExportPorosityOverlay.checked = false;
+  }
+}
+
 function getSnapshotExportLimitError(exportSize) {
   if (!exportSize) return "";
 
@@ -4406,6 +4465,7 @@ function updateSnapshotStatus(message) {
 
   updateSnapshotScalebarAvailability();
   updateSnapshotFilterAvailability();
+  updateSnapshotPorosityOverlayAvailability();
 
   let exportSize = null;
   let exportLimitError = "";
@@ -6601,6 +6661,7 @@ function drawPorosityOverlay() {
     drawPorosityMask(ctx, mask);
   });
   updatePorosityThicknessOverlayLegend(thicknessSettings, thicknessExtent);
+  updateSnapshotPorosityOverlayAvailability();
 
   if (!porosityAoiVisible && !porosityAoiModeActive) return;
 
@@ -9371,6 +9432,39 @@ function renderVisibleSnapshotBaseCanvas(sourceCanvas, sourceRect, exportSize) {
     outputCanvas.height,
   );
   return outputCanvas;
+}
+
+function drawSnapshotPorosityOverlay(ctx, outputCanvas, selectionRect) {
+  if (
+    !ctx ||
+    !outputCanvas ||
+    !selectionRect ||
+    !snapshotExportPorosityOverlay?.checked ||
+    !hasSnapshotExportablePorosityOverlay() ||
+    !porosityOverlay?.width ||
+    !porosityOverlay?.height
+  ) {
+    return false;
+  }
+
+  const sourceRect = getSnapshotSourceRect(porosityOverlay, selectionRect);
+  if (!sourceRect?.width || !sourceRect?.height) return false;
+
+  ctx.save();
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(
+    porosityOverlay,
+    sourceRect.left,
+    sourceRect.top,
+    sourceRect.width,
+    sourceRect.height,
+    0,
+    0,
+    outputCanvas.width,
+    outputCanvas.height,
+  );
+  ctx.restore();
+  return true;
 }
 
 function getSnapshotViewportBounds(selectionRect) {
@@ -12197,6 +12291,12 @@ async function exportSnapshotSelection(destination = "file") {
           )
         : await applySnapshotExportFilter(outputCanvas, exportSize);
 
+    const porosityOverlayDrawn = drawSnapshotPorosityOverlay(
+      ctx,
+      outputCanvas,
+      snapshotSelectionRect,
+    );
+
     const contentMode = getSnapshotContentMode();
     if (contentMode === "annotations" || contentMode === "labels") {
       drawSnapshotAnnotationShapes(ctx, outputCanvas, snapshotSelectionRect);
@@ -12237,9 +12337,13 @@ async function exportSnapshotSelection(destination = "file") {
     finalStatus =
       scalebarRequested && !scalebarDrawn
         ? `Snapshot ${action} without scalebar; scale unknown.`
-        : filterApplied
-          ? `Snapshot ${action} with applied filter.`
-          : `Snapshot ${action}.`;
+        : porosityOverlayDrawn && filterApplied
+          ? `Snapshot ${action} with porosity overlay and applied filter.`
+          : porosityOverlayDrawn
+            ? `Snapshot ${action} with porosity overlay.`
+            : filterApplied
+              ? `Snapshot ${action} with applied filter.`
+              : `Snapshot ${action}.`;
   } catch (error) {
     console.error("Snapshot export failed:", error);
     finalStatus = error.message || "Snapshot export failed.";
@@ -12251,6 +12355,278 @@ async function exportSnapshotSelection(destination = "file") {
       snapshotCopyButton.textContent = "Copy to Clipboard";
     updateSnapshotStatus(finalStatus);
   }
+}
+
+const cziImportState = {
+  sourcePath: "",
+  inspection: null,
+  converting: false,
+};
+
+function setCziImportStatus(message, kind = "") {
+  if (!cziImportStatus) return;
+  cziImportStatus.textContent = message || "";
+  cziImportStatus.classList.toggle("error", kind === "error");
+  cziImportStatus.classList.toggle("success", kind === "success");
+}
+
+function formatCziBytes(bytes) {
+  const value = Number(bytes) || 0;
+  const units = ["bytes", "KB", "MB", "GB", "TB"];
+  let amount = value;
+  let unitIndex = 0;
+  while (amount >= 1000 && unitIndex < units.length - 1) {
+    amount /= 1000;
+    unitIndex += 1;
+  }
+  return `${amount.toLocaleString(undefined, {
+    maximumFractionDigits: amount >= 100 ? 0 : amount >= 10 ? 1 : 2,
+  })} ${units[unitIndex]}`;
+}
+
+function countCziDziTiles(width, height) {
+  const tileSize = 254;
+  const maxLevel = Math.ceil(Math.log2(Math.max(width, height)));
+  let total = 0;
+  for (let level = 0; level <= maxLevel; level += 1) {
+    const divisor = 2 ** (maxLevel - level);
+    const levelWidth = Math.max(1, Math.ceil(width / divisor));
+    const levelHeight = Math.max(1, Math.ceil(height / divisor));
+    total += Math.ceil(levelWidth / tileSize) * Math.ceil(levelHeight / tileSize);
+  }
+  return total;
+}
+
+function getUniqueCziSampleTitle(baseTitle) {
+  const cleanTitle = String(baseTitle || "Imported CZI").trim() || "Imported CZI";
+  const existingTitles = new Set(samples.map((sample) => sample.title));
+  if (!existingTitles.has(cleanTitle)) return cleanTitle;
+  for (let index = 2; index < 1000; index += 1) {
+    const candidate = `${cleanTitle} (${index})`;
+    if (!existingTitles.has(candidate)) return candidate;
+  }
+  return `${cleanTitle} ${Date.now()}`;
+}
+
+function updateCziOutputEstimate() {
+  const inspection = cziImportState.inspection;
+  if (!inspection || !cziOutputEstimate) return;
+  const scale = Number(cziResolutionSelect?.value || 0.5);
+  const quality = Math.max(
+    1,
+    Math.min(100, Number(cziJpegQuality?.value || 90)),
+  );
+  const width = Math.ceil(inspection.bounds.width * scale);
+  const height = Math.ceil(inspection.bounds.height * scale);
+  const outputMicrons = inspection.micronsPerPixel
+    ? inspection.micronsPerPixel / scale
+    : null;
+  const tileCount =
+    countCziDziTiles(width, height) * inspection.channels.length;
+  const qualityFactor = 0.75 + quality / 150;
+  const midpointBytes = inspection.sourceBytes * scale ** 2 * qualityFactor;
+  const lowBytes = midpointBytes * 0.7;
+  const highBytes = midpointBytes * 1.35;
+  cziOutputEstimate.textContent =
+    `${width.toLocaleString()} × ${height.toLocaleString()} pixels per channel` +
+    `${outputMicrons ? ` · ${outputMicrons.toFixed(3)} µm/pixel` : ""}` +
+    ` · ${tileCount.toLocaleString()} total tiles` +
+    ` · estimated ${formatCziBytes(lowBytes)}–${formatCziBytes(highBytes)} output. ` +
+    "The size estimate is approximate and will vary with image detail.";
+}
+
+function summarizeCziChannels(channels) {
+  const kinds = new Map();
+  channels.forEach((channel) => {
+    if (!kinds.has(channel.kind)) kinds.set(channel.kind, []);
+    kinds.get(channel.kind).push(channel);
+  });
+  const angleList = (kind) =>
+    (kinds.get(kind) || [])
+      .map((channel) => `${channel.angleDegrees}°`)
+      .join(", ");
+  return [
+    `Brightfield: ${(kinds.get("brightfield") || []).length}`,
+    `CPL: ${(kinds.get("cpl") || []).length}`,
+    `XPL: ${angleList("xpl") || "none"}`,
+    `PPL: ${angleList("ppl") || "none"}`,
+  ].join(" · ");
+}
+
+function renderCziInspection(inspection) {
+  cziImportState.inspection = inspection;
+  cziInspectionPanel.hidden = false;
+  cziSourceName.textContent = inspection.sourceName;
+  cziProfileBadge.textContent = inspection.isSupportedProfile
+    ? inspection.microscope || "AxioScan 7"
+    : "Unsupported CZI profile";
+  cziProfileBadge.classList.toggle("invalid", !inspection.isSupportedProfile);
+  cziSourceDimensions.textContent =
+    `${inspection.bounds.width.toLocaleString()} × ` +
+    inspection.bounds.height.toLocaleString();
+  cziPhysicalScale.textContent = inspection.micronsPerPixel
+    ? `${inspection.micronsPerPixel.toFixed(3)} µm/pixel`
+    : "Not recorded";
+  cziChannelCount.textContent =
+    `${inspection.sizeC} channels · ${inspection.sceneCount} scene · ` +
+    `Z=${inspection.sizeZ}, T=${inspection.sizeT}`;
+  cziPixelFormat.textContent =
+    `${inspection.pixelType || "Unknown"} · ${inspection.componentBitCount}-bit · ` +
+    (inspection.compression || "Unknown compression");
+  cziChannelSummary.textContent = summarizeCziChannels(inspection.channels);
+  cziSampleTitle.value = getUniqueCziSampleTitle(
+    inspection.sourceName.replace(/\.czi$/i, ""),
+  );
+  startCziConversionButton.disabled = !inspection.isSupportedProfile;
+  if (inspection.isSupportedProfile) {
+    setCziImportStatus(
+      "Supported AxioScan 7 polarization profile detected. All channels will use the same registered extent.",
+    );
+  } else {
+    setCziImportStatus(
+      "This beta requires one scene, one Z plane, one time point, and the expected 14-channel Brightfield/CPL/XPL/PPL profile.",
+      "error",
+    );
+  }
+  updateCziOutputEstimate();
+}
+
+function setCziConversionRunning(running) {
+  cziImportState.converting = running;
+  selectCziFileButton.disabled = running;
+  cziResolutionSelect.disabled = running;
+  cziJpegQuality.disabled = running;
+  cziLibraryMode.disabled = running;
+  cziSampleTitle.disabled = running;
+  closeCziImportButton.disabled = running;
+  startCziConversionButton.hidden = running;
+  cancelCziConversionButton.hidden = !running;
+  if (!running) {
+    startCziConversionButton.disabled =
+      !cziImportState.inspection?.isSupportedProfile;
+  }
+}
+
+async function chooseAndInspectCzi() {
+  if (!window.electronAPI?.selectAxioScanCzi || cziImportState.converting) return;
+  const selection = await window.electronAPI.selectAxioScanCzi();
+  if (selection?.canceled) return;
+
+  cziImportState.sourcePath = selection.sourcePath;
+  cziImportState.inspection = null;
+  cziSourcePath.textContent = selection.sourcePath;
+  cziSourcePath.title = selection.sourcePath;
+  cziInspectionPanel.hidden = true;
+  cziProgressPanel.hidden = true;
+  startCziConversionButton.disabled = true;
+  selectCziFileButton.disabled = true;
+  setCziImportStatus("Reading CZI metadata…");
+  try {
+    const inspection = await window.electronAPI.inspectAxioScanCzi(
+      selection.sourcePath,
+    );
+    renderCziInspection(inspection);
+  } catch (error) {
+    console.error("Could not inspect CZI:", error);
+    setCziImportStatus(error.message || "Could not inspect the CZI file.", "error");
+  } finally {
+    selectCziFileButton.disabled = false;
+  }
+}
+
+function selectImportedCziSample(titleText) {
+  const sampleIndex = samples.findIndex((sample) => sample.title === titleText);
+  if (sampleIndex < 0) return;
+  const groupDropdown = document.getElementById("groupDropdown");
+  const sampleDropdown = document.getElementById("sampleDropdown");
+  groupDropdown.value = "All";
+  populateSampleDropdown("All", { autoSelect: false });
+  sampleDropdown.value = String(sampleIndex);
+  sampleDropdown.dispatchEvent(new Event("change"));
+}
+
+async function startCziConversion() {
+  const inspection = cziImportState.inspection;
+  if (!inspection?.isSupportedProfile || cziImportState.converting) return;
+  const titleText = getUniqueCziSampleTitle(cziSampleTitle.value);
+  cziSampleTitle.value = titleText;
+  const createNewLibrary = cziLibraryMode.value === "create";
+  let newLibraryPath = "";
+  if (createNewLibrary) {
+    const defaultName =
+      `${titleText.replace(/[^a-z0-9._-]+/gi, "-").replace(/^-+|-+$/g, "") || "czi"}_library.json`;
+    const selection = await window.electronAPI.chooseNewLibraryPath(defaultName);
+    if (selection?.canceled) return;
+    newLibraryPath = selection.filePath;
+  }
+  const quality = Math.max(
+    1,
+    Math.min(100, Math.round(Number(cziJpegQuality.value) || 90)),
+  );
+  cziJpegQuality.value = String(quality);
+  cziProgressPanel.hidden = false;
+  cziProgressBar.value = 0;
+  cziProgressPercent.textContent = "0%";
+  cziProgressMessage.textContent = "Preparing conversion…";
+  setCziImportStatus("Writing registered DZI pyramids into the active project…");
+  setCziConversionRunning(true);
+
+  try {
+    const result = await window.electronAPI.convertAxioScanCzi({
+      sourcePath: cziImportState.sourcePath,
+      bounds: inspection.bounds,
+      resolutionScale: Number(cziResolutionSelect.value),
+      quality,
+      title: titleText,
+    });
+    const jsonData = createNewLibrary
+      ? { format: "v1", samples: [result.sample] }
+      : {
+          ...(currentLibraryData || {}),
+          samples: [...samples.map(serializeSampleForLibrary), result.sample],
+        };
+    await saveLibraryData(jsonData, { targetPath: newLibraryPath });
+    await loadSampleJSON(jsonData, { autoLoadSample: false });
+    selectImportedCziSample(titleText);
+    cziProgressBar.value = 100;
+    cziProgressPercent.textContent = "100%";
+    cziProgressMessage.textContent = "Conversion complete";
+    setCziImportStatus(
+      `Added “${titleText}” with ${result.totalTiles.toLocaleString()} DZI tiles.`,
+      "success",
+    );
+  } catch (error) {
+    console.error("Could not import AxioScan CZI:", error);
+    const canceled = /canceled/i.test(error.message || "");
+    setCziImportStatus(
+      canceled ? "Conversion canceled; partial output was removed." : error.message,
+      canceled ? "" : "error",
+    );
+  } finally {
+    setCziConversionRunning(false);
+  }
+}
+
+async function cancelCziConversion() {
+  if (!cziImportState.converting) return;
+  cancelCziConversionButton.disabled = true;
+  cziProgressMessage.textContent = "Canceling and cleaning up…";
+  try {
+    await window.electronAPI.cancelAxioScanCzi();
+  } finally {
+    cancelCziConversionButton.disabled = false;
+  }
+}
+
+function openCziImportDialog() {
+  closeElectronActionTray();
+  if (!cziImportDialog?.open) cziImportDialog?.showModal();
+  if (!cziImportState.inspection) chooseAndInspectCzi();
+}
+
+function closeCziImportDialog() {
+  if (cziImportState.converting) return;
+  cziImportDialog?.close();
 }
 
 function closeElectronActionTray() {
@@ -12352,6 +12728,40 @@ if (hasSharedViewerMenus) {
       }
       closeLibraryEditor();
     }
+  });
+}
+
+if (openCziImportButton && cziImportDialog && window.electronAPI) {
+  openCziImportButton.addEventListener("click", function (event) {
+    event.preventDefault();
+    openCziImportDialog();
+  });
+  closeCziImportButton?.addEventListener("click", closeCziImportDialog);
+  selectCziFileButton?.addEventListener("click", chooseAndInspectCzi);
+  startCziConversionButton?.addEventListener("click", startCziConversion);
+  cancelCziConversionButton?.addEventListener("click", cancelCziConversion);
+  cziResolutionSelect?.addEventListener("change", updateCziOutputEstimate);
+  cziJpegQuality?.addEventListener("input", updateCziOutputEstimate);
+  cziImportDialog.addEventListener("cancel", function (event) {
+    if (cziImportState.converting) {
+      event.preventDefault();
+      return;
+    }
+    closeCziImportDialog();
+  });
+  cziImportDialog.addEventListener("click", function (event) {
+    if (event.target === cziImportDialog) closeCziImportDialog();
+  });
+  window.electronAPI.onCziConversionProgress?.((progress) => {
+    if (!cziImportState.converting) return;
+    if (progress?.type === "channel") {
+      cziProgressMessage.textContent = progress.message || "Converting channel…";
+      return;
+    }
+    if (progress?.type !== "progress") return;
+    const percent = Math.max(0, Math.min(100, Number(progress.percent) || 0));
+    cziProgressBar.value = percent;
+    cziProgressPercent.textContent = `${Math.round(percent)}%`;
   });
 }
 
@@ -28038,9 +28448,22 @@ function selectSampleAfterLibraryEdit(previousTitle) {
 
 async function saveLibraryData(
   jsonData,
-  { forceSaveAs = false, canceledMessage = "Library was not saved." } = {},
+  {
+    forceSaveAs = false,
+    canceledMessage = "Library was not saved.",
+    targetPath = "",
+  } = {},
 ) {
   currentLibraryData = jsonData;
+
+  if (targetPath && window.electronAPI?.writeJsonFile) {
+    await window.electronAPI.writeJsonFile(targetPath, jsonData);
+    currentLibraryPath = targetPath;
+    window.electronAPI.setUnsavedState?.(
+      window.appState.hasUnsavedAnnotations || window.appState.hasUnsavedCounts,
+    );
+    return;
+  }
 
   if (!forceSaveAs && currentLibraryPath && window.electronAPI?.writeJsonFile) {
     try {

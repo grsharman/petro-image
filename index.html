@@ -563,11 +563,11 @@
           >
             <span class="electron-action-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24">
-                <path d="M5 8c2.5-4 11.5-4 14 0" />
-                <path d="M5 16c2.5 4 11.5 4 14 0" />
-                <path d="M5 8c-2 2.5-2 5.5 0 8" />
-                <path d="M19 8c2 2.5 2 5.5 0 8" />
-                <circle cx="12" cy="12" r="2" />
+                <path
+                  d="M4.2 8.4c1-1.9 3.1-2.8 4.5-4.5 1.1-1.4 2.6-1.1 4 .1l5.6 4.2c1.7 1.3 2.5 4 1.8 6.1l-1.9 3.2c-.6 1.1-1.6 1.8-2.7 1l-2.1 1.5c-2.2 1-4.2.2-6-1l-2.6-2.2c-1.6-1.3-2-3.6-1.4-5.6l.8-2.8Z"
+                  stroke-dasharray="3.4 2.1"
+                  transform="translate(-1.2 2) scale(1.1 .85)"
+                />
               </svg>
             </span>
             <span>
@@ -609,13 +609,11 @@
                 <circle cx="9" cy="10" r="1.5" />
                 <circle cx="14.5" cy="12.5" r="1.75" />
                 <circle cx="10.5" cy="16" r="1.25" />
-                <path d="M17 7.5h1.5" />
-                <path d="M17 16.5h1.5" />
               </svg>
             </span>
             <span>
               <span class="electron-action-title">Estimate Porosity <span class="beta-badge">βeta</span></span>
-              <span class="electron-action-description">Estimate pore-color area in an AOI</span>
+              <span class="electron-action-description">Define porosity by color in an AOI</span>
             </span>
           </button>
           <button
@@ -626,16 +624,19 @@
           >
             <span class="electron-action-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24">
-                <path d="M4 7.5 8 4l5 1 4.5 4.5L20 16l-4 4-6.5-.8L4 15z" />
-                <path d="M8 4l2 5.5L4 15" />
-                <path d="m13 5-3 4.5 5.5 3L20 16" />
-                <circle cx="10" cy="9.5" r="1" />
-                <circle cx="15.5" cy="12.5" r="1" />
+                <path
+                  d="M4.2 8.4c1-1.9 3.1-2.8 4.5-4.5 1.1-1.4 2.6-1.1 4 .1l5.6 4.2c1.7 1.3 2.5 4 1.8 6.1l-1.9 3.2c-.6 1.1-1.6 1.8-2.7 1l-2.1 1.5c-2.2 1-4.2.2-6-1l-2.6-2.2c-1.6-1.3-2-3.6-1.4-5.6l.8-2.8Z"
+                  transform="translate(-1.2 2) scale(1.1 .85)"
+                />
+                <g transform="translate(.5 2.4) scale(.8)">
+                  <path d="M9.5 9.5c.2-1.8 1.5-2.8 3.3-2.8 1.9 0 3.2 1.1 3.2 2.7 0 1.5-.9 2.2-2.1 2.9-1 .6-1.5 1.2-1.5 2.2" />
+                  <path d="M12.4 17.5h.01" />
+                </g>
               </svg>
             </span>
             <span>
               <span class="electron-action-title">Classify Polygons <span class="beta-badge">βeta</span></span>
-              <span class="electron-action-description">Predict from image features</span>
+              <span class="electron-action-description">Predict labels from image features</span>
             </span>
           </button>
         </div>
@@ -721,6 +722,25 @@
             <span>
               <span class="electron-action-title">Open Project</span>
               <span class="electron-action-description">Switch project folder</span>
+            </span>
+          </button>
+          <button
+            id="openCziImportButton"
+            class="electron-action-item"
+            type="button"
+            role="menuitem"
+          >
+            <span class="electron-action-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <path d="M4 3h11l5 5v13H4z" />
+                <path d="M14 3v6h6" />
+                <path d="M8 14h8" />
+                <path d="m13 11 3 3-3 3" />
+              </svg>
+            </span>
+            <span>
+              <span class="electron-action-title">Import AxioScan 7 CZI <span class="beta-badge">βeta</span></span>
+              <span class="electron-action-description">Convert polarization channels to DZI</span>
             </span>
           </button>
           <button
@@ -819,6 +839,80 @@
           </button>
         </div>
       </div>
+      <dialog
+        id="cziImportDialog"
+        class="czi-import-dialog"
+        aria-labelledby="cziImportTitle"
+      >
+        <div class="czi-import-header">
+          <div>
+            <h2 id="cziImportTitle">Import AxioScan 7 CZI</h2>
+            <p>Convert a supported 14-channel polarization scan directly into registered DZI tile sets.</p>
+          </div>
+          <button id="closeCziImportButton" type="button" aria-label="Close">×</button>
+        </div>
+        <div class="czi-import-body">
+          <div class="czi-source-row">
+            <button id="selectCziFileButton" type="button">Choose CZI File…</button>
+            <span id="cziSourcePath">No file selected</span>
+          </div>
+          <div id="cziInspectionPanel" class="czi-inspection-panel" hidden>
+            <div class="czi-profile-heading">
+              <span id="cziProfileBadge" class="czi-profile-badge">AxioScan 7</span>
+              <strong id="cziSourceName"></strong>
+            </div>
+            <dl class="czi-metadata-grid">
+              <div><dt>Source dimensions</dt><dd id="cziSourceDimensions"></dd></div>
+              <div><dt>Physical scale</dt><dd id="cziPhysicalScale"></dd></div>
+              <div><dt>Channels</dt><dd id="cziChannelCount"></dd></div>
+              <div><dt>Pixel format</dt><dd id="cziPixelFormat"></dd></div>
+            </dl>
+            <div id="cziChannelSummary" class="czi-channel-summary"></div>
+            <label class="czi-field">
+              <span>Sample title</span>
+              <input id="cziSampleTitle" type="text" maxlength="120" />
+            </label>
+            <div class="czi-settings-grid">
+              <label class="czi-field czi-library-field">
+                <span>Library destination</span>
+                <select id="cziLibraryMode">
+                  <option value="add" selected>Add to current library</option>
+                  <option value="create">Create new library</option>
+                </select>
+              </label>
+              <label class="czi-field">
+                <span>Output resolution</span>
+                <select id="cziResolutionSelect">
+                  <option value="1">Full resolution</option>
+                  <option value="0.5" selected>½ resolution</option>
+                  <option value="0.25">¼ resolution</option>
+                  <option value="0.125">⅛ resolution</option>
+                  <option value="0.0625">¹⁄₁₆ resolution</option>
+                  <option value="0.03125">¹⁄₃₂ resolution</option>
+                  <option value="0.015625">¹⁄₆₄ resolution</option>
+                </select>
+              </label>
+              <label class="czi-field">
+                <span>JPEG quality</span>
+                <input id="cziJpegQuality" type="number" min="1" max="100" value="90" />
+              </label>
+            </div>
+            <div id="cziOutputEstimate" class="czi-output-estimate"></div>
+          </div>
+          <div id="cziProgressPanel" class="czi-progress-panel" hidden>
+            <progress id="cziProgressBar" max="100" value="0"></progress>
+            <div class="czi-progress-labels">
+              <span id="cziProgressMessage">Preparing conversion…</span>
+              <span id="cziProgressPercent">0%</span>
+            </div>
+          </div>
+          <p id="cziImportStatus" class="czi-import-status" role="status"></p>
+        </div>
+        <div class="czi-import-actions">
+          <button id="cancelCziConversionButton" type="button" hidden>Cancel Conversion</button>
+          <button id="startCziConversionButton" type="button" disabled>Convert and Add Sample</button>
+        </div>
+      </dialog>
       <div
         id="gridCountPalette"
         class="tool-palette grid-count-palette"
@@ -1075,6 +1169,18 @@
             <input id="snapshotIncludeScalebar" type="checkbox" checked />
             <span>Include scalebar</span>
           </label>
+          <label class="snapshot-option">
+            <input
+              id="snapshotExportPorosityOverlay"
+              type="checkbox"
+              disabled
+            />
+            <span>Export porosity overlay</span>
+          </label>
+          <label class="snapshot-option">
+            <input id="snapshotExportFilter" type="checkbox" disabled />
+            <span>Export applied filter</span>
+          </label>
           <label class="snapshot-field">
             <span>JPG quality</span>
             <input
@@ -1085,10 +1191,6 @@
               step="5"
               value="92"
             />
-          </label>
-          <label class="snapshot-option">
-            <input id="snapshotExportFilter" type="checkbox" disabled />
-            <span>Export applied filter</span>
           </label>
           <div class="snapshot-actions">
             <button id="snapshotDrawButton" type="button">Draw Area</button>
@@ -1144,7 +1246,7 @@
         </div>
         <div class="measure-help-content snapshot-help-content">
           <h4>What It Does</h4>
-          <p>Snapshot captures a selected image area as a JPG, with options for including visible annotations, labels, a scalebar, and an applied image filter (if there is one).</p>
+          <p>Snapshot captures a selected image area as a JPG, with options for including visible annotations, labels, a scalebar, the currently displayed porosity overlay, and an applied image filter (if there is one).</p>
           <h4>Select an Area</h4>
           <p>Click Draw Area and click+drag over the image, or use the current screen extent. Drag the box or its handles to adjust the snapshot area.</p>
           <h4>Contents and Resolution</h4>
@@ -3221,42 +3323,16 @@
               title="Number of points"
               onchange="enableGridButtons()"
             />
-            <!--Gear icon to trigger grid appearance menu-->
+            <!--Pencil icon to trigger grid appearance menu-->
             <button
               class="custom-button"
               id="gridSettingsButton"
               title="Grid Appearance Settings"
             >
-              <svg
-                class="gear-icon"
-                version="1.1"
-                id="Layer_1"
-                xmlns="http://www.w3.org/2000/svg"
-                xmlns:xlink="http://www.w3.org/1999/xlink"
-                viewBox="0 0 64 64"
-                enable-background="new 0 0 64 64"
-                xml:space="preserve"
-              >
-                <g>
-                  <polygon
-                    fill="#444"
-                    stroke="#000000"
-                    stroke-width="2"
-                    stroke-miterlimit="10"
-                    points="32,1 26,1 26,10 20,12 14,6 6,14 12,20 
-                10,26 1,26 1,38 10,38 12,44 6,50 14,58 20,52 26,54 26,63 32,63 38,63 38,54 44,52 50,58 58,50 52,44 54,38 63,38 63,26 54,26 
-                52,20 58,14 50,6 44,12 38,10 38,1 	"
-                  />
-                  <circle
-                    fill="#FFFFFF"
-                    stroke="#000000"
-                    stroke-width="2"
-                    stroke-miterlimit="10"
-                    cx="32"
-                    cy="32"
-                    r="6"
-                  />
-                </g>
+              <svg class="annotation-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 20l1.5-4L16 5.5a2.1 2.1 0 0 1 3 3L8.5 19 4 20z" />
+                <path d="m14.5 7 3 3" />
+                <path d="m5.5 16 3 3" />
               </svg>
             </button>
           </div>
@@ -3889,8 +3965,8 @@
               <div id="resultsContent"></div>
             </div>
           </div>
-          <div class="dropdown-container">
-            <label style="width: 40px">JSON</label>
+          <div class="dropdown-container count-file-row">
+            <label>JSON</label>
             <label for="count-geojson-input" class="file-label">Import</label>
             <input type="file" id="count-geojson-input" class="file-input" />
             <button
@@ -3903,8 +3979,8 @@
               Export
             </button>
           </div>
-          <div class="dropdown-container">
-            <label style="width: 40px">CSV</label>
+          <div class="dropdown-container count-file-row">
+            <label>CSV</label>
             <label for="count-file-input" class="file-label">Import</label>
             <input type="file" id="count-file-input" class="file-input" />
             <button
@@ -4162,15 +4238,15 @@
             >
               <svg class="annotation-icon" viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M12 3v18" />
-                <path d="M12 3 8 7" />
-                <path d="M12 3l4 4" />
-                <path d="M12 21l-4-4" />
-                <path d="M12 21l4-4" />
+                <path d="M12 3 9 6" />
+                <path d="M12 3l3 3" />
+                <path d="M12 21l-3-3" />
+                <path d="M12 21l3-3" />
                 <path d="M3 12h18" />
-                <path d="M3 12l4-4" />
-                <path d="M3 12l4 4" />
-                <path d="M21 12l-4-4" />
-                <path d="M21 12l-4 4" />
+                <path d="M3 12l3-3" />
+                <path d="M3 12l3 3" />
+                <path d="M21 12l-3-3" />
+                <path d="M21 12l-3 3" />
               </svg>
             </button>
             <button
@@ -4182,12 +4258,18 @@
               aria-pressed="false"
             >
               <svg class="annotation-icon" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M5 5h11v8h-6l-5 4V5z" />
-                <path d="M18 5v12" />
-                <path d="M18 5l-3 3" />
-                <path d="M18 5l3 3" />
-                <path d="M18 17l-3-3" />
-                <path d="M18 17l3-3" />
+                <path d="M6 6v12" />
+                <path d="M6 6 4 8" />
+                <path d="m6 6 2 2" />
+                <path d="m6 18-2-2" />
+                <path d="m6 18 2-2" />
+                <path d="M1 12h10" />
+                <path d="m1 12 2-2" />
+                <path d="m1 12 2 2" />
+                <path d="m11 12-2-2" />
+                <path d="m11 12-2 2" />
+                <path d="m13.5 19 4.25-13L22 19" />
+                <path d="M15 14.5h5.5" />
               </svg>
             </button>
             <button
@@ -4197,10 +4279,9 @@
               aria-label="Annotation Appearance"
             >
               <svg class="annotation-icon" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M4 16.5c3.5-6 8.5-9.5 15-10.5" />
-                <path d="M14 5l5 5" />
-                <path d="M12.8 6.2 18 11.4 9.4 20H4v-5.4l8.8-8.4z" />
-                <path d="M7 17h2" />
+                <path d="M4 20l1.5-4L16 5.5a2.1 2.1 0 0 1 3 3L8.5 19 4 20z" />
+                <path d="m14.5 7 3 3" />
+                <path d="m5.5 16 3 3" />
               </svg>
             </button>
             <button
@@ -5151,36 +5232,10 @@
               title="Measurement drawing properties"
               aria-label="Measurement drawing properties"
             >
-              <svg
-                class="gear-icon"
-                version="1.1"
-                id="Layer_1"
-                xmlns="http://www.w3.org/2000/svg"
-                xmlns:xlink="http://www.w3.org/1999/xlink"
-                viewBox="0 0 64 64"
-                enable-background="new 0 0 64 64"
-                xml:space="preserve"
-              >
-                <g>
-                  <polygon
-                    fill="#444"
-                    stroke="#000000"
-                    stroke-width="2"
-                    stroke-miterlimit="10"
-                    points="32,1 26,1 26,10 20,12 14,6 6,14 12,20 
-                  10,26 1,26 1,38 10,38 12,44 6,50 14,58 20,52 26,54 26,63 32,63 38,63 38,54 44,52 50,58 58,50 52,44 54,38 63,38 63,26 54,26 
-                  52,20 58,14 50,6 44,12 38,10 38,1 	"
-                  />
-                  <circle
-                    fill="#FFFFFF"
-                    stroke="#000000"
-                    stroke-width="2"
-                    stroke-miterlimit="10"
-                    cx="32"
-                    cy="32"
-                    r="6"
-                  />
-                </g>
+              <svg class="annotation-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 20l1.5-4L16 5.5a2.1 2.1 0 0 1 3 3L8.5 19 4 20z" />
+                <path d="m14.5 7 3 3" />
+                <path d="m5.5 16 3 3" />
               </svg>
             </button>
           </div>
@@ -5460,13 +5515,9 @@
               aria-expanded="false"
             >
               <svg class="annotation-icon" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M12 12 12 4" />
-                <path d="M12 12 19 8" />
-                <path d="M12 12 18 17" />
-                <path d="M12 12 6 17" />
-                <path d="M12 12 5 8" />
-                <path d="M12 4a4 4 0 0 1 3.4 5.9L12 12z" />
-                <path d="M19 8a4 4 0 0 1-.9 6.1L12 12z" />
+                <path d="M6 19 1 10.3A10 10 0 0 1 7.7 9.2L6 19z" />
+                <path d="M6 19 8.8 3.2A16 16 0 0 1 18.3 8.7L6 19z" />
+                <path d="M6 19 16.7 10A14 14 0 0 1 20 19H6z" />
               </svg>
             </button>
             <button
@@ -5965,31 +6016,10 @@
                 title="Reference circle drawing properties"
                 aria-label="Reference circle drawing properties"
               >
-                <svg
-                  class="gear-icon"
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 64 64"
-                >
-                  <g>
-                    <polygon
-                      fill="#444"
-                      stroke="#000000"
-                      stroke-width="2"
-                      stroke-miterlimit="10"
-                      points="32,1 26,1 26,10 20,12 14,6 6,14 12,20 
-                    10,26 1,26 1,38 10,38 12,44 6,50 14,58 20,52 26,54 26,63 32,63 38,63 38,54 44,52 50,58 58,50 52,44 54,38 63,38 63,26 54,26 
-                    52,20 58,14 50,6 44,12 38,10 38,1 	"
-                    />
-                    <circle
-                      fill="#FFFFFF"
-                      stroke="#000000"
-                      stroke-width="2"
-                      stroke-miterlimit="10"
-                      cx="32"
-                      cy="32"
-                      r="6"
-                    />
-                  </g>
+                <svg class="annotation-icon" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M4 20l1.5-4L16 5.5a2.1 2.1 0 0 1 3 3L8.5 19 4 20z" />
+                  <path d="m14.5 7 3 3" />
+                  <path d="m5.5 16 3 3" />
                 </svg>
               </button>
             </div>

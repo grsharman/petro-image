@@ -45,7 +45,20 @@ contextBridge.exposeInMainWorld("electronAPI", {
   readLocalJsonFile: (filePath) =>
     ipcRenderer.invoke("read-local-json-file", filePath),
   selectImageFile: () => ipcRenderer.invoke("select-image-file"),
+  selectAxioScanCzi: () => ipcRenderer.invoke("select-axioscan-czi"),
+  inspectAxioScanCzi: (sourcePath) =>
+    ipcRenderer.invoke("inspect-axioscan-czi", sourcePath),
+  convertAxioScanCzi: (request) =>
+    ipcRenderer.invoke("convert-axioscan-czi", request),
+  cancelAxioScanCzi: () => ipcRenderer.invoke("cancel-axioscan-czi"),
+  onCziConversionProgress: (callback) => {
+    const listener = (event, payload) => callback(payload);
+    ipcRenderer.on("czi-conversion-progress", listener);
+    return () => ipcRenderer.removeListener("czi-conversion-progress", listener);
+  },
   selectExistingJsonFile: () => ipcRenderer.invoke("select-existing-json-file"),
+  chooseNewLibraryPath: (defaultFileName) =>
+    ipcRenderer.invoke("choose-new-library-path", defaultFileName),
   writeJsonFile: (filePath, jsonData) =>
     ipcRenderer.invoke("write-json-file", { filePath, jsonData }),
   saveJsonFileAs: (defaultFileName, jsonData) =>

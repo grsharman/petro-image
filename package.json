@@ -7,9 +7,10 @@
   "scripts": {
     "start": "electron-forge start",
     "test": "node --test test/*.test.cjs",
-    "package": "electron-forge package",
-    "make": "electron-forge make",
-    "dist": "electron-builder"
+    "build:czi-worker": "node scripts/build-czi-worker.mjs",
+    "package": "npm run build:czi-worker && electron-forge package",
+    "make": "npm run build:czi-worker && electron-forge make",
+    "dist": "npm run build:czi-worker && electron-builder"
   },
   "repository": {
     "type": "git",
@@ -49,8 +50,21 @@
       "node_modules/sharp/**/*",
       "node_modules/@img/**/*"
     ],
+    "extraResources": [
+      {
+        "from": "build/czi-worker",
+        "to": "czi-worker",
+        "filter": ["**/*"]
+      }
+    ],
     "files": [
-      "**/*"
+      "**/*",
+      "!build/czi-worker{,/**}",
+      "!build/czi-worker-cache{,/**}",
+      "!build/czi-worker-spec{,/**}",
+      "!build/czi-worker-work{,/**}",
+      "!.venv-czi-build{,/**}",
+      "!test-data{,/**}"
     ],
     "win": {
       "icon": "assets/icon.ico",

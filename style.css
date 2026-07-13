@@ -227,6 +227,263 @@ body.import-wizard-page {
   stroke-linejoin: round;
 }
 
+.czi-import-dialog {
+  width: min(680px, calc(100vw - 40px));
+  max-height: calc(100vh - 48px);
+  box-sizing: border-box;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid rgba(20, 20, 20, 0.35);
+  border-radius: 9px;
+  background: #f7f7f5;
+  color: #222;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.35);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.czi-import-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.46);
+}
+
+.czi-import-header,
+.czi-import-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 20px;
+  background: #fff;
+}
+
+.czi-import-header {
+  border-bottom: 1px solid #d6d6d2;
+}
+
+.czi-import-header h2 {
+  margin: 0 0 3px;
+  font-size: 19px;
+}
+
+.czi-import-header p {
+  margin: 0;
+  color: #5b5b57;
+  font-size: 13px;
+}
+
+#closeCziImportButton {
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: #555;
+  font-size: 25px;
+  cursor: pointer;
+}
+
+#closeCziImportButton:hover {
+  background: #ededeb;
+}
+
+.czi-import-body {
+  max-height: calc(100vh - 190px);
+  padding: 18px 20px;
+  overflow: auto;
+}
+
+.czi-source-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+#cziSourcePath {
+  min-width: 0;
+  overflow: hidden;
+  color: #595955;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.czi-inspection-panel {
+  margin-top: 16px;
+  padding: 15px;
+  border: 1px solid #d5d5cf;
+  border-radius: 7px;
+  background: #fff;
+}
+
+.czi-profile-heading {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 13px;
+}
+
+.czi-profile-badge {
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: #dceee2;
+  color: #215f38;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.czi-profile-badge.invalid {
+  background: #f7dddd;
+  color: #8c2929;
+}
+
+.czi-metadata-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 18px;
+  margin: 0 0 13px;
+}
+
+.czi-metadata-grid div {
+  min-width: 0;
+}
+
+.czi-metadata-grid dt {
+  color: #70706a;
+  font-size: 11px;
+}
+
+.czi-metadata-grid dd {
+  margin: 2px 0 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.czi-channel-summary {
+  margin-bottom: 14px;
+  padding: 9px 10px;
+  border-radius: 5px;
+  background: #f0f2ef;
+  color: #454641;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.czi-settings-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 145px;
+  gap: 12px;
+}
+
+.czi-field {
+  display: grid;
+  gap: 5px;
+  margin-top: 11px;
+  color: #494944;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.czi-library-field {
+  grid-column: 1 / -1;
+}
+
+.czi-field input,
+.czi-field select {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 34px;
+  border: 1px solid #bdbdb7;
+  border-radius: 5px;
+  padding: 6px 8px;
+  background: #fff;
+  color: #222;
+  font: inherit;
+  font-weight: 400;
+}
+
+.czi-output-estimate {
+  margin-top: 13px;
+  padding: 9px 10px;
+  border-left: 3px solid #64826b;
+  background: #f1f5f1;
+  color: #414840;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.czi-progress-panel {
+  margin-top: 17px;
+}
+
+#cziProgressBar {
+  width: 100%;
+  height: 12px;
+}
+
+.czi-progress-labels {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 5px;
+  color: #555;
+  font-size: 12px;
+}
+
+.czi-import-status {
+  min-height: 18px;
+  margin: 13px 0 0;
+  color: #555;
+  font-size: 12px;
+}
+
+.czi-import-status.error {
+  color: #a02626;
+}
+
+.czi-import-status.success {
+  color: #23633a;
+}
+
+.czi-import-actions {
+  justify-content: flex-end;
+  border-top: 1px solid #d6d6d2;
+}
+
+.czi-import-dialog button {
+  min-height: 34px;
+  border: 1px solid #aaa;
+  border-radius: 5px;
+  padding: 6px 12px;
+  background: #fff;
+  color: #222;
+  font: inherit;
+  cursor: pointer;
+}
+
+.czi-import-dialog button:disabled {
+  cursor: default;
+  opacity: 0.52;
+}
+
+#startCziConversionButton {
+  border-color: #2f6742;
+  background: #397c50;
+  color: #fff;
+  font-weight: 650;
+}
+
+#cancelCziConversionButton {
+  color: #932c2c;
+}
+
+@media (max-width: 620px) {
+  .czi-metadata-grid,
+  .czi-settings-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .tool-palette {
   position: absolute;
   top: 56px;
@@ -1700,6 +1957,7 @@ body.import-wizard-page {
   gap: 1px;
   max-height: 168px;
   overflow-y: auto;
+  user-select: none;
   margin: 3px 2px 5px;
   padding: 1px;
   border: 1px solid rgba(68, 68, 68, 0.35);
@@ -1826,6 +2084,10 @@ body.import-wizard-page {
 .annotation-list-index,
 .annotation-list-type {
   font-weight: 700;
+}
+
+.annotation-list-index {
+  font-size: 11px;
 }
 
 .annotation-list-type {
@@ -2048,21 +2310,23 @@ body.import-wizard-page {
   position: absolute;
   left: 0;
   top: 0;
-  width: 17px;
+  width: 11px;
   height: 14px;
   background: #333;
-  clip-path: polygon(0 0, 100% 50%, 0 100%, 0 78%, 72% 50%, 0 22%);
+  clip-path: polygon(0 12%, 100% 50%, 0 88%, 0 74%, 72% 50%, 0 26%);
 }
 
 .annotation-visibility-eye::after {
   content: "";
   position: absolute;
-  left: 3px;
+  left: 1px;
   top: 3px;
-  width: 4px;
+  width: 6px;
   height: 8px;
-  border-radius: 50%;
-  background: #333;
+  box-sizing: border-box;
+  border-right: 1.5px solid #333;
+  border-radius: 0 60% 60% 0;
+  transform: rotate(180deg);
 }
 
 .annotation-visibility-slash {
@@ -2104,15 +2368,11 @@ body.import-wizard-page {
 }
 
 .annotation-lock-icon-unlocked .annotation-lock-shackle {
-  left: 7px;
-  top: -2px;
-  transform: rotate(34deg);
-  transform-origin: left bottom;
-  background: rgba(255, 255, 255, 0.95);
-}
-
-.annotation-lock-icon-unlocked .annotation-lock-body {
-  top: 8px;
+  left: 3px;
+  top: 0;
+  transform: translateX(3px) scaleX(-1);
+  transform-origin: left center;
+  background: transparent;
 }
 
 .measure-header-menu.annotation-header-menu {
@@ -2955,6 +3215,15 @@ input[type="range"] {
   display: flex;
   align-items: flex-start; /* Align items to the left */
   gap: 2px; /* Add some space between the dropdown and the button */
+}
+
+.count-file-row {
+  align-items: center;
+}
+
+.count-file-row > label:first-child {
+  width: 40px;
+  text-align: center;
 }
 
 /* Hidden menu styles */
@@ -4335,6 +4604,7 @@ input[type="range"] {
   min-width: 650px;
   border-collapse: collapse;
   font-size: 11px;
+  user-select: none;
 }
 
 .measure-results-table th,
