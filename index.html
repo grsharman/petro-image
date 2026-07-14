@@ -980,7 +980,7 @@
         <div class="czi-import-header">
           <div>
             <h2 id="cziImportTitle">Import AxioScan 7 CZI</h2>
-            <p>Convert a supported 14-channel polarization scan directly into registered DZI tile sets.</p>
+            <p>Convert selected AxioScan lighting channels directly into registered DZI tile sets.</p>
           </div>
           <button id="closeCziImportButton" type="button" aria-label="Close">×</button>
         </div>
@@ -1005,6 +1005,23 @@
               <span>Sample title</span>
               <input id="cziSampleTitle" type="text" maxlength="120" />
             </label>
+            <label class="czi-field">
+              <span>Groups</span>
+              <input
+                id="cziGroupsInput"
+                type="text"
+                maxlength="500"
+                list="cziExistingGroups"
+                placeholder="Separate multiple groups with semicolons"
+              />
+              <datalist id="cziExistingGroups"></datalist>
+              <small>Existing or new group names; separate multiple groups with semicolons.</small>
+            </label>
+            <fieldset class="czi-tile-set-order">
+              <legend>Tile set order</legend>
+              <div id="cziTileSetOrderList"></div>
+              <small>PPL and XPL use stage rotation when more than one angle is present.</small>
+            </fieldset>
             <div class="czi-settings-grid">
               <label class="czi-field czi-library-field">
                 <span>Library destination</span>
@@ -1030,6 +1047,29 @@
                 <input id="cziJpegQuality" type="number" min="1" max="100" value="90" />
               </label>
             </div>
+            <details class="czi-advanced-diagnostics">
+              <summary>Advanced diagnostics</summary>
+              <div class="czi-advanced-diagnostics-content">
+                <fieldset class="czi-benchmark-panel">
+                  <legend>CZI read benchmark</legend>
+                  <p>Compare read sizes on a centered region of one channel. No image files are created.</p>
+                  <div class="czi-benchmark-controls">
+                    <label class="czi-field">
+                      <span>Channel</span>
+                      <select id="cziBenchmarkChannelSelect"></select>
+                    </label>
+                    <button id="startCziBenchmarkButton" type="button">Run Read Benchmark</button>
+                    <button id="cancelCziBenchmarkButton" type="button" hidden>Cancel Benchmark</button>
+                  </div>
+                  <div id="cziBenchmarkStatus" class="czi-benchmark-status"></div>
+                  <pre id="cziBenchmarkResults" hidden></pre>
+                </fieldset>
+                <section id="cziPerformancePanel" class="czi-performance-panel" hidden>
+                  <h3>Conversion performance</h3>
+                  <pre id="cziPerformanceSummary"></pre>
+                </section>
+              </div>
+            </details>
             <div id="cziOutputEstimate" class="czi-output-estimate"></div>
           </div>
           <div id="cziProgressPanel" class="czi-progress-panel" hidden>

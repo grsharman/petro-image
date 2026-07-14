@@ -32,6 +32,7 @@ let segmenteverygrainWorker = null;
 let activeSegmenteverygrainChild = null;
 let activeCziConversionChild = null;
 let activeCziConversionOutput = "";
+let activeCziBenchmarkChild = null;
 let windowStateSaveTimer = null;
 const localFileServerToken = randomUUID();
 const grantedLocalRoots = [];
@@ -938,6 +939,71 @@ async function inspectAxioScanCzi(sourcePath) {
   return inspection;
 }
 
+async function benchmarkAxioScanCzi(request, event) {
+  if (activeCziBenchmarkChild) {
+    throw new Error("An AxioScan CZI benchmark is already running.");
+  }
+  if (activeCziConversionChild) {
+    throw new Error("Wait for the CZI conversion to finish before benchmarking.");
+  }
+  const sourcePath = String(request?.sourcePath || "");
+  if (!sourcePath || path.extname(sourcePath).toLowerCase() !== ".czi") {
+    throw new Error("Choose a valid CZI source file.");
+  }
+  if (!(await pathExists(sourcePath))) {
+    throw new Error("The selected CZI file could not be found.");
+  }
+  const channel = Math.floor(Number(request?.channel));
+  if (!Number.isInteger(channel) || channel < 0) {
+    throw new Error("Choose a valid CZI channel to benchmark.");
+  }
+  const resolutionScale = Number(request?.resolutionScale);
+  if (!CZI_RESOLUTION_SCALES.has(resolutionScale)) {
+    throw new Error("Choose a supported CZI benchmark resolution.");
+  }
+
+  const runtime = await getCziWorkerRuntime();
+  let benchmark = null;
+  try {
+    const result = await runProcessWithProgress(
+      runtime.command,
+      [
+        ...runtime.workerArgs,
+        sourcePath,
+        "--benchmark",
+        "--channel",
+        String(channel),
+        "--downsample",
+        String(resolutionScale),
+      ],
+      {
+        timeoutMs: 20 * 60 * 1000,
+        env: runtime.env,
+        onChild: (child) => {
+          activeCziBenchmarkChild = child;
+        },
+        onStdoutLine: (line) => {
+          const workerEvent = tryParseJsonLine(line);
+          if (workerEvent?.type === "benchmark") benchmark = workerEvent.benchmark;
+          if (workerEvent?.type === "benchmark_progress") {
+            event.sender.send("czi-benchmark-progress", workerEvent);
+          }
+        },
+      },
+    );
+    const canceled = Boolean(
+      result.canceled || activeCziBenchmarkChild?._petroImageCanceled,
+    );
+    if (canceled) throw new Error("CZI benchmark canceled.");
+    if (result.exitCode !== 0 || !benchmark) {
+      throw new Error(getCziWorkerError(result, "CZI benchmark failed"));
+    }
+    return { ok: true, benchmark };
+  } finally {
+    activeCziBenchmarkChild = null;
+  }
+}
+
 function sanitizeCziOutputName(value) {
   return (
     String(value || "axioscan-czi")
@@ -1071,7 +1137,7 @@ async function runAxioScanCziConversion(request, event) {
           const workerEvent = tryParseJsonLine(line);
           if (!workerEvent) return;
           if (workerEvent.type === "result") resultEvent = workerEvent;
-          if (["channel", "progress"].includes(workerEvent.type)) {
+          if (["channel", "progress", "performance"].includes(workerEvent.type)) {
             event.sender.send("czi-conversion-progress", workerEvent);
           }
         },
@@ -1096,6 +1162,29 @@ async function runAxioScanCziConversion(request, event) {
       movedOutputPaths,
     );
     sample.title = String(request?.title || sample.title || sourceName).trim();
+    const requestedGroups = Array.isArray(request?.groups)
+      ? [...new Set(
+          request.groups
+            .map((group) => String(group || "").trim())
+            .filter(Boolean),
+        )]
+      : [];
+    sample.groups = requestedGroups.length ? requestedGroups : ["Imported CZI"];
+
+    const requestedOrder = Array.isArray(request?.tileSetOrder)
+      ? request.tileSetOrder.map((key) => String(key))
+      : [];
+    const remainingTileSets = [...(sample.tileSets || [])];
+    const orderedTileSets = [];
+    for (const key of requestedOrder) {
+      const index = remainingTileSets.findIndex(
+        (tileSet) => tileSet._cziImportKey === key,
+      );
+      if (index >= 0) orderedTileSets.push(...remainingTileSets.splice(index, 1));
+    }
+    orderedTileSets.push(...remainingTileSets);
+    orderedTileSets.forEach((tileSet) => delete tileSet._cziImportKey);
+    sample.tileSets = orderedTileSets;
     await fs.rm(stagingDirectory, { recursive: true, force: true });
     return {
       ok: true,
@@ -1104,6 +1193,7 @@ async function runAxioScanCziConversion(request, event) {
       width: resultEvent.width,
       height: resultEvent.height,
       totalTiles: resultEvent.totalTiles,
+      performance: resultEvent.performance || null,
     };
   } catch (error) {
     for (const outputPath of movedOutputPaths.reverse()) {
@@ -2524,6 +2614,19 @@ ipcMain.handle("select-axioscan-czi", async (event) => {
 
 ipcMain.handle("inspect-axioscan-czi", async (event, sourcePath) => {
   return inspectAxioScanCzi(sourcePath);
+});
+
+ipcMain.handle("benchmark-axioscan-czi", async (event, request) => {
+  return benchmarkAxioScanCzi(request || {}, event);
+});
+
+ipcMain.handle("cancel-axioscan-czi-benchmark", async () => {
+  if (!activeCziBenchmarkChild || activeCziBenchmarkChild.killed) {
+    return { ok: true, canceled: false };
+  }
+  activeCziBenchmarkChild._petroImageCanceled = true;
+  activeCziBenchmarkChild.kill();
+  return { ok: true, canceled: true };
 });
 
 ipcMain.handle("convert-axioscan-czi", async (event, request) => {

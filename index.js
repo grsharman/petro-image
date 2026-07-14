@@ -449,14 +449,30 @@ const cziChannelCount = document.getElementById("cziChannelCount");
 const cziPixelFormat = document.getElementById("cziPixelFormat");
 const cziChannelSummary = document.getElementById("cziChannelSummary");
 const cziSampleTitle = document.getElementById("cziSampleTitle");
+const cziGroupsInput = document.getElementById("cziGroupsInput");
+const cziExistingGroups = document.getElementById("cziExistingGroups");
+const cziTileSetOrderList = document.getElementById("cziTileSetOrderList");
 const cziLibraryMode = document.getElementById("cziLibraryMode");
 const cziResolutionSelect = document.getElementById("cziResolutionSelect");
 const cziJpegQuality = document.getElementById("cziJpegQuality");
 const cziOutputEstimate = document.getElementById("cziOutputEstimate");
+const cziBenchmarkChannelSelect = document.getElementById(
+  "cziBenchmarkChannelSelect",
+);
+const startCziBenchmarkButton = document.getElementById(
+  "startCziBenchmarkButton",
+);
+const cancelCziBenchmarkButton = document.getElementById(
+  "cancelCziBenchmarkButton",
+);
+const cziBenchmarkStatus = document.getElementById("cziBenchmarkStatus");
+const cziBenchmarkResults = document.getElementById("cziBenchmarkResults");
 const cziProgressPanel = document.getElementById("cziProgressPanel");
 const cziProgressBar = document.getElementById("cziProgressBar");
 const cziProgressMessage = document.getElementById("cziProgressMessage");
 const cziProgressPercent = document.getElementById("cziProgressPercent");
+const cziPerformancePanel = document.getElementById("cziPerformancePanel");
+const cziPerformanceSummary = document.getElementById("cziPerformanceSummary");
 const cziImportStatus = document.getElementById("cziImportStatus");
 const cancelCziConversionButton = document.getElementById(
   "cancelCziConversionButton",
@@ -12563,6 +12579,10 @@ async function exportSnapshotSelection(destination = "file") {
 const cziImportState = {
   sourcePath: "",
   inspection: null,
+  tileSetOrder: [],
+  performance: null,
+  performanceChannels: [],
+  benchmarking: false,
   converting: false,
 };
 
@@ -12585,6 +12605,173 @@ function formatCziBytes(bytes) {
   return `${amount.toLocaleString(undefined, {
     maximumFractionDigits: amount >= 100 ? 0 : amount >= 10 ? 1 : 2,
   })} ${units[unitIndex]}`;
+}
+
+function formatCziDuration(seconds) {
+  const value = Math.max(0, Number(seconds) || 0);
+  if (value < 10) return `${value.toFixed(2)} s`;
+  if (value < 60) return `${value.toFixed(1)} s`;
+  const hours = Math.floor(value / 3600);
+  const minutes = Math.floor((value % 3600) / 60);
+  const remainingSeconds = Math.round(value % 60);
+  return hours
+    ? `${hours} h ${minutes} m ${remainingSeconds} s`
+    : `${minutes} m ${remainingSeconds} s`;
+}
+
+function formatCziCount(value) {
+  return (Number(value) || 0).toLocaleString(undefined, {
+    maximumFractionDigits: 0,
+  });
+}
+
+function aggregateCziPerformance(channels) {
+  const keys = [
+    "tileCount",
+    "readCalls",
+    "readSeconds",
+    "colorSeconds",
+    "resizeSeconds",
+    "cropSeconds",
+    "jpegSeconds",
+    "requestedSourcePixels",
+    "returnedPixels",
+    "outputPixels",
+    "wallSeconds",
+  ];
+  return (channels || []).reduce((totals, channel) => {
+    keys.forEach((key) => {
+      totals[key] += Number(channel[key]) || 0;
+    });
+    return totals;
+  }, Object.fromEntries(keys.map((key) => [key, 0])));
+}
+
+function renderCziPerformance(performance) {
+  if (!cziPerformancePanel || !cziPerformanceSummary || !performance) return;
+  const channels = performance.channels || [];
+  const totals = performance.totals || aggregateCziPerformance(channels);
+  const wallSeconds =
+    Number(performance.conversionWallSeconds) || Number(totals.wallSeconds) || 0;
+  const percent = (seconds) =>
+    wallSeconds ? `${((Number(seconds) || 0) / wallSeconds * 100).toFixed(1)}%` : "—";
+  const measuredSeconds =
+    Number(totals.readSeconds || 0) +
+    Number(totals.colorSeconds || 0) +
+    Number(totals.resizeSeconds || 0) +
+    Number(totals.cropSeconds || 0) +
+    Number(totals.jpegSeconds || 0);
+  const otherSeconds = Math.max(0, wallSeconds - measuredSeconds);
+  const averageReturnedPixels = totals.readCalls
+    ? totals.returnedPixels / totals.readCalls
+    : 0;
+  const readMegapixelsPerSecond = totals.readSeconds
+    ? totals.returnedPixels / totals.readSeconds / 1_000_000
+    : 0;
+  const lines = [
+    `Elapsed:       ${formatCziDuration(wallSeconds)}`,
+    `CZI reads:     ${formatCziDuration(totals.readSeconds)} (${percent(totals.readSeconds)}) · ${formatCziCount(totals.readCalls)} calls`,
+    `JPEG writes:   ${formatCziDuration(totals.jpegSeconds)} (${percent(totals.jpegSeconds)})`,
+    `BGR → RGB:     ${formatCziDuration(totals.colorSeconds)} (${percent(totals.colorSeconds)})`,
+    `Resizing:      ${formatCziDuration(totals.resizeSeconds)} (${percent(totals.resizeSeconds)})`,
+    `Tile slicing:  ${formatCziDuration(totals.cropSeconds)} (${percent(totals.cropSeconds)})`,
+    `Other:         ${formatCziDuration(otherSeconds)} (${percent(otherSeconds)})`,
+    `DZI tiles:     ${formatCziCount(totals.tileCount)}`,
+    `Source pixels: ${formatCziCount(totals.requestedSourcePixels)} requested · ${formatCziCount(totals.returnedPixels)} returned`,
+    `Read batches:  ${formatCziCount(averageReturnedPixels)} returned pixels/call · ${readMegapixelsPerSecond.toFixed(2)} MP/s`,
+    "",
+    "Per channel:",
+    ...channels.map((channel, index) =>
+      `${index + 1}. ${channel.label || `Channel ${index + 1}`}: ${formatCziDuration(channel.wallSeconds)} · reads ${formatCziDuration(channel.readSeconds)} · JPEG ${formatCziDuration(channel.jpegSeconds)}`,
+    ),
+  ];
+  cziPerformanceSummary.textContent = lines.join("\n");
+  cziPerformancePanel.hidden = false;
+}
+
+function setCziBenchmarkStatus(message, kind = "") {
+  if (!cziBenchmarkStatus) return;
+  cziBenchmarkStatus.textContent = message || "";
+  cziBenchmarkStatus.classList.toggle("error", kind === "error");
+}
+
+function renderCziBenchmarkResults(benchmark) {
+  if (!cziBenchmarkResults || !benchmark) return;
+  const scaleLabel = `${Math.round(benchmark.resolutionScale * 100)}%`;
+  const lines = [
+    `${benchmark.channelLabel} · ${scaleLabel} resolution · ${formatCziCount(benchmark.outputRegion.width)} × ${formatCziCount(benchmark.outputRegion.height)} output pixels`,
+    "",
+    "Chunk      Calls   Elapsed   ms/call    MP/s",
+    "---------  ------  --------  --------  ------",
+    ...(benchmark.results || []).map((result) =>
+      `${`${formatCziCount(result.chunkSize)}²`.padStart(9)}  ${formatCziCount(result.readCalls).padStart(6)}  ${formatCziDuration(result.readSeconds).padStart(8)}  ${Number(result.millisecondsPerCall).toFixed(1).padStart(8)}  ${Number(result.megapixelsPerSecond).toFixed(2).padStart(6)}`,
+    ),
+    "",
+    `Execution order: ${(benchmark.executionOrder || []).map(formatCziCount).join(" → ")}`,
+  ];
+  cziBenchmarkResults.textContent = lines.join("\n");
+  cziBenchmarkResults.hidden = false;
+}
+
+function setCziBenchmarkRunning(running) {
+  cziImportState.benchmarking = running;
+  selectCziFileButton.disabled = running;
+  closeCziImportButton.disabled = running;
+  cziResolutionSelect.disabled = running;
+  cziBenchmarkChannelSelect.disabled = running;
+  startCziBenchmarkButton.hidden = running;
+  cancelCziBenchmarkButton.hidden = !running;
+  if (!running) {
+    startCziBenchmarkButton.disabled =
+      !cziImportState.inspection?.isSupportedProfile;
+  }
+  startCziConversionButton.disabled =
+    running || !cziImportState.inspection?.isSupportedProfile;
+}
+
+async function startCziBenchmark() {
+  const inspection = cziImportState.inspection;
+  if (
+    !inspection?.isSupportedProfile ||
+    cziImportState.converting ||
+    cziImportState.benchmarking
+  ) {
+    return;
+  }
+  cziBenchmarkResults.hidden = true;
+  cziBenchmarkResults.textContent = "";
+  setCziBenchmarkStatus("Preparing centered 4,096 × 4,096 benchmark region…");
+  setCziBenchmarkRunning(true);
+  try {
+    const result = await window.electronAPI.benchmarkAxioScanCzi({
+      sourcePath: cziImportState.sourcePath,
+      channel: Number(cziBenchmarkChannelSelect.value),
+      resolutionScale: Number(cziResolutionSelect.value),
+    });
+    renderCziBenchmarkResults(result.benchmark);
+    setCziBenchmarkStatus(
+      "Benchmark complete. Compare MP/s across chunk sizes.",
+    );
+  } catch (error) {
+    const canceled = /canceled/i.test(error.message || "");
+    setCziBenchmarkStatus(
+      canceled ? "Benchmark canceled." : error.message || "Benchmark failed.",
+      canceled ? "" : "error",
+    );
+  } finally {
+    setCziBenchmarkRunning(false);
+  }
+}
+
+async function cancelCziBenchmark() {
+  if (!cziImportState.benchmarking) return;
+  cancelCziBenchmarkButton.disabled = true;
+  setCziBenchmarkStatus("Canceling benchmark…");
+  try {
+    await window.electronAPI.cancelAxioScanCziBenchmark();
+  } finally {
+    cancelCziBenchmarkButton.disabled = false;
+  }
 }
 
 function countCziDziTiles(width, height) {
@@ -12656,6 +12843,91 @@ function summarizeCziChannels(channels) {
   ].join(" · ");
 }
 
+function parseCziGroups(value) {
+  return [...new Set(
+    String(value || "")
+      .split(/[;\n]+/)
+      .map((group) => group.trim())
+      .filter(Boolean),
+  )];
+}
+
+function populateCziGroupSuggestions() {
+  if (!cziExistingGroups) return;
+  cziExistingGroups.replaceChildren();
+  Object.keys(groupMapping || {})
+    .filter((group) => group !== "All")
+    .sort((a, b) => a.localeCompare(b))
+    .forEach((group) => {
+      const option = document.createElement("option");
+      option.value = group;
+      cziExistingGroups.appendChild(option);
+    });
+}
+
+function renderCziTileSetOrder() {
+  if (!cziTileSetOrderList) return;
+  cziTileSetOrderList.replaceChildren();
+  const specsByKey = new Map(
+    (cziImportState.inspection?.tileSets || []).map((spec) => [spec.key, spec]),
+  );
+  cziImportState.tileSetOrder.forEach((key, index) => {
+    const spec = specsByKey.get(key);
+    if (!spec) return;
+    const row = document.createElement("div");
+    row.className = "czi-tile-set-order-row";
+    row.dataset.key = key;
+
+    const position = document.createElement("span");
+    position.className = "czi-tile-set-order-index";
+    position.textContent = String(index + 1);
+
+    const name = document.createElement("span");
+    name.className = "czi-tile-set-order-name";
+    const label = document.createElement("strong");
+    label.textContent = spec.label;
+    const detail = document.createElement("small");
+    const channelCount = spec.channelIndices?.length || 1;
+    detail.textContent = spec.rotationEnabled
+      ? `${channelCount} angles · rotation enabled`
+      : channelCount === 1
+        ? "Individual image"
+        : `${channelCount} images`;
+    name.append(label, detail);
+
+    const actions = document.createElement("span");
+    actions.className = "czi-tile-set-order-actions";
+    for (const [direction, symbol, title] of [
+      [-1, "↑", "Move tile set up"],
+      [1, "↓", "Move tile set down"],
+    ]) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.dataset.direction = String(direction);
+      button.textContent = symbol;
+      button.title = title;
+      button.setAttribute("aria-label", `${title}: ${spec.label}`);
+      button.disabled =
+        cziImportState.converting ||
+        (direction < 0 ? index === 0 : index === cziImportState.tileSetOrder.length - 1);
+      actions.appendChild(button);
+    }
+    row.append(position, name, actions);
+    cziTileSetOrderList.appendChild(row);
+  });
+}
+
+function moveCziTileSet(key, direction) {
+  const index = cziImportState.tileSetOrder.indexOf(key);
+  const destination = index + direction;
+  if (index < 0 || destination < 0 || destination >= cziImportState.tileSetOrder.length) {
+    return;
+  }
+  [cziImportState.tileSetOrder[index], cziImportState.tileSetOrder[destination]] =
+    [cziImportState.tileSetOrder[destination], cziImportState.tileSetOrder[index]];
+  renderCziTileSetOrder();
+}
+
 function renderCziInspection(inspection) {
   cziImportState.inspection = inspection;
   cziInspectionPanel.hidden = false;
@@ -12677,9 +12949,29 @@ function renderCziInspection(inspection) {
     `${inspection.pixelType || "Unknown"} · ${inspection.componentBitCount}-bit · ` +
     (inspection.compression || "Unknown compression");
   cziChannelSummary.textContent = summarizeCziChannels(inspection.channels);
+  cziBenchmarkChannelSelect.replaceChildren();
+  let preferredBenchmarkChannel = 0;
+  inspection.channels.forEach((channel, index) => {
+    const option = document.createElement("option");
+    option.value = String(index);
+    option.textContent = `${index + 1}. ${channel.label}`;
+    cziBenchmarkChannelSelect.appendChild(option);
+    if (channel.kind === "brightfield") preferredBenchmarkChannel = index;
+  });
+  cziBenchmarkChannelSelect.value = String(preferredBenchmarkChannel);
+  startCziBenchmarkButton.disabled = !inspection.isSupportedProfile;
+  cziBenchmarkResults.hidden = true;
+  setCziBenchmarkStatus("");
+  cziImportState.tileSetOrder = (inspection.tileSets || []).map((spec) => spec.key);
+  renderCziTileSetOrder();
   cziSampleTitle.value = getUniqueCziSampleTitle(
     inspection.sourceName.replace(/\.czi$/i, ""),
   );
+  populateCziGroupSuggestions();
+  const selectedGroup = document.getElementById("groupDropdown")?.value;
+  cziGroupsInput.value = selectedGroup && selectedGroup !== "All"
+    ? selectedGroup
+    : "Imported CZI";
   startCziConversionButton.disabled = !inspection.isSupportedProfile;
   if (inspection.isSupportedProfile) {
     setCziImportStatus(
@@ -12687,7 +12979,7 @@ function renderCziInspection(inspection) {
     );
   } else {
     setCziImportStatus(
-      "This beta requires one scene, one Z plane, one time point, and the expected 14-channel Brightfield/CPL/XPL/PPL profile.",
+      "This importer requires an AxioScan 7 CZI with one scene, one Z plane, one time point, and at least one channel.",
       "error",
     );
   }
@@ -12701,6 +12993,10 @@ function setCziConversionRunning(running) {
   cziJpegQuality.disabled = running;
   cziLibraryMode.disabled = running;
   cziSampleTitle.disabled = running;
+  cziGroupsInput.disabled = running;
+  cziBenchmarkChannelSelect.disabled = running;
+  startCziBenchmarkButton.disabled =
+    running || !cziImportState.inspection?.isSupportedProfile;
   closeCziImportButton.disabled = running;
   startCziConversionButton.hidden = running;
   cancelCziConversionButton.hidden = !running;
@@ -12708,19 +13004,28 @@ function setCziConversionRunning(running) {
     startCziConversionButton.disabled =
       !cziImportState.inspection?.isSupportedProfile;
   }
+  renderCziTileSetOrder();
 }
 
 async function chooseAndInspectCzi() {
-  if (!window.electronAPI?.selectAxioScanCzi || cziImportState.converting) return;
+  if (
+    !window.electronAPI?.selectAxioScanCzi ||
+    cziImportState.converting ||
+    cziImportState.benchmarking
+  ) return;
   const selection = await window.electronAPI.selectAxioScanCzi();
   if (selection?.canceled) return;
 
   cziImportState.sourcePath = selection.sourcePath;
   cziImportState.inspection = null;
+  cziImportState.performance = null;
+  cziImportState.performanceChannels = [];
   cziSourcePath.textContent = selection.sourcePath;
   cziSourcePath.title = selection.sourcePath;
   cziInspectionPanel.hidden = true;
   cziProgressPanel.hidden = true;
+  cziPerformancePanel.hidden = true;
+  cziPerformanceSummary.textContent = "";
   startCziConversionButton.disabled = true;
   selectCziFileButton.disabled = true;
   setCziImportStatus("Reading CZI metadata…");
@@ -12737,23 +13042,36 @@ async function chooseAndInspectCzi() {
   }
 }
 
-function selectImportedCziSample(titleText) {
+function selectImportedCziSample(titleText, preferredGroup = "") {
   const sampleIndex = samples.findIndex((sample) => sample.title === titleText);
   if (sampleIndex < 0) return;
   const groupDropdown = document.getElementById("groupDropdown");
   const sampleDropdown = document.getElementById("sampleDropdown");
-  groupDropdown.value = "All";
-  populateSampleDropdown("All", { autoSelect: false });
+  const group = groupMapping[preferredGroup]?.includes(sampleIndex)
+    ? preferredGroup
+    : "All";
+  groupDropdown.value = group;
+  populateSampleDropdown(group, { autoSelect: false });
   sampleDropdown.value = String(sampleIndex);
   sampleDropdown.dispatchEvent(new Event("change"));
 }
 
 async function startCziConversion() {
   const inspection = cziImportState.inspection;
-  if (!inspection?.isSupportedProfile || cziImportState.converting) return;
+  if (
+    !inspection?.isSupportedProfile ||
+    cziImportState.converting ||
+    cziImportState.benchmarking
+  ) return;
   if (!confirmDiscardUnsavedWork("Importing and opening a CZI sample")) return;
   const titleText = getUniqueCziSampleTitle(cziSampleTitle.value);
   cziSampleTitle.value = titleText;
+  const groups = parseCziGroups(cziGroupsInput.value);
+  if (!groups.length) {
+    setCziImportStatus("Specify at least one group for the imported sample.", "error");
+    cziGroupsInput.focus();
+    return;
+  }
   const createNewLibrary = cziLibraryMode.value === "create";
   let newLibraryPath = "";
   if (createNewLibrary) {
@@ -12772,6 +13090,10 @@ async function startCziConversion() {
   cziProgressBar.value = 0;
   cziProgressPercent.textContent = "0%";
   cziProgressMessage.textContent = "Preparing conversion…";
+  cziImportState.performance = null;
+  cziImportState.performanceChannels = [];
+  cziPerformancePanel.hidden = true;
+  cziPerformanceSummary.textContent = "";
   setCziImportStatus("Writing registered DZI pyramids into the active project…");
   setCziConversionRunning(true);
 
@@ -12782,6 +13104,8 @@ async function startCziConversion() {
       resolutionScale: Number(cziResolutionSelect.value),
       quality,
       title: titleText,
+      groups,
+      tileSetOrder: cziImportState.tileSetOrder,
     });
     const jsonData = createNewLibrary
       ? { format: "v1", samples: [result.sample] }
@@ -12792,17 +13116,28 @@ async function startCziConversion() {
     await saveLibraryData(jsonData, { targetPath: newLibraryPath });
     clearUnsavedWork();
     await loadSampleJSON(jsonData, { autoLoadSample: false });
-    selectImportedCziSample(titleText);
+    selectImportedCziSample(titleText, groups[0]);
     cziProgressBar.value = 100;
     cziProgressPercent.textContent = "100%";
     cziProgressMessage.textContent = "Conversion complete";
+    if (result.performance) {
+      cziImportState.performance = result.performance;
+      renderCziPerformance(result.performance);
+    }
+    const duration = result.performance?.conversionWallSeconds
+      ? ` in ${formatCziDuration(result.performance.conversionWallSeconds)}`
+      : "";
     setCziImportStatus(
-      `Added “${titleText}” with ${result.totalTiles.toLocaleString()} DZI tiles.`,
+      `Added “${titleText}” with ${result.totalTiles.toLocaleString()} DZI tiles${duration}.`,
       "success",
     );
   } catch (error) {
     console.error("Could not import AxioScan CZI:", error);
     const canceled = /canceled/i.test(error.message || "");
+    cziProgressMessage.textContent = canceled
+      ? "Canceled — cleanup complete"
+      : "Conversion failed";
+    cziProgressPercent.textContent = canceled ? "Canceled" : "Failed";
     setCziImportStatus(
       canceled ? "Conversion canceled; partial output was removed." : error.message,
       canceled ? "" : "error",
@@ -12815,9 +13150,17 @@ async function startCziConversion() {
 async function cancelCziConversion() {
   if (!cziImportState.converting) return;
   cancelCziConversionButton.disabled = true;
-  cziProgressMessage.textContent = "Canceling and cleaning up…";
+  cziProgressMessage.textContent = "Stopping conversion…";
+  cziProgressPercent.textContent = "Stopping";
   try {
-    await window.electronAPI.cancelAxioScanCzi();
+    const result = await window.electronAPI.cancelAxioScanCzi();
+    if (result?.canceled) {
+      cziProgressMessage.textContent =
+        "Stop requested; waiting for worker exit and cleanup…";
+      cziProgressPercent.textContent = "Stopping";
+    } else {
+      cziProgressMessage.textContent = "Waiting for conversion to stop…";
+    }
   } finally {
     cancelCziConversionButton.disabled = false;
   }
@@ -12830,7 +13173,7 @@ function openCziImportDialog() {
 }
 
 function closeCziImportDialog() {
-  if (cziImportState.converting) return;
+  if (cziImportState.converting || cziImportState.benchmarking) return;
   cziImportDialog?.close();
 }
 
@@ -13395,10 +13738,18 @@ if (
   selectCziFileButton?.addEventListener("click", chooseAndInspectCzi);
   startCziConversionButton?.addEventListener("click", startCziConversion);
   cancelCziConversionButton?.addEventListener("click", cancelCziConversion);
+  startCziBenchmarkButton?.addEventListener("click", startCziBenchmark);
+  cancelCziBenchmarkButton?.addEventListener("click", cancelCziBenchmark);
   cziResolutionSelect?.addEventListener("change", updateCziOutputEstimate);
   cziJpegQuality?.addEventListener("input", updateCziOutputEstimate);
+  cziTileSetOrderList?.addEventListener("click", function (event) {
+    const button = event.target.closest("button[data-direction]");
+    const row = button?.closest(".czi-tile-set-order-row");
+    if (!button || !row || cziImportState.converting) return;
+    moveCziTileSet(row.dataset.key, Number(button.dataset.direction));
+  });
   cziImportDialog.addEventListener("cancel", function (event) {
-    if (cziImportState.converting) {
+    if (cziImportState.converting || cziImportState.benchmarking) {
       event.preventDefault();
       return;
     }
@@ -13409,6 +13760,22 @@ if (
   });
   window.electronAPI.onCziConversionProgress?.((progress) => {
     if (!cziImportState.converting) return;
+    if (progress?.type === "performance") {
+      console.info("AxioScan CZI conversion performance:", progress.metrics);
+      if (progress.scope === "conversion") {
+        cziImportState.performance = progress.metrics;
+        renderCziPerformance(progress.metrics);
+      } else if (progress.scope === "channel") {
+        cziImportState.performanceChannels[progress.metrics.channelIndex] =
+          progress.metrics;
+        const channels = cziImportState.performanceChannels.filter(Boolean);
+        renderCziPerformance({
+          channels,
+          totals: aggregateCziPerformance(channels),
+        });
+      }
+      return;
+    }
     if (progress?.type === "channel") {
       cziProgressMessage.textContent = progress.message || "Converting channel…";
       return;
@@ -13417,6 +13784,15 @@ if (
     const percent = Math.max(0, Math.min(100, Number(progress.percent) || 0));
     cziProgressBar.value = percent;
     cziProgressPercent.textContent = `${Math.round(percent)}%`;
+  });
+  window.electronAPI.onCziBenchmarkProgress?.((progress) => {
+    if (!cziImportState.benchmarking || progress?.type !== "benchmark_progress") {
+      return;
+    }
+    const result = progress.result;
+    setCziBenchmarkStatus(
+      `${progress.completed}/${progress.total}: ${formatCziCount(result.chunkSize)} × ${formatCziCount(result.chunkSize)} reads · ${formatCziDuration(result.readSeconds)} · ${Number(result.megapixelsPerSecond).toFixed(2)} MP/s`,
+    );
   });
 }
 

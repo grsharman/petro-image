@@ -48,6 +48,15 @@ contextBridge.exposeInMainWorld("electronAPI", {
   selectAxioScanCzi: () => ipcRenderer.invoke("select-axioscan-czi"),
   inspectAxioScanCzi: (sourcePath) =>
     ipcRenderer.invoke("inspect-axioscan-czi", sourcePath),
+  benchmarkAxioScanCzi: (request) =>
+    ipcRenderer.invoke("benchmark-axioscan-czi", request),
+  cancelAxioScanCziBenchmark: () =>
+    ipcRenderer.invoke("cancel-axioscan-czi-benchmark"),
+  onCziBenchmarkProgress: (callback) => {
+    const listener = (event, payload) => callback(payload);
+    ipcRenderer.on("czi-benchmark-progress", listener);
+    return () => ipcRenderer.removeListener("czi-benchmark-progress", listener);
+  },
   convertAxioScanCzi: (request) =>
     ipcRenderer.invoke("convert-axioscan-czi", request),
   cancelAxioScanCzi: () => ipcRenderer.invoke("cancel-axioscan-czi"),
