@@ -20,6 +20,39 @@ let activeMeasureTool = null;
 let circleModeActive = false;
 let imageLoadFailureKey = "";
 const imageLoadSuccessfulGenerations = new Set();
+const SAMPLE_ID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function createSampleId() {
+  if (typeof crypto?.randomUUID === "function") return crypto.randomUUID();
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  const hex = [...bytes].map((value) => value.toString(16).padStart(2, "0"));
+  return `${hex.slice(0, 4).join("")}-${hex.slice(4, 6).join("")}-${hex
+    .slice(6, 8)
+    .join("")}-${hex.slice(8, 10).join("")}-${hex.slice(10).join("")}`;
+}
+
+function ensureInMemorySampleIds(sampleList) {
+  const seen = new Set();
+  (sampleList || []).forEach((sample) => {
+    if (!sample || typeof sample !== "object") return;
+    const candidate =
+      typeof sample.sampleId === "string" ? sample.sampleId.toLowerCase() : "";
+    if (SAMPLE_ID_PATTERN.test(candidate) && !seen.has(candidate)) {
+      sample.sampleId = candidate;
+      seen.add(candidate);
+      return;
+    }
+    let sampleId;
+    do {
+      sampleId = createSampleId();
+    } while (seen.has(sampleId));
+    sample.sampleId = sampleId;
+    seen.add(sampleId);
+  });
+}
 let launchWelcomeConsidered = false;
 let quickTourStepIndex = -1;
 let quickTourReturnFocus = null;
@@ -307,6 +340,7 @@ async function processJSON(data, options = {}) {
   currentIndex = 0;
   currentLibraryData = data;
   samples = data.samples;
+  ensureInMemorySampleIds(samples);
   annotationFiles = {}; // For loading predefined annotations
   groupMapping = {}; // To map groups to sample indices
   lastSelectedSampleByGroup = {};
@@ -395,9 +429,12 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 
 async function loadLibraryWithElectronDialog() {
+  await flushAnnotationAutosave();
   if (!confirmDiscardUnsavedWork("Loading another library")) return;
   try {
-    const result = await window.electronAPI.selectExistingJsonFile();
+    const result = await window.electronAPI.selectExistingJsonFile({
+      persistSampleIds: true,
+    });
     if (result?.canceled) return;
 
     clearUnsavedWork();
@@ -413,6 +450,7 @@ async function loadLibraryWithElectronDialog() {
 }
 
 async function changeProjectWithElectronDialog() {
+  await flushAnnotationAutosave();
   if (!confirmDiscardUnsavedWork("Changing projects")) return;
   try {
     const result = await window.electronAPI.changeProjectLibrary();
@@ -512,6 +550,13 @@ const imageLoadFailure = document.getElementById("imageLoadFailure");
 const imageLoadFailureTitle = document.getElementById("imageLoadFailureTitle");
 const imageLoadFailureMessage = document.getElementById(
   "imageLoadFailureMessage",
+);
+const annotationLoadStatus = document.getElementById("annotationLoadStatus");
+const annotationLoadStatusText = document.getElementById(
+  "annotationLoadStatusText",
+);
+const annotationLoadStatusBar = document.getElementById(
+  "annotationLoadStatusBar",
 );
 const retryImageLoadButton = document.getElementById("retryImageLoadButton");
 const openLibraryFromFailureButton = document.getElementById(
@@ -13063,6 +13108,7 @@ async function startCziConversion() {
     cziImportState.converting ||
     cziImportState.benchmarking
   ) return;
+  await flushAnnotationAutosave();
   if (!confirmDiscardUnsavedWork("Importing and opening a CZI sample")) return;
   const titleText = getUniqueCziSampleTitle(cziSampleTitle.value);
   cziSampleTitle.value = titleText;
@@ -15285,6 +15331,7 @@ document
   .addEventListener("change", async function () {
     const requestedIndex = Number(this.value);
     const sampleChanged = requestedIndex !== currentIndex;
+    if (sampleChanged) await flushAnnotationAutosave();
     if (
       sampleChanged &&
       !confirmDiscardUnsavedWork("Changing samples")
@@ -15347,6 +15394,7 @@ document
       updateStageRotationCheck();
       updateScaleDependentControls();
       addScalebar();
+      await restoreWorkingAnnotationsForCurrentSample();
     } catch (error) {
       console.error("[sample-switch] failed", error);
       throw error;
@@ -19813,6 +19861,7 @@ function setUnsavedWork(domain, value) {
     : unsavedWorkRegistry.has(domain);
   if (value) unsavedWorkRegistry.add(domain);
   else unsavedWorkRegistry.delete(domain);
+  if (domain === "annotations" && value) scheduleAnnotationAutosave();
   if (changed) syncUnsavedWorkState();
 }
 
@@ -19844,6 +19893,171 @@ window.appState = {
   hasUnsavedPorosity: false,
 };
 syncUnsavedWorkState();
+
+const ANNOTATION_AUTOSAVE_DELAY_MS = 800;
+let annotationAutosaveTimer = null;
+let annotationAutosaveRevision = 0;
+let annotationAutosaveWriteChain = Promise.resolve();
+let annotationAutosaveAvailable = null;
+const annotationAutosaveBlockedSampleIds = new Set();
+let annotationLoadStatusSequence = 0;
+let annotationLoadStatusDelayTimer = null;
+
+function beginAnnotationLoadStatus(total) {
+  const sequence = ++annotationLoadStatusSequence;
+  if (!annotationLoadStatus || !annotationLoadStatusText) return sequence;
+  if (annotationLoadStatusDelayTimer !== null) {
+    clearTimeout(annotationLoadStatusDelayTimer);
+  }
+  annotationLoadStatus.hidden = true;
+  annotationLoadStatusText.textContent =
+    Number.isFinite(total) && total > 0
+      ? `Loading annotations… 0 of ${total.toLocaleString()}`
+      : "Loading annotations…";
+  if (annotationLoadStatusBar) {
+    annotationLoadStatusBar.style.transform = "scaleX(0)";
+  }
+  annotationLoadStatusDelayTimer = window.setTimeout(() => {
+    annotationLoadStatusDelayTimer = null;
+    if (sequence !== annotationLoadStatusSequence) return;
+    annotationLoadStatus.hidden = false;
+  }, 180);
+  return sequence;
+}
+
+function updateAnnotationLoadStatus(sequence, progress = {}) {
+  if (
+    sequence !== annotationLoadStatusSequence ||
+    !annotationLoadStatusText
+  ) return;
+  const total = Math.max(0, Number(progress.total) || 0);
+  const current = Math.max(0, Math.min(total, Number(progress.current) || 0));
+  if (progress.phase === "features" && total > 0) {
+    annotationLoadStatusText.textContent =
+      `Loading annotations… ${current.toLocaleString()} of ${total.toLocaleString()}`;
+  } else if (progress.phase === "rendering") {
+    annotationLoadStatusText.textContent = "Loading annotations… rendering list";
+  } else if (progress.phase === "selection") {
+    annotationLoadStatusText.textContent = "Loading annotations… finishing";
+  }
+  if (annotationLoadStatusBar) {
+    const percent = Math.max(0, Math.min(100, Number(progress.percent) || 0));
+    annotationLoadStatusBar.style.transform = `scaleX(${percent / 100})`;
+  }
+}
+
+function finishAnnotationLoadStatus(sequence) {
+  if (sequence !== annotationLoadStatusSequence) return;
+  if (annotationLoadStatusDelayTimer !== null) {
+    clearTimeout(annotationLoadStatusDelayTimer);
+    annotationLoadStatusDelayTimer = null;
+  }
+  if (annotationLoadStatus) annotationLoadStatus.hidden = true;
+}
+
+function scheduleAnnotationAutosave() {
+  if (
+    !window.electronAPI?.saveWorkingAnnotations ||
+    annotationAutosaveAvailable === false
+  ) return;
+  annotationAutosaveRevision += 1;
+  if (annotationAutosaveTimer !== null) {
+    clearTimeout(annotationAutosaveTimer);
+  }
+  annotationAutosaveTimer = window.setTimeout(() => {
+    annotationAutosaveTimer = null;
+    queueAnnotationAutosave(annotationAutosaveRevision);
+  }, ANNOTATION_AUTOSAVE_DELAY_MS);
+}
+
+async function queueAnnotationAutosave(revision) {
+  const sample = samples[currentIndex];
+  if (!sample?.sampleId || !window.electronAPI?.saveWorkingAnnotations) {
+    return false;
+  }
+  const sampleId = sample.sampleId;
+  if (annotationAutosaveBlockedSampleIds.has(sampleId)) return false;
+  const request = {
+    sampleId,
+    sampleTitle: sample.title || "",
+    geoJSON: cloneData(annoJSON),
+  };
+
+  const write = annotationAutosaveWriteChain.then(() =>
+    window.electronAPI.saveWorkingAnnotations(request),
+  );
+  annotationAutosaveWriteChain = write.catch(() => {});
+
+  try {
+    const result = await write;
+    annotationAutosaveAvailable = Boolean(result?.available);
+    if (!annotationAutosaveAvailable) return false;
+    const savedCurrentRevision =
+      samples[currentIndex]?.sampleId === sampleId &&
+      revision === annotationAutosaveRevision;
+    if (savedCurrentRevision) {
+      setUnsavedWork("annotations", false);
+    }
+    return savedCurrentRevision;
+  } catch (error) {
+    console.warn("Could not automatically save working annotations:", error);
+    return false;
+  }
+}
+
+async function flushAnnotationAutosave() {
+  if (!unsavedWorkRegistry.has("annotations")) return true;
+  if (!window.electronAPI?.saveWorkingAnnotations) return false;
+  if (annotationAutosaveTimer !== null) {
+    clearTimeout(annotationAutosaveTimer);
+    annotationAutosaveTimer = null;
+  }
+  return queueAnnotationAutosave(annotationAutosaveRevision);
+}
+
+window.flushAnnotationAutosave = flushAnnotationAutosave;
+
+async function restoreWorkingAnnotationsForCurrentSample() {
+  const sampleId = samples[currentIndex]?.sampleId;
+  if (!sampleId || !window.electronAPI?.loadWorkingAnnotations) return false;
+  let loadStatusSequence = null;
+
+  try {
+    const result = await window.electronAPI.loadWorkingAnnotations(sampleId);
+    annotationAutosaveAvailable = Boolean(result?.available);
+    if (!annotationAutosaveAvailable || !result.geoJSON) return false;
+    if (samples[currentIndex]?.sampleId !== sampleId) return false;
+    const featureCount = getAnnotationFeaturesFromGeoJSON(result.geoJSON).length;
+    loadStatusSequence = beginAnnotationLoadStatus(featureCount);
+
+    suppressUnsavedAnnotationTracking = true;
+    try {
+      await loadAnnotations(result.geoJSON, {
+        groupMode: "preserve",
+        selectImported: false,
+        onProgress: (progress) =>
+          updateAnnotationLoadStatus(loadStatusSequence, progress),
+      });
+      annotationHistory.reset();
+      setUnsavedWork("annotations", false);
+    } finally {
+      suppressUnsavedAnnotationTracking = false;
+    }
+    return true;
+  } catch (error) {
+    console.warn("Could not restore working annotations:", error);
+    annotationAutosaveBlockedSampleIds.add(sampleId);
+    alert(
+      "The saved working annotations for this sample could not be loaded. " +
+        "They will not be overwritten during this session.",
+    );
+    return false;
+  } finally {
+    if (loadStatusSequence !== null) {
+      finishAnnotationLoadStatus(loadStatusSequence);
+    }
+  }
+}
 
 let suppressUnsavedAnnotationTracking = false;
 let suppressUnsavedCountTracking = false;
@@ -29550,6 +29764,7 @@ async function saveLibraryEditor({
   closeAfterSave = false,
 } = {}) {
   if (libraryEditorState.saving) return;
+  await flushAnnotationAutosave();
   if (!confirmDiscardUnsavedWork("Applying library changes")) return;
 
   updateLibraryEditorSelectedSample();
@@ -29635,6 +29850,7 @@ async function saveLibraryData(
     targetPath = "",
   } = {},
 ) {
+  ensureInMemorySampleIds(jsonData?.samples);
   currentLibraryData = jsonData;
 
   if (targetPath && window.electronAPI?.writeJsonFile) {
@@ -33251,6 +33467,10 @@ function waitForAnnotationImportPaint() {
 // New loadAnnotations() for testing
 async function loadAnnotations(geoJSONData, options = {}) {
   const features = getAnnotationFeaturesFromGeoJSON(geoJSONData);
+  const reportProgress =
+    typeof options.onProgress === "function"
+      ? options.onProgress
+      : ({ percent, message }) => setAnnotationImportProgress(percent, message);
   const assignedGroup =
     options.groupMode === "assign" && options.group ? options.group : null;
   const preservedImportGroups = new Map();
@@ -33313,17 +33533,32 @@ async function loadAnnotations(geoJSONData, options = {}) {
       });
       if ((index + 1) % chunkSize === 0 || index === features.length - 1) {
         const percent = Math.round(((index + 1) / features.length) * 90);
-        setAnnotationImportProgress(
+        reportProgress({
           percent,
-          `Importing annotations... ${index + 1} of ${features.length}`,
-        );
+          current: index + 1,
+          total: features.length,
+          phase: "features",
+          message: `Importing annotations... ${index + 1} of ${features.length}`,
+        });
         await waitForAnnotationImportPaint();
       }
     }
-    setAnnotationImportProgress(94, "Rendering annotation list...");
+    reportProgress({
+      percent: 94,
+      current: features.length,
+      total: features.length,
+      phase: "rendering",
+      message: "Rendering annotation list...",
+    });
     await waitForAnnotationImportPaint();
     renderAnnotationList();
-    setAnnotationImportProgress(98, "Updating annotation selection...");
+    reportProgress({
+      percent: 98,
+      current: features.length,
+      total: features.length,
+      phase: "selection",
+      message: "Updating annotation selection...",
+    });
     await waitForAnnotationImportPaint();
     if (addedUuids.length > 0 && options.selectImported !== false) {
       setAnnotationSelection(addedUuids, addedUuids[addedUuids.length - 1]);
@@ -33336,10 +33571,13 @@ async function loadAnnotations(geoJSONData, options = {}) {
       selectAnnotationByUuid(annoJSON.features[0].properties.uuid);
     }
     annoLabelToText();
-    setAnnotationImportProgress(
-      100,
-      `Imported ${addedUuids.length} annotation${addedUuids.length === 1 ? "" : "s"}.`,
-    );
+    reportProgress({
+      percent: 100,
+      current: features.length,
+      total: features.length,
+      phase: "complete",
+      message: `Imported ${addedUuids.length} annotation${addedUuids.length === 1 ? "" : "s"}.`,
+    });
   } finally {
     annotationHistoryPaused = false;
     updateAnnotationHistoryControls();
@@ -33714,7 +33952,7 @@ function exportAnnotations(features) {
     type: "application/geo+json",
   });
   saveAs(geoJSONBlob, "annotations.geojson");
-  if (isFullExport) {
+  if (isFullExport && annotationAutosaveAvailable !== true) {
     unsavedAnnotations(false);
   }
 }

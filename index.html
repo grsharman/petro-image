@@ -329,6 +329,20 @@
           </div>
         </div>
       </div>
+      <div
+        id="annotationLoadStatus"
+        class="annotation-load-status"
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        hidden
+      >
+        <span class="annotation-load-status-spinner" aria-hidden="true"></span>
+        <span id="annotationLoadStatusText">Loading annotations…</span>
+        <span class="annotation-load-status-track" aria-hidden="true">
+          <span id="annotationLoadStatusBar" class="annotation-load-status-bar"></span>
+        </span>
+      </div>
       <canvas id="annotation-overlay"></canvas>
       <canvas id="measurement-overlay"></canvas>
       <canvas id="circle-overlay"></canvas>

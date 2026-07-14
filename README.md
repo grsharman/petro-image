@@ -136,6 +136,8 @@ The measure tool allows simple calculation of length and area. In addition, a re
 
 Annotations are a useful way to record observations and share them with collaborators. petro-image annotations use the [GeoJSON file standard](https://geojson.org/), which includes point, linestrings, polygons, and multi-part versions of these. Tools for creating points, polylines, rectangles, polygons, and ellipses are available in petro-image. Each annotation type has a specific [keyboard shortcut](#keyboard-shortcuts) in addition to being enabled by toggling buttons in the Annotate menu.
 
+In the Desktop app, annotations for project samples are saved automatically as per-sample working GeoJSON files in the project's `annotations` folder and restored when the sample is reopened. These working files are separate from GeoJSON files created with the Export command. Legacy library JSON files remain supported; Desktop projects add a stable `sampleId` to samples that do not already have one.
+
 > [!TIP]
 > It is possible to pre-load a specimen with annotations by specifying the annotation file in the JSON. If a file is available to load, a <img src="assets/3_load_from_json.png" alt="icon" height="20" style="vertical-align: middle;"/> button will become available at the bottom of the Annotate menu.
 

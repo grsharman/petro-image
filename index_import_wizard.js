@@ -639,6 +639,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 function createJSON() {
   const data = {};
+  data.sampleId = crypto.randomUUID();
 
   // Groups
   data.groups = [];

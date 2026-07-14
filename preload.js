@@ -10,6 +10,10 @@ contextBridge.exposeInMainWorld("electronAPI", {
   initializeProjectLibrary: () => ipcRenderer.invoke("initialize-project-library"),
   changeProjectLibrary: () => ipcRenderer.invoke("change-project-library"),
   getProjectSettings: () => ipcRenderer.invoke("get-project-settings"),
+  loadWorkingAnnotations: (sampleId) =>
+    ipcRenderer.invoke("load-working-annotations", { sampleId }),
+  saveWorkingAnnotations: (request) =>
+    ipcRenderer.invoke("save-working-annotations", request),
   saveSamSettings: (samSettings) =>
     ipcRenderer.invoke("save-sam-settings", samSettings),
   saveSegmenteverygrainSettings: (settings) =>
@@ -65,7 +69,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
     ipcRenderer.on("czi-conversion-progress", listener);
     return () => ipcRenderer.removeListener("czi-conversion-progress", listener);
   },
-  selectExistingJsonFile: () => ipcRenderer.invoke("select-existing-json-file"),
+  selectExistingJsonFile: (options) =>
+    ipcRenderer.invoke("select-existing-json-file", options),
   chooseNewLibraryPath: (defaultFileName) =>
     ipcRenderer.invoke("choose-new-library-path", defaultFileName),
   writeJsonFile: (filePath, jsonData) =>

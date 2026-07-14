@@ -17,6 +17,14 @@ import http from "http";
 import { randomUUID } from "crypto";
 import { convertImageBufferToDzi, convertImageToDzi } from "./dzi-converter.js";
 import {
+  ANNOTATIONS_FOLDER_NAME,
+  loadWorkingAnnotations,
+  migrateLibrarySampleIds,
+  normalizeLibrarySampleIds,
+  saveWorkingAnnotations,
+  writeJsonAtomic,
+} from "./desktop-annotation-store.js";
+import {
   convertJpeg2000ToDzi,
   isJpeg2000Path,
 } from "./jpeg2000-converter.js";
@@ -27,6 +35,7 @@ const __dirname = path.dirname(__filename);
 let mainWindow;
 let importWizardWindow;
 let hasUnsavedWork = false; // main process copy
+let unsavedWorkDomains = [];
 let unsavedWorkLabels = [];
 let closeWarningInProgress = false;
 let localFileServer;
@@ -46,7 +55,6 @@ const PROJECT_LIBRARY_TEMPLATE_FILE_NAME = "default_library.json";
 const USER_LIBRARY_FILE_NAME = "library.json";
 const WINDOW_STATE_FILE_NAME = "window-state.json";
 const DZI_FOLDER_NAME = "dzi";
-const ANNOTATIONS_FOLDER_NAME = "annotations";
 const TUTORIAL_ASSETS_FOLDER_NAME = "tutorial-assets";
 const CZI_WORKER_PATH = path.join(__dirname, "scripts", "axioscan_czi_worker.py");
 const CZI_RESOLUTION_SCALES = new Set([1, 0.5, 0.25, 0.125, 0.0625, 0.03125, 0.015625]);
@@ -392,13 +400,15 @@ async function buildProjectLibraryResult(
   defaultLibraryPath,
 ) {
   const jsonText = await fs.readFile(lastLibraryPath, "utf8");
+  const jsonData = parseSampleJSON(jsonText, lastLibraryPath);
+  await migrateLibrarySampleIds(lastLibraryPath, jsonData);
   return {
     projectDirectory,
     defaultLibraryPath,
     lastLibraryPath,
     filePath: lastLibraryPath,
     fileName: path.basename(lastLibraryPath),
-    jsonData: parseSampleJSON(jsonText, lastLibraryPath),
+    jsonData,
   };
 }
 
@@ -1232,6 +1242,7 @@ async function runAxioScanCziConversion(request, event) {
     orderedTileSets.push(...remainingTileSets);
     orderedTileSets.forEach((tileSet) => delete tileSet._cziImportKey);
     sample.tileSets = orderedTileSets;
+    sample.sampleId = randomUUID();
     await fs.rm(stagingDirectory, { recursive: true, force: true });
     return {
       ok: true,
@@ -2485,6 +2496,28 @@ const createWindow = async () => {
       if (closeWarningInProgress) return;
       closeWarningInProgress = true;
       try {
+        if (unsavedWorkDomains.includes("annotations")) {
+          try {
+            const saved = await mainWindow.webContents.executeJavaScript(
+              "window.flushAnnotationAutosave?.()",
+            );
+            if (saved === true) {
+              unsavedWorkDomains = unsavedWorkDomains.filter(
+                (domain) => domain !== "annotations",
+              );
+              unsavedWorkLabels = unsavedWorkLabels.filter(
+                (label) => label !== "annotations",
+              );
+              hasUnsavedWork = unsavedWorkDomains.length > 0;
+            }
+          } catch (error) {
+            console.warn("Could not flush working annotations before closing:", error);
+          }
+        }
+        if (!hasUnsavedWork) {
+          mainWindow.destroy();
+          return;
+        }
         const detail = unsavedWorkLabels.length
           ? `Unsaved: ${unsavedWorkLabels.join(", ")}.`
           : "";
@@ -2498,6 +2531,7 @@ const createWindow = async () => {
         });
         if (result.response === 1) {
           hasUnsavedWork = false; // allow closing next time
+          unsavedWorkDomains = [];
           unsavedWorkLabels = [];
           mainWindow.destroy();
         }
@@ -2512,6 +2546,9 @@ const createWindow = async () => {
 ipcMain.on("set-unsaved-state", (event, state) => {
   const payload = state && typeof state === "object" ? state : null;
   hasUnsavedWork = payload ? Boolean(payload.dirty) : Boolean(state);
+  unsavedWorkDomains = payload
+    ? (payload.domains || []).filter((domain) => typeof domain === "string")
+    : [];
   unsavedWorkLabels = payload
     ? (payload.labels || []).filter((label) => typeof label === "string")
     : [];
@@ -2695,6 +2732,20 @@ ipcMain.handle("change-project-library", async () => changeProjectLibrary());
 
 ipcMain.handle("get-project-settings", async () => readProjectSettings());
 
+ipcMain.handle("load-working-annotations", async (event, { sampleId } = {}) => {
+  const settings = await readProjectSettings();
+  if (!settings.projectDirectory) return { available: false, geoJSON: null };
+  const geoJSON = await loadWorkingAnnotations(settings.projectDirectory, sampleId);
+  return { available: true, geoJSON };
+});
+
+ipcMain.handle("save-working-annotations", async (event, request = {}) => {
+  const settings = await readProjectSettings();
+  if (!settings.projectDirectory) return { available: false };
+  const result = await saveWorkingAnnotations(settings.projectDirectory, request);
+  return { available: true, ...result };
+});
+
 ipcMain.handle("save-sam-settings", async (event, samSettings) => {
   return writeSamSettings(samSettings || {});
 });
@@ -2842,7 +2893,7 @@ ipcMain.handle("cancel-segmenteverygrain-segmentation", async () => {
   return { ok: true, canceled: true };
 });
 
-ipcMain.handle("select-existing-json-file", async () => {
+ipcMain.handle("select-existing-json-file", async (event, options = {}) => {
   const ownerWindow = BrowserWindow.getFocusedWindow() || mainWindow;
   const { canceled, filePaths } = await dialog.showOpenDialog(ownerWindow, {
     title: "Select library JSON",
@@ -2860,6 +2911,10 @@ ipcMain.handle("select-existing-json-file", async () => {
   try {
     const jsonText = await fs.readFile(filePath, "utf8");
     jsonData = parseSampleJSON(jsonText, filePath);
+    const normalization = normalizeLibrarySampleIds(jsonData);
+    if (options.persistSampleIds === true && normalization.changed) {
+      await writeJsonAtomic(filePath, jsonData);
+    }
     await rememberLastLibraryPath(filePath);
   } catch (error) {
     throw new Error(`Could not read library JSON: ${error.message}`);
@@ -2896,9 +2951,10 @@ ipcMain.handle("write-json-file", async (event, { filePath, jsonData }) => {
     throw new Error("No JSON file path was provided.");
   }
 
-  await fs.writeFile(filePath, JSON.stringify(jsonData, null, 2), "utf8");
+  normalizeLibrarySampleIds(jsonData);
+  await writeJsonAtomic(filePath, jsonData);
   await rememberLastLibraryPath(filePath);
-  return { ok: true };
+  return { ok: true, jsonData };
 });
 
 ipcMain.handle("choose-new-library-path", async (event, defaultFileName) => {
@@ -2933,12 +2989,14 @@ ipcMain.handle("save-json-file-as", async (event, { defaultFileName, jsonData })
     return { canceled: true };
   }
 
-  await fs.writeFile(filePath, JSON.stringify(jsonData, null, 2), "utf8");
+  normalizeLibrarySampleIds(jsonData);
+  await writeJsonAtomic(filePath, jsonData);
   await rememberLastLibraryPath(filePath);
   return {
     canceled: false,
     filePath,
     fileName: path.basename(filePath),
+    jsonData,
   };
 });
 
