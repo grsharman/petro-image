@@ -10,6 +10,7 @@ export default {
   packagerConfig: {
     asar: {
       unpackDir: "node_modules/{sharp,@img}",
+      unpack: "**/scripts/*.py",
     },
     appBundleId: "com.sharman.petro-image",
     icon: "assets/icon", // base name; electron-packager will use .icns/.ico/.png depending on platform

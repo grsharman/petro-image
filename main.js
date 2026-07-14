@@ -56,9 +56,20 @@ const USER_LIBRARY_FILE_NAME = "library.json";
 const WINDOW_STATE_FILE_NAME = "window-state.json";
 const DZI_FOLDER_NAME = "dzi";
 const TUTORIAL_ASSETS_FOLDER_NAME = "tutorial-assets";
-const CZI_WORKER_PATH = path.join(__dirname, "scripts", "axioscan_czi_worker.py");
 const CZI_RESOLUTION_SCALES = new Set([1, 0.5, 0.25, 0.125, 0.0625, 0.03125, 0.015625]);
 const SEGMENTEVERYGRAIN_MODEL_EXTENSIONS = new Set([".h5", ".keras"]);
+
+function getPythonWorkerPath(fileName) {
+  if (app.isPackaged) {
+    return path.join(
+      process.resourcesPath,
+      "app.asar.unpacked",
+      "scripts",
+      fileName,
+    );
+  }
+  return path.join(__dirname, "scripts", fileName);
+}
 
 async function getVipsWorkerRuntime() {
   const executableName = process.platform === "win32" ? "vips.exe" : "vips";
@@ -952,7 +963,7 @@ async function getCziWorkerRuntime() {
       };
   return {
     command: pythonPath,
-    workerArgs: [CZI_WORKER_PATH],
+    workerArgs: [getPythonWorkerPath("axioscan_czi_worker.py")],
     env,
     bundled: false,
   };
@@ -1674,7 +1685,7 @@ async function getSamWorker(settings, device = "auto") {
 
   stopSamWorker();
 
-  const scriptPath = path.join(__dirname, "scripts", "sam2_worker.py");
+  const scriptPath = getPythonWorkerPath("sam2_worker.py");
   const child = spawn(
     settings.pythonPath,
     [
@@ -1729,7 +1740,10 @@ async function getSamWorker(settings, device = "auto") {
   });
   child.on("close", (exitCode) => {
     worker.exited = true;
-    const message = `SAM worker exited${exitCode === null ? "" : ` with code ${exitCode}`}.`;
+    const stderr = worker.stderr.trim();
+    const message = `SAM worker exited${exitCode === null ? "" : ` with code ${exitCode}`}.${
+      stderr ? ` ${stderr.split(/\r?\n/).slice(-1)[0]}` : ""
+    }`;
     worker.readyReject(new Error(message));
     rejectSamWorkerPending(worker, message);
     if (samWorker === worker) samWorker = null;
@@ -1925,11 +1939,7 @@ async function getSegmenteverygrainWorker(
   }
 
   stopSegmenteverygrainWorker({ force: true });
-  const scriptPath = path.join(
-    __dirname,
-    "scripts",
-    "segmenteverygrain_worker.py",
-  );
+  const scriptPath = getPythonWorkerPath("segmenteverygrain_worker.py");
   const args = [scriptPath, "--model", segSettings.modelPath];
   if (useSam) {
     args.push(
