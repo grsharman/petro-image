@@ -1,6 +1,6 @@
 {
   "name": "petro-image",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Deep zoom petrographic images with OpenSeaDragon",
   "type": "module",
   "main": "main.js",
@@ -58,17 +58,23 @@
       {
         "from": "build/czi-worker",
         "to": "czi-worker",
-        "filter": ["**/*"]
+        "filter": [
+          "**/*"
+        ]
       },
       {
         "from": "build/vips-worker",
         "to": "vips-worker",
-        "filter": ["**/*"]
+        "filter": [
+          "**/*"
+        ]
       },
       {
         "from": "tutorial-assets",
         "to": "tutorial-assets",
-        "filter": ["**/*"]
+        "filter": [
+          "**/*"
+        ]
       }
     ],
     "files": [
@@ -86,10 +92,12 @@
     "win": {
       "icon": "assets/icon.ico",
       "target": [
-      {
-        "target": "nsis",
-        "arch": ["x64"]
-      }
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
       ]
     },
     "nsis": {
