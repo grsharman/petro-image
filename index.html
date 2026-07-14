@@ -8,6 +8,7 @@
     />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>petro-image</title>
+    <script src="mobile-mode.js"></script>
     <!-- <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/OpenSeadragonScalebar/2.0.0/openseadragon-scalebar.min.css"
@@ -3089,7 +3090,7 @@
       <div>
         <!-- Hidden settings menu for images-->
         <div id="imageSettingsMenu" class="dropdown-container">
-          <div class="settings-checkbox-row">
+          <div id="divideImagesRow" class="settings-checkbox-row">
             <input
               type="checkbox"
               id="enableDivideImages"
@@ -3363,6 +3364,20 @@
       </div>
       <hr />
       <div id="imageCheckboxContainer"></div>
+      <div id="mobileAnnotationControl" class="mobile-annotation-control" hidden>
+        <button
+          id="mobileAnnotationButton"
+          class="custom-button"
+          type="button"
+        >
+          Load Annotations
+        </button>
+        <div
+          id="mobileAnnotationDropdown"
+          class="annotation-json-dropdown"
+          hidden
+        ></div>
+      </div>
       <details id="toolsMenu" closed>
         <summary class="tools-summary">
           <span>Tools</span>

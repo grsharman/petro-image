@@ -3567,6 +3567,31 @@ body.import-wizard-page {
   position: relative;
 }
 
+.mobile-annotation-control {
+  position: relative;
+  display: none;
+}
+
+.mobile-view .mobile-annotation-control:not([hidden]) {
+  display: block;
+}
+
+#mobileAnnotationButton {
+  --button-width: 170px;
+  font: inherit;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+#mobileAnnotationDropdown {
+  left: 2px;
+  bottom: calc(100% + 2px);
+}
+
+#mobileAnnotationDropdown[hidden] {
+  display: none;
+}
+
 .annotation-json-dropdown {
   position: absolute;
   z-index: 1000;
@@ -3635,6 +3660,20 @@ body.import-wizard-page {
   font: inherit;
   font-weight: 500;
   white-space: nowrap;
+}
+
+/* The mobile viewer retains the existing Controls dimensions and simplifies
+   behavior through mode-specific visibility rather than responsive resizing. */
+.mobile-view .viewer-corner-actions,
+.mobile-view #toolsMenu,
+.mobile-view #imageSettingsMenu #divideImagesRow {
+  display: none;
+}
+
+.mobile-view .viewer-overlay-annotation,
+.mobile-view .annotate-crosshairs,
+.mobile-view #annotation-overlay {
+  pointer-events: none;
 }
 
 #apply-grid-settings {

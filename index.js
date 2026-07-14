@@ -1,5 +1,8 @@
 "use strict";
 
+const mobileMode = Boolean(window.__PETRO_IMAGE_MOBILE_MODE__);
+const annotationEditingEnabled = !mobileMode;
+
 // Index of the currently selected sample
 let currentIndex = 0;
 let samples = [];
@@ -19,6 +22,13 @@ let measurementModeActive = false;
 let activeMeasureTool = null;
 let circleModeActive = false;
 let imageLoadFailureKey = "";
+let mobileAnnotationState = {
+  files: [],
+  loaded: false,
+  visible: false,
+  busy: false,
+  file: "",
+};
 const imageLoadSuccessfulGenerations = new Set();
 const SAMPLE_ID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -1207,6 +1217,7 @@ const hasSharedViewerMenus = Boolean(
   viewerToolsButton &&
   viewerToolsTray,
 );
+const hasFullViewerMenus = hasSharedViewerMenus && !mobileMode;
 let gridCountPaletteControlsMoved = false;
 let annotatePaletteControlsMoved = false;
 let measurePaletteControlsMoved = false;
@@ -1897,7 +1908,7 @@ function saveToolPaletteWorkspaceState() {
 }
 
 function initializeToolPaletteWorkspacePersistence() {
-  if (toolPaletteWorkspaceObserver || !hasSharedViewerMenus) return;
+  if (toolPaletteWorkspaceObserver || !hasFullViewerMenus) return;
 
   const entries = getToolPaletteWorkspaceEntries().filter(
     (entry) => !entry.openButton.hidden,
@@ -1987,7 +1998,7 @@ function moveAnnotateControlsToPalette() {
 
 function updateToolsMenuVisibility() {
   const toolsMenu = document.getElementById("toolsMenu");
-  if (!toolsMenu || !hasSharedViewerMenus) return;
+  if (!toolsMenu || !hasFullViewerMenus) return;
 
   toolsMenu.hidden =
     gridCountPaletteControlsMoved &&
@@ -13319,6 +13330,7 @@ function closeWelcomeDialog({ startTour = false } = {}) {
 function maybeOpenLaunchWelcome() {
   if (launchWelcomeConsidered || !welcomeDialog) return;
   launchWelcomeConsidered = true;
+  if (mobileMode) return;
   if (getOnboardingPreference()?.dismissed) return;
   requestAnimationFrame(openWelcomeDialog);
 }
@@ -13651,7 +13663,7 @@ function toggleViewerToolsTray() {
   }
 }
 
-if (hasSharedViewerMenus) {
+if (hasFullViewerMenus) {
   if (loadLibraryButton) loadLibraryButton.hidden = true;
   electronActionButton.hidden = false;
   viewerToolsButton.hidden = false;
@@ -13855,7 +13867,7 @@ if (loadLibraryButton) {
   });
 }
 
-if (hasSharedViewerMenus && openGridCountPaletteButton && gridCountPalette) {
+if (hasFullViewerMenus && openGridCountPaletteButton && gridCountPalette) {
   openGridCountPaletteButton.hidden = false;
   openGridCountPaletteButton.setAttribute("aria-pressed", "false");
   openGridCountPaletteButton.addEventListener("click", function (event) {
@@ -13928,7 +13940,7 @@ if (controlsPanel && minimizeControlsButton) {
   });
 }
 
-if (hasSharedViewerMenus && openAnnotatePaletteButton && annotatePalette) {
+if (hasFullViewerMenus && openAnnotatePaletteButton && annotatePalette) {
   openAnnotatePaletteButton.hidden = false;
   openAnnotatePaletteButton.setAttribute("aria-pressed", "false");
   openAnnotatePaletteButton.addEventListener("click", function (event) {
@@ -13953,7 +13965,7 @@ if (hasSharedViewerMenus && openAnnotatePaletteButton && annotatePalette) {
   });
 }
 
-if (hasSharedViewerMenus && openMeasurePaletteButton && measurePalette) {
+if (hasFullViewerMenus && openMeasurePaletteButton && measurePalette) {
   openMeasurePaletteButton.hidden = false;
   openMeasurePaletteButton.setAttribute("aria-pressed", "false");
   openMeasurePaletteButton.addEventListener("click", function (event) {
@@ -13980,7 +13992,7 @@ if (hasSharedViewerMenus && openMeasurePaletteButton && measurePalette) {
   });
 }
 
-if (hasSharedViewerMenus && openSnapshotPaletteButton && snapshotPalette) {
+if (hasFullViewerMenus && openSnapshotPaletteButton && snapshotPalette) {
   openSnapshotPaletteButton.hidden = false;
   openSnapshotPaletteButton.setAttribute("aria-pressed", "false");
   openSnapshotPaletteButton.addEventListener("click", function (event) {
@@ -14030,7 +14042,7 @@ if (hasSharedViewerMenus && openSnapshotPaletteButton && snapshotPalette) {
 }
 
 if (
-  hasSharedViewerMenus &&
+  hasFullViewerMenus &&
   openTransformImageryPaletteButton &&
   transformImageryPalette
 ) {
@@ -14237,7 +14249,7 @@ if (
   });
 }
 
-if (hasSharedViewerMenus && openClassifyPaletteButton && classifyPalette) {
+if (hasFullViewerMenus && openClassifyPaletteButton && classifyPalette) {
   openClassifyPaletteButton.hidden = false;
   openClassifyPaletteButton.setAttribute("aria-pressed", "false");
   openClassifyPaletteButton.addEventListener("click", function (event) {
@@ -14322,7 +14334,7 @@ if (hasSharedViewerMenus && openClassifyPaletteButton && classifyPalette) {
   });
 }
 
-if (hasSharedViewerMenus && openPorosityEstimatorButton && porosityPalette) {
+if (hasFullViewerMenus && openPorosityEstimatorButton && porosityPalette) {
   porosityDefinePanel?.addEventListener("toggle", () => {
     if (porosityDefinePanel.open && porosityCalculatePanel) {
       porosityCalculatePanel.open = false;
@@ -14792,7 +14804,7 @@ if (hasSharedViewerMenus && openPorosityEstimatorButton && porosityPalette) {
 }
 
 if (
-  hasSharedViewerMenus &&
+  hasFullViewerMenus &&
   hasElectronActions &&
   openSegmentPaletteButton &&
   segmentPalette
@@ -14979,7 +14991,7 @@ window.addEventListener("pointerup", function () {
   finishSnapshotAdjustment();
 });
 
-if (hasSharedViewerMenus && actionLoadLibraryButton) {
+if (hasFullViewerMenus && actionLoadLibraryButton) {
   actionLoadLibraryButton.addEventListener("click", function (event) {
     event.preventDefault();
     closeElectronActionTray();
@@ -15350,6 +15362,7 @@ document
         "Estimate porosity to calculate local thickness",
       );
       currentIndex = requestedIndex;
+      resetMobileAnnotationState();
       committedGroupSelection =
         document.getElementById("groupDropdown")?.value || "All";
       rememberSelectedSampleForCurrentGroup(currentIndex);
@@ -15381,8 +15394,8 @@ document
       if (measurementControlsInitialized) {
         resetMeasurements(true);
       }
-      document.getElementById("enableDivideImages").checked = true;
-      enableDivideImages = true;
+      document.getElementById("enableDivideImages").checked = !mobileMode;
+      enableDivideImages = !mobileMode;
       const canLoadTiles = await confirmSampleTilesAvailable();
       if (!canLoadTiles) {
         return;
@@ -15407,7 +15420,8 @@ document
     const annotationFileOptions = normalizeAnnotationFileOptions(
       annotationFiles[title()],
     );
-    if (annotationFileOptions.length > 0) {
+    configureMobileAnnotationControl(annotationFileOptions);
+    if (annotationFileOptions.length > 0 && !mobileMode) {
       hasAnnotationInJSON = true;
       const button = document.createElement("button");
       button.textContent = "Load Existing Annotations";
@@ -15450,7 +15464,7 @@ document
         annoJSONButtonContainer.appendChild(dropdown);
       }
     } else {
-      hasAnnotationInJSON = false;
+      hasAnnotationInJSON = annotationFileOptions.length > 0;
     }
   });
 
@@ -15477,6 +15491,139 @@ function getAnnotationFileLabel(file, index) {
   return decodeURIComponent(fileName).replace(/\.(geo)?json$/i, "");
 }
 
+function resetMobileAnnotationState() {
+  mobileAnnotationState = {
+    files: [],
+    loaded: false,
+    visible: false,
+    busy: false,
+    file: "",
+  };
+  const control = document.getElementById("mobileAnnotationControl");
+  const dropdown = document.getElementById("mobileAnnotationDropdown");
+  if (control) control.hidden = true;
+  if (dropdown) {
+    dropdown.hidden = true;
+    dropdown.innerHTML = "";
+  }
+  if (mobileMode) {
+    const groupDropdown = document.getElementById("groupDropdown");
+    const sampleDropdown = document.getElementById("sampleDropdown");
+    if (groupDropdown) groupDropdown.disabled = false;
+    if (sampleDropdown) sampleDropdown.disabled = false;
+  }
+}
+
+function updateMobileAnnotationControl() {
+  if (!mobileMode) return;
+  const control = document.getElementById("mobileAnnotationControl");
+  const button = document.getElementById("mobileAnnotationButton");
+  const dropdown = document.getElementById("mobileAnnotationDropdown");
+  if (!control || !button || !dropdown) return;
+
+  control.hidden = mobileAnnotationState.files.length === 0;
+  button.disabled = mobileAnnotationState.busy;
+  button.setAttribute("aria-busy", String(mobileAnnotationState.busy));
+  const groupDropdown = document.getElementById("groupDropdown");
+  const sampleDropdown = document.getElementById("sampleDropdown");
+  if (groupDropdown) groupDropdown.disabled = mobileAnnotationState.busy;
+  if (sampleDropdown) sampleDropdown.disabled = mobileAnnotationState.busy;
+  button.textContent = mobileAnnotationState.busy
+    ? "Loading Annotations…"
+    : !mobileAnnotationState.loaded
+      ? "Load Annotations"
+      : mobileAnnotationState.visible
+        ? "Hide Annotations"
+        : "Show Annotations";
+  button.setAttribute(
+    "aria-expanded",
+    String(!dropdown.hidden && mobileAnnotationState.files.length > 1),
+  );
+}
+
+function configureMobileAnnotationControl(files) {
+  if (!mobileMode) return;
+  mobileAnnotationState.files = [...files];
+  const button = document.getElementById("mobileAnnotationButton");
+  const dropdown = document.getElementById("mobileAnnotationDropdown");
+  if (!button || !dropdown) return;
+
+  dropdown.innerHTML = "";
+  files.forEach((file, index) => {
+    const option = document.createElement("button");
+    option.type = "button";
+    option.textContent = getAnnotationFileLabel(file, index);
+    option.title = file;
+    option.addEventListener("click", async (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      dropdown.hidden = true;
+      await loadMobileAnnotations(file);
+    });
+    dropdown.appendChild(option);
+  });
+
+  button.onclick = async (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (mobileAnnotationState.busy) return;
+    if (mobileAnnotationState.loaded) {
+      setMobileAnnotationsVisible(!mobileAnnotationState.visible);
+      return;
+    }
+    if (mobileAnnotationState.files.length === 1) {
+      await loadMobileAnnotations(mobileAnnotationState.files[0]);
+      return;
+    }
+    dropdown.hidden = !dropdown.hidden;
+    updateMobileAnnotationControl();
+  };
+  updateMobileAnnotationControl();
+}
+
+function setMobileAnnotationsVisible(visible) {
+  if (!mobileMode || !mobileAnnotationState.loaded) return;
+  mobileAnnotationState.visible = Boolean(visible);
+  const showAnnotations = document.getElementById("show-annotations");
+  const showLabels = document.getElementById("show-annotation-labels");
+  if (showAnnotations) showAnnotations.checked = mobileAnnotationState.visible;
+  if (showLabels) showLabels.checked = true;
+  applyAnnotationVisibilityState();
+  updateMobileAnnotationControl();
+}
+
+async function loadMobileAnnotations(file) {
+  if (!mobileMode || mobileAnnotationState.busy) return;
+  const requestedSampleIndex = currentIndex;
+  mobileAnnotationState.busy = true;
+  updateMobileAnnotationControl();
+
+  try {
+    const data = await fetchAnnotationJSON(file);
+    if (currentIndex !== requestedSampleIndex) return;
+    suppressUnsavedAnnotationTracking = true;
+    clearAnnotations({ markUnsaved: false });
+    await loadAnnotations(data, {
+      groupMode: "preserve",
+      selectImported: false,
+      onProgress: () => {},
+    });
+    annotationHistory.reset();
+    setUnsavedWork("annotations", false);
+    mobileAnnotationState.loaded = true;
+    mobileAnnotationState.file = file;
+    setMobileAnnotationsVisible(true);
+  } catch (error) {
+    console.error("Error loading mobile annotations:", error);
+    clearAnnotations({ markUnsaved: false });
+    alert(error.message || "Could not load annotation GeoJSON.");
+  } finally {
+    suppressUnsavedAnnotationTracking = false;
+    mobileAnnotationState.busy = false;
+    updateMobileAnnotationControl();
+  }
+}
+
 document.addEventListener("click", function (event) {
   const dropdown = document.getElementById("loadAnnoFromJSONDropdown");
   const button = document.getElementById("loadAnnoFromJSONButton");
@@ -15485,6 +15632,16 @@ document.addEventListener("click", function (event) {
 
   if (!dropdown.contains(event.target) && event.target !== button) {
     dropdown.style.display = "none";
+  }
+});
+
+document.addEventListener("click", function (event) {
+  const dropdown = document.getElementById("mobileAnnotationDropdown");
+  const button = document.getElementById("mobileAnnotationButton");
+  if (!dropdown || !button || dropdown.hidden) return;
+  if (!dropdown.contains(event.target) && event.target !== button) {
+    dropdown.hidden = true;
+    updateMobileAnnotationControl();
   }
 });
 
@@ -21803,6 +21960,12 @@ function buildImageCheckboxes() {
     checkbox.className = "image-checkbox";
     checkbox.dataset.index = i;
     checkbox.addEventListener("change", () => {
+      if (mobileMode) {
+        if (!checkbox.checked) checkbox.checked = true;
+        container.querySelectorAll(".image-checkbox").forEach((candidate) => {
+          if (candidate !== checkbox) candidate.checked = false;
+        });
+      }
       displayImages();
       refreshTransformPreviewStatus();
     });
@@ -26019,6 +26182,7 @@ document
   );
 
 document.addEventListener("keydown", function (event) {
+  if (!annotationEditingEnabled) return;
   if (event.ctrlKey || event.metaKey || event.altKey) return;
   if (isTextEntryElement(event.target)) return;
   if (event.key !== "l" && event.key !== "L") return;
@@ -28521,6 +28685,12 @@ function ensureUniqueAnnotationUuids(options = {}) {
 
 let enableDivideImages = true;
 const toggleDivideImages = (event) => {
+  if (mobileMode) {
+    event.checked = false;
+    enableDivideImages = false;
+    displayImages();
+    return;
+  }
   if (event.checked) {
     enableDivideImages = true;
   } else {
@@ -28587,6 +28757,7 @@ let isXPressed = false;
 let isCPressed = false;
 let isVPressed = false;
 document.addEventListener("keydown", function (event) {
+  if (!annotationEditingEnabled) return;
   if (event.ctrlKey || event.metaKey || event.altKey) return;
   if (isTextEntryElement(event.target)) return;
 
@@ -28617,6 +28788,7 @@ document.addEventListener("keydown", function (event) {
   }
 });
 document.addEventListener("keyup", function (event) {
+  if (!annotationEditingEnabled) return;
   if (event.ctrlKey || event.metaKey || event.altKey) return;
   if (isTextEntryElement(event.target)) return;
 
@@ -28730,6 +28902,7 @@ viewer.addHandler("canvas-click", function (event) {
 });
 
 viewer.addHandler("canvas-click", function (event) {
+  if (!annotationEditingEnabled) return;
   if (suppressNextAnnotationClick) {
     suppressNextAnnotationClick = false;
     event.preventDefaultAction = true;
@@ -31637,6 +31810,7 @@ viewerContainer.addEventListener("mouseleave", () => {
 
 // Event listener for double-click to edit existing vertices or end collection
 viewer.addHandler("canvas-double-click", function (event) {
+  if (!annotationEditingEnabled) return;
   if (measurementModeActive) {
     event.preventDefaultAction = true;
     return;
@@ -32651,17 +32825,19 @@ function addText(
   pointLabel.id = `${className}-${i}`;
   if (type === "anno") {
     pointLabel.dataset.annotationUuid = i;
-    pointLabel.addEventListener("pointerdown", function (event) {
-      handleAnnotationLabelPointerDown(event, i);
-    });
-    pointLabel.addEventListener("click", function (event) {
-      event.stopPropagation();
-      if (suppressNextAnnotationClick) {
-        suppressNextAnnotationClick = false;
-        return;
-      }
-      selectAnnotationByUuid(i);
-    });
+    if (annotationEditingEnabled) {
+      pointLabel.addEventListener("pointerdown", function (event) {
+        handleAnnotationLabelPointerDown(event, i);
+      });
+      pointLabel.addEventListener("click", function (event) {
+        event.stopPropagation();
+        if (suppressNextAnnotationClick) {
+          suppressNextAnnotationClick = false;
+          return;
+        }
+        selectAnnotationByUuid(i);
+      });
+    }
   }
 
   const backgroundColorToPlot = applyOpacityToColor(
@@ -32871,17 +33047,19 @@ function addCrosshairs(
     crosshair.className = "annotate-crosshairs"; // Used for css styling
     crosshair.id = `annotate-crosshair-${uuid}`;
     crosshair.dataset.annotationUuid = uuid;
-    crosshair.addEventListener("click", function (event) {
-      event.stopPropagation();
-      selectAnnotationByUuid(uuid);
-    });
-    crosshair.addEventListener("dblclick", function (event) {
-      event.preventDefault();
-      event.stopPropagation();
-      selectAnnotationByUuid(uuid, { pan: false });
-      enterAnnotationShapeEditMode(uuid);
-      suppressAnnotationClickBriefly();
-    });
+    if (annotationEditingEnabled) {
+      crosshair.addEventListener("click", function (event) {
+        event.stopPropagation();
+        selectAnnotationByUuid(uuid);
+      });
+      crosshair.addEventListener("dblclick", function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        selectAnnotationByUuid(uuid, { pan: false });
+        enterAnnotationShapeEditMode(uuid);
+        suppressAnnotationClickBriefly();
+      });
+    }
   } else if (type === "grid") {
     crosshair.className = "grid-crosshairs"; // Used for css styling
     crosshair.id = `grid-crosshair-${uuid}`;
@@ -35381,6 +35559,7 @@ viewerContainer.addEventListener("pointerleave", hideTransformValueTooltip);
 ////////////////////////
 
 document.addEventListener("keydown", (event) => {
+  if (!annotationEditingEnabled) return;
   const isUndoKey = event.code === "KeyZ" && (event.ctrlKey || event.metaKey);
   const isRedoKey =
     (event.code === "KeyZ" &&
@@ -35407,6 +35586,7 @@ document.addEventListener("keydown", (event) => {
 });
 
 document.addEventListener("keydown", (event) => {
+  if (!annotationEditingEnabled) return;
   if (event.key !== "Delete" && event.key !== "Backspace") return;
   if (event.defaultPrevented) return;
   if (!porosityPalette || porosityPalette.hidden) return;
@@ -35420,6 +35600,7 @@ document.addEventListener("keydown", (event) => {
 });
 
 document.addEventListener("keydown", (event) => {
+  if (!annotationEditingEnabled) return;
   if (event.key !== "Delete" && event.key !== "Backspace") return;
   if (!segmentPalette || segmentPalette.hidden) return;
   if (unsupervisedAoiSelectedVertexIndex === null) return;
@@ -35432,6 +35613,7 @@ document.addEventListener("keydown", (event) => {
 });
 
 document.addEventListener("keydown", (event) => {
+  if (!annotationEditingEnabled) return;
   if (event.key !== "Delete" && event.key !== "Backspace") return;
   if (
     event.defaultPrevented ||
@@ -35485,7 +35667,7 @@ document.addEventListener("keydown", (event) => {
 
     if (digit >= 1 && digit <= 9 && index < checkboxes.length) {
       // If Shift is held, select only that checkbox
-      if (event.shiftKey) {
+      if (mobileMode || event.shiftKey) {
         checkboxes.forEach((cb, i) => {
           cb.checked = i === index;
         });
@@ -35509,12 +35691,13 @@ document.addEventListener("keydown", (event) => {
       break;
 
     case "KeyD":
+      if (mobileMode) break;
       toggleCheckbox("enableDivideImages");
       event.preventDefault();
       break;
 
     case "Digit0": // Ctrl+0 to deselect all
-      if (event.altKey) {
+      if (event.altKey && !mobileMode) {
         checkboxes.forEach((cb) => (cb.checked = false));
         displayImages();
         event.preventDefault();
@@ -45793,6 +45976,7 @@ const keyTimestamps = {};
 const KEY_TIMEOUT_MS = 500; // 0.5 seconds
 
 window.addEventListener("keydown", (event) => {
+  if (!annotationEditingEnabled) return;
   const code = event.code;
   if (
     (event.ctrlKey || event.metaKey || event.altKey) &&
@@ -45808,6 +45992,7 @@ window.addEventListener("keydown", (event) => {
 });
 
 window.addEventListener("keyup", (event) => {
+  if (!annotationEditingEnabled) return;
   const code = event.code;
   pressedKeys.delete(code);
   delete keyTimestamps[code];
@@ -45828,6 +46013,7 @@ setInterval(() => {
 }, 250); // check four times a second
 
 document.addEventListener("mousemove", (event) => {
+  if (!annotationEditingEnabled) return;
   isCPressed = pressedKeys.has("KeyC");
   isXPressed = pressedKeys.has("KeyX");
   isQPressed = pressedKeys.has("KeyQ");
@@ -45896,6 +46082,7 @@ viewer.addHandler("canvas-drag", function (event) {
 });
 
 window.addEventListener("keydown", function (event) {
+  if (!annotationEditingEnabled) return;
   if (event.ctrlKey || event.metaKey || event.altKey) return;
 
   if (event.key === "x" || event.key === "X") {
