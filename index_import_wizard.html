@@ -1,181 +1,103 @@
+<!doctype html>
 <head>
+  <meta
+    http-equiv="Content-Security-Policy"
+    content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' file: data: blob: http://127.0.0.1:* https:; connect-src 'self' file: http://127.0.0.1:* https:; object-src 'none'; base-uri 'self'"
+  />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body class="import-wizard-page">
   <div class="import-wizard-container">
-    <h2>Sample Import Wizard</h2>
-    <div>
-      <select
-        id="saveTypeDropdown"
-        onchange="updateSaveType()"
-        title="Specify whether to save as a new or existing JSON file"
-      >
-        <option value="createNewJSON" selected>Create new JSON</option>
-        <option value="modifyExistingJSON">Add to existing JSON</option>
-      </select>
-      <label for="saveTypeDropdown"></label>
-    </div>
-    <div>
-      <label
-        for="selectNewJSON"
-        id="labelNewJSON"
-        class="file-label"
-        style="--file-label-width: 141px"
-        >Choose output file</label
-      >
-      <input type="file" id="selectNewJSON" class="file-input" />
-    </div>
-    <div>
-      <label
-        for="selectExistingJSON"
-        id="labelExistingJSON"
-        class="file-label"
-        style="--file-label-width: 141px; display: none"
-        >Select file</label
-      >
-      <input type="file" id="selectExistingJSON" class="file-input" />
-    </div>
-    <hr />
-    <h3>Metadata</h3>
-    <div>
-      <input type="text" id="TitleText" placeholder="Title" />
-    </div>
-    <div>
-      <input
-        type="number"
-        id="pixelsPerMeterValue"
-        placeholder="# of pixels per meter (optional)"
-      />
-    </div>
-    <div>
-      <input
-        type="text"
-        id="DescriptionText"
-        placeholder="Description (optional)"
-      />
-    </div>
-    <div id="groupContainer">
-      <div class="group-row">
-        <input
-          type="text"
-          class="group-input"
-          placeholder="Group 1"
-          oninput="validateGroupUniqueness()"
-        />
-        <button
-          type="button"
-          class="group-btn"
-          onclick="addGroup(this)"
-          title="Add group"
-        >
-          +
-        </button>
+    <div class="import-wizard-header">
+      <div>
+        <h2>Sample Import Wizard</h2>
+        <p>Create a new sample or add it to a library.</p>
       </div>
     </div>
-    <hr />
-    <h3>Image(s)</h3>
-    <div id="tileSetContainer">
-      <div class="tile-set-row">
-        <div class="tile-row-header">
-          <!--Tile set label-->
-          <span class="tile-set-label">Tile Set 1</span>
-          <button type="button" class="img-btn" onclick="addTileRow(this)">
-            +
-          </button>
-          <!--Minus button only appears on added tile sets-->
-        </div>
+    <div class="import-wizard-body">
+      <section class="import-wizard-metadata">
+        <h3>Sample</h3>
+        <label for="TitleText" class="field-label-with-note">
+          <span>Title</span>
+          <span class="required-field-label">required</span>
+        </label>
+        <input type="text" id="TitleText" placeholder="Sample title" required />
 
-        <!--Tile set dropdown-->
-        <select
-          onchange="updateTileSetType(this)"
-          title="Specify the format for the tile set"
-        >
-          <option value="Individual" selected>Individual</option>
-          <option value="Multiple">Multiple</option>
-          <option value="Multiple (rotation enabled)">
-            Multiple (rotation enabled)
-          </option>
-        </select>
+        <label for="DescriptionText">Description</label>
+        <input
+          type="text"
+          id="DescriptionText"
+          placeholder="Description (optional)"
+        />
 
-        <div class="tile-set-label-container">
-          <input type="text" class="tile-set-label" placeholder="Label" />
+        <label for="pixelsPerMeterValue">Pixels per meter</label>
+        <input
+          type="number"
+          id="pixelsPerMeterValue"
+          placeholder="Optional"
+          min="0"
+          step="any"
+        />
+
+        <div class="import-wizard-field-header">
+          <span>Groups</span>
+          <span class="import-wizard-field-hint">Add one or more groups.</span>
         </div>
-        <!-- Angle periodicity input, shown only for "Multiple (rotation enabled)" -->
-        <div class="angle-periodicity-container" style="display: none">
-          <label
-            >Angle periodicity:
+        <div id="groupContainer">
+          <div class="group-row">
             <input
-              type="number"
-              class="tile-angle-periodicity"
-              placeholder="e.g., 360"
-              min="0"
-              max="360"
-              value="0"
+              type="text"
+              class="group-input"
+              placeholder="Group 1"
+              oninput="validateGroupUniqueness()"
             />
-          </label>
-        </div>
-
-        <!--Container for image(s) in this tile set-->
-        <div class="images-container">
-          <div class="image-row">
-            <!--The image label for Multiple option-->
-            <input type="text" class="image-label" placeholder="Label" hidden />
-            <!--The angle input for Multiple (rotation enabled) option-->
-            <label hidden
-              >Angle (0&minus;360):
-              <input
-                type="number"
-                class="image-angle"
-                min="0"
-                max="360"
-                value="0"
-                hidden
-              />
-            </label>
             <button
               type="button"
-              class="img-btn add-btn"
-              onclick="addImageRow(this)"
-              hidden
+              class="group-btn"
+              onclick="addGroup(this)"
+              title="Add group"
             >
               +
             </button>
-            <button
-              type="button"
-              class="img-btn remove-btn"
-              onclick="removeImageRow(this)"
-              hidden
-            >
-              &minus;
-            </button>
-            <div class="jpg-row">
-              <label
-                class="file-label jpg-label"
-                style="--file-label-width: 141px"
-                ><span class="jpg-label-text">Choose image</span></label
-              >
-              <input
-                type="file"
-                class="file-input jpg-file"
-                accept=".jpg,.jpeg,.png,.tif,.tiff,.webp,.gif,.avif,.heif,.heic,.svg,.v,.vips,.jp2,.j2k,.jpf,.jpx,.jpm,.mj2,image/jpeg,image/png,image/tiff,image/webp,image/gif,image/avif,image/heif,image/svg+xml,image/jp2"
-                style="display: none"
-              />
-              <!-- URI input -->
-              <input
-                type="text"
-                class="uri-input"
-                placeholder="Enter image URI"
-                style="display: none"
-              />
-
-              <!-- Toggle checkbox -->
-              <input type="checkbox" onclick="toggleURI(this)" />
-              <label>Use URI?</label>
-            </div>
           </div>
         </div>
-      </div>
+
+        <label for="saveTypeDropdown">Save target</label>
+        <select
+          id="saveTypeDropdown"
+          onchange="updateSaveType()"
+          title="Choose where to save the imported sample"
+        >
+          <option value="modifyCurrentJSON" selected>Add to this library JSON</option>
+          <option value="createNewJSON">Create new library JSON</option>
+          <option value="modifyExistingJSON">Add to another library JSON</option>
+        </select>
+        <button id="loadExistingJSONBtn" hidden>Select file</button>
+      </section>
+      <section class="import-wizard-tiles">
+        <div class="import-wizard-section-header">
+          <h3>Tile Sets</h3>
+        </div>
+        <div id="tileSetContainer">
+          <!-- Tile set rows will be added dynamically here in JS -->
+        </div>
+      </section>
     </div>
+    <div class="import-wizard-footer">
+      <div id="importProgressContainer" class="import-progress" hidden>
+        <div class="import-progress-track">
+          <div id="importProgressBar" class="import-progress-bar"></div>
+        </div>
+        <div id="importProgressText" class="import-progress-text"></div>
+      </div>
+      <button id="exportJSONBtn">Export JSON</button>
+    </div>
+    <input
+      type="file"
+      id="selectExistingJSON"
+      class="file-input"
+      style="display: none"
+    />
   </div>
   <script src="index_import_wizard.js"></script>
 </body>

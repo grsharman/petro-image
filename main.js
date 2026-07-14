@@ -2622,7 +2622,7 @@ ipcMain.handle("open-import-wizard", (event, requestedContext) => {
   importWizardWindow.webContents.once("did-finish-load", () => {
     sendImportWizardContext(context);
   });
-  importWizardWindow.loadFile("index_import_wizard_v3.html");
+  importWizardWindow.loadFile("index_import_wizard.html");
   importWizardWindow.on("closed", () => {
     importWizardWindow = null;
   });
