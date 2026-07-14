@@ -18,7 +18,7 @@ try:
     from pylibCZIrw import czi
 except ImportError as error:
     raise SystemExit(
-        "The AxioScan CZI importer requires pylibCZIrw, numpy, and Pillow."
+        f"The AxioScan CZI importer could not load a dependency: {error!r}"
     ) from error
 
 

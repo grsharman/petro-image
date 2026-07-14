@@ -109,6 +109,16 @@ print(json.dumps(result))
 
 function main() {
   const pythonPath = preparePython();
+  const condaExpatDll = path.join(
+    path.dirname(pythonPath),
+    "Library",
+    "bin",
+    "libexpat.dll",
+  );
+  const condaExpatArguments =
+    process.platform === "win32" && fs.existsSync(condaExpatDll)
+      ? ["--add-binary", `${condaExpatDll}${path.delimiter}.`]
+      : [];
   fs.rmSync(outputDirectory, { recursive: true, force: true });
   fs.mkdirSync(outputDirectory, { recursive: true });
   fs.mkdirSync(workDirectory, { recursive: true });
@@ -135,6 +145,7 @@ function main() {
       specDirectory,
       "--collect-all",
       "pylibCZIrw",
+      ...condaExpatArguments,
       workerSource,
     ],
     { env: { PYINSTALLER_CONFIG_DIR: cacheDirectory } },
