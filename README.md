@@ -82,6 +82,28 @@ The first build creates `.venv-czi-build`, installs the pinned dependencies from
 
 macOS development packages are ad-hoc signed after all native worker resources are added. For a distributable release, set `PETRO_IMAGE_MAC_SIGN_IDENTITY` to the installed Developer ID Application identity; Apple notarization remains a separate release-credential step.
 
+### JPEG 2000 Import (Desktop Beta)
+
+The desktop image importer accepts JPEG 2000 still images (`.jp2`, `.j2k`, `.j2c`, `.jpc`, `.jpx`, and `.jpf`) and converts them directly to a standard 254-pixel, 1-pixel-overlap JPEG DZI pyramid. Conversion runs in a bundled libvips worker compiled with OpenJPEG, keeping large source decoding outside Electron and avoiding a full-size intermediate TIFF or PNG. Complex multi-codestream JPX compositions, JPM compound documents, and Motion JPEG 2000 (`.mj2`) are not supported.
+
+JPEG 2000 sources can contain more precision than the display pyramid. The current importer creates quality-90, 8-bit JPEG tiles, so 16-bit precision, alpha, and lossless source encoding are not retained in the DZI derivative.
+
+Release builds create the platform-specific worker automatically. The build uses pinned conda-forge packages and needs a Conda installation; set `PETRO_IMAGE_CONDA` if `conda` is not on `PATH`:
+
+```sh
+PETRO_IMAGE_CONDA=/path/to/conda npm run build:vips-worker
+```
+
+The generated worker is written to `build/vips-worker`, includes third-party license material, and is bundled into packaged desktop releases. It must be built separately for each supported operating system and processor architecture. Development runs use this staged worker automatically when it exists, or `PETRO_IMAGE_VIPS_PATH` can point to another OpenJPEG-enabled `vips` executable.
+
+Before releasing large-file support, benchmark a representative scan. The benchmark retains its DZI output so it can be inspected and reports source size, pixel dimensions, elapsed time, and output size:
+
+```sh
+npm run benchmark:jpeg2000 -- /path/to/scan.jp2 /path/to/benchmark-output
+```
+
+On macOS, `/usr/bin/time -l` can wrap that command to record peak resident memory. Ensure the destination has ample free space: a large DZI includes approximately one third more source pixels across its reduced pyramid levels before JPEG compression.
+
 ## Tools
 
 ### Table of Contents

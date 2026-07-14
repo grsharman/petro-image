@@ -15,10 +15,12 @@ export default {
     icon: "assets/icon", // base name; electron-packager will use .icns/.ico/.png depending on platform
     overwrite: true, // overwrite existing packaged apps
     osxSign: {},
-    extraResource: ["build/czi-worker", "tutorial-assets"],
+    extraResource: ["build/czi-worker", "build/vips-worker", "tutorial-assets"],
     ignore: [
       /^\/\.venv-czi-build(?:\/|$)/,
       /^\/build\/czi-worker(?:-cache|-spec|-work)?(?:\/|$)/,
+      /^\/build\/vips-worker(?:\/|$)/,
+      /^\/\.vips-worker-build(?:\/|$)/,
       /^\/test-data(?:\/|$)/,
       /^\/tutorial-assets(?:\/|$)/,
     ],

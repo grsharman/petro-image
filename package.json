@@ -8,9 +8,12 @@
     "start": "electron-forge start",
     "test": "node --test test/*.test.cjs",
     "build:czi-worker": "node scripts/build-czi-worker.mjs",
-    "package": "npm run build:czi-worker && electron-forge package",
-    "make": "npm run build:czi-worker && electron-forge make",
-    "dist": "npm run build:czi-worker && electron-builder"
+    "build:vips-worker": "node scripts/build-vips-worker.mjs",
+    "build:workers": "npm run build:czi-worker && npm run build:vips-worker",
+    "benchmark:jpeg2000": "node scripts/benchmark-jpeg2000.mjs",
+    "package": "npm run build:workers && electron-forge package",
+    "make": "npm run build:workers && electron-forge make",
+    "dist": "npm run build:workers && electron-builder"
   },
   "repository": {
     "type": "git",
@@ -57,6 +60,11 @@
         "filter": ["**/*"]
       },
       {
+        "from": "build/vips-worker",
+        "to": "vips-worker",
+        "filter": ["**/*"]
+      },
+      {
         "from": "tutorial-assets",
         "to": "tutorial-assets",
         "filter": ["**/*"]
@@ -68,6 +76,8 @@
       "!build/czi-worker-cache{,/**}",
       "!build/czi-worker-spec{,/**}",
       "!build/czi-worker-work{,/**}",
+      "!build/vips-worker{,/**}",
+      "!.vips-worker-build{,/**}",
       "!.venv-czi-build{,/**}",
       "!test-data{,/**}",
       "!tutorial-assets{,/**}"

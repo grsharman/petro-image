@@ -9,3 +9,5 @@ build/czi-worker/
 build/czi-worker-cache/
 build/czi-worker-spec/
 build/czi-worker-work/
+.vips-worker-build/
+build/vips-worker/

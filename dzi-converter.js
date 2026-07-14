@@ -159,7 +159,7 @@ function createSourceImage(sourcePath) {
 
 function getSourceImageError(sourcePath, error) {
   const extension = path.extname(sourcePath || "").toLowerCase();
-  if ([".jp2", ".j2k", ".jpf", ".jpx", ".jpm", ".mj2"].includes(extension)) {
+  if ([".jp2", ".j2k", ".j2c", ".jpc", ".jpf", ".jpx"].includes(extension)) {
     return "JPEG 2000/JPX is not supported by this build of the image converter.";
   }
 

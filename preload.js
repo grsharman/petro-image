@@ -74,6 +74,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
     ipcRenderer.invoke("save-json-file-as", { defaultFileName, jsonData }),
   convertImageToDzi: (sourcePath) =>
     ipcRenderer.invoke("convert-image-to-dzi", sourcePath),
+  cancelImageToDzi: () => ipcRenderer.invoke("cancel-image-to-dzi"),
   createDerivedDzi: (request) =>
     ipcRenderer.invoke("create-derived-dzi", request),
   deleteProjectDzi: (request) =>

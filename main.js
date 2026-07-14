@@ -16,6 +16,10 @@ import { spawn } from "child_process";
 import http from "http";
 import { randomUUID } from "crypto";
 import { convertImageBufferToDzi, convertImageToDzi } from "./dzi-converter.js";
+import {
+  convertJpeg2000ToDzi,
+  isJpeg2000Path,
+} from "./jpeg2000-converter.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -33,6 +37,7 @@ let activeSegmenteverygrainChild = null;
 let activeCziConversionChild = null;
 let activeCziConversionOutput = "";
 let activeCziBenchmarkChild = null;
+let activeJpeg2000ConversionChild = null;
 let windowStateSaveTimer = null;
 const localFileServerToken = randomUUID();
 const grantedLocalRoots = [];
@@ -46,6 +51,48 @@ const TUTORIAL_ASSETS_FOLDER_NAME = "tutorial-assets";
 const CZI_WORKER_PATH = path.join(__dirname, "scripts", "axioscan_czi_worker.py");
 const CZI_RESOLUTION_SCALES = new Set([1, 0.5, 0.25, 0.125, 0.0625, 0.03125, 0.015625]);
 const SEGMENTEVERYGRAIN_MODEL_EXTENSIONS = new Set([".h5", ".keras"]);
+
+async function getVipsWorkerRuntime() {
+  const executableName = process.platform === "win32" ? "vips.exe" : "vips";
+  const configuredExecutable = process.env.PETRO_IMAGE_VIPS_PATH || "";
+  const bundledRoot = path.join(process.resourcesPath, "vips-worker");
+  const bundledExecutable = path.join(bundledRoot, "bin", executableName);
+  const stagedRoot = path.join(__dirname, "build", "vips-worker");
+  const stagedExecutable = path.join(stagedRoot, "bin", executableName);
+  const hasStagedExecutable = !app.isPackaged && (await pathExists(stagedExecutable));
+  const command =
+    configuredExecutable ||
+    (app.isPackaged ? bundledExecutable : hasStagedExecutable ? stagedExecutable : "vips");
+
+  if ((configuredExecutable || app.isPackaged) && !(await pathExists(command))) {
+    throw new Error(
+      app.isPackaged
+        ? "The bundled JPEG 2000 converter is missing from this petro-image installation."
+        : `The configured JPEG 2000 converter could not be found: ${command}`,
+    );
+  }
+
+  const env = {};
+  const runtimeRoot = app.isPackaged ? bundledRoot : hasStagedExecutable ? stagedRoot : "";
+  if (runtimeRoot && !configuredExecutable) {
+    const libraryDirectory = path.join(runtimeRoot, "lib");
+    if (process.platform === "darwin") {
+      env.DYLD_LIBRARY_PATH = [libraryDirectory, process.env.DYLD_LIBRARY_PATH]
+        .filter(Boolean)
+        .join(path.delimiter);
+    } else if (process.platform === "linux") {
+      env.LD_LIBRARY_PATH = [libraryDirectory, process.env.LD_LIBRARY_PATH]
+        .filter(Boolean)
+        .join(path.delimiter);
+    } else if (process.platform === "win32") {
+      env.PATH = [path.dirname(command), process.env.PATH]
+        .filter(Boolean)
+        .join(path.delimiter);
+    }
+  }
+
+  return { command, env };
+}
 
 function setMainWindowTitle(projectDirectory, libraryPath = "") {
   if (!mainWindow || mainWindow.isDestroyed()) return;
@@ -2569,7 +2616,7 @@ ipcMain.handle("select-image-file", async () => {
         extensions: [
           "jpg", "jpeg", "png", "tif", "tiff", "webp", "gif",
           "avif", "heif", "heic", "svg", "v", "vips",
-          "jp2", "j2k", "jpf", "jpx", "jpm", "mj2",
+          "jp2", "j2k", "j2c", "jpc", "jpf", "jpx",
         ],
       },
       { name: "JPEG", extensions: ["jpg", "jpeg"] },
@@ -2581,7 +2628,7 @@ ipcMain.handle("select-image-file", async () => {
       { name: "SVG", extensions: ["svg"] },
       {
         name: "JPEG 2000 / JPX",
-        extensions: ["jp2", "j2k", "jpf", "jpx", "jpm", "mj2"],
+        extensions: ["jp2", "j2k", "j2c", "jpc", "jpf", "jpx"],
       },
     ],
   });
@@ -3329,19 +3376,44 @@ ipcMain.handle("convert-image-to-dzi", async (event, sourcePath) => {
   const outputDirectory = settings.projectDirectory
     ? path.join(settings.projectDirectory, DZI_FOLDER_NAME)
     : path.dirname(sourcePath);
-  const result = await convertImageToDzi(
-    sourcePath,
-    (progress) => {
-      event.sender.send("dzi-conversion-progress", progress);
-    },
-    outputDirectory,
-  );
+  const onProgress = (progress) => {
+    event.sender.send("dzi-conversion-progress", progress);
+  };
+  let result;
+  if (isJpeg2000Path(sourcePath)) {
+    if (activeJpeg2000ConversionChild) {
+      throw new Error("A JPEG 2000 conversion is already running.");
+    }
+    const runtime = await getVipsWorkerRuntime();
+    try {
+      result = await convertJpeg2000ToDzi(sourcePath, onProgress, outputDirectory, {
+        command: runtime.command,
+        env: runtime.env,
+        onChild: (child) => {
+          activeJpeg2000ConversionChild = child;
+        },
+      });
+    } finally {
+      activeJpeg2000ConversionChild = null;
+    }
+  } else {
+    result = await convertImageToDzi(sourcePath, onProgress, outputDirectory);
+  }
 
   if (settings.projectDirectory) {
     result.relativeDziPath = path.relative(settings.projectDirectory, result.dziPath);
   }
 
   return result;
+});
+
+ipcMain.handle("cancel-image-to-dzi", async () => {
+  if (!activeJpeg2000ConversionChild || activeJpeg2000ConversionChild.killed) {
+    return { ok: true, canceled: false };
+  }
+  activeJpeg2000ConversionChild._petroImageCanceled = true;
+  activeJpeg2000ConversionChild.kill();
+  return { ok: true, canceled: true };
 });
 
 ipcMain.handle("create-derived-dzi", async (event, { dataUrl, baseName }) => {

@@ -17135,7 +17135,7 @@ function resetTransformImageryForSampleChange(previousTileSets = []) {
   tileSetsToReset.forEach((tileSet) => {
     tileSetTransformState.set(tileSet, { ...TILE_SET_TRANSFORM_DEFAULTS });
   });
-  resetTransformTileCaches(tileSetsToReset);
+  resetTransformTileCaches(tileSetsToReset, { restoreDisplayed: false });
   updateAdvancedVisibleInputPreloadHints();
   syncTransformControlsFromSettings(activeTransformPreviewSettings);
   if (transformPreviewEnabled) transformPreviewEnabled.checked = true;
@@ -29239,6 +29239,8 @@ const libraryEditorState = {
 const tileSetEditorState = {
   sampleIndex: -1,
   convertingRow: null,
+  cancelableConversion: false,
+  cancelingConversion: false,
   progressUnsubscribe: null,
   pendingDeletedDziUris: new Set(),
 };
@@ -29725,10 +29727,14 @@ function isTileSetEditorLocalImagePath(uri) {
   return (
     typeof uri === "string" &&
     !/^[a-z][a-z0-9+.-]*:\/\//i.test(uri) &&
-    /\.(jpe?g|png|tiff?|webp|gif|avif|hei[cf]|svg|v|vips|jp2|j2k|jpf|jpx|jpm|mj2)$/i.test(
+    /\.(jpe?g|png|tiff?|webp|gif|avif|hei[cf]|svg|v|vips|jp2|j2k|j2c|jpc|jpf|jpx)$/i.test(
       uri,
     )
   );
+}
+
+function isTileSetEditorJpeg2000Path(uri) {
+  return /\.(jp2|j2k|j2c|jpc|jpf|jpx)$/i.test(String(uri || ""));
 }
 
 function getFileNameFromPath(filePath) {
@@ -30346,6 +30352,16 @@ async function convertPendingTileSetEditorImages() {
     }
 
     tileSetEditorState.convertingRow = row;
+    tileSetEditorState.cancelableConversion =
+      isTileSetEditorJpeg2000Path(sourcePath);
+    tileSetEditorState.cancelingConversion = false;
+    if (cancelTileSetEditorButton) {
+      cancelTileSetEditorButton.textContent = tileSetEditorState.cancelableConversion
+        ? "Cancel Conversion"
+        : "Cancel";
+      cancelTileSetEditorButton.disabled = !tileSetEditorState.cancelableConversion;
+    }
+    if (closeTileSetEditorButton) closeTileSetEditorButton.disabled = true;
     setTileImageRowStatus(
       row,
       `Converting ${index + 1}/${rows.length}: ${getFileNameFromPath(sourcePath)}`,
@@ -30407,6 +30423,13 @@ async function saveTileSetEditorDraft() {
       return;
     } finally {
       tileSetEditorState.convertingRow = null;
+      tileSetEditorState.cancelableConversion = false;
+      tileSetEditorState.cancelingConversion = false;
+      if (cancelTileSetEditorButton) {
+        cancelTileSetEditorButton.textContent = "Cancel";
+        cancelTileSetEditorButton.disabled = false;
+      }
+      if (closeTileSetEditorButton) closeTileSetEditorButton.disabled = false;
       if (saveTileSetEditorButton) {
         saveTileSetEditorButton.disabled = false;
       }
@@ -30485,6 +30508,35 @@ function handleTileSetEditorConversionProgress(progress) {
     ? ` ${Math.round(percent)}%`
     : "";
   setTileImageRowStatus(row, `Converting image to DZI...${percentLabel}`);
+}
+
+async function cancelOrCloseTileSetEditor() {
+  if (!tileSetEditorState.convertingRow) {
+    closeTileSetEditor();
+    return;
+  }
+  if (
+    !tileSetEditorState.cancelableConversion ||
+    tileSetEditorState.cancelingConversion ||
+    !window.electronAPI?.cancelImageToDzi
+  ) {
+    return;
+  }
+  tileSetEditorState.cancelingConversion = true;
+  if (cancelTileSetEditorButton) cancelTileSetEditorButton.disabled = true;
+  setTileSetEditorStatus("Stopping JPEG 2000 conversion...");
+  try {
+    const result = await window.electronAPI.cancelImageToDzi();
+    if (!result?.canceled) {
+      tileSetEditorState.cancelingConversion = false;
+      if (cancelTileSetEditorButton) cancelTileSetEditorButton.disabled = false;
+      setTileSetEditorStatus("The JPEG 2000 conversion has already stopped.");
+    }
+  } catch (error) {
+    tileSetEditorState.cancelingConversion = false;
+    if (cancelTileSetEditorButton) cancelTileSetEditorButton.disabled = false;
+    setTileSetEditorStatus(error.message || "Could not stop conversion.", true);
+  }
 }
 
 if (window.electronAPI?.onDziConversionProgress) {
@@ -30593,7 +30645,7 @@ libraryEditorDeleteButton?.addEventListener("click", deleteLibraryEditorSample);
 cancelLibraryEditorButton?.addEventListener("click", closeLibraryEditor);
 closeLibraryEditorButton?.addEventListener("click", closeLibraryEditor);
 openTileSetEditorButton?.addEventListener("click", openTileSetEditor);
-cancelTileSetEditorButton?.addEventListener("click", closeTileSetEditor);
+cancelTileSetEditorButton?.addEventListener("click", cancelOrCloseTileSetEditor);
 closeTileSetEditorButton?.addEventListener("click", closeTileSetEditor);
 saveTileSetEditorButton?.addEventListener("click", saveTileSetEditorDraft);
 saveLibraryEditorButton?.addEventListener("click", () => saveLibraryEditor());
