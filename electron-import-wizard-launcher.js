@@ -13,7 +13,8 @@ if (window.electronAPI?.openImportWizard && openImportWizardButton) {
     document
       .getElementById("electronActionButton")
       ?.setAttribute("aria-expanded", "false");
-    window.electronAPI.openImportWizard();
+    const context = window.getImportWizardLibraryContext?.() || {};
+    window.electronAPI.openImportWizard(context);
   });
 }
 

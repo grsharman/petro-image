@@ -36,10 +36,12 @@ let windowStateSaveTimer = null;
 const localFileServerToken = randomUUID();
 const grantedLocalRoots = [];
 const APP_TITLE = "petro-image";
-const WELCOME_LIBRARY_FILE_NAME = "welcome_library.json";
+const PROJECT_LIBRARY_TEMPLATE_FILE_NAME = "default_library.json";
 const USER_LIBRARY_FILE_NAME = "library.json";
 const WINDOW_STATE_FILE_NAME = "window-state.json";
 const DZI_FOLDER_NAME = "dzi";
+const ANNOTATIONS_FOLDER_NAME = "annotations";
+const TUTORIAL_ASSETS_FOLDER_NAME = "tutorial-assets";
 const CZI_WORKER_PATH = path.join(__dirname, "scripts", "axioscan_czi_worker.py");
 const CZI_RESOLUTION_SCALES = new Set([1, 0.5, 0.25, 0.125, 0.0625, 0.03125, 0.015625]);
 const SEGMENTEVERYGRAIN_MODEL_EXTENSIONS = new Set([".h5", ".keras"]);
@@ -92,24 +94,33 @@ function getBundledDefaultLibraryPath() {
   return path.join(__dirname, "samples.json");
 }
 
-function getBundledWelcomeLibraryPath() {
-  return path.join(__dirname, WELCOME_LIBRARY_FILE_NAME);
+function getBundledProjectLibraryTemplatePath() {
+  return path.join(__dirname, PROJECT_LIBRARY_TEMPLATE_FILE_NAME);
+}
+
+function getBundledTutorialAssetsPath() {
+  return app.isPackaged
+    ? path.join(process.resourcesPath, TUTORIAL_ASSETS_FOLDER_NAME)
+    : path.join(__dirname, TUTORIAL_ASSETS_FOLDER_NAME);
 }
 
 async function ensureProjectStructure(projectDirectory) {
   await fs.mkdir(projectDirectory, { recursive: true });
   await fs.mkdir(path.join(projectDirectory, DZI_FOLDER_NAME), { recursive: true });
+  await fs.mkdir(path.join(projectDirectory, ANNOTATIONS_FOLDER_NAME), {
+    recursive: true,
+  });
 
-  const welcomeLibraryPath = path.join(projectDirectory, WELCOME_LIBRARY_FILE_NAME);
-  if (!(await pathExists(welcomeLibraryPath))) {
-    const welcomeLibraryText = await fs.readFile(
-      getBundledWelcomeLibraryPath(),
+  const projectLibraryPath = path.join(projectDirectory, USER_LIBRARY_FILE_NAME);
+  if (!(await pathExists(projectLibraryPath))) {
+    const projectLibraryText = await fs.readFile(
+      getBundledProjectLibraryTemplatePath(),
       "utf8",
     );
-    await fs.writeFile(welcomeLibraryPath, welcomeLibraryText, "utf8");
+    await fs.writeFile(projectLibraryPath, projectLibraryText, "utf8");
   }
 
-  return welcomeLibraryPath;
+  return projectLibraryPath;
 }
 
 async function promptForProjectDirectory(mode) {
@@ -465,7 +476,7 @@ async function rememberLastLibraryPath(filePath) {
   const projectDirectory = settings.projectDirectory || path.dirname(filePath);
   const defaultLibraryPath =
     settings.defaultLibraryPath ||
-    path.join(projectDirectory, WELCOME_LIBRARY_FILE_NAME);
+    path.join(projectDirectory, USER_LIBRARY_FILE_NAME);
   const recentLibrariesByProject = {
     ...(settings.recentLibrariesByProject || {}),
     [projectDirectory]: filePath,
@@ -2375,9 +2386,37 @@ ipcMain.on("set-unsaved-state", (event, state) => {
 
 ipcMain.handle("get-app-version", () => app.getVersion());
 
-ipcMain.handle("open-import-wizard", () => {
+function getImportWizardContext(context = {}) {
+  const filePath = typeof context.filePath === "string" ? context.filePath : "";
+  const jsonData =
+    context.jsonData && Array.isArray(context.jsonData.samples)
+      ? context.jsonData
+      : { format: "v1", samples: [] };
+  const resolvedFilePath = filePath ? path.resolve(filePath) : "";
+  const bundledLibraryPaths = new Set([
+    path.resolve(getBundledDefaultLibraryPath()),
+    path.resolve(getBundledProjectLibraryTemplatePath()),
+  ]);
+
+  return {
+    filePath,
+    fileName: filePath ? path.basename(filePath) : "",
+    jsonData,
+    canWriteCurrentLibrary:
+      Boolean(resolvedFilePath) && !bundledLibraryPaths.has(resolvedFilePath),
+  };
+}
+
+function sendImportWizardContext(context) {
+  if (!importWizardWindow || importWizardWindow.isDestroyed()) return;
+  importWizardWindow.webContents.send("import-wizard-context", context);
+}
+
+ipcMain.handle("open-import-wizard", (event, requestedContext) => {
+  const context = getImportWizardContext(requestedContext);
   if (importWizardWindow && !importWizardWindow.isDestroyed()) {
     importWizardWindow.focus();
+    sendImportWizardContext(context);
     return;
   }
 
@@ -2396,6 +2435,9 @@ ipcMain.handle("open-import-wizard", () => {
   });
 
   importWizardWindow.setMenuBarVisibility(false);
+  importWizardWindow.webContents.once("did-finish-load", () => {
+    sendImportWizardContext(context);
+  });
   importWizardWindow.loadFile("index_import_wizard_v3.html");
   importWizardWindow.on("closed", () => {
     importWizardWindow = null;
@@ -2782,33 +2824,6 @@ ipcMain.handle("confirm-slow-tiles", async (event, validationResult) => {
   return result.response === 1;
 });
 
-ipcMain.handle("show-tile-load-warning", async (event, failure) => {
-  const settings = await readProjectSettings();
-  if (settings.suppressTileLoadWarning) {
-    return { suppressed: true };
-  }
-  const ownerWindow =
-    BrowserWindow.fromWebContents(event.sender) ||
-    BrowserWindow.getFocusedWindow() ||
-    mainWindow;
-  const context = getTileLoadFailureContext(failure);
-  const result = await dialog.showMessageBox(ownerWindow, {
-    type: "info",
-    buttons: ["OK", "Do Not Show Again"],
-    defaultId: 0,
-    cancelId: 0,
-    message: context.message,
-    detail: context.detail,
-  });
-  if (result.response === 1) {
-    await writeProjectSettings({
-      ...settings,
-      suppressTileLoadWarning: true,
-    });
-  }
-  return { suppressed: false, dontShowAgain: result.response === 1 };
-});
-
 ipcMain.handle("copy-image-to-clipboard", async (event, imageBytes) => {
   if (!imageBytes) throw new Error("No snapshot image was provided.");
 
@@ -2818,43 +2833,6 @@ ipcMain.handle("copy-image-to-clipboard", async (event, imageBytes) => {
   clipboard.writeImage(image);
   return true;
 });
-
-function getTileLoadFailureContext(failure = {}) {
-  const location = failure.tilePath || failure.tileUrl || "";
-  const sample = failure.sampleTitle || "the selected sample";
-  const requestMessage = failure.message || "One tile request failed.";
-  const isRemote =
-    typeof failure.tileUrl === "string" &&
-    /^[a-z][a-z0-9+.-]*:\/\//i.test(failure.tileUrl) &&
-    !/^https?:\/\/(127\.0\.0\.1|localhost|\[?::1\]?)([:/]|$)/i.test(
-      failure.tileUrl
-    );
-  const cloudProvider = failure.tilePath
-    ? getCloudProjectProvider(failure.tilePath)
-    : "";
-
-  if (isRemote) {
-    return {
-      message: "Some Web Image Tiles Did Not Load",
-      detail:
-        `petro-image could not load one or more web-hosted DZI image tiles for ${sample}.\n\n${location}\n\n${requestMessage}\n\nThis is usually a temporary network or hosting issue. The app can continue working, although parts of the image may appear blank until tiles load successfully.`,
-    };
-  }
-
-  if (cloudProvider) {
-    return {
-      message: "Some Local Image Tiles Did Not Load",
-      detail:
-        `petro-image could not load one or more local DZI image tiles for ${sample}.\n\n${location}\n\n${requestMessage}\n\nThis path appears to be inside ${cloudProvider}. If tiles are stored in a cloud-synced folder, mark the project folder as available offline or move the project to local storage for more reliable loading.`,
-    };
-  }
-
-  return {
-    message: "Some Image Tiles Did Not Load",
-    detail:
-      `petro-image could not load one or more DZI image tiles for ${sample}.\n\n${location}\n\n${requestMessage}\n\nThe app can continue working, although parts of the image may appear blank until the missing tiles load successfully.`,
-  };
-}
 
 ipcMain.handle("read-local-json-file", async (event, filePath) => {
   const resolvedPath = await resolveLibraryFilePath(filePath);
@@ -3204,6 +3182,22 @@ function readFirstChunkQuickly(filePath, timeoutMs) {
 }
 
 async function resolveLibraryFilePath(filePath) {
+  if (typeof filePath === "string") {
+    const normalizedPath = filePath.replace(/\\/g, "/");
+    const tutorialPrefix = `${TUTORIAL_ASSETS_FOLDER_NAME}/`;
+    if (normalizedPath.startsWith(tutorialPrefix)) {
+      const tutorialRoot = path.resolve(getBundledTutorialAssetsPath());
+      const resolvedTutorialPath = path.resolve(
+        tutorialRoot,
+        normalizedPath.slice(tutorialPrefix.length),
+      );
+      if (!isPathInside(tutorialRoot, resolvedTutorialPath)) {
+        throw new Error("Tutorial asset path is outside the bundled resource folder.");
+      }
+      return resolvedTutorialPath;
+    }
+  }
+
   if (
     typeof filePath !== "string" ||
     /^[a-z][a-z0-9+.-]*:\/\//i.test(filePath) ||

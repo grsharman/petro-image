@@ -10,7 +10,7 @@
     <div class="import-wizard-header">
       <div>
         <h2>Sample Import Wizard</h2>
-        <p>Create a new sample or add it to an existing library.</p>
+        <p>Create a new sample or add it to a library.</p>
       </div>
     </div>
     <div class="import-wizard-body">
@@ -65,10 +65,10 @@
         <select
           id="saveTypeDropdown"
           onchange="updateSaveType()"
-          title="Specify whether to save as a new or existing library JSON file"
+          title="Choose where to save the imported sample"
         >
-          <option value="createNewJSON" selected>Create new library JSON</option>
-          <option value="modifyExistingJSON">Add to existing library JSON</option>
+          <option value="modifyCurrentJSON" selected>Add to this library JSON</option>
+          <option value="modifyExistingJSON">Add to another library JSON</option>
         </select>
         <button id="loadExistingJSONBtn" hidden>Select file</button>
       </section>

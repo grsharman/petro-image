@@ -1,0 +1,41 @@
+{
+  "format": "v1",
+  "samples": [
+    {
+      "groups": [
+        "Tutorial"
+      ],
+      "title": "Example image",
+      "pixelsPerMeter": "398000",
+      "description": "Mooretown schist",
+      "tileSets": [
+        {
+          "label": "PPL(0°)",
+          "tiles": [
+            {
+              "uri": "tutorial-assets/example-image/ppl.dzi"
+            }
+          ]
+        },
+        {
+          "label": "XPL (mult-pol)",
+          "periodDegrees": 90,
+          "tiles": [
+            {
+              "uri": "tutorial-assets/example-image/xpl-00.dzi",
+              "angleDegrees": 0
+            },
+            {
+              "uri": "tutorial-assets/example-image/xpl-30.dzi",
+              "angleDegrees": 30
+            },
+            {
+              "uri": "tutorial-assets/example-image/xpl-60.dzi",
+              "angleDegrees": 60
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -69,8 +69,8 @@ body.import-wizard-page {
 
 .viewer-corner-actions {
   position: absolute;
-  top: 8px;
-  right: 8px;
+  top: 5px;
+  right: 5px;
   display: flex;
   gap: 6px;
   align-items: flex-start;
@@ -258,6 +258,111 @@ body.import-wizard-page {
   line-height: 1;
 }
 
+.tour-action-icon span {
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.image-load-failure {
+  position: absolute;
+  inset: 0;
+  z-index: 3400;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  padding: 24px;
+  pointer-events: none;
+  background: rgba(245, 245, 245, 0.7);
+  font:
+    13px/1.4 system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+
+.image-load-failure[hidden] {
+  display: none;
+}
+
+.image-load-failure-panel {
+  width: min(430px, calc(100% - 24px));
+  box-sizing: border-box;
+  padding: 22px;
+  border: 1px solid rgba(20, 20, 20, 0.25);
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.97);
+  box-shadow: 0 16px 42px rgba(0, 0, 0, 0.22);
+  color: #222;
+  text-align: center;
+  pointer-events: auto;
+}
+
+.image-load-failure-icon {
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #a45b00;
+  border-radius: 50%;
+  color: #8a4c00;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.image-load-failure h2 {
+  margin: 10px 0 6px;
+  font-size: 18px;
+}
+
+.image-load-failure p {
+  margin: 0;
+  color: #4b4b4b;
+}
+
+.image-load-failure-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.image-load-failure-actions button,
+.welcome-dialog button,
+.quick-tour-card button {
+  min-height: 34px;
+  border: 1px solid rgba(20, 20, 20, 0.3);
+  border-radius: 5px;
+  padding: 7px 12px;
+  background: #fff;
+  color: #222;
+  font: inherit;
+  cursor: pointer;
+}
+
+.image-load-failure-actions button:hover,
+.image-load-failure-actions button:focus-visible,
+.welcome-dialog button:hover,
+.welcome-dialog button:focus-visible,
+.quick-tour-card button:hover,
+.quick-tour-card button:focus-visible {
+  background: #ededed;
+  outline: 2px solid rgba(35, 105, 170, 0.34);
+  outline-offset: 1px;
+}
+
 .about-dialog {
   position: fixed;
   inset: 0;
@@ -279,6 +384,144 @@ body.import-wizard-page {
 
 .about-dialog[hidden] {
   display: none;
+}
+
+.about-dialog-panel.welcome-dialog-panel {
+  width: min(600px, calc(100vw - 36px));
+}
+
+.welcome-feature-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 9px;
+  margin: 18px 0;
+}
+
+.welcome-feature-grid > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px;
+  border: 1px solid rgba(20, 20, 20, 0.14);
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.025);
+}
+
+.welcome-feature-grid strong {
+  font-size: 14px;
+}
+
+.welcome-feature-grid span {
+  color: #555;
+  font-size: 12px;
+}
+
+.welcome-dismiss-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+}
+
+.welcome-dialog-footer {
+  justify-content: flex-end;
+}
+
+#startQuickTourButton,
+#nextQuickTourButton {
+  border-color: #2f668f;
+  background: #3978a8;
+  color: #fff;
+}
+
+#startQuickTourButton:hover,
+#startQuickTourButton:focus-visible,
+#nextQuickTourButton:hover,
+#nextQuickTourButton:focus-visible {
+  background: #2f668f;
+}
+
+.quick-tour-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 5600;
+  pointer-events: none;
+  font:
+    13px/1.4 system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+
+.quick-tour-overlay[hidden] {
+  display: none;
+}
+
+.quick-tour-spotlight {
+  position: fixed;
+  z-index: 0;
+  border: 3px solid #71b9ec;
+  border-radius: 8px;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.56);
+  transition: left 150ms ease, top 150ms ease, width 150ms ease, height 150ms ease;
+}
+
+.quick-tour-card {
+  position: fixed;
+  z-index: 1;
+  width: min(330px, calc(100vw - 24px));
+  box-sizing: border-box;
+  padding: 15px;
+  border: 1px solid rgba(20, 20, 20, 0.34);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.99);
+  box-shadow: 0 16px 42px rgba(0, 0, 0, 0.3);
+  color: #222;
+  pointer-events: auto;
+}
+
+.quick-tour-progress,
+.quick-tour-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.quick-tour-progress {
+  color: #666;
+  font-size: 12px;
+}
+
+#closeQuickTourButton,
+#closeWelcomeButton {
+  width: 30px;
+  min-height: 30px;
+  padding: 0;
+  font-size: 20px;
+  line-height: 1;
+}
+
+.quick-tour-card h2 {
+  margin: 10px 0 6px;
+  font-size: 17px;
+}
+
+.quick-tour-card p {
+  min-height: 38px;
+  margin: 0 0 15px;
+  color: #444;
+}
+
+.quick-tour-actions {
+  justify-content: flex-end;
+}
+
+@media (max-width: 620px) {
+  .welcome-feature-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .about-dialog-panel {

@@ -18,8 +18,12 @@ let circleControlsInitialized = false;
 let measurementModeActive = false;
 let activeMeasureTool = null;
 let circleModeActive = false;
-let tileLoadFailureWarningKey = "";
-let tileLoadFailureWarningInFlight = false;
+let imageLoadFailureKey = "";
+const imageLoadSuccessfulGenerations = new Set();
+let launchWelcomeConsidered = false;
+let quickTourStepIndex = -1;
+let quickTourReturnFocus = null;
+const ONBOARDING_STORAGE_KEY = "petro-image:onboarding:v1";
 const tileSetAppearanceState = new WeakMap();
 const tileSetTransformState = new WeakMap();
 const TILE_SET_APPEARANCE_DEFAULTS = Object.freeze({
@@ -140,6 +144,13 @@ function serializeLibraryDataForSave() {
     samples: samples.map(serializeSampleForLibrary),
   };
 }
+
+window.getImportWizardLibraryContext = function () {
+  return {
+    filePath: currentLibraryPath,
+    jsonData: serializeLibraryDataForSave(),
+  };
+};
 
 function isTextEntryElement(element) {
   if (!element) return false;
@@ -455,6 +466,7 @@ const startCziConversionButton = document.getElementById(
 );
 const electronActionButton = document.getElementById("electronActionButton");
 const electronActionTray = document.getElementById("electronActionTray");
+const openQuickTourButton = document.getElementById("openQuickTourButton");
 const openAboutButton = document.getElementById("openAboutButton");
 const aboutDialog = document.getElementById("aboutDialog");
 const closeAboutButton = document.getElementById("closeAboutButton");
@@ -464,6 +476,31 @@ const copyAboutCitationButton = document.getElementById(
   "copyAboutCitationButton",
 );
 const aboutCopyStatus = document.getElementById("aboutCopyStatus");
+const welcomeDialog = document.getElementById("welcomeDialog");
+const closeWelcomeButton = document.getElementById("closeWelcomeButton");
+const dismissWelcomeButton = document.getElementById("dismissWelcomeButton");
+const startQuickTourButton = document.getElementById("startQuickTourButton");
+const dontShowWelcomeAgain = document.getElementById("dontShowWelcomeAgain");
+const quickTourOverlay = document.getElementById("quickTourOverlay");
+const quickTourSpotlight = document.getElementById("quickTourSpotlight");
+const quickTourCard = document.getElementById("quickTourCard");
+const quickTourProgress = document.getElementById("quickTourProgress");
+const quickTourTitle = document.getElementById("quickTourTitle");
+const quickTourText = document.getElementById("quickTourText");
+const closeQuickTourButton = document.getElementById("closeQuickTourButton");
+const previousQuickTourButton = document.getElementById(
+  "previousQuickTourButton",
+);
+const nextQuickTourButton = document.getElementById("nextQuickTourButton");
+const imageLoadFailure = document.getElementById("imageLoadFailure");
+const imageLoadFailureTitle = document.getElementById("imageLoadFailureTitle");
+const imageLoadFailureMessage = document.getElementById(
+  "imageLoadFailureMessage",
+);
+const retryImageLoadButton = document.getElementById("retryImageLoadButton");
+const openLibraryFromFailureButton = document.getElementById(
+  "openLibraryFromFailureButton",
+);
 const viewerToolsButton = document.getElementById("viewerToolsButton");
 const viewerToolsTray = document.getElementById("viewerToolsTray");
 const changeProjectButton = document.getElementById("changeProjectButton");
@@ -12797,6 +12834,288 @@ function closeCziImportDialog() {
   cziImportDialog?.close();
 }
 
+const QUICK_TOUR_STEPS = Object.freeze([
+  {
+    target: "#viewer-container",
+    title: "Explore the image",
+    text: "Scroll to zoom and drag to pan. The viewer keeps very large images responsive.",
+  },
+  {
+    target: "#groupDropdown",
+    endTarget: "#sampleDropdown",
+    title: "Choose groups and samples",
+    text: "Use the group and sample menus to move through the images in the current library.",
+  },
+  {
+    target: "#imageRotation",
+    targetClosest: ".slider-container",
+    endTarget: ".image-checkbox-row",
+    endTargetLast: true,
+    title: "Control image layers",
+    text: "Use the image checkboxes to toggle layers on and off. The Image control rotates the displayed view, while Stage rotation controls rotation-aware image sets. Locking the stage links the image and stage angles together.",
+  },
+  {
+    target: "#viewerToolsButton",
+    spotlightTopInset: 0,
+    title: "Open analysis tools",
+    text: "Tools contains focused workspaces for point counting, annotating, measuring, taking snapshots, segmenting features, and performing other types of analyses.",
+  },
+  {
+    target: "#electronActionButton",
+    spotlightTopInset: 0,
+    title: "Manage libraries and projects",
+    text: "Actions lets you load libraries, import or edit images, open projects in the desktop app, and return to this tour.",
+  },
+]);
+
+function getOnboardingPreference() {
+  try {
+    return JSON.parse(localStorage.getItem(ONBOARDING_STORAGE_KEY) || "null");
+  } catch (error) {
+    console.warn("Could not read onboarding preference:", error);
+    return null;
+  }
+}
+
+function saveOnboardingPreference() {
+  if (!dontShowWelcomeAgain?.checked) return;
+  try {
+    localStorage.setItem(
+      ONBOARDING_STORAGE_KEY,
+      JSON.stringify({ dismissed: true }),
+    );
+  } catch (error) {
+    console.warn("Could not save onboarding preference:", error);
+  }
+}
+
+function trapDialogFocus(event, dialog) {
+  if (event.key !== "Tab" || !dialog || dialog.hidden) return;
+  const focusable = Array.from(
+    dialog.querySelectorAll(
+      'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+    ),
+  ).filter((element) => !element.hidden);
+  if (!focusable.length) return;
+
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first.focus();
+  }
+}
+
+function openWelcomeDialog() {
+  if (!welcomeDialog) return;
+  closeElectronActionTray();
+  closeViewerToolsTray();
+  welcomeDialog.hidden = false;
+  dontShowWelcomeAgain.checked = false;
+  startQuickTourButton?.focus();
+}
+
+function closeWelcomeDialog({ startTour = false } = {}) {
+  if (!welcomeDialog || welcomeDialog.hidden) return;
+  saveOnboardingPreference();
+  welcomeDialog.hidden = true;
+  if (startTour) {
+    requestAnimationFrame(() => startQuickTour(startQuickTourButton));
+  }
+}
+
+function maybeOpenLaunchWelcome() {
+  if (launchWelcomeConsidered || !welcomeDialog) return;
+  launchWelcomeConsidered = true;
+  if (getOnboardingPreference()?.dismissed) return;
+  requestAnimationFrame(openWelcomeDialog);
+}
+
+function clampTourPosition(value, minimum, maximum) {
+  return Math.min(Math.max(value, minimum), Math.max(minimum, maximum));
+}
+
+function getQuickTourTargetRect(step) {
+  let startTarget = document.querySelector(step.target);
+  if (step.targetClosest) {
+    startTarget = startTarget?.closest(step.targetClosest);
+  }
+  if (!startTarget || startTarget.hidden) return null;
+
+  let endTarget = null;
+  if (step.endTarget) {
+    if (step.endTargetLast) {
+      const matches = document.querySelectorAll(step.endTarget);
+      endTarget = matches[matches.length - 1] || null;
+    } else {
+      endTarget = document.querySelector(step.endTarget);
+    }
+  }
+  if (step.endTargetClosest) {
+    endTarget = endTarget?.closest(step.endTargetClosest);
+  }
+
+  const startRect = startTarget.getBoundingClientRect();
+  if (!endTarget || endTarget.hidden) return startRect;
+  const endRect = endTarget.getBoundingClientRect();
+  const left = Math.min(startRect.left, endRect.left);
+  const top = Math.min(startRect.top, endRect.top);
+  const right = Math.max(startRect.right, endRect.right);
+  const bottom = Math.max(startRect.bottom, endRect.bottom);
+  return {
+    left,
+    top,
+    right,
+    bottom,
+    width: right - left,
+    height: bottom - top,
+  };
+}
+
+function positionQuickTourStep() {
+  if (!quickTourOverlay || quickTourOverlay.hidden || quickTourStepIndex < 0) {
+    return;
+  }
+  const step = QUICK_TOUR_STEPS[quickTourStepIndex];
+  const rect = getQuickTourTargetRect(step);
+  if (!rect) return;
+  const padding = 6;
+  const spotlightTopInset = step.spotlightTopInset ?? 4;
+  quickTourSpotlight.style.left = `${Math.max(4, rect.left - padding)}px`;
+  quickTourSpotlight.style.top = `${Math.max(spotlightTopInset, rect.top - padding)}px`;
+  quickTourSpotlight.style.width = `${Math.max(20, rect.width + padding * 2)}px`;
+  quickTourSpotlight.style.height = `${Math.max(20, rect.height + padding * 2)}px`;
+
+  const cardWidth = quickTourCard.offsetWidth;
+  const cardHeight = quickTourCard.offsetHeight;
+  const viewportPadding = 12;
+  const gap = 12;
+  let top;
+  let left;
+  const isLargeTarget =
+    rect.width > window.innerWidth * 0.7 &&
+    rect.height > window.innerHeight * 0.7;
+  if (isLargeTarget) {
+    top = window.innerHeight - cardHeight - 24;
+    left = window.innerWidth - cardWidth - 24;
+  } else if (
+    rect.right + gap + cardWidth <=
+    window.innerWidth - viewportPadding
+  ) {
+    left = rect.right + gap;
+    top = clampTourPosition(
+      rect.top,
+      viewportPadding,
+      window.innerHeight - cardHeight - viewportPadding,
+    );
+  } else if (rect.left - gap - cardWidth >= viewportPadding) {
+    left = rect.left - gap - cardWidth;
+    top = clampTourPosition(
+      rect.top,
+      viewportPadding,
+      window.innerHeight - cardHeight - viewportPadding,
+    );
+  } else {
+    if (rect.bottom + gap + cardHeight <= window.innerHeight - viewportPadding) {
+      top = rect.bottom + gap;
+    } else if (rect.top - gap - cardHeight >= viewportPadding) {
+      top = rect.top - gap - cardHeight;
+    } else {
+      top = clampTourPosition(
+        rect.top + 18,
+        viewportPadding,
+        window.innerHeight - cardHeight - viewportPadding,
+      );
+    }
+    left = clampTourPosition(
+      rect.left,
+      viewportPadding,
+      window.innerWidth - cardWidth - viewportPadding,
+    );
+  }
+  quickTourCard.style.left = `${left}px`;
+  quickTourCard.style.top = `${top}px`;
+}
+
+function renderQuickTourStep() {
+  const step = QUICK_TOUR_STEPS[quickTourStepIndex];
+  if (!step) return;
+  quickTourProgress.textContent = `Step ${quickTourStepIndex + 1} of ${QUICK_TOUR_STEPS.length}`;
+  quickTourTitle.textContent = step.title;
+  quickTourText.textContent = step.text;
+  previousQuickTourButton.disabled = quickTourStepIndex === 0;
+  nextQuickTourButton.textContent =
+    quickTourStepIndex === QUICK_TOUR_STEPS.length - 1 ? "Finish" : "Next";
+  requestAnimationFrame(positionQuickTourStep);
+}
+
+function startQuickTour(returnFocus = document.activeElement) {
+  if (!quickTourOverlay) return;
+  if (quickTourOverlay.parentElement !== document.body) {
+    document.body.appendChild(quickTourOverlay);
+  }
+  closeWelcomeDialog();
+  closeAboutDialog();
+  closeElectronActionTray();
+  closeViewerToolsTray();
+  quickTourReturnFocus = returnFocus;
+  quickTourStepIndex = 0;
+  quickTourOverlay.hidden = false;
+  renderQuickTourStep();
+  nextQuickTourButton?.focus();
+}
+
+function closeQuickTour() {
+  if (!quickTourOverlay || quickTourOverlay.hidden) return;
+  quickTourOverlay.hidden = true;
+  quickTourStepIndex = -1;
+  const returnFocus = quickTourReturnFocus;
+  quickTourReturnFocus = null;
+  if (returnFocus?.isConnected && returnFocus.offsetParent !== null) {
+    returnFocus.focus();
+  } else {
+    electronActionButton?.focus();
+  }
+}
+
+function advanceQuickTour(direction) {
+  const nextIndex = quickTourStepIndex + direction;
+  if (nextIndex >= QUICK_TOUR_STEPS.length) {
+    closeQuickTour();
+    return;
+  }
+  if (nextIndex < 0) return;
+  quickTourStepIndex = nextIndex;
+  renderQuickTourStep();
+}
+
+async function retryCurrentImageLoad() {
+  retryImageLoadButton.disabled = true;
+  clearImageLoadFailure();
+  try {
+    await loadTileSet();
+    displayImages();
+    toggleOnImages();
+  } catch (error) {
+    console.error("Could not retry image load:", error);
+    showImageLoadFailure({ uri: tileSets()[0]?.tiles?.[0]?.uri || "" });
+  } finally {
+    retryImageLoadButton.disabled = false;
+  }
+}
+
+function openLibraryFromImageFailure() {
+  clearImageLoadFailure();
+  if (window.electronAPI?.changeProjectLibrary) {
+    changeProjectWithElectronDialog();
+    return;
+  }
+  loadLibraryInput?.click();
+}
+
 async function resolveAboutVersion() {
   if (window.electronAPI?.getAppVersion) {
     try {
@@ -12971,6 +13290,10 @@ if (hasSharedViewerMenus) {
     event.stopPropagation();
   });
 
+  openQuickTourButton?.addEventListener("click", function (event) {
+    event.preventDefault();
+    startQuickTour(openQuickTourButton);
+  });
   openAboutButton?.addEventListener("click", function (event) {
     event.preventDefault();
     openAboutDialog();
@@ -12983,12 +13306,55 @@ if (hasSharedViewerMenus) {
   });
   aboutDialog?.addEventListener("keydown", trapAboutDialogFocus);
 
+  closeWelcomeButton?.addEventListener("click", () => closeWelcomeDialog());
+  dismissWelcomeButton?.addEventListener("click", () => closeWelcomeDialog());
+  startQuickTourButton?.addEventListener("click", () =>
+    closeWelcomeDialog({ startTour: true }),
+  );
+  welcomeDialog?.addEventListener("click", function (event) {
+    if (event.target === welcomeDialog) closeWelcomeDialog();
+  });
+  welcomeDialog?.addEventListener("keydown", function (event) {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      closeWelcomeDialog();
+      return;
+    }
+    trapDialogFocus(event, welcomeDialog);
+  });
+
+  closeQuickTourButton?.addEventListener("click", closeQuickTour);
+  previousQuickTourButton?.addEventListener("click", () =>
+    advanceQuickTour(-1),
+  );
+  nextQuickTourButton?.addEventListener("click", () => advanceQuickTour(1));
+  quickTourOverlay?.addEventListener("keydown", function (event) {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      closeQuickTour();
+      return;
+    }
+    if (event.key === "ArrowLeft") {
+      event.preventDefault();
+      advanceQuickTour(-1);
+      return;
+    }
+    if (event.key === "ArrowRight") {
+      event.preventDefault();
+      advanceQuickTour(1);
+      return;
+    }
+    trapDialogFocus(event, quickTourCard);
+  });
+
   document.addEventListener("click", function () {
     closeElectronActionTray();
     closeViewerToolsTray();
   });
   document.addEventListener("keydown", function (event) {
     if (event.key === "Escape") {
+      closeQuickTour();
+      closeWelcomeDialog();
       closeAboutDialog();
       closeElectronActionTray();
       closeViewerToolsTray();
@@ -13008,7 +13374,19 @@ if (hasSharedViewerMenus) {
   });
 }
 
-if (openCziImportButton && cziImportDialog && window.electronAPI) {
+retryImageLoadButton?.addEventListener("click", retryCurrentImageLoad);
+openLibraryFromFailureButton?.addEventListener(
+  "click",
+  openLibraryFromImageFailure,
+);
+window.addEventListener("resize", positionQuickTourStep);
+
+if (
+  openCziImportButton &&
+  cziImportDialog &&
+  window.electronAPI?.selectAxioScanCzi
+) {
+  openCziImportButton.hidden = false;
   openCziImportButton.addEventListener("click", function (event) {
     event.preventDefault();
     openCziImportDialog();
@@ -14464,6 +14842,7 @@ viewer.addHandler("canvas-double-click", function (event) {
 });
 
 viewer.addHandler("tile-load-failed", handleTileLoadFailed);
+viewer.addHandler("tile-loaded", handleImageLoadSucceeded);
 viewer.addHandler("tile-loaded", handleTileLoadedForAppearance);
 viewer.addHandler("tile-drawn", handleTileDrawnForTransformPreview);
 viewer.addHandler("update-viewport", () => {
@@ -14472,43 +14851,56 @@ viewer.addHandler("update-viewport", () => {
 viewer.addHandler("open", clearUnsupervisedAoiForSampleChange);
 viewer.addHandler("open", scheduleScalebarRefresh);
 
-async function handleTileLoadFailed(event) {
-  if (!window.electronAPI?.showTileLoadWarning) {
-    return;
-  }
-
-  const warningKey = `${currentIndex}:${tileLoadGeneration}`;
-  if (
-    tileLoadFailureWarningInFlight ||
-    tileLoadFailureWarningKey === warningKey
-  ) {
-    return;
-  }
-
-  tileLoadFailureWarningInFlight = true;
-  tileLoadFailureWarningKey = warningKey;
-
-  try {
-    await window.electronAPI.showTileLoadWarning({
-      sampleTitle: title(),
-      tileUrl: event?.tile?.getUrl?.() || "",
-      tilePath: getLocalTilePathFromUrl(event?.tile?.getUrl?.() || ""),
-      message: event?.message || "",
-    });
-  } catch (error) {
-    console.error("Could not show tile-load warning:", error);
-  } finally {
-    tileLoadFailureWarningInFlight = false;
-  }
+function isRemoteImageUri(uri) {
+  return (
+    typeof uri === "string" &&
+    /^https?:\/\//i.test(uri) &&
+    !/^https?:\/\/(127\.0\.0\.1|localhost|\[?::1\]?)([:/]|$)/i.test(uri)
+  );
 }
 
-function getLocalTilePathFromUrl(url) {
-  try {
-    const parsedUrl = new URL(url);
-    return parsedUrl.searchParams.get("path") || "";
-  } catch {
-    return "";
-  }
+function clearImageLoadFailure() {
+  if (!imageLoadFailure) return;
+  imageLoadFailure.hidden = true;
+  imageLoadFailureKey = "";
+}
+
+function showImageLoadFailure({ uri = "", generation = tileLoadGeneration } = {}) {
+  if (!imageLoadFailure || imageLoadSuccessfulGenerations.has(generation)) return;
+
+  const failureKey = `${currentIndex}:${generation}`;
+  if (failureKey === imageLoadFailureKey) return;
+  imageLoadFailureKey = failureKey;
+
+  const remote = isRemoteImageUri(uri);
+  const sampleTitle = samples[currentIndex]?.title || "The selected sample";
+  const explicitlyOffline = remote && navigator.onLine === false;
+
+  imageLoadFailureTitle.textContent = remote
+    ? "Online image unavailable"
+    : "Image unavailable";
+  imageLoadFailureMessage.textContent = remote
+    ? explicitlyOffline
+      ? `You appear to be offline. “${sampleTitle}” is stored online and cannot be loaded without an internet connection.`
+      : `“${sampleTitle}” is stored online and could not be loaded. Check your connection and try again, or open a library containing local images.`
+    : `The image files for “${sampleTitle}” could not be loaded. Check that the files are available, or open another library.`;
+  openLibraryFromFailureButton.textContent = window.electronAPI?.changeProjectLibrary
+    ? "Open Project…"
+    : "Load Library…";
+  imageLoadFailure.hidden = false;
+}
+
+function handleTileLoadFailed(event) {
+  if (imageLoadSuccessfulGenerations.has(tileLoadGeneration)) return;
+  showImageLoadFailure({
+    uri: event?.tile?.getUrl?.() || tileSets()[0]?.tiles?.[0]?.uri || "",
+  });
+}
+
+function handleImageLoadSucceeded() {
+  imageLoadSuccessfulGenerations.add(tileLoadGeneration);
+  clearImageLoadFailure();
+  maybeOpenLaunchWelcome();
 }
 
 /// Event listener for sample selection change (only add once)
@@ -20136,6 +20528,8 @@ async function confirmSampleTilesAvailable() {
 async function loadTileSet() {
   const loadGeneration = ++tileLoadGeneration;
   const sampleIndex = currentIndex;
+  imageLoadSuccessfulGenerations.clear();
+  clearImageLoadFailure();
 
   // Remove any previously loaded images from the viewer.
   viewer.world.removeAll();
@@ -20144,7 +20538,19 @@ async function loadTileSet() {
   for (let tileSet of tileSets()) {
     for (let tile of tileSet.tiles) {
       tile.image = null;
-      const tileSource = await getTileSource(tile.uri);
+      let tileSource;
+      try {
+        tileSource = await getTileSource(tile.uri);
+      } catch (error) {
+        if (
+          loadGeneration === tileLoadGeneration &&
+          sampleIndex === currentIndex
+        ) {
+          console.error("Could not resolve image source:", error);
+          showImageLoadFailure({ uri: tile.uri, generation: loadGeneration });
+        }
+        continue;
+      }
       if (
         loadGeneration !== tileLoadGeneration ||
         sampleIndex !== currentIndex
@@ -20167,8 +20573,25 @@ async function loadTileSet() {
           updateAdvancedVisibleInputPreloadHints();
           displayImages();
         },
+        error: (event) => {
+          if (
+            loadGeneration !== tileLoadGeneration ||
+            sampleIndex !== currentIndex
+          ) {
+            return;
+          }
+          console.error(
+            `Could not open DZI source: ${tile.uri}`,
+            event?.message || event,
+          );
+          showImageLoadFailure({ uri: tile.uri, generation: loadGeneration });
+        },
       });
     }
+  }
+
+  if (tileSets().every((tileSet) => !tileSet.tiles?.length)) {
+    showImageLoadFailure({ generation: loadGeneration });
   }
 }
 

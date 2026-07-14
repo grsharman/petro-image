@@ -142,7 +142,7 @@ document.addEventListener("click", async (event) => {
   if (!row) return;
 
   try {
-    setJpgRowConversionState(row, "selecting", "Selecting image...");
+    setJpgRowConversionState(row, "selecting", "Selecting...");
     const result = await window.electronAPI.selectImageFile();
 
     if (result?.canceled) {
@@ -728,6 +728,9 @@ const exportBtn = document.getElementById("exportJSONBtn");
 const existingFileInput = document.getElementById("selectExistingJSON");
 const titleInput = document.getElementById("TitleText");
 const pixelsPerMeterInput = document.getElementById("pixelsPerMeterValue");
+const modifyCurrentOption = saveDropdown.querySelector(
+  'option[value="modifyCurrentJSON"]',
+);
 const importProgressContainer = document.getElementById(
   "importProgressContainer",
 );
@@ -736,6 +739,9 @@ const importProgressText = document.getElementById("importProgressText");
 let selectedExistingJSONPath = "";
 let selectedExistingJSONData = null;
 let selectedExistingJSONName = "";
+let currentLibraryPath = "";
+let currentLibraryData = null;
+let canWriteCurrentLibrary = false;
 let activeConversionProgress = null;
 
 function hasRequiredSampleFields() {
@@ -745,10 +751,13 @@ function hasRequiredSampleFields() {
 
 function updateExportButtonState() {
   const needsExistingJSON = saveDropdown.value === "modifyExistingJSON";
+  const needsCurrentJSON = saveDropdown.value === "modifyCurrentJSON";
   const hasExistingJSON =
     Boolean(selectedExistingJSONPath) || existingFileInput.files.length > 0;
   exportBtn.disabled =
-    !hasRequiredSampleFields() || (needsExistingJSON && !hasExistingJSON);
+    !hasRequiredSampleFields() ||
+    (needsExistingJSON && !hasExistingJSON) ||
+    (needsCurrentJSON && !canWriteCurrentLibrary);
 }
 
 function hasPendingLocalImageUris() {
@@ -768,10 +777,12 @@ function hasPendingLocalImageUris() {
 }
 
 function updateExportButtonLabel() {
-  const action =
-    saveDropdown.value === "modifyExistingJSON"
-      ? "Update Library"
-      : "Export Library";
+  const actions = {
+    modifyCurrentJSON: "Add to Library",
+    modifyExistingJSON: "Update Library",
+    createNewJSON: "Export Library",
+  };
+  const action = actions[saveDropdown.value] || "Export Library";
 
   exportBtn.textContent = hasElectronDziConverter() && hasPendingLocalImageUris()
     ? `Convert images and ${action}`
@@ -781,10 +792,10 @@ function updateExportButtonLabel() {
 // Called whenever the dropdown changes
 function updateSaveType() {
   const mode = saveDropdown.value;
-  const isNew = mode === "createNewJSON";
+  const needsAnotherLibrary = mode === "modifyExistingJSON";
 
   // Show/hide the "Select file" button
-  loadBtn.hidden = isNew;
+  loadBtn.hidden = !needsAnotherLibrary;
 
   // Clear the file input when switching
   existingFileInput.value = "";
@@ -794,6 +805,37 @@ function updateSaveType() {
   loadBtn.textContent = "Select file";
   updateExportButtonLabel();
   updateExportButtonState();
+}
+
+function applyCurrentLibraryContext(context = {}) {
+  currentLibraryPath =
+    typeof context.filePath === "string" ? context.filePath : "";
+  currentLibraryData =
+    context.jsonData && Array.isArray(context.jsonData.samples)
+      ? context.jsonData
+      : null;
+  canWriteCurrentLibrary = Boolean(
+    context.canWriteCurrentLibrary &&
+      currentLibraryPath &&
+      currentLibraryData,
+  );
+
+  if (modifyCurrentOption) {
+    modifyCurrentOption.disabled = !canWriteCurrentLibrary;
+    modifyCurrentOption.textContent = canWriteCurrentLibrary
+      ? "Add to this library JSON"
+      : "Add to this library JSON (read-only)";
+  }
+  if (!canWriteCurrentLibrary && saveDropdown.value === "modifyCurrentJSON") {
+    saveDropdown.value = "createNewJSON";
+  }
+  updateSaveType();
+}
+
+if (window.electronAPI?.onImportWizardContext) {
+  window.electronAPI.onImportWizardContext(applyCurrentLibraryContext);
+} else {
+  applyCurrentLibraryContext();
 }
 
 // Open file picker when user clicks "Select file"
@@ -838,13 +880,19 @@ function isLocalImagePath(uri) {
   );
 }
 
-function getLocalImageUris(sample) {
+function getSampleImageUris(sample) {
   const uris = [];
   const seen = new Set();
 
   for (const tileSet of sample.tileSets || []) {
     for (const tile of tileSet.tiles || []) {
-      if (!isLocalImagePath(tile.uri) || seen.has(tile.uri)) continue;
+      if (
+        typeof tile.uri !== "string" ||
+        !tile.uri.trim() ||
+        seen.has(tile.uri)
+      ) {
+        continue;
+      }
 
       seen.add(tile.uri);
       uris.push(tile.uri);
@@ -854,13 +902,21 @@ function getLocalImageUris(sample) {
   return uris;
 }
 
+function waitForImportProgressPaint() {
+  return new Promise((resolve) => {
+    requestAnimationFrame(() => requestAnimationFrame(resolve));
+  });
+}
+
 function showImportProgress(message, percent = 0) {
   if (!importProgressContainer || !importProgressBar || !importProgressText) {
     return;
   }
 
   importProgressContainer.hidden = false;
-  importProgressBar.style.width = `${Math.max(0, Math.min(100, percent))}%`;
+  const clampedPercent = Math.max(0, Math.min(100, percent));
+  importProgressBar.style.width = "100%";
+  importProgressBar.style.transform = `scaleX(${clampedPercent / 100})`;
   importProgressText.textContent = message;
 }
 
@@ -870,7 +926,8 @@ function hideImportProgress() {
   }
 
   importProgressContainer.hidden = true;
-  importProgressBar.style.width = "0%";
+  importProgressBar.style.width = "100%";
+  importProgressBar.style.transform = "scaleX(0)";
   importProgressText.textContent = "";
   activeConversionProgress = null;
 }
@@ -891,7 +948,7 @@ function handleDziConversionProgress(progress) {
   const overallPercent =
     ((activeConversionProgress.fileIndex - 1 + filePercent / 100) /
       activeConversionProgress.totalFiles) *
-    100;
+    activeConversionProgress.progressLimit;
   const fileName = getPathFileName(progress.sourcePath);
 
   showImportProgress(
@@ -904,32 +961,48 @@ if (window.electronAPI?.onDziConversionProgress) {
   window.electronAPI.onDziConversionProgress(handleDziConversionProgress);
 }
 
-async function convertLocalImageUrisToDzi(sample) {
-  if (!hasElectronDziConverter()) return;
-
-  const localImageUris = getLocalImageUris(sample);
+async function prepareSampleImages(sample) {
+  const imageUris = getSampleImageUris(sample);
   const conversionResults = new Map();
+  const progressLimit = 90;
 
-  if (!localImageUris.length) {
+  if (!imageUris.length) {
+    showImportProgress("Saving library...", progressLimit);
+    await waitForImportProgressPaint();
     return;
   }
 
-  for (let i = 0; i < localImageUris.length; i += 1) {
-    const uri = localImageUris[i];
+  for (let i = 0; i < imageUris.length; i += 1) {
+    const uri = imageUris[i];
+    const fileIndex = i + 1;
+    const shouldConvert = isLocalImagePath(uri) && hasElectronDziConverter();
 
-    activeConversionProgress = {
-      sourcePath: uri,
-      fileIndex: i + 1,
-      totalFiles: localImageUris.length,
-    };
     showImportProgress(
-      `Preparing ${i + 1}/${localImageUris.length}: ${getPathFileName(uri)}`,
-      (i / localImageUris.length) * 100,
+      `Preparing ${fileIndex}/${imageUris.length}: ${getPathFileName(uri)}`,
+      (i / imageUris.length) * progressLimit,
     );
+    await waitForImportProgressPaint();
 
-    const result = await window.electronAPI.convertImageToDzi(uri);
-    conversionResults.set(uri, result.relativeDziPath || result.dziPath);
+    if (shouldConvert) {
+      activeConversionProgress = {
+        sourcePath: uri,
+        fileIndex,
+        totalFiles: imageUris.length,
+        progressLimit,
+      };
+
+      const result = await window.electronAPI.convertImageToDzi(uri);
+      conversionResults.set(uri, result.relativeDziPath || result.dziPath);
+    }
+
+    showImportProgress(
+      `Prepared ${fileIndex}/${imageUris.length}: ${getPathFileName(uri)}`,
+      (fileIndex / imageUris.length) * progressLimit,
+    );
+    await waitForImportProgressPaint();
   }
+
+  activeConversionProgress = null;
 
   for (const tileSet of sample.tileSets || []) {
     for (const tile of tileSet.tiles || []) {
@@ -953,18 +1026,22 @@ async function convertLocalImageUrisToDzi(sample) {
     }
   });
 
-  showImportProgress("Finishing import...", 100);
+  showImportProgress("Saving library...", 95);
+  await waitForImportProgressPaint();
 }
 
 function setExportInProgress(inProgress) {
   exportBtn.disabled = inProgress;
-  exportBtn.textContent = inProgress ? "Converting..." : "";
+  exportBtn.textContent = inProgress ? "Importing..." : "";
   if (!inProgress) {
     updateExportButtonLabel();
   }
 }
 
 async function completeSampleImport(jsonData, selectedTitle) {
+  showImportProgress("Import complete.", 100);
+  await waitForImportProgressPaint();
+
   if (!window.electronAPI?.completeSampleImport) return;
 
   await window.electronAPI.completeSampleImport(jsonData, selectedTitle);
@@ -986,9 +1063,10 @@ document.getElementById("exportJSONBtn").addEventListener("click", async () => {
   const mode = document.getElementById("saveTypeDropdown").value;
 
   setExportInProgress(true);
+  showImportProgress("Preparing import...", 0);
 
   try {
-    await convertLocalImageUrisToDzi(newSample);
+    await prepareSampleImages(newSample);
   } catch (error) {
     console.error(error);
     alert(error.message || "Could not convert image file(s) to DZI.");
@@ -998,7 +1076,33 @@ document.getElementById("exportJSONBtn").addEventListener("click", async () => {
     return;
   }
 
-  if (mode === "createNewJSON") {
+  if (mode === "modifyCurrentJSON") {
+    if (!canWriteCurrentLibrary || !currentLibraryData || !currentLibraryPath) {
+      alert("The current library JSON is read-only. Choose another save target.");
+      setExportInProgress(false);
+      hideImportProgress();
+      updateExportButtonState();
+      return;
+    }
+
+    try {
+      const updatedLibrary = JSON.parse(JSON.stringify(currentLibraryData));
+      if (!updatedLibrary.samples) updatedLibrary.samples = [];
+      updatedLibrary.samples.push(newSample);
+      await window.electronAPI.writeJsonFile(
+        currentLibraryPath,
+        updatedLibrary,
+      );
+      await completeSampleImport(updatedLibrary, newSample.title);
+    } catch (err) {
+      alert("Could not update the current library JSON file.");
+      console.error(err);
+      setExportInProgress(false);
+      hideImportProgress();
+      updateExportButtonState();
+    }
+    return;
+  } else if (mode === "createNewJSON") {
     // Create a new JSON object
     const jsonOutput = {
       format: "v1",

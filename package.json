@@ -55,6 +55,11 @@
         "from": "build/czi-worker",
         "to": "czi-worker",
         "filter": ["**/*"]
+      },
+      {
+        "from": "tutorial-assets",
+        "to": "tutorial-assets",
+        "filter": ["**/*"]
       }
     ],
     "files": [
@@ -64,7 +69,8 @@
       "!build/czi-worker-spec{,/**}",
       "!build/czi-worker-work{,/**}",
       "!.venv-czi-build{,/**}",
-      "!test-data{,/**}"
+      "!test-data{,/**}",
+      "!tutorial-assets{,/**}"
     ],
     "win": {
       "icon": "assets/icon.ico",

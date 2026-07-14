@@ -310,6 +310,25 @@
       </div>
     </div>
     <div id="viewer-container">
+      <div
+        id="imageLoadFailure"
+        class="image-load-failure"
+        role="status"
+        aria-live="polite"
+        hidden
+      >
+        <div class="image-load-failure-panel">
+          <span class="image-load-failure-icon" aria-hidden="true">!</span>
+          <h2 id="imageLoadFailureTitle">Image unavailable</h2>
+          <p id="imageLoadFailureMessage"></p>
+          <div class="image-load-failure-actions">
+            <button id="retryImageLoadButton" type="button">Try Again</button>
+            <button id="openLibraryFromFailureButton" type="button">
+              Open Project…
+            </button>
+          </div>
+        </div>
+      </div>
       <canvas id="annotation-overlay"></canvas>
       <canvas id="measurement-overlay"></canvas>
       <canvas id="circle-overlay"></canvas>
@@ -679,25 +698,6 @@
             </span>
           </button>
           <button
-            id="openCziImportButton"
-            class="electron-action-item"
-            type="button"
-            role="menuitem"
-          >
-            <span class="electron-action-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24">
-                <path d="M4 3h11l5 5v13H4z" />
-                <path d="M14 3v6h6" />
-                <path d="M8 14h8" />
-                <path d="m13 11 3 3-3 3" />
-              </svg>
-            </span>
-            <span>
-              <span class="electron-action-title">Import AxioScan 7 CZI <span class="beta-badge">βeta</span></span>
-              <span class="electron-action-description">Convert polarization channels to DZI</span>
-            </span>
-          </button>
-          <button
             id="openImportWizardButton"
             class="electron-action-item"
             type="button"
@@ -791,7 +791,41 @@
               <span class="electron-action-description">Reorder and update samples</span>
             </span>
           </button>
+          <button
+            id="openCziImportButton"
+            class="electron-action-item"
+            type="button"
+            role="menuitem"
+            hidden
+          >
+            <span class="electron-action-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <path d="M4 3h11l5 5v13H4z" />
+                <path d="M14 3v6h6" />
+                <path d="M8 14h8" />
+                <path d="m13 11 3 3-3 3" />
+              </svg>
+            </span>
+            <span>
+              <span class="electron-action-title">Import AxioScan 7 CZI <span class="beta-badge">βeta</span></span>
+              <span class="electron-action-description">Convert polarization channels to DZI</span>
+            </span>
+          </button>
           <div class="electron-action-separator" role="separator"></div>
+          <button
+            id="openQuickTourButton"
+            class="electron-action-item"
+            type="button"
+            role="menuitem"
+          >
+            <span class="electron-action-icon tour-action-icon" aria-hidden="true">
+              <span>?</span>
+            </span>
+            <span>
+              <span class="electron-action-title">Quick Tour</span>
+              <span class="electron-action-description">Review the essential controls</span>
+            </span>
+          </button>
           <button
             id="openAboutButton"
             class="electron-action-item"
@@ -876,6 +910,67 @@
             <button id="dismissAboutButton" type="button">Close</button>
           </footer>
         </div>
+      </div>
+      <div
+        id="welcomeDialog"
+        class="about-dialog welcome-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="welcomeDialogTitle"
+        hidden
+      >
+        <div class="about-dialog-panel welcome-dialog-panel">
+          <header class="about-dialog-header">
+            <div class="about-brand">
+              <img src="assets/icon.png" alt="" />
+              <div>
+                <h2 id="welcomeDialogTitle">Welcome to petro-image</h2>
+                <p>Explore and analyze high-resolution microscopy</p>
+              </div>
+            </div>
+            <button id="closeWelcomeButton" type="button" aria-label="Close welcome">×</button>
+          </header>
+          <div class="about-dialog-body welcome-dialog-body">
+            <p>
+              Pan and zoom through large images, compare image layers, and use
+              focused tools for annotation, measurement, and analysis.
+            </p>
+            <div class="welcome-feature-grid" aria-label="Tour highlights">
+              <div><strong>Explore</strong><span>Navigate detailed images smoothly</span></div>
+              <div><strong>Compare</strong><span>Switch between superimposed layers</span></div>
+              <div><strong>Analyze</strong><span>Use tools to analyze your images</span></div>
+            </div>
+            <label class="welcome-dismiss-option">
+              <input id="dontShowWelcomeAgain" type="checkbox" />
+              Don’t show this welcome again
+            </label>
+          </div>
+          <footer class="about-dialog-footer welcome-dialog-footer">
+            <button id="dismissWelcomeButton" type="button">Start Exploring</button>
+            <button id="startQuickTourButton" type="button">Take the Quick Tour</button>
+          </footer>
+        </div>
+      </div>
+      <div id="quickTourOverlay" class="quick-tour-overlay" hidden>
+        <div id="quickTourSpotlight" class="quick-tour-spotlight" aria-hidden="true"></div>
+        <section
+          id="quickTourCard"
+          class="quick-tour-card"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="quickTourTitle"
+        >
+          <div class="quick-tour-progress">
+            <span id="quickTourProgress"></span>
+            <button id="closeQuickTourButton" type="button" aria-label="Close tour">×</button>
+          </div>
+          <h2 id="quickTourTitle"></h2>
+          <p id="quickTourText"></p>
+          <div class="quick-tour-actions">
+            <button id="previousQuickTourButton" type="button">Back</button>
+            <button id="nextQuickTourButton" type="button">Next</button>
+          </div>
+        </section>
       </div>
       <dialog
         id="cziImportDialog"

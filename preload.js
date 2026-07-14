@@ -3,7 +3,8 @@ const { contextBridge, ipcRenderer } = require("electron");
 contextBridge.exposeInMainWorld("electronAPI", {
   getAppVersion: () => ipcRenderer.invoke("get-app-version"),
   setUnsavedState: (state) => ipcRenderer.send("set-unsaved-state", state),
-  openImportWizard: () => ipcRenderer.invoke("open-import-wizard"),
+  openImportWizard: (context) =>
+    ipcRenderer.invoke("open-import-wizard", context),
   resizeImportWizardToContent: (size) =>
     ipcRenderer.invoke("resize-import-wizard-to-content", size),
   initializeProjectLibrary: () => ipcRenderer.invoke("initialize-project-library"),
@@ -39,8 +40,6 @@ contextBridge.exposeInMainWorld("electronAPI", {
     ipcRenderer.invoke("validate-sample-tiles", tileSets),
   confirmSlowTiles: (validationResult) =>
     ipcRenderer.invoke("confirm-slow-tiles", validationResult),
-  showTileLoadWarning: (failure) =>
-    ipcRenderer.invoke("show-tile-load-warning", failure),
   copyImageToClipboard: (imageBytes) =>
     ipcRenderer.invoke("copy-image-to-clipboard", imageBytes),
   readLocalJsonFile: (filePath) =>
@@ -75,6 +74,11 @@ contextBridge.exposeInMainWorld("electronAPI", {
     ipcRenderer.on("dzi-conversion-progress", listener);
     return () =>
       ipcRenderer.removeListener("dzi-conversion-progress", listener);
+  },
+  onImportWizardContext: (callback) => {
+    const listener = (event, payload) => callback(payload);
+    ipcRenderer.on("import-wizard-context", listener);
+    return () => ipcRenderer.removeListener("import-wizard-context", listener);
   },
   onDerivedDziProgress: (callback) => {
     const listener = (event, payload) => callback(payload);
