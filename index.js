@@ -3460,6 +3460,7 @@ function addUnsupervisedPatchGridPreview() {
           uuid: `segmenteverygrain-patch-${patchIndex}`,
           label: "segmenteverygrain patch",
           shapeType: "segment-patch-preview",
+          renderCoordinateSpace: "display",
           lineStyle: "solid",
           lineWeight: 1,
           lineColor: "#555555",
@@ -3716,6 +3717,7 @@ function addSegmentPromptPointFeatures() {
       properties: {
         uuid: `segment-prompt-point-${index}`,
         shapeType: "segment-prompt-point",
+        renderCoordinateSpace: "display",
         pointLabel: point.label,
         lineColor: point.label === 1 ? "#0f9d58" : "#d93025",
         fillColor: point.label === 1 ? "#0f9d58" : "#d93025",
@@ -3774,6 +3776,7 @@ function updateSegmentPromptPreview(promptRect = segmentPromptBox) {
       uuid: "segment-prompt-box",
       label: "SAM prompt",
       shapeType: "segment-prompt",
+      renderCoordinateSpace: "display",
       lineStyle: "dashed",
       lineWeight: 2,
       lineColor: "#00a6d6",
@@ -3842,6 +3845,7 @@ function previewSegmentPolygon(fullImagePolygon, result) {
       uuid: "segment-prompt-box",
       label: "SAM prompt",
       shapeType: "segment-prompt",
+      renderCoordinateSpace: "display",
       lineStyle: "dashed",
       lineWeight: 2,
       lineColor: "#00a6d6",
@@ -3997,6 +4001,7 @@ function updateUnsupervisedAoiPreview(points = unsupervisedAoiImagePoints) {
       uuid: "segmenteverygrain-aoi",
       label: "segmenteverygrain AOI",
       shapeType: "segment-prompt",
+      renderCoordinateSpace: "display",
       lineStyle: "dashed",
       lineWeight: 2,
       lineColor: "#9c27b0",
@@ -32125,9 +32130,14 @@ function drawShape(canvas, JSONArray) {
     return;
   }
 
-  const image =
+  const annotationImage =
     canvas === polyCanvas ? getAnnotationImage() : viewer.world.getItemAt(0);
-  const visibleImageBounds = getVisibleImageBounds(0.15, image);
+  const displayImage = viewer.world.getItemAt(0);
+  const annotationVisibleImageBounds = getVisibleImageBounds(
+    0.15,
+    annotationImage,
+  );
+  const displayVisibleImageBounds = getVisibleImageBounds(0.15, displayImage);
 
   // Flatten the geoJSON array into a single array of features
   const allFeatures = sourceCollections.flatMap((geoJSON) => geoJSON.features);
@@ -32136,6 +32146,14 @@ function drawShape(canvas, JSONArray) {
     // Only process features that have geometry and properties
     if (feature.geometry && feature.properties) {
       if (!isAnnotationFeatureVisible(feature)) return;
+      const usesDisplayCoordinates =
+        canvas === polyCanvas &&
+        feature.properties.renderCoordinateSpace === "display";
+      const image = usesDisplayCoordinates ? displayImage : annotationImage;
+      const visibleImageBounds = usesDisplayCoordinates
+        ? displayVisibleImageBounds
+        : annotationVisibleImageBounds;
+      if (!image) return;
       if (
         !boundsIntersect(getFeatureImageBounds(feature), visibleImageBounds)
       ) {
