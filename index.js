@@ -164,6 +164,120 @@ const squareMetersFromSquarePixels = (pixels2) => {
     : pixels2 / scale ** 2;
 };
 
+const annotationCoordinateApi = window.PetroImageAnnotationCoordinates;
+const inferredAnnotationCoordinateSpaceSamples = new WeakSet();
+
+function getImageCoordinateSpace(image) {
+  const size = image?.getContentSize?.();
+  return annotationCoordinateApi.normalizeCoordinateSpace({
+    width: size?.x,
+    height: size?.y,
+  });
+}
+
+function setAnnotationCoordinateSpace(coordinateSpace, options = {}) {
+  const normalized =
+    annotationCoordinateApi.normalizeCoordinateSpace(coordinateSpace);
+  if (!normalized) return null;
+
+  const sample = samples[currentIndex];
+  if (sample) {
+    sample.annotationCoordinateSpace = normalized;
+    if (options.inferred) {
+      inferredAnnotationCoordinateSpaceSamples.add(sample);
+    } else {
+      inferredAnnotationCoordinateSpaceSamples.delete(sample);
+    }
+  }
+  if (typeof annoJSON !== "undefined" && annoJSON) {
+    annoJSON.petroImage = {
+      ...(annoJSON.petroImage || {}),
+      annotationCoordinateSpace: normalized,
+    };
+  }
+  return normalized;
+}
+
+function ensureAnnotationCoordinateSpace(preferredCoordinateSpace = null) {
+  const sample = samples[currentIndex];
+  const preferred = annotationCoordinateApi.normalizeCoordinateSpace(
+    preferredCoordinateSpace,
+  );
+  const sampleSpace = annotationCoordinateApi.normalizeCoordinateSpace(
+    sample?.annotationCoordinateSpace,
+  );
+  if (
+    sampleSpace &&
+    preferred &&
+    inferredAnnotationCoordinateSpaceSamples.has(sample) &&
+    (typeof annoJSON === "undefined" || annoJSON.features.length === 0)
+  ) {
+    return setAnnotationCoordinateSpace(preferred);
+  }
+  if (sampleSpace) {
+    return setAnnotationCoordinateSpace(sampleSpace, {
+      inferred: inferredAnnotationCoordinateSpaceSamples.has(sample),
+    });
+  }
+
+  const documentSpace = annotationCoordinateApi.getGeoJSONCoordinateSpace(
+    typeof annoJSON === "undefined" ? null : annoJSON,
+  );
+  if (documentSpace) return setAnnotationCoordinateSpace(documentSpace);
+
+  if (preferred) return setAnnotationCoordinateSpace(preferred);
+
+  return setAnnotationCoordinateSpace(
+    getImageCoordinateSpace(viewer?.world?.getItemAt?.(0)),
+    { inferred: true },
+  );
+}
+
+// Annotations live in a stable, sample-level pixel coordinate space. This
+// adapter maps that space through whichever tiled image currently occupies
+// world index 0, so changing tile-set order cannot move annotations.
+function getAnnotationImage() {
+  const displayImage = viewer?.world?.getItemAt?.(0);
+  const displaySpace = getImageCoordinateSpace(displayImage);
+  const annotationSpace = ensureAnnotationCoordinateSpace(displaySpace);
+  if (!displayImage || !displaySpace || !annotationSpace) return null;
+
+  const pointFromArguments = (pointOrX, y) =>
+    typeof pointOrX === "object"
+      ? pointOrX
+      : new OpenSeadragon.Point(pointOrX, y);
+
+  return {
+    getContentSize() {
+      return new OpenSeadragon.Point(
+        annotationSpace.width,
+        annotationSpace.height,
+      );
+    },
+    imageToViewportCoordinates(pointOrX, y) {
+      const point = pointFromArguments(pointOrX, y);
+      const displayPoint = annotationCoordinateApi.annotationToDisplayPoint(
+        point,
+        annotationSpace,
+        displaySpace,
+      );
+      return displayImage.imageToViewportCoordinates(
+        new OpenSeadragon.Point(displayPoint.x, displayPoint.y),
+      );
+    },
+    viewportToImageCoordinates(pointOrX, y) {
+      const point = pointFromArguments(pointOrX, y);
+      const displayPoint = displayImage.viewportToImageCoordinates(point);
+      const annotationPoint = annotationCoordinateApi.displayToAnnotationPoint(
+        displayPoint,
+        displaySpace,
+        annotationSpace,
+      );
+      return new OpenSeadragon.Point(annotationPoint.x, annotationPoint.y);
+    },
+  };
+}
+
 function serializeTileSetForLibrary(tileSet) {
   return {
     ...tileSet,
@@ -4211,14 +4325,14 @@ function commitUnsupervisedSegmentFeatures(features, statusMessage) {
         ? applyAnnotationGroupToProperties(segmentProperties, segmentGroup)
         : applyActiveAnnotationGroup(segmentProperties),
     );
-    annoJSON.features.push({
+    annoJSON.features.push(canonicalizeAnnotationFeature({
       type: "Feature",
       geometry: {
         type: "Polygon",
         coordinates: [coordinates],
       },
       properties,
-    });
+    }));
   });
 
   annoJSONTemp = {
@@ -4517,7 +4631,7 @@ function commitSegmentFeature(feature, options = {}) {
   );
 
   annotationHistory.push("Add segmented annotation");
-  annoJSON.features.push({
+  const storedFeature = canonicalizeAnnotationFeature({
     type: "Feature",
     geometry: {
       type: "Polygon",
@@ -4525,6 +4639,7 @@ function commitSegmentFeature(feature, options = {}) {
     },
     properties,
   });
+  annoJSON.features.push(storedFeature);
   if (options.clearPrompts) {
     segmentPromptBox = null;
     segmentPromptPoints = [];
@@ -4543,14 +4658,17 @@ function commitSegmentFeature(feature, options = {}) {
     selectAnnotationByUuid(properties.uuid, { redraw: false });
   }
   addText(
-    properties.uuid,
-    properties.label,
-    image.imageToViewportCoordinates(properties.xLabel, properties.yLabel),
+    storedFeature.properties.uuid,
+    storedFeature.properties.label,
+    getAnnotationImage().imageToViewportCoordinates(
+      storedFeature.properties.xLabel,
+      storedFeature.properties.yLabel,
+    ),
     "anno",
-    properties.labelFontColor,
-    properties.labelFontSize,
-    properties.labelBackgroundColor,
-    properties.labelBackgroundOpacity,
+    storedFeature.properties.labelFontColor,
+    storedFeature.properties.labelFontSize,
+    storedFeature.properties.labelBackgroundColor,
+    storedFeature.properties.labelBackgroundOpacity,
   );
   enableAnnoButtons();
   populateSegmentAnnotationGroupOptions();
@@ -20493,7 +20611,7 @@ function clearTransientAnnotationShortcutState() {
 }
 
 function getDraftCursorImagePoint() {
-  const image = viewer.world.getItemAt(0);
+  const image = getAnnotationImage();
   if (!image || !mousePos) return null;
 
   const rect = viewerContainer.getBoundingClientRect();
@@ -20690,6 +20808,104 @@ function removeAnnotationOverlays() {
   annotatePoints = [];
 }
 
+function annotationOverlaysAreGloballyVisible() {
+  return document.getElementById("show-annotations")?.checked !== false;
+}
+
+function annotationLabelsAreGloballyVisible() {
+  return (
+    annotationOverlaysAreGloballyVisible() &&
+    document.getElementById("show-annotation-labels")?.checked !== false
+  );
+}
+
+function isAnnotationOverlayLocationVisible(location, marginRatio = 0.15) {
+  if (!location || !viewer?.viewport || !viewer?.container) return false;
+  const pixel = viewer.viewport.viewportToViewerElementCoordinates(location);
+  const width = viewer.container.clientWidth;
+  const height = viewer.container.clientHeight;
+  const marginX = width * marginRatio;
+  const marginY = height * marginRatio;
+  return (
+    pixel.x >= -marginX &&
+    pixel.x <= width + marginX &&
+    pixel.y >= -marginY &&
+    pixel.y <= height + marginY
+  );
+}
+
+function refreshVisibleAnnotationOverlays() {
+  if (!annotationOverlaysAreGloballyVisible()) {
+    removeAnnotationOverlays();
+    return;
+  }
+
+  const image = getAnnotationImage();
+  if (!image) return;
+
+  const showLabels = annotationLabelsAreGloballyVisible();
+  const visibleFeatures = new Map();
+  annoJSON.features.forEach((feature) => {
+    if (!feature?.geometry || !feature?.properties) return;
+    if (!isAnnotationFeatureVisible(feature)) return;
+    const props = feature.properties;
+    const x = Number(props.xLabel);
+    const y = Number(props.yLabel);
+    if (!Number.isFinite(x) || !Number.isFinite(y)) return;
+    const location = image.imageToViewportCoordinates(
+      new OpenSeadragon.Point(x, y),
+    );
+    if (isAnnotationOverlayLocationVisible(location)) {
+      visibleFeatures.set(props.uuid, { feature, location });
+    }
+  });
+
+  [...document.getElementsByClassName("annotate-label")].forEach((label) => {
+    if (showLabels && visibleFeatures.has(label.dataset.annotationUuid)) return;
+    const container = label.closest(".annotation-overlay");
+    viewer.removeOverlay(container || label);
+    container?.remove();
+  });
+  [...document.getElementsByClassName("annotate-crosshairs")].forEach(
+    (crosshair) => {
+      if (visibleFeatures.has(crosshair.dataset.annotationUuid)) return;
+      viewer.removeOverlay(crosshair);
+      crosshair.remove();
+    },
+  );
+  annotateLabels = annotateLabels.filter((label) => label.isConnected);
+  annotatePoints = annotatePoints.filter((point) => point.isConnected);
+
+  visibleFeatures.forEach(({ feature, location }, uuid) => {
+    const props = feature.properties;
+    if (showLabels && !document.getElementById(`annotate-label-${uuid}`)) {
+      addText(
+        uuid,
+        props.label || "",
+        location,
+        "anno",
+        props.labelFontColor,
+        Number(props.labelFontSize),
+        props.labelBackgroundColor,
+        Number(props.labelBackgroundOpacity),
+      );
+    }
+    if (
+      feature.geometry.type === "Point" &&
+      !document.getElementById(`annotate-crosshair-${uuid}`)
+    ) {
+      addCrosshairs(
+        uuid,
+        location,
+        "anno",
+        props.lineColor,
+        Number(props.lineWeight),
+        Number(props.lineOpacity),
+      );
+    }
+  });
+}
+
 function applyAnnotationVisibilityState() {
   const showAnnotations = document.getElementById("show-annotations").checked;
   const showLabels = document.getElementById("show-annotation-labels").checked;
@@ -20709,45 +20925,13 @@ function applyAnnotationVisibilityState() {
   }
 
   polyCanvas.style.display = showAnnotations ? "block" : "none";
+  refreshVisibleAnnotationOverlays();
 }
 
 function renderAnnotationOverlaysFromJSON() {
-  const image = viewer.world.getItemAt(0);
-  if (!image) return;
-
-  annoJSON.features.forEach((feature) => {
-    if (!feature.geometry || !feature.properties) return;
-
-    const props = feature.properties;
-    const viewportPoint = image.imageToViewportCoordinates(
-      new OpenSeadragon.Point(props.xLabel, props.yLabel),
-    );
-
-    addText(
-      props.uuid,
-      props.label || "",
-      viewportPoint,
-      "anno",
-      props.labelFontColor,
-      Number(props.labelFontSize),
-      props.labelBackgroundColor,
-      Number(props.labelBackgroundOpacity),
-    );
-
-    if (feature.geometry.type === "Point") {
-      addCrosshairs(
-        props.uuid,
-        viewportPoint,
-        "anno",
-        props.lineColor,
-        Number(props.lineWeight),
-        Number(props.lineOpacity),
-      );
-    }
-  });
-
+  removeAnnotationOverlays();
+  refreshVisibleAnnotationOverlays();
   drawShape(polyCanvas, [annoJSON, annoJSONTemp]);
-  applyAnnotationVisibilityState();
 }
 
 function removeCountOverlays() {
@@ -23947,7 +24131,7 @@ function splitPrimaryMultiPolygon() {
   annoJSON.features.splice(originalIndex, 1, ...splitFeatures);
 
   splitFeatures.forEach((splitFeature) => {
-    const image = viewer.world.getItemAt(0);
+    const image = getAnnotationImage();
     if (!image) return;
     const props = splitFeature.properties;
     const viewportPoint = image.imageToViewportCoordinates(
@@ -24115,7 +24299,7 @@ function setAnnotationSelection(uuids, primaryUuid = null, options = {}) {
 
   if (pan && selectedAnnotationUuid) {
     const feature = getSelectedAnnotation();
-    const image = viewer.world.getItemAt(0);
+    const image = getAnnotationImage();
     const viewportPoint = image.imageToViewportCoordinates(
       feature.properties.xLabel,
       feature.properties.yLabel,
@@ -26434,7 +26618,7 @@ function annotationFeatureIntersectsMarquee(feature, marqueePolygon) {
 
 function findAnnotationUuidAtViewerPoint(viewerPoint, options = {}) {
   const lineTolerance = options.lineTolerance ?? 8;
-  const image = viewer.world.getItemAt(0);
+  const image = getAnnotationImage();
   if (!image) return null;
 
   const viewportPoint = viewer.viewport.pointFromPixel(viewerPoint);
@@ -26499,7 +26683,7 @@ function findAnnotationUuidAtViewerPoint(viewerPoint, options = {}) {
 }
 
 function getImagePointFromViewerPixel(pixelPoint) {
-  const image = viewer.world.getItemAt(0);
+  const image = getAnnotationImage();
   if (!image) return null;
 
   const viewportPoint = viewer.viewport.pointFromPixel(pixelPoint);
@@ -26633,7 +26817,7 @@ function updateAnnotationLabelOverlayPosition(uuid) {
   const feature = getAnnotationByUuid(uuid);
   const label = document.getElementById(`annotate-label-${uuid}`);
   const container = label?.closest(".annotation-overlay");
-  const image = viewer.world.getItemAt(0);
+  const image = getAnnotationImage();
   if (!feature?.properties || !container || !image) return;
 
   const viewportPoint = image.imageToViewportCoordinates(
@@ -26892,7 +27076,7 @@ function renderAnnotationVertexHandles() {
   const feature = getAnnotationByUuid(activeVertexEditUuid);
   if (!isVertexEditableAnnotation(feature)) return;
 
-  const image = viewer.world.getItemAt(0);
+  const image = getAnnotationImage();
   if (!image) return;
 
   addAnnotationEditMoveHandle(
@@ -27249,7 +27433,7 @@ function getFeatureRotationCoordinates(feature) {
 }
 
 function getImageDistanceForViewerPixels(center, pixelDistance) {
-  const image = viewer.world.getItemAt(0);
+  const image = getAnnotationImage();
   if (!image || !center) return pixelDistance;
 
   const centerViewport = image.imageToViewportCoordinates(
@@ -27567,7 +27751,7 @@ function renderAnnotationShapeHandles() {
   const feature = getAnnotationByUuid(activeShapeEditUuid);
   if (!isShapeEditableAnnotation(feature)) return;
 
-  const image = viewer.world.getItemAt(0);
+  const image = getAnnotationImage();
   if (!image) return;
 
   getShapeEditHandles(feature).forEach(({ handleType, coordinate }) => {
@@ -27683,7 +27867,7 @@ function getDefaultShapeLabelPoint(feature) {
 function updateAnnotationPointOverlayPosition(uuid) {
   const feature = getAnnotationByUuid(uuid);
   const crosshair = document.getElementById(`annotate-crosshair-${uuid}`);
-  const image = viewer.world.getItemAt(0);
+  const image = getAnnotationImage();
   if (
     !feature?.geometry ||
     feature.geometry.type !== "Point" ||
@@ -28196,7 +28380,7 @@ function getNearestEditableSegmentAtViewerPoint(
 ) {
   if (!isVertexEditableAnnotation(feature)) return null;
 
-  const image = viewer.world.getItemAt(0);
+  const image = getAnnotationImage();
   if (!image) return null;
 
   const entries = getEditableVertexEntries(feature);
@@ -28284,7 +28468,7 @@ function updateAnnotationVertexHandlePosition(uuid, vertexContext) {
   const handle = document.querySelector(
     getVertexContextSelector(uuid, vertexContext),
   );
-  const image = viewer.world.getItemAt(0);
+  const image = getAnnotationImage();
   if (!coordinate || !handle || !image) return;
 
   viewer.updateOverlay(
@@ -28301,7 +28485,7 @@ function updateAnnotationEditMoveHandlePosition(uuid) {
   const handle = document.querySelector(
     `.annotation-shape-handle-center[data-annotation-uuid="${CSS.escape(uuid)}"]`,
   );
-  const image = viewer.world.getItemAt(0);
+  const image = getAnnotationImage();
   if (!coordinate || !handle || !image) return;
 
   viewer.updateOverlay(
@@ -28511,6 +28695,16 @@ function roundFeatureCoordinates(
   return feature;
 }
 
+function canonicalizeAnnotationFeature(feature) {
+  const sourceSpace = annotationCoordinateApi.getFeatureCoordinateSpace(feature);
+  const targetSpace = ensureAnnotationCoordinateSpace(sourceSpace);
+  return annotationCoordinateApi.migrateFeatureToCoordinateSpace(
+    feature,
+    targetSpace,
+    sourceSpace,
+  );
+}
+
 function cloneFeaturesWithRoundedCoordinates(features) {
   return cloneData(features).map((feature) => roundFeatureCoordinates(feature));
 }
@@ -28525,14 +28719,14 @@ function addPointToGeoJSON(x, y, metadata) {
   // Create a GeoJSON point feature
   // x, y = coordinates in image (pixel) coordinates
   // metadata = dictionary with feature labels and values, e.g., { uuid: 'abc', label: 'Hello World'}
-  const pointFeature = {
+  const pointFeature = canonicalizeAnnotationFeature({
     type: "Feature",
     geometry: {
       type: "Point",
       coordinates: roundCoordinateTree([x, y]), // [x, y] format for coordinates
     },
     properties: properties, // metadata like label, description, etc.
-  };
+  });
 
   // Add the point feature to the annoJSON under the provided id
   annoJSON.features.push(pointFeature);
@@ -28554,7 +28748,7 @@ function addPolylineToGeoJSON(JSON, coordinates, metadata) {
   // Create a GeoJSON point feature
   // coordinates = array of x,y values in image (pixel) coordinates
   // metadata = dictionary with feature labels and values, e.g., { uuid: 'abc', label: 'Hello World'}
-  const polylineFeature = {
+  let polylineFeature = {
     type: "Feature",
     geometry: {
       type: "LineString",
@@ -28562,6 +28756,9 @@ function addPolylineToGeoJSON(JSON, coordinates, metadata) {
     },
     properties: properties, // metadata like label, description, etc.
   };
+  if (JSON === annoJSON) {
+    polylineFeature = canonicalizeAnnotationFeature(polylineFeature);
+  }
   // Add the point feature to the annoJSON under the provided id
   JSON.features.push(polylineFeature);
   if (JSON === annoJSON) {
@@ -28584,7 +28781,7 @@ function addPolygonToGeoJSON(JSON, coordinates, metadata) {
   // Create a GeoJSON polygon feature
   // coordinates = array of x,y values in image (pixel) coordinates
   // metadata = dictionary with feature labels and values, e.g., { uuid: 'abc', label: 'Hello World'}
-  const polygonFeature = {
+  let polygonFeature = {
     type: "Feature",
     geometry: {
       type: "Polygon",
@@ -28592,6 +28789,9 @@ function addPolygonToGeoJSON(JSON, coordinates, metadata) {
     },
     properties: properties, // metadata like label, description, etc.
   };
+  if (JSON === annoJSON) {
+    polygonFeature = canonicalizeAnnotationFeature(polygonFeature);
+  }
   updateAnnotationGeometryStatus(polygonFeature);
   // Add the point feature to the annoJSON under the provided id
   JSON.features.push(polygonFeature);
@@ -28828,7 +29028,7 @@ document.addEventListener("keyup", function (event) {
 viewer.addHandler("canvas-click", function (event) {
   if (isQPressed || isPointMode) {
     event.preventDefaultAction = true;
-    const image = viewer.world.getItemAt(0);
+    const image = getAnnotationImage();
     const imageSize = image.getContentSize();
     let viewportPoint = viewer.viewport.pointFromPixel(event.position); // Get viewport coordinates
     let imagePoint = image.viewportToImageCoordinates(
@@ -29049,7 +29249,7 @@ let currentEllipseStyleColors = null;
 viewer.addHandler("canvas-click", function (event) {
   if (isEllipseMode || isCPressed) {
     activelyMakingEllipse = true;
-    const image = viewer.world.getItemAt(0);
+    const image = getAnnotationImage();
     const imageSize = image.getContentSize();
     const viewportPoint = viewer.viewport.pointFromPixel(event.position);
     const imagePoint = image.viewportToImageCoordinates(
@@ -29456,7 +29656,7 @@ viewer.addHandler("canvas-click", function (event) {
   }
 
   event.preventDefaultAction = true;
-  const image = viewer.world.getItemAt(0);
+  const image = getAnnotationImage();
   if (!image) return;
 
   const imageSize = image.getContentSize();
@@ -29506,7 +29706,7 @@ viewer.addHandler("canvas-click", function (event) {
 viewerContainer.addEventListener("mousemove", function (event) {
   if (!activelyMakingCircleAnnotation || !circleAnnotationCenterImage) return;
 
-  const image = viewer.world.getItemAt(0);
+  const image = getAnnotationImage();
   if (!image) return;
 
   const rect = viewerContainer.getBoundingClientRect();
@@ -31138,7 +31338,7 @@ function drawScaleWizardOverlay() {
   ctx.clearRect(0, 0, scaleCanvas.width, scaleCanvas.height);
   if (!scaleWizardState.active || scaleWizardState.points.length === 0) return;
 
-  const image = viewer.world.getItemAt(0);
+  const image = getAnnotationImage();
   if (!image) return;
 
   const screenPoints = scaleWizardState.points.map(([x, y]) => {
@@ -31224,7 +31424,7 @@ viewer.addHandler("canvas-click", function (event) {
   if (!scaleWizardState.active) return;
 
   event.preventDefaultAction = true;
-  const image = viewer.world.getItemAt(0);
+  const image = getAnnotationImage();
   if (!image) return;
 
   const viewportPoint = viewer.viewport.pointFromPixel(event.position);
@@ -31253,7 +31453,7 @@ viewer.addHandler("canvas-click", function (event) {
   if (scaleWizardState.active) return;
   if (isPolylineMode || isPolygonMode || isZPressed || isXPressed) {
     activelyMakingPoly = true;
-    const image = viewer.world.getItemAt(0);
+    const image = getAnnotationImage();
     const imageSize = image.getContentSize();
     const viewportPoint = viewer.viewport.pointFromPixel(event.position);
     const imagePoint = image.viewportToImageCoordinates(
@@ -31370,7 +31570,7 @@ viewer.addHandler("canvas-click", function (event) {
 
       // Calculate the stuff we need
       const uuid = generateUniqueId(8);
-      const image = viewer.world.getItemAt(0);
+      const image = getAnnotationImage();
       const labelViewportPoint = new OpenSeadragon.Point(
         clickCoordinates[0].x,
         clickCoordinates[0].y,
@@ -31600,8 +31800,8 @@ function requestViewerOverlayRedraw() {
   });
 }
 
-function getVisibleImageBounds(marginRatio = 0.15) {
-  const image = viewer.world.getItemAt(0);
+function getVisibleImageBounds(marginRatio = 0.15, image = null) {
+  image ||= viewer.world.getItemAt(0);
   if (!image) return null;
 
   const width = viewer.container.clientWidth;
@@ -31706,6 +31906,7 @@ viewer.addHandler("animation", () => {
 
 viewer.addHandler("animation-finish", () => {
   drawViewerOverlays();
+  refreshVisibleAnnotationOverlays();
   refreshPorosityOverlayForViewportChange();
   refreshSnapshotSelectionForViewportChange();
   if (unsupervisedResolutionSelect?.value === "viewer") {
@@ -31716,6 +31917,7 @@ viewer.addHandler("animation-finish", () => {
 if (window.ResizeObserver && viewerContainer) {
   const overlayResizeObserver = new ResizeObserver(() => {
     drawViewerOverlays();
+    refreshVisibleAnnotationOverlays();
     refreshPorosityOverlayForViewportChange();
     refreshSnapshotSelectionForViewportChange();
   });
@@ -31723,6 +31925,7 @@ if (window.ResizeObserver && viewerContainer) {
 } else {
   window.addEventListener("resize", () => {
     drawViewerOverlays();
+    refreshVisibleAnnotationOverlays();
     refreshPorosityOverlayForViewportChange();
     refreshSnapshotSelectionForViewportChange();
   });
@@ -31875,11 +32078,20 @@ function drawShape(canvas, JSONArray) {
   const ctx = canvas.getContext("2d");
   ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear the canvas
 
-  const image = viewer.world.getItemAt(0); // Get image to use for drawing
-  const visibleImageBounds = getVisibleImageBounds();
+  const sourceCollections =
+    canvas === polyCanvas && !annotationOverlaysAreGloballyVisible()
+      ? JSONArray.filter((geoJSON) => geoJSON !== annoJSON)
+      : JSONArray;
+  if (sourceCollections.every((geoJSON) => geoJSON.features.length === 0)) {
+    return;
+  }
+
+  const image =
+    canvas === polyCanvas ? getAnnotationImage() : viewer.world.getItemAt(0);
+  const visibleImageBounds = getVisibleImageBounds(0.15, image);
 
   // Flatten the geoJSON array into a single array of features
-  const allFeatures = JSONArray.flatMap((geoJSON) => geoJSON.features);
+  const allFeatures = sourceCollections.flatMap((geoJSON) => geoJSON.features);
 
   allFeatures.forEach((feature) => {
     // Only process features that have geometry and properties
@@ -32195,7 +32407,7 @@ function isPorosityAoiDrawGesture() {
 }
 
 function getImageMarqueePolygon(startPixel, endPixel) {
-  const image = viewer.world.getItemAt(0);
+  const image = getAnnotationImage();
   if (!image) return null;
 
   const left = Math.min(startPixel.x, endPixel.x);
@@ -32448,7 +32660,7 @@ viewer.addHandler("canvas-drag", function (event) {
       );
 
       // 4. Convert to image coordinates if needed
-      const image = viewer.world.getItemAt(0);
+      const image = getAnnotationImage();
       const topLeft = image.viewportToImageCoordinates(topLeftVP);
       const topRight = image.viewportToImageCoordinates(topRightVP);
       const bottomRight = image.viewportToImageCoordinates(bottomRightVP);
@@ -32598,7 +32810,7 @@ viewer.addHandler("canvas-release", function (event) {
 
   if (isDrawingRectangle && startPoint) {
     // Capture the final rectangle's coordinates and size
-    const image = viewer.world.getItemAt(0);
+    const image = getAnnotationImage();
     const imageSize = image.getContentSize();
 
     const left = Math.min(startPixel.x, event.position.x);
@@ -32727,7 +32939,7 @@ function finalizeRectAnnotationWithCoords(
   fillColor,
   fillOpacity,
 ) {
-  const image = viewer.world.getItemAt(0); // Get image to use for drawing
+  const image = getAnnotationImage(); // Get annotation coordinate reference
 
   // Calculate area and perimeter
   const rectAreaPixels2 = calculatePolygonArea([coordinates]);
@@ -32802,6 +33014,13 @@ function addText(
 ) {
   const labelText = label === undefined || label === null ? "" : String(label);
   if (type === "anno" && labelText.trim() === "") {
+    return;
+  }
+  if (
+    type === "anno" &&
+    (!annotationLabelsAreGloballyVisible() ||
+      !isAnnotationOverlayLocationVisible(location))
+  ) {
     return;
   }
 
@@ -32981,7 +33200,7 @@ function updateText(
 
     if (!pointLabel) {
       const feature = getAnnotationByUuid(uuid);
-      const image = viewer.world.getItemAt(0);
+      const image = getAnnotationImage();
       const labelX = Number(feature?.properties?.xLabel);
       const labelY = Number(feature?.properties?.yLabel);
       if (
@@ -33042,6 +33261,13 @@ function addCrosshairs(
   lineWeight = 2,
   opacity = 1,
 ) {
+  if (
+    type === "anno" &&
+    (!annotationOverlaysAreGloballyVisible() ||
+      !isAnnotationOverlayLocationVisible(location))
+  ) {
+    return;
+  }
   const crosshair = document.createElement("div");
   if (type === "anno") {
     crosshair.className = "annotate-crosshairs"; // Used for css styling
@@ -33644,7 +33870,16 @@ function waitForAnnotationImportPaint() {
 
 // New loadAnnotations() for testing
 async function loadAnnotations(geoJSONData, options = {}) {
+  const parsedGeoJSON = parseJSON(geoJSONData);
   const features = getAnnotationFeaturesFromGeoJSON(geoJSONData);
+  const importedDocumentSpace =
+    annotationCoordinateApi.getGeoJSONCoordinateSpace(parsedGeoJSON);
+  const importedFeatureSpace = features
+    .map((feature) => annotationCoordinateApi.getFeatureCoordinateSpace(feature))
+    .find(Boolean);
+  const annotationSpace = ensureAnnotationCoordinateSpace(
+    importedDocumentSpace || importedFeatureSpace,
+  );
   const reportProgress =
     typeof options.onProgress === "function"
       ? options.onProgress
@@ -33661,8 +33896,13 @@ async function loadAnnotations(geoJSONData, options = {}) {
   try {
     const chunkSize = Math.max(25, Number(options.chunkSize) || 100);
     for (let index = 0; index < features.length; index += 1) {
-      const feature = features[index];
-      if (!feature) continue;
+      const sourceFeature = features[index];
+      if (!sourceFeature) continue;
+      const feature = annotationCoordinateApi.migrateFeatureToCoordinateSpace(
+        sourceFeature,
+        annotationSpace,
+        importedDocumentSpace || importedFeatureSpace,
+      );
 
       const geometry = feature.geometry;
       const sourceProperties = feature.properties || {};
@@ -33769,7 +34009,7 @@ function handlePoint(coords, properties) {
     // Invalid point geometry, skipping
     return;
   }
-  const image = viewer.world.getItemAt(0);
+  const image = getAnnotationImage();
   const viewportPoint = image.imageToViewportCoordinates(
     new OpenSeadragon.Point(x, y),
   );
@@ -33801,7 +34041,7 @@ function handleMultiPoint(coords, properties) {
     return;
   }
 
-  const image = viewer.world.getItemAt(0);
+  const image = getAnnotationImage();
 
   // Loop through each coordinate in the MultiPoint geometry
   let c = 0; // Counter variable
@@ -33855,7 +34095,7 @@ function handleMultiPoint(coords, properties) {
 
 // TODO: These functions could be combined a bit
 function handleLineString(coords, properties) {
-  const image = viewer.world.getItemAt(0);
+  const image = getAnnotationImage();
   const viewportPoint = image.imageToViewportCoordinates(
     new OpenSeadragon.Point(properties.xLabel, properties.yLabel),
   );
@@ -33873,7 +34113,7 @@ function handleLineString(coords, properties) {
 }
 
 function handleMultiLineString(coords, properties) {
-  const image = viewer.world.getItemAt(0);
+  const image = getAnnotationImage();
   const viewportPoint = image.imageToViewportCoordinates(
     new OpenSeadragon.Point(properties.xLabel, properties.yLabel),
   );
@@ -33891,7 +34131,7 @@ function handleMultiLineString(coords, properties) {
 }
 
 function handlePolygon(coords, properties) {
-  const image = viewer.world.getItemAt(0);
+  const image = getAnnotationImage();
   const viewportPoint = image.imageToViewportCoordinates(
     new OpenSeadragon.Point(properties.xLabel, properties.yLabel),
   );
@@ -33909,7 +34149,7 @@ function handlePolygon(coords, properties) {
 }
 
 function handleMultiPolygon(coords, properties) {
-  const image = viewer.world.getItemAt(0);
+  const image = getAnnotationImage();
   const viewportPoint = image.imageToViewportCoordinates(
     new OpenSeadragon.Point(properties.xLabel, properties.yLabel),
   );
@@ -33933,7 +34173,7 @@ function saveAnnotationToJSON(type, coordinates, properties) {
     applyActiveAnnotationGroup(properties),
   );
 
-  const geoJSONFeature = {
+  const geoJSONFeature = canonicalizeAnnotationFeature({
     type: "Feature",
     geometry: { type, coordinates: roundCoordinateTree(coordinates) },
     properties: {
@@ -33951,7 +34191,7 @@ function saveAnnotationToJSON(type, coordinates, properties) {
       lineOpacity: Number(normalizedProperties.lineOpacity),
       fillOpacity: Number(normalizedProperties.fillOpacity),
     },
-  };
+  });
   annoJSON.features.push(geoJSONFeature);
   unsavedAnnotations(true);
 }
@@ -34122,8 +34362,12 @@ function getAnnotationExportFeatures() {
 
 function exportAnnotations(features) {
   const isFullExport = features.length === annoJSON.features.length;
+  const annotationCoordinateSpace = ensureAnnotationCoordinateSpace();
   const geoJSON = {
     type: "FeatureCollection",
+    petroImage: annotationCoordinateSpace
+      ? { annotationCoordinateSpace }
+      : undefined,
     features: cloneFeaturesWithRoundedCoordinates(features),
   };
   const geoJSONBlob = new Blob([JSON.stringify(geoJSON, null, 2)], {
@@ -34338,8 +34582,17 @@ function confirmAnnotationClear() {
     return;
   }
 
+  const clearsAllAnnotations =
+    unlockedFeatures.length === annoJSON.features.length;
+  // Full-state undo snapshots are intentionally retained, but many copies of
+  // a very large collection keep the renderer under memory/GC pressure even
+  // after Clear. Preserve the Clear undo while releasing older snapshots.
+  if (clearsAllAnnotations && annoJSON.features.length >= 5000) {
+    annotationHistory.undoStack = [];
+    annotationHistory.redoStack = [];
+  }
   annotationHistory.push(
-    unlockedFeatures.length === annoJSON.features.length
+    clearsAllAnnotations
       ? "Clear annotations"
       : "Clear annotation group",
   );
@@ -35504,27 +35757,15 @@ const clearAnnotations = ({ markUnsaved = true } = {}) => {
   pendingAnnotationTextEdit = null;
   exitAnnotationVertexEditMode();
   exitAnnotationShapeEditMode();
-  const annoIds = Array.from(
-    { length: annoJSON.features.length },
-    (_, i) => i + 1,
-  );
-  if (annoIds.length === 0) {
-    return; // Nothing to remove
-  } else {
-    for (let i = 0; i < annoIds.length; i++) {
-      const type = annoJSON.features[annoIds[i] - 1].geometry.type;
-      deleteText(annoJSON.features[annoIds[i] - 1].properties.uuid, "anno");
-      if (type === "Point") {
-        deleteCrosshairs(
-          annoJSON.features[annoIds[i] - 1].properties.uuid,
-          "anno",
-        );
-      }
-    }
-  }
-  const geoJSON = {};
+  removeAnnotationOverlays();
   annoJSON = {
     type: "FeatureCollection",
+    petroImage: samples[currentIndex]?.annotationCoordinateSpace
+      ? {
+          annotationCoordinateSpace:
+            samples[currentIndex].annotationCoordinateSpace,
+        }
+      : undefined,
     features: [],
   };
   annoJSONTemp = {
@@ -46608,7 +46849,7 @@ viewerContainer.addEventListener("mousemove", function (subevent) {
   };
   const positionPoint = new OpenSeadragon.Point(position.x, position.y);
   const viewportPoint = viewer.viewport.pointFromPixel(positionPoint);
-  const image = viewer.world.getItemAt(0);
+  const image = getAnnotationImage();
   const imagePoint = image.viewportToImageCoordinates(
     viewportPoint.x,
     viewportPoint.y,

@@ -28,6 +28,10 @@ import {
   convertJpeg2000ToDzi,
   isJpeg2000Path,
 } from "./jpeg2000-converter.js";
+import {
+  parseJsonProcessOutput,
+  tryParseJsonLine,
+} from "./process-output.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -764,41 +768,6 @@ function runProcess(command, args, options = {}) {
   });
 }
 
-function parseJsonProcessOutput(stdout) {
-  const lines = String(stdout || "")
-    .trim()
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean);
-  const jsonLine = [...lines].reverse().find((line) => line.startsWith("{"));
-  if (!jsonLine) {
-    throw new Error("Process did not write JSON.");
-  }
-  return JSON.parse(jsonLine);
-}
-
-function tryParseJsonLine(line) {
-  const text = String(line);
-  try {
-    return JSON.parse(text);
-  } catch {
-    // Recover protocol messages if a third-party library wrote an unterminated
-    // stdout message immediately before our JSON payload.
-    for (
-      let index = text.indexOf("{");
-      index >= 0;
-      index = text.indexOf("{", index + 1)
-    ) {
-      try {
-        return JSON.parse(text.slice(index));
-      } catch {
-        // Keep looking for the beginning of the outer JSON object.
-      }
-    }
-    return null;
-  }
-}
-
 function parseSegmenteverygrainTextProgress(line) {
   const text = String(line || "");
   const tqdmMatch = text.match(/(\d{1,3})%\|/);
@@ -1478,7 +1447,7 @@ try:
 except Exception:
     result["errors"].append(traceback.format_exc())
 
-print(json.dumps(result))
+print("\n" + json.dumps(result))
 `;
 
 async function validateSamSetup(settings) {

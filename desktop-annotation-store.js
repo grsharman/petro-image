@@ -92,6 +92,12 @@ export async function saveWorkingAnnotations(
       sampleId: sampleId.toLowerCase(),
       sampleTitle: typeof sampleTitle === "string" ? sampleTitle : "",
       savedAt: new Date().toISOString(),
+      ...(geoJSON.petroImage?.annotationCoordinateSpace
+        ? {
+            annotationCoordinateSpace:
+              geoJSON.petroImage.annotationCoordinateSpace,
+          }
+        : {}),
     },
     features: geoJSON.features,
   };

@@ -55,6 +55,13 @@ test("working annotations round-trip independently for each sample", async (t) =
   const sampleId = "30000000-0000-4000-8000-000000000001";
   const geoJSON = {
     type: "FeatureCollection",
+    petroImage: {
+      annotationCoordinateSpace: {
+        version: 1,
+        width: 20000,
+        height: 10000,
+      },
+    },
     features: [
       {
         type: "Feature",
@@ -73,6 +80,10 @@ test("working annotations round-trip independently for each sample", async (t) =
   assert.deepEqual(loaded.features, geoJSON.features);
   assert.equal(loaded.petroImage.kind, "working-annotations");
   assert.equal(loaded.petroImage.sampleId, sampleId);
+  assert.deepEqual(
+    loaded.petroImage.annotationCoordinateSpace,
+    geoJSON.petroImage.annotationCoordinateSpace,
+  );
 
   await saveWorkingAnnotations(projectDirectory, {
     sampleId,
