@@ -32,6 +32,7 @@ import {
   parseJsonProcessOutput,
   tryParseJsonLine,
 } from "./process-output.js";
+import { buildPythonProcessEnv } from "./python-environment.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -1391,7 +1392,10 @@ async function validateSamSetup(settings) {
   const result = await runProcess(
     samSettings.pythonPath,
     ["-c", SAM_PROBE_SCRIPT, samSettings.checkpointPath, samSettings.modelType],
-    { timeoutMs: 120000 },
+    {
+      timeoutMs: 120000,
+      env: buildPythonProcessEnv(samSettings.pythonPath),
+    },
   );
 
   if (result.timedOut) {
@@ -1457,7 +1461,10 @@ async function validateSegmenteverygrainSetup(settings = {}) {
       getPythonWorkerPath("segmenteverygrain_validate.py"),
       segSettings.modelPath,
     ],
-    { timeoutMs: 240000 },
+    {
+      timeoutMs: 240000,
+      env: buildPythonProcessEnv(samSettings.pythonPath),
+    },
   );
 
   if (result.timedOut) {
@@ -1608,6 +1615,7 @@ async function getSamWorker(settings, device = "auto") {
     {
       windowsHide: true,
       stdio: ["pipe", "pipe", "pipe"],
+      env: buildPythonProcessEnv(settings.pythonPath),
     },
   );
 
@@ -1868,11 +1876,10 @@ async function getSegmenteverygrainWorker(
   const child = spawn(samSettings.pythonPath, args, {
     windowsHide: true,
     stdio: ["pipe", "pipe", "pipe"],
-    env: {
-      ...process.env,
+    env: buildPythonProcessEnv(samSettings.pythonPath, {
       MPLCONFIGDIR: matplotlibConfigDirectory,
       TF_CPP_MIN_LOG_LEVEL: "2",
-    },
+    }),
   });
   activeSegmenteverygrainChild = child;
 
