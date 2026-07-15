@@ -1,6 +1,6 @@
 {
   "name": "petro-image",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Deep zoom petrographic images with OpenSeaDragon",
   "type": "module",
   "main": "main.js",
