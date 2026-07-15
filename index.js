@@ -20177,9 +20177,14 @@ let annotationAutosaveAvailable = null;
 const annotationAutosaveBlockedSampleIds = new Set();
 let annotationLoadStatusSequence = 0;
 let annotationLoadStatusDelayTimer = null;
+let annotationLoadStatusVerb = "Loading";
 
-function beginAnnotationLoadStatus(total) {
+function beginAnnotationLoadStatus(
+  total,
+  { delayMs = 180, verb = "Loading" } = {},
+) {
   const sequence = ++annotationLoadStatusSequence;
+  annotationLoadStatusVerb = verb;
   if (!annotationLoadStatus || !annotationLoadStatusText) return sequence;
   if (annotationLoadStatusDelayTimer !== null) {
     clearTimeout(annotationLoadStatusDelayTimer);
@@ -20187,16 +20192,20 @@ function beginAnnotationLoadStatus(total) {
   annotationLoadStatus.hidden = true;
   annotationLoadStatusText.textContent =
     Number.isFinite(total) && total > 0
-      ? `Loading annotations… 0 of ${total.toLocaleString()}`
-      : "Loading annotations…";
+      ? `${annotationLoadStatusVerb} annotations… 0 of ${total.toLocaleString()}`
+      : `${annotationLoadStatusVerb} annotations…`;
   if (annotationLoadStatusBar) {
     annotationLoadStatusBar.style.transform = "scaleX(0)";
   }
-  annotationLoadStatusDelayTimer = window.setTimeout(() => {
-    annotationLoadStatusDelayTimer = null;
-    if (sequence !== annotationLoadStatusSequence) return;
+  if (delayMs <= 0) {
     annotationLoadStatus.hidden = false;
-  }, 180);
+  } else {
+    annotationLoadStatusDelayTimer = window.setTimeout(() => {
+      annotationLoadStatusDelayTimer = null;
+      if (sequence !== annotationLoadStatusSequence) return;
+      annotationLoadStatus.hidden = false;
+    }, delayMs);
+  }
   return sequence;
 }
 
@@ -20209,11 +20218,13 @@ function updateAnnotationLoadStatus(sequence, progress = {}) {
   const current = Math.max(0, Math.min(total, Number(progress.current) || 0));
   if (progress.phase === "features" && total > 0) {
     annotationLoadStatusText.textContent =
-      `Loading annotations… ${current.toLocaleString()} of ${total.toLocaleString()}`;
+      `${annotationLoadStatusVerb} annotations… ${current.toLocaleString()} of ${total.toLocaleString()}`;
   } else if (progress.phase === "rendering") {
-    annotationLoadStatusText.textContent = "Loading annotations… rendering list";
+    annotationLoadStatusText.textContent =
+      `${annotationLoadStatusVerb} annotations… rendering list`;
   } else if (progress.phase === "selection") {
-    annotationLoadStatusText.textContent = "Loading annotations… finishing";
+    annotationLoadStatusText.textContent =
+      `${annotationLoadStatusVerb} annotations… finishing`;
   }
   if (annotationLoadStatusBar) {
     const percent = Math.max(0, Math.min(100, Number(progress.percent) || 0));
@@ -20906,7 +20917,7 @@ function refreshVisibleAnnotationOverlays() {
   });
 }
 
-function applyAnnotationVisibilityState() {
+function applyAnnotationVisibilityState({ refreshOverlays = true } = {}) {
   const showAnnotations = document.getElementById("show-annotations").checked;
   const showLabels = document.getElementById("show-annotation-labels").checked;
 
@@ -20925,7 +20936,7 @@ function applyAnnotationVisibilityState() {
   }
 
   polyCanvas.style.display = showAnnotations ? "block" : "none";
-  refreshVisibleAnnotationOverlays();
+  if (refreshOverlays) refreshVisibleAnnotationOverlays();
 }
 
 function renderAnnotationOverlaysFromJSON() {
@@ -28900,8 +28911,31 @@ const toggleDivideImages = (event) => {
 };
 
 // Import, add, and export points with labels
-const toggleAnnotation = (event) => {
-  applyAnnotationVisibilityState();
+const toggleAnnotation = async (event) => {
+  if (!event.checked) {
+    applyAnnotationVisibilityState();
+    return;
+  }
+
+  const total = annoJSON.features.length;
+  const loadStatusSequence = beginAnnotationLoadStatus(total, {
+    delayMs: 0,
+    verb: "Adding",
+  });
+  applyAnnotationVisibilityState({ refreshOverlays: false });
+  await new Promise((resolve) => window.requestAnimationFrame(resolve));
+  try {
+    refreshVisibleAnnotationOverlays();
+    updateAnnotationLoadStatus(loadStatusSequence, {
+      phase: "features",
+      current: total,
+      total,
+      percent: 100,
+    });
+    await new Promise((resolve) => window.requestAnimationFrame(resolve));
+  } finally {
+    finishAnnotationLoadStatus(loadStatusSequence);
+  }
 };
 
 // Import, add, and export points with labels

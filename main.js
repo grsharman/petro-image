@@ -1378,78 +1378,6 @@ except Exception:
 print(json.dumps(result))
 `;
 
-const SEGMENTEVERYGRAIN_PROBE_SCRIPT = String.raw`
-import importlib
-import importlib.util
-import json
-import os
-import sys
-import traceback
-
-model_path = sys.argv[1] if len(sys.argv) > 1 else ""
-
-result = {
-    "ok": False,
-    "pythonExecutable": sys.executable,
-    "pythonVersion": sys.version.split()[0],
-    "modelPath": model_path,
-    "modelExists": False,
-    "modelSizeBytes": None,
-    "modules": {},
-    "errors": [],
-    "warnings": [],
-}
-
-def add_module(name, import_name=None, required=False):
-    import_name = import_name or name
-    available = importlib.util.find_spec(import_name) is not None
-    module_result = {"available": available}
-    result["modules"][name] = module_result
-    if available:
-        try:
-            module = importlib.import_module(import_name)
-            version = getattr(module, "__version__", "")
-            if version:
-                module_result["version"] = version
-        except Exception as error:
-            module_result["available"] = False
-            module_result["importError"] = str(error)
-            if required:
-                result["errors"].append(f"{name} import failed: {error}")
-            else:
-                result["warnings"].append(f"{name} import failed: {error}")
-            return False
-    elif required:
-        result["errors"].append(f"{name} is not importable.")
-    return available and module_result.get("available", False)
-
-try:
-    if model_path:
-        result["modelExists"] = os.path.isfile(model_path)
-        if result["modelExists"]:
-            result["modelSizeBytes"] = os.path.getsize(model_path)
-        else:
-            result["errors"].append("segmenteverygrain model file was not found.")
-    else:
-        result["errors"].append("No segmenteverygrain model path was provided.")
-    if model_path and os.path.splitext(model_path)[1].lower() not in [".h5", ".keras"]:
-        result["errors"].append("segmenteverygrain model must be a .h5 or .keras file.")
-    seg_available = add_module("segmenteverygrain", required=True)
-    add_module("tensorflow")
-    add_module("torch")
-    add_module("opencv-python", "cv2")
-    add_module("scikit-image", "skimage")
-    result["ok"] = (
-        seg_available
-        and result["modelExists"]
-        and os.path.splitext(model_path)[1].lower() in [".h5", ".keras"]
-    )
-except Exception:
-    result["errors"].append(traceback.format_exc())
-
-print("\n" + json.dumps(result))
-`;
-
 async function validateSamSetup(settings) {
   const samSettings = normalizeSamSettings({ sam: settings });
   if (!samSettings.pythonPath) {
@@ -1525,8 +1453,11 @@ async function validateSegmenteverygrainSetup(settings = {}) {
 
   const result = await runProcess(
     samSettings.pythonPath,
-    ["-c", SEGMENTEVERYGRAIN_PROBE_SCRIPT, segSettings.modelPath],
-    { timeoutMs: 60000 },
+    [
+      getPythonWorkerPath("segmenteverygrain_validate.py"),
+      segSettings.modelPath,
+    ],
+    { timeoutMs: 240000 },
   );
 
   if (result.timedOut) {
@@ -1543,9 +1474,17 @@ async function validateSegmenteverygrainSetup(settings = {}) {
   try {
     parsed = parseJsonProcessOutput(result.stdout);
   } catch (error) {
+    const processDetail = String(
+      result.stderr || result.stdout || result.error || "",
+    ).trim();
     return {
       ok: false,
-      errors: ["Python did not return valid segmenteverygrain validation JSON."],
+      errors: [
+        "Python did not return valid segmenteverygrain validation JSON.",
+        ...(processDetail
+          ? [`Python process output: ${processDetail.slice(-4000)}`]
+          : [`Python exited with code ${result.exitCode ?? "unknown"}.`]),
+      ],
       exitCode: result.exitCode,
       stdout: result.stdout,
       stderr: result.stderr,
