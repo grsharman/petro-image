@@ -427,10 +427,6 @@ def stitch_dzi_tile_job(tile_job_path, output_path):
 
 
 def load_models(model_path, use_sam, sam_checkpoint, sam_model_type, requested_device):
-    # Load PyTorch before segmenteverygrain. The latter imports TensorFlow first
-    # and then SAM2/PyTorch, which can cause a Windows shm.dll dependency to bind
-    # to an incompatible DLL that TensorFlow already loaded.
-    import torch  # noqa: F401
     import segmenteverygrain as seg
 
     device = choose_device(requested_device) if use_sam else None

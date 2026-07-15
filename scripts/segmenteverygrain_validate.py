@@ -20,8 +20,6 @@ import json
 import sys
 
 try:
-    for preimport_name in sys.argv[2:]:
-        importlib.import_module(preimport_name)
     module = importlib.import_module(sys.argv[1])
     version = getattr(module, "__version__", "")
     payload = {"available": True}
@@ -59,7 +57,7 @@ def output_detail(completed):
     return f"Python exited with code {completed.returncode}."
 
 
-def probe_module(display_name, import_name=None, required=False, preimports=()):
+def probe_module(display_name, import_name=None, required=False):
     import_name = import_name or display_name
     try:
         installed = importlib.util.find_spec(import_name) is not None
@@ -75,7 +73,7 @@ def probe_module(display_name, import_name=None, required=False, preimports=()):
     if installed:
         try:
             completed = subprocess.run(
-                [sys.executable, "-c", IMPORT_PROBE, import_name, *preimports],
+                [sys.executable, "-c", IMPORT_PROBE, import_name],
                 capture_output=True,
                 encoding="utf-8",
                 errors="replace",
@@ -144,12 +142,7 @@ try:
             "segmenteverygrain model must be a .h5 or .keras file."
         )
 
-    # segmenteverygrain imports TensorFlow before SAM2/PyTorch. On Windows this
-    # can make the loader bind PyTorch's shm.dll dependencies to incompatible
-    # DLLs that TensorFlow loaded first. Match the worker's torch-first order.
-    seg_available = probe_module(
-        "segmenteverygrain", required=True, preimports=("torch",)
-    )
+    seg_available = probe_module("segmenteverygrain", required=True)
     probe_module("tensorflow")
     probe_module("torch")
     probe_module("opencv-python", "cv2")
