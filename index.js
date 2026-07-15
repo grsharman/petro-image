@@ -20935,7 +20935,12 @@ function applyAnnotationVisibilityState({ refreshOverlays = true } = {}) {
     el.style.visibility = visible ? "visible" : "hidden";
   }
 
-  polyCanvas.style.display = showAnnotations ? "block" : "none";
+  // Annotation drafts and segmentation prompts share this canvas with saved
+  // annotations. Keep the canvas present when saved annotations are hidden;
+  // drawShape filters annoJSON while still rendering annoJSONTemp (including
+  // the segmenteverygrain AOI).
+  polyCanvas.style.display = "block";
+  drawShape(polyCanvas, [annoJSON, annoJSONTemp]);
   if (refreshOverlays) refreshVisibleAnnotationOverlays();
 }
 
