@@ -478,6 +478,7 @@ def build_library(source: Path, details: list[dict], dzi_paths: list[str],
             tiles.append(tile)
         tile_set = {
             "label": spec["label"],
+            "modality": spec["kind"],
             "tiles": tiles,
             "_cziImportKey": spec["key"],
         }

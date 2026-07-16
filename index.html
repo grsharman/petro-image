@@ -1677,6 +1677,15 @@
               />
               <span>Transform Calculator</span>
             </label>
+            <label>
+              <input
+                id="transformRecipePolarization"
+                type="radio"
+                name="transformImageryRecipe"
+                value="polarization"
+              />
+              <span>Polarization Analysis</span>
+            </label>
           </div>
           <label class="snapshot-field">
             <span>Source tile set</span>
@@ -1815,6 +1824,33 @@
               </label>
             </div>
           </div>
+          <div class="transform-polarization-fields" hidden>
+            <label class="snapshot-field">
+              <span>PPL tile set</span>
+              <select id="transformPolarizationPplSelect"></select>
+            </label>
+            <label class="snapshot-field">
+              <span>XPL tile set</span>
+              <select id="transformPolarizationXplSelect"></select>
+            </label>
+            <label class="snapshot-field">
+              <span>CPL tile set</span>
+              <select id="transformPolarizationCplSelect"></select>
+            </label>
+            <button id="transformPolarizationSaveRolesButton" type="button">
+              Save roles to library
+            </button>
+            <p id="transformPolarizationInputStatus" class="transform-polarization-status"></p>
+            <p class="transform-polarization-assumption">
+              <span>XPL: crossed 90°, co-rotated.</span>
+              <span>Angles: image coordinates.</span>
+            </p>
+            <label class="snapshot-field">
+              <span>Calculation</span>
+              <select id="transformPolarizationProductSelect"></select>
+            </label>
+            <button id="transformPolarizationPreviewButton" type="button">Preview</button>
+          </div>
           <label class="snapshot-field transform-channel-field">
             <span>Channel</span>
             <select id="transformChannelSelect">
@@ -1883,20 +1919,38 @@
               aria-label="Output histogram"
             ></canvas>
           </div>
-          <details class="transform-export-details">
-            <summary>Export to Tile Set</summary>
+          <details class="transform-resolution-panel" open>
+            <summary>Resolution</summary>
+            <label class="snapshot-field">
+              <span>Analysis</span>
+              <select id="transformGenerateSize">
+                <option value="preview">Fast preview</option>
+                <option value="balanced" selected>Balanced</option>
+                <option value="high">High detail</option>
+                <option value="maximum">Maximum available</option>
+              </select>
+            </label>
+            <p id="transformResolutionStatus" class="transform-resolution-status"></p>
+          </details>
+          <details id="transformRasterExportPanel" class="transform-export-details">
+            <summary>Export</summary>
             <div class="transform-create-fields">
+              <div class="transform-export-group-label">Raster file</div>
+              <label class="snapshot-field">
+                <span>Format</span>
+                <select id="transformRasterExportFormat">
+                  <option value="npy" selected>NumPy array (.npy)</option>
+                  <option value="tiff">TIFF image</option>
+                  <option value="png">PNG image</option>
+                  <option value="jpeg">JPEG image</option>
+                </select>
+              </label>
+              <button id="transformRasterExportButton" type="button">Export raster…</button>
+              <p class="transform-raster-export-note">Analytical exports include a JSON coordinate and provenance sidecar.</p>
+              <div class="transform-export-group-label transform-export-tile-set-label">Tile set</div>
               <label class="snapshot-field">
                 <span>Output name</span>
                 <input id="transformOutputName" type="text" value="" />
-              </label>
-              <label class="snapshot-field">
-                <span>Resolution</span>
-                <select id="transformGenerateSize">
-                  <option value="small">Small (up to 10 MP)</option>
-                  <option value="medium" selected>Medium (up to 40 MP)</option>
-                  <option value="large">Large (up to 80 MP)</option>
-                </select>
               </label>
               <button id="transformGenerateButton" type="button">
                 Generate Tile Set
@@ -1941,6 +1995,10 @@
           <p>Use Transform Calculator to build expressions from tile-set channels. Calculations can be performed on any tile set (labeled A, B, C, etc.) for R, G, B, luminance, saturation, and hue. Supported functions include abs, normdiff, range, max, min, and mean.</p>
           <h4>Tile-Set Stack Functions</h4>
           <p>range, max, min, and mean summarize all images within the selected source tile set at each pixel. A single-image tile set has a range of 0.</p>
+          <h4>Polarization Analysis</h4>
+          <p>Assign PPL, XPL, and CPL roles to angle-aware tile sets. Polarization products use harmonic fits when at least three valid angles are available; six well-spaced images are preferred. Direct stack statistics such as mean and range remain available in Transform Calculator. XPL fitting assumes crossed polarizer and analyzer rotation.</p>
+          <h4>Resolution and Raster Export</h4>
+          <p>The selected analysis resolution is used for generated tile sets and raster exports. NumPy and TIFF preserve scalar calculated values; PNG and JPEG export the current display mapping. Maximum available uses source-image resolution and may require substantial memory.</p>
           <h4>Display and Histogram</h4>
           <p>The preview is mapped to a display image. Auto-scale stretches calculator output for viewing, while the histogram shows the rendered display intensities from 0 to 255.</p>
           <h4>Export Notes</h4>
@@ -6386,7 +6444,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
     <script src="node_modules/polygon-clipping/dist/polygon-clipping.umd.min.js"></script>
     <script src="local-thickness.js"></script>
-    <script src="index.js?v=porosity-local-thickness"></script>
+    <script src="polarization-analysis.js"></script>
+    <script src="derived-preview-overlay.js"></script>
+    <script src="index.js?v=polarization-analysis"></script>
     <script src="electron-import-wizard-launcher.js"></script>
   </body>
 </html>

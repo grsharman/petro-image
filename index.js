@@ -87,6 +87,10 @@ const TILE_SET_TRANSFORM_DEFAULTS = Object.freeze({
   rasterScale: "auto",
   rasterCustomMin: 0,
   rasterCustomMax: 255,
+  polarizationPplIndex: -1,
+  polarizationXplIndex: -1,
+  polarizationCplIndex: -1,
+  polarizationProduct: "ppl_modulation",
 });
 const TRANSFORM_RASTER_CHANNELS = Object.freeze({
   r: "red",
@@ -104,25 +108,35 @@ const TRANSFORM_RASTER_AGGREGATE_FUNCTIONS = Object.freeze([
 ]);
 const TRANSFORM_RASTER_SCALAR_FUNCTIONS = Object.freeze(["abs", "normdiff"]);
 const TRANSFORM_EXPORT_RESOLUTION_TIERS = Object.freeze({
-  small: {
-    label: "Small",
+  preview: {
+    label: "Fast preview",
     maxPixels: 10000000,
     maxSide: 12000,
   },
-  medium: {
-    label: "Medium",
+  balanced: {
+    label: "Balanced",
     maxPixels: 40000000,
     maxSide: 18000,
   },
-  large: {
-    label: "Large",
+  high: {
+    label: "High detail",
     maxPixels: 80000000,
     maxSide: 24000,
   },
+  maximum: {
+    label: "Maximum available",
+    maxPixels: Infinity,
+    maxSide: Infinity,
+  },
 });
 const TILE_APPEARANCE_STORAGE_KEY = "petroImageTileAppearance";
+const BASE_VIEWER_TILE_CACHE_COUNT = 200;
+const MAX_STACK_PREVIEW_TILE_CACHE_COUNT = 1200;
 let tileAppearanceReprocessTimer = null;
 let tileAppearanceReprocessToken = 0;
+let tileAppearanceReprocessRunning = false;
+const tileAppearanceReprocessQueue = new Set();
+let derivedPreviewOverlay = null;
 let transformGenerationRunning = false;
 let activeTransformPreviewSettings = { ...TILE_SET_TRANSFORM_DEFAULTS };
 let transformRasterCustomRange = {
@@ -131,6 +145,11 @@ let transformRasterCustomRange = {
 };
 let transformHistogramRefreshHandle = null;
 let transformHistogramRefreshTimer = null;
+let transformPreviewProgressState = {
+  key: "",
+  percent: 0,
+  complete: false,
+};
 
 // Accessors for attributes of the current sample
 const title = () => samples[currentIndex].title;
@@ -882,6 +901,36 @@ const transformRadius = document.getElementById("transformRadius");
 const transformRadiusValue = document.getElementById("transformRadiusValue");
 const transformOutputName = document.getElementById("transformOutputName");
 const transformGenerateSize = document.getElementById("transformGenerateSize");
+const transformResolutionStatus = document.getElementById(
+  "transformResolutionStatus",
+);
+const transformPolarizationPplSelect = document.getElementById(
+  "transformPolarizationPplSelect",
+);
+const transformPolarizationXplSelect = document.getElementById(
+  "transformPolarizationXplSelect",
+);
+const transformPolarizationCplSelect = document.getElementById(
+  "transformPolarizationCplSelect",
+);
+const transformPolarizationProductSelect = document.getElementById(
+  "transformPolarizationProductSelect",
+);
+const transformPolarizationInputStatus = document.getElementById(
+  "transformPolarizationInputStatus",
+);
+const transformPolarizationPreviewButton = document.getElementById(
+  "transformPolarizationPreviewButton",
+);
+const transformPolarizationSaveRolesButton = document.getElementById(
+  "transformPolarizationSaveRolesButton",
+);
+const transformRasterExportFormat = document.getElementById(
+  "transformRasterExportFormat",
+);
+const transformRasterExportButton = document.getElementById(
+  "transformRasterExportButton",
+);
 const transformResetPreviewButton = document.getElementById(
   "transformResetPreviewButton",
 );
@@ -10879,7 +10928,7 @@ async function renderFullResolutionImageRectCanvas(
   outputScale = 1,
   options = {},
 ) {
-  const renderScale = Math.max(0.05, Math.min(1, Number(outputScale) || 1));
+  const renderScale = Math.max(0.001, Math.min(1, Number(outputScale) || 1));
   const exportSize = {
     width: Math.max(1, Math.round(imageRect.width * renderScale)),
     height: Math.max(1, Math.round(imageRect.height * renderScale)),
@@ -14190,12 +14239,31 @@ if (
     transformImageryPaletteHeader,
     "petroImage.transformImageryPalette",
   );
+  transformImageryPalette.querySelectorAll("details").forEach((panel) => {
+    panel.addEventListener("toggle", function () {
+      window.requestAnimationFrame(() =>
+        clampToolPaletteToViewer(transformImageryPalette),
+      );
+    });
+  });
   document
     .querySelectorAll('input[name="transformImageryRecipe"]')
     .forEach((input) => {
       input.addEventListener("change", function () {
+        window.requestAnimationFrame(() =>
+          clampToolPaletteToViewer(transformImageryPalette),
+        );
         if (input.checked && input.value === "raster") {
           clearSimpleTransformControls();
+          updateTransformControls();
+          clearSelectedTransformPreviewForRasterEntry();
+          scheduleTransformHistogramRefresh();
+          return;
+        }
+        if (input.checked && input.value === "polarization") {
+          clearSimpleTransformControls();
+          populateTransformPolarizationRoleSelects();
+          if (transformOutputSelect) transformOutputSelect.value = "falseColor";
           updateTransformControls();
           clearSelectedTransformPreviewForRasterEntry();
           scheduleTransformHistogramRefresh();
@@ -14209,7 +14277,13 @@ if (
         scheduleTransformHistogramRefresh();
       });
     });
-  [transformTileSetSelect, transformTypeSelect, transformChannelSelect].forEach(
+  transformTileSetSelect?.addEventListener("change", function () {
+    updateTransformControls();
+    moveTransformPreviewToSelectedTileSet();
+    updateTransformControls();
+    scheduleTransformHistogramRefresh();
+  });
+  [transformTypeSelect, transformChannelSelect].forEach(
     (element) => {
       element?.addEventListener("change", function () {
         updateTransformControls();
@@ -14228,6 +14302,10 @@ if (
     if (isRasterRecipe(getTransformOptionsFromControls())) {
       updateTransformAdvancedExpressionStatus();
       applyRasterCalculatorPreview();
+      return;
+    }
+    if (isPolarizationRecipe(getTransformOptionsFromControls())) {
+      applyPolarizationPreview();
       return;
     }
     applyTransformControlsToSelectedTileSet();
@@ -14328,7 +14406,7 @@ if (
   });
   transformRasterPreviewButton?.addEventListener(
     "click",
-    applyRasterCalculatorPreview,
+    toggleRasterCalculatorPreview,
   );
   document.querySelectorAll("[data-raster-insert]").forEach((button) => {
     button.addEventListener("click", function () {
@@ -14361,6 +14439,40 @@ if (
     "click",
     generateTransformedTileSet,
   );
+  [
+    transformPolarizationPplSelect,
+    transformPolarizationXplSelect,
+    transformPolarizationCplSelect,
+  ].forEach((select) => {
+    select?.addEventListener("change", function () {
+      populateTransformPolarizationProducts();
+      clearSelectedTransformPreviewForRasterEntry();
+      updateTransformControls();
+    });
+  });
+  transformPolarizationProductSelect?.addEventListener("change", function () {
+    const definition = PetroPolarizationAnalysis.getProductDefinition(
+      transformPolarizationProductSelect.value,
+    );
+    if (transformOutputSelect) {
+      transformOutputSelect.value = definition?.circular ? "falseColor" : "grayscale";
+    }
+    updateTransformOutputName();
+    applyPolarizationPreview();
+  });
+  transformPolarizationPreviewButton?.addEventListener(
+    "click",
+    togglePolarizationPreview,
+  );
+  transformPolarizationSaveRolesButton?.addEventListener(
+    "click",
+    savePolarizationRolesToLibrary,
+  );
+  transformGenerateSize?.addEventListener("change", function () {
+    updateTransformResolutionStatus();
+    updateTransformControls();
+  });
+  transformRasterExportButton?.addEventListener("click", exportTransformRaster);
   window.electronAPI?.onDerivedDziProgress?.((progress) => {
     if (transformGenerationRunning && (progress?.percent || 0) < 100) {
       setTransformStatus("Writing transformed DZI tiles...");
@@ -15308,6 +15420,16 @@ const viewer = OpenSeadragon({
   crossOriginPolicy: "Anonymous",
 });
 
+derivedPreviewOverlay = new PetroDerivedPreviewOverlay.DerivedPreviewOverlay({
+  OpenSeadragon,
+  viewer,
+  onProgress: updateDerivedPreviewProgress,
+  onReady: () => {
+    displayImages();
+    scheduleTransformHistogramRefresh();
+  },
+});
+
 const OPEN_SEADRAGON_FLIP_KEY_CODE = 70; // F
 
 viewer.addHandler("canvas-key", (event) => {
@@ -15949,7 +16071,9 @@ function normalizeTransformValue(key, value) {
   const valueKey = stringValue.trim();
   switch (key) {
     case "recipeType":
-      return ["simple", "raster"].includes(valueKey) ? valueKey : fallback;
+      return ["simple", "raster", "polarization"].includes(valueKey)
+        ? valueKey
+        : fallback;
     case "type":
       return [
         "none",
@@ -15990,6 +16114,16 @@ function normalizeTransformValue(key, value) {
       const numericValue = Number(value);
       return Number.isFinite(numericValue) ? numericValue : fallback;
     }
+    case "polarizationPplIndex":
+    case "polarizationXplIndex":
+    case "polarizationCplIndex": {
+      const numericValue = Number.parseInt(value, 10);
+      return Number.isFinite(numericValue) ? numericValue : -1;
+    }
+    case "polarizationProduct":
+      return PetroPolarizationAnalysis?.getProductDefinition?.(valueKey)
+        ? valueKey
+        : fallback;
     case "intensity": {
       const numericValue = Number(value);
       return Number.isFinite(numericValue)
@@ -16032,6 +16166,22 @@ function normalizeTileSetTransform(transform = {}) {
       "rasterCustomMax",
       transform.rasterCustomMax,
     ),
+    polarizationPplIndex: normalizeTransformValue(
+      "polarizationPplIndex",
+      transform.polarizationPplIndex,
+    ),
+    polarizationXplIndex: normalizeTransformValue(
+      "polarizationXplIndex",
+      transform.polarizationXplIndex,
+    ),
+    polarizationCplIndex: normalizeTransformValue(
+      "polarizationCplIndex",
+      transform.polarizationCplIndex,
+    ),
+    polarizationProduct: normalizeTransformValue(
+      "polarizationProduct",
+      transform.polarizationProduct,
+    ),
   };
 }
 
@@ -16054,9 +16204,12 @@ function isDefaultTileSetTransform(tileSet) {
 }
 
 function shouldProcessTileSet(tileSet) {
-  return (
-    !isDefaultTileSetAppearance(tileSet) || !isDefaultTileSetTransform(tileSet)
-  );
+  const transform = getTileSetTransform(tileSet);
+  const rawTileTransformActive =
+    !isDefaultTileSetTransform(tileSet) &&
+    !isRasterRecipe(transform) &&
+    !isPolarizationRecipe(transform);
+  return !isDefaultTileSetAppearance(tileSet) || rawTileTransformActive;
 }
 
 function getSelectedTransformTileSetIndex() {
@@ -16086,6 +16239,10 @@ function isChannelTransform(type) {
 
 function isRasterRecipe(transform) {
   return transform?.recipeType === "raster";
+}
+
+function isPolarizationRecipe(transform) {
+  return transform?.recipeType === "polarization";
 }
 
 function getTransformTypeLabel(type) {
@@ -16152,6 +16309,19 @@ function syncRasterCustomRangeFromInputs(options = {}) {
 
 function getTransformOptionsFromControls() {
   const recipeType = getSelectedTransformRecipeType();
+  if (recipeType === "polarization") {
+    return normalizeTileSetTransform({
+      ...TILE_SET_TRANSFORM_DEFAULTS,
+      recipeType: "polarization",
+      output: transformOutputSelect?.value || "falseColor",
+      channel: transformChannelSelect?.value || "luminance",
+      polarizationPplIndex: transformPolarizationPplSelect?.value ?? -1,
+      polarizationXplIndex: transformPolarizationXplSelect?.value ?? -1,
+      polarizationCplIndex: transformPolarizationCplSelect?.value ?? -1,
+      polarizationProduct:
+        transformPolarizationProductSelect?.value || "ppl_modulation",
+    });
+  }
   if (recipeType === "raster") {
     if (transformRasterScaleSelect?.value === "custom") {
       syncRasterCustomRangeFromInputs();
@@ -16959,31 +17129,58 @@ function planHasRenderableAdvancedExpression() {
   return Boolean(plan.valid);
 }
 
-function getAdvancedVisibleInputPreloadTileSetIndices() {
-  const indices = new Set();
-  tileSets().forEach((tileSet, tileSetIndex) => {
+function updateAdvancedVisibleInputPreloadHints() {
+  let requiredStackImageCount = 0;
+  tileSets().forEach((tileSet) => {
     const transform = getTileSetTransform(tileSet);
     if (!isRasterRecipe(transform)) return;
     const plan = getTransformAdvancedExpressionPlan(transform.rasterExpression);
     if (!plan.valid) return;
-    indices.add(tileSetIndex);
-    plan.visibleInputs.forEach((input) => {
-      if (input.tileSetIndex >= 0) indices.add(input.tileSetIndex);
-    });
     plan.aggregateInputs.forEach((input) => {
-      if (input.tileSetIndex >= 0) indices.add(input.tileSetIndex);
+      const stackImageCount =
+        tileSets()[input.tileSetIndex]?.tiles?.length || 0;
+      requiredStackImageCount = Math.max(
+        requiredStackImageCount,
+        stackImageCount,
+      );
     });
   });
-  return indices;
-}
-
-function updateAdvancedVisibleInputPreloadHints() {
-  const preloadIndices = getAdvancedVisibleInputPreloadTileSetIndices();
-  tileSets().forEach((tileSet, tileSetIndex) => {
-    const shouldPreload = preloadIndices.has(tileSetIndex);
+  tileSets().forEach((tileSet) => {
+    const transform = getTileSetTransform(tileSet);
+    if (!isPolarizationRecipe(transform)) return;
+    const polarizationStackImageCount = getPolarizationRequiredModalities(
+      transform.polarizationProduct,
+    ).reduce((count, modality) => {
+      return (
+        count +
+        (getPolarizationTileSet(modality, transform)?.tiles?.length || 0)
+      );
+    }, 0);
+    requiredStackImageCount = Math.max(
+      requiredStackImageCount,
+      polarizationStackImageCount,
+    );
+  });
+  const desiredCacheCount = Math.min(
+    MAX_STACK_PREVIEW_TILE_CACHE_COUNT,
+    Math.max(
+      BASE_VIEWER_TILE_CACHE_COUNT,
+      requiredStackImageCount * 100,
+    ),
+  );
+  if (viewer?.tileCache) {
+    viewer.maxImageCacheCount = desiredCacheCount;
+    // OpenSeadragon 4.1 has no public setter for an existing cache.
+    viewer.tileCache._maxImageCacheCount = desiredCacheCount;
+  }
+  tileSets().forEach((tileSet) => {
     (tileSet.tiles || []).forEach((tile) => {
       if (typeof tile.image?.setPreload === "function") {
-        tile.image.setPreload(shouldPreload);
+        // Hidden advanced inputs are requested explicitly for the visible
+        // destination coordinates. Broad OpenSeadragon preloading walks
+        // unrelated pyramid tiles and repeatedly invalidates a settled
+        // preview as each background tile arrives.
+        tile.image.setPreload(false);
       }
     });
   });
@@ -17024,6 +17221,373 @@ function populateTransformRasterInputTable() {
   });
 }
 
+function updateDerivedPreviewProgress(progress) {
+  if (!derivedPreviewOverlay?.state) return;
+  const total = Math.max(progress.requested, 1);
+  const completed = Math.min(progress.completed, total);
+  const percent = Math.max(8, (completed / total) * 100);
+  setTransformProgress(percent, `${completed}/${total} visible tiles calculated`);
+  if (progress.requested > 0 && progress.pending === 0) {
+    setTransformProgress(100, "Preview calculated");
+    setTransformStatus(getTransformPreviewIdleStatus(derivedPreviewOverlay.state.tileSet), "ok");
+  }
+}
+
+function getDerivedPreviewReferenceTile(tileSet) {
+  const tileSetIndex = tileSets().indexOf(tileSet);
+  const tiles = tileSet?.tiles || [];
+  return tiles[getTileSetVisibleTileIndex(tileSetIndex)] || tiles[0] || null;
+}
+
+function getDerivedVisibleInputTile(tileSet, tileSetIndex) {
+  const tiles = tileSet?.tiles || [];
+  return tiles[getTileSetVisibleTileIndex(tileSetIndex)] || tiles[0] || null;
+}
+
+function getDerivedPreviewRequiredTiles(tileSet, transform, referenceTile) {
+  const requiredTiles = new Set(referenceTile ? [referenceTile] : []);
+  if (isRasterRecipe(transform)) {
+    const plan = getTransformAdvancedExpressionPlan(transform.rasterExpression);
+    plan.visibleInputs.forEach((input) => {
+      const entry = getRasterInputEntry(input.set);
+      const tile = getDerivedVisibleInputTile(
+        entry?.tileSet,
+        entry?.tileSetIndex,
+      );
+      if (tile) requiredTiles.add(tile);
+    });
+    plan.aggregateInputs.forEach((input) => {
+      const entry = getRasterInputEntry(input.set);
+      (entry?.tileSet?.tiles || []).forEach((tile) => requiredTiles.add(tile));
+    });
+  } else if (isPolarizationRecipe(transform)) {
+    getPolarizationRequiredModalities(transform.polarizationProduct).forEach(
+      (modality) => {
+        const sourceTileSet = getPolarizationTileSet(modality, transform);
+        (sourceTileSet?.tiles || []).forEach((tile) => requiredTiles.add(tile));
+      },
+    );
+  }
+  return Array.from(requiredTiles);
+}
+
+function getMappedDerivedSourceCoordinates(
+  referenceImage,
+  sourceImage,
+  level,
+  x,
+  y,
+) {
+  const referenceSource = referenceImage?.source;
+  const source = sourceImage?.source;
+  if (!referenceSource || !source) return null;
+  const referenceMaxLevel = getTiledImageMaxLevel(referenceImage);
+  const sourceMaxLevel = getTiledImageMaxLevel(sourceImage);
+  if (!Number.isFinite(sourceMaxLevel)) return null;
+  const sourceLevel = Math.min(
+    sourceMaxLevel,
+    Math.max(
+      Number(source.minLevel) || 0,
+      level +
+        (Number.isFinite(referenceMaxLevel)
+          ? sourceMaxLevel - referenceMaxLevel
+          : 0),
+    ),
+  );
+  const referenceBounds = referenceSource.getTileBounds(level, x, y);
+  const center = referenceBounds?.getCenter?.() ||
+    new OpenSeadragon.Point(
+      referenceBounds.x + referenceBounds.width / 2,
+      referenceBounds.y + referenceBounds.height / 2,
+    );
+  const coordinates = source.getTileAtPoint(sourceLevel, center);
+  if (!coordinates) return null;
+  const tileCount = source.getNumTiles(sourceLevel);
+  return {
+    level: sourceLevel,
+    x: Math.max(0, Math.min(tileCount.x - 1, coordinates.x)),
+    y: Math.max(0, Math.min(tileCount.y - 1, coordinates.y)),
+  };
+}
+
+function downloadDerivedSourceTile(tile, coordinates, signal) {
+  const image = tile?.image;
+  const source = image?.source;
+  if (!image || !source || !coordinates) {
+    return Promise.reject(new Error("A source image is not ready."));
+  }
+  const src = source.getTileUrl(
+    coordinates.level,
+    coordinates.x,
+    coordinates.y,
+  );
+  const postData = source.getTilePostData?.(
+    coordinates.level,
+    coordinates.x,
+    coordinates.y,
+  );
+  const ajaxHeaders = source.getTileAjaxHeaders?.(
+    coordinates.level,
+    coordinates.x,
+    coordinates.y,
+  );
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const job = {
+      src,
+      tile: coordinates,
+      userData: {},
+      postData,
+      loadWithAjax: Boolean(image.loadTilesWithAjax),
+      ajaxHeaders,
+      crossOriginPolicy: image.crossOriginPolicy,
+      ajaxWithCredentials: image.ajaxWithCredentials,
+      finish(data, request, error) {
+        if (settled) return;
+        settled = true;
+        signal?.removeEventListener("abort", abort);
+        if (!data || error) {
+          reject(new Error(error || `Could not load ${src}.`));
+          return;
+        }
+        resolve(data);
+      },
+    };
+    const abort = () => {
+      if (settled) return;
+      settled = true;
+      source.downloadTileAbort?.(job);
+      reject(new DOMException("Canceled", "AbortError"));
+    };
+    if (signal?.aborted) {
+      abort();
+      return;
+    }
+    signal?.addEventListener("abort", abort, { once: true });
+    source.downloadTileStart(job);
+  });
+}
+
+function createDerivedRasterTileContext(
+  transform,
+  outputTileSet,
+  outputContext,
+  tileContexts,
+) {
+  const plan = getTransformAdvancedExpressionPlan(transform.rasterExpression);
+  if (!plan.valid || !plan.ast) {
+    throw new Error(plan.errors[0] || "The expression is not renderable.");
+  }
+  const width = outputContext.canvas.width;
+  const height = outputContext.canvas.height;
+  const inputMap = {};
+  const aggregateInputMap = {};
+  plan.visibleInputs.forEach((input) => {
+    const entry = getRasterInputEntry(input.set);
+    const tile = getDerivedVisibleInputTile(
+      entry?.tileSet,
+      entry?.tileSetIndex,
+    );
+    const imageData = getContextImageDataMatchingSize(
+      tileContexts.get(tile),
+      width,
+      height,
+    );
+    if (!imageData) throw new Error(`Waiting for ${input.set} source tile.`);
+    inputMap[input.set] = imageData;
+  });
+  plan.aggregateInputs.forEach((input) => {
+    if (aggregateInputMap[input.key]) return;
+    const entry = getRasterInputEntry(input.set);
+    const stack = (entry?.tileSet?.tiles || []).map((tile) =>
+      getContextImageDataMatchingSize(tileContexts.get(tile), width, height),
+    );
+    if (!stack.length || stack.some((imageData) => !imageData)) {
+      throw new Error(`Waiting for ${input.set} source stack.`);
+    }
+    aggregateInputMap[input.key] = stack;
+  });
+
+  const values = new Float32Array(width * height);
+  let minValue = Infinity;
+  let maxValue = -Infinity;
+  for (let offset = 0, valueIndex = 0; offset < width * height * 4; offset += 4, valueIndex += 1) {
+    const result = evaluateTransformRasterExpressionAtPixel(
+      plan.ast,
+      inputMap,
+      offset,
+      getRasterAggregateValuesForPixel(plan, aggregateInputMap, offset),
+    );
+    if (!result.ok) throw new Error(result.error);
+    const value = Number(result.value);
+    values[valueIndex] = Number.isFinite(value) ? value : 0;
+    minValue = Math.min(minValue, values[valueIndex]);
+    maxValue = Math.max(maxValue, values[valueIndex]);
+  }
+
+  const context = createCanvasContextFromImage(outputContext.canvas, {
+    forceOpaque: true,
+  });
+  const imageData = context.createImageData(width, height);
+  const output = imageData.data;
+  for (let offset = 0, valueIndex = 0; offset < output.length; offset += 4, valueIndex += 1) {
+    const displayValue = clampColorValue(
+      mapAdvancedRasterValue(values[valueIndex], transform, minValue, maxValue),
+    );
+    const rgb = transform.output === "falseColor"
+      ? getFalseColorRgb(displayValue)
+      : [displayValue, displayValue, displayValue];
+    output[offset] = rgb[0];
+    output[offset + 1] = rgb[1];
+    output[offset + 2] = rgb[2];
+    output[offset + 3] = 255;
+  }
+  context.putImageData(imageData, 0, 0);
+  context.petroImageGeneratedPreviewContext = true;
+  context.petroImageAdvancedRawValues = values;
+  context.petroImageAdvancedRawWidth = width;
+  context.petroImageAdvancedRawHeight = height;
+  return context;
+}
+
+function createDerivedPolarizationTileContext(
+  transform,
+  outputContext,
+  tileContexts,
+) {
+  const width = outputContext.canvas.width;
+  const height = outputContext.canvas.height;
+  const stacks = {};
+  getPolarizationRequiredModalities(transform.polarizationProduct).forEach(
+    (modality) => {
+      const sourceTileSet = getPolarizationTileSet(modality, transform);
+      const stack = (sourceTileSet?.tiles || []).map((tile) => {
+        const imageData = getContextImageDataMatchingSize(
+          tileContexts.get(tile),
+          width,
+          height,
+        );
+        return imageData?.data;
+      });
+      if (!stack.length || stack.some((data) => !data)) {
+        throw new Error(`Waiting for ${modality.toUpperCase()} source stack.`);
+      }
+      stacks[modality] = stack;
+    },
+  );
+  const raster = PetroPolarizationAnalysis.calculatePolarizationRaster(
+    stacks,
+    width,
+    height,
+    {
+      product: transform.polarizationProduct,
+      channel: transform.channel,
+      pplAngles: getPolarizationAngles(getPolarizationTileSet("ppl", transform)),
+      xplAngles: getPolarizationAngles(getPolarizationTileSet("xpl", transform)),
+    },
+  );
+  const context = createCanvasContextFromImage(outputContext.canvas, {
+    forceOpaque: true,
+  });
+  mapPolarizationRasterToImageData(context, raster, transform);
+  context.petroImageGeneratedPreviewContext = true;
+  context.petroImageAdvancedRawValues = raster.values;
+  context.petroImageAdvancedRawWidth = width;
+  context.petroImageAdvancedRawHeight = height;
+  return context;
+}
+
+async function createDerivedPreviewTile(
+  tileSet,
+  transform,
+  referenceTile,
+  sourceCache,
+  request,
+) {
+  if (request.signal.aborted) throw new DOMException("Canceled", "AbortError");
+  const requiredTiles = getDerivedPreviewRequiredTiles(
+    tileSet,
+    transform,
+    referenceTile,
+  );
+  const tileContexts = new Map();
+  await Promise.all(
+    requiredTiles.map(async (tile) => {
+      const coordinates = getMappedDerivedSourceCoordinates(
+        referenceTile.image,
+        tile.image,
+        request.level,
+        request.x,
+        request.y,
+      );
+      const cacheKey = `${tile.uri || tile.label || "tile"}:${coordinates?.level}/${coordinates?.x}/${coordinates?.y}`;
+      let promise = sourceCache.get(cacheKey);
+      if (!promise) {
+        promise = downloadDerivedSourceTile(tile, coordinates, request.signal);
+        sourceCache.set(cacheKey, promise);
+        promise.catch(() => {
+          if (sourceCache.get(cacheKey) === promise) sourceCache.delete(cacheKey);
+        });
+      }
+      const data = await promise;
+      if (request.signal.aborted) throw new DOMException("Canceled", "AbortError");
+      const context = createCanvasContextFromImage(data, { forceOpaque: true });
+      if (!context) throw new Error("Could not read a source tile.");
+      tileContexts.set(tile, context);
+    }),
+  );
+  const outputContext = tileContexts.get(referenceTile);
+  if (!outputContext) throw new Error("The output source tile is unavailable.");
+  const context = isPolarizationRecipe(transform)
+    ? createDerivedPolarizationTileContext(transform, outputContext, tileContexts)
+    : createDerivedRasterTileContext(
+        transform,
+        tileSet,
+        outputContext,
+        tileContexts,
+      );
+  const appearance = getTileSetAppearance(tileSet);
+  if (!isDefaultAppearanceValue(appearance)) {
+    applyTileSetAppearanceToContext(context, appearance);
+  }
+  markContextAsOpaqueTileContext(context);
+  return context.canvas;
+}
+
+async function startDerivedAdvancedPreview(tileSet, transform) {
+  const referenceTile = getDerivedPreviewReferenceTile(tileSet);
+  if (!referenceTile?.image) {
+    setTransformStatus("Waiting for the selected source image...", "");
+    return;
+  }
+  const sourceCache = new Map();
+  const key = `${tileLoadGeneration}:${tileSets().indexOf(tileSet)}:${JSON.stringify(normalizeTileSetTransform(transform))}`;
+  try {
+    await derivedPreviewOverlay.start({
+      tileSet,
+      key,
+      referenceImage: referenceTile.image,
+      requestTile: (request) =>
+        createDerivedPreviewTile(
+          tileSet,
+          transform,
+          referenceTile,
+          sourceCache,
+          request,
+        ),
+    });
+    displayImages();
+  } catch (error) {
+    if (error?.name === "AbortError") return;
+    setTransformStatus(error?.message || "Could not start preview.", "error");
+  }
+}
+
+function stopDerivedAdvancedPreview() {
+  derivedPreviewOverlay?.stop();
+  displayImages();
+}
+
 function applyRasterCalculatorPreview() {
   const tileSet = tileSets()[getSelectedTransformTileSetIndex()];
   const plan = updateTransformAdvancedExpressionStatus();
@@ -17031,10 +17595,9 @@ function applyRasterCalculatorPreview() {
     return;
   }
 
-  const hadTransform = !isDefaultTileSetTransform(tileSet);
   const transform = getTransformOptionsFromControls();
   activeTransformPreviewSettings = { ...transform };
-  resetTransformTileCaches(tileSet, { restoreDisplayed: false });
+  resetTransformTileCaches(tileSet);
   tileSetTransformState.set(
     tileSet,
     isTransformPreviewEnabled()
@@ -17043,12 +17606,95 @@ function applyRasterCalculatorPreview() {
   );
   updateSnapshotStatus();
   updateAdvancedVisibleInputPreloadHints();
+  hideTransformValueTooltip();
   setTransformStatus("Processing preview...");
   setTransformPreviewProgressStart();
-  if (!hadTransform) updateTileSetAppearanceRenderingHints(tileSet);
-  scheduleTileAppearanceReprocess(tileSet);
+  updateTileSetAppearanceRenderingHints(tileSet);
+  startDerivedAdvancedPreview(tileSet, transform);
   updateTransformControls();
   scheduleTransformHistogramRefresh();
+}
+
+function applyPolarizationPreview() {
+  populateTransformPolarizationProducts();
+  const transform = getTransformOptionsFromControls();
+  if (hasDuplicatePolarizationRoleAssignments(transform)) {
+    setTransformStatus("Assign each polarization role to a different tile set.", "error");
+    return;
+  }
+  if (
+    !getAvailablePolarizationProducts(transform).includes(
+      transform.polarizationProduct,
+    )
+  ) {
+    setTransformStatus(
+      "The selected sources do not support this polarization product.",
+      "error",
+    );
+    return;
+  }
+  const tileSet = tileSets()[getSelectedTransformTileSetIndex()];
+  if (!tileSet) return;
+  activeTransformPreviewSettings = { ...transform };
+  resetTransformTileCaches(tileSet);
+  tileSetTransformState.set(
+    tileSet,
+    isTransformPreviewEnabled()
+      ? transform
+      : { ...TILE_SET_TRANSFORM_DEFAULTS },
+  );
+  updateAdvancedVisibleInputPreloadHints();
+  hideTransformValueTooltip();
+  setTransformStatus("Processing polarization preview...");
+  setTransformPreviewProgressStart();
+  updateTileSetAppearanceRenderingHints(tileSet);
+  startDerivedAdvancedPreview(tileSet, transform);
+  updateTransformControls();
+  scheduleTransformHistogramRefresh();
+}
+
+function isSelectedAdvancedPreviewActive(recipeType) {
+  const tileSet = tileSets()[getSelectedTransformTileSetIndex()];
+  const transform = getTileSetTransform(tileSet);
+  return transform.recipeType === recipeType && !isDefaultTileSetTransform(tileSet);
+}
+
+function stopSelectedAdvancedPreview(recipeType) {
+  const tileSet = tileSets()[getSelectedTransformTileSetIndex()];
+  if (!tileSet || !isSelectedAdvancedPreviewActive(recipeType)) return;
+
+  activeTransformPreviewSettings = {
+    ...getTransformOptionsFromControls(),
+  };
+  stopDerivedAdvancedPreview();
+  tileSetTransformState.set(tileSet, { ...TILE_SET_TRANSFORM_DEFAULTS });
+  updateTileSetAppearanceRenderingHints(tileSet);
+  resetTransformTileCaches(tileSet);
+  updateSnapshotStatus();
+  updateAdvancedVisibleInputPreloadHints();
+  clearTransformProgress();
+  hideTransformValueTooltip();
+  setTransformStatus("Preview stopped.");
+  updateTransformControls();
+  scheduleTransformHistogramRefresh();
+}
+
+function toggleRasterCalculatorPreview() {
+  if (isSelectedAdvancedPreviewActive("raster")) {
+    stopSelectedAdvancedPreview("raster");
+    return;
+  }
+  if (transformPreviewEnabled) transformPreviewEnabled.checked = true;
+  applyRasterCalculatorPreview();
+}
+
+function togglePolarizationPreview() {
+  if (isSelectedAdvancedPreviewActive("polarization")) {
+    stopSelectedAdvancedPreview("polarization");
+    return;
+  }
+  if (transformPreviewEnabled) transformPreviewEnabled.checked = true;
+  applyPolarizationPreview();
 }
 
 function drawEmptyTransformHistogram(context, width, height) {
@@ -17091,6 +17737,14 @@ function getTransformHistogramSourceCanvas() {
 
 function getTransformHistogramAxisLabels() {
   const transform = getTransformOptionsFromControls();
+  if (isPolarizationRecipe(transform)) {
+    const definition = PetroPolarizationAnalysis.getProductDefinition(
+      transform.polarizationProduct,
+    );
+    if (definition?.range) {
+      return definition.range.map(formatTransformTooltipNumber);
+    }
+  }
   if (isRasterRecipe(transform) && !transform.rasterNormalize) {
     switch (transform.rasterScale) {
       case "custom":
@@ -17304,6 +17958,202 @@ function populateTransformTileSetSelect() {
   transformTileSetSelect.value = hasPrevious ? previousValue : "0";
   populateTransformRasterTileSetBSelect();
   populateTransformRasterInputTable();
+  populateTransformPolarizationRoleSelects();
+}
+
+function inferTileSetModality(tileSet) {
+  const explicit = String(tileSet?.modality || "").trim().toLowerCase();
+  if (["ppl", "xpl", "cpl"].includes(explicit)) return explicit;
+  const label = String(tileSet?.label || "").toLowerCase();
+  if (/\bppl\b/.test(label)) return "ppl";
+  if (/\bxpl\b/.test(label)) return "xpl";
+  if (/\bcpl\b/.test(label)) return "cpl";
+  return "";
+}
+
+function populatePolarizationRoleSelect(select, modality) {
+  if (!select) return;
+  const previousValue = select.value;
+  select.innerHTML = "";
+  const none = document.createElement("option");
+  none.value = "-1";
+  none.textContent = "None";
+  select.append(none);
+  tileSets().forEach((tileSet, index) => {
+    const option = document.createElement("option");
+    option.value = String(index);
+    option.textContent = getSnapshotTileSetLabel(tileSet, index);
+    select.append(option);
+  });
+  const hasPrevious = Array.from(select.options).some(
+    (option) => option.value === previousValue,
+  );
+  if (hasPrevious && previousValue !== "-1") {
+    select.value = previousValue;
+    return;
+  }
+  const inferredIndex = tileSets().findIndex(
+    (tileSet) => inferTileSetModality(tileSet) === modality,
+  );
+  select.value = String(inferredIndex);
+}
+
+function populateTransformPolarizationRoleSelects() {
+  populatePolarizationRoleSelect(transformPolarizationPplSelect, "ppl");
+  populatePolarizationRoleSelect(transformPolarizationXplSelect, "xpl");
+  populatePolarizationRoleSelect(transformPolarizationCplSelect, "cpl");
+  populateTransformPolarizationProducts();
+}
+
+function getPolarizationRoleIndex(modality, transform = null) {
+  const settings = transform || getTransformOptionsFromControls();
+  const key = `polarization${modality.toUpperCase()}Index`;
+  if (Object.prototype.hasOwnProperty.call(settings, key)) return settings[key];
+  const normalizedKey =
+    modality === "ppl"
+      ? "polarizationPplIndex"
+      : modality === "xpl"
+        ? "polarizationXplIndex"
+        : "polarizationCplIndex";
+  return Number(settings[normalizedKey]);
+}
+
+function getPolarizationTileSet(modality, transform = null) {
+  const index = getPolarizationRoleIndex(modality, transform);
+  return index >= 0 ? tileSets()[index] || null : null;
+}
+
+function getPolarizationAngles(tileSet) {
+  return (tileSet?.tiles || []).map((tile) => Number(tile?.angleDegrees));
+}
+
+function getPolarizationFitModel(modality, tileSet) {
+  if (!tileSet) return null;
+  return PetroPolarizationAnalysis.createHarmonicModel(
+    getPolarizationAngles(tileSet),
+    modality === "ppl" ? 2 : 4,
+  );
+}
+
+const POLARIZATION_PRODUCT_LABELS = Object.freeze({
+  ppl_modulation: "PPL modulation",
+  ppl_normalized_modulation: "PPL normalized modulation",
+  ppl_azimuth: "PPL maximum-transmission azimuth",
+  ppl_rmse: "PPL fit RMSE",
+  xpl_maximum: "XPL predicted maximum",
+  xpl_minimum: "XPL predicted extinction intensity",
+  xpl_modulation: "XPL normalized modulation",
+  xpl_extinction_azimuth: "XPL extinction azimuth",
+  xpl_rmse: "XPL fit RMSE",
+  xpl_cpl_difference: "CPL − predicted XPL maximum",
+});
+
+function getAvailablePolarizationProducts(transform = null) {
+  const settings = transform || getTransformOptionsFromControls();
+  const ppl = getPolarizationTileSet("ppl", settings);
+  const xpl = getPolarizationTileSet("xpl", settings);
+  const cpl = getPolarizationTileSet("cpl", settings);
+  const products = [];
+  if (getPolarizationFitModel("ppl", ppl)) {
+    products.push(
+      "ppl_modulation",
+      "ppl_normalized_modulation",
+      "ppl_azimuth",
+      "ppl_rmse",
+    );
+  }
+  if (getPolarizationFitModel("xpl", xpl)) {
+    products.push(
+      "xpl_maximum",
+      "xpl_minimum",
+      "xpl_modulation",
+      "xpl_extinction_azimuth",
+      "xpl_rmse",
+    );
+  }
+  if (getPolarizationFitModel("xpl", xpl) && (cpl?.tiles || []).length > 0) {
+    products.push("xpl_cpl_difference");
+  }
+  return products;
+}
+
+function populateTransformPolarizationProducts() {
+  if (!transformPolarizationProductSelect) return;
+  const previousValue = transformPolarizationProductSelect.value;
+  const products = getAvailablePolarizationProducts();
+  transformPolarizationProductSelect.innerHTML = "";
+  products.forEach((product) => {
+    const option = document.createElement("option");
+    option.value = product;
+    option.textContent = POLARIZATION_PRODUCT_LABELS[product] || product;
+    transformPolarizationProductSelect.append(option);
+  });
+  transformPolarizationProductSelect.value = products.includes(previousValue)
+    ? previousValue
+    : products[0] || "";
+  updatePolarizationInputStatus();
+}
+
+function hasDuplicatePolarizationRoleAssignments(transform = null) {
+  const settings = transform || getTransformOptionsFromControls();
+  const indices = [
+    settings.polarizationPplIndex,
+    settings.polarizationXplIndex,
+    settings.polarizationCplIndex,
+  ].filter((index) => Number.isInteger(index) && index >= 0);
+  return new Set(indices).size !== indices.length;
+}
+
+function updatePolarizationInputStatus() {
+  if (!transformPolarizationInputStatus) return;
+  const selected = ["ppl", "xpl", "cpl"]
+    .map((modality) => ({
+      modality,
+      tileSet: getPolarizationTileSet(modality),
+      index: getPolarizationRoleIndex(modality),
+    }))
+    .filter((entry) => entry.tileSet);
+  const duplicate = hasDuplicatePolarizationRoleAssignments();
+  const details = [];
+  const messages = selected.map((entry) => {
+    const count = entry.tileSet.tiles?.length || 0;
+    if (entry.modality === "cpl") {
+      const message = `CPL: ${count} image${count === 1 ? "" : "s"}`;
+      details.push(message);
+      return message;
+    }
+    const validAngles = getPolarizationAngles(entry.tileSet).filter(Number.isFinite);
+    const fit = getPolarizationFitModel(entry.modality, entry.tileSet);
+    let quality = "fit unavailable";
+    let compactQuality = "fit unavailable";
+    if (fit && validAngles.length === 3) {
+      quality = "exact fit; no residual check";
+      compactQuality = "exact; unchecked";
+    } else if (fit && validAngles.length < 6) {
+      quality = "limited fit";
+      compactQuality = "limited";
+    } else if (fit) {
+      quality = "preferred angular coverage";
+      compactQuality = "preferred";
+    }
+    details.push(
+      `${entry.modality.toUpperCase()}: ${count} images, ${validAngles.length} angles (${quality})`,
+    );
+    return `${entry.modality.toUpperCase()}: ${count} img · ${validAngles.length} angles · ${compactQuality}`;
+  });
+  if (duplicate) {
+    const warning = "Assign each role to a different tile set.";
+    messages.push(warning);
+    details.push(warning);
+  }
+  if (!messages.length) {
+    const prompt = "Assign at least one polarization source.";
+    messages.push(prompt);
+    details.push(prompt);
+  }
+  transformPolarizationInputStatus.textContent = messages.join("\n");
+  transformPolarizationInputStatus.title = details.join(" · ");
+  transformPolarizationInputStatus.classList.toggle("error", duplicate);
 }
 
 function populateTransformRasterTileSetBSelect() {
@@ -17359,11 +18209,33 @@ function clearTransformProgress() {
   transformProgressBar.style.width = "0%";
   transformProgressBar.style.transform = "scaleX(0)";
   transformProgressText.textContent = "";
+  transformPreviewProgressState = { key: "", percent: 0, complete: false };
 }
 
 function setTransformPreviewProgressStart() {
   if (getTransformMode() !== "preview" || transformGenerationRunning) return;
+  transformPreviewProgressState = { key: "", percent: 0, complete: false };
   setTransformProgress(8, "Processing preview...");
+}
+
+function getTransformPreviewProgressKey() {
+  const bounds = viewer?.viewport?.getBounds?.(true);
+  const round = (value) =>
+    Number.isFinite(value) ? Math.round(value * 10000) / 10000 : 0;
+  const tileSetIndex = getSelectedTransformTileSetIndex();
+  const tileSet = tileSets()[tileSetIndex];
+  return JSON.stringify({
+    tileSetIndex,
+    transform: normalizeTileSetTransform(getTileSetTransform(tileSet)),
+    viewport: bounds
+      ? [
+          round(bounds.x),
+          round(bounds.y),
+          round(bounds.width),
+          round(bounds.height),
+        ]
+      : null,
+  });
 }
 
 function updateTransformPreviewProgress(stats) {
@@ -17374,23 +18246,45 @@ function updateTransformPreviewProgress(stats) {
     0,
     stats?.missingAdvancedInputs || stats?.missingRasterInputs || 0,
   );
+  const progressKey = getTransformPreviewProgressKey();
+  if (transformPreviewProgressState.key !== progressKey) {
+    transformPreviewProgressState = {
+      key: progressKey,
+      percent: 0,
+      complete: false,
+    };
+  }
+  if (transformPreviewProgressState.complete) {
+    setTransformProgress(100, "Preview calculated");
+    return;
+  }
   if (total === 0) {
     setTransformProgress(8, "Waiting for source tiles...");
     return;
   }
 
-  const completed = Math.max(0, processed - missing);
+  const completed = processed;
   const percent =
     processed < total || missing > 0
       ? Math.max(8, (completed / total) * 100)
       : 100;
+  transformPreviewProgressState.percent = Math.max(
+    transformPreviewProgressState.percent,
+    percent,
+  );
+  if (processed >= total && missing === 0) {
+    transformPreviewProgressState.complete = true;
+    transformPreviewProgressState.percent = 100;
+  }
   const label =
-    processed < total
+    transformPreviewProgressState.complete
+      ? "Preview calculated"
+      : processed < total
       ? `${processed}/${total} tiles calculated`
       : missing > 0
         ? `${completed}/${total} tiles calculated`
         : "Preview calculated";
-  setTransformProgress(percent, label);
+  setTransformProgress(transformPreviewProgressState.percent, label);
 }
 
 function updateTransformOutputName() {
@@ -17401,8 +18295,9 @@ function updateTransformOutputName() {
     tileSet,
     getSelectedTransformTileSetIndex(),
   );
-  const suggestedName =
-    transform.type === "none"
+  const suggestedName = isPolarizationRecipe(transform)
+    ? POLARIZATION_PRODUCT_LABELS[transform.polarizationProduct] || "Polarization Analysis"
+    : transform.type === "none"
       ? `${sourceLabel} Copy`
       : `${sourceLabel} ${getTransformTypeLabel(transform.type)}`;
   if (
@@ -17440,17 +18335,27 @@ function clearSelectedTransformPreviewForRasterEntry() {
   activeTransformPreviewSettings = getTransformOptionsFromControls();
   if (!tileSet) {
     clearTransformProgress();
-    updateTransformAdvancedExpressionStatus();
+    if (getSelectedTransformRecipeType() === "raster") {
+      updateTransformAdvancedExpressionStatus();
+    } else {
+      updatePolarizationInputStatus();
+    }
     scheduleTransformHistogramRefresh();
     return;
   }
 
   const hadTransform = !isDefaultTileSetTransform(tileSet);
+  stopDerivedAdvancedPreview();
   resetTransformTileCaches(tileSet);
   tileSetTransformState.set(tileSet, { ...TILE_SET_TRANSFORM_DEFAULTS });
   updateAdvancedVisibleInputPreloadHints();
   clearTransformProgress();
-  updateTransformAdvancedExpressionStatus();
+  if (getSelectedTransformRecipeType() === "raster") {
+    updateTransformAdvancedExpressionStatus();
+  } else {
+    updatePolarizationInputStatus();
+    setTransformStatus("Choose a calculation, then preview or export it.");
+  }
   if (hadTransform) {
     scheduleTileAppearanceReprocess(tileSet);
   }
@@ -17458,6 +18363,7 @@ function clearSelectedTransformPreviewForRasterEntry() {
 }
 
 function resetTransformImageryForSampleChange(previousTileSets = []) {
+  derivedPreviewOverlay?.stop();
   activeTransformPreviewSettings = { ...TILE_SET_TRANSFORM_DEFAULTS };
   const tileSetsToReset = [...new Set([...previousTileSets, ...tileSets()])];
   tileSetsToReset.forEach((tileSet) => {
@@ -17479,11 +18385,7 @@ function resetTransformImageryForSampleChange(previousTileSets = []) {
 
 function resetTransformTileCaches(tileSetToReset = null, options = {}) {
   const restoreDisplayed = options.restoreDisplayed !== false;
-  tileAppearanceReprocessToken += 1;
-  if (tileAppearanceReprocessTimer !== null) {
-    window.clearTimeout(tileAppearanceReprocessTimer);
-    tileAppearanceReprocessTimer = null;
-  }
+  cancelQueuedTileAppearanceReprocess();
   const setsToReset = Array.isArray(tileSetToReset)
     ? tileSetToReset
     : tileSetToReset
@@ -17492,6 +18394,7 @@ function resetTransformTileCaches(tileSetToReset = null, options = {}) {
   setsToReset.forEach((tileSet) => {
     forEachLoadedTileInTileSet(tileSet, (loadedTile) => {
       loadedTile.petroImageProcessedContext = null;
+      loadedTile.petroImagePendingProcessedContext = null;
       if (restoreDisplayed) {
         restoreLoadedTileSourceContext(loadedTile);
       }
@@ -17506,15 +18409,24 @@ function resetTransformTileCaches(tileSetToReset = null, options = {}) {
 function updateTransformControls() {
   const simpleFields = document.querySelector(".transform-simple-fields");
   const rasterFields = document.querySelector(".transform-raster-fields");
+  const polarizationFields = document.querySelector(
+    ".transform-polarization-fields",
+  );
   const transformActions = document.querySelector(".transform-actions");
   const transform = getTransformOptionsFromControls();
   const rasterRecipe = isRasterRecipe(transform);
-  const hasTransform = !rasterRecipe && transform.type !== "none";
-  if (simpleFields) simpleFields.hidden = rasterRecipe;
+  const polarizationRecipe = isPolarizationRecipe(transform);
+  const specializedRecipe = rasterRecipe || polarizationRecipe;
+  const hasTransform = !specializedRecipe && transform.type !== "none";
+  const rasterPreviewActive = isSelectedAdvancedPreviewActive("raster");
+  const polarizationPreviewActive =
+    isSelectedAdvancedPreviewActive("polarization");
+  if (simpleFields) simpleFields.hidden = specializedRecipe;
   if (rasterFields) rasterFields.hidden = !rasterRecipe;
-  if (transformActions) transformActions.hidden = rasterRecipe;
+  if (polarizationFields) polarizationFields.hidden = !polarizationRecipe;
+  if (transformActions) transformActions.hidden = specializedRecipe;
   document.querySelectorAll(".transform-range-field").forEach((field) => {
-    field.hidden = rasterRecipe;
+    field.hidden = specializedRecipe;
   });
   populateTransformRasterTileSetBSelect();
   populateTransformRasterInputTable();
@@ -17524,13 +18436,13 @@ function updateTransformControls() {
   const channelField = document.querySelector(".transform-channel-field");
   if (transformChannelSelect) {
     transformChannelSelect.disabled =
-      rasterRecipe || transform.type !== "channelMap";
+      rasterRecipe || (!polarizationRecipe && transform.type !== "channelMap");
   }
   if (channelField) {
     channelField.hidden = rasterRecipe;
     channelField.classList.toggle(
       "transform-field-disabled",
-      rasterRecipe || transform.type !== "channelMap",
+      rasterRecipe || (!polarizationRecipe && transform.type !== "channelMap"),
     );
   }
   if (transformRasterTileSetBSelect) {
@@ -17574,21 +18486,22 @@ function updateTransformControls() {
       channelMap: "grayscale",
     };
     const outputEnabled =
-      rasterRecipe || ["localContrast", "channelMap"].includes(transform.type);
+      specializedRecipe || ["localContrast", "channelMap"].includes(transform.type);
     transformOutputSelect.disabled = !outputEnabled;
     Array.from(transformOutputSelect.options).forEach((option) => {
       if (option.value === "rgb") {
-        option.disabled = rasterRecipe || transform.type !== "localContrast";
+        option.disabled = specializedRecipe || transform.type !== "localContrast";
       }
       if (option.value === "falseColor") {
-        option.disabled = !rasterRecipe && transform.type !== "channelMap";
+        option.disabled =
+          !rasterRecipe && !polarizationRecipe && transform.type !== "channelMap";
       }
       if (option.value === "grayscale") {
         option.disabled = !hasTransform && transform.type !== "none";
       }
     });
     if (!outputEnabled || transformOutputSelect.selectedOptions[0]?.disabled) {
-      transformOutputSelect.value = rasterRecipe
+      transformOutputSelect.value = specializedRecipe
         ? "grayscale"
         : outputDefaults[transform.type] || "grayscale";
     }
@@ -17601,12 +18514,55 @@ function updateTransformControls() {
   if (transformGenerateButton) {
     const canGenerateRasterRecipe =
       !rasterRecipe || planHasRenderableAdvancedExpression();
+    const canGeneratePolarization =
+      !polarizationRecipe ||
+      (!hasDuplicatePolarizationRoleAssignments(transform) &&
+        getAvailablePolarizationProducts(transform).includes(
+          transform.polarizationProduct,
+        ));
     transformGenerateButton.disabled =
       transformGenerationRunning ||
       tileSets().length === 0 ||
       !canGenerateRasterRecipe ||
+      !canGeneratePolarization ||
       !window.electronAPI?.createDerivedDzi;
   }
+  if (transformPolarizationPreviewButton) {
+    transformPolarizationPreviewButton.textContent = polarizationPreviewActive
+      ? "Stop Preview…"
+      : "Preview";
+    transformPolarizationPreviewButton.setAttribute(
+      "aria-pressed",
+      String(polarizationPreviewActive),
+    );
+    transformPolarizationPreviewButton.disabled =
+      !polarizationPreviewActive &&
+      (!polarizationRecipe ||
+        hasDuplicatePolarizationRoleAssignments(transform) ||
+        !getAvailablePolarizationProducts(transform).includes(
+          transform.polarizationProduct,
+        ));
+  }
+  if (transformRasterPreviewButton) {
+    transformRasterPreviewButton.textContent = rasterPreviewActive
+      ? "Stop Preview…"
+      : "Preview";
+    transformRasterPreviewButton.setAttribute(
+      "aria-pressed",
+      String(rasterPreviewActive),
+    );
+  }
+  if (transformRasterExportButton) {
+    transformRasterExportButton.disabled =
+      transformGenerationRunning ||
+      tileSets().length === 0 ||
+      (polarizationRecipe &&
+        (hasDuplicatePolarizationRoleAssignments(transform) ||
+          !getAvailablePolarizationProducts(transform).includes(
+            transform.polarizationProduct,
+          )));
+  }
+  updateTransformResolutionStatus();
   updateTransformOutputName();
   if (!transformGenerationRunning) {
     const defaultStatuses = new Set([
@@ -17620,7 +18576,22 @@ function updateTransformControls() {
     ]);
     if (defaultStatuses.has(transformStatus?.textContent || "")) {
       if (rasterRecipe) {
-        updateTransformAdvancedExpressionStatus();
+        if (rasterPreviewActive) {
+          setTransformStatus(getTransformPreviewIdleStatus(
+            tileSets()[getSelectedTransformTileSetIndex()],
+          ));
+        } else {
+          updateTransformAdvancedExpressionStatus();
+        }
+      } else if (polarizationRecipe) {
+        updatePolarizationInputStatus();
+        setTransformStatus(
+          polarizationPreviewActive
+            ? getTransformPreviewIdleStatus(
+                tileSets()[getSelectedTransformTileSetIndex()],
+              )
+            : "Choose a calculation, then preview or export it.",
+        );
       } else {
         setTransformStatus("Preview transforms are temporary.");
       }
@@ -17656,15 +18627,19 @@ function applyTransformControlsToSelectedTileSet() {
   if (
     hadTransform ||
     appliedTransform.type !== "none" ||
-    isRasterRecipe(appliedTransform)
+    isRasterRecipe(appliedTransform) ||
+    isPolarizationRecipe(appliedTransform)
   ) {
-    resetTransformTileCaches(tileSet, { restoreDisplayed: false });
+    resetTransformTileCaches(tileSet);
   }
   tileSetTransformState.set(tileSet, appliedTransform);
   updateSnapshotStatus();
   updateAdvancedVisibleInputPreloadHints();
   if (isRasterRecipe(transform) && planHasRenderableAdvancedExpression()) {
     setTransformStatus("Processing preview...");
+    setTransformPreviewProgressStart();
+  } else if (isPolarizationRecipe(transform)) {
+    setTransformStatus("Processing polarization preview...");
     setTransformPreviewProgressStart();
   } else if (
     !isRasterRecipe(transform) &&
@@ -17675,6 +18650,30 @@ function applyTransformControlsToSelectedTileSet() {
   }
   scheduleTileAppearanceReprocess(tileSet);
   scheduleTransformHistogramRefresh();
+}
+
+function moveTransformPreviewToSelectedTileSet() {
+  const selectedTileSet = tileSets()[getSelectedTransformTileSetIndex()];
+  if (!selectedTileSet) return;
+
+  // A preview belongs to exactly one output tile set. Clear both the transform
+  // state and every displayed derived canvas before applying it to the newly
+  // selected source, so zoom-level tile reuse cannot reveal the old preview.
+  const previouslyTransformedTileSets = tileSets().filter(
+    (tileSet) => !isDefaultTileSetTransform(tileSet),
+  );
+  if (previouslyTransformedTileSets.length) {
+    previouslyTransformedTileSets.forEach((tileSet) => {
+      tileSetTransformState.set(tileSet, {
+        ...TILE_SET_TRANSFORM_DEFAULTS,
+      });
+      updateTileSetAppearanceRenderingHints(tileSet);
+    });
+    resetTransformTileCaches(previouslyTransformedTileSets);
+  }
+
+  clearTransformProgress();
+  applyTransformControlsToSelectedTileSet();
 }
 
 function isTransformSourceTileSetVisible() {
@@ -17688,7 +18687,8 @@ function getTransformPreviewIdleStatus(tileSet) {
   if (
     !isTransformPreviewEnabled() &&
     (activeTransformPreviewSettings.type !== "none" ||
-      isRasterRecipe(activeTransformPreviewSettings))
+      isRasterRecipe(activeTransformPreviewSettings) ||
+      isPolarizationRecipe(activeTransformPreviewSettings))
   ) {
     return "Preview transform is hidden.";
   }
@@ -17741,6 +18741,19 @@ function syncTransformControlsFromSettings(transform) {
     transformIntensityValue.value = normalized.intensity;
   if (transformRadius) transformRadius.value = normalized.radius;
   if (transformRadiusValue) transformRadiusValue.value = normalized.radius;
+  if (transformPolarizationPplSelect) {
+    transformPolarizationPplSelect.value = String(normalized.polarizationPplIndex);
+  }
+  if (transformPolarizationXplSelect) {
+    transformPolarizationXplSelect.value = String(normalized.polarizationXplIndex);
+  }
+  if (transformPolarizationCplSelect) {
+    transformPolarizationCplSelect.value = String(normalized.polarizationCplIndex);
+  }
+  populateTransformPolarizationProducts();
+  if (transformPolarizationProductSelect) {
+    transformPolarizationProductSelect.value = normalized.polarizationProduct;
+  }
 }
 
 function applyActiveTransformPreviewToSelectedTileSet() {
@@ -17801,10 +18814,10 @@ function getTransformGenerationImageRect() {
 }
 
 function getTransformGenerationResolution(imageRect) {
-  const tierKey = transformGenerateSize?.value || "medium";
+  const tierKey = transformGenerateSize?.value || "balanced";
   const tier =
     TRANSFORM_EXPORT_RESOLUTION_TIERS[tierKey] ||
-    TRANSFORM_EXPORT_RESOLUTION_TIERS.medium;
+    TRANSFORM_EXPORT_RESOLUTION_TIERS.balanced;
   const sourceWidth = Math.max(1, Math.round(imageRect?.width || 1));
   const sourceHeight = Math.max(1, Math.round(imageRect?.height || 1));
   const sourcePixels = sourceWidth * sourceHeight;
@@ -17839,8 +18852,310 @@ function formatMegapixels(pixelCount) {
 function getTransformGenerationResolutionLabel(resolution) {
   const percent = Math.round((resolution?.scale || 1) * 100);
   const sizeLabel = `${resolution.width} x ${resolution.height}`;
-  const capLabel = formatMegapixels(resolution.maxPixels);
-  return `${resolution.label}: ${percent}% (${sizeLabel}, ${capLabel} cap)`;
+  const capLabel = Number.isFinite(resolution.maxPixels)
+    ? `, ${formatMegapixels(resolution.maxPixels)} cap`
+    : "";
+  return `${resolution.label}: ${percent}% (${sizeLabel}${capLabel})`;
+}
+
+function updateTransformResolutionStatus() {
+  if (!transformResolutionStatus) return;
+  const imageRect = getTransformGenerationImageRect();
+  if (!imageRect) {
+    transformResolutionStatus.textContent = "Resolution is unavailable.";
+    return;
+  }
+  const resolution = getTransformGenerationResolution(imageRect);
+  const warning =
+    resolution.key === "maximum" && resolution.pixels > 80000000
+      ? " Maximum available may require substantial memory and processing time."
+      : "";
+  transformResolutionStatus.textContent = `${getTransformGenerationResolutionLabel(
+    resolution,
+  )}.${warning}`;
+}
+
+async function renderPolarizationRaster(imageRect, resolution, transform) {
+  const stacks = {};
+  const modalities = getPolarizationRequiredModalities(
+    transform.polarizationProduct,
+  );
+  let completedImages = 0;
+  const totalImages = modalities.reduce(
+    (sum, modality) =>
+      sum + (getPolarizationTileSet(modality, transform)?.tiles?.length || 0),
+    0,
+  );
+  for (const modality of modalities) {
+    const tileSetIndex = getPolarizationRoleIndex(modality, transform);
+    const tileSet = tileSets()[tileSetIndex];
+    if (!tileSet) throw new Error(`${modality.toUpperCase()} source is not assigned.`);
+    stacks[modality] = [];
+    for (let tileIndex = 0; tileIndex < tileSet.tiles.length; tileIndex += 1) {
+      setTransformProgress(
+        8 + (completedImages / Math.max(1, totalImages)) * 42,
+        `Rendering ${modality.toUpperCase()} image ${tileIndex + 1}/${tileSet.tiles.length}...`,
+      );
+      const canvas = await renderFullResolutionImageRectCanvas(
+        imageRect,
+        tileSetIndex,
+        resolution.scale,
+        { tileIndex },
+      );
+      const context = canvas.getContext("2d", { willReadFrequently: true });
+      const imageData = context?.getImageData(0, 0, canvas.width, canvas.height);
+      if (!imageData) throw new Error(`Could not render ${modality.toUpperCase()} image.`);
+      stacks[modality].push(imageData.data);
+      completedImages += 1;
+      await wait(0);
+    }
+  }
+  setTransformProgress(52, "Calculating polarization product...");
+  return PetroPolarizationAnalysis.calculatePolarizationRaster(
+    stacks,
+    resolution.width,
+    resolution.height,
+    {
+      product: transform.polarizationProduct,
+      channel: transform.channel,
+      pplAngles: getPolarizationAngles(getPolarizationTileSet("ppl", transform)),
+      xplAngles: getPolarizationAngles(getPolarizationTileSet("xpl", transform)),
+    },
+  );
+}
+
+function createPolarizationRasterDisplayCanvas(raster, transform, width, height) {
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const context = canvas.getContext("2d", { willReadFrequently: true });
+  if (!context) throw new Error("Could not create polarization display image.");
+  mapPolarizationRasterToImageData(context, raster, transform);
+  return canvas;
+}
+
+function getTransformExportFilename(extension) {
+  const source = String(typeof title === "function" ? title() : "transform")
+    .replace(/[^a-z0-9_-]+/gi, "-")
+    .replace(/^-+|-+$/g, "") || "transform";
+  const product = sanitizeDerivedTileSetName(
+    transformOutputName?.value || "transform",
+  )
+    .replace(/[^a-z0-9_-]+/gi, "-")
+    .replace(/^-+|-+$/g, "")
+    .toLowerCase();
+  return `${source}-${product}.${extension}`;
+}
+
+function getTransformRasterSidecarFilename(filename) {
+  return filename.replace(/\.[^.]+$/, ".json");
+}
+
+function getTransformRasterMetadata(transform, resolution, raster, format) {
+  const imageSize = viewer.world.getItemAt(0)?.getContentSize?.();
+  const definition = isPolarizationRecipe(transform)
+    ? PetroPolarizationAnalysis.getProductDefinition(
+        transform.polarizationProduct,
+      )
+    : null;
+  return {
+    schema: "petro-image.transform-raster",
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    product: isPolarizationRecipe(transform)
+      ? transform.polarizationProduct
+      : transform.recipeType === "raster"
+        ? transform.rasterExpression
+        : transform.type,
+    format,
+    encoding:
+      format === "npy"
+        ? "NumPy .npy, little-endian float32"
+        : format === "tiff"
+          ? "TIFF, little-endian float32"
+          : `${format.toUpperCase()} display image`,
+    unit: definition?.unit || "display-intensity",
+    noDataValue: format === "npy" || format === "tiff" ? "NaN" : null,
+    source: {
+      title: typeof title === "function" ? title() : "",
+      width: imageSize?.x ?? null,
+      height: imageSize?.y ?? null,
+      coordinateSpace: "source-image-pixels",
+      origin: "top-left",
+      axes: { x: "right", y: "down" },
+    },
+    raster: {
+      width: resolution.width,
+      height: resolution.height,
+      scale: resolution.scale,
+      resolutionMode: resolution.key,
+      pixelToSourceImage: {
+        origin: { x: 0, y: 0 },
+        xStep: { x: (imageSize?.x || resolution.width) / resolution.width, y: 0 },
+        yStep: { x: 0, y: (imageSize?.y || resolution.height) / resolution.height },
+        pixelCenterOffset: { x: 0.5, y: 0.5 },
+      },
+      valueRange: definition?.range || [raster.min, raster.max],
+      circular: Boolean(definition?.circular),
+    },
+    transform,
+    assumptions: isPolarizationRecipe(transform)
+      ? ["XPL polarizer and analyzer are crossed at 90 degrees and rotate together."]
+      : [],
+  };
+}
+
+function getScalarValuesFromCanvas(canvas) {
+  const context = canvas.getContext("2d", { willReadFrequently: true });
+  const pixels = context?.getImageData(0, 0, canvas.width, canvas.height)?.data;
+  if (!pixels) throw new Error("Could not read transformed raster values.");
+  const values = new Float32Array(canvas.width * canvas.height);
+  let min = Infinity;
+  let max = -Infinity;
+  for (let index = 0; index < values.length; index += 1) {
+    const offset = index * 4;
+    const value = getPixelLuminance(pixels, offset);
+    values[index] = value;
+    min = Math.min(min, value);
+    max = Math.max(max, value);
+  }
+  return { values, min, max, definition: null };
+}
+
+async function renderTransformRasterForExport(transform, imageRect, resolution) {
+  if (isPolarizationRecipe(transform)) {
+    const raster = await renderPolarizationRaster(imageRect, resolution, transform);
+    const canvas = createPolarizationRasterDisplayCanvas(
+      raster,
+      transform,
+      resolution.width,
+      resolution.height,
+    );
+    return { raster, canvas };
+  }
+  const tileSetIndex = getSelectedTransformTileSetIndex();
+  const canvas = await renderFullResolutionImageRectCanvas(
+    imageRect,
+    tileSetIndex,
+    resolution.scale,
+  );
+  const context = canvas.getContext("2d", { willReadFrequently: true });
+  if (!context) throw new Error("Could not process transformed raster.");
+  if (isRasterRecipe(transform)) {
+    await applyAdvancedTransformToExportContext(
+      context,
+      transform,
+      imageRect,
+      resolution.scale,
+    );
+  } else {
+    applyTileSetTransformToContext(context, transform);
+  }
+  return { raster: getScalarValuesFromCanvas(canvas), canvas };
+}
+
+async function exportTransformRaster() {
+  if (transformGenerationRunning) return;
+  const transform = getTransformOptionsFromControls();
+  if (
+    isPolarizationRecipe(transform) &&
+    hasDuplicatePolarizationRoleAssignments(transform)
+  ) {
+    setTransformStatus("Assign each polarization role to a different tile set.", "error");
+    return;
+  }
+  const imageRect = getTransformGenerationImageRect();
+  if (!imageRect) {
+    setTransformStatus("Could not determine the source image size.", "error");
+    return;
+  }
+  const format = transformRasterExportFormat?.value || "npy";
+  const resolution = getTransformGenerationResolution(imageRect);
+  transformGenerationRunning = true;
+  updateTransformControls();
+  setTransformStatus("Preparing raster export...");
+  setTransformProgress(5, "Preparing raster export...");
+  try {
+    const { raster, canvas } = await renderTransformRasterForExport(
+      transform,
+      imageRect,
+      resolution,
+    );
+    const extension = format === "jpeg" ? "jpg" : format === "tiff" ? "tif" : format;
+    const filename = getTransformExportFilename(extension);
+    setTransformProgress(75, "Encoding raster...");
+    if (format === "npy") {
+      saveAs(
+        encodeNpy(raster.values, resolution.width, resolution.height, "<f4"),
+        filename,
+      );
+    } else if (format === "tiff") {
+      saveAs(
+        encodeTiff(raster.values, resolution.width, resolution.height, {
+          bitsPerSample: 32,
+          sampleFormat: 3,
+        }),
+        filename,
+      );
+    } else {
+      saveAs(
+        await canvasToBlob(
+          canvas,
+          format === "jpeg" ? "image/jpeg" : "image/png",
+          format === "jpeg" ? 0.95 : undefined,
+        ),
+        filename,
+      );
+    }
+    const metadata = getTransformRasterMetadata(
+      transform,
+      resolution,
+      raster,
+      format,
+    );
+    saveAs(
+      new Blob([JSON.stringify(metadata, null, 2)], {
+        type: "application/json;charset=utf-8",
+      }),
+      getTransformRasterSidecarFilename(filename),
+    );
+    setTransformProgress(100, "Done");
+    setTransformStatus(`Exported ${filename} with metadata sidecar.`, "ok");
+  } catch (error) {
+    console.error("Could not export transformed raster:", error);
+    setTransformStatus(error.message || "Could not export raster.", "error");
+  } finally {
+    transformGenerationRunning = false;
+    updateTransformControls();
+    window.setTimeout(clearTransformProgress, 1200);
+  }
+}
+
+async function savePolarizationRolesToLibrary() {
+  const assignments = [
+    ["ppl", Number(transformPolarizationPplSelect?.value)],
+    ["xpl", Number(transformPolarizationXplSelect?.value)],
+    ["cpl", Number(transformPolarizationCplSelect?.value)],
+  ].filter(([, index]) => index >= 0);
+  if (new Set(assignments.map(([, index]) => index)).size !== assignments.length) {
+    setTransformStatus("Assign each polarization role to a different tile set.", "error");
+    return;
+  }
+  tileSets().forEach((tileSet) => {
+    if (["ppl", "xpl", "cpl"].includes(String(tileSet.modality).toLowerCase())) {
+      delete tileSet.modality;
+    }
+  });
+  assignments.forEach(([modality, index]) => {
+    tileSets()[index].modality = modality;
+  });
+  const saved = await persistCurrentLibraryAfterTileSetExport();
+  setTransformStatus(
+    saved
+      ? "Saved polarization roles to the library."
+      : "Updated roles in memory; automatic library save is unavailable.",
+    "ok",
+  );
 }
 
 function sanitizeDerivedTileSetName(value) {
@@ -18015,9 +19330,16 @@ async function applyAdvancedTransformToExportContext(
 
 async function generateTransformedTileSet() {
   if (transformGenerationRunning) return;
+  const transform = getTransformOptionsFromControls();
+  if (
+    isPolarizationRecipe(transform) &&
+    hasDuplicatePolarizationRoleAssignments(transform)
+  ) {
+    setTransformStatus("Assign each polarization role to a different tile set.", "error");
+    return;
+  }
   const tileSetIndex = getSelectedTransformTileSetIndex();
   const sourceTileSet = tileSets()[tileSetIndex];
-  const transform = getTransformOptionsFromControls();
   const imageRect = getTransformGenerationImageRect();
 
   if (!sourceTileSet) {
@@ -18061,26 +19383,37 @@ async function generateTransformedTileSet() {
       8,
       `Rendering ${getTransformGenerationResolutionLabel(resolution)}...`,
     );
-    const canvas = await renderFullResolutionImageRectCanvas(
-      imageRect,
-      tileSetIndex,
-      scale,
-    );
-    setTransformStatus("Applying transform to export image...");
-    setTransformProgress(45, "Applying transform...");
-    const context = canvas.getContext("2d", { willReadFrequently: true });
-    if (!context) {
-      throw new Error("Could not process the transformed image.");
-    }
-    if (isRasterRecipe(transform)) {
-      await applyAdvancedTransformToExportContext(
-        context,
+    let canvas;
+    if (isPolarizationRecipe(transform)) {
+      const raster = await renderPolarizationRaster(imageRect, resolution, transform);
+      canvas = createPolarizationRasterDisplayCanvas(
+        raster,
         transform,
-        imageRect,
-        scale,
+        resolution.width,
+        resolution.height,
       );
     } else {
-      applyTileSetTransformToContext(context, transform);
+      canvas = await renderFullResolutionImageRectCanvas(
+        imageRect,
+        tileSetIndex,
+        scale,
+      );
+      setTransformStatus("Applying transform to export image...");
+      setTransformProgress(45, "Applying transform...");
+      const context = canvas.getContext("2d", { willReadFrequently: true });
+      if (!context) {
+        throw new Error("Could not process the transformed image.");
+      }
+      if (isRasterRecipe(transform)) {
+        await applyAdvancedTransformToExportContext(
+          context,
+          transform,
+          imageRect,
+          scale,
+        );
+      } else {
+        applyTileSetTransformToContext(context, transform);
+      }
     }
     await wait(0);
 
@@ -18103,6 +19436,28 @@ async function generateTransformedTileSet() {
       derivedFrom: {
         sourceTileSet: getSnapshotTileSetLabel(sourceTileSet, tileSetIndex),
         transform,
+        analysis:
+          isPolarizationRecipe(transform)
+            ? {
+                type: "polarization",
+                product: transform.polarizationProduct,
+                model:
+                  transform.polarizationProduct.startsWith("ppl_")
+                    ? "second_harmonic"
+                    : transform.polarizationProduct.startsWith("xpl_")
+                      ? "fourth_harmonic"
+                      : "observed",
+                assumption: "Polarizer and analyzer are crossed at 90 degrees and rotate together.",
+                anglesDegrees: {
+                  ppl: getPolarizationAngles(
+                    getPolarizationTileSet("ppl", transform),
+                  ),
+                  xpl: getPolarizationAngles(
+                    getPolarizationTileSet("xpl", transform),
+                  ),
+                },
+              }
+            : null,
         generatedAt: new Date().toISOString(),
         resolution: {
           tier: resolution.key,
@@ -18760,6 +20115,259 @@ function findLoadedTileByCoordinates(tileSet, coordinates) {
   return null;
 }
 
+function getTiledImageMaxLevel(tiledImage) {
+  const declaredMaxLevel = Number(
+    tiledImage?.source?.maxLevel ?? tiledImage?.tileSource?.maxLevel,
+  );
+  if (Number.isFinite(declaredMaxLevel)) return declaredMaxLevel;
+  const size = tiledImage?.getContentSize?.();
+  const largestDimension = Math.max(Number(size?.x) || 0, Number(size?.y) || 0);
+  return largestDimension > 0
+    ? Math.ceil(Math.log2(largestDimension))
+    : null;
+}
+
+function markMatchedImageDataResolution(
+  imageData,
+  sourceTile,
+  sourceLevel,
+  sourcePixelSize,
+  targetPixelSize,
+) {
+  if (!imageData) return null;
+  const maxLevel = getTiledImageMaxLevel(sourceTile?.image);
+  const resolutionPending = Boolean(
+    Number.isFinite(sourceLevel) &&
+      Number.isFinite(maxLevel) &&
+      Number.isFinite(sourcePixelSize) &&
+      Number.isFinite(targetPixelSize) &&
+      sourceLevel < maxLevel &&
+      sourcePixelSize > targetPixelSize * 1.05,
+  );
+  imageData.petroImageSourcePixelSize = sourcePixelSize;
+  imageData.petroImageTargetPixelSize = targetPixelSize;
+  imageData.petroImageSourceLevel = sourceLevel;
+  imageData.petroImageSourceMaxLevel = maxLevel;
+  imageData.petroImageResolutionPending = resolutionPending;
+  return imageData;
+}
+
+function getSpatiallyMatchedTileImageData(
+  sourceTile,
+  outputLoadedTile,
+  width,
+  height,
+) {
+  const targetBounds = getLoadedTileViewportBounds(outputLoadedTile);
+  if (!sourceTile || !targetBounds || !width || !height) return null;
+  const targetPixelSize = Math.max(
+    targetBounds.width / width,
+    targetBounds.height / height,
+  );
+  const epsilon = Math.max(targetBounds.width, targetBounds.height) * 1e-6;
+  const intersectingMatches = [];
+
+  const matrix = sourceTile.image?.tilesMatrix;
+  if (!matrix) return null;
+  Object.entries(matrix).forEach(([level, columns]) => {
+    Object.values(columns || {}).forEach((rows) => {
+      Object.values(rows || {}).forEach((loadedTile) => {
+        if (!loadedTile?.loaded && !loadedTile?.context2D) return;
+        const sourceBounds = getLoadedTileViewportBounds(loadedTile);
+        const sourceContext = getOriginalContextForLoadedTile(loadedTile);
+        if (!sourceBounds || !sourceContext?.canvas) return;
+        const intersection = {
+          x: Math.max(sourceBounds.x, targetBounds.x),
+          y: Math.max(sourceBounds.y, targetBounds.y),
+          right: Math.min(
+            sourceBounds.x + sourceBounds.width,
+            targetBounds.x + targetBounds.width,
+          ),
+          bottom: Math.min(
+            sourceBounds.y + sourceBounds.height,
+            targetBounds.y + targetBounds.height,
+          ),
+        };
+        if (
+          intersection.right <= intersection.x + epsilon ||
+          intersection.bottom <= intersection.y + epsilon
+        ) {
+          return;
+        }
+        const sourcePixelSize = Math.max(
+          sourceBounds.width / sourceContext.canvas.width,
+          sourceBounds.height / sourceContext.canvas.height,
+        );
+        const score = Math.abs(
+          Math.log(Math.max(Number.EPSILON, sourcePixelSize / targetPixelSize)),
+        );
+        intersectingMatches.push({
+          level: Number.parseInt(level, 10),
+          sourceBounds,
+          sourceContext,
+          intersection,
+          sourcePixelSize,
+          score,
+        });
+      });
+    });
+  });
+
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const context = canvas.getContext("2d", {
+    alpha: false,
+    willReadFrequently: true,
+  });
+  if (!context) return null;
+  context.imageSmoothingEnabled = true;
+  if (!intersectingMatches.length) return null;
+  const matchesByLevel = new Map();
+  intersectingMatches.forEach((match) => {
+    if (!matchesByLevel.has(match.level)) matchesByLevel.set(match.level, []);
+    matchesByLevel.get(match.level).push(match);
+  });
+  const completeLevelGroups = Array.from(matchesByLevel.entries())
+    .map(([level, matches]) => ({
+      level,
+      matches,
+      coveredArea: matches.reduce((area, match) => {
+        return (
+          area +
+          (match.intersection.right - match.intersection.x) *
+            (match.intersection.bottom - match.intersection.y)
+        );
+      }, 0),
+      score: Math.min(...matches.map((match) => match.score)),
+    }))
+    .filter(
+      (group) =>
+        group.coveredArea >=
+        targetBounds.width * targetBounds.height * 0.98,
+    );
+  if (!completeLevelGroups.length) return null;
+  const bestGroup = completeLevelGroups.reduce((best, group) =>
+    !best || group.score < best.score ? group : best,
+  );
+  const bestLevel = bestGroup.level;
+  let coveredArea = 0;
+  const bestLevelMatches = bestGroup.matches;
+  bestLevelMatches
+    .forEach(({ sourceBounds, sourceContext, intersection }) => {
+      const intersectionWidth = intersection.right - intersection.x;
+      const intersectionHeight = intersection.bottom - intersection.y;
+      const sourceCanvas = sourceContext.canvas;
+      context.drawImage(
+        sourceCanvas,
+        ((intersection.x - sourceBounds.x) / sourceBounds.width) *
+          sourceCanvas.width,
+        ((intersection.y - sourceBounds.y) / sourceBounds.height) *
+          sourceCanvas.height,
+        (intersectionWidth / sourceBounds.width) * sourceCanvas.width,
+        (intersectionHeight / sourceBounds.height) * sourceCanvas.height,
+        ((intersection.x - targetBounds.x) / targetBounds.width) * width,
+        ((intersection.y - targetBounds.y) / targetBounds.height) * height,
+        (intersectionWidth / targetBounds.width) * width,
+        (intersectionHeight / targetBounds.height) * height,
+      );
+      coveredArea += intersectionWidth * intersectionHeight;
+    });
+  if (
+    coveredArea <
+    targetBounds.width * targetBounds.height * 0.98
+  ) {
+    return null;
+  }
+  const sourcePixelSize = bestLevelMatches.reduce(
+    (largest, match) => Math.max(largest, match.sourcePixelSize),
+    0,
+  );
+  return markMatchedImageDataResolution(
+    context.getImageData(0, 0, width, height),
+    sourceTile,
+    bestLevel,
+    sourcePixelSize,
+    targetPixelSize,
+  );
+}
+
+function getMatchedTileImageData(
+  sourceTile,
+  outputLoadedTile,
+  coordinates,
+  width,
+  height,
+) {
+  const exactTile = findLoadedTileByCoordinatesInTile(sourceTile, coordinates);
+  const exactBounds = getLoadedTileViewportBounds(exactTile);
+  const outputBounds = getLoadedTileViewportBounds(outputLoadedTile);
+  const boundsTolerance = outputBounds
+    ? Math.max(outputBounds.width, outputBounds.height) * 1e-6
+    : 0;
+  const exactBoundsMatch =
+    exactBounds &&
+    outputBounds &&
+    Math.abs(exactBounds.x - outputBounds.x) <= boundsTolerance &&
+    Math.abs(exactBounds.y - outputBounds.y) <= boundsTolerance &&
+    Math.abs(exactBounds.width - outputBounds.width) <= boundsTolerance &&
+    Math.abs(exactBounds.height - outputBounds.height) <= boundsTolerance;
+  const exactContext = exactBoundsMatch
+    ? getOriginalContextForLoadedTile(exactTile)
+    : null;
+  const exactImageData = getContextImageDataMatchingSize(
+    exactContext,
+    width,
+    height,
+  );
+  const targetPixelSize = outputBounds
+    ? Math.max(outputBounds.width / width, outputBounds.height / height)
+    : null;
+  const exactSourcePixelSize =
+    exactBounds && exactContext?.canvas
+      ? Math.max(
+          exactBounds.width / exactContext.canvas.width,
+          exactBounds.height / exactContext.canvas.height,
+        )
+      : null;
+  return (
+    (exactImageData &&
+      markMatchedImageDataResolution(
+        exactImageData,
+        sourceTile,
+        coordinates.level,
+        exactSourcePixelSize,
+        targetPixelSize,
+      )) ||
+    getSpatiallyMatchedTileImageData(
+      sourceTile,
+      outputLoadedTile,
+      width,
+      height,
+    )
+  );
+}
+
+function getMatchedTileSetImageData(
+  sourceTileSet,
+  outputLoadedTile,
+  coordinates,
+  width,
+  height,
+) {
+  for (const sourceTile of sourceTileSet?.tiles || []) {
+    const imageData = getMatchedTileImageData(
+      sourceTile,
+      outputLoadedTile,
+      coordinates,
+      width,
+      height,
+    );
+    if (imageData) return imageData;
+  }
+  return null;
+}
+
 function findTileEntryForLoadedTile(tileSet, loadedTile) {
   if (!tileSet || !loadedTile) return null;
   for (const tile of tileSet.tiles || []) {
@@ -18848,6 +20456,7 @@ function applyAdvancedVisibleTransformToContext(
   const imageData = context.getImageData(0, 0, width, height);
   const inputMap = {};
   const aggregateInputMap = {};
+  let resolutionPending = false;
   const outputTileSetIndex = tileSets().indexOf(outputTileSet);
   const needsMatchedTile =
     plan.aggregateInputs.length > 0 ||
@@ -18868,13 +20477,22 @@ function applyAdvancedVisibleTransformToContext(
       inputContext = sourceContext;
     } else {
       const entry = getRasterInputEntry(input.set);
-      const matchingTile = findLoadedTileByCoordinates(
+      const inputImageData = getMatchedTileSetImageData(
         entry?.tileSet,
+        loadedTile,
         coordinates,
+        width,
+        height,
       );
-      inputContext = matchingTile
-        ? getOriginalContextForLoadedTile(matchingTile)
-        : null;
+      if (!inputImageData) {
+        context.petroImageAdvancedMissingInput = true;
+        return false;
+      }
+      resolutionPending ||= Boolean(
+        inputImageData.petroImageResolutionPending,
+      );
+      inputMap[input.set] = inputImageData;
+      continue;
     }
     const inputImageData = getContextImageDataMatchingSize(
       inputContext,
@@ -18897,12 +20515,10 @@ function applyAdvancedVisibleTransformToContext(
     }
     const stack = [];
     for (const tile of entry.tileSet.tiles || []) {
-      const matchingTile = findLoadedTileByCoordinatesInTile(tile, coordinates);
-      const inputContext = matchingTile
-        ? getOriginalContextForLoadedTile(matchingTile)
-        : null;
-      const inputImageData = getContextImageDataMatchingSize(
-        inputContext,
+      const inputImageData = getMatchedTileImageData(
+        tile,
+        loadedTile,
+        coordinates,
         width,
         height,
       );
@@ -18910,6 +20526,9 @@ function applyAdvancedVisibleTransformToContext(
         context.petroImageAdvancedMissingInput = true;
         return false;
       }
+      resolutionPending ||= Boolean(
+        inputImageData.petroImageResolutionPending,
+      );
       stack.push(inputImageData);
     }
     if (!stack.length) {
@@ -18966,12 +20585,134 @@ function applyAdvancedVisibleTransformToContext(
   }
 
   context.putImageData(imageData, 0, 0);
-  context.petroImageAdvancedMissingInput = false;
+  context.petroImageAdvancedResolutionPending = resolutionPending;
+  context.petroImageAdvancedMissingInput = resolutionPending;
   context.petroImageAdvancedTransformError = "";
   context.petroImageAdvancedRawValues = values;
   context.petroImageAdvancedRawWidth = width;
   context.petroImageAdvancedRawHeight = height;
   return true;
+}
+
+function getPolarizationRequiredModalities(product) {
+  const definition = PetroPolarizationAnalysis.getProductDefinition(product);
+  if (definition?.mode === "combined") return ["xpl", "cpl"];
+  return definition?.mode ? [definition.mode] : [];
+}
+
+function getCircularHueRgb(value, period) {
+  const hue = PetroPolarizationAnalysis.positiveModulo(value, period) / period;
+  const sector = hue * 6;
+  const x = 1 - Math.abs((sector % 2) - 1);
+  let rgb;
+  if (sector < 1) rgb = [1, x, 0];
+  else if (sector < 2) rgb = [x, 1, 0];
+  else if (sector < 3) rgb = [0, 1, x];
+  else if (sector < 4) rgb = [0, x, 1];
+  else if (sector < 5) rgb = [x, 0, 1];
+  else rgb = [1, 0, x];
+  return rgb.map((component) => Math.round(component * 255));
+}
+
+function mapPolarizationRasterToImageData(context, raster, transform) {
+  const imageData = context.createImageData(context.canvas.width, context.canvas.height);
+  const output = imageData.data;
+  const definition = raster.definition;
+  const displayMin = definition.range[0];
+  const displayMax = definition.range[1];
+  const span = Math.max(Number.EPSILON, displayMax - displayMin);
+  for (let index = 0; index < raster.values.length; index += 1) {
+    const offset = index * 4;
+    const raw = raster.values[index];
+    if (!Number.isFinite(raw)) {
+      output[offset + 3] = 255;
+      continue;
+    }
+    const displayValue = clampColorValue(((raw - displayMin) / span) * 255);
+    let rgb;
+    if (transform.output === "falseColor") {
+      rgb = definition.circular
+        ? getCircularHueRgb(raw, displayMax - displayMin)
+        : getFalseColorRgb(displayValue);
+    } else {
+      rgb = [displayValue, displayValue, displayValue];
+    }
+    output[offset] = rgb[0];
+    output[offset + 1] = rgb[1];
+    output[offset + 2] = rgb[2];
+    output[offset + 3] = 255;
+  }
+  context.putImageData(imageData, 0, 0);
+}
+
+function applyPolarizationVisibleTransformToContext(
+  context,
+  transform,
+  loadedTile,
+) {
+  const coordinates = getLoadedTileCoordinates(loadedTile);
+  if (!coordinates) {
+    context.petroImageAdvancedMissingInput = true;
+    return false;
+  }
+  const width = context.canvas.width;
+  const height = context.canvas.height;
+  const stacks = {};
+  let resolutionPending = false;
+  for (const modality of getPolarizationRequiredModalities(
+    transform.polarizationProduct,
+  )) {
+    const tileSet = getPolarizationTileSet(modality, transform);
+    if (!tileSet) {
+      context.petroImageAdvancedTransformError = `${modality.toUpperCase()} source is not assigned.`;
+      return false;
+    }
+    stacks[modality] = [];
+    for (const tile of tileSet.tiles || []) {
+      const imageData = getMatchedTileImageData(
+        tile,
+        loadedTile,
+        coordinates,
+        width,
+        height,
+      );
+      if (!imageData) {
+        context.petroImageAdvancedMissingInput = true;
+        return false;
+      }
+      resolutionPending ||= Boolean(imageData.petroImageResolutionPending);
+      stacks[modality].push(imageData.data);
+    }
+  }
+  try {
+    const raster = PetroPolarizationAnalysis.calculatePolarizationRaster(
+      stacks,
+      width,
+      height,
+      {
+        product: transform.polarizationProduct,
+        channel: transform.channel,
+        pplAngles: getPolarizationAngles(
+          getPolarizationTileSet("ppl", transform),
+        ),
+        xplAngles: getPolarizationAngles(
+          getPolarizationTileSet("xpl", transform),
+        ),
+      },
+    );
+    mapPolarizationRasterToImageData(context, raster, transform);
+    context.petroImageAdvancedRawValues = raster.values;
+    context.petroImageAdvancedRawWidth = width;
+    context.petroImageAdvancedRawHeight = height;
+    context.petroImageAdvancedResolutionPending = resolutionPending;
+    context.petroImageAdvancedMissingInput = resolutionPending;
+    context.petroImageAdvancedTransformError = "";
+    return true;
+  } catch (error) {
+    context.petroImageAdvancedTransformError =
+      error.message || "Polarization analysis failed.";
+    return false;
+  }
 }
 
 function applyTileSetTransformToContext(
@@ -18981,6 +20722,10 @@ function applyTileSetTransformToContext(
   sourceContext = null,
   outputTileSet = null,
 ) {
+  if (isPolarizationRecipe(transform)) {
+    applyPolarizationVisibleTransformToContext(context, transform, loadedTile);
+    return;
+  }
   if (isRasterRecipe(transform)) {
     applyAdvancedVisibleTransformToContext(
       context,
@@ -19177,7 +20922,11 @@ function createProcessedTileContext(
   if (!isDefaultAppearanceValue(appearance)) {
     applyTileSetAppearanceToContext(context, appearance);
   }
-  if (isRasterRecipe(transform) || transform.type !== "none") {
+  if (
+    isRasterRecipe(transform) ||
+    isPolarizationRecipe(transform) ||
+    transform.type !== "none"
+  ) {
     applyTileSetTransformToContext(
       context,
       transform,
@@ -19233,6 +20982,12 @@ function getCachedProcessedTileContext(
   ) {
     return loadedTile.petroImageProcessedContext.context;
   }
+  if (
+    loadedTile.petroImagePendingProcessedContext?.key === cacheKey &&
+    loadedTile.petroImagePendingProcessedContext.context?.canvas
+  ) {
+    return loadedTile.petroImagePendingProcessedContext.context;
+  }
 
   const processedContext = createProcessedTileContext(
     originalContext,
@@ -19250,11 +21005,16 @@ function getCachedProcessedTileContext(
       key: cacheKey,
       context: processedContext,
     };
+    loadedTile.petroImagePendingProcessedContext = null;
   } else if (
     processedContext?.petroImageAdvancedMissingInput ||
     processedContext?.petroImageAdvancedTransformError
   ) {
     loadedTile.petroImageProcessedContext = null;
+    loadedTile.petroImagePendingProcessedContext = {
+      key: cacheKey,
+      context: processedContext,
+    };
   }
   return processedContext;
 }
@@ -19307,6 +21067,7 @@ function restoreLoadedTileSourceContext(loadedTile) {
 
   const sourceContext = createSourceContextForLoadedTile(loadedTile);
   loadedTile.petroImageProcessedContext = null;
+  loadedTile.petroImagePendingProcessedContext = null;
   loadedTile.petroImageOriginalContext = sourceContext || null;
   if (!sourceContext) return false;
 
@@ -19422,7 +21183,6 @@ function handleTileLoadedForAppearance(event) {
   if (!tileSet || !event.data) return;
 
   if (!shouldProcessTileSet(tileSet)) {
-    scheduleAdvancedVisibleTransformDependents(tileSet);
     if (tileSet === tileSets()[getSelectedTransformTileSetIndex()]) {
       scheduleTransformHistogramRefresh();
     }
@@ -19440,7 +21200,6 @@ function handleTileLoadedForAppearance(event) {
     );
   } finally {
     completionCallback();
-    scheduleAdvancedVisibleTransformDependents(tileSet);
     if (tileSet === tileSets()[getSelectedTransformTileSetIndex()]) {
       scheduleTransformHistogramRefresh();
     }
@@ -19449,7 +21208,12 @@ function handleTileLoadedForAppearance(event) {
 
 function handleTileDrawnForTransformPreview(event) {
   const tileSet = getTileSetForTiledImage(event.tiledImage);
-  if (!tileSet || !shouldProcessTileSet(tileSet)) return;
+  if (!tileSet) return;
+  if (event.tile) {
+    event.tile.petroImageLastDrawnAt = performance.now();
+    event.tile.petroImageLastDrawnOpacity = Number(event.tile.opacity) || 0;
+  }
+  if (!shouldProcessTileSet(tileSet)) return;
   const changed = processLoadedTileForPreview(
     tileSet,
     event.tiledImage,
@@ -19464,25 +21228,6 @@ function handleTileDrawnForTransformPreview(event) {
       scheduleTileAppearanceReprocess(tileSet);
     }
   }
-}
-
-function scheduleAdvancedVisibleTransformDependents(loadedTileSet) {
-  const loadedTileSetIndex = tileSets().indexOf(loadedTileSet);
-  if (loadedTileSetIndex < 0) return;
-
-  tileSets().forEach((tileSet) => {
-    const transform = getTileSetTransform(tileSet);
-    if (!isRasterRecipe(transform)) return;
-    const plan = getTransformAdvancedExpressionPlan(transform.rasterExpression);
-    if (!plan.valid) return;
-    const usesLoadedTileSet = [
-      ...plan.visibleInputs,
-      ...plan.aggregateInputs,
-    ].some((input) => input.tileSetIndex === loadedTileSetIndex);
-    if (usesLoadedTileSet) {
-      scheduleTileAppearanceReprocess(tileSet);
-    }
-  });
 }
 
 function forEachLoadedTileInTileSet(tileSet, callback) {
@@ -19597,9 +21342,12 @@ function updateTransformPreviewAfterReprocess(tileSet, stats) {
 
   if (stats.contextMessage) {
     setTransformStatus(stats.contextMessage, "error");
-  } else if (stats.missingAdvancedInputs > 0) {
+  } else if (
+    stats.missingAdvancedInputs > 0 &&
+    !transformPreviewProgressState.complete
+  ) {
     setTransformStatus(
-      `Waiting for source stack tiles... ${stats.missingAdvancedInputs} pending`,
+      "Waiting for source stack tiles...",
       "",
     );
   } else if (aggregateWarning) {
@@ -19616,6 +21364,7 @@ function updateTransformPreviewAfterReprocess(tileSet, stats) {
     );
   } else if (
     transformStatus?.textContent === "Processing preview..." ||
+    transformStatus?.textContent === "Processing polarization preview..." ||
     transformStatus?.textContent === "Waiting for source tiles..." ||
     transformStatus?.textContent?.startsWith(
       "Waiting for visible input tiles...",
@@ -19627,6 +21376,7 @@ function updateTransformPreviewAfterReprocess(tileSet, stats) {
     const idleStatus = getTransformPreviewIdleStatus(tileSet);
     setTransformStatus(idleStatus, "ok");
   }
+  refreshTransformValueTooltipAtLastPointer();
   scheduleTransformHistogramRefresh();
 }
 
@@ -19643,7 +21393,63 @@ function waitForNextPreviewFrame() {
 async function reprocessLoadedTileSetTilesAsync(tileSet, token) {
   const appearance = getTileSetAppearance(tileSet);
   const transform = getTileSetTransform(tileSet);
-  const loadedTiles = getLoadedTilesInTileSet(tileSet);
+  displayImages();
+  viewer?.forceRedraw?.();
+  await waitForNextPreviewFrame();
+  if (token !== tileAppearanceReprocessToken) return null;
+  const allLoadedTiles = getLoadedTilesInTileSet(tileSet);
+  const visibleLayerTiles = allLoadedTiles.filter((tile) => {
+    const entry = findTileEntryForLoadedTile(tileSet, tile);
+    return (Number(entry?.tile?.image?.getOpacity?.()) || 0) > 0.001;
+  });
+  const viewportBounds = viewer?.viewport?.getBounds?.(true);
+  const visibleTiles = viewportBounds
+    ? visibleLayerTiles.filter((tile) => {
+        const bounds = getLoadedTileViewportBounds(tile);
+        if (!bounds) return false;
+        return (
+          bounds.x < viewportBounds.x + viewportBounds.width &&
+          bounds.x + bounds.width > viewportBounds.x &&
+          bounds.y < viewportBounds.y + viewportBounds.height &&
+          bounds.y + bounds.height > viewportBounds.y
+        );
+      })
+    : [];
+  const drawingTiles = allLoadedTiles.filter((tile) => tile.beingDrawn);
+  const getLastTouch = (tile) => {
+    const value = tile?.lastTouchTime;
+    if (value instanceof Date) return value.getTime();
+    const numericValue = Number(value);
+    return Number.isFinite(numericValue) ? numericValue : 0;
+  };
+  const mostRecentTouch = allLoadedTiles.reduce(
+    (latest, tile) => Math.max(latest, getLastTouch(tile)),
+    0,
+  );
+  const recentlyTouchedTiles = mostRecentTouch
+    ? allLoadedTiles.filter(
+        (tile) => getLastTouch(tile) >= mostRecentTouch - 1000,
+      )
+    : [];
+  const loadedTiles = visibleTiles.length
+      ? visibleTiles
+      : visibleLayerTiles.length
+        ? visibleLayerTiles
+        : drawingTiles.length
+          ? drawingTiles
+          : recentlyTouchedTiles.length
+            ? recentlyTouchedTiles
+            : allLoadedTiles;
+  loadedTiles.sort((tileA, tileB) => {
+    const drawingDifference =
+      Number(Boolean(tileB.beingDrawn)) - Number(Boolean(tileA.beingDrawn));
+    if (drawingDifference) return drawingDifference;
+    const levelDifference =
+      (getLoadedTileCoordinates(tileB)?.level || 0) -
+      (getLoadedTileCoordinates(tileA)?.level || 0);
+    if (levelDifference) return levelDifference;
+    return getLastTouch(tileB) - getLastTouch(tileA);
+  });
   const stats = {
     total: loadedTiles.length,
     processed: 0,
@@ -19671,10 +21477,6 @@ async function reprocessLoadedTileSetTilesAsync(tileSet, token) {
 
     if (token !== tileAppearanceReprocessToken) return null;
 
-    displayImages();
-    viewer?.forceRedraw?.();
-    updateTransformPreviewAfterReprocess(tileSet, stats);
-
     if (index < loadedTiles.length) {
       await waitForNextPreviewFrame();
       index -= 1;
@@ -19684,23 +21486,48 @@ async function reprocessLoadedTileSetTilesAsync(tileSet, token) {
   return stats;
 }
 
-function scheduleTileAppearanceReprocess(tileSet) {
+function cancelQueuedTileAppearanceReprocess() {
   tileAppearanceReprocessToken += 1;
-  const token = tileAppearanceReprocessToken;
+  tileAppearanceReprocessQueue.clear();
   if (tileAppearanceReprocessTimer !== null) {
     window.clearTimeout(tileAppearanceReprocessTimer);
-  }
-  tileAppearanceReprocessTimer = window.setTimeout(() => {
     tileAppearanceReprocessTimer = null;
+  }
+}
+
+function startNextTileAppearanceReprocess() {
+  if (
+    tileAppearanceReprocessRunning ||
+    tileAppearanceReprocessTimer !== null ||
+    tileAppearanceReprocessQueue.size === 0
+  ) {
+    return;
+  }
+  tileAppearanceReprocessTimer = window.setTimeout(async () => {
+    tileAppearanceReprocessTimer = null;
+    const tileSet = tileAppearanceReprocessQueue.values().next().value;
+    tileAppearanceReprocessQueue.delete(tileSet);
+    const token = tileAppearanceReprocessToken;
+    tileAppearanceReprocessRunning = true;
     updateTileSetAppearanceRenderingHints(tileSet);
-    reprocessLoadedTileSetTilesAsync(tileSet, token).then((stats) => {
+    try {
+      const stats = await reprocessLoadedTileSetTilesAsync(tileSet, token);
       if (!stats || token !== tileAppearanceReprocessToken) return;
       displayImages();
       viewer?.forceRedraw?.();
       updateTransformPreviewAfterReprocess(tileSet, stats);
       scheduleTransformHistogramRefresh();
-    });
-  }, 140);
+    } finally {
+      tileAppearanceReprocessRunning = false;
+      startNextTileAppearanceReprocess();
+    }
+  }, 40);
+}
+
+function scheduleTileAppearanceReprocess(tileSet) {
+  if (!tileSet) return;
+  tileAppearanceReprocessQueue.add(tileSet);
+  startNextTileAppearanceReprocess();
 }
 
 function updateTileAppearanceValueDisplay(key, value) {
@@ -19741,10 +21568,7 @@ function resetTileSetAppearance(tileSetIndex) {
   if (!tileSet) return;
   tileSetAppearanceState.set(tileSet, { ...TILE_SET_APPEARANCE_DEFAULTS });
   saveCurrentSampleTileAppearancePreference();
-  if (tileAppearanceReprocessTimer !== null) {
-    window.clearTimeout(tileAppearanceReprocessTimer);
-    tileAppearanceReprocessTimer = null;
-  }
+  cancelQueuedTileAppearanceReprocess();
   updateTileSetAppearanceRenderingHints(tileSet);
   reprocessLoadedTileSetTiles(tileSet);
   updateTileAppearanceControls();
@@ -19759,10 +21583,7 @@ function resetAllTileSetAppearance() {
     reprocessLoadedTileSetTiles(tileSet);
   });
   saveCurrentSampleTileAppearancePreference();
-  if (tileAppearanceReprocessTimer !== null) {
-    window.clearTimeout(tileAppearanceReprocessTimer);
-    tileAppearanceReprocessTimer = null;
-  }
+  cancelQueuedTileAppearanceReprocess();
   updateTileAppearanceControls();
   displayImages();
   viewer.forceRedraw();
@@ -21590,6 +23411,9 @@ function formatTransformTooltipNumber(value) {
 }
 
 function getTransformTooltipTileCandidates(tileSet, tileSetIndex) {
+  if (derivedPreviewOverlay?.isActiveFor(tileSet) && derivedPreviewOverlay.item) {
+    return [{ image: derivedPreviewOverlay.item }];
+  }
   const tiles = tileSet?.tiles || [];
   if (!tileSet?.periodDegrees) {
     const visibleTile = tiles[getTileSetVisibleTileIndex(tileSetIndex)];
@@ -21682,6 +23506,7 @@ function getTransformTooltipSample(event) {
   const tileSet = tileSets()[tileSetIndex];
   const candidates = getTransformTooltipTileCandidates(tileSet, tileSetIndex);
   let bestSample = null;
+  let bestRawSample = null;
 
   candidates.forEach((tile) => {
     const matrix = tile?.image?.tilesMatrix;
@@ -21707,12 +23532,29 @@ function getTransformTooltipSample(event) {
             context.canvas.height - 1,
           );
           const numericLevel = Number.parseInt(level, 10);
+          const processedContext =
+            loadedTile?.petroImageProcessedContext?.context;
+          const rawContext = [context, processedContext].find(
+            (candidateContext) =>
+              candidateContext?.petroImageAdvancedRawValues &&
+              candidateContext.petroImageAdvancedRawWidth ===
+                candidateContext.canvas?.width &&
+              candidateContext.petroImageAdvancedRawHeight ===
+                candidateContext.canvas?.height,
+          );
+          const sampleContext = rawContext || context;
           const sample = {
-            context,
+            context: sampleContext,
             x: sampleX,
             y: sampleY,
             level: Number.isFinite(numericLevel) ? numericLevel : -Infinity,
           };
+          if (
+            rawContext &&
+            (!bestRawSample || sample.level > bestRawSample.level)
+          ) {
+            bestRawSample = sample;
+          }
           if (!bestSample || sample.level > bestSample.level) {
             loadedTile.petroImageTileCoordinates = {
               level: sample.level,
@@ -21726,9 +23568,24 @@ function getTransformTooltipSample(event) {
     });
   });
 
-  if (!bestSample) return getRenderedViewerPixelTooltipSample(event);
+  const activeTransform = getTileSetTransform(tileSet);
+  const advancedPreviewActive =
+    isRasterRecipe(activeTransform) || isPolarizationRecipe(activeTransform);
+  if (
+    advancedPreviewActive &&
+    (!bestRawSample ||
+      (bestSample && bestRawSample.level < bestSample.level))
+  ) {
+    return null;
+  }
+  const selectedSample = bestRawSample || bestSample;
+  if (!selectedSample) {
+    return advancedPreviewActive
+      ? null
+      : getRenderedViewerPixelTooltipSample(event);
+  }
 
-  const { context, x, y } = bestSample;
+  const { context, x, y } = selectedSample;
   const rawValues = context.petroImageAdvancedRawValues;
   if (
     rawValues &&
@@ -21739,6 +23596,11 @@ function getTransformTooltipSample(event) {
       rawValues[y * context.canvas.width + x],
     );
   }
+
+  // RGB is only a display encoding for calculator and polarization products;
+  // it is not the analytical cursor value. Wait until the processed tile's
+  // raw raster is available instead of returning a misleading color triplet.
+  if (advancedPreviewActive) return null;
 
   try {
     const pixel = context.getImageData(x, y, 1, 1).data;
@@ -21769,6 +23631,14 @@ function updateTransformValueTooltip(event) {
   );
   transformValueTooltip.style.left = `${Math.max(left, 8)}px`;
   transformValueTooltip.style.top = `${Math.max(top, 8)}px`;
+}
+
+function refreshTransformValueTooltipAtLastPointer() {
+  if (!transformValueTooltipEnabled?.checked || !mousePos) return;
+  updateTransformValueTooltip({
+    clientX: mousePos.x,
+    clientY: mousePos.y,
+  });
 }
 
 // Update the appearance of the images for the currently selected sample. Note
@@ -21807,6 +23677,7 @@ const displayImages = () => {
         }
       });
     });
+    derivedPreviewOverlay?.setDisplay({ visible: false });
     viewer.forceRedraw();
     return;
   }
@@ -21848,6 +23719,7 @@ const displayImages = () => {
       sliders[i].disabled = !isChecked[i];
     }
     const getTileOpacity = getTileOpacityGetter(tileSet, tileSetOpacity, i);
+    const derivedPreviewActive = derivedPreviewOverlay?.isActiveFor(tileSet);
 
     tiles.forEach((tile, j) => {
       const image = tile.image;
@@ -21855,7 +23727,8 @@ const displayImages = () => {
         // Image is not loaded yet.
         return;
       }
-      const tileOpacity = isChecked[i] ? getTileOpacity(j) : 0;
+      const tileOpacity =
+        isChecked[i] && !derivedPreviewActive ? getTileOpacity(j) : 0;
       image.setOpacity(tileOpacity);
 
       // Divide the tile sets into sectors, if image division is enabled.
@@ -21867,6 +23740,21 @@ const displayImages = () => {
         image.resetCroppingPolygons();
       }
     });
+
+    if (derivedPreviewActive) {
+      const overlayItem = derivedPreviewOverlay.item;
+      const imagePolygon =
+        enableDivideImages && overlayItem
+          ? windowPolygon.map((point) =>
+              overlayItem.viewerElementToImageCoordinates(point),
+            )
+          : null;
+      derivedPreviewOverlay.setDisplay({
+        visible: isChecked[i],
+        opacity: tileSetOpacity,
+        imagePolygon,
+      });
+    }
   });
   viewer.forceRedraw();
 };

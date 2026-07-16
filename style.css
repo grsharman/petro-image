@@ -1366,6 +1366,16 @@ body.import-wizard-page {
   display: grid;
   gap: 6px;
   overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.transform-imagery-palette {
+  max-height: min(680px, calc(100vh - 72px), calc(100% - 10px));
+}
+
+.transform-imagery-palette > .tool-palette-header {
+  flex: 0 0 auto;
 }
 
 .transform-imagery-palette-body .snapshot-field,
@@ -1459,7 +1469,7 @@ body.import-wizard-page {
 
 .transform-mode-toggle {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0;
   border: 1px solid rgba(0, 0, 0, 0.24);
   border-radius: 4px;
@@ -1488,11 +1498,12 @@ body.import-wizard-page {
   justify-content: center;
   width: 100%;
   min-height: 32px;
-  padding: 3px 4px;
+  padding: 3px 1px;
   text-align: center;
-  font-size: 11px;
-  line-height: 1.12;
-  overflow-wrap: anywhere;
+  font-size: 8px;
+  line-height: 1.05;
+  overflow-wrap: normal;
+  word-break: normal;
   white-space: normal;
 }
 
@@ -1514,17 +1525,51 @@ body.import-wizard-page {
 }
 
 .transform-simple-fields,
-.transform-raster-fields {
+.transform-raster-fields,
+.transform-polarization-fields {
   display: grid;
   gap: 6px;
 }
 
 .transform-simple-fields[hidden],
 .transform-raster-fields[hidden],
+.transform-polarization-fields[hidden],
 .transform-channel-field[hidden],
 .transform-range-field[hidden],
 .transform-actions[hidden] {
   display: none !important;
+}
+
+.transform-polarization-status,
+.transform-polarization-assumption,
+.transform-resolution-status,
+.transform-raster-export-note {
+  margin: 0;
+  color: rgba(17, 17, 17, 0.72);
+  font-size: 10px;
+  line-height: 1.25;
+}
+
+.transform-polarization-status {
+  white-space: pre-line;
+}
+
+.transform-polarization-assumption {
+  display: grid;
+  gap: 1px;
+}
+
+.transform-polarization-status.error {
+  color: #a32121;
+}
+
+.transform-resolution-panel summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.transform-resolution-panel > :not(summary) {
+  margin-top: 5px;
 }
 
 .transform-raster-expression-field input {
@@ -1633,14 +1678,16 @@ body.import-wizard-page {
   background: rgba(255, 255, 255, 0.94);
 }
 
-#transformRasterPreviewButton {
+#transformRasterPreviewButton,
+#transformPolarizationPreviewButton {
   background: #1f7a4d;
   border-color: #155f3a;
   color: #fff;
   font-weight: 600;
 }
 
-#transformRasterPreviewButton:hover {
+#transformRasterPreviewButton:hover,
+#transformPolarizationPreviewButton:hover {
   background: #25915c;
 }
 
@@ -1682,6 +1729,20 @@ body.import-wizard-page {
 
 .transform-export-details button {
   width: 100%;
+}
+
+.transform-export-group-label {
+  color: rgba(17, 17, 17, 0.78);
+  font-size: 10px;
+  font-weight: 650;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.transform-export-tile-set-label {
+  margin-top: 4px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(17, 17, 17, 0.14);
 }
 
 .transform-actions {
