@@ -1364,6 +1364,8 @@ body.import-wizard-page {
 
 .transform-imagery-palette-body {
   display: grid;
+  grid-auto-rows: max-content;
+  align-content: start;
   gap: 6px;
   overflow-x: hidden;
   overflow-y: auto;

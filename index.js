@@ -17479,6 +17479,7 @@ function createDerivedPolarizationTileContext(
     {
       product: transform.polarizationProduct,
       channel: transform.channel,
+      output: transform.output,
       pplAngles: getPolarizationAngles(getPolarizationTileSet("ppl", transform)),
       xplAngles: getPolarizationAngles(getPolarizationTileSet("xpl", transform)),
     },
@@ -17489,6 +17490,7 @@ function createDerivedPolarizationTileContext(
   mapPolarizationRasterToImageData(context, raster, transform);
   context.petroImageGeneratedPreviewContext = true;
   context.petroImageAdvancedRawValues = raster.values;
+  context.petroImageAdvancedRgbValues = raster.rgbValues;
   context.petroImageAdvancedRawWidth = width;
   context.petroImageAdvancedRawHeight = height;
   return context;
@@ -17772,6 +17774,8 @@ function getTransformAnalyticalHistogramDomain(transform) {
 
 function getTransformAnalyticalHistogram(transform) {
   if (!isTransformPreviewEnabled()) return null;
+  const rgbMode =
+    isPolarizationRecipe(transform) && transform.output === "rgb";
   const tileSet = tileSets()[getSelectedTransformTileSetIndex()];
   const item = derivedPreviewOverlay?.isActiveFor(tileSet)
     ? derivedPreviewOverlay.item
@@ -17788,7 +17792,9 @@ function getTransformAnalyticalHistogram(transform) {
       Object.values(rows || {}).forEach((loadedTile) => {
         const context =
           PetroDerivedPreviewOverlay.getDerivedTileContext2D(loadedTile);
-        const values = context?.petroImageAdvancedRawValues;
+        const values = rgbMode
+          ? context?.petroImageAdvancedRgbValues
+          : context?.petroImageAdvancedRawValues;
         if (
           !values?.length ||
           context.petroImageAdvancedRawWidth !== context.canvas?.width ||
@@ -17816,6 +17822,33 @@ function getTransformAnalyticalHistogram(transform) {
     });
   });
   if (!valueArrays.length) return null;
+  if (rgbMode) {
+    const rgbBins = [
+      new Uint32Array(256),
+      new Uint32Array(256),
+      new Uint32Array(256),
+    ];
+    const totalPixels = valueArrays.reduce(
+      (sum, values) => sum + Math.floor(values.length / 3),
+      0,
+    );
+    const stride = Math.max(1, Math.ceil(totalPixels / 75000));
+    let pixelIndex = 0;
+    valueArrays.forEach((values) => {
+      for (let offset = 0; offset < values.length; offset += 3) {
+        if (pixelIndex % stride === 0) {
+          for (let channelIndex = 0; channelIndex < 3; channelIndex += 1) {
+            const value = values[offset + channelIndex];
+            if (Number.isFinite(value)) {
+              rgbBins[channelIndex][clampColorValue(value)] += 1;
+            }
+          }
+        }
+        pixelIndex += 1;
+      }
+    });
+    return { rgbBins, min: 0, max: 255 };
+  }
   const domain = getTransformAnalyticalHistogramDomain(transform) || {};
   return PetroDerivedPreviewOverlay.buildScalarHistogram(valueArrays, {
     ...domain,
@@ -17898,13 +17931,29 @@ function renderTransformHistogram() {
   const transform = getTransformOptionsFromControls();
   const analyticalHistogram = getTransformAnalyticalHistogram(transform);
   if (analyticalHistogram) {
-    drawTransformHistogramSeries(
-      context,
-      analyticalHistogram.bins,
-      width,
-      height,
-      "rgba(17, 17, 17, 0.82)",
-    );
+    if (analyticalHistogram.rgbBins) {
+      [
+        "rgba(220, 50, 47, 0.42)",
+        "rgba(30, 160, 80, 0.42)",
+        "rgba(38, 95, 220, 0.42)",
+      ].forEach((color, channelIndex) => {
+        drawTransformHistogramSeries(
+          context,
+          analyticalHistogram.rgbBins[channelIndex],
+          width,
+          height,
+          color,
+        );
+      });
+    } else {
+      drawTransformHistogramSeries(
+        context,
+        analyticalHistogram.bins,
+        width,
+        height,
+        "rgba(17, 17, 17, 0.82)",
+      );
+    }
     drawTransformHistogramAxisLabels(context, width, height, {
       min: analyticalHistogram.min,
       max: analyticalHistogram.max,
@@ -18152,12 +18201,14 @@ function getPolarizationFitModel(modality, tileSet) {
 }
 
 const POLARIZATION_PRODUCT_LABELS = Object.freeze({
+  ppl_maximum: "PPL predicted maximum transmission",
+  ppl_minimum: "PPL predicted minimum transmission",
   ppl_modulation: "PPL modulation",
   ppl_normalized_modulation: "PPL normalized modulation",
   ppl_azimuth: "PPL maximum-transmission azimuth",
   ppl_rmse: "PPL fit RMSE",
   xpl_maximum: "XPL predicted maximum",
-  xpl_minimum: "XPL predicted extinction intensity",
+  xpl_minimum: "XPL predicted minimum",
   xpl_modulation: "XPL normalized modulation",
   xpl_extinction_azimuth: "XPL extinction azimuth",
   xpl_rmse: "XPL fit RMSE",
@@ -18173,6 +18224,12 @@ function applyPolarizationProductDisplayDefaults() {
   }
 }
 
+function polarizationProductSupportsRgb(product) {
+  return Boolean(
+    PetroPolarizationAnalysis.getProductDefinition(product)?.rgbAngleField,
+  );
+}
+
 function getAvailablePolarizationProducts(transform = null) {
   const settings = transform || getTransformOptionsFromControls();
   const ppl = getPolarizationTileSet("ppl", settings);
@@ -18183,6 +18240,8 @@ function getAvailablePolarizationProducts(transform = null) {
     products.push(
       "ppl_modulation",
       "ppl_normalized_modulation",
+      "ppl_maximum",
+      "ppl_minimum",
       "ppl_azimuth",
       "ppl_rmse",
     );
@@ -18549,10 +18608,15 @@ function updateTransformControls() {
   const rasterRecipe = isRasterRecipe(transform);
   const polarizationRecipe = isPolarizationRecipe(transform);
   const specializedRecipe = rasterRecipe || polarizationRecipe;
+  const polarizationRgbOutput =
+    polarizationRecipe &&
+    transform.output === "rgb" &&
+    polarizationProductSupportsRgb(transform.polarizationProduct);
   if (
     polarizationRecipe &&
     transformChannelSelect &&
-    ["saturation", "hue"].includes(transformChannelSelect.value)
+    (polarizationRgbOutput ||
+      ["saturation", "hue"].includes(transformChannelSelect.value))
   ) {
     transformChannelSelect.value = "luminance";
     transform.channel = "luminance";
@@ -18589,7 +18653,9 @@ function updateTransformControls() {
   const channelFieldLabel = channelField?.querySelector("span");
   if (transformChannelSelect) {
     transformChannelSelect.disabled =
-      rasterRecipe || (!polarizationRecipe && transform.type !== "channelMap");
+      rasterRecipe ||
+      polarizationRgbOutput ||
+      (!polarizationRecipe && transform.type !== "channelMap");
     Array.from(transformChannelSelect.options).forEach((option) => {
       if (["saturation", "hue"].includes(option.value)) {
         option.disabled = polarizationRecipe;
@@ -18600,7 +18666,9 @@ function updateTransformControls() {
     channelField.hidden = rasterRecipe;
     channelField.classList.toggle(
       "transform-field-disabled",
-      rasterRecipe || (!polarizationRecipe && transform.type !== "channelMap"),
+      rasterRecipe ||
+        polarizationRgbOutput ||
+        (!polarizationRecipe && transform.type !== "channelMap"),
     );
   }
   if (channelFieldLabel) {
@@ -18653,7 +18721,9 @@ function updateTransformControls() {
     transformOutputSelect.disabled = !outputEnabled;
     Array.from(transformOutputSelect.options).forEach((option) => {
       if (option.value === "rgb") {
-        option.disabled = specializedRecipe || transform.type !== "localContrast";
+        option.disabled = polarizationRecipe
+          ? !polarizationProductSupportsRgb(transform.polarizationProduct)
+          : specializedRecipe || transform.type !== "localContrast";
       }
       if (option.value === "falseColor") {
         option.disabled =
@@ -18665,7 +18735,9 @@ function updateTransformControls() {
     });
     if (!outputEnabled || transformOutputSelect.selectedOptions[0]?.disabled) {
       transformOutputSelect.value = specializedRecipe
-        ? "grayscale"
+        ? polarizationRecipe
+          ? "falseColor"
+          : "grayscale"
         : outputDefaults[transform.type] || "grayscale";
     }
   }
@@ -19101,6 +19173,7 @@ async function renderPolarizationRaster(imageRect, resolution, transform) {
     {
       product: transform.polarizationProduct,
       channel: transform.channel,
+      output: transform.output,
       pplAngles: getPolarizationAngles(getPolarizationTileSet("ppl", transform)),
       xplAngles: getPolarizationAngles(getPolarizationTileSet("xpl", transform)),
     },
@@ -19183,7 +19256,14 @@ function getTransformRasterMetadata(transform, resolution, raster, format) {
     },
     transform,
     assumptions: isPolarizationRecipe(transform)
-      ? ["XPL polarizer and analyzer are crossed at 90 degrees and rotate together."]
+      ? [
+          "XPL polarizer and analyzer are crossed at 90 degrees and rotate together.",
+          ...(transform.output === "rgb"
+            ? [
+                "RGB channels are evaluated at one orientation derived from the luminance fit.",
+              ]
+            : []),
+        ]
       : [],
   };
 }
@@ -19631,6 +19711,10 @@ async function generateTransformedTileSet() {
                       ? "fourth_harmonic"
                       : "observed",
                 assumption: "Polarizer and analyzer are crossed at 90 degrees and rotate together.",
+                rgbSharedOrientation:
+                  transform.output === "rgb"
+                    ? "luminance-derived"
+                    : null,
                 anglesDegrees: {
                   ppl: getPolarizationAngles(
                     getPolarizationTileSet("ppl", transform),
@@ -20796,13 +20880,27 @@ function mapPolarizationRasterToImageData(context, raster, transform) {
   for (let index = 0; index < raster.values.length; index += 1) {
     const offset = index * 4;
     const raw = raster.values[index];
-    if (!Number.isFinite(raw)) {
+    const rgbOffset = index * 3;
+    const predictedRgb = raster.rgbValues
+      ? [
+          raster.rgbValues[rgbOffset],
+          raster.rgbValues[rgbOffset + 1],
+          raster.rgbValues[rgbOffset + 2],
+        ]
+      : null;
+    if (
+      !Number.isFinite(raw) ||
+      (transform.output === "rgb" &&
+        (!predictedRgb || predictedRgb.some((value) => !Number.isFinite(value))))
+    ) {
       output[offset + 3] = 255;
       continue;
     }
     const displayValue = clampColorValue(((raw - displayMin) / span) * 255);
     let rgb;
-    if (transform.output === "falseColor") {
+    if (transform.output === "rgb") {
+      rgb = predictedRgb.map(clampColorValue);
+    } else if (transform.output === "falseColor") {
       rgb = PetroPolarizationAnalysis.getColorMapRgb(
         (raw - displayMin) / span,
         transform.polarizationColormap,
@@ -20865,6 +20963,7 @@ function applyPolarizationVisibleTransformToContext(
       {
         product: transform.polarizationProduct,
         channel: transform.channel,
+        output: transform.output,
         pplAngles: getPolarizationAngles(
           getPolarizationTileSet("ppl", transform),
         ),
@@ -20875,6 +20974,7 @@ function applyPolarizationVisibleTransformToContext(
     );
     mapPolarizationRasterToImageData(context, raster, transform);
     context.petroImageAdvancedRawValues = raster.values;
+    context.petroImageAdvancedRgbValues = raster.rgbValues;
     context.petroImageAdvancedRawWidth = width;
     context.petroImageAdvancedRawHeight = height;
     context.petroImageAdvancedResolutionPending = resolutionPending;
@@ -23765,6 +23865,24 @@ function getTransformTooltipSample(event) {
 
   const { context, x, y } = selectedSample;
   const rawValues = context.petroImageAdvancedRawValues;
+  const rgbValues = context.petroImageAdvancedRgbValues;
+  if (
+    activeTransform.output === "rgb" &&
+    rgbValues?.length &&
+    context.petroImageAdvancedRawWidth === context.canvas.width &&
+    context.petroImageAdvancedRawHeight === context.canvas.height
+  ) {
+    const rgbOffset = (y * context.canvas.width + x) * 3;
+    const rgb = [
+      rgbValues[rgbOffset],
+      rgbValues[rgbOffset + 1],
+      rgbValues[rgbOffset + 2],
+    ];
+    if (rgb.every(Number.isFinite)) {
+      return `(${rgb.map(clampColorValue).join(",")})`;
+    }
+  }
+  if (activeTransform.output === "rgb") return null;
   if (
     rawValues &&
     context.petroImageAdvancedRawWidth === context.canvas.width &&

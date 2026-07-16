@@ -152,6 +152,7 @@
       periodDegrees,
     );
     return {
+      coefficients: [a, b, c],
       mean: a,
       amplitude,
       minimum: a - amplitude,
@@ -162,6 +163,19 @@
       rmse: Math.sqrt(squaredError / values.length),
       residualDegreesOfFreedom: Math.max(0, values.length - 3),
     };
+  }
+
+  function evaluateHarmonicFitAtAngle(model, fit, angleDegrees) {
+    if (!model || !fit?.coefficients || !Number.isFinite(angleDegrees)) {
+      return Number.NaN;
+    }
+    const radians = (angleDegrees * Math.PI) / 180;
+    const [a, b, c] = fit.coefficients;
+    return (
+      a +
+      b * Math.cos(model.harmonic * radians) +
+      c * Math.sin(model.harmonic * radians)
+    );
   }
 
   function getChannelValue(pixels, offset, channel) {
@@ -176,12 +190,38 @@
 
   function getProductDefinition(product) {
     const definitions = {
+      ppl_maximum: {
+        mode: "ppl",
+        field: "maximum",
+        unit: "intensity",
+        range: [0, 255],
+        rgbAngleField: "maximumAzimuth",
+      },
+      ppl_minimum: {
+        mode: "ppl",
+        field: "minimum",
+        unit: "intensity",
+        range: [0, 255],
+        rgbAngleField: "minimumAzimuth",
+      },
       ppl_modulation: { mode: "ppl", field: "amplitude", unit: "intensity", range: [0, 255] },
       ppl_normalized_modulation: { mode: "ppl", field: "normalizedModulation", unit: "ratio", range: [0, 1] },
       ppl_azimuth: { mode: "ppl", field: "maximumAzimuth", unit: "degrees", range: [0, 180], circular: true },
       ppl_rmse: { mode: "ppl", field: "rmse", unit: "intensity", range: [0, 64] },
-      xpl_maximum: { mode: "xpl", field: "maximum", unit: "intensity", range: [0, 255] },
-      xpl_minimum: { mode: "xpl", field: "minimum", unit: "intensity", range: [0, 255] },
+      xpl_maximum: {
+        mode: "xpl",
+        field: "maximum",
+        unit: "intensity",
+        range: [0, 255],
+        rgbAngleField: "maximumAzimuth",
+      },
+      xpl_minimum: {
+        mode: "xpl",
+        field: "minimum",
+        unit: "intensity",
+        range: [0, 255],
+        rgbAngleField: "minimumAzimuth",
+      },
       xpl_modulation: { mode: "xpl", field: "normalizedModulation", unit: "ratio", range: [0, 1] },
       xpl_extinction_azimuth: { mode: "xpl", field: "minimumAzimuth", unit: "degrees", range: [0, 90], circular: true },
       xpl_rmse: { mode: "xpl", field: "rmse", unit: "intensity", range: [0, 64] },
@@ -203,10 +243,15 @@
     const product = options.product || "ppl_modulation";
     const definition = getProductDefinition(product);
     if (!definition) throw new Error(`Unknown polarization product: ${product}`);
-    const channel = options.channel || "luminance";
+    const rgbOutput = Boolean(
+      options.output === "rgb" && definition.rgbAngleField,
+    );
+    const channel = rgbOutput ? "luminance" : options.channel || "luminance";
     const count = width * height;
     const output = new Float32Array(count);
     output.fill(Number.NaN);
+    const rgbValues = rgbOutput ? new Float32Array(count * 3) : null;
+    rgbValues?.fill(Number.NaN);
     const sourceStack = definition.mode === "combined" ? stacks.xpl : stacks[definition.mode];
     if (!Array.isArray(sourceStack) || sourceStack.length === 0) {
       throw new Error(`The ${definition.mode.toUpperCase()} source is not available.`);
@@ -243,6 +288,25 @@
       } else {
         const fit = fitHarmonicValues(model, observations);
         value = fit?.[definition.field];
+        if (rgbValues && fit) {
+          const sharedAngle = fit[definition.rgbAngleField];
+          ["red", "green", "blue"].forEach((rgbChannel, channelIndex) => {
+            for (
+              let imageIndex = 0;
+              imageIndex < sourceStack.length;
+              imageIndex += 1
+            ) {
+              observations[imageIndex] = getChannelValue(
+                sourceStack[imageIndex],
+                offset,
+                rgbChannel,
+              );
+            }
+            const channelFit = fitHarmonicValues(model, observations);
+            rgbValues[pixelIndex * 3 + channelIndex] =
+              evaluateHarmonicFitAtAngle(model, channelFit, sharedAngle);
+          });
+        }
         if (definition.combined) {
           const cpl = stacks.cpl;
           if (!Array.isArray(cpl) || cpl.length === 0) value = Number.NaN;
@@ -260,12 +324,14 @@
       min: Number.isFinite(min) ? min : Number.NaN,
       max: Number.isFinite(max) ? max : Number.NaN,
       definition,
+      rgbValues,
     };
   }
 
   return {
     COLOR_MAPS,
     createHarmonicModel,
+    evaluateHarmonicFitAtAngle,
     fitHarmonicValues,
     getColorMapRgb,
     getDefaultColorMap,

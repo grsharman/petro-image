@@ -105,3 +105,87 @@ test("scalar color maps provide stable endpoints and a cyclic hue option", async
   assert.equal(getDefaultColorMap("xpl_cpl_difference"), "diverging");
   assert.equal(getDefaultColorMap("xpl_maximum"), "viridis");
 });
+
+test("RGB polarization products evaluate every channel at one luminance-derived angle", async () => {
+  const {
+    calculatePolarizationRaster,
+    createHarmonicModel,
+    evaluateHarmonicFitAtAngle,
+    fitHarmonicValues,
+  } = await polarizationApi;
+  const xplAngles = [0, 15, 30, 45, 60, 75];
+  const channelModels = [
+    { mean: 100, amplitude: 40, azimuth: 0 },
+    { mean: 100, amplitude: 40, azimuth: 20 },
+    { mean: 100, amplitude: 40, azimuth: 40 },
+  ];
+  const xplStack = xplAngles.map((angle) => {
+    const channels = channelModels.map(
+      ({ mean, amplitude, azimuth }) =>
+        mean +
+        amplitude * Math.cos((4 * (angle - azimuth) * Math.PI) / 180),
+    );
+    return new Float64Array([...channels, 255]);
+  });
+  const model = createHarmonicModel(xplAngles, 4);
+  const luminance = xplStack.map(
+    (pixels) =>
+      0.2126 * pixels[0] + 0.7152 * pixels[1] + 0.0722 * pixels[2],
+  );
+  const luminanceFit = fitHarmonicValues(model, luminance);
+
+  for (const [product, angleField] of [
+    ["xpl_maximum", "maximumAzimuth"],
+    ["xpl_minimum", "minimumAzimuth"],
+  ]) {
+    const raster = calculatePolarizationRaster(
+      { xpl: xplStack },
+      1,
+      1,
+      { product, output: "rgb", xplAngles },
+    );
+    const expected = [0, 1, 2].map((channelIndex) => {
+      const fit = fitHarmonicValues(
+        model,
+        xplStack.map((pixels) => pixels[channelIndex]),
+      );
+      return evaluateHarmonicFitAtAngle(
+        model,
+        fit,
+        luminanceFit[angleField],
+      );
+    });
+    expected.forEach((value, channelIndex) => {
+      assert.ok(Math.abs(raster.rgbValues[channelIndex] - value) < 1e-4);
+    });
+  }
+
+  assert.ok(
+    calculatePolarizationRaster(
+      { xpl: xplStack },
+      1,
+      1,
+      { product: "xpl_maximum", output: "rgb", xplAngles },
+    ).rgbValues[0] < channelModels[0].mean + channelModels[0].amplitude,
+  );
+
+  const pplAngles = [0, 30, 60, 90, 120, 150];
+  const pplStack = pplAngles.map((angle) => {
+    const value = 90 + 35 * Math.cos((2 * (angle - 25) * Math.PI) / 180);
+    return new Float64Array([value, value * 0.8, value * 0.6, 255]);
+  });
+  for (const [product, expected] of [
+    ["ppl_maximum", [125, 100, 75]],
+    ["ppl_minimum", [55, 44, 33]],
+  ]) {
+    const pplRaster = calculatePolarizationRaster(
+      { ppl: pplStack },
+      1,
+      1,
+      { product, output: "rgb", pplAngles },
+    );
+    expected.forEach((value, channelIndex) => {
+      assert.ok(Math.abs(pplRaster.rgbValues[channelIndex] - value) < 1e-4);
+    });
+  }
+});
