@@ -6,6 +6,72 @@
   "use strict";
 
   const EPSILON = 1e-10;
+  const COLOR_MAPS = Object.freeze({
+    viridis: [
+      [68, 1, 84],
+      [59, 82, 139],
+      [33, 145, 140],
+      [94, 201, 98],
+      [253, 231, 37],
+    ],
+    inferno: [
+      [0, 0, 4],
+      [87, 15, 109],
+      [187, 55, 84],
+      [249, 142, 9],
+      [252, 255, 164],
+    ],
+    turbo: [
+      [48, 18, 59],
+      [50, 120, 238],
+      [34, 208, 139],
+      [249, 190, 31],
+      [122, 4, 3],
+    ],
+    blues: [
+      [247, 251, 255],
+      [198, 219, 239],
+      [107, 174, 214],
+      [33, 113, 181],
+      [8, 48, 107],
+    ],
+    gray: [
+      [0, 0, 0],
+      [255, 255, 255],
+    ],
+    diverging: [
+      [33, 102, 172],
+      [146, 197, 222],
+      [247, 247, 247],
+      [244, 165, 130],
+      [178, 24, 43],
+    ],
+  });
+
+  function getColorMapRgb(value, name = "viridis") {
+    const normalized = Math.max(0, Math.min(1, Number(value) || 0));
+    if (name === "hue") {
+      const sector = normalized * 6;
+      const x = 1 - Math.abs((sector % 2) - 1);
+      let rgb;
+      if (sector < 1) rgb = [1, x, 0];
+      else if (sector < 2) rgb = [x, 1, 0];
+      else if (sector < 3) rgb = [0, 1, x];
+      else if (sector < 4) rgb = [0, x, 1];
+      else if (sector < 5) rgb = [x, 0, 1];
+      else rgb = [1, 0, x];
+      return rgb.map((component) => Math.round(component * 255));
+    }
+    const colors = COLOR_MAPS[name] || COLOR_MAPS.viridis;
+    const position = normalized * (colors.length - 1);
+    const index = Math.min(colors.length - 2, Math.floor(position));
+    const fraction = position - index;
+    return colors[index].map((channel, channelIndex) =>
+      Math.round(
+        channel + (colors[index + 1][channelIndex] - channel) * fraction,
+      ),
+    );
+  }
 
   function positiveModulo(value, period) {
     return ((value % period) + period) % period;
@@ -124,6 +190,15 @@
     return definitions[product] || null;
   }
 
+  function getDefaultColorMap(product) {
+    const definition = getProductDefinition(product);
+    if (definition?.circular) return "hue";
+    if (definition?.range?.[0] < 0 && definition.range[1] > 0) {
+      return "diverging";
+    }
+    return "viridis";
+  }
+
   function calculatePolarizationRaster(stacks, width, height, options = {}) {
     const product = options.product || "ppl_modulation";
     const definition = getProductDefinition(product);
@@ -189,8 +264,11 @@
   }
 
   return {
+    COLOR_MAPS,
     createHarmonicModel,
     fitHarmonicValues,
+    getColorMapRgb,
+    getDefaultColorMap,
     getProductDefinition,
     calculatePolarizationRaster,
     positiveModulo,

@@ -13,6 +13,73 @@
     return error;
   }
 
+  function getDerivedSlotDisplayState(options = {}) {
+    const checked = Boolean(options.checked);
+    const previewReplacesRaw = Boolean(
+      options.active && options.previewEnabled,
+    );
+    return {
+      derivedVisible: checked && previewReplacesRaw,
+      rawVisible: checked && !previewReplacesRaw,
+    };
+  }
+
+  function getDerivedTileContext2D(tile) {
+    if (tile?.context2D?.canvas) return tile.context2D;
+    const cached = tile?.cacheImageRecord?.getRenderedContext?.();
+    if (cached?.canvas) return cached;
+    return cached?.getContext?.("2d") || null;
+  }
+
+  function buildScalarHistogram(valueArrays, options = {}) {
+    const arrays = Array.from(valueArrays || []).filter(
+      (values) => values?.length,
+    );
+    if (!arrays.length) return null;
+    const binCount = Math.max(2, Math.round(options.binCount || 256));
+    const maxSamples = Math.max(1, Math.round(options.maxSamples || 100000));
+    const totalValues = arrays.reduce((sum, values) => sum + values.length, 0);
+    const stride = Math.max(1, Math.ceil(totalValues / maxSamples));
+    let observedMin = Infinity;
+    let observedMax = -Infinity;
+    let sampleCount = 0;
+    arrays.forEach((values) => {
+      for (let index = 0; index < values.length; index += stride) {
+        const value = Number(values[index]);
+        if (!Number.isFinite(value)) continue;
+        observedMin = Math.min(observedMin, value);
+        observedMax = Math.max(observedMax, value);
+        sampleCount += 1;
+      }
+    });
+    if (!sampleCount) return null;
+
+    const requestedMin = Number(options.min);
+    const requestedMax = Number(options.max);
+    let min = Number.isFinite(requestedMin) ? requestedMin : observedMin;
+    let max = Number.isFinite(requestedMax) ? requestedMax : observedMax;
+    if (!(max > min)) {
+      const padding = Math.max(Math.abs(min) * 0.01, 0.5);
+      min -= padding;
+      max += padding;
+    }
+    const bins = new Uint32Array(binCount);
+    const span = max - min;
+    arrays.forEach((values) => {
+      for (let index = 0; index < values.length; index += stride) {
+        const value = Number(values[index]);
+        if (!Number.isFinite(value)) continue;
+        const normalized = (value - min) / span;
+        const bin = Math.max(
+          0,
+          Math.min(binCount - 1, Math.floor(normalized * binCount)),
+        );
+        bins[bin] += 1;
+      }
+    });
+    return { bins, min, max, observedMin, observedMax, sampleCount };
+  }
+
   class DerivedPreviewOverlay {
     constructor(options) {
       this.OpenSeadragon = options.OpenSeadragon;
@@ -168,10 +235,14 @@
       };
 
       return new Promise((resolve, reject) => {
+        const worldItemCount = this.viewer.world.getItemCount();
+        const worldIndex = Number.isFinite(options.worldIndex)
+          ? Math.max(0, Math.min(options.worldIndex, worldItemCount))
+          : worldItemCount;
         this.viewer.addTiledImage({
           tileSource,
           opacity: 0,
-          index: this.viewer.world.getItemCount(),
+          index: worldIndex,
           success: (event) => {
             if (this.state !== state || this.generation !== generation) {
               this._removeItem(event.item);
@@ -247,5 +318,11 @@
     }
   }
 
-  return { DerivedPreviewOverlay, createAbortError };
+  return {
+    DerivedPreviewOverlay,
+    createAbortError,
+    buildScalarHistogram,
+    getDerivedSlotDisplayState,
+    getDerivedTileContext2D,
+  };
 });

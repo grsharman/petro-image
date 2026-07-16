@@ -91,3 +91,17 @@ test("PPL raster products distinguish modulation amplitude from normalized modul
   assert.equal(getProductDefinition("ppl_range"), null);
   assert.equal(getProductDefinition("cpl_intensity"), null);
 });
+
+test("scalar color maps provide stable endpoints and a cyclic hue option", async () => {
+  const { getColorMapRgb, getDefaultColorMap } = await polarizationApi;
+  assert.deepEqual(getColorMapRgb(0, "viridis"), [68, 1, 84]);
+  assert.deepEqual(getColorMapRgb(1, "viridis"), [253, 231, 37]);
+  assert.deepEqual(getColorMapRgb(0, "hue"), [255, 0, 0]);
+  assert.deepEqual(getColorMapRgb(1, "hue"), [255, 0, 0]);
+  assert.deepEqual(getColorMapRgb(0, "unknown"), [68, 1, 84]);
+  assert.deepEqual(getColorMapRgb(0.5, "diverging"), [247, 247, 247]);
+  assert.equal(getDefaultColorMap("ppl_azimuth"), "hue");
+  assert.equal(getDefaultColorMap("xpl_extinction_azimuth"), "hue");
+  assert.equal(getDefaultColorMap("xpl_cpl_difference"), "diverging");
+  assert.equal(getDefaultColorMap("xpl_maximum"), "viridis");
+});

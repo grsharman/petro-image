@@ -5,6 +5,98 @@ const overlayApi = import("../derived-preview-overlay.js").then(
   () => globalThis.PetroDerivedPreviewOverlay,
 );
 
+test("derived previews replace only their checked source display slot", async () => {
+  const { getDerivedSlotDisplayState } = await overlayApi;
+  assert.deepEqual(
+    getDerivedSlotDisplayState({
+      active: true,
+      previewEnabled: true,
+      checked: true,
+    }),
+    { derivedVisible: true, rawVisible: false },
+  );
+  assert.deepEqual(
+    getDerivedSlotDisplayState({
+      active: true,
+      previewEnabled: false,
+      checked: true,
+    }),
+    { derivedVisible: false, rawVisible: true },
+  );
+  assert.deepEqual(
+    getDerivedSlotDisplayState({
+      active: true,
+      previewEnabled: true,
+      checked: false,
+    }),
+    { derivedVisible: false, rawVisible: false },
+  );
+  assert.deepEqual(
+    getDerivedSlotDisplayState({
+      active: false,
+      previewEnabled: true,
+      checked: true,
+    }),
+    { derivedVisible: false, rawVisible: true },
+  );
+});
+
+test("derived tile contexts are read from OpenSeadragon's custom cache", async () => {
+  const { getDerivedTileContext2D } = await overlayApi;
+  const directContext = { canvas: {} };
+  assert.equal(
+    getDerivedTileContext2D({ context2D: directContext }),
+    directContext,
+  );
+
+  const cachedContext = { canvas: {} };
+  assert.equal(
+    getDerivedTileContext2D({
+      cacheImageRecord: {
+        getRenderedContext: () => cachedContext,
+      },
+    }),
+    cachedContext,
+  );
+
+  const canvasContext = { canvas: {} };
+  const cachedCanvas = { getContext: () => canvasContext };
+  assert.equal(
+    getDerivedTileContext2D({
+      cacheImageRecord: {
+        getRenderedContext: () => cachedCanvas,
+      },
+    }),
+    canvasContext,
+  );
+});
+
+test("scalar histograms bin analytical values in their requested domain", async () => {
+  const { buildScalarHistogram } = await overlayApi;
+  const histogram = buildScalarHistogram(
+    [new Float32Array([0, 45, 90, Number.NaN])],
+    { min: 0, max: 90, binCount: 9 },
+  );
+  assert.equal(histogram.min, 0);
+  assert.equal(histogram.max, 90);
+  assert.equal(histogram.sampleCount, 3);
+  assert.equal(histogram.bins[0], 1);
+  assert.equal(histogram.bins[4], 1);
+  assert.equal(histogram.bins[8], 1);
+});
+
+test("auto-scaled scalar histograms report the observed analytical range", async () => {
+  const { buildScalarHistogram } = await overlayApi;
+  const histogram = buildScalarHistogram(
+    [new Float32Array([60, 75, 120])],
+    { binCount: 12 },
+  );
+  assert.equal(histogram.min, 60);
+  assert.equal(histogram.max, 120);
+  assert.equal(histogram.observedMin, 60);
+  assert.equal(histogram.observedMax, 120);
+});
+
 async function createHarness({ deferAttach = false } = {}) {
   const { DerivedPreviewOverlay } = await overlayApi;
   class TileSource {
@@ -37,7 +129,10 @@ async function createHarness({ deferAttach = false } = {}) {
           this.destroyed = true;
         },
       };
-      items.push(item);
+      const index = Number.isFinite(options.index)
+        ? Math.max(0, Math.min(options.index, items.length))
+        : items.length;
+      items.splice(index, 0, item);
       attachments.push({ options, item });
       if (!deferAttach) options.success({ item });
     },
@@ -63,6 +158,26 @@ async function createHarness({ deferAttach = false } = {}) {
     referenceImage,
   };
 }
+
+test("a derived overlay is inserted at its source tile-set layer position", async () => {
+  const harness = await createHarness();
+  const lowerLayer = {};
+  const upperLayer = {};
+  harness.items.push(lowerLayer, upperLayer);
+
+  await harness.manager.start({
+    tileSet: {},
+    key: "slotted",
+    worldIndex: 1,
+    referenceImage: harness.referenceImage,
+    requestTile: async () => ({}),
+  });
+
+  assert.equal(harness.attachments[0].options.index, 1);
+  assert.equal(harness.items[0], lowerLayer);
+  assert.equal(harness.items[1], harness.manager.item);
+  assert.equal(harness.items[2], upperLayer);
+});
 
 test("stopping a preview immediately finishes its in-flight tile jobs", async () => {
   const originalDocument = global.document;

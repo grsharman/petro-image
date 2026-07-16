@@ -91,6 +91,7 @@ const TILE_SET_TRANSFORM_DEFAULTS = Object.freeze({
   polarizationXplIndex: -1,
   polarizationCplIndex: -1,
   polarizationProduct: "ppl_modulation",
+  polarizationColormap: "viridis",
 });
 const TRANSFORM_RASTER_CHANNELS = Object.freeze({
   r: "red",
@@ -844,6 +845,9 @@ const transformChannelSelect = document.getElementById(
   "transformChannelSelect",
 );
 const transformOutputSelect = document.getElementById("transformOutputSelect");
+const transformPolarizationColormap = document.getElementById(
+  "transformPolarizationColormap",
+);
 const transformHistogramCanvas = document.getElementById(
   "transformHistogramCanvas",
 );
@@ -6779,52 +6783,11 @@ function drawPorosityMask(ctx, mask) {
   }
 }
 
-const POROSITY_THICKNESS_COLORMAPS = {
-  viridis: [
-    [68, 1, 84],
-    [59, 82, 139],
-    [33, 145, 140],
-    [94, 201, 98],
-    [253, 231, 37],
-  ],
-  inferno: [
-    [0, 0, 4],
-    [87, 15, 109],
-    [187, 55, 84],
-    [249, 142, 9],
-    [252, 255, 164],
-  ],
-  turbo: [
-    [48, 18, 59],
-    [50, 120, 238],
-    [34, 208, 139],
-    [249, 190, 31],
-    [122, 4, 3],
-  ],
-  blues: [
-    [247, 251, 255],
-    [198, 219, 239],
-    [107, 174, 214],
-    [33, 113, 181],
-    [8, 48, 107],
-  ],
-  gray: [
-    [0, 0, 0],
-    [255, 255, 255],
-  ],
-};
+const POROSITY_THICKNESS_COLORMAPS =
+  PetroPolarizationAnalysis.COLOR_MAPS;
 
 function getPorosityThicknessColor(value, name) {
-  const colors =
-    POROSITY_THICKNESS_COLORMAPS[name] || POROSITY_THICKNESS_COLORMAPS.viridis;
-  const position = Math.max(0, Math.min(1, value)) * (colors.length - 1);
-  const index = Math.min(colors.length - 2, Math.floor(position));
-  const fraction = position - index;
-  return colors[index].map((channel, channelIndex) =>
-    Math.round(
-      channel + (colors[index + 1][channelIndex] - channel) * fraction,
-    ),
-  );
+  return PetroPolarizationAnalysis.getColorMapRgb(value, name);
 }
 
 function getPorosityThicknessOverlaySettings() {
@@ -14263,7 +14226,7 @@ if (
         if (input.checked && input.value === "polarization") {
           clearSimpleTransformControls();
           populateTransformPolarizationRoleSelects();
-          if (transformOutputSelect) transformOutputSelect.value = "falseColor";
+          applyPolarizationProductDisplayDefaults();
           updateTransformControls();
           clearSelectedTransformPreviewForRasterEntry();
           scheduleTransformHistogramRefresh();
@@ -14311,6 +14274,12 @@ if (
     applyTransformControlsToSelectedTileSet();
     updateTransformControls();
     scheduleTransformHistogramRefresh();
+  });
+  transformPolarizationColormap?.addEventListener("change", function () {
+    updateTransformControls();
+    if (isPolarizationRecipe(getTransformOptionsFromControls())) {
+      applyPolarizationPreview();
+    }
   });
   [
     transformRasterChannelASelect,
@@ -14419,6 +14388,20 @@ if (
     });
   });
   transformPreviewEnabled?.addEventListener("change", function () {
+    const transform = getTransformOptionsFromControls();
+    if (
+      derivedPreviewOverlay?.state &&
+      (isRasterRecipe(transform) || isPolarizationRecipe(transform))
+    ) {
+      displayImages();
+      hideTransformValueTooltip();
+      setTransformStatus(
+        getTransformPreviewIdleStatus(derivedPreviewOverlay.state.tileSet),
+      );
+      updateTransformControls();
+      scheduleTransformHistogramRefresh();
+      return;
+    }
     applyTransformControlsToSelectedTileSet();
     updateTransformControls();
   });
@@ -14451,12 +14434,7 @@ if (
     });
   });
   transformPolarizationProductSelect?.addEventListener("change", function () {
-    const definition = PetroPolarizationAnalysis.getProductDefinition(
-      transformPolarizationProductSelect.value,
-    );
-    if (transformOutputSelect) {
-      transformOutputSelect.value = definition?.circular ? "falseColor" : "grayscale";
-    }
+    applyPolarizationProductDisplayDefaults();
     updateTransformOutputName();
     applyPolarizationPreview();
   });
@@ -16124,6 +16102,18 @@ function normalizeTransformValue(key, value) {
       return PetroPolarizationAnalysis?.getProductDefinition?.(valueKey)
         ? valueKey
         : fallback;
+    case "polarizationColormap":
+      return [
+        "viridis",
+        "inferno",
+        "turbo",
+        "blues",
+        "gray",
+        "hue",
+        "diverging",
+      ].includes(valueKey)
+        ? valueKey
+        : fallback;
     case "intensity": {
       const numericValue = Number(value);
       return Number.isFinite(numericValue)
@@ -16181,6 +16171,10 @@ function normalizeTileSetTransform(transform = {}) {
     polarizationProduct: normalizeTransformValue(
       "polarizationProduct",
       transform.polarizationProduct,
+    ),
+    polarizationColormap: normalizeTransformValue(
+      "polarizationColormap",
+      transform.polarizationColormap,
     ),
   };
 }
@@ -16320,6 +16314,8 @@ function getTransformOptionsFromControls() {
       polarizationCplIndex: transformPolarizationCplSelect?.value ?? -1,
       polarizationProduct:
         transformPolarizationProductSelect?.value || "ppl_modulation",
+      polarizationColormap:
+        transformPolarizationColormap?.value || "viridis",
     });
   }
   if (recipeType === "raster") {
@@ -17227,6 +17223,7 @@ function updateDerivedPreviewProgress(progress) {
   const completed = Math.min(progress.completed, total);
   const percent = Math.max(8, (completed / total) * 100);
   setTransformProgress(percent, `${completed}/${total} visible tiles calculated`);
+  scheduleTransformHistogramRefresh();
   if (progress.requested > 0 && progress.pending === 0) {
     setTransformProgress(100, "Preview calculated");
     setTransformStatus(getTransformPreviewIdleStatus(derivedPreviewOverlay.state.tileSet), "ok");
@@ -17554,6 +17551,15 @@ async function createDerivedPreviewTile(
   return context.canvas;
 }
 
+function getDerivedPreviewWorldIndex(tileSet) {
+  const indices = (tileSet?.tiles || [])
+    .map((tile) => viewer.world.getIndexOfItem(tile.image))
+    .filter((index) => index >= 0);
+  return indices.length
+    ? Math.min(...indices)
+    : viewer.world.getItemCount();
+}
+
 async function startDerivedAdvancedPreview(tileSet, transform) {
   const referenceTile = getDerivedPreviewReferenceTile(tileSet);
   if (!referenceTile?.image) {
@@ -17567,6 +17573,7 @@ async function startDerivedAdvancedPreview(tileSet, transform) {
       tileSet,
       key,
       referenceImage: referenceTile.image,
+      worldIndex: getDerivedPreviewWorldIndex(tileSet),
       requestTile: (request) =>
         createDerivedPreviewTile(
           tileSet,
@@ -17577,6 +17584,9 @@ async function startDerivedAdvancedPreview(tileSet, transform) {
         ),
     });
     displayImages();
+    if (!isTransformPreviewEnabled()) {
+      setTransformStatus(getTransformPreviewIdleStatus(tileSet));
+    }
   } catch (error) {
     if (error?.name === "AbortError") return;
     setTransformStatus(error?.message || "Could not start preview.", "error");
@@ -17600,9 +17610,7 @@ function applyRasterCalculatorPreview() {
   resetTransformTileCaches(tileSet);
   tileSetTransformState.set(
     tileSet,
-    isTransformPreviewEnabled()
-      ? transform
-      : { ...TILE_SET_TRANSFORM_DEFAULTS },
+    transform,
   );
   updateSnapshotStatus();
   updateAdvancedVisibleInputPreloadHints();
@@ -17639,9 +17647,7 @@ function applyPolarizationPreview() {
   resetTransformTileCaches(tileSet);
   tileSetTransformState.set(
     tileSet,
-    isTransformPreviewEnabled()
-      ? transform
-      : { ...TILE_SET_TRANSFORM_DEFAULTS },
+    transform,
   );
   updateAdvancedVisibleInputPreloadHints();
   hideTransformValueTooltip();
@@ -17735,7 +17741,93 @@ function getTransformHistogramSourceCanvas() {
   );
 }
 
-function getTransformHistogramAxisLabels() {
+function getTransformAnalyticalHistogramDomain(transform) {
+  if (isPolarizationRecipe(transform)) {
+    const definition = PetroPolarizationAnalysis.getProductDefinition(
+      transform.polarizationProduct,
+    );
+    if (definition?.range?.length === 2) {
+      return { min: definition.range[0], max: definition.range[1] };
+    }
+  }
+  if (!isRasterRecipe(transform)) return null;
+  if (transform.rasterNormalize || transform.rasterScale === "auto") {
+    return {};
+  }
+  switch (transform.rasterScale) {
+    case "custom":
+      return {
+        min: transform.rasterCustomMin,
+        max: transform.rasterCustomMax,
+      };
+    case "signed":
+      return { min: -255, max: 255 };
+    case "unit":
+      return { min: -1, max: 1 };
+    case "raw":
+    default:
+      return { min: 0, max: 255 };
+  }
+}
+
+function getTransformAnalyticalHistogram(transform) {
+  if (!isTransformPreviewEnabled()) return null;
+  const tileSet = tileSets()[getSelectedTransformTileSetIndex()];
+  const item = derivedPreviewOverlay?.isActiveFor(tileSet)
+    ? derivedPreviewOverlay.item
+    : null;
+  const matrix = item?.tilesMatrix;
+  if (!matrix) return null;
+  const viewportBounds = viewer?.viewport?.getBounds?.(true);
+  let highestLevel = -Infinity;
+  let valueArrays = [];
+  Object.entries(matrix).forEach(([level, columns]) => {
+    const numericLevel = Number.parseInt(level, 10);
+    if (!Number.isFinite(numericLevel)) return;
+    Object.values(columns || {}).forEach((rows) => {
+      Object.values(rows || {}).forEach((loadedTile) => {
+        const context =
+          PetroDerivedPreviewOverlay.getDerivedTileContext2D(loadedTile);
+        const values = context?.petroImageAdvancedRawValues;
+        if (
+          !values?.length ||
+          context.petroImageAdvancedRawWidth !== context.canvas?.width ||
+          context.petroImageAdvancedRawHeight !== context.canvas?.height
+        ) {
+          return;
+        }
+        const bounds = getLoadedTileViewportBounds(loadedTile);
+        if (
+          viewportBounds &&
+          bounds &&
+          (bounds.x >= viewportBounds.x + viewportBounds.width ||
+            bounds.x + bounds.width <= viewportBounds.x ||
+            bounds.y >= viewportBounds.y + viewportBounds.height ||
+            bounds.y + bounds.height <= viewportBounds.y)
+        ) {
+          return;
+        }
+        if (numericLevel > highestLevel) {
+          highestLevel = numericLevel;
+          valueArrays = [];
+        }
+        if (numericLevel === highestLevel) valueArrays.push(values);
+      });
+    });
+  });
+  if (!valueArrays.length) return null;
+  const domain = getTransformAnalyticalHistogramDomain(transform) || {};
+  return PetroDerivedPreviewOverlay.buildScalarHistogram(valueArrays, {
+    ...domain,
+    binCount: 256,
+    maxSamples: 75000,
+  });
+}
+
+function getTransformHistogramAxisLabels(range = null) {
+  if (range && Number.isFinite(range.min) && Number.isFinite(range.max)) {
+    return [range.min, range.max].map(formatTransformTooltipNumber);
+  }
   const transform = getTransformOptionsFromControls();
   if (isPolarizationRecipe(transform)) {
     const definition = PetroPolarizationAnalysis.getProductDefinition(
@@ -17765,8 +17857,8 @@ function getTransformHistogramAxisLabels() {
   return ["0", "255"];
 }
 
-function drawTransformHistogramAxisLabels(context, width, height) {
-  const [minLabel, maxLabel] = getTransformHistogramAxisLabels();
+function drawTransformHistogramAxisLabels(context, width, height, range = null) {
+  const [minLabel, maxLabel] = getTransformHistogramAxisLabels(range);
   context.save();
   context.fillStyle = "rgba(17, 17, 17, 0.68)";
   context.font = `${Math.max(9, Math.round(height * 0.22))}px system-ui, sans-serif`;
@@ -17803,13 +17895,37 @@ function renderTransformHistogram() {
     drawTransformHistogramAxisLabels(context, width, height);
     return;
   }
+  const transform = getTransformOptionsFromControls();
+  const analyticalHistogram = getTransformAnalyticalHistogram(transform);
+  if (analyticalHistogram) {
+    drawTransformHistogramSeries(
+      context,
+      analyticalHistogram.bins,
+      width,
+      height,
+      "rgba(17, 17, 17, 0.82)",
+    );
+    drawTransformHistogramAxisLabels(context, width, height, {
+      min: analyticalHistogram.min,
+      max: analyticalHistogram.max,
+    });
+    return;
+  }
+  const selectedTileSet = tileSets()[getSelectedTransformTileSetIndex()];
+  const analyticalPreviewPending =
+    isTransformPreviewEnabled() &&
+    (isRasterRecipe(transform) || isPolarizationRecipe(transform)) &&
+    derivedPreviewOverlay?.isActiveFor(selectedTileSet);
+  if (analyticalPreviewPending) {
+    drawTransformHistogramAxisLabels(context, width, height);
+    return;
+  }
   const sourceCanvas = getTransformHistogramSourceCanvas();
   if (!sourceCanvas?.width || !sourceCanvas?.height) {
     drawTransformHistogramAxisLabels(context, width, height);
     return;
   }
 
-  const transform = getTransformOptionsFromControls();
   const outputRequestsRgb = transform.output === "rgb";
   const forceScalarHistogram = transform.output === "falseColor";
   const rgbBins = [
@@ -18048,6 +18164,15 @@ const POLARIZATION_PRODUCT_LABELS = Object.freeze({
   xpl_cpl_difference: "CPL − predicted XPL maximum",
 });
 
+function applyPolarizationProductDisplayDefaults() {
+  const product = transformPolarizationProductSelect?.value;
+  if (transformOutputSelect) transformOutputSelect.value = "falseColor";
+  if (transformPolarizationColormap) {
+    transformPolarizationColormap.value =
+      PetroPolarizationAnalysis.getDefaultColorMap(product);
+  }
+}
+
 function getAvailablePolarizationProducts(transform = null) {
   const settings = transform || getTransformOptionsFromControls();
   const ppl = getPolarizationTileSet("ppl", settings);
@@ -18091,6 +18216,9 @@ function populateTransformPolarizationProducts() {
   transformPolarizationProductSelect.value = products.includes(previousValue)
     ? previousValue
     : products[0] || "";
+  if (transformPolarizationProductSelect.value !== previousValue) {
+    applyPolarizationProductDisplayDefaults();
+  }
   updatePolarizationInputStatus();
 }
 
@@ -18154,6 +18282,7 @@ function updatePolarizationInputStatus() {
   transformPolarizationInputStatus.textContent = messages.join("\n");
   transformPolarizationInputStatus.title = details.join(" · ");
   transformPolarizationInputStatus.classList.toggle("error", duplicate);
+  scheduleClampOpenToolPalettes();
 }
 
 function populateTransformRasterTileSetBSelect() {
@@ -18413,18 +18542,41 @@ function updateTransformControls() {
     ".transform-polarization-fields",
   );
   const transformActions = document.querySelector(".transform-actions");
+  const transformColormapField = document.querySelector(
+    ".transform-colormap-field",
+  );
   const transform = getTransformOptionsFromControls();
   const rasterRecipe = isRasterRecipe(transform);
   const polarizationRecipe = isPolarizationRecipe(transform);
   const specializedRecipe = rasterRecipe || polarizationRecipe;
+  if (
+    polarizationRecipe &&
+    transformChannelSelect &&
+    ["saturation", "hue"].includes(transformChannelSelect.value)
+  ) {
+    transformChannelSelect.value = "luminance";
+    transform.channel = "luminance";
+  }
   const hasTransform = !specializedRecipe && transform.type !== "none";
   const rasterPreviewActive = isSelectedAdvancedPreviewActive("raster");
   const polarizationPreviewActive =
     isSelectedAdvancedPreviewActive("polarization");
+  let transformColormapVisibilityChanged = false;
   if (simpleFields) simpleFields.hidden = specializedRecipe;
   if (rasterFields) rasterFields.hidden = !rasterRecipe;
   if (polarizationFields) polarizationFields.hidden = !polarizationRecipe;
   if (transformActions) transformActions.hidden = specializedRecipe;
+  if (transformColormapField) {
+    const colormapHidden =
+      !polarizationRecipe || transform.output !== "falseColor";
+    transformColormapVisibilityChanged =
+      transformColormapField.hidden !== colormapHidden;
+    transformColormapField.hidden = colormapHidden;
+  }
+  if (transformPolarizationColormap) {
+    transformPolarizationColormap.disabled =
+      !polarizationRecipe || transform.output !== "falseColor";
+  }
   document.querySelectorAll(".transform-range-field").forEach((field) => {
     field.hidden = specializedRecipe;
   });
@@ -18434,9 +18586,15 @@ function updateTransformControls() {
   const usesRadius =
     !rasterRecipe && ["unsharp", "localContrast"].includes(transform.type);
   const channelField = document.querySelector(".transform-channel-field");
+  const channelFieldLabel = channelField?.querySelector("span");
   if (transformChannelSelect) {
     transformChannelSelect.disabled =
       rasterRecipe || (!polarizationRecipe && transform.type !== "channelMap");
+    Array.from(transformChannelSelect.options).forEach((option) => {
+      if (["saturation", "hue"].includes(option.value)) {
+        option.disabled = polarizationRecipe;
+      }
+    });
   }
   if (channelField) {
     channelField.hidden = rasterRecipe;
@@ -18444,6 +18602,11 @@ function updateTransformControls() {
       "transform-field-disabled",
       rasterRecipe || (!polarizationRecipe && transform.type !== "channelMap"),
     );
+  }
+  if (channelFieldLabel) {
+    channelFieldLabel.textContent = polarizationRecipe
+      ? "Input channel"
+      : "Channel";
   }
   if (transformRasterTileSetBSelect) {
     transformRasterTileSetBSelect.disabled = !rasterRecipe;
@@ -18597,6 +18760,9 @@ function updateTransformControls() {
       }
     }
   }
+  if (transformColormapVisibilityChanged) {
+    scheduleClampOpenToolPalettes();
+  }
 }
 
 function setupTransformNumberPair(rangeInput, numberInput) {
@@ -18655,6 +18821,8 @@ function applyTransformControlsToSelectedTileSet() {
 function moveTransformPreviewToSelectedTileSet() {
   const selectedTileSet = tileSets()[getSelectedTransformTileSetIndex()];
   if (!selectedTileSet) return;
+  const transform = getTransformOptionsFromControls();
+  const derivedPreviewWasActive = Boolean(derivedPreviewOverlay?.state);
 
   // A preview belongs to exactly one output tile set. Clear both the transform
   // state and every displayed derived canvas before applying it to the newly
@@ -18673,6 +18841,16 @@ function moveTransformPreviewToSelectedTileSet() {
   }
 
   clearTransformProgress();
+  if (derivedPreviewWasActive && isRasterRecipe(transform)) {
+    stopDerivedAdvancedPreview();
+    applyRasterCalculatorPreview();
+    return;
+  }
+  if (derivedPreviewWasActive && isPolarizationRecipe(transform)) {
+    stopDerivedAdvancedPreview();
+    applyPolarizationPreview();
+    return;
+  }
   applyTransformControlsToSelectedTileSet();
 }
 
@@ -18754,6 +18932,9 @@ function syncTransformControlsFromSettings(transform) {
   if (transformPolarizationProductSelect) {
     transformPolarizationProductSelect.value = normalized.polarizationProduct;
   }
+  if (transformPolarizationColormap) {
+    transformPolarizationColormap.value = normalized.polarizationColormap;
+  }
 }
 
 function applyActiveTransformPreviewToSelectedTileSet() {
@@ -18792,7 +18973,9 @@ function resetTransformControlsToDefault() {
     recipeType: currentRecipeType,
     type: currentRecipeType === "raster" ? "none" : currentType,
     output:
-      currentType === "unsharp" && currentRecipeType !== "raster"
+      currentRecipeType === "polarization"
+        ? "falseColor"
+        : currentType === "unsharp" && currentRecipeType !== "raster"
         ? "rgb"
         : TILE_SET_TRANSFORM_DEFAULTS.output,
   };
@@ -20600,22 +20783,11 @@ function getPolarizationRequiredModalities(product) {
   return definition?.mode ? [definition.mode] : [];
 }
 
-function getCircularHueRgb(value, period) {
-  const hue = PetroPolarizationAnalysis.positiveModulo(value, period) / period;
-  const sector = hue * 6;
-  const x = 1 - Math.abs((sector % 2) - 1);
-  let rgb;
-  if (sector < 1) rgb = [1, x, 0];
-  else if (sector < 2) rgb = [x, 1, 0];
-  else if (sector < 3) rgb = [0, 1, x];
-  else if (sector < 4) rgb = [0, x, 1];
-  else if (sector < 5) rgb = [x, 0, 1];
-  else rgb = [1, 0, x];
-  return rgb.map((component) => Math.round(component * 255));
-}
-
 function mapPolarizationRasterToImageData(context, raster, transform) {
-  const imageData = context.createImageData(context.canvas.width, context.canvas.height);
+  const imageData = context.createImageData(
+    context.canvas.width,
+    context.canvas.height,
+  );
   const output = imageData.data;
   const definition = raster.definition;
   const displayMin = definition.range[0];
@@ -20631,9 +20803,10 @@ function mapPolarizationRasterToImageData(context, raster, transform) {
     const displayValue = clampColorValue(((raw - displayMin) / span) * 255);
     let rgb;
     if (transform.output === "falseColor") {
-      rgb = definition.circular
-        ? getCircularHueRgb(raw, displayMax - displayMin)
-        : getFalseColorRgb(displayValue);
+      rgb = PetroPolarizationAnalysis.getColorMapRgb(
+        (raw - displayMin) / span,
+        transform.polarizationColormap,
+      );
     } else {
       rgb = [displayValue, displayValue, displayValue];
     }
@@ -23411,7 +23584,11 @@ function formatTransformTooltipNumber(value) {
 }
 
 function getTransformTooltipTileCandidates(tileSet, tileSetIndex) {
-  if (derivedPreviewOverlay?.isActiveFor(tileSet) && derivedPreviewOverlay.item) {
+  if (
+    isTransformPreviewEnabled() &&
+    derivedPreviewOverlay?.isActiveFor(tileSet) &&
+    derivedPreviewOverlay.item
+  ) {
     return [{ image: derivedPreviewOverlay.item }];
   }
   const tiles = tileSet?.tiles || [];
@@ -23515,7 +23692,8 @@ function getTransformTooltipSample(event) {
     Object.entries(matrix).forEach(([level, columns]) => {
       Object.entries(columns || {}).forEach(([x, rows]) => {
         Object.entries(rows || {}).forEach(([y, loadedTile]) => {
-          const context = loadedTile?.context2D;
+          const context =
+            PetroDerivedPreviewOverlay.getDerivedTileContext2D(loadedTile);
           if (!context?.canvas) return;
           const bounds = getLoadedTileViewportBounds(loadedTile);
           if (!bounds) return;
@@ -23720,6 +23898,12 @@ const displayImages = () => {
     }
     const getTileOpacity = getTileOpacityGetter(tileSet, tileSetOpacity, i);
     const derivedPreviewActive = derivedPreviewOverlay?.isActiveFor(tileSet);
+    const derivedDisplayState =
+      PetroDerivedPreviewOverlay.getDerivedSlotDisplayState({
+        active: derivedPreviewActive,
+        previewEnabled: isTransformPreviewEnabled(),
+        checked: isChecked[i],
+      });
 
     tiles.forEach((tile, j) => {
       const image = tile.image;
@@ -23728,7 +23912,7 @@ const displayImages = () => {
         return;
       }
       const tileOpacity =
-        isChecked[i] && !derivedPreviewActive ? getTileOpacity(j) : 0;
+        derivedDisplayState.rawVisible ? getTileOpacity(j) : 0;
       image.setOpacity(tileOpacity);
 
       // Divide the tile sets into sectors, if image division is enabled.
@@ -23742,15 +23926,19 @@ const displayImages = () => {
     });
 
     if (derivedPreviewActive) {
-      const overlayItem = derivedPreviewOverlay.item;
+      // The derived image is a separate TiledImage, but it occupies the same
+      // logical display slot as its source tile set. Build its clipping polygon
+      // in the reference source image's coordinates so Divide Images gives the
+      // raw and derived versions precisely the same sector boundary.
+      const referenceImage = derivedPreviewOverlay.state?.referenceImage;
       const imagePolygon =
-        enableDivideImages && overlayItem
+        enableDivideImages && referenceImage
           ? windowPolygon.map((point) =>
-              overlayItem.viewerElementToImageCoordinates(point),
+              referenceImage.viewerElementToImageCoordinates(point),
             )
           : null;
       derivedPreviewOverlay.setDisplay({
-        visible: isChecked[i],
+        visible: derivedDisplayState.derivedVisible,
         opacity: tileSetOpacity,
         imagePolygon,
       });

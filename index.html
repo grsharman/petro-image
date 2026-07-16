@@ -1658,33 +1658,36 @@
         </div>
         <div class="tool-palette-body transform-imagery-palette-body">
           <div class="transform-mode-toggle" role="group" aria-label="Transform Imagery recipe">
-            <label>
+            <label title="Simple Transform">
               <input
                 id="transformRecipeSimple"
                 type="radio"
                 name="transformImageryRecipe"
                 value="simple"
+                aria-label="Simple Transform"
                 checked
               />
-              <span>Simple Transform</span>
+              <span>Simple</span>
             </label>
-            <label>
+            <label title="Transform Calculator">
               <input
                 id="transformRecipeRaster"
                 type="radio"
                 name="transformImageryRecipe"
                 value="raster"
+                aria-label="Transform Calculator"
               />
-              <span>Transform Calculator</span>
+              <span>Calculator</span>
             </label>
-            <label>
+            <label title="Polarization Analysis">
               <input
                 id="transformRecipePolarization"
                 type="radio"
                 name="transformImageryRecipe"
                 value="polarization"
+                aria-label="Polarization Analysis"
               />
-              <span>Polarization Analysis</span>
+              <span>Polarization</span>
             </label>
           </div>
           <label class="snapshot-field">
@@ -1851,7 +1854,10 @@
             </label>
             <button id="transformPolarizationPreviewButton" type="button">Preview</button>
           </div>
-          <label class="snapshot-field transform-channel-field">
+          <label
+            class="snapshot-field transform-channel-field"
+            title="Image channel used as the input to the calculation"
+          >
             <span>Channel</span>
             <select id="transformChannelSelect">
               <option value="red">Red</option>
@@ -1868,6 +1874,18 @@
               <option value="grayscale">Grayscale</option>
               <option value="falseColor">False color</option>
               <option value="rgb">RGB</option>
+            </select>
+          </label>
+          <label class="snapshot-field transform-colormap-field" hidden>
+            <span>Color map</span>
+            <select id="transformPolarizationColormap">
+              <option value="viridis" selected>Viridis</option>
+              <option value="inferno">Inferno</option>
+              <option value="turbo">Turbo</option>
+              <option value="blues">Blues</option>
+              <option value="gray">Grayscale</option>
+              <option value="hue">Cyclic hue</option>
+              <option value="diverging">Blue–white–red</option>
             </select>
           </label>
           <label class="snapshot-field transform-range-field">
@@ -1919,23 +1937,21 @@
               aria-label="Output histogram"
             ></canvas>
           </div>
-          <details class="transform-resolution-panel" open>
-            <summary>Resolution</summary>
-            <label class="snapshot-field">
-              <span>Analysis</span>
-              <select id="transformGenerateSize">
-                <option value="preview">Fast preview</option>
-                <option value="balanced" selected>Balanced</option>
-                <option value="high">High detail</option>
-                <option value="maximum">Maximum available</option>
-              </select>
-            </label>
-            <p id="transformResolutionStatus" class="transform-resolution-status"></p>
-          </details>
           <details id="transformRasterExportPanel" class="transform-export-details">
             <summary>Export</summary>
             <div class="transform-create-fields">
-              <div class="transform-export-group-label">Raster file</div>
+              <div class="transform-export-group-label">Resolution</div>
+              <label class="snapshot-field">
+                <span>Quality</span>
+                <select id="transformGenerateSize">
+                  <option value="preview">Fast preview</option>
+                  <option value="balanced" selected>Balanced</option>
+                  <option value="high">High detail</option>
+                  <option value="maximum">Maximum available</option>
+                </select>
+              </label>
+              <p id="transformResolutionStatus" class="transform-resolution-status"></p>
+              <div class="transform-export-group-label transform-export-raster-label">Raster file</div>
               <label class="snapshot-field">
                 <span>Format</span>
                 <select id="transformRasterExportFormat">
@@ -1996,7 +2012,7 @@
           <h4>Tile-Set Stack Functions</h4>
           <p>range, max, min, and mean summarize all images within the selected source tile set at each pixel. A single-image tile set has a range of 0.</p>
           <h4>Polarization Analysis</h4>
-          <p>Assign PPL, XPL, and CPL roles to angle-aware tile sets. Polarization products use harmonic fits when at least three valid angles are available; six well-spaced images are preferred. Direct stack statistics such as mean and range remain available in Transform Calculator. XPL fitting assumes crossed polarizer and analyzer rotation.</p>
+          <p>Assign PPL, XPL, and CPL roles to angle-aware tile sets. Polarization products use harmonic fits when at least three valid angles are available; six well-spaced images are preferred. Input channel selects the source-image intensity fitted at each angle; Red, Green, Blue, and Luminance are supported. Direct stack statistics such as mean and range remain available in Transform Calculator. XPL fitting assumes crossed polarizer and analyzer rotation.</p>
           <h4>Resolution and Raster Export</h4>
           <p>The selected analysis resolution is used for generated tile sets and raster exports. NumPy and TIFF preserve scalar calculated values; PNG and JPEG export the current display mapping. Maximum available uses source-image resolution and may require substantial memory.</p>
           <h4>Display and Histogram</h4>
