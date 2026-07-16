@@ -14,6 +14,7 @@ By [Glenn R. Sharman](https://github.com/grsharman) and [Jonathan P. Sharman](ht
 - [Overview](#overview)
 - [Image Selection](#image-selection)
 - [Adding Your Own Images](#adding-your-own-images)
+- [Polarization Anisotropy Classification](#polarization-anisotropy-classification)
 - [Tools](#tools)
 - [Appendix](#appendix)
 
@@ -103,6 +104,69 @@ npm run benchmark:jpeg2000 -- /path/to/scan.jp2 /path/to/benchmark-output
 ```
 
 On macOS, `/usr/bin/time -l` can wrap that command to record peak resident memory. Ensure the destination has ample free space: a large DZI includes approximately one third more source pixels across its reduced pyramid levels before JPEG compression.
+
+### Polarization Anisotropy Classification
+
+The pixel-based anisotropy classifier combines observed PPL and XPL intensities with fitted angular responses. A reliable PPL fit supplies the predicted maximum used for transmission decisions; the observed maximum remains the fallback when a reliable fit is unavailable.
+
+```mermaid
+flowchart TD
+    A["PPL and/or XPL angular image stacks"] --> B["Calculate observed intensity statistics"]
+    B --> C["Fit angular models where sufficient images and angles are available"]
+
+    C --> E{"Reliable multi-angle PPL fit?"}
+
+    E -- Yes --> F["Use PPL predicted maximum for transmission evidence"]
+    E -- No --> G["Use PPL observed maximum as limited fallback"]
+
+    F --> H{"Observed and predicted PPL maxima ≤ 15?"}
+    G --> I{"Observed PPL maximum ≤ 15?"}
+
+    H -- Yes --> O["Opaque-like / very low transmission"]
+    I -- Yes --> O
+    H -- No --> J["Evaluate PPL modulation"]
+    I -- No --> J
+
+    J --> K{"Reliable PPL fit? normalized RMSE ≤ 0.12"}
+    K -- No --> MU["PPL-uncertain"]
+    K -- Yes --> KT{"Normalized modulation ≥ 0.08 and absolute modulation ≥ max(4, 2 × RMSE)?"}
+    KT -- Yes --> L["PPL-positive"]
+    KT -- No --> MN["PPL-negative"]
+
+    L --> N["Evaluate XPL modulation"]
+    MN --> N
+    MU --> N
+
+    N --> P{"Continuously dark XPL?"}
+    P -- "Yes: ≥3 images and conservative XPL maximum ≤ 12" --> Q{"Reliable PPL fit from ≥3 images and PPL-negative?"}
+    Q -- Yes --> ISO["Isotropic-like / continuously extinct"]
+    Q -- No --> R["Do not infer isotropic-like"]
+
+    P -- No --> S{"Reliable XPL birefringence?"}
+    R --> S
+
+    S -- Yes --> XP["XPL-positive"]
+    S -- No --> XN["XPL-negative or uncertain"]
+
+    XP --> T{"PPL-positive?"}
+    T -- Yes --> PB["Pleochroic + birefringent"]
+    T -- No --> BI["Birefringent"]
+
+    XN --> W{"PPL-positive?"}
+    W -- Yes --> PL["Pleochroic"]
+    W -- No --> U
+
+    O --> Z{"Confidence ≥ 0.35?"}
+    ISO --> Z
+    PB --> Z
+    BI --> Z
+    PL --> Z
+
+    Z -- Yes --> V["Return classification and confidence"]
+    Z -- No --> U
+```
+
+Default criteria use 8-bit luminance intensity values. PPL-positive confidence is the minimum evidence from fitted normalized modulation, fitted absolute amplitude relative to the greater of 4 intensity units or twice the fit RMSE, and fit quality. A reliable PPL fit has normalized RMSE ≤ 0.12; a missing fit or a fit above that error limit is PPL-uncertain rather than PPL-negative. XPL-positive confidence is the minimum evidence from fitted normalized modulation, fitted absolute amplitude relative to 2 intensity units, and fit quality. Continuously dark XPL uses the observed maximum, or the greater of observed and predicted maxima when the fit is reliable. Classified pixels below 0.35 confidence are returned as unresolved.
 
 ## Tools
 

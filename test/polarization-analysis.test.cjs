@@ -189,3 +189,336 @@ test("RGB polarization products evaluate every channel at one luminance-derived 
     });
   }
 });
+
+test("anisotropy classification distinguishes the five optical response classes", async () => {
+  const { classifyAnisotropyFits } = await polarizationApi;
+  const fit = (maximum, modulation, rmse = 1, mean = 100) => ({
+    maximum,
+    minimum: mean - modulation * mean,
+    mean,
+    amplitude: modulation * mean,
+    normalizedModulation: modulation,
+    rmse,
+  });
+  const options = { pplObservationCount: 6, xplObservationCount: 6 };
+  assert.equal(classifyAnisotropyFits(fit(8, 0.2), fit(100, 0.4), options).classCode, 1);
+  assert.equal(classifyAnisotropyFits(fit(100, 0.02), fit(5, 0.04, 3, 4), options).classCode, 2);
+  assert.equal(classifyAnisotropyFits(fit(100, 0.3), fit(100, 0.04), options).classCode, 3);
+  assert.equal(classifyAnisotropyFits(fit(100, 0.02), fit(100, 0.5), options).classCode, 4);
+  assert.equal(classifyAnisotropyFits(fit(100, 0.3), fit(100, 0.5), options).classCode, 5);
+});
+
+test("anisotropy classification preserves missing evidence and poor fits as unresolved", async () => {
+  const { classifyAnisotropyFits } = await polarizationApi;
+  const fit = (modulation, rmse = 1) => ({
+    maximum: 120,
+    mean: 100,
+    amplitude: modulation * 100,
+    normalizedModulation: modulation,
+    rmse,
+  });
+  const pplOnlyPositive = classifyAnisotropyFits(fit(0.3), null, {
+    pplObservationCount: 6,
+  });
+  assert.equal(pplOnlyPositive.classCode, 3);
+  assert.equal(classifyAnisotropyFits(fit(0.02), null, { pplObservationCount: 6 }).classCode, 0);
+  assert.equal(classifyAnisotropyFits(null, fit(0.5), { xplObservationCount: 6 }).classCode, 4);
+  assert.equal(classifyAnisotropyFits(null, fit(0.02), { xplObservationCount: 6 }).classCode, 0);
+  const poorFit = classifyAnisotropyFits(fit(0.3, 30), fit(0.5), {
+    pplObservationCount: 6,
+    xplObservationCount: 6,
+  });
+  assert.equal(poorFit.classCode, 4);
+  assert.equal(poorFit.reasonCode, 4);
+});
+
+test("continuous XPL extinction is isotropic-like even when its harmonic fit is unstable", async () => {
+  const { classifyAnisotropyFits } = await polarizationApi;
+  const pplFit = {
+    maximum: 110,
+    minimum: 106,
+    mean: 108,
+    amplitude: 2,
+    normalizedModulation: 2 / 108,
+    rmse: 1,
+    residualDegreesOfFreedom: 3,
+  };
+  const unstableDarkXplFit = {
+    maximum: 5,
+    minimum: -1,
+    mean: 2,
+    amplitude: 3,
+    normalizedModulation: 1.5,
+    rmse: 5,
+    residualDegreesOfFreedom: 3,
+  };
+  const result = classifyAnisotropyFits(pplFit, unstableDarkXplFit, {
+    pplObservationCount: 6,
+    xplObservationCount: 6,
+    pplObserved: { min: 106, max: 110, mean: 108, range: 4 },
+    xplObserved: { min: 0, max: 5, mean: 2, range: 5 },
+  });
+  assert.equal(result.classCode, 2);
+  assert.equal(result.reasonCode, 5);
+  assert.ok(result.confidence > 0.5);
+});
+
+test("PPL pleochroism takes precedence over continuous XPL darkness", async () => {
+  const { classifyAnisotropyFits } = await polarizationApi;
+  const pleochroicPplFit = {
+    maximum: 110,
+    minimum: 50,
+    mean: 80,
+    amplitude: 30,
+    normalizedModulation: 30 / 80,
+    rmse: 2,
+    residualDegreesOfFreedom: 3,
+  };
+  const unstableDarkXplFit = {
+    maximum: 5,
+    minimum: -1,
+    mean: 2,
+    amplitude: 3,
+    normalizedModulation: 1.5,
+    rmse: 5,
+    residualDegreesOfFreedom: 3,
+  };
+  const result = classifyAnisotropyFits(
+    pleochroicPplFit,
+    unstableDarkXplFit,
+    {
+      pplObservationCount: 6,
+      xplObservationCount: 6,
+      pplObserved: { min: 50, max: 110, mean: 80, range: 60 },
+      xplObserved: { min: 0, max: 5, mean: 2, range: 5 },
+    },
+  );
+  assert.equal(result.classCode, 3);
+  assert.equal(result.reasonCode, 3);
+  assert.ok(result.confidence > 0.5);
+});
+
+test("continuous XPL darkness without reliable PPL evidence remains unresolved", async () => {
+  const { classifyAnisotropyFits } = await polarizationApi;
+  const unreliablePplFit = {
+    maximum: 110,
+    minimum: 50,
+    mean: 80,
+    amplitude: 30,
+    normalizedModulation: 30 / 80,
+    rmse: 40,
+    residualDegreesOfFreedom: 3,
+  };
+  const darkXplFit = {
+    maximum: 5,
+    minimum: 0,
+    mean: 2,
+    amplitude: 2,
+    normalizedModulation: 1,
+    rmse: 4,
+    residualDegreesOfFreedom: 3,
+  };
+  const result = classifyAnisotropyFits(unreliablePplFit, darkXplFit, {
+    pplObservationCount: 6,
+    xplObservationCount: 6,
+    pplObserved: { min: 50, max: 110, mean: 80, range: 60 },
+    xplObserved: { min: 0, max: 5, mean: 2, range: 5 },
+  });
+  assert.equal(result.classCode, 0);
+  assert.equal(result.reasonCode, 8);
+});
+
+test("PPL pleochroism requires an absolute modulation above the noise floor", async () => {
+  const { classifyAnisotropyFits } = await polarizationApi;
+  const lowAmplitudeFit = {
+    maximum: 28,
+    minimum: 22,
+    mean: 25,
+    amplitude: 3,
+    normalizedModulation: 0.12,
+    rmse: 0.5,
+    residualDegreesOfFreedom: 3,
+  };
+  const result = classifyAnisotropyFits(lowAmplitudeFit, null, {
+    pplObservationCount: 6,
+    pplObserved: { min: 22, max: 28, mean: 25, range: 6 },
+  });
+  assert.equal(result.classCode, 0);
+});
+
+test("a reliable PPL predicted maximum prevents a false opaque-like result", async () => {
+  const { classifyAnisotropyFits } = await polarizationApi;
+  const pplFit = {
+    maximum: 40,
+    minimum: 10,
+    mean: 25,
+    amplitude: 15,
+    normalizedModulation: 0.6,
+    rmse: 1,
+    residualDegreesOfFreedom: 3,
+  };
+  const result = classifyAnisotropyFits(pplFit, null, {
+    pplObservationCount: 6,
+    pplObserved: { min: 4, max: 12, mean: 8, range: 8 },
+  });
+  assert.equal(result.classCode, 3);
+  assert.equal(result.pplPredictedMaximum, 40);
+});
+
+test("an unreliable PPL fit retains observed maximum as the opaque-like fallback", async () => {
+  const { classifyAnisotropyFits } = await polarizationApi;
+  const unreliablePplFit = {
+    maximum: 40,
+    minimum: -20,
+    mean: 10,
+    amplitude: 30,
+    normalizedModulation: 3,
+    rmse: 40,
+    residualDegreesOfFreedom: 3,
+  };
+  const result = classifyAnisotropyFits(unreliablePplFit, null, {
+    pplObservationCount: 6,
+    pplObserved: { min: 4, max: 12, mean: 8, range: 8 },
+  });
+  assert.equal(result.classCode, 1);
+  assert.equal(result.pplPredictedMaximum, 40);
+});
+
+test("opaque-like confidence uses the conservative fitted and observed PPL maximum", async () => {
+  const { classifyAnisotropyFits } = await polarizationApi;
+  const pplFit = {
+    maximum: 14,
+    minimum: 10,
+    mean: 12,
+    amplitude: 2,
+    normalizedModulation: 2 / 12,
+    rmse: 0.5,
+    residualDegreesOfFreedom: 3,
+  };
+  const result = classifyAnisotropyFits(pplFit, null, {
+    pplObservationCount: 6,
+    pplObserved: { min: 3, max: 5, mean: 4, range: 2 },
+  });
+  assert.equal(result.classCode, 1);
+  assert.ok(Math.abs(result.confidence - (0.5 + 1 / 30)) < 1e-12);
+});
+
+test("PPL confidence evaluates fitted amplitude against its noise-adjusted floor", async () => {
+  const { classifyAnisotropyFits } = await polarizationApi;
+  const pplFit = {
+    maximum: 110,
+    minimum: 90,
+    mean: 100,
+    amplitude: 10,
+    normalizedModulation: 0.1,
+    rmse: 5,
+    residualDegreesOfFreedom: 3,
+  };
+  const result = classifyAnisotropyFits(pplFit, null, {
+    pplObservationCount: 6,
+  });
+  assert.equal(result.classCode, 3);
+  assert.ok(Math.abs(result.confidence - 0.5) < 1e-12);
+});
+
+test("XPL confidence includes fitted absolute amplitude evidence", async () => {
+  const { classifyAnisotropyFits } = await polarizationApi;
+  const xplFit = {
+    maximum: 102,
+    minimum: 98,
+    mean: 100,
+    amplitude: 2,
+    normalizedModulation: 0.2,
+    rmse: 1,
+    residualDegreesOfFreedom: 3,
+  };
+  const result = classifyAnisotropyFits(null, xplFit, {
+    xplObservationCount: 6,
+  });
+  assert.equal(result.classCode, 4);
+  assert.ok(Math.abs(result.confidence - 0.5) < 1e-12);
+});
+
+test("a reliable fitted XPL maximum prevents a false continuously-dark result", async () => {
+  const { classifyAnisotropyFits } = await polarizationApi;
+  const pplFit = {
+    maximum: 110,
+    minimum: 106,
+    mean: 108,
+    amplitude: 2,
+    normalizedModulation: 2 / 108,
+    rmse: 1,
+    residualDegreesOfFreedom: 3,
+  };
+  const xplFit = {
+    maximum: 20,
+    minimum: 0,
+    mean: 10,
+    amplitude: 10,
+    normalizedModulation: 1,
+    rmse: 1,
+    residualDegreesOfFreedom: 3,
+  };
+  const result = classifyAnisotropyFits(pplFit, xplFit, {
+    pplObservationCount: 6,
+    xplObservationCount: 6,
+    pplObserved: { min: 106, max: 110, mean: 108, range: 4 },
+    xplObserved: { min: 0, max: 5, mean: 2, range: 5 },
+  });
+  assert.equal(result.classCode, 0);
+  assert.equal(result.xplPredictedMaximum, 20);
+});
+
+test("a single PPL image supports opaque-like classification only", async () => {
+  const { calculatePolarizationRaster } = await polarizationApi;
+  const ppl = [new Float64Array([
+    5, 5, 5, 255,
+    100, 100, 100, 255,
+  ])];
+  const raster = calculatePolarizationRaster(
+    { ppl },
+    2,
+    1,
+    { product: "anisotropy_class", pplAngles: [Number.NaN] },
+  );
+  assert.deepEqual(Array.from(raster.classification.classValues), [1, 0]);
+  assert.deepEqual(raster.classification.assessableClassCodes, [0, 1]);
+});
+
+test("anisotropy raster exposes class, confidence, reason, and metric rasters", async () => {
+  const { calculatePolarizationRaster } = await polarizationApi;
+  const pplAngles = [0, 30, 60, 90, 120, 150];
+  const xplAngles = [0, 15, 30, 45, 60, 75];
+  const pixel = (value) => new Float64Array([value, value, value, 255]);
+  const ppl = pplAngles.map((angle) =>
+    pixel(100 + 30 * Math.cos((2 * (angle - 20) * Math.PI) / 180)),
+  );
+  const xpl = xplAngles.map((angle) =>
+    pixel(100 + 40 * Math.cos((4 * (angle - 10) * Math.PI) / 180)),
+  );
+  const classRaster = calculatePolarizationRaster(
+    { ppl, xpl },
+    1,
+    1,
+    { product: "anisotropy_class", pplAngles, xplAngles },
+  );
+  const confidenceRaster = calculatePolarizationRaster(
+    { ppl, xpl },
+    1,
+    1,
+    { product: "anisotropy_confidence", pplAngles, xplAngles },
+  );
+  assert.equal(classRaster.values[0], 5);
+  assert.equal(classRaster.classification.classValues[0], 5);
+  assert.ok(classRaster.classification.confidenceValues[0] > 0.5);
+  assert.equal(classRaster.classification.reasonCodes[0], 2);
+  assert.ok(Math.abs(classRaster.classification.pplModulation[0] - 0.3) < 1e-6);
+  assert.ok(Math.abs(classRaster.classification.xplModulation[0] - 0.4) < 1e-6);
+  assert.ok(Math.abs(classRaster.classification.pplPredictedMaximum[0] - 130) < 1e-6);
+  assert.ok(Math.abs(classRaster.classification.xplPredictedMaximum[0] - 140) < 1e-6);
+  assert.ok(
+    classRaster.classification.pplObservedMaximum[0] <
+      classRaster.classification.pplPredictedMaximum[0],
+  );
+  assert.ok(Math.abs(confidenceRaster.values[0] - classRaster.classification.confidenceValues[0]) < 1e-6);
+});

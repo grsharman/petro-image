@@ -92,6 +92,43 @@ const TILE_SET_TRANSFORM_DEFAULTS = Object.freeze({
   polarizationCplIndex: -1,
   polarizationProduct: "ppl_modulation",
   polarizationColormap: "viridis",
+  polarizationClassificationPreset: "balanced",
+  polarizationLowTransmission: 15,
+  polarizationXplExtinctionCeiling: 12,
+  polarizationPplThreshold: 0.08,
+  polarizationPplAbsoluteThreshold: 4,
+  polarizationXplThreshold: 0.15,
+  polarizationMaxFitError: 0.12,
+  polarizationMinConfidence: 0.35,
+});
+const POLARIZATION_CLASSIFICATION_PRESETS = Object.freeze({
+  conservative: Object.freeze({
+    lowTransmission: 12,
+    xplExtinctionCeiling: 8,
+    pplModulation: 0.12,
+    pplAbsoluteModulation: 6,
+    xplModulation: 0.22,
+    maxFitError: 0.08,
+    minConfidence: 0.5,
+  }),
+  balanced: Object.freeze({
+    lowTransmission: 15,
+    xplExtinctionCeiling: 12,
+    pplModulation: 0.08,
+    pplAbsoluteModulation: 4,
+    xplModulation: 0.15,
+    maxFitError: 0.12,
+    minConfidence: 0.35,
+  }),
+  sensitive: Object.freeze({
+    lowTransmission: 20,
+    xplExtinctionCeiling: 18,
+    pplModulation: 0.05,
+    pplAbsoluteModulation: 3,
+    xplModulation: 0.1,
+    maxFitError: 0.18,
+    minConfidence: 0.25,
+  }),
 });
 const TRANSFORM_RASTER_CHANNELS = Object.freeze({
   r: "red",
@@ -928,6 +965,39 @@ const transformPolarizationPreviewButton = document.getElementById(
 );
 const transformPolarizationSaveRolesButton = document.getElementById(
   "transformPolarizationSaveRolesButton",
+);
+const transformPolarizationClassificationPanel = document.getElementById(
+  "transformPolarizationClassificationPanel",
+);
+const transformPolarizationClassificationSummary = document.getElementById(
+  "transformPolarizationClassificationSummary",
+);
+const transformPolarizationClassificationPreset = document.getElementById(
+  "transformPolarizationClassificationPreset",
+);
+const transformPolarizationLowTransmission = document.getElementById(
+  "transformPolarizationLowTransmission",
+);
+const transformPolarizationXplExtinctionCeiling = document.getElementById(
+  "transformPolarizationXplExtinctionCeiling",
+);
+const transformPolarizationPplThreshold = document.getElementById(
+  "transformPolarizationPplThreshold",
+);
+const transformPolarizationPplAbsoluteThreshold = document.getElementById(
+  "transformPolarizationPplAbsoluteThreshold",
+);
+const transformPolarizationXplThreshold = document.getElementById(
+  "transformPolarizationXplThreshold",
+);
+const transformPolarizationMaxFitError = document.getElementById(
+  "transformPolarizationMaxFitError",
+);
+const transformPolarizationMinConfidence = document.getElementById(
+  "transformPolarizationMinConfidence",
+);
+const transformPolarizationClassLegend = document.getElementById(
+  "transformPolarizationClassLegend",
 );
 const transformRasterExportFormat = document.getElementById(
   "transformRasterExportFormat",
@@ -14438,6 +14508,35 @@ if (
     updateTransformOutputName();
     applyPolarizationPreview();
   });
+  transformPolarizationClassificationPreset?.addEventListener(
+    "change",
+    function () {
+      const preset = transformPolarizationClassificationPreset.value;
+      if (preset !== "custom") {
+        applyPolarizationClassificationPreset(preset);
+      } else {
+        updatePolarizationClassificationSummary();
+      }
+      updateTransformControls();
+      applyPolarizationPreview();
+    },
+  );
+  getPolarizationClassificationInputs().forEach(([input]) => {
+    input?.addEventListener("input", function () {
+      if (transformPolarizationClassificationPreset) {
+        transformPolarizationClassificationPreset.value = "custom";
+      }
+      updatePolarizationClassificationSummary();
+    });
+    input?.addEventListener("change", function () {
+      if (transformPolarizationClassificationPreset) {
+        transformPolarizationClassificationPreset.value = "custom";
+      }
+      updatePolarizationClassificationSummary();
+      updateTransformControls();
+      applyPolarizationPreview();
+    });
+  });
   transformPolarizationPreviewButton?.addEventListener(
     "click",
     togglePolarizationPreview,
@@ -16065,7 +16164,7 @@ function normalizeTransformValue(key, value) {
         ? valueKey
         : fallback;
     case "output":
-      return ["grayscale", "falseColor", "rgb"].includes(valueKey)
+      return ["grayscale", "falseColor", "rgb", "classification"].includes(valueKey)
         ? valueKey
         : fallback;
     case "channel":
@@ -16114,6 +16213,32 @@ function normalizeTransformValue(key, value) {
       ].includes(valueKey)
         ? valueKey
         : fallback;
+    case "polarizationClassificationPreset":
+      return ["conservative", "balanced", "sensitive", "custom"].includes(valueKey)
+        ? valueKey
+        : fallback;
+    case "polarizationLowTransmission":
+    case "polarizationXplExtinctionCeiling":
+    case "polarizationPplAbsoluteThreshold": {
+      const numericValue = Number(value);
+      return Number.isFinite(numericValue)
+        ? Math.max(0, Math.min(255, numericValue))
+        : fallback;
+    }
+    case "polarizationPplThreshold":
+    case "polarizationXplThreshold":
+    case "polarizationMaxFitError": {
+      const numericValue = Number(value);
+      return Number.isFinite(numericValue)
+        ? Math.max(0.001, Math.min(2, numericValue))
+        : fallback;
+    }
+    case "polarizationMinConfidence": {
+      const numericValue = Number(value);
+      return Number.isFinite(numericValue)
+        ? Math.max(0, Math.min(1, numericValue))
+        : fallback;
+    }
     case "intensity": {
       const numericValue = Number(value);
       return Number.isFinite(numericValue)
@@ -16175,6 +16300,38 @@ function normalizeTileSetTransform(transform = {}) {
     polarizationColormap: normalizeTransformValue(
       "polarizationColormap",
       transform.polarizationColormap,
+    ),
+    polarizationClassificationPreset: normalizeTransformValue(
+      "polarizationClassificationPreset",
+      transform.polarizationClassificationPreset,
+    ),
+    polarizationLowTransmission: normalizeTransformValue(
+      "polarizationLowTransmission",
+      transform.polarizationLowTransmission,
+    ),
+    polarizationXplExtinctionCeiling: normalizeTransformValue(
+      "polarizationXplExtinctionCeiling",
+      transform.polarizationXplExtinctionCeiling,
+    ),
+    polarizationPplThreshold: normalizeTransformValue(
+      "polarizationPplThreshold",
+      transform.polarizationPplThreshold,
+    ),
+    polarizationPplAbsoluteThreshold: normalizeTransformValue(
+      "polarizationPplAbsoluteThreshold",
+      transform.polarizationPplAbsoluteThreshold,
+    ),
+    polarizationXplThreshold: normalizeTransformValue(
+      "polarizationXplThreshold",
+      transform.polarizationXplThreshold,
+    ),
+    polarizationMaxFitError: normalizeTransformValue(
+      "polarizationMaxFitError",
+      transform.polarizationMaxFitError,
+    ),
+    polarizationMinConfidence: normalizeTransformValue(
+      "polarizationMinConfidence",
+      transform.polarizationMinConfidence,
     ),
   };
 }
@@ -16316,6 +16473,22 @@ function getTransformOptionsFromControls() {
         transformPolarizationProductSelect?.value || "ppl_modulation",
       polarizationColormap:
         transformPolarizationColormap?.value || "viridis",
+      polarizationClassificationPreset:
+        transformPolarizationClassificationPreset?.value || "balanced",
+      polarizationLowTransmission:
+        transformPolarizationLowTransmission?.value ?? 15,
+      polarizationXplExtinctionCeiling:
+        transformPolarizationXplExtinctionCeiling?.value ?? 12,
+      polarizationPplThreshold:
+        transformPolarizationPplThreshold?.value ?? 0.08,
+      polarizationPplAbsoluteThreshold:
+        transformPolarizationPplAbsoluteThreshold?.value ?? 4,
+      polarizationXplThreshold:
+        transformPolarizationXplThreshold?.value ?? 0.15,
+      polarizationMaxFitError:
+        transformPolarizationMaxFitError?.value ?? 0.12,
+      polarizationMinConfidence:
+        transformPolarizationMinConfidence?.value ?? 0.35,
     });
   }
   if (recipeType === "raster") {
@@ -17146,6 +17319,7 @@ function updateAdvancedVisibleInputPreloadHints() {
     if (!isPolarizationRecipe(transform)) return;
     const polarizationStackImageCount = getPolarizationRequiredModalities(
       transform.polarizationProduct,
+      transform,
     ).reduce((count, modality) => {
       return (
         count +
@@ -17258,7 +17432,10 @@ function getDerivedPreviewRequiredTiles(tileSet, transform, referenceTile) {
       (entry?.tileSet?.tiles || []).forEach((tile) => requiredTiles.add(tile));
     });
   } else if (isPolarizationRecipe(transform)) {
-    getPolarizationRequiredModalities(transform.polarizationProduct).forEach(
+    getPolarizationRequiredModalities(
+      transform.polarizationProduct,
+      transform,
+    ).forEach(
       (modality) => {
         const sourceTileSet = getPolarizationTileSet(modality, transform);
         (sourceTileSet?.tiles || []).forEach((tile) => requiredTiles.add(tile));
@@ -17455,7 +17632,10 @@ function createDerivedPolarizationTileContext(
   const width = outputContext.canvas.width;
   const height = outputContext.canvas.height;
   const stacks = {};
-  getPolarizationRequiredModalities(transform.polarizationProduct).forEach(
+  getPolarizationRequiredModalities(
+    transform.polarizationProduct,
+    transform,
+  ).forEach(
     (modality) => {
       const sourceTileSet = getPolarizationTileSet(modality, transform);
       const stack = (sourceTileSet?.tiles || []).map((tile) => {
@@ -17480,6 +17660,8 @@ function createDerivedPolarizationTileContext(
       product: transform.polarizationProduct,
       channel: transform.channel,
       output: transform.output,
+      classificationThresholds:
+        getPolarizationClassificationThresholds(transform),
       pplAngles: getPolarizationAngles(getPolarizationTileSet("ppl", transform)),
       xplAngles: getPolarizationAngles(getPolarizationTileSet("xpl", transform)),
     },
@@ -17491,6 +17673,7 @@ function createDerivedPolarizationTileContext(
   context.petroImageGeneratedPreviewContext = true;
   context.petroImageAdvancedRawValues = raster.values;
   context.petroImageAdvancedRgbValues = raster.rgbValues;
+  context.petroImagePolarizationClassification = raster.classification || null;
   context.petroImageAdvancedRawWidth = width;
   context.petroImageAdvancedRawHeight = height;
   return context;
@@ -17734,6 +17917,24 @@ function drawTransformHistogramSeries(context, bins, width, height, color) {
   });
 }
 
+function drawAnisotropyClassDistribution(context, counts, width, height) {
+  const maxCount = Math.max(...counts);
+  if (maxCount <= 0) return;
+  const gap = Math.max(1, Math.round(width * 0.008));
+  const barWidth = (width - gap * (counts.length + 1)) / counts.length;
+  counts.forEach((count, code) => {
+    const entry = PetroPolarizationAnalysis.ANISOTROPY_CLASSES[code];
+    const barHeight = Math.max(1, (count / maxCount) * (height - 6));
+    context.fillStyle = `rgb(${entry.color.join(",")})`;
+    context.fillRect(
+      gap + code * (barWidth + gap),
+      height - barHeight - 2,
+      Math.max(1, barWidth),
+      barHeight,
+    );
+  });
+}
+
 function getTransformHistogramSourceCanvas() {
   return (
     viewer?.drawer?.canvas ||
@@ -17785,6 +17986,7 @@ function getTransformAnalyticalHistogram(transform) {
   const viewportBounds = viewer?.viewport?.getBounds?.(true);
   let highestLevel = -Infinity;
   let valueArrays = [];
+  let assessableClassCodes = null;
   Object.entries(matrix).forEach(([level, columns]) => {
     const numericLevel = Number.parseInt(level, 10);
     if (!Number.isFinite(numericLevel)) return;
@@ -17816,12 +18018,50 @@ function getTransformAnalyticalHistogram(transform) {
         if (numericLevel > highestLevel) {
           highestLevel = numericLevel;
           valueArrays = [];
+          assessableClassCodes =
+            context.petroImagePolarizationClassification
+              ?.assessableClassCodes || null;
         }
-        if (numericLevel === highestLevel) valueArrays.push(values);
+        if (numericLevel === highestLevel) {
+          valueArrays.push(values);
+          assessableClassCodes ||= context.petroImagePolarizationClassification
+            ?.assessableClassCodes || null;
+        }
       });
     });
   });
   if (!valueArrays.length) return null;
+  const definition = isPolarizationRecipe(transform)
+    ? PetroPolarizationAnalysis.getProductDefinition(
+        transform.polarizationProduct,
+      )
+    : null;
+  if (definition?.categorical) {
+    const classCounts = new Uint32Array(
+      PetroPolarizationAnalysis.ANISOTROPY_CLASSES.length,
+    );
+    let sampled = 0;
+    const totalPixels = valueArrays.reduce(
+      (sum, values) => sum + values.length,
+      0,
+    );
+    const stride = Math.max(1, Math.ceil(totalPixels / 75000));
+    valueArrays.forEach((values) => {
+      for (let index = 0; index < values.length; index += 1) {
+        if (sampled % stride === 0) {
+          const code = Math.round(values[index]);
+          if (code >= 0 && code < classCounts.length) classCounts[code] += 1;
+        }
+        sampled += 1;
+      }
+    });
+    return {
+      classCounts,
+      assessableClassCodes,
+      min: 0,
+      max: classCounts.length - 1,
+    };
+  }
   if (rgbMode) {
     const rgbBins = [
       new Uint32Array(256),
@@ -17931,7 +18171,19 @@ function renderTransformHistogram() {
   const transform = getTransformOptionsFromControls();
   const analyticalHistogram = getTransformAnalyticalHistogram(transform);
   if (analyticalHistogram) {
-    if (analyticalHistogram.rgbBins) {
+    if (analyticalHistogram.classCounts) {
+      drawAnisotropyClassDistribution(
+        context,
+        analyticalHistogram.classCounts,
+        width,
+        height,
+      );
+      updatePolarizationClassLegendCounts(
+        analyticalHistogram.classCounts,
+        analyticalHistogram.assessableClassCodes,
+      );
+      return;
+    } else if (analyticalHistogram.rgbBins) {
       [
         "rgba(220, 50, 47, 0.42)",
         "rgba(30, 160, 80, 0.42)",
@@ -17961,14 +18213,24 @@ function renderTransformHistogram() {
     return;
   }
   const selectedTileSet = tileSets()[getSelectedTransformTileSetIndex()];
+  const categoricalHistogram = Boolean(
+    isPolarizationRecipe(transform) &&
+      PetroPolarizationAnalysis.getProductDefinition(
+        transform.polarizationProduct,
+      )?.categorical,
+  );
+  if (categoricalHistogram) updatePolarizationClassLegendCounts();
   const analyticalPreviewPending =
     isTransformPreviewEnabled() &&
     (isRasterRecipe(transform) || isPolarizationRecipe(transform)) &&
     derivedPreviewOverlay?.isActiveFor(selectedTileSet);
   if (analyticalPreviewPending) {
-    drawTransformHistogramAxisLabels(context, width, height);
+    if (!categoricalHistogram) {
+      drawTransformHistogramAxisLabels(context, width, height);
+    }
     return;
   }
+  if (categoricalHistogram) return;
   const sourceCanvas = getTransformHistogramSourceCanvas();
   if (!sourceCanvas?.width || !sourceCanvas?.height) {
     drawTransformHistogramAxisLabels(context, width, height);
@@ -18213,11 +18475,158 @@ const POLARIZATION_PRODUCT_LABELS = Object.freeze({
   xpl_extinction_azimuth: "XPL extinction azimuth",
   xpl_rmse: "XPL fit RMSE",
   xpl_cpl_difference: "CPL − predicted XPL maximum",
+  anisotropy_class: "Anisotropy class",
+  anisotropy_confidence: "Anisotropy confidence",
 });
+const POLARIZATION_PRODUCT_GROUPS = Object.freeze([
+  Object.freeze({
+    label: "PPL fitted properties",
+    products: Object.freeze([
+      "ppl_modulation",
+      "ppl_normalized_modulation",
+      "ppl_maximum",
+      "ppl_minimum",
+      "ppl_azimuth",
+      "ppl_rmse",
+    ]),
+  }),
+  Object.freeze({
+    label: "XPL fitted properties",
+    products: Object.freeze([
+      "xpl_modulation",
+      "xpl_maximum",
+      "xpl_minimum",
+      "xpl_extinction_azimuth",
+      "xpl_rmse",
+    ]),
+  }),
+  Object.freeze({
+    label: "Combined views",
+    products: Object.freeze(["xpl_cpl_difference"]),
+  }),
+  Object.freeze({
+    label: "Interpretation",
+    products: Object.freeze(["anisotropy_class", "anisotropy_confidence"]),
+  }),
+]);
+
+function isPolarizationClassificationProduct(product) {
+  return Boolean(
+    PetroPolarizationAnalysis.getProductDefinition(product)?.classification,
+  );
+}
+
+function getPolarizationClassificationThresholds(transform = null) {
+  const settings = transform || getTransformOptionsFromControls();
+  return {
+    lowTransmission: settings.polarizationLowTransmission,
+    xplExtinctionCeiling: settings.polarizationXplExtinctionCeiling,
+    pplModulation: settings.polarizationPplThreshold,
+    pplAbsoluteModulation: settings.polarizationPplAbsoluteThreshold,
+    xplModulation: settings.polarizationXplThreshold,
+    maxFitError: settings.polarizationMaxFitError,
+    minConfidence: settings.polarizationMinConfidence,
+  };
+}
+
+function getPolarizationAssessableClassCodes(transform = null) {
+  const settings = transform || getTransformOptionsFromControls();
+  const ppl = getPolarizationTileSet("ppl", settings);
+  const xpl = getPolarizationTileSet("xpl", settings);
+  const hasPplImage = (ppl?.tiles || []).length > 0;
+  const hasPplFit = Boolean(getPolarizationFitModel("ppl", ppl));
+  const hasXplFit = Boolean(getPolarizationFitModel("xpl", xpl));
+  const codes = [0];
+  if (hasPplImage) codes.push(1);
+  if (hasPplImage && hasXplFit) codes.push(2);
+  if (hasPplFit) codes.push(3);
+  if (hasXplFit) codes.push(4);
+  if (hasPplFit && hasXplFit) codes.push(5);
+  return codes;
+}
+
+function getPolarizationClassificationInputs() {
+  return [
+    [transformPolarizationLowTransmission, "lowTransmission"],
+    [transformPolarizationXplExtinctionCeiling, "xplExtinctionCeiling"],
+    [transformPolarizationPplThreshold, "pplModulation"],
+    [transformPolarizationPplAbsoluteThreshold, "pplAbsoluteModulation"],
+    [transformPolarizationXplThreshold, "xplModulation"],
+    [transformPolarizationMaxFitError, "maxFitError"],
+    [transformPolarizationMinConfidence, "minConfidence"],
+  ];
+}
+
+function updatePolarizationClassificationSummary() {
+  if (!transformPolarizationClassificationSummary) return;
+  const value = transformPolarizationClassificationPreset?.value || "balanced";
+  transformPolarizationClassificationSummary.textContent =
+    value.charAt(0).toUpperCase() + value.slice(1);
+}
+
+function applyPolarizationClassificationPreset(preset) {
+  const values = POLARIZATION_CLASSIFICATION_PRESETS[preset];
+  if (!values) return;
+  getPolarizationClassificationInputs().forEach(([input, key]) => {
+    if (input) input.value = values[key];
+  });
+  if (transformPolarizationClassificationPreset) {
+    transformPolarizationClassificationPreset.value = preset;
+  }
+  updatePolarizationClassificationSummary();
+}
+
+function populatePolarizationClassLegend() {
+  if (!transformPolarizationClassLegend) return;
+  if (transformPolarizationClassLegend.childElementCount) return;
+  PetroPolarizationAnalysis.ANISOTROPY_CLASSES.forEach((entry) => {
+    const item = document.createElement("div");
+    item.className = "transform-classification-legend-item";
+    item.title = entry.label;
+    item.dataset.classCode = String(entry.code);
+    const swatch = document.createElement("span");
+    swatch.className = "transform-classification-legend-swatch";
+    swatch.style.background = `rgb(${entry.color.join(",")})`;
+    const label = document.createElement("span");
+    label.className = "transform-classification-legend-label";
+    label.textContent = entry.label;
+    const percent = document.createElement("span");
+    percent.className = "transform-classification-legend-percent";
+    percent.textContent = "—";
+    item.append(swatch, label, percent);
+    transformPolarizationClassLegend.append(item);
+  });
+}
+
+function updatePolarizationClassLegendCounts(
+  counts = null,
+  assessableClassCodes = null,
+) {
+  populatePolarizationClassLegend();
+  if (!transformPolarizationClassLegend) return;
+  const total = counts
+    ? Array.from(counts).reduce((sum, count) => sum + count, 0)
+    : 0;
+  const assessable = new Set(assessableClassCodes || []);
+  transformPolarizationClassLegend
+    .querySelectorAll(".transform-classification-legend-item")
+    .forEach((item) => {
+      const code = Number(item.dataset.classCode);
+      const percent = item.querySelector(".transform-classification-legend-percent");
+      if (!percent) return;
+      percent.textContent = total > 0 && assessable.has(code)
+        ? `${Math.round((counts[code] / total) * 100)}%`
+        : "—";
+    });
+}
 
 function applyPolarizationProductDisplayDefaults() {
   const product = transformPolarizationProductSelect?.value;
-  if (transformOutputSelect) transformOutputSelect.value = "falseColor";
+  if (transformOutputSelect) {
+    transformOutputSelect.value = product === "anisotropy_class"
+      ? "classification"
+      : "falseColor";
+  }
   if (transformPolarizationColormap) {
     transformPolarizationColormap.value =
       PetroPolarizationAnalysis.getDefaultColorMap(product);
@@ -18258,6 +18667,9 @@ function getAvailablePolarizationProducts(transform = null) {
   if (getPolarizationFitModel("xpl", xpl) && (cpl?.tiles || []).length > 0) {
     products.push("xpl_cpl_difference");
   }
+  if ((ppl?.tiles || []).length > 0 || getPolarizationFitModel("xpl", xpl)) {
+    products.push("anisotropy_class", "anisotropy_confidence");
+  }
   return products;
 }
 
@@ -18266,11 +18678,18 @@ function populateTransformPolarizationProducts() {
   const previousValue = transformPolarizationProductSelect.value;
   const products = getAvailablePolarizationProducts();
   transformPolarizationProductSelect.innerHTML = "";
-  products.forEach((product) => {
-    const option = document.createElement("option");
-    option.value = product;
-    option.textContent = POLARIZATION_PRODUCT_LABELS[product] || product;
-    transformPolarizationProductSelect.append(option);
+  POLARIZATION_PRODUCT_GROUPS.forEach((group) => {
+    const available = group.products.filter((product) => products.includes(product));
+    if (!available.length) return;
+    const optgroup = document.createElement("optgroup");
+    optgroup.label = group.label;
+    available.forEach((product) => {
+      const option = document.createElement("option");
+      option.value = product;
+      option.textContent = POLARIZATION_PRODUCT_LABELS[product] || product;
+      optgroup.append(option);
+    });
+    transformPolarizationProductSelect.append(optgroup);
   });
   transformPolarizationProductSelect.value = products.includes(previousValue)
     ? previousValue
@@ -18337,6 +18756,32 @@ function updatePolarizationInputStatus() {
     const prompt = "Assign at least one polarization source.";
     messages.push(prompt);
     details.push(prompt);
+  }
+  if (isPolarizationClassificationProduct(
+    transformPolarizationProductSelect?.value,
+  )) {
+    const hasPplImage = (getPolarizationTileSet("ppl")?.tiles || []).length > 0;
+    const hasPplFit = Boolean(getPolarizationFitModel(
+      "ppl",
+      getPolarizationTileSet("ppl"),
+    ));
+    const hasXplFit = Boolean(getPolarizationFitModel(
+      "xpl",
+      getPolarizationTileSet("xpl"),
+    ));
+    const classificationStatus = hasPplFit && hasXplFit
+      ? "Classification: PPL + XPL · full class set"
+      : hasPplImage && hasXplFit
+        ? "Classification: PPL image + XPL fit · PPL anisotropy unknown"
+        : hasPplFit
+          ? "Classification: PPL only · XPL unknown"
+          : hasPplImage
+            ? "Classification: PPL image · opaque-like only"
+            : hasXplFit
+          ? "Classification: XPL only · PPL unknown"
+          : "Classification unavailable";
+    messages.push(classificationStatus);
+    details.push(classificationStatus);
   }
   transformPolarizationInputStatus.textContent = messages.join("\n");
   transformPolarizationInputStatus.title = details.join(" · ");
@@ -18607,6 +19052,13 @@ function updateTransformControls() {
   const transform = getTransformOptionsFromControls();
   const rasterRecipe = isRasterRecipe(transform);
   const polarizationRecipe = isPolarizationRecipe(transform);
+  const polarizationDefinition = polarizationRecipe
+    ? PetroPolarizationAnalysis.getProductDefinition(transform.polarizationProduct)
+    : null;
+  const polarizationClassification = Boolean(
+    polarizationDefinition?.classification,
+  );
+  const polarizationCategorical = Boolean(polarizationDefinition?.categorical);
   const specializedRecipe = rasterRecipe || polarizationRecipe;
   const polarizationRgbOutput =
     polarizationRecipe &&
@@ -18616,6 +19068,7 @@ function updateTransformControls() {
     polarizationRecipe &&
     transformChannelSelect &&
     (polarizationRgbOutput ||
+      polarizationClassification ||
       ["saturation", "hue"].includes(transformChannelSelect.value))
   ) {
     transformChannelSelect.value = "luminance";
@@ -18625,22 +19078,42 @@ function updateTransformControls() {
   const rasterPreviewActive = isSelectedAdvancedPreviewActive("raster");
   const polarizationPreviewActive =
     isSelectedAdvancedPreviewActive("polarization");
-  let transformColormapVisibilityChanged = false;
+  let transformLayoutVisibilityChanged = false;
   if (simpleFields) simpleFields.hidden = specializedRecipe;
   if (rasterFields) rasterFields.hidden = !rasterRecipe;
   if (polarizationFields) polarizationFields.hidden = !polarizationRecipe;
   if (transformActions) transformActions.hidden = specializedRecipe;
   if (transformColormapField) {
     const colormapHidden =
-      !polarizationRecipe || transform.output !== "falseColor";
-    transformColormapVisibilityChanged =
+      !polarizationRecipe ||
+      polarizationCategorical ||
+      transform.output !== "falseColor";
+    transformLayoutVisibilityChanged =
       transformColormapField.hidden !== colormapHidden;
     transformColormapField.hidden = colormapHidden;
   }
   if (transformPolarizationColormap) {
     transformPolarizationColormap.disabled =
-      !polarizationRecipe || transform.output !== "falseColor";
+      !polarizationRecipe ||
+      polarizationCategorical ||
+      transform.output !== "falseColor";
   }
+  if (transformPolarizationClassificationPanel) {
+    const classificationPanelHidden =
+      !polarizationRecipe || !polarizationClassification;
+    transformLayoutVisibilityChanged ||=
+      transformPolarizationClassificationPanel.hidden !==
+      classificationPanelHidden;
+    transformPolarizationClassificationPanel.hidden = classificationPanelHidden;
+  }
+  if (transformPolarizationClassLegend) {
+    const classLegendHidden = !polarizationRecipe || !polarizationCategorical;
+    transformLayoutVisibilityChanged ||=
+      transformPolarizationClassLegend.hidden !== classLegendHidden;
+    transformPolarizationClassLegend.hidden = classLegendHidden;
+    if (polarizationCategorical) populatePolarizationClassLegend();
+  }
+  updatePolarizationClassificationSummary();
   document.querySelectorAll(".transform-range-field").forEach((field) => {
     field.hidden = specializedRecipe;
   });
@@ -18655,6 +19128,7 @@ function updateTransformControls() {
     transformChannelSelect.disabled =
       rasterRecipe ||
       polarizationRgbOutput ||
+      polarizationClassification ||
       (!polarizationRecipe && transform.type !== "channelMap");
     Array.from(transformChannelSelect.options).forEach((option) => {
       if (["saturation", "hue"].includes(option.value)) {
@@ -18666,8 +19140,9 @@ function updateTransformControls() {
     channelField.hidden = rasterRecipe;
     channelField.classList.toggle(
       "transform-field-disabled",
-      rasterRecipe ||
+        rasterRecipe ||
         polarizationRgbOutput ||
+        polarizationClassification ||
         (!polarizationRecipe && transform.type !== "channelMap"),
     );
   }
@@ -18718,21 +19193,31 @@ function updateTransformControls() {
     };
     const outputEnabled =
       specializedRecipe || ["localContrast", "channelMap"].includes(transform.type);
-    transformOutputSelect.disabled = !outputEnabled;
+    transformOutputSelect.disabled = !outputEnabled || polarizationCategorical;
     Array.from(transformOutputSelect.options).forEach((option) => {
       if (option.value === "rgb") {
         option.disabled = polarizationRecipe
-          ? !polarizationProductSupportsRgb(transform.polarizationProduct)
+          ? polarizationClassification ||
+            !polarizationProductSupportsRgb(transform.polarizationProduct)
           : specializedRecipe || transform.type !== "localContrast";
       }
       if (option.value === "falseColor") {
         option.disabled =
-          !rasterRecipe && !polarizationRecipe && transform.type !== "channelMap";
+          polarizationCategorical ||
+          (!rasterRecipe && !polarizationRecipe && transform.type !== "channelMap");
       }
       if (option.value === "grayscale") {
-        option.disabled = !hasTransform && transform.type !== "none";
+        option.disabled = polarizationCategorical ||
+          (!hasTransform && transform.type !== "none");
+      }
+      if (option.value === "classification") {
+        option.disabled = !polarizationCategorical;
       }
     });
+    if (polarizationCategorical) {
+      transformOutputSelect.value = "classification";
+      transform.output = "classification";
+    }
     if (!outputEnabled || transformOutputSelect.selectedOptions[0]?.disabled) {
       transformOutputSelect.value = specializedRecipe
         ? polarizationRecipe
@@ -18832,7 +19317,7 @@ function updateTransformControls() {
       }
     }
   }
-  if (transformColormapVisibilityChanged) {
+  if (transformLayoutVisibilityChanged) {
     scheduleClampOpenToolPalettes();
   }
 }
@@ -19007,6 +19492,35 @@ function syncTransformControlsFromSettings(transform) {
   if (transformPolarizationColormap) {
     transformPolarizationColormap.value = normalized.polarizationColormap;
   }
+  if (transformPolarizationClassificationPreset) {
+    transformPolarizationClassificationPreset.value =
+      normalized.polarizationClassificationPreset;
+  }
+  if (transformPolarizationLowTransmission) {
+    transformPolarizationLowTransmission.value =
+      normalized.polarizationLowTransmission;
+  }
+  if (transformPolarizationXplExtinctionCeiling) {
+    transformPolarizationXplExtinctionCeiling.value =
+      normalized.polarizationXplExtinctionCeiling;
+  }
+  if (transformPolarizationPplThreshold) {
+    transformPolarizationPplThreshold.value = normalized.polarizationPplThreshold;
+  }
+  if (transformPolarizationPplAbsoluteThreshold) {
+    transformPolarizationPplAbsoluteThreshold.value =
+      normalized.polarizationPplAbsoluteThreshold;
+  }
+  if (transformPolarizationXplThreshold) {
+    transformPolarizationXplThreshold.value = normalized.polarizationXplThreshold;
+  }
+  if (transformPolarizationMaxFitError) {
+    transformPolarizationMaxFitError.value = normalized.polarizationMaxFitError;
+  }
+  if (transformPolarizationMinConfidence) {
+    transformPolarizationMinConfidence.value =
+      normalized.polarizationMinConfidence;
+  }
 }
 
 function applyActiveTransformPreviewToSelectedTileSet() {
@@ -19134,6 +19648,7 @@ async function renderPolarizationRaster(imageRect, resolution, transform) {
   const stacks = {};
   const modalities = getPolarizationRequiredModalities(
     transform.polarizationProduct,
+    transform,
   );
   let completedImages = 0;
   const totalImages = modalities.reduce(
@@ -19174,6 +19689,8 @@ async function renderPolarizationRaster(imageRect, resolution, transform) {
       product: transform.polarizationProduct,
       channel: transform.channel,
       output: transform.output,
+      classificationThresholds:
+        getPolarizationClassificationThresholds(transform),
       pplAngles: getPolarizationAngles(getPolarizationTileSet("ppl", transform)),
       xplAngles: getPolarizationAngles(getPolarizationTileSet("xpl", transform)),
     },
@@ -19226,12 +19743,21 @@ function getTransformRasterMetadata(transform, resolution, raster, format) {
     format,
     encoding:
       format === "npy"
-        ? "NumPy .npy, little-endian float32"
+        ? definition?.categorical
+          ? "NumPy .npy, unsigned 8-bit class codes"
+          : "NumPy .npy, little-endian float32"
         : format === "tiff"
-          ? "TIFF, little-endian float32"
+          ? definition?.categorical
+            ? "TIFF, unsigned 8-bit class codes"
+            : "TIFF, little-endian float32"
           : `${format.toUpperCase()} display image`,
     unit: definition?.unit || "display-intensity",
-    noDataValue: format === "npy" || format === "tiff" ? "NaN" : null,
+    noDataValue:
+      format === "npy" || format === "tiff"
+        ? definition?.categorical
+          ? null
+          : "NaN"
+        : null,
     source: {
       title: typeof title === "function" ? title() : "",
       width: imageSize?.x ?? null,
@@ -19255,6 +19781,21 @@ function getTransformRasterMetadata(transform, resolution, raster, format) {
       circular: Boolean(definition?.circular),
     },
     transform,
+    interpretation: definition?.classification
+      ? {
+          type: "anisotropy-classification",
+          thresholds: getPolarizationClassificationThresholds(transform),
+          classDefinitions: PetroPolarizationAnalysis.ANISOTROPY_CLASSES,
+          assessableClassCodes:
+            raster.classification?.assessableClassCodes || [],
+          availableModalities: getPolarizationRequiredModalities(
+            transform.polarizationProduct,
+            transform,
+          ),
+          isotropicLikeMeaning:
+            "Observed XPL and any reliable fitted XPL maximum remain below the extinction ceiling while the reliable fitted PPL maximum indicates transmission and no PPL anisotropy; this is not a mineral identification.",
+        }
+      : null,
     assumptions: isPolarizationRecipe(transform)
       ? [
           "XPL polarizer and analyzer are crossed at 90 degrees and rotate together.",
@@ -19348,15 +19889,26 @@ async function exportTransformRaster() {
     const filename = getTransformExportFilename(extension);
     setTransformProgress(75, "Encoding raster...");
     if (format === "npy") {
+      const categorical = Boolean(raster.definition?.categorical);
       saveAs(
-        encodeNpy(raster.values, resolution.width, resolution.height, "<f4"),
+        encodeNpy(
+          categorical ? raster.classification.classValues : raster.values,
+          resolution.width,
+          resolution.height,
+          categorical ? "|u1" : "<f4",
+        ),
         filename,
       );
     } else if (format === "tiff") {
+      const categorical = Boolean(raster.definition?.categorical);
       saveAs(
-        encodeTiff(raster.values, resolution.width, resolution.height, {
-          bitsPerSample: 32,
-          sampleFormat: 3,
+        encodeTiff(
+          categorical ? raster.classification.classValues : raster.values,
+          resolution.width,
+          resolution.height,
+          {
+          bitsPerSample: categorical ? 8 : 32,
+          sampleFormat: categorical ? 1 : 3,
         }),
         filename,
       );
@@ -19705,7 +20257,11 @@ async function generateTransformedTileSet() {
                 type: "polarization",
                 product: transform.polarizationProduct,
                 model:
-                  transform.polarizationProduct.startsWith("ppl_")
+                  isPolarizationClassificationProduct(
+                    transform.polarizationProduct,
+                  )
+                    ? "observed_brightness_and_harmonic_interpretation"
+                    : transform.polarizationProduct.startsWith("ppl_")
                     ? "second_harmonic"
                     : transform.polarizationProduct.startsWith("xpl_")
                       ? "fourth_harmonic"
@@ -19723,6 +20279,22 @@ async function generateTransformedTileSet() {
                     getPolarizationTileSet("xpl", transform),
                   ),
                 },
+                classification: isPolarizationClassificationProduct(
+                  transform.polarizationProduct,
+                )
+                  ? {
+                      thresholds:
+                        getPolarizationClassificationThresholds(transform),
+                      classDefinitions:
+                        PetroPolarizationAnalysis.ANISOTROPY_CLASSES,
+                      availableModalities: getPolarizationRequiredModalities(
+                        transform.polarizationProduct,
+                        transform,
+                      ),
+                      assessableClassCodes:
+                        getPolarizationAssessableClassCodes(transform),
+                    }
+                  : null,
               }
             : null,
         generatedAt: new Date().toISOString(),
@@ -20861,8 +21433,22 @@ function applyAdvancedVisibleTransformToContext(
   return true;
 }
 
-function getPolarizationRequiredModalities(product) {
+function getPolarizationRequiredModalities(product, transform = null) {
   const definition = PetroPolarizationAnalysis.getProductDefinition(product);
+  if (definition?.classification) {
+    const settings = transform || getTransformOptionsFromControls();
+    const modalities = [];
+    if ((getPolarizationTileSet("ppl", settings)?.tiles || []).length > 0) {
+      modalities.push("ppl");
+    }
+    if (getPolarizationFitModel(
+      "xpl",
+      getPolarizationTileSet("xpl", settings),
+    )) {
+      modalities.push("xpl");
+    }
+    return modalities;
+  }
   if (definition?.mode === "combined") return ["xpl", "cpl"];
   return definition?.mode ? [definition.mode] : [];
 }
@@ -20898,7 +21484,14 @@ function mapPolarizationRasterToImageData(context, raster, transform) {
     }
     const displayValue = clampColorValue(((raw - displayMin) / span) * 255);
     let rgb;
-    if (transform.output === "rgb") {
+    if (definition.categorical) {
+      rgb = PetroPolarizationAnalysis.ANISOTROPY_CLASSES[
+        Math.max(0, Math.min(
+          PetroPolarizationAnalysis.ANISOTROPY_CLASSES.length - 1,
+          Math.round(raw),
+        ))
+      ].color;
+    } else if (transform.output === "rgb") {
       rgb = predictedRgb.map(clampColorValue);
     } else if (transform.output === "falseColor") {
       rgb = PetroPolarizationAnalysis.getColorMapRgb(
@@ -20932,6 +21525,7 @@ function applyPolarizationVisibleTransformToContext(
   let resolutionPending = false;
   for (const modality of getPolarizationRequiredModalities(
     transform.polarizationProduct,
+    transform,
   )) {
     const tileSet = getPolarizationTileSet(modality, transform);
     if (!tileSet) {
@@ -20964,6 +21558,8 @@ function applyPolarizationVisibleTransformToContext(
         product: transform.polarizationProduct,
         channel: transform.channel,
         output: transform.output,
+        classificationThresholds:
+          getPolarizationClassificationThresholds(transform),
         pplAngles: getPolarizationAngles(
           getPolarizationTileSet("ppl", transform),
         ),
@@ -20975,6 +21571,7 @@ function applyPolarizationVisibleTransformToContext(
     mapPolarizationRasterToImageData(context, raster, transform);
     context.petroImageAdvancedRawValues = raster.values;
     context.petroImageAdvancedRgbValues = raster.rgbValues;
+    context.petroImagePolarizationClassification = raster.classification || null;
     context.petroImageAdvancedRawWidth = width;
     context.petroImageAdvancedRawHeight = height;
     context.petroImageAdvancedResolutionPending = resolutionPending;
@@ -23672,6 +24269,7 @@ let mousePos = new OpenSeadragon.Point(0, 0);
 function hideTransformValueTooltip() {
   if (!transformValueTooltip) return;
   transformValueTooltip.hidden = true;
+  transformValueTooltip.classList.remove("classification");
 }
 
 function formatTransformTooltipNumber(value) {
@@ -23762,13 +24360,38 @@ function getRenderedViewerPixelTooltipSample(event) {
   }
 }
 
+const transformValueTooltipSuppressionSelector = [
+  '[role="menu"]',
+  '[role="dialog"]',
+  ".electron-action-tray",
+  ".tool-palette",
+  ".controls",
+].join(", ");
+
+function isTransformValueTooltipSuppressedAtEvent(event) {
+  if (event?.target?.closest?.(transformValueTooltipSuppressionSelector)) {
+    return true;
+  }
+
+  const clientX = Number(event?.clientX);
+  const clientY = Number(event?.clientY);
+  if (!Number.isFinite(clientX) || !Number.isFinite(clientY)) return false;
+
+  return Boolean(
+    document
+      .elementFromPoint(clientX, clientY)
+      ?.closest?.(transformValueTooltipSuppressionSelector),
+  );
+}
+
 function getTransformTooltipSample(event) {
   if (
     !transformValueTooltipEnabled?.checked ||
     !transformImageryPalette ||
     transformImageryPalette.hidden ||
     !viewer?.viewport ||
-    !viewerContainer
+    !viewerContainer ||
+    isTransformValueTooltipSuppressedAtEvent(event)
   ) {
     return null;
   }
@@ -23866,6 +24489,63 @@ function getTransformTooltipSample(event) {
   const { context, x, y } = selectedSample;
   const rawValues = context.petroImageAdvancedRawValues;
   const rgbValues = context.petroImageAdvancedRgbValues;
+  const classification = context.petroImagePolarizationClassification;
+  if (
+    classification?.classValues?.length &&
+    context.petroImageAdvancedRawWidth === context.canvas.width &&
+    context.petroImageAdvancedRawHeight === context.canvas.height
+  ) {
+    const valueIndex = y * context.canvas.width + x;
+    const classCode = classification.classValues[valueIndex];
+    const entry = PetroPolarizationAnalysis.ANISOTROPY_CLASSES[classCode] ||
+      PetroPolarizationAnalysis.ANISOTROPY_CLASSES[0];
+    const confidence = classification.confidenceValues[valueIndex];
+    const reason = PetroPolarizationAnalysis.ANISOTROPY_REASONS[
+      classification.reasonCodes[valueIndex]
+    ] || PetroPolarizationAnalysis.ANISOTROPY_REASONS[0];
+    const metrics = [];
+    const pplModulation = classification.pplModulation[valueIndex];
+    const xplModulation = classification.xplModulation[valueIndex];
+    const pplObservedMaximum = classification.pplObservedMaximum?.[valueIndex];
+    const pplPredictedMaximum =
+      classification.pplPredictedMaximum?.[valueIndex];
+    const xplObservedMaximum = classification.xplObservedMaximum?.[valueIndex];
+    const xplPredictedMaximum =
+      classification.xplPredictedMaximum?.[valueIndex];
+    if (Number.isFinite(pplModulation)) {
+      metrics.push(`PPL ${formatTransformTooltipNumber(pplModulation)}`);
+    }
+    if (Number.isFinite(xplModulation)) {
+      metrics.push(`XPL ${formatTransformTooltipNumber(xplModulation)}`);
+    }
+    const observed = [];
+    if (Number.isFinite(pplPredictedMaximum)) {
+      observed.push(
+        `PPL predicted max ${formatTransformTooltipNumber(pplPredictedMaximum)}`,
+      );
+    }
+    if (Number.isFinite(pplObservedMaximum)) {
+      observed.push(
+        `PPL observed max ${formatTransformTooltipNumber(pplObservedMaximum)}`,
+      );
+    }
+    if (Number.isFinite(xplPredictedMaximum)) {
+      observed.push(
+        `XPL predicted max ${formatTransformTooltipNumber(xplPredictedMaximum)}`,
+      );
+    }
+    if (Number.isFinite(xplObservedMaximum)) {
+      observed.push(
+        `XPL observed max ${formatTransformTooltipNumber(xplObservedMaximum)}`,
+      );
+    }
+    return [
+      `${entry.label} · ${Math.round(confidence * 100)}% confidence`,
+      metrics.length ? `${metrics.join(" · ")} normalized modulation` : "",
+      observed.join(" · "),
+      reason,
+    ].filter(Boolean).join("\n");
+  }
   if (
     activeTransform.output === "rgb" &&
     rgbValues?.length &&
@@ -23915,6 +24595,10 @@ function updateTransformValueTooltip(event) {
   }
 
   transformValueTooltip.textContent = sampleText;
+  transformValueTooltip.classList.toggle(
+    "classification",
+    sampleText.includes("\n"),
+  );
   transformValueTooltip.hidden = false;
   const tooltipRect = transformValueTooltip.getBoundingClientRect();
   const left = Math.min(

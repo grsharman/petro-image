@@ -6,6 +6,37 @@
   "use strict";
 
   const EPSILON = 1e-10;
+  const ANISOTROPY_CLASSES = Object.freeze([
+    Object.freeze({ code: 0, key: "unresolved", label: "Unresolved / poor fit", color: [244, 220, 120] }),
+    Object.freeze({ code: 1, key: "opaque_like", label: "Opaque-like / very low transmission", color: [20, 20, 20] }),
+    Object.freeze({ code: 2, key: "isotropic_like", label: "Isotropic-like / continuously extinct", color: [150, 150, 150] }),
+    Object.freeze({ code: 3, key: "pleochroic", label: "Pleochroic", color: [230, 126, 34] }),
+    Object.freeze({ code: 4, key: "birefringent", label: "Birefringent", color: [52, 120, 210] }),
+    Object.freeze({ code: 5, key: "pleochroic_birefringent", label: "Pleochroic + birefringent", color: [139, 79, 191] }),
+  ]);
+  const ANISOTROPY_REASONS = Object.freeze([
+    "No classification evidence",
+    "Very low PPL transmission estimate",
+    "High PPL and XPL modulation",
+    "High PPL modulation",
+    "High XPL modulation",
+    "PPL is transmissive while observed and reliable fitted XPL maxima remain below the extinction ceiling",
+    "XPL input unavailable",
+    "PPL input unavailable",
+    "PPL fit quality is poor",
+    "XPL fit quality is poor",
+    "Classification confidence is below the selected minimum",
+    "PPL angular fit is unavailable",
+  ]);
+  const DEFAULT_CLASSIFICATION_THRESHOLDS = Object.freeze({
+    lowTransmission: 15,
+    xplExtinctionCeiling: 12,
+    pplModulation: 0.08,
+    pplAbsoluteModulation: 4,
+    xplModulation: 0.15,
+    maxFitError: 0.12,
+    minConfidence: 0.35,
+  });
   const COLOR_MAPS = Object.freeze({
     viridis: [
       [68, 1, 84],
@@ -226,8 +257,373 @@
       xpl_extinction_azimuth: { mode: "xpl", field: "minimumAzimuth", unit: "degrees", range: [0, 90], circular: true },
       xpl_rmse: { mode: "xpl", field: "rmse", unit: "intensity", range: [0, 64] },
       xpl_cpl_difference: { mode: "combined", combined: true, unit: "intensity", range: [-255, 255] },
+      anisotropy_class: {
+        mode: "interpretation",
+        classification: true,
+        categorical: true,
+        unit: "class-code",
+        range: [0, ANISOTROPY_CLASSES.length - 1],
+      },
+      anisotropy_confidence: {
+        mode: "interpretation",
+        classification: true,
+        confidence: true,
+        unit: "ratio",
+        range: [0, 1],
+      },
     };
     return definitions[product] || null;
+  }
+
+  function clamp01(value) {
+    return Math.max(0, Math.min(1, Number(value) || 0));
+  }
+
+  function normalizeClassificationThresholds(thresholds = {}) {
+    const normalized = {};
+    Object.entries(DEFAULT_CLASSIFICATION_THRESHOLDS).forEach(([key, fallback]) => {
+      const value = Number(thresholds[key]);
+      normalized[key] = Number.isFinite(value) ? value : fallback;
+    });
+    normalized.lowTransmission = Math.max(0, Math.min(255, normalized.lowTransmission));
+    normalized.xplExtinctionCeiling = Math.max(0, Math.min(255, normalized.xplExtinctionCeiling));
+    normalized.pplModulation = Math.max(0.001, Math.min(2, normalized.pplModulation));
+    normalized.pplAbsoluteModulation = Math.max(0, Math.min(255, normalized.pplAbsoluteModulation));
+    normalized.xplModulation = Math.max(0.001, Math.min(2, normalized.xplModulation));
+    normalized.maxFitError = Math.max(0.001, Math.min(2, normalized.maxFitError));
+    normalized.minConfidence = clamp01(normalized.minConfidence);
+    return normalized;
+  }
+
+  function getFitQuality(fit, observationCount, maxFitError) {
+    if (!fit) return { reliable: false, quality: 0, normalizedRmse: Number.NaN };
+    const scale = Math.max(Math.abs(fit.mean), fit.amplitude, 1);
+    const normalizedRmse = fit.rmse / scale;
+    const reliable = Number.isFinite(normalizedRmse) && normalizedRmse <= maxFitError;
+    let quality = reliable
+      ? clamp01(1 - 0.5 * (normalizedRmse / maxFitError))
+      : clamp01(0.5 * (maxFitError / Math.max(normalizedRmse, EPSILON)));
+    if (observationCount <= 3) quality = Math.min(quality, 0.55);
+    return { reliable, quality, normalizedRmse };
+  }
+
+  function getThresholdEvidence(value, threshold, positive) {
+    const distance = positive ? value - threshold : threshold - value;
+    return clamp01(0.5 + distance / (2 * Math.max(threshold, EPSILON)));
+  }
+
+  function getObservedStatistics(values) {
+    if (!values?.length) return null;
+    let min = Infinity;
+    let max = -Infinity;
+    let sum = 0;
+    for (const item of values) {
+      const value = Number(item);
+      if (!Number.isFinite(value)) return null;
+      min = Math.min(min, value);
+      max = Math.max(max, value);
+      sum += value;
+    }
+    return { min, max, mean: sum / values.length, range: max - min };
+  }
+
+  function classifyAnisotropyFits(pplFit, xplFit, options = {}) {
+    const thresholds = normalizeClassificationThresholds(options.thresholds);
+    const pplObserved = options.pplObserved || (pplFit
+      ? { min: pplFit.minimum, max: pplFit.maximum, mean: pplFit.mean, range: pplFit.maximum - pplFit.minimum }
+      : null);
+    const xplObserved = options.xplObserved || (xplFit
+      ? { min: xplFit.minimum, max: xplFit.maximum, mean: xplFit.mean, range: xplFit.maximum - xplFit.minimum }
+      : null);
+    const pplAvailable = Boolean(pplObserved);
+    const xplAvailable = Boolean(xplObserved);
+    const pplQuality = getFitQuality(
+      pplFit,
+      Number(options.pplObservationCount) || 0,
+      thresholds.maxFitError,
+    );
+    const xplQuality = getFitQuality(
+      xplFit,
+      Number(options.xplObservationCount) || 0,
+      thresholds.maxFitError,
+    );
+    const pplModulation = pplFit?.normalizedModulation;
+    const xplModulation = xplFit?.normalizedModulation;
+    const pplPredictedMaximum = Number.isFinite(pplFit?.maximum)
+      ? pplFit.maximum
+      : Number.NaN;
+    const xplPredictedMaximum = Number.isFinite(xplFit?.maximum)
+      ? xplFit.maximum
+      : Number.NaN;
+    const reliablePplPredictedMaximum = pplQuality.reliable &&
+      Number.isFinite(pplPredictedMaximum)
+      ? pplPredictedMaximum
+      : Number.NaN;
+    const pplTransmissionMaximum = Number.isFinite(reliablePplPredictedMaximum)
+      ? reliablePplPredictedMaximum
+      : pplObserved?.max;
+    const reliableXplPredictedMaximum = xplQuality.reliable &&
+      Number.isFinite(xplPredictedMaximum)
+      ? xplPredictedMaximum
+      : Number.NaN;
+    const pplOpaqueMaximum = Number.isFinite(reliablePplPredictedMaximum)
+      ? Math.max(pplObserved?.max ?? -Infinity, reliablePplPredictedMaximum)
+      : pplObserved?.max;
+    const xplDarknessMaximum = Number.isFinite(reliableXplPredictedMaximum)
+      ? Math.max(xplObserved?.max ?? -Infinity, reliableXplPredictedMaximum)
+      : xplObserved?.max;
+    const result = {
+      classCode: 0,
+      confidence: 0,
+      reasonCode: 0,
+      pplModulation: Number.isFinite(pplModulation) ? pplModulation : Number.NaN,
+      xplModulation: Number.isFinite(xplModulation) ? xplModulation : Number.NaN,
+      pplFitError: pplQuality.normalizedRmse,
+      xplFitError: xplQuality.normalizedRmse,
+      pplPredictedMaximum,
+      xplPredictedMaximum,
+    };
+    if (!pplAvailable && !xplAvailable) return result;
+
+    const pplNoiseFloor = Math.max(
+      thresholds.pplAbsoluteModulation,
+      pplFit?.residualDegreesOfFreedom > 0 ? pplFit.rmse * 2 : 0,
+    );
+    const pplPositive = Boolean(
+      pplFit &&
+      pplQuality.reliable &&
+      Number.isFinite(pplModulation) &&
+      pplModulation >= thresholds.pplModulation &&
+      pplFit.amplitude >= pplNoiseFloor,
+    );
+    const pplEvidence = pplPositive
+      ? Math.min(
+          getThresholdEvidence(pplModulation, thresholds.pplModulation, true),
+          getThresholdEvidence(
+            pplFit.amplitude,
+            Math.max(pplNoiseFloor, 1),
+            true,
+          ),
+          pplQuality.quality,
+        )
+      : 0;
+    const xplContinuouslyDark = Boolean(
+      xplAvailable &&
+      (Number(options.xplObservationCount) || 0) >= 3 &&
+      xplDarknessMaximum <= thresholds.xplExtinctionCeiling,
+    );
+
+    // Very low PPL transmission is direct evidence for opaque-like material.
+    // When a reliable angular fit is available, both the sampled observations
+    // and fitted maximum must remain below the threshold. Otherwise the
+    // observed maximum is retained as the limited single-image fallback.
+    // Continuous XPL extinction is only isotropic-like when a sufficient,
+    // reliable PPL angular fit also rules out pleochroism. This keeps strongly
+    // absorbing pleochroic minerals from being classified as isotropic-like.
+    if (
+      pplAvailable &&
+      pplObserved.max <= thresholds.lowTransmission &&
+      (!Number.isFinite(reliablePplPredictedMaximum) ||
+        reliablePplPredictedMaximum <= thresholds.lowTransmission)
+    ) {
+      result.classCode = 1;
+      result.reasonCode = 1;
+      result.confidence = clamp01(
+        getThresholdEvidence(
+          pplOpaqueMaximum,
+          Math.max(thresholds.lowTransmission, 1),
+          false,
+        ) * ((Number(options.pplObservationCount) || 0) <= 1 ? 0.8 : 1),
+      );
+    } else if (
+      xplContinuouslyDark &&
+      pplFit &&
+      pplQuality.reliable &&
+      (Number(options.pplObservationCount) || 0) >= 3 &&
+      !pplPositive
+    ) {
+      result.classCode = 2;
+      result.reasonCode = 5;
+      const pplEvidence = getThresholdEvidence(
+        pplTransmissionMaximum,
+        Math.max(thresholds.lowTransmission, 1),
+        true,
+      );
+      const xplEvidence = getThresholdEvidence(
+        xplDarknessMaximum,
+        Math.max(thresholds.xplExtinctionCeiling, 1),
+        false,
+      );
+      const xplSampling = (Number(options.xplObservationCount) || 0) <= 3
+        ? 0.65
+        : 1;
+      const pplSampling = (Number(options.pplObservationCount) || 0) <= 1
+        ? 0.8
+        : 1;
+      result.confidence = Math.min(pplEvidence, xplEvidence) *
+        xplSampling * pplSampling;
+    } else {
+      const xplPositive = Boolean(
+        xplFit &&
+        xplQuality.reliable &&
+        xplObserved.max > thresholds.xplExtinctionCeiling &&
+        Number.isFinite(xplModulation) &&
+        xplModulation >= thresholds.xplModulation &&
+        xplFit.amplitude >= 2,
+      );
+      const xplEvidence = xplPositive
+        ? Math.min(
+            getThresholdEvidence(xplModulation, thresholds.xplModulation, true),
+            getThresholdEvidence(xplFit.amplitude, 2, true),
+            xplQuality.quality,
+          )
+        : 0;
+      if (pplPositive && xplPositive) {
+        result.classCode = 5;
+        result.reasonCode = 2;
+        result.confidence = Math.min(pplEvidence, xplEvidence);
+      } else if (pplPositive) {
+        result.classCode = 3;
+        result.reasonCode = 3;
+        result.confidence = pplEvidence *
+          (xplAvailable && !xplQuality.reliable && !xplContinuouslyDark
+            ? 0.75
+            : 1);
+      } else if (xplPositive) {
+        result.classCode = 4;
+        result.reasonCode = 4;
+        result.confidence = xplEvidence * (pplFit && !pplQuality.reliable ? 0.75 : 1);
+      } else {
+        result.reasonCode = pplAvailable && !pplFit
+          ? 11
+          : pplFit && !pplQuality.reliable
+            ? 8
+            : xplFit && !xplQuality.reliable
+              ? 9
+              : pplAvailable
+                ? 6
+                : 7;
+        result.confidence = Math.max(
+          pplFit ? pplQuality.quality * 0.5 : 0,
+          xplFit ? xplQuality.quality * 0.5 : 0,
+        );
+      }
+    }
+    if (result.classCode !== 0 && result.confidence < thresholds.minConfidence) {
+      result.classCode = 0;
+      result.reasonCode = 10;
+    }
+    result.confidence = clamp01(result.confidence);
+    return result;
+  }
+
+  function calculateAnisotropyRaster(stacks, width, height, options, definition) {
+    const pplStack = Array.isArray(stacks.ppl) && stacks.ppl.length ? stacks.ppl : null;
+    const xplStack = Array.isArray(stacks.xpl) && stacks.xpl.length ? stacks.xpl : null;
+    const pplModel = pplStack ? createHarmonicModel(options.pplAngles, 2) : null;
+    const xplModel = xplStack ? createHarmonicModel(options.xplAngles, 4) : null;
+    if (!pplStack && !xplModel) {
+      throw new Error("A PPL image or fitted XPL source is required for anisotropy classification.");
+    }
+    const assessableClassCodes = [0];
+    if (pplStack) assessableClassCodes.push(1);
+    if (pplStack && xplModel) assessableClassCodes.push(2);
+    if (pplModel) assessableClassCodes.push(3);
+    if (xplModel) assessableClassCodes.push(4);
+    if (pplModel && xplModel) assessableClassCodes.push(5);
+    const count = width * height;
+    const values = new Float32Array(count);
+    const classValues = new Uint8Array(count);
+    const confidenceValues = new Float32Array(count);
+    const reasonCodes = new Uint8Array(count);
+    const pplModulation = new Float32Array(count);
+    const xplModulation = new Float32Array(count);
+    const pplFitError = new Float32Array(count);
+    const xplFitError = new Float32Array(count);
+    const pplObservedMaximum = new Float32Array(count);
+    const pplPredictedMaximum = new Float32Array(count);
+    const xplObservedMaximum = new Float32Array(count);
+    const xplPredictedMaximum = new Float32Array(count);
+    [
+      pplModulation,
+      xplModulation,
+      pplFitError,
+      xplFitError,
+      pplObservedMaximum,
+      pplPredictedMaximum,
+      xplObservedMaximum,
+      xplPredictedMaximum,
+    ].forEach((array) =>
+      array.fill(Number.NaN),
+    );
+    const pplObservations = pplStack ? new Float64Array(pplStack.length) : null;
+    const xplObservations = xplStack ? new Float64Array(xplStack.length) : null;
+    let min = Infinity;
+    let max = -Infinity;
+    for (let pixelIndex = 0; pixelIndex < count; pixelIndex += 1) {
+      const offset = pixelIndex * 4;
+      if (pplStack) {
+        for (let index = 0; index < pplStack.length; index += 1) {
+          pplObservations[index] = getChannelValue(pplStack[index], offset, "luminance");
+        }
+      }
+      if (xplStack) {
+        for (let index = 0; index < xplStack.length; index += 1) {
+          xplObservations[index] = getChannelValue(xplStack[index], offset, "luminance");
+        }
+      }
+      const pplObserved = getObservedStatistics(pplObservations);
+      const xplObserved = getObservedStatistics(xplObservations);
+      const classification = classifyAnisotropyFits(
+        pplModel ? fitHarmonicValues(pplModel, pplObservations) : null,
+        xplModel ? fitHarmonicValues(xplModel, xplObservations) : null,
+        {
+          thresholds: options.classificationThresholds,
+          pplObservationCount: pplStack?.length || 0,
+          xplObservationCount: xplStack?.length || 0,
+          pplObserved,
+          xplObserved,
+        },
+      );
+      classValues[pixelIndex] = classification.classCode;
+      confidenceValues[pixelIndex] = classification.confidence;
+      reasonCodes[pixelIndex] = classification.reasonCode;
+      pplModulation[pixelIndex] = classification.pplModulation;
+      xplModulation[pixelIndex] = classification.xplModulation;
+      pplFitError[pixelIndex] = classification.pplFitError;
+      xplFitError[pixelIndex] = classification.xplFitError;
+      pplObservedMaximum[pixelIndex] = pplObserved?.max ?? Number.NaN;
+      pplPredictedMaximum[pixelIndex] = classification.pplPredictedMaximum;
+      xplObservedMaximum[pixelIndex] = xplObserved?.max ?? Number.NaN;
+      xplPredictedMaximum[pixelIndex] = classification.xplPredictedMaximum;
+      const value = definition.confidence
+        ? classification.confidence
+        : classification.classCode;
+      values[pixelIndex] = value;
+      min = Math.min(min, value);
+      max = Math.max(max, value);
+    }
+    return {
+      values,
+      min,
+      max,
+      definition,
+      rgbValues: null,
+      classification: {
+        classValues,
+        confidenceValues,
+        reasonCodes,
+        pplModulation,
+        xplModulation,
+        pplFitError,
+        xplFitError,
+        pplObservedMaximum,
+        pplPredictedMaximum,
+        xplObservedMaximum,
+        xplPredictedMaximum,
+        assessableClassCodes,
+      },
+    };
   }
 
   function getDefaultColorMap(product) {
@@ -243,6 +639,9 @@
     const product = options.product || "ppl_modulation";
     const definition = getProductDefinition(product);
     if (!definition) throw new Error(`Unknown polarization product: ${product}`);
+    if (definition.classification) {
+      return calculateAnisotropyRaster(stacks, width, height, options, definition);
+    }
     const rgbOutput = Boolean(
       options.output === "rgb" && definition.rgbAngleField,
     );
@@ -329,7 +728,11 @@
   }
 
   return {
+    ANISOTROPY_CLASSES,
+    ANISOTROPY_REASONS,
     COLOR_MAPS,
+    DEFAULT_CLASSIFICATION_THRESHOLDS,
+    classifyAnisotropyFits,
     createHarmonicModel,
     evaluateHarmonicFitAtAngle,
     fitHarmonicValues,

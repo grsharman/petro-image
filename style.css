@@ -67,6 +67,11 @@ body.import-wizard-page {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
+.transform-value-tooltip.classification {
+  max-width: 250px;
+  white-space: pre-line;
+}
+
 .annotation-load-status {
   position: absolute;
   left: 14px;
@@ -1457,6 +1462,72 @@ body.import-wizard-page {
   background: rgba(255, 255, 255, 0.78);
 }
 
+.transform-classification-settings {
+  min-width: 0;
+}
+
+.transform-classification-settings summary {
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.transform-classification-fields {
+  display: grid;
+  gap: 4px;
+  padding-top: 5px;
+}
+
+.transform-classification-fields .snapshot-field {
+  grid-template-columns: minmax(0, 1fr) 72px;
+}
+
+.transform-classification-fields .snapshot-field input,
+.transform-classification-fields .snapshot-field select {
+  width: 100%;
+  max-width: none;
+}
+
+.transform-classification-legend {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 2px 5px;
+  padding-top: 4px;
+  font-size: 8.5px;
+  line-height: 1.15;
+}
+
+.transform-classification-legend[hidden] {
+  display: none;
+}
+
+.transform-classification-legend-item {
+  display: grid;
+  grid-template-columns: 8px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 3px;
+  min-width: 0;
+}
+
+.transform-classification-legend-swatch {
+  width: 8px;
+  height: 8px;
+  border: 1px solid rgba(17, 17, 17, 0.2);
+  border-radius: 2px;
+}
+
+.transform-classification-legend-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.transform-classification-legend-percent {
+  color: rgba(17, 17, 17, 0.68);
+  font-variant-numeric: tabular-nums;
+}
+
 .transform-imagery-palette-body .snapshot-field input,
 .transform-imagery-palette-body .snapshot-field select {
   box-sizing: border-box;
@@ -1470,6 +1541,9 @@ body.import-wizard-page {
 }
 
 .transform-mode-toggle {
+  position: sticky;
+  top: 0;
+  z-index: 2;
   display: grid;
   grid-template-columns: 0.8fr 1.15fr 1.45fr;
   gap: 0;

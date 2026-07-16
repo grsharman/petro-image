@@ -1853,6 +1853,55 @@
               <select id="transformPolarizationProductSelect"></select>
             </label>
             <button id="transformPolarizationPreviewButton" type="button">Preview</button>
+            <details
+              id="transformPolarizationClassificationPanel"
+              class="transform-classification-settings"
+              hidden
+            >
+              <summary>
+                Classification settings ·
+                <span id="transformPolarizationClassificationSummary">Balanced</span>
+              </summary>
+              <div class="transform-classification-fields">
+                <label class="snapshot-field">
+                  <span>Preset</span>
+                  <select id="transformPolarizationClassificationPreset">
+                    <option value="conservative">Conservative</option>
+                    <option value="balanced" selected>Balanced</option>
+                    <option value="sensitive">Sensitive</option>
+                    <option value="custom">Custom</option>
+                  </select>
+                </label>
+                <label class="snapshot-field" title="Maximum observed PPL transmission treated as very low transmission">
+                  <span>Low transmission</span>
+                  <input id="transformPolarizationLowTransmission" type="number" min="0" max="255" step="1" value="15" />
+                </label>
+                <label class="snapshot-field" title="Maximum observed XPL luminance treated as continuous extinction when PPL is transmissive">
+                  <span>XPL extinction ceiling</span>
+                  <input id="transformPolarizationXplExtinctionCeiling" type="number" min="0" max="255" step="1" value="12" />
+                </label>
+                <label class="snapshot-field" title="Minimum normalized PPL modulation used as evidence of pleochroism">
+                  <span>PPL anisotropy</span>
+                  <input id="transformPolarizationPplThreshold" type="number" min="0.001" max="2" step="0.01" value="0.08" />
+                </label>
+                <label class="snapshot-field" title="Minimum absolute fitted PPL modulation used as evidence of pleochroism">
+                  <span>PPL modulation floor</span>
+                  <input id="transformPolarizationPplAbsoluteThreshold" type="number" min="0" max="255" step="1" value="4" />
+                </label>
+                <label class="snapshot-field" title="Minimum normalized XPL modulation used as evidence of birefringence">
+                  <span>XPL anisotropy</span>
+                  <input id="transformPolarizationXplThreshold" type="number" min="0.001" max="2" step="0.01" value="0.15" />
+                </label>
+                <label class="snapshot-field" title="Maximum fit RMSE divided by fitted mean intensity">
+                  <span>Maximum fit error</span>
+                  <input id="transformPolarizationMaxFitError" type="number" min="0.001" max="2" step="0.01" value="0.12" />
+                </label>
+                <label class="snapshot-field">
+                  <span>Minimum confidence</span>
+                  <input id="transformPolarizationMinConfidence" type="number" min="0" max="1" step="0.05" value="0.35" />
+                </label>
+              </div>
+            </details>
           </div>
           <label
             class="snapshot-field transform-channel-field"
@@ -1874,6 +1923,7 @@
               <option value="grayscale">Grayscale</option>
               <option value="falseColor">False color</option>
               <option value="rgb">RGB</option>
+              <option value="classification">Classification</option>
             </select>
           </label>
           <label class="snapshot-field transform-colormap-field" hidden>
@@ -1936,6 +1986,12 @@
               class="transform-histogram-canvas"
               aria-label="Output histogram"
             ></canvas>
+            <div
+              id="transformPolarizationClassLegend"
+              class="transform-classification-legend"
+              aria-label="Anisotropy class legend"
+              hidden
+            ></div>
           </div>
           <details id="transformRasterExportPanel" class="transform-export-details">
             <summary>Export</summary>
@@ -2013,10 +2069,12 @@
           <p>range, max, min, and mean summarize all images within the selected source tile set at each pixel. A single-image tile set has a range of 0.</p>
           <h4>Polarization Analysis</h4>
           <p>Assign PPL, XPL, and CPL roles to angle-aware tile sets. Polarization products use harmonic fits when at least three valid angles are available; six well-spaced images are preferred. Input channel selects the source-image intensity fitted at each angle; Red, Green, Blue, and Luminance are supported. RGB output is available for predicted PPL maximum or minimum transmission and predicted XPL maximum or minimum. It derives one orientation from luminance, then evaluates the fitted red, green, and blue channels at that shared orientation. The XPL predicted minimum corresponds to the fitted extinction orientation. Direct stack statistics such as mean and range remain available in Transform Calculator. XPL fitting assumes crossed polarizer and analyzer rotation.</p>
+          <h4>Anisotropy Classification</h4>
+          <p>Anisotropy class combines observed PPL/XPL brightness with luminance-based harmonic fits. A single very dark PPL image can support an opaque-like result. Isotropic-like / continuously extinct means PPL is transmissive while observed XPL remains below the extinction ceiling at every measured angle; XPL fit quality is not used when the signal is continuously dark. This remains an optical-behavior description rather than a mineral identification. Pleochroism requires both normalized PPL modulation and a minimum absolute, noise-relative amplitude. Missing evidence is never treated as a negative response, and unavailable legend classes show a dash rather than 0%. Classification confidence reflects threshold separation, angular sampling, fit quality when a fit is identifiable, and input completeness. Presets are general-purpose starting points rather than petrographically calibrated standards.</p>
           <h4>Resolution and Raster Export</h4>
           <p>The selected analysis resolution is used for generated tile sets and raster exports. NumPy and TIFF preserve scalar calculated values; for RGB polarization display they retain the corresponding luminance calculation. PNG and JPEG export the current display mapping. Maximum available uses source-image resolution and may require substantial memory.</p>
           <h4>Display and Histogram</h4>
-          <p>The preview is mapped to a display image. Auto-scale stretches calculator output for viewing, while the histogram shows the rendered display intensities from 0 to 255.</p>
+          <p>The preview is mapped to a display image. Auto-scale stretches calculator output for viewing. Scalar polarization histograms retain their analytical units, while anisotropy class shows a categorical distribution and legend.</p>
           <h4>Export Notes</h4>
           <p>Preview changes are temporary. Use Generate Tile Set to make a persistent transformed tile set. Higher output resolutions preserve more detail but take longer to render. Exported images may be deleted using the Edit Library action.</p>
         </div>
