@@ -198,7 +198,7 @@
         return value;
       });
     });
-    return { angles, harmonic, rows, weights };
+    return { angles, harmonic, rows, weights, normalInverse: inverse };
   }
 
   function fitHarmonicValues(model, values) {
@@ -225,6 +225,28 @@
       ((Math.atan2(c, b) * 180) / Math.PI) / model.harmonic,
       periodDegrees,
     );
+    const residualDegreesOfFreedom = Math.max(0, values.length - 3);
+    const scale = Math.max(Math.abs(a), amplitude, 1);
+    let azimuthStandardError = Number.NaN;
+    if (
+      residualDegreesOfFreedom > 0 &&
+      amplitude > EPSILON &&
+      model.normalInverse?.length === 9
+    ) {
+      const residualVariance = squaredError / residualDegreesOfFreedom;
+      const amplitudeSquared = amplitude * amplitude;
+      const gradientB = -c / (model.harmonic * amplitudeSquared);
+      const gradientC = b / (model.harmonic * amplitudeSquared);
+      const angularVariance = residualVariance * (
+        gradientB * gradientB * model.normalInverse[4] +
+        2 * gradientB * gradientC * model.normalInverse[5] +
+        gradientC * gradientC * model.normalInverse[8]
+      );
+      if (Number.isFinite(angularVariance) && angularVariance >= -EPSILON) {
+        azimuthStandardError = Math.sqrt(Math.max(0, angularVariance)) * 180 / Math.PI;
+      }
+    }
+    const rmse = Math.sqrt(squaredError / values.length);
     return {
       coefficients: [a, b, c],
       mean: a,
@@ -234,8 +256,10 @@
       normalizedModulation: Math.abs(a) <= EPSILON ? Number.NaN : amplitude / Math.abs(a),
       maximumAzimuth,
       minimumAzimuth: positiveModulo(maximumAzimuth + periodDegrees / 2, periodDegrees),
-      rmse: Math.sqrt(squaredError / values.length),
-      residualDegreesOfFreedom: Math.max(0, values.length - 3),
+      rmse,
+      normalizedRmse: rmse / scale,
+      azimuthStandardError,
+      residualDegreesOfFreedom,
     };
   }
 
@@ -282,6 +306,9 @@
       ppl_normalized_modulation: { mode: "ppl", field: "normalizedModulation", unit: "ratio", range: [0, 1] },
       ppl_azimuth: { mode: "ppl", field: "maximumAzimuth", unit: "degrees", range: [0, 180], circular: true },
       ppl_rmse: { mode: "ppl", field: "rmse", unit: "intensity", range: [0, 64] },
+      ppl_normalized_rmse: { mode: "ppl", field: "normalizedRmse", unit: "ratio", range: [0, 0.5] },
+      ppl_azimuth_uncertainty: { mode: "ppl", field: "azimuthStandardError", unit: "degrees", range: [0, 45] },
+      ppl_azimuth_reliability: { mode: "ppl", reliability: true, unit: "binary-mask", range: [0, 1] },
       xpl_maximum: {
         mode: "xpl",
         field: "maximum",
@@ -300,7 +327,11 @@
       xpl_modulation: { mode: "xpl", field: "normalizedModulation", unit: "ratio", range: [0, 1] },
       xpl_extinction_azimuth: { mode: "xpl", field: "minimumAzimuth", unit: "degrees", range: [0, 90], circular: true },
       xpl_rmse: { mode: "xpl", field: "rmse", unit: "intensity", range: [0, 64] },
+      xpl_normalized_rmse: { mode: "xpl", field: "normalizedRmse", unit: "ratio", range: [0, 0.5] },
+      xpl_azimuth_uncertainty: { mode: "xpl", field: "azimuthStandardError", unit: "degrees", range: [0, 22.5] },
+      xpl_azimuth_reliability: { mode: "xpl", reliability: true, unit: "binary-mask", range: [0, 1] },
       xpl_cpl_difference: { mode: "combined", combined: true, unit: "intensity", range: [-255, 255] },
+      ppl_xpl_azimuth_difference: { mode: "combined", azimuthDifference: true, unit: "degrees", range: [0, 45] },
       anisotropy_class: {
         mode: "interpretation",
         classification: true,
@@ -349,6 +380,39 @@
       : clamp01(0.5 * (maxFitError / Math.max(normalizedRmse, EPSILON)));
     if (observationCount <= 3) quality = Math.min(quality, 0.55);
     return { reliable, quality, normalizedRmse };
+  }
+
+  function isAzimuthFitReliable(fit, mode, thresholds = {}) {
+    if (!fit || (mode !== "ppl" && mode !== "xpl")) return false;
+    const normalized = normalizeClassificationThresholds(thresholds);
+    const fitQuality = getFitQuality(
+      fit,
+      fit.residualDegreesOfFreedom + 3,
+      normalized.maxFitError,
+    );
+    const modulationThreshold = mode === "ppl"
+      ? normalized.pplModulation
+      : normalized.xplModulation;
+    const signalReliable = mode === "ppl"
+      ? fit.amplitude >= Math.max(
+          normalized.pplAbsoluteModulation,
+          fit.residualDegreesOfFreedom > 0 ? fit.rmse * 2 : 0,
+        )
+      : fit.maximum > normalized.xplExtinctionCeiling;
+    return Boolean(
+      fitQuality.reliable &&
+      signalReliable &&
+      Number.isFinite(fit.normalizedModulation) &&
+      fit.normalizedModulation >= modulationThreshold
+    );
+  }
+
+  function getPplXplAzimuthDifference(pplAzimuth, xplAzimuth) {
+    if (!Number.isFinite(pplAzimuth) || !Number.isFinite(xplAzimuth)) {
+      return Number.NaN;
+    }
+    const folded = positiveModulo(pplAzimuth - xplAzimuth + 45, 90) - 45;
+    return Math.abs(folded);
   }
 
   function getThresholdEvidence(value, threshold, positive) {
@@ -673,10 +737,63 @@
   function getDefaultColorMap(product) {
     const definition = getProductDefinition(product);
     if (definition?.circular) return "hue";
+    if (definition?.reliability) return "gray";
     if (definition?.range?.[0] < 0 && definition.range[1] > 0) {
       return "diverging";
     }
     return "viridis";
+  }
+
+  function calculateAzimuthDifferenceRaster(stacks, width, height, options, definition) {
+    const pplStack = stacks.ppl;
+    const xplStack = stacks.xpl;
+    if (!Array.isArray(pplStack) || pplStack.length === 0) {
+      throw new Error("The PPL source is not available.");
+    }
+    if (!Array.isArray(xplStack) || xplStack.length === 0) {
+      throw new Error("The XPL source is not available.");
+    }
+    const pplModel = createHarmonicModel(options.pplAngles, 2);
+    const xplModel = createHarmonicModel(options.xplAngles, 4);
+    if (!pplModel || !xplModel) {
+      throw new Error("Fitted PPL and XPL sources are required for the azimuth difference.");
+    }
+    const channel = options.channel || "luminance";
+    const count = width * height;
+    const output = new Float32Array(count);
+    output.fill(Number.NaN);
+    const pplObservations = new Float64Array(pplStack.length);
+    const xplObservations = new Float64Array(xplStack.length);
+    let min = Infinity;
+    let max = -Infinity;
+    for (let pixelIndex = 0; pixelIndex < count; pixelIndex += 1) {
+      const offset = pixelIndex * 4;
+      for (let index = 0; index < pplStack.length; index += 1) {
+        pplObservations[index] = getChannelValue(pplStack[index], offset, channel);
+      }
+      for (let index = 0; index < xplStack.length; index += 1) {
+        xplObservations[index] = getChannelValue(xplStack[index], offset, channel);
+      }
+      const pplFit = fitHarmonicValues(pplModel, pplObservations);
+      const xplFit = fitHarmonicValues(xplModel, xplObservations);
+      const value = getPplXplAzimuthDifference(
+        pplFit?.maximumAzimuth,
+        xplFit?.minimumAzimuth,
+      );
+      if (Number.isFinite(value)) {
+        output[pixelIndex] = value;
+        min = Math.min(min, value);
+        max = Math.max(max, value);
+      }
+    }
+    return {
+      values: output,
+      min: Number.isFinite(min) ? min : Number.NaN,
+      max: Number.isFinite(max) ? max : Number.NaN,
+      definition,
+      rgbValues: null,
+      fitReliability: null,
+    };
   }
 
   function calculatePolarizationRaster(stacks, width, height, options = {}) {
@@ -685,6 +802,15 @@
     if (!definition) throw new Error(`Unknown polarization product: ${product}`);
     if (definition.classification) {
       return calculateAnisotropyRaster(stacks, width, height, options, definition);
+    }
+    if (definition.azimuthDifference) {
+      return calculateAzimuthDifferenceRaster(
+        stacks,
+        width,
+        height,
+        options,
+        definition,
+      );
     }
     const rgbOutput = Boolean(
       options.output === "rgb" && definition.rgbAngleField,
@@ -709,10 +835,10 @@
       ? options.xplAngles
       : definition.mode === "ppl" ? options.pplAngles : null;
     const harmonic = definition.mode === "ppl" ? 2 : 4;
-    const model = definition.field || definition.combined
+    const model = definition.field || definition.reliability || definition.combined
       ? createHarmonicModel(angles, harmonic)
       : null;
-    if ((definition.field || definition.combined) && !model) {
+    if ((definition.field || definition.reliability || definition.combined) && !model) {
       throw new Error("At least three distinct, well-spaced angles are required for this fitted product.");
     }
     const observations = new Float64Array(sourceStack.length);
@@ -736,27 +862,20 @@
         value = observations.reduce((sum, item) => sum + item, 0) / observations.length;
       } else {
         const fit = fitHarmonicValues(model, observations);
-        value = fit?.[definition.field];
+        value = definition.reliability
+          ? Number(isAzimuthFitReliable(
+              fit,
+              definition.mode,
+              classificationThresholds,
+            ))
+          : fit?.[definition.field];
         if (fitReliabilityValues && fit) {
-          const fitQuality = getFitQuality(
-            fit,
-            sourceStack.length,
-            classificationThresholds.maxFitError,
-          );
-          const modulationThreshold = definition.mode === "ppl"
-            ? classificationThresholds.pplModulation
-            : classificationThresholds.xplModulation;
-          const signalReliable = definition.mode === "ppl"
-            ? fit.amplitude >= Math.max(
-                classificationThresholds.pplAbsoluteModulation,
-                fit.residualDegreesOfFreedom > 0 ? fit.rmse * 2 : 0,
-              )
-            : fit.maximum > classificationThresholds.xplExtinctionCeiling;
           fitReliabilityValues[pixelIndex] = Number(
-            fitQuality.reliable &&
-              signalReliable &&
-              Number.isFinite(fit.normalizedModulation) &&
-              fit.normalizedModulation >= modulationThreshold,
+            isAzimuthFitReliable(
+              fit,
+              definition.mode,
+              classificationThresholds,
+            ),
           );
         }
         if (rgbValues && fit) {
@@ -816,7 +935,9 @@
     fitHarmonicValues,
     getColorMapRgb,
     getDefaultColorMap,
+    getPplXplAzimuthDifference,
     getProductDefinition,
+    isAzimuthFitReliable,
     calculatePolarizationRaster,
     positiveModulo,
   };

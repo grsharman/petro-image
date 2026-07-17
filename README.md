@@ -185,6 +185,31 @@ $$
 
 This is a descriptive RMSE divided by $n$, not a residual standard error divided by $n-3$. With exactly three observations, the three-parameter model is exactly determined and normally has zero residual degrees of freedom. Such a fit can interpolate all three observations but cannot independently test model adequacy; the UI marks it as an exact fit with residual unchecked, and fit quality is capped as described below.
 
+Normalized RMSE uses the same intensity-relative scale as the reliability rules:
+
+$$
+e=\frac{\operatorname{RMSE}}{\max(|a|,A,1)}.
+$$
+
+For more than three observations, the approximate covariance of the fitted coefficients is
+
+$$
+\operatorname{Cov}(\hat{\boldsymbol\beta})=
+\hat\sigma^2(\mathbf X^\mathsf T\mathbf X)^{-1},
+\qquad
+\hat\sigma^2=\frac{\mathrm{SSE}}{n-3}.
+$$
+
+Let $V_{bb}$, $V_{cc}$, and $V_{bc}$ be the corresponding covariance terms for $b$ and $c$. Propagating this covariance through $\theta=h^{-1}\operatorname{atan2}(c,b)$ gives the approximate azimuth variance in radians squared:
+
+$$
+\operatorname{Var}(\theta)\approx
+\frac{c^2V_{bb}+b^2V_{cc}-2bcV_{bc}}
+{h^2(b^2+c^2)^2}.
+$$
+
+Azimuth uncertainty is reported as the resulting one-standard-error value in degrees. It incorporates residual variation, angular sampling, and fitted amplitude under the ordinary-least-squares assumptions. It becomes large as modulation approaches zero and is undefined when $n\le3$, because residual variance cannot then be estimated independently.
+
 ### Calculated products
 
 | Calculation | Definition | Units and nominal display range | Interpretation |
@@ -195,19 +220,26 @@ This is a descriptive RMSE divided by $n$, not a residual standard error divided
 | PPL predicted minimum transmission | $a-A$ from the $h=2$ fit | intensity, 0–255 | Synthetic intensity at the orthogonal fitted minimum-transmission orientation. |
 | PPL maximum-transmission azimuth | $\theta_{\max}$ for $h=2$ | degrees, 0–180 | Bidirectional image-coordinate axis of fitted maximum transmission. |
 | PPL fit RMSE | RMSE of the $h=2$ fit | intensity, 0–64 display scale | Residual mismatch between observations and the harmonic model. |
+| PPL normalized RMSE | $e=\mathrm{RMSE}/\max(|a|,A,1)$ | ratio, nominal display 0–0.5 | Intensity-relative residual mismatch; lower values indicate closer agreement with the harmonic model. |
+| PPL azimuth uncertainty | $\sqrt{\operatorname{Var}(\theta_{\max})}$ | degrees, nominal display 0–45 | Approximate one-standard-error uncertainty of the PPL axis. Available only with more than three observations. |
+| PPL azimuth reliability | PPL fit-error, modulation, and signal tests | binary mask, 0 or 1 | The modality-specific mask used by `Fits = Reliable`; 1 means included and 0 means excluded. |
 | XPL modulation | $A=\sqrt{b^2+c^2}=\frac{I_{\max}-I_{\min}}{2}$ | intensity, 0–255 | Fitted half-range of the XPL response. |
 | XPL normalized modulation | $\frac{A}{\lvert a\rvert}$ | ratio, nominally 0–1 | Relative angular XPL modulation. |
 | XPL predicted maximum | $a+A$ from the $h=4$ fit | intensity, 0–255 | Synthetic XPL intensity at the fitted maximum. |
 | XPL predicted minimum | $a-A$ from the $h=4$ fit | intensity, 0–255 | Synthetic XPL intensity at fitted extinction. |
 | XPL extinction azimuth | $\theta_{\min}$ for $h=4$ | degrees, 0–90 | Image-coordinate extinction azimuth, repeated every 90°. |
 | XPL fit RMSE | RMSE of the $h=4$ fit | intensity, 0–64 display scale | Residual mismatch between observations and the harmonic model. |
+| XPL normalized RMSE | $e=\mathrm{RMSE}/\max(|a|,A,1)$ | ratio, nominal display 0–0.5 | Intensity-relative residual mismatch; lower values indicate closer agreement with the harmonic model. |
+| XPL azimuth uncertainty | $\sqrt{\operatorname{Var}(\theta_{\min})}$ | degrees, nominal display 0–22.5 | Approximate one-standard-error uncertainty of the XPL extinction axis. Available only with more than three observations. |
+| XPL azimuth reliability | XPL fit-error, modulation, and signal tests | binary mask, 0 or 1 | The modality-specific mask used by `Fits = Reliable`; 1 means included and 0 means excluded. |
+| PPL–XPL azimuth difference | $|\operatorname{mod}(\theta_{PPL}-\theta_{XPL}+45^\circ,90^\circ)-45^\circ|$ | degrees, 0–45 | Smallest separation between the PPL maximum-transmission axis and an extinction-equivalent XPL axis. |
 | CPL − predicted XPL maximum | $I_{\mathrm{CPL}}-I_{\mathrm{XPL,max}}$ | intensity, −255–255 | Empirical signed difference between the CPL image and fitted maximum XPL intensity. Positive values are brighter in CPL. |
 | Anisotropy class | decision rules below | integer code, 0–5 | Pixel-scale optical-behavior class, not a mineral identification. |
 | Anisotropy confidence | class-specific evidence score below | ratio, 0–1 | Heuristic support for the assigned class. It is not a probability. |
 
 Simple observed mean and range are intentionally not duplicated as Polarization products. They can be calculated in Image Calculator, for example with `mean(A.l)` or `range(A.l)`. PPL and XPL modulation are fitted amplitudes $A$—half the corresponding predicted maximum-to-minimum differences—not raw observed ranges.
 
-The CPL difference assumes that CPL and XPL images are registered and radiometrically comparable. It should not by itself be interpreted as retardation, maximum birefringence, mineral identity, or crystallographic orientation.
+The two reliability products are separate because PPL and XPL use different signal and modulation tests. With exactly three images they reproduce the current mask but remain residual-unchecked; they are convenient thresholded indicators rather than probabilities. The PPL–XPL difference respects the 180° PPL and 90° XPL symmetries, but it is only an image-coordinate relationship and should not by itself be interpreted as crystallographic misorientation. The CPL difference assumes that CPL and XPL images are registered and radiometrically comparable. It should not by itself be interpreted as retardation, maximum birefringence, mineral identity, or crystallographic orientation.
 
 ### Synthetic RGB output
 

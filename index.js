@@ -19599,13 +19599,20 @@ const POLARIZATION_PRODUCT_LABELS = Object.freeze({
   ppl_normalized_modulation: "PPL normalized modulation",
   ppl_azimuth: "PPL maximum-transmission azimuth",
   ppl_rmse: "PPL fit RMSE",
+  ppl_normalized_rmse: "PPL normalized RMSE",
+  ppl_azimuth_uncertainty: "PPL azimuth uncertainty",
+  ppl_azimuth_reliability: "PPL azimuth reliability",
   xpl_maximum: "XPL predicted maximum",
   xpl_minimum: "XPL predicted minimum",
   xpl_absolute_modulation: "XPL modulation",
   xpl_modulation: "XPL normalized modulation",
   xpl_extinction_azimuth: "XPL extinction azimuth",
   xpl_rmse: "XPL fit RMSE",
+  xpl_normalized_rmse: "XPL normalized RMSE",
+  xpl_azimuth_uncertainty: "XPL azimuth uncertainty",
+  xpl_azimuth_reliability: "XPL azimuth reliability",
   xpl_cpl_difference: "CPL − predicted XPL maximum",
+  ppl_xpl_azimuth_difference: "PPL–XPL azimuth difference",
   anisotropy_class: "Anisotropy class",
   anisotropy_confidence: "Anisotropy confidence",
 });
@@ -19619,6 +19626,9 @@ const POLARIZATION_PRODUCT_GROUPS = Object.freeze([
       "ppl_minimum",
       "ppl_azimuth",
       "ppl_rmse",
+      "ppl_normalized_rmse",
+      "ppl_azimuth_uncertainty",
+      "ppl_azimuth_reliability",
     ]),
   }),
   Object.freeze({
@@ -19630,11 +19640,17 @@ const POLARIZATION_PRODUCT_GROUPS = Object.freeze([
       "xpl_minimum",
       "xpl_extinction_azimuth",
       "xpl_rmse",
+      "xpl_normalized_rmse",
+      "xpl_azimuth_uncertainty",
+      "xpl_azimuth_reliability",
     ]),
   }),
   Object.freeze({
     label: "Combined views",
-    products: Object.freeze(["xpl_cpl_difference"]),
+    products: Object.freeze([
+      "ppl_xpl_azimuth_difference",
+      "xpl_cpl_difference",
+    ]),
   }),
   Object.freeze({
     label: "Interpretation",
@@ -19785,7 +19801,12 @@ function getAvailablePolarizationProducts(transform = null) {
       "ppl_minimum",
       "ppl_azimuth",
       "ppl_rmse",
+      "ppl_normalized_rmse",
+      "ppl_azimuth_reliability",
     );
+    if ((ppl?.tiles || []).length > 3) {
+      products.push("ppl_azimuth_uncertainty");
+    }
   }
   if (getPolarizationFitModel("xpl", xpl)) {
     products.push(
@@ -19795,7 +19816,15 @@ function getAvailablePolarizationProducts(transform = null) {
       "xpl_minimum",
       "xpl_extinction_azimuth",
       "xpl_rmse",
+      "xpl_normalized_rmse",
+      "xpl_azimuth_reliability",
     );
+    if ((xpl?.tiles || []).length > 3) {
+      products.push("xpl_azimuth_uncertainty");
+    }
+  }
+  if (getPolarizationFitModel("ppl", ppl) && getPolarizationFitModel("xpl", xpl)) {
+    products.push("ppl_xpl_azimuth_difference");
   }
   if (getPolarizationFitModel("xpl", xpl) && (cpl?.tiles || []).length > 0) {
     products.push("xpl_cpl_difference");
@@ -21402,6 +21431,10 @@ async function generateTransformedTileSet() {
                     transform.polarizationProduct,
                   )
                     ? "observed_brightness_and_harmonic_interpretation"
+                    : PetroPolarizationAnalysis.getProductDefinition(
+                        transform.polarizationProduct,
+                      )?.azimuthDifference
+                      ? "second_and_fourth_harmonic"
                     : transform.polarizationProduct.startsWith("ppl_")
                     ? "second_harmonic"
                     : transform.polarizationProduct.startsWith("xpl_")
@@ -22597,6 +22630,7 @@ function getPolarizationRequiredModalities(product, transform = null) {
     }
     return modalities;
   }
+  if (definition?.azimuthDifference) return ["ppl", "xpl"];
   if (definition?.mode === "combined") return ["xpl", "cpl"];
   return definition?.mode ? [definition.mode] : [];
 }
@@ -25729,7 +25763,17 @@ function getTransformTooltipSample(event) {
     context.petroImageAdvancedRawHeight === context.canvas.height
   ) {
     const valueIndex = y * context.canvas.width + x;
-    const valueLabel = formatTransformTooltipNumber(rawValues[valueIndex]);
+    const rawValue = rawValues[valueIndex];
+    const definition = isPolarizationRecipe(activeTransform)
+      ? PetroPolarizationAnalysis.getProductDefinition(
+          activeTransform.polarizationProduct,
+        )
+      : null;
+    if (definition?.reliability) {
+      return rawValue >= 0.5 ? "Reliable (1)" : "Unreliable (0)";
+    }
+    if (!Number.isFinite(rawValue)) return "No value";
+    const valueLabel = formatTransformTooltipNumber(rawValue);
     const reliability = context.petroImagePolarizationFitReliability;
     if (
       shouldMaskUnreliableAzimuthPreview(activeTransform) &&

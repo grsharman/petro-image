@@ -81,6 +81,120 @@ test("azimuth rasters identify pixels with interpretable fitted orientations", a
   assert.equal(result.fitReliability.residualUnchecked, false);
 });
 
+test("normalized RMSE and azimuth uncertainty expose fit quality as map products", async () => {
+  const {
+    calculatePolarizationRaster,
+    createHarmonicModel,
+    fitHarmonicValues,
+  } = await polarizationApi;
+  const angles = [0, 30, 60, 90, 120, 150];
+  const noise = [2, -2, 1, -1, 2, -2];
+  const values = angles.map(
+    (angle, index) =>
+      100 +
+      30 * Math.cos((2 * (angle - 25) * Math.PI) / 180) +
+      noise[index],
+  );
+  const stack = values.map(
+    (value) => new Float64Array([value, value, value, 255]),
+  );
+  const fit = fitHarmonicValues(createHarmonicModel(angles, 2), values);
+  const normalizedRmse = calculatePolarizationRaster(
+    { ppl: stack },
+    1,
+    1,
+    { product: "ppl_normalized_rmse", pplAngles: angles },
+  );
+  const uncertainty = calculatePolarizationRaster(
+    { ppl: stack },
+    1,
+    1,
+    { product: "ppl_azimuth_uncertainty", pplAngles: angles },
+  );
+  assert.ok(Math.abs(normalizedRmse.values[0] - fit.normalizedRmse) < 1e-6);
+  assert.ok(Math.abs(uncertainty.values[0] - fit.azimuthStandardError) < 1e-6);
+  assert.ok(uncertainty.values[0] > 0);
+  assert.equal(uncertainty.definition.unit, "degrees");
+
+  const exactAngles = angles.slice(0, 3);
+  const exactFit = fitHarmonicValues(
+    createHarmonicModel(exactAngles, 2),
+    values.slice(0, 3),
+  );
+  assert.equal(exactFit.residualDegreesOfFreedom, 0);
+  assert.equal(Number.isNaN(exactFit.azimuthStandardError), true);
+});
+
+test("PPL and XPL azimuth reliability products reproduce their modality-specific masks", async () => {
+  const { calculatePolarizationRaster } = await polarizationApi;
+  const pplAngles = [0, 30, 60, 90, 120, 150];
+  const pplStack = pplAngles.map((angle) => {
+    const strong = 100 + 30 * Math.cos((2 * (angle - 25) * Math.PI) / 180);
+    const weak = 100 + 2 * Math.cos((2 * (angle - 70) * Math.PI) / 180);
+    return new Float64Array([
+      strong, strong, strong, 255,
+      weak, weak, weak, 255,
+    ]);
+  });
+  const pplReliability = calculatePolarizationRaster(
+    { ppl: pplStack },
+    2,
+    1,
+    { product: "ppl_azimuth_reliability", pplAngles },
+  );
+  assert.deepEqual(Array.from(pplReliability.values), [1, 0]);
+
+  const xplAngles = [0, 15, 30, 45, 60, 75];
+  const xplStack = xplAngles.map((angle) => {
+    const strong = 60 + 40 * Math.cos((4 * (angle - 20) * Math.PI) / 180);
+    const dark = 4 + 1 * Math.cos((4 * (angle - 20) * Math.PI) / 180);
+    return new Float64Array([
+      strong, strong, strong, 255,
+      dark, dark, dark, 255,
+    ]);
+  });
+  const xplReliability = calculatePolarizationRaster(
+    { xpl: xplStack },
+    2,
+    1,
+    { product: "xpl_azimuth_reliability", xplAngles },
+  );
+  assert.deepEqual(Array.from(xplReliability.values), [1, 0]);
+  assert.equal(xplReliability.definition.unit, "binary-mask");
+});
+
+test("PPL-XPL azimuth difference folds the two fitted symmetries into 0 to 45 degrees", async () => {
+  const {
+    calculatePolarizationRaster,
+    getPplXplAzimuthDifference,
+  } = await polarizationApi;
+  assert.equal(getPplXplAzimuthDifference(170, 80), 0);
+  assert.equal(getPplXplAzimuthDifference(10, 80), 20);
+
+  const pplAngles = [0, 30, 60, 90, 120, 150];
+  const xplAngles = [0, 15, 30, 45, 60, 75];
+  const pplStack = pplAngles.map((angle) => {
+    const value = 100 + 30 * Math.cos((2 * (angle - 25) * Math.PI) / 180);
+    return new Float64Array([value, value, value, 255]);
+  });
+  const xplStack = xplAngles.map((angle) => {
+    const value = 20 + 80 * Math.sin((2 * (angle - 10) * Math.PI) / 180) ** 2;
+    return new Float64Array([value, value, value, 255]);
+  });
+  const result = calculatePolarizationRaster(
+    { ppl: pplStack, xpl: xplStack },
+    1,
+    1,
+    {
+      product: "ppl_xpl_azimuth_difference",
+      pplAngles,
+      xplAngles,
+    },
+  );
+  assert.ok(Math.abs(result.values[0] - 15) < 1e-5);
+  assert.deepEqual(result.definition.range, [0, 45]);
+});
+
 test("PPL raster products distinguish modulation amplitude from normalized modulation", async () => {
   const { calculatePolarizationRaster, getProductDefinition } = await polarizationApi;
   const angles = [0, 30, 60, 90, 120, 150];
@@ -163,6 +277,7 @@ test("scalar color maps provide stable endpoints and cyclic options", async () =
   assert.equal(getDefaultColorMap("ppl_azimuth"), "hue");
   assert.equal(getDefaultColorMap("xpl_extinction_azimuth"), "hue");
   assert.equal(getDefaultColorMap("xpl_cpl_difference"), "diverging");
+  assert.equal(getDefaultColorMap("ppl_azimuth_reliability"), "gray");
   assert.equal(getDefaultColorMap("xpl_maximum"), "viridis");
 });
 
