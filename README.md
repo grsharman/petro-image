@@ -14,7 +14,7 @@ By [Glenn R. Sharman](https://github.com/grsharman) and [Jonathan P. Sharman](ht
 - [Overview](#overview)
 - [Image Selection](#image-selection)
 - [Adding Your Own Images](#adding-your-own-images)
-- [Polarization Anisotropy Classification](#polarization-anisotropy-classification)
+- [Transform Imagery: Polarization Analysis](#transform-imagery-polarization-analysis)
 - [Tools](#tools)
 - [Appendix](#appendix)
 
@@ -105,68 +105,299 @@ npm run benchmark:jpeg2000 -- /path/to/scan.jp2 /path/to/benchmark-output
 
 On macOS, `/usr/bin/time -l` can wrap that command to record peak resident memory. Ensure the destination has ample free space: a large DZI includes approximately one third more source pixels across its reduced pyramid levels before JPEG compression.
 
-### Polarization Anisotropy Classification
+## Transform Imagery: Polarization Analysis
 
-The pixel-based anisotropy classifier combines observed PPL and XPL intensities with fitted angular responses. A reliable PPL fit supplies the predicted maximum used for transmission decisions; the observed maximum remains the fallback when a reliable fit is unavailable.
+Polarization Analysis derives pixel-scale optical-response products from registered images acquired at multiple polarization angles. It is intended to quantify patterns that are visible while rotating a petrographic stage; it does not identify minerals or directly determine crystallographic orientation. The calculations and classification rules below describe the current implementation.
+
+### Inputs, coordinates, and acquisition assumptions
+
+The user assigns tile sets to the PPL, XPL, and, where applicable, CPL roles. This assignment is stored independently of optional acquisition metadata, so older samples without acquisition parameters remain usable. A fitted product requires at least three finite angles that produce a nonsingular design matrix. More observations with broad angular coverage are strongly preferred; six PPL and six XPL images are the normal target.
+
+The current XPL model assumes that the polarizer and analyzer are crossed at 90° and rotate together. This has the same relative optical effect as keeping the crossed polars fixed while rotating the specimen stage. Reported angles use the image-coordinate convention and the supplied acquisition angles. They are not automatically converted to geographic, specimen, or crystallographic coordinates.
+
+Calculations may use red, green, blue, or luminance intensity. Luminance is
+
+$$
+Y = 0.2126R + 0.7152G + 0.0722B.
+$$
+
+The anisotropy classifier always uses luminance. Its default intensity thresholds assume 8-bit data numbers (DN) on a 0–255 scale. Registration, illumination, exposure, white balance, camera response, and specimen thickness should be consistent among images. Differences in any of these can be fitted as apparent angular variation.
+
+### Harmonic response models
+
+For each pixel, the application fits the observations by ordinary, unweighted least squares:
+
+$$
+I(\theta_i)=a+b\cos(h\theta_i)+c\sin(h\theta_i)+\varepsilon_i,
+$$
+
+where $I(\theta_i)$ is the selected-channel intensity at acquisition angle $\theta_i$, $a$ is the fitted mean, $b$ and $c$ are harmonic coefficients, and $h$ is the harmonic number. Angles are converted to radians during fitting. In matrix form,
+
+$$
+\hat{\boldsymbol\beta}=
+(\mathbf X^\mathsf T\mathbf X)^{-1}\mathbf X^\mathsf T\mathbf I,
+\qquad
+\hat{\boldsymbol\beta}=[a,b,c]^\mathsf T.
+$$
+
+PPL uses $h=2$, giving a 180° period appropriate for a bidirectional maximum-transmission axis. XPL uses $h=4$, giving a 90° period for the repeated extinction/maximum cycle under crossed polars. The fitted amplitude and extrema are
+
+$$
+A=\sqrt{b^2+c^2},\qquad
+I_{\min}=a-A,\qquad
+I_{\max}=a+A,
+$$
+
+and normalized modulation is
+
+$$
+M=\frac{A}{|a|}.
+$$
+
+$M$ is dimensionless. The unnormalized amplitude $A$ has the same intensity units as the source. Although display ranges are normally 0–255 for intensity and 0–1 for normalized modulation, an unconstrained least-squares fit can produce extrema outside 0–255 or $M>1$, particularly for noisy or poorly sampled data.
+
+The fitted maximum azimuth is
+
+$$
+\theta_{\max}=
+\operatorname{mod}\!\left[
+\frac{180^\circ}{\pi h}\operatorname{atan2}(c,b),\frac{360^\circ}{h}
+\right],
+$$
+
+and the minimum azimuth is
+
+$$
+\theta_{\min}=
+\operatorname{mod}\!\left[
+\theta_{\max}+\frac{180^\circ}{h},\frac{360^\circ}{h}
+\right].
+$$
+
+Thus PPL maximum-transmission azimuth is reported on $[0,180^\circ)$ and XPL extinction azimuth on $[0,90^\circ)$. These are axial, not directional, measurements: 0° and 180° describe the same PPL axis, while equivalent XPL extinction positions repeat every 90°.
+
+Fit error is reported as the root mean square residual
+
+$$
+\operatorname{RMSE}=\sqrt{\frac{1}{n}
+\sum_{i=1}^{n}\left[I_i-\hat I(\theta_i)\right]^2}.
+$$
+
+This is a descriptive RMSE divided by $n$, not a residual standard error divided by $n-3$. With exactly three observations, the three-parameter model is exactly determined and normally has zero residual degrees of freedom. Such a fit can interpolate all three observations but cannot independently test model adequacy; the UI marks it as an exact fit with residual unchecked, and fit quality is capped as described below.
+
+### Calculated products
+
+| Calculation | Definition | Units and nominal display range | Interpretation |
+| --- | --- | --- | --- |
+| PPL modulation | $A=\sqrt{b^2+c^2}=\frac{I_{\max}-I_{\min}}{2}$ | intensity, 0–255 | Fitted half-range of the PPL response. Unlike an observed range, it uses all angular observations. |
+| PPL normalized modulation | $\frac{A}{\lvert a\rvert}$ | ratio, nominally 0–1 | Relative PPL modulation, reducing dependence on absolute brightness. |
+| PPL predicted maximum transmission | $a+A$ from the $h=2$ fit | intensity, 0–255 | Synthetic intensity at the fitted maximum-transmission orientation. |
+| PPL predicted minimum transmission | $a-A$ from the $h=2$ fit | intensity, 0–255 | Synthetic intensity at the orthogonal fitted minimum-transmission orientation. |
+| PPL maximum-transmission azimuth | $\theta_{\max}$ for $h=2$ | degrees, 0–180 | Bidirectional image-coordinate axis of fitted maximum transmission. |
+| PPL fit RMSE | RMSE of the $h=2$ fit | intensity, 0–64 display scale | Residual mismatch between observations and the harmonic model. |
+| XPL modulation | $A=\sqrt{b^2+c^2}=\frac{I_{\max}-I_{\min}}{2}$ | intensity, 0–255 | Fitted half-range of the XPL response. |
+| XPL normalized modulation | $\frac{A}{\lvert a\rvert}$ | ratio, nominally 0–1 | Relative angular XPL modulation. |
+| XPL predicted maximum | $a+A$ from the $h=4$ fit | intensity, 0–255 | Synthetic XPL intensity at the fitted maximum. |
+| XPL predicted minimum | $a-A$ from the $h=4$ fit | intensity, 0–255 | Synthetic XPL intensity at fitted extinction. |
+| XPL extinction azimuth | $\theta_{\min}$ for $h=4$ | degrees, 0–90 | Image-coordinate extinction azimuth, repeated every 90°. |
+| XPL fit RMSE | RMSE of the $h=4$ fit | intensity, 0–64 display scale | Residual mismatch between observations and the harmonic model. |
+| CPL − predicted XPL maximum | $I_{\mathrm{CPL}}-I_{\mathrm{XPL,max}}$ | intensity, −255–255 | Empirical signed difference between the CPL image and fitted maximum XPL intensity. Positive values are brighter in CPL. |
+| Anisotropy class | decision rules below | integer code, 0–5 | Pixel-scale optical-behavior class, not a mineral identification. |
+| Anisotropy confidence | class-specific evidence score below | ratio, 0–1 | Heuristic support for the assigned class. It is not a probability. |
+
+Simple observed mean and range are intentionally not duplicated as Polarization products. They can be calculated in Image Calculator, for example with `mean(A.l)` or `range(A.l)`. PPL and XPL modulation are fitted amplitudes $A$—half the corresponding predicted maximum-to-minimum differences—not raw observed ranges.
+
+The CPL difference assumes that CPL and XPL images are registered and radiometrically comparable. It should not by itself be interpreted as retardation, maximum birefringence, mineral identity, or crystallographic orientation.
+
+### Synthetic RGB output
+
+RGB output is available for the predicted PPL maximum, predicted PPL minimum, predicted XPL maximum, and predicted XPL minimum. A luminance fit first determines one physically consistent target angle $\theta^*$. Red, green, and blue are then fitted independently and evaluated at that shared angle:
+
+$$
+\mathbf I_{\mathrm{RGB}}(\theta^*)=
+\left[
+\hat I_R(\theta^*),
+\hat I_G(\theta^*),
+\hat I_B(\theta^*)
+\right].
+$$
+
+Using one luminance-derived angle prevents each color channel from selecting a different synthetic orientation. Scalar and false-color outputs instead use the channel selected in the UI. Azimuth is available as a separate calculation and is not appended to the RGB cursor value.
+
+### Fit at cursor, histogram, and rose diagram
+
+**Fit at cursor** plots the angular observations and fitted curve for the pixel under the cursor. It reports fitted minimum, maximum, amplitude, normalized modulation, azimuth, RMSE, and normalized RMSE. Double-clicking the image pins the sampled point so the cursor can be moved to inspect the chart without changing it.
+
+For analytical previews, the histogram and rose diagram use a common, approximately uniform screen-space sample of up to 30,000 points from the visible viewport. Each screen position samples the highest-resolution loaded analytical tile available there. Consequently, larger visible areas contribute proportionally more observations, while viewer background and positions without a calculated value are excluded. The displays are representative samples of the current view rather than exhaustive statistics over the entire source image.
+
+The histogram, rose diagram, and azimuth preview share a fit filter. **All**, the default, includes every finite fitted azimuth. **Reliable** retains pixels that satisfy the fit-error, normalized-modulation, and signal tests associated with the selected classification preset; pixels that fail those tests are shown in neutral grey on the preview without changing their analytical values. Both statistical views report the included fraction and number of sampled pixels.
+
+The rose diagram is available for azimuth products. It treats the measurements as axial by expanding each PPL observation to $\theta$ and $\theta+180^\circ$, and each XPL observation to $\theta$, $\theta+90^\circ$, $\theta+180^\circ$, and $\theta+270^\circ$. PPL uses 10° bins and XPL uses 5° bins. Bin radius is linear in sample count.
+
+### Pixel-based anisotropy classification
+
+The classifier combines observed luminance statistics with the PPL and XPL fits. Its classes describe image behavior:
+
+| Code | Class | Required evidence |
+| ---: | --- | --- |
+| 0 | Unresolved / poor fit | No supported class, missing or conflicting evidence, poor fit, or confidence below the selected minimum. |
+| 1 | Opaque-like / very low transmission | Very low PPL transmission. A single PPL image can provide limited evidence. |
+| 2 | Isotropic-like / continuously extinct | Transmissive, reliably non-pleochroic PPL response plus continuously dark XPL. |
+| 3 | Pleochroic | Reliable PPL modulation without reliable positive XPL evidence. |
+| 4 | Birefringent | Reliable XPL modulation without reliable positive PPL evidence. |
+| 5 | Pleochroic + birefringent | Reliable positive PPL and XPL responses. |
+
+“Opaque-like” and “isotropic-like” are deliberately qualified. A dark pixel may reflect absorption, thickness, polishing, illumination, registration, or sensor limitations. Likewise, continuous XPL darkness can resemble isotropic behavior without proving mineral isotropy.
+
+#### Presets and thresholds
+
+The symbols below are used in the decision and confidence equations.
+
+| Symbol | UI threshold | Conservative | Balanced | Sensitive |
+| --- | --- | ---: | ---: | ---: |
+| $L$ | Low PPL transmission (DN) | 12 | 15 | 20 |
+| $D$ | XPL extinction ceiling (DN) | 8 | 12 | 18 |
+| $P$ | Minimum PPL normalized modulation | 0.12 | 0.08 | 0.05 |
+| $P_{\mathrm{abs}}$ | Minimum PPL amplitude (DN) | 6 | 4 | 3 |
+| $X$ | Minimum XPL normalized modulation | 0.22 | 0.15 | 0.10 |
+| $E_{\max}$ | Maximum normalized fit error | 0.08 | 0.12 | 0.18 |
+| $C_{\min}$ | Minimum classification confidence | 0.50 | 0.35 | 0.25 |
+
+The presets are heuristic starting points, not universally calibrated physical boundaries. Changing acquisition conditions or bit depth generally requires validation and possibly custom thresholds.
+
+#### Fit reliability and evidence functions
+
+For either fit, the normalization scale and normalized fit error are
+
+$$
+s=\max(|a|,A,1),\qquad e=\frac{\operatorname{RMSE}}{s}.
+$$
+
+The fit is called reliable when $e\le E_{\max}$. Its quality score is
+
+$$
+q=
+\begin{cases}
+\operatorname{clip}_{[0,1]}\left(1-\frac{1}{2}\frac{e}{E_{\max}}\right), & e\le E_{\max},\\[4pt]
+\operatorname{clip}_{[0,1]}\left(\frac{1}{2}\frac{E_{\max}}{\max(e,\epsilon)}\right), & e>E_{\max}.
+\end{cases}
+$$
+
+For three or fewer observations, $q$ is capped at 0.55 because the residual is not an independent check on the three-parameter fit.
+
+Evidence relative to a positive threshold $t$ is scored as
+
+$$
+E_+(v,t)=\operatorname{clip}_{[0,1]}
+\left(0.5+\frac{v-t}{2\max(t,\epsilon)}\right),
+$$
+
+while evidence that a value lies below a threshold is
+
+$$
+E_-(v,t)=\operatorname{clip}_{[0,1]}
+\left(0.5+\frac{t-v}{2\max(t,\epsilon)}\right).
+$$
+
+A value exactly at its decision threshold therefore has evidence 0.5. These linear scores quantify separation from the selected thresholds; they are not likelihood functions.
+
+#### Decision rules and confidence
+
+Let $M_P$, $A_P$, and $q_P$ denote PPL normalized modulation, amplitude, and fit quality, and let $M_X$, $A_X$, and $q_X$ denote their XPL equivalents. The PPL amplitude noise floor is
+
+$$
+N_P=\max\left(P_{\mathrm{abs}},
+\begin{cases}
+2\operatorname{RMSE}_P,& n_P>3,\\
+0,& n_P\le3.
+\end{cases}\right).
+$$
+
+PPL-positive requires a reliable fit, $M_P\ge P$, and $A_P\ge N_P$. Its evidence is
+
+$$
+C_P=\min\left[E_+(M_P,P),E_+(A_P,\max(N_P,1)),q_P\right].
+$$
+
+XPL-positive requires a reliable fit, an observed XPL maximum greater than $D$, $M_X\ge X$, and $A_X\ge2$ DN. Its evidence is
+
+$$
+C_X=\min\left[E_+(M_X,X),E_+(A_X,2),q_X\right].
+$$
+
+Several rules use conservative maxima. Let $I_{P,\mathrm{obs}}^{\max}$ and $I_{X,\mathrm{obs}}^{\max}$ be observed maxima and let $I_{P,\mathrm{fit}}^{\max}$ and $I_{X,\mathrm{fit}}^{\max}$ be predicted maxima from reliable fits. The implementation defines
+
+$$
+I_{P,\mathrm{opaque}}=
+\begin{cases}
+\max(I_{P,\mathrm{obs}}^{\max},I_{P,\mathrm{fit}}^{\max}),& \text{reliable PPL fit},\\
+I_{P,\mathrm{obs}}^{\max},& \text{otherwise},
+\end{cases}
+$$
+
+$$
+I_{X,\mathrm{dark}}=
+\begin{cases}
+\max(I_{X,\mathrm{obs}}^{\max},I_{X,\mathrm{fit}}^{\max}),& \text{reliable XPL fit},\\
+I_{X,\mathrm{obs}}^{\max},& \text{otherwise},
+\end{cases}
+$$
+
+and uses the reliable fitted PPL maximum, when available, as the PPL transmission estimate $I_{P,\mathrm{trans}}$; otherwise it falls back to the observed PPL maximum. These choices prevent an undersampled observation or a fitted curve alone from making the pixel appear darker than the combined evidence supports.
+
+- **Opaque-like:** the observed PPL maximum must be $\le L$, and a reliable predicted PPL maximum, if available, must also be $\le L$. Confidence is $E_-(I_{P,\mathrm{opaque}},\max(L,1))s_P$, where $s_P=0.8$ for one PPL observation and 1 otherwise.
+- **Isotropic-like:** at least three XPL observations must satisfy $I_{X,\mathrm{dark}}\le D$; a reliable PPL fit from at least three images must not be PPL-positive. Confidence is $\min[E_+(I_{P,\mathrm{trans}},\max(L,1)),E_-(I_{X,\mathrm{dark}},\max(D,1))]s_X$, where $s_X=0.65$ for exactly three XPL observations and 1 for more than three.
+- **Pleochroic + birefringent:** both tests are positive and confidence is $\min(C_P,C_X)$.
+- **Pleochroic:** only PPL is positive and confidence is $C_P$. It is multiplied by 0.75 when XPL exists but is neither reliably fitted nor continuously dark.
+- **Birefringent:** only XPL is positive and confidence is $C_X$. It is multiplied by 0.75 when a PPL fit exists but is unreliable.
+- **Unresolved:** when neither response is positive, the retained confidence is at most half of the better available fit-quality score. Any provisional nonzero class with confidence below $C_{\min}$ is reassigned to unresolved while retaining its evidence score.
+
+Accordingly, **Anisotropy confidence is a deterministic, heuristic evidence score** constructed from threshold separation, fit quality, and limited sampling penalties. It is not a posterior probability, confidence interval, p-value, or empirically calibrated probability of correct mineral classification. Missing PPL or XPL information is treated as missing evidence, not as a negative observation. If a class cannot be assessed from the available inputs, its histogram percentage is displayed as `--` rather than 0%.
 
 ```mermaid
 flowchart TD
-    A["PPL and/or XPL angular image stacks"] --> B["Calculate observed intensity statistics"]
-    B --> C["Fit angular models where sufficient images and angles are available"]
-
-    C --> E{"Reliable multi-angle PPL fit?"}
-
-    E -- Yes --> F["Use PPL predicted maximum for transmission evidence"]
-    E -- No --> G["Use PPL observed maximum as limited fallback"]
-
-    F --> H{"Observed and predicted PPL maxima ≤ 15?"}
-    G --> I{"Observed PPL maximum ≤ 15?"}
-
-    H -- Yes --> O["Opaque-like / very low transmission"]
-    I -- Yes --> O
-    H -- No --> J["Evaluate PPL modulation"]
-    I -- No --> J
-
-    J --> K{"Reliable PPL fit? normalized RMSE ≤ 0.12"}
-    K -- No --> MU["PPL-uncertain"]
-    K -- Yes --> KT{"Normalized modulation ≥ 0.08 and absolute modulation ≥ max(4, 2 × RMSE)?"}
-    KT -- Yes --> L["PPL-positive"]
-    KT -- No --> MN["PPL-negative"]
-
-    L --> N["Evaluate XPL modulation"]
-    MN --> N
-    MU --> N
-
-    N --> P{"Continuously dark XPL?"}
-    P -- "Yes: ≥3 images and conservative XPL maximum ≤ 12" --> Q{"Reliable PPL fit from ≥3 images and PPL-negative?"}
-    Q -- Yes --> ISO["Isotropic-like / continuously extinct"]
-    Q -- No --> R["Do not infer isotropic-like"]
-
-    P -- No --> S{"Reliable XPL birefringence?"}
-    R --> S
-
-    S -- Yes --> XP["XPL-positive"]
-    S -- No --> XN["XPL-negative or uncertain"]
-
-    XP --> T{"PPL-positive?"}
-    T -- Yes --> PB["Pleochroic + birefringent"]
-    T -- No --> BI["Birefringent"]
-
-    XN --> W{"PPL-positive?"}
-    W -- Yes --> PL["Pleochroic"]
-    W -- No --> U
-
-    O --> Z{"Confidence ≥ 0.35?"}
-    ISO --> Z
-    PB --> Z
-    BI --> Z
-    PL --> Z
-
-    Z -- Yes --> V["Return classification and confidence"]
-    Z -- No --> U
+    A["PPL and/or XPL image stacks"] --> B["Observed luminance statistics"]
+    A --> C["Harmonic fits when at least 3 usable angles exist"]
+    B --> D{"Very low PPL transmission?"}
+    C --> D
+    D -- Yes --> O["Opaque-like"]
+    D -- No --> E{"Continuously dark XPL and reliable non-pleochroic PPL?"}
+    E -- Yes --> I["Isotropic-like"]
+    E -- No --> F{"Reliable PPL modulation?"}
+    F -- Yes --> P["PPL-positive"]
+    F -- No --> PN["PPL-negative or uncertain"]
+    P --> H{"XPL-positive?"}
+    H -- Yes --> PB["Pleochroic + birefringent"]
+    H -- No --> PL["Pleochroic"]
+    PN --> J{"XPL-positive?"}
+    J -- Yes --> BI["Birefringent"]
+    J -- No --> U["Unresolved / poor fit"]
+    O --> K{"Confidence meets minimum?"}
+    I --> K
+    PB --> K
+    PL --> K
+    BI --> K
+    K -- Yes --> R["Return class and confidence"]
+    K -- No --> U
 ```
 
-Default criteria use 8-bit luminance intensity values. PPL-positive confidence is the minimum evidence from fitted normalized modulation, fitted absolute amplitude relative to the greater of 4 intensity units or twice the fit RMSE, and fit quality. A reliable PPL fit has normalized RMSE ≤ 0.12; a missing fit or a fit above that error limit is PPL-uncertain rather than PPL-negative. XPL-positive confidence is the minimum evidence from fitted normalized modulation, fitted absolute amplitude relative to 2 intensity units, and fit quality. Continuously dark XPL uses the observed maximum, or the greater of observed and predicted maxima when the fit is reliable. Classified pixels below 0.35 confidence are returned as unresolved.
+### Display, export, and reproducibility
+
+False color changes only the visualization, not the analytical values. Cyclic hue is the default for PPL and XPL azimuths; cyclic hue shifted moves its seam by half a cycle. Cyclic twilight and cyclic twilight shifted, sampled from the corresponding Matplotlib palettes, provide perceptually smoother alternatives with different seam placement. The same color-map selector is available for false-color Image Calculator output. Viridis is the default for noncyclic scalar products, and a zero-centered diverging map is used for CPL − predicted XPL maximum. Grayscale and false-color analytical histograms include a colorbar aligned with their numerical axis; RGB and classification displays omit it. Histograms and cursor values for scalar outputs report analytical units rather than display RGB values.
+
+NumPy and TIFF exports preserve scalar analytical values. PNG and JPEG preserve the current display mapping. For synthetic RGB products, the image display contains the calculated RGB values; scalar analytical export retains the corresponding luminance calculation. Exported analytical rasters include coordinate/provenance information so that the source roles, angles, calculation, channel, and settings can be reconstructed.
+
+For scientific reporting, record at minimum:
+
+- the petro-image version or commit;
+- source tile-set roles and every acquisition angle;
+- image registration and any illumination, exposure, flat-field, or color normalization;
+- selected channel or RGB output;
+- classification preset and any custom thresholds;
+- export resolution and file format; and
+- whether azimuth summaries used all fits or only reliable fits.
+
+The present products quantify 2D image-coordinate optical responses. C-axis orientation, retardation, mineral composition, and mineral identity remain derivative interpretations that require additional constraints and validation; they are not outputs of the current Polarization Analysis workflow.
 
 ## Tools
 

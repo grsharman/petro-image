@@ -70,6 +70,46 @@
       [0, 0, 0],
       [255, 255, 255],
     ],
+    // Sixteen-interval samples of Matplotlib's cyclic twilight maps. Matching
+    // endpoints keep angular values continuous across the 0/1 display seam.
+    twilight: [
+      [226, 217, 226],
+      [196, 206, 212],
+      [149, 181, 199],
+      [114, 151, 193],
+      [98, 118, 186],
+      [94, 81, 173],
+      [89, 42, 143],
+      [69, 19, 92],
+      [47, 20, 54],
+      [74, 19, 66],
+      [116, 30, 79],
+      [152, 53, 80],
+      [178, 86, 82],
+      [194, 124, 99],
+      [204, 163, 137],
+      [216, 199, 190],
+      [226, 217, 226],
+    ],
+    twilight_shifted: [
+      [48, 20, 55],
+      [69, 19, 92],
+      [89, 42, 143],
+      [94, 81, 173],
+      [98, 118, 186],
+      [114, 151, 193],
+      [149, 181, 199],
+      [196, 206, 212],
+      [226, 217, 226],
+      [216, 199, 190],
+      [204, 163, 137],
+      [194, 124, 99],
+      [178, 86, 82],
+      [152, 53, 80],
+      [116, 30, 79],
+      [74, 19, 66],
+      [48, 20, 55],
+    ],
     diverging: [
       [33, 102, 172],
       [146, 197, 222],
@@ -81,8 +121,11 @@
 
   function getColorMapRgb(value, name = "viridis") {
     const normalized = Math.max(0, Math.min(1, Number(value) || 0));
-    if (name === "hue") {
-      const sector = normalized * 6;
+    if (name === "hue" || name === "hue_shifted") {
+      const phase = name === "hue_shifted"
+        ? (normalized + 0.5) % 1
+        : normalized;
+      const sector = phase * 6;
       const x = 1 - Math.abs((sector % 2) - 1);
       let rgb;
       if (sector < 1) rgb = [1, x, 0];
@@ -253,6 +296,7 @@
         range: [0, 255],
         rgbAngleField: "minimumAzimuth",
       },
+      xpl_absolute_modulation: { mode: "xpl", field: "amplitude", unit: "intensity", range: [0, 255] },
       xpl_modulation: { mode: "xpl", field: "normalizedModulation", unit: "ratio", range: [0, 1] },
       xpl_extinction_azimuth: { mode: "xpl", field: "minimumAzimuth", unit: "degrees", range: [0, 90], circular: true },
       xpl_rmse: { mode: "xpl", field: "rmse", unit: "intensity", range: [0, 64] },
@@ -651,6 +695,12 @@
     output.fill(Number.NaN);
     const rgbValues = rgbOutput ? new Float32Array(count * 3) : null;
     rgbValues?.fill(Number.NaN);
+    const fitReliabilityValues = definition.circular
+      ? new Uint8Array(count)
+      : null;
+    const classificationThresholds = normalizeClassificationThresholds(
+      options.classificationThresholds,
+    );
     const sourceStack = definition.mode === "combined" ? stacks.xpl : stacks[definition.mode];
     if (!Array.isArray(sourceStack) || sourceStack.length === 0) {
       throw new Error(`The ${definition.mode.toUpperCase()} source is not available.`);
@@ -687,6 +737,28 @@
       } else {
         const fit = fitHarmonicValues(model, observations);
         value = fit?.[definition.field];
+        if (fitReliabilityValues && fit) {
+          const fitQuality = getFitQuality(
+            fit,
+            sourceStack.length,
+            classificationThresholds.maxFitError,
+          );
+          const modulationThreshold = definition.mode === "ppl"
+            ? classificationThresholds.pplModulation
+            : classificationThresholds.xplModulation;
+          const signalReliable = definition.mode === "ppl"
+            ? fit.amplitude >= Math.max(
+                classificationThresholds.pplAbsoluteModulation,
+                fit.residualDegreesOfFreedom > 0 ? fit.rmse * 2 : 0,
+              )
+            : fit.maximum > classificationThresholds.xplExtinctionCeiling;
+          fitReliabilityValues[pixelIndex] = Number(
+            fitQuality.reliable &&
+              signalReliable &&
+              Number.isFinite(fit.normalizedModulation) &&
+              fit.normalizedModulation >= modulationThreshold,
+          );
+        }
         if (rgbValues && fit) {
           const sharedAngle = fit[definition.rgbAngleField];
           ["red", "green", "blue"].forEach((rgbChannel, channelIndex) => {
@@ -724,6 +796,12 @@
       max: Number.isFinite(max) ? max : Number.NaN,
       definition,
       rgbValues,
+      fitReliability: fitReliabilityValues
+        ? {
+            values: fitReliabilityValues,
+            residualUnchecked: sourceStack.length <= 3,
+          }
+        : null,
     };
   }
 

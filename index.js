@@ -183,6 +183,14 @@ let transformRasterCustomRange = {
 };
 let transformHistogramRefreshHandle = null;
 let transformHistogramRefreshTimer = null;
+let transformPlotView = "histogram";
+let transformFitLastHoverPoint = null;
+let transformFitPinnedPoint = null;
+let transformFitSample = null;
+let transformFitRefreshHandle = null;
+let transformFitRequestGeneration = 0;
+let transformFitScratchCanvas = null;
+let transformFitPinMarker = null;
 let transformPreviewProgressState = {
   key: "",
   percent: 0,
@@ -888,6 +896,38 @@ const transformPolarizationColormap = document.getElementById(
 const transformHistogramCanvas = document.getElementById(
   "transformHistogramCanvas",
 );
+const transformHistogramStatus = document.getElementById(
+  "transformHistogramStatus",
+);
+const transformAzimuthFilterControls = document.getElementById(
+  "transformAzimuthFilterControls",
+);
+const transformAzimuthFilter = document.getElementById(
+  "transformAzimuthFilter",
+);
+const transformHistogramViewButton = document.getElementById(
+  "transformHistogramViewButton",
+);
+const transformFitViewButton = document.getElementById(
+  "transformFitViewButton",
+);
+const transformRoseViewButton = document.getElementById(
+  "transformRoseViewButton",
+);
+const transformFitInspector = document.getElementById(
+  "transformFitInspector",
+);
+const transformFitModality = document.getElementById("transformFitModality");
+const transformFitPinButton = document.getElementById(
+  "transformFitPinButton",
+);
+const transformFitCanvas = document.getElementById("transformFitCanvas");
+const transformFitStatus = document.getElementById("transformFitStatus");
+const transformRoseInspector = document.getElementById(
+  "transformRoseInspector",
+);
+const transformRoseCanvas = document.getElementById("transformRoseCanvas");
+const transformRoseStatus = document.getElementById("transformRoseStatus");
 const transformRasterChannelASelect = document.getElementById(
   "transformRasterChannelASelect",
 );
@@ -899,9 +939,6 @@ const transformRasterChannelBSelect = document.getElementById(
 );
 const transformRasterPresetSelect = document.getElementById(
   "transformRasterPresetSelect",
-);
-const transformRasterNormalize = document.getElementById(
-  "transformRasterNormalize",
 );
 const transformRasterScaleSelect = document.getElementById(
   "transformRasterScaleSelect",
@@ -2426,6 +2463,7 @@ function closeTransformImageryPalette() {
 
   transformImageryPalette.hidden = true;
   openTransformImageryPaletteButton?.setAttribute("aria-pressed", "false");
+  clearTransformFitInspector({ clearHover: true });
   closeTransformImageryHelpDialog();
 }
 
@@ -14279,6 +14317,25 @@ if (
       );
     });
   });
+  transformHistogramViewButton?.addEventListener("click", function () {
+    setTransformPlotView("histogram");
+  });
+  transformFitViewButton?.addEventListener("click", function () {
+    if (!transformFitViewButton.disabled) setTransformPlotView("fit");
+  });
+  transformRoseViewButton?.addEventListener("click", function () {
+    if (!transformRoseViewButton.disabled) setTransformPlotView("rose");
+  });
+  transformFitModality?.addEventListener("change", function () {
+    transformFitSample = null;
+    scheduleTransformFitRefresh();
+    renderTransformFitInspector();
+  });
+  transformFitPinButton?.addEventListener("click", toggleTransformFitPin);
+  transformAzimuthFilter?.addEventListener("change", function () {
+    updatePolarizationAzimuthPreviewMask();
+    scheduleTransformHistogramRefresh();
+  });
   document
     .querySelectorAll('input[name="transformImageryRecipe"]')
     .forEach((input) => {
@@ -14347,6 +14404,11 @@ if (
   });
   transformPolarizationColormap?.addEventListener("change", function () {
     updateTransformControls();
+    if (isRasterRecipe(getTransformOptionsFromControls())) {
+      updateTransformAdvancedExpressionStatus();
+      applyRasterCalculatorPreview();
+      return;
+    }
     if (isPolarizationRecipe(getTransformOptionsFromControls())) {
       applyPolarizationPreview();
     }
@@ -14370,15 +14432,6 @@ if (
       updateTransformControls();
       scheduleTransformHistogramRefresh();
     });
-  });
-  transformRasterNormalize?.addEventListener("change", function () {
-    updateTransformAdvancedExpressionStatus();
-    if (isRasterRecipe(getTransformOptionsFromControls())) {
-      applyRasterCalculatorPreview();
-      return;
-    }
-    updateTransformControls();
-    scheduleTransformHistogramRefresh();
   });
   transformValueTooltipEnabled?.addEventListener("change", function () {
     if (!transformValueTooltipEnabled.checked) {
@@ -14558,6 +14611,8 @@ if (
   });
   window.addEventListener("resize", function () {
     scheduleClampOpenToolPalettes();
+    if (transformPlotView === "fit") renderTransformFitInspector();
+    if (transformPlotView === "rose") renderTransformRoseInspector();
   });
 }
 
@@ -16209,6 +16264,9 @@ function normalizeTransformValue(key, value) {
         "blues",
         "gray",
         "hue",
+        "hue_shifted",
+        "twilight",
+        "twilight_shifted",
         "diverging",
       ].includes(valueKey)
         ? valueKey
@@ -16257,6 +16315,13 @@ function normalizeTransformValue(key, value) {
 }
 
 function normalizeTileSetTransform(transform = {}) {
+  const legacyRasterNormalize = normalizeTransformValue(
+    "rasterNormalize",
+    transform.rasterNormalize,
+  );
+  const rasterScale = legacyRasterNormalize
+    ? "auto"
+    : normalizeTransformValue("rasterScale", transform.rasterScale);
   return {
     recipeType: normalizeTransformValue("recipeType", transform.recipeType),
     type: normalizeTransformValue("type", transform.type),
@@ -16268,11 +16333,8 @@ function normalizeTileSetTransform(transform = {}) {
       "rasterExpression",
       transform.rasterExpression,
     ),
-    rasterNormalize: normalizeTransformValue(
-      "rasterNormalize",
-      transform.rasterNormalize,
-    ),
-    rasterScale: normalizeTransformValue("rasterScale", transform.rasterScale),
+    rasterNormalize: rasterScale === "auto",
+    rasterScale,
     rasterCustomMin: normalizeTransformValue(
       "rasterCustomMin",
       transform.rasterCustomMin,
@@ -16495,6 +16557,7 @@ function getTransformOptionsFromControls() {
     if (transformRasterScaleSelect?.value === "custom") {
       syncRasterCustomRangeFromInputs();
     }
+    const rasterScale = transformRasterScaleSelect?.value || "auto";
     return normalizeTileSetTransform({
       ...TILE_SET_TRANSFORM_DEFAULTS,
       recipeType: "raster",
@@ -16502,10 +16565,12 @@ function getTransformOptionsFromControls() {
       rasterExpression:
         getRasterExpressionText() ||
         TILE_SET_TRANSFORM_DEFAULTS.rasterExpression,
-      rasterNormalize: transformRasterNormalize?.checked !== false,
-      rasterScale: transformRasterScaleSelect?.value || "auto",
+      rasterNormalize: rasterScale === "auto",
+      rasterScale,
       rasterCustomMin: transformRasterCustomRange.min,
       rasterCustomMax: transformRasterCustomRange.max,
+      polarizationColormap:
+        transformPolarizationColormap?.value || "viridis",
     });
   }
 
@@ -17542,11 +17607,16 @@ function downloadDerivedSourceTile(tile, coordinates, signal) {
   });
 }
 
+function getDerivedSourceCacheKey(tile, coordinates) {
+  return `${tile?.uri || tile?.label || "tile"}:${coordinates?.level}/${coordinates?.x}/${coordinates?.y}`;
+}
+
 function createDerivedRasterTileContext(
   transform,
   outputTileSet,
   outputContext,
   tileContexts,
+  autoScaleRange = null,
 ) {
   const plan = getTransformAdvancedExpressionPlan(transform.rasterExpression);
   if (!plan.valid || !plan.ast) {
@@ -17604,12 +17674,23 @@ function createDerivedRasterTileContext(
   });
   const imageData = context.createImageData(width, height);
   const output = imageData.data;
+  const displayMin = Number.isFinite(autoScaleRange?.min)
+    ? autoScaleRange.min
+    : minValue;
+  const displayMax = Number.isFinite(autoScaleRange?.max)
+    ? autoScaleRange.max
+    : maxValue;
   for (let offset = 0, valueIndex = 0; offset < output.length; offset += 4, valueIndex += 1) {
     const displayValue = clampColorValue(
-      mapAdvancedRasterValue(values[valueIndex], transform, minValue, maxValue),
+      mapAdvancedRasterValue(
+        values[valueIndex],
+        transform,
+        displayMin,
+        displayMax,
+      ),
     );
     const rgb = transform.output === "falseColor"
-      ? getFalseColorRgb(displayValue)
+      ? getTransformColorMapRgb(displayValue, transform)
       : [displayValue, displayValue, displayValue];
     output[offset] = rgb[0];
     output[offset + 1] = rgb[1];
@@ -17621,6 +17702,7 @@ function createDerivedRasterTileContext(
   context.petroImageAdvancedRawValues = values;
   context.petroImageAdvancedRawWidth = width;
   context.petroImageAdvancedRawHeight = height;
+  context.petroImageAdvancedAutoScaleRange = autoScaleRange;
   return context;
 }
 
@@ -17669,10 +17751,13 @@ function createDerivedPolarizationTileContext(
   const context = createCanvasContextFromImage(outputContext.canvas, {
     forceOpaque: true,
   });
-  mapPolarizationRasterToImageData(context, raster, transform);
+  mapPolarizationRasterToImageData(context, raster, transform, {
+    maskUnreliable: shouldMaskUnreliableAzimuthPreview(transform),
+  });
   context.petroImageGeneratedPreviewContext = true;
   context.petroImageAdvancedRawValues = raster.values;
   context.petroImageAdvancedRgbValues = raster.rgbValues;
+  context.petroImagePolarizationFitReliability = raster.fitReliability || null;
   context.petroImagePolarizationClassification = raster.classification || null;
   context.petroImageAdvancedRawWidth = width;
   context.petroImageAdvancedRawHeight = height;
@@ -17685,6 +17770,7 @@ async function createDerivedPreviewTile(
   referenceTile,
   sourceCache,
   request,
+  autoScaleRange = null,
 ) {
   if (request.signal.aborted) throw new DOMException("Canceled", "AbortError");
   const requiredTiles = getDerivedPreviewRequiredTiles(
@@ -17702,7 +17788,7 @@ async function createDerivedPreviewTile(
         request.x,
         request.y,
       );
-      const cacheKey = `${tile.uri || tile.label || "tile"}:${coordinates?.level}/${coordinates?.x}/${coordinates?.y}`;
+      const cacheKey = getDerivedSourceCacheKey(tile, coordinates);
       let promise = sourceCache.get(cacheKey);
       if (!promise) {
         promise = downloadDerivedSourceTile(tile, coordinates, request.signal);
@@ -17727,6 +17813,7 @@ async function createDerivedPreviewTile(
         tileSet,
         outputContext,
         tileContexts,
+        autoScaleRange,
       );
   const appearance = getTileSetAppearance(tileSet);
   if (!isDefaultAppearanceValue(appearance)) {
@@ -17745,16 +17832,77 @@ function getDerivedPreviewWorldIndex(tileSet) {
     : viewer.world.getItemCount();
 }
 
+async function estimateAdvancedPreviewAutoScaleRange(transform) {
+  const imageRect = getTransformGenerationImageRect();
+  if (!imageRect) {
+    throw new Error("Could not determine the image extent for auto-scaling.");
+  }
+  const maxPixels = 1000000;
+  const maxSide = 2048;
+  const sourcePixels = Math.max(1, imageRect.width * imageRect.height);
+  const scale = Math.max(
+    0.001,
+    Math.min(
+      1,
+      Math.sqrt(maxPixels / sourcePixels),
+      maxSide / Math.max(1, imageRect.width),
+      maxSide / Math.max(1, imageRect.height),
+    ),
+  );
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.round(imageRect.width * scale));
+  canvas.height = Math.max(1, Math.round(imageRect.height * scale));
+  const context = canvas.getContext("2d", { willReadFrequently: true });
+  if (!context) throw new Error("Could not create the auto-scale overview.");
+  const result = await applyAdvancedTransformToExportContext(
+    context,
+    transform,
+    imageRect,
+    scale,
+  );
+  if (
+    !Number.isFinite(result?.minValue) ||
+    !Number.isFinite(result?.maxValue)
+  ) {
+    throw new Error("Could not calculate the global auto-scale range.");
+  }
+  return {
+    min: result.minValue,
+    max: result.maxValue,
+    width: canvas.width,
+    height: canvas.height,
+    scale,
+  };
+}
+
 async function startDerivedAdvancedPreview(tileSet, transform) {
   const referenceTile = getDerivedPreviewReferenceTile(tileSet);
   if (!referenceTile?.image) {
     setTransformStatus("Waiting for the selected source image...", "");
     return;
   }
-  const sourceCache = new Map();
-  const key = `${tileLoadGeneration}:${tileSets().indexOf(tileSet)}:${JSON.stringify(normalizeTileSetTransform(transform))}`;
+  transformFitRequestGeneration += 1;
+  const requestGeneration = transformFitRequestGeneration;
+  transformFitSample = null;
+  let autoScaleRange = null;
   try {
-    await derivedPreviewOverlay.start({
+    if (
+      isRasterRecipe(transform) &&
+      (transform.rasterNormalize || transform.rasterScale === "auto")
+    ) {
+      setTransformStatus("Estimating the whole-image auto-scale range...");
+      setTransformProgress(4, "Estimating global min/max...");
+      autoScaleRange = await estimateAdvancedPreviewAutoScaleRange(transform);
+      if (requestGeneration !== transformFitRequestGeneration) return;
+      setTransformStatus(
+        `Processing preview with global range ${formatTransformTooltipNumber(
+          autoScaleRange.min,
+        )} to ${formatTransformTooltipNumber(autoScaleRange.max)}...`,
+      );
+    }
+    const sourceCache = new Map();
+    const key = `${tileLoadGeneration}:${tileSets().indexOf(tileSet)}:${JSON.stringify(normalizeTileSetTransform(transform))}`;
+    const state = await derivedPreviewOverlay.start({
       tileSet,
       key,
       referenceImage: referenceTile.image,
@@ -17766,9 +17914,18 @@ async function startDerivedAdvancedPreview(tileSet, transform) {
           referenceTile,
           sourceCache,
           request,
+          autoScaleRange,
         ),
     });
+    state.petroImageSourceCache = sourceCache;
+    state.petroImageReferenceTile = referenceTile;
+    state.petroImageAutoScaleRange = autoScaleRange;
     displayImages();
+    if (isPolarizationRecipe(transform)) {
+      syncTransformFitControls(transform);
+    }
+    scheduleTransformFitRefresh();
+    scheduleTransformHistogramRefresh();
     if (!isTransformPreviewEnabled()) {
       setTransformStatus(getTransformPreviewIdleStatus(tileSet));
     }
@@ -17779,7 +17936,10 @@ async function startDerivedAdvancedPreview(tileSet, transform) {
 }
 
 function stopDerivedAdvancedPreview() {
+  transformFitRequestGeneration += 1;
   derivedPreviewOverlay?.stop();
+  transformFitSample = null;
+  renderTransformFitInspector();
   displayImages();
 }
 
@@ -17888,23 +18048,86 @@ function togglePolarizationPreview() {
   applyPolarizationPreview();
 }
 
-function drawEmptyTransformHistogram(context, width, height) {
+function getTransformHistogramLayout(height, showColorBar = false) {
+  const chromeHeight = Math.min(
+    height,
+    Math.round(56 * (window.devicePixelRatio || 1)),
+  );
+  const labelBandHeight = getTransformHistogramLabelBandHeight(chromeHeight);
+  const labelTop = height - labelBandHeight;
+  const gap = Math.max(1, Math.round(chromeHeight * 0.025));
+  const colorBarHeight = showColorBar
+    ? Math.max(6, Math.round(chromeHeight * 0.11))
+    : 0;
+  const colorBarBottom = labelTop - gap;
+  const colorBarTop = colorBarBottom - colorBarHeight;
+  return {
+    labelBandHeight,
+    labelTop,
+    axisY: labelTop + 0.5,
+    colorBarHeight,
+    colorBarTop,
+    plotHeight: Math.max(
+      1,
+      showColorBar ? colorBarTop - gap : labelTop - 1,
+    ),
+  };
+}
+
+function drawEmptyTransformHistogram(context, width, height, layout) {
   context.clearRect(0, 0, width, height);
   context.fillStyle = "rgba(255, 255, 255, 0.78)";
   context.fillRect(0, 0, width, height);
   context.strokeStyle = "rgba(17, 17, 17, 0.12)";
   context.beginPath();
-  context.moveTo(0, height - 12.5);
-  context.lineTo(width, height - 12.5);
+  context.moveTo(0, layout.axisY);
+  context.lineTo(width, layout.axisY);
   context.stroke();
 }
 
-function drawTransformHistogramSeries(context, bins, width, height, color) {
+function getTransformHistogramLabelBandHeight(height) {
+  return Math.max(14, Math.round(height * 0.3));
+}
+
+function shouldDrawTransformHistogramColorBar(transform) {
+  if (!isRasterRecipe(transform) && !isPolarizationRecipe(transform)) {
+    return false;
+  }
+  if (!["grayscale", "falseColor"].includes(transform.output)) return false;
+  if (!isPolarizationRecipe(transform)) return true;
+  return !PetroPolarizationAnalysis.getProductDefinition(
+    transform.polarizationProduct,
+  )?.categorical;
+}
+
+function drawTransformHistogramColorBar(context, width, layout, transform) {
+  if (layout.colorBarHeight <= 0 || width <= 0) return;
+  for (let x = 0; x < width; x += 1) {
+    const normalized = width <= 1 ? 0 : x / (width - 1);
+    const rgb = transform.output === "falseColor"
+      ? PetroPolarizationAnalysis.getColorMapRgb(
+          normalized,
+          transform.polarizationColormap,
+        )
+      : Array(3).fill(Math.round(normalized * 255));
+    context.fillStyle = `rgb(${rgb.join(",")})`;
+    context.fillRect(x, layout.colorBarTop, 1, layout.colorBarHeight);
+  }
+  context.strokeStyle = "rgba(17, 17, 17, 0.24)";
+  context.lineWidth = 1;
+  context.strokeRect(
+    0.5,
+    layout.colorBarTop + 0.5,
+    Math.max(0, width - 1),
+    Math.max(0, layout.colorBarHeight - 1),
+  );
+}
+
+function drawTransformHistogramSeries(context, bins, width, plotHeight, color) {
   const maxCount = Math.max(...bins);
   if (maxCount <= 0) return;
   context.fillStyle = color;
   const barWidth = width / bins.length;
-  const plotHeight = Math.max(1, height - 14);
   bins.forEach((count, index) => {
     if (count <= 0) return;
     const barHeight = Math.max(1, (count / maxCount) * (plotHeight - 2));
@@ -17955,6 +18178,17 @@ function getTransformAnalyticalHistogramDomain(transform) {
   }
   if (!isRasterRecipe(transform)) return null;
   if (transform.rasterNormalize || transform.rasterScale === "auto") {
+    const selectedTileSet = tileSets()[getSelectedTransformTileSetIndex()];
+    const autoScaleRange = derivedPreviewOverlay?.isActiveFor(selectedTileSet)
+      ? derivedPreviewOverlay.state?.petroImageAutoScaleRange
+      : null;
+    if (
+      Number.isFinite(autoScaleRange?.min) &&
+      Number.isFinite(autoScaleRange?.max) &&
+      autoScaleRange.max > autoScaleRange.min
+    ) {
+      return { min: autoScaleRange.min, max: autoScaleRange.max };
+    }
     return {};
   }
   switch (transform.rasterScale) {
@@ -17973,20 +18207,19 @@ function getTransformAnalyticalHistogramDomain(transform) {
   }
 }
 
-function getTransformAnalyticalHistogram(transform) {
-  if (!isTransformPreviewEnabled()) return null;
-  const rgbMode =
-    isPolarizationRecipe(transform) && transform.output === "rgb";
+function getTransformVisibleAnalyticalSamples(transform, options = {}) {
+  if (!isTransformPreviewEnabled() || !viewer?.viewport || !viewerContainer) {
+    return null;
+  }
   const tileSet = tileSets()[getSelectedTransformTileSetIndex()];
   const item = derivedPreviewOverlay?.isActiveFor(tileSet)
     ? derivedPreviewOverlay.item
     : null;
   const matrix = item?.tilesMatrix;
   if (!matrix) return null;
-  const viewportBounds = viewer?.viewport?.getBounds?.(true);
-  let highestLevel = -Infinity;
-  let valueArrays = [];
+  const candidates = [];
   let assessableClassCodes = null;
+  const viewportBounds = viewer.viewport.getBounds(true);
   Object.entries(matrix).forEach(([level, columns]) => {
     const numericLevel = Number.parseInt(level, 10);
     if (!Number.isFinite(numericLevel)) return;
@@ -17994,43 +18227,151 @@ function getTransformAnalyticalHistogram(transform) {
       Object.values(rows || {}).forEach((loadedTile) => {
         const context =
           PetroDerivedPreviewOverlay.getDerivedTileContext2D(loadedTile);
-        const values = rgbMode
-          ? context?.petroImageAdvancedRgbValues
-          : context?.petroImageAdvancedRawValues;
-        if (
-          !values?.length ||
-          context.petroImageAdvancedRawWidth !== context.canvas?.width ||
-          context.petroImageAdvancedRawHeight !== context.canvas?.height
-        ) {
-          return;
-        }
+        const values = context?.petroImageAdvancedRawValues;
+        const width = context?.petroImageAdvancedRawWidth;
+        const height = context?.petroImageAdvancedRawHeight;
         const bounds = getLoadedTileViewportBounds(loadedTile);
         if (
-          viewportBounds &&
-          bounds &&
-          (bounds.x >= viewportBounds.x + viewportBounds.width ||
-            bounds.x + bounds.width <= viewportBounds.x ||
-            bounds.y >= viewportBounds.y + viewportBounds.height ||
-            bounds.y + bounds.height <= viewportBounds.y)
+          !values?.length ||
+          !bounds ||
+          width !== context.canvas?.width ||
+          height !== context.canvas?.height
         ) {
           return;
         }
-        if (numericLevel > highestLevel) {
-          highestLevel = numericLevel;
-          valueArrays = [];
-          assessableClassCodes =
-            context.petroImagePolarizationClassification
-              ?.assessableClassCodes || null;
+        if (
+          bounds.x >= viewportBounds.x + viewportBounds.width ||
+          bounds.x + bounds.width <= viewportBounds.x ||
+          bounds.y >= viewportBounds.y + viewportBounds.height ||
+          bounds.y + bounds.height <= viewportBounds.y
+        ) {
+          return;
         }
-        if (numericLevel === highestLevel) {
-          valueArrays.push(values);
-          assessableClassCodes ||= context.petroImagePolarizationClassification
+        assessableClassCodes ||=
+          context.petroImagePolarizationClassification
             ?.assessableClassCodes || null;
-        }
+        candidates.push({
+          level: numericLevel,
+          bounds,
+          width,
+          height,
+          values,
+          rgbValues: context.petroImageAdvancedRgbValues || null,
+          reliability: context.petroImagePolarizationFitReliability || null,
+        });
       });
     });
   });
-  if (!valueArrays.length) return null;
+  if (!candidates.length) return null;
+  candidates.sort((a, b) => b.level - a.level);
+
+  const rect = viewerContainer.getBoundingClientRect();
+  const screenWidth = Math.max(1, Math.round(rect.width));
+  const screenHeight = Math.max(1, Math.round(rect.height));
+  const maxSamples = Number.isFinite(options.maxSamples)
+    ? Math.max(1, options.maxSamples)
+    : 30000;
+  const step = Math.max(
+    1,
+    Math.sqrt((screenWidth * screenHeight) / maxSamples),
+  );
+  const scalarValues = [];
+  const rgbValues = [];
+  const reliableValues = [];
+  let residualUnchecked = false;
+  for (let screenY = step / 2; screenY < screenHeight; screenY += step) {
+    for (let screenX = step / 2; screenX < screenWidth; screenX += step) {
+      const viewportPoint = viewer.viewport.pointFromPixel(
+        new OpenSeadragon.Point(screenX, screenY),
+        true,
+      );
+      let selected = null;
+      for (const candidate of candidates) {
+        const { bounds } = candidate;
+        if (
+          viewportPoint.x >= bounds.x &&
+          viewportPoint.x < bounds.x + bounds.width &&
+          viewportPoint.y >= bounds.y &&
+          viewportPoint.y < bounds.y + bounds.height
+        ) {
+          selected = candidate;
+          break;
+        }
+      }
+      if (!selected) continue;
+      const xRatio =
+        (viewportPoint.x - selected.bounds.x) / selected.bounds.width;
+      const yRatio =
+        (viewportPoint.y - selected.bounds.y) / selected.bounds.height;
+      const pixelX = Math.min(
+        selected.width - 1,
+        Math.max(0, Math.floor(xRatio * selected.width)),
+      );
+      const pixelY = Math.min(
+        selected.height - 1,
+        Math.max(0, Math.floor(yRatio * selected.height)),
+      );
+      const pixelIndex = pixelY * selected.width + pixelX;
+      scalarValues.push(selected.values[pixelIndex]);
+      if (selected.rgbValues?.length) {
+        const rgbOffset = pixelIndex * 3;
+        rgbValues.push(
+          selected.rgbValues[rgbOffset],
+          selected.rgbValues[rgbOffset + 1],
+          selected.rgbValues[rgbOffset + 2],
+        );
+      }
+      reliableValues.push(selected.reliability?.values?.[pixelIndex] === 1);
+      residualUnchecked ||= Boolean(selected.reliability?.residualUnchecked);
+    }
+  }
+  if (!scalarValues.length) return null;
+  return {
+    scalarValues,
+    rgbValues,
+    reliableValues,
+    residualUnchecked,
+    assessableClassCodes,
+  };
+}
+
+function getTransformAnalyticalHistogram(transform) {
+  if (!isTransformPreviewEnabled()) return null;
+  const rgbMode =
+    isPolarizationRecipe(transform) && transform.output === "rgb";
+  const samples = getTransformVisibleAnalyticalSamples(transform);
+  if (!samples) return null;
+  const azimuthConfig = getTransformRoseConfig(transform);
+  const filterReliable = Boolean(
+    azimuthConfig && transformAzimuthFilter?.value === "reliable",
+  );
+  let scalarValues = samples.scalarValues;
+  let azimuthSummary = null;
+  if (azimuthConfig) {
+    const filteredValues = [];
+    let considered = 0;
+    let included = 0;
+    samples.scalarValues.forEach((rawValue, index) => {
+      const value = Number(rawValue);
+      if (!Number.isFinite(value)) return;
+      considered += 1;
+      if (filterReliable && !samples.reliableValues[index]) return;
+      included += 1;
+      filteredValues.push(value);
+    });
+    scalarValues = filteredValues;
+    azimuthSummary = {
+      config: azimuthConfig,
+      considered,
+      included,
+      residualUnchecked: samples.residualUnchecked,
+      filterReliable,
+    };
+  }
+  const valueArrays = [
+    rgbMode ? samples.rgbValues : scalarValues,
+  ];
+  const assessableClassCodes = samples.assessableClassCodes;
   const definition = isPolarizationRecipe(transform)
     ? PetroPolarizationAnalysis.getProductDefinition(
         transform.polarizationProduct,
@@ -18090,11 +18431,55 @@ function getTransformAnalyticalHistogram(transform) {
     return { rgbBins, min: 0, max: 255 };
   }
   const domain = getTransformAnalyticalHistogramDomain(transform) || {};
-  return PetroDerivedPreviewOverlay.buildScalarHistogram(valueArrays, {
+  const histogram = PetroDerivedPreviewOverlay.buildScalarHistogram(valueArrays, {
     ...domain,
     binCount: 256,
     maxSamples: 75000,
   });
+  if (histogram) return { ...histogram, azimuthSummary };
+  if (!azimuthSummary) return null;
+  return {
+    bins: new Uint32Array(256),
+    min: Number.isFinite(domain.min) ? domain.min : 0,
+    max: Number.isFinite(domain.max) ? domain.max : 1,
+    azimuthSummary,
+  };
+}
+
+function formatTransformAzimuthSummary(summary) {
+  if (!summary) return "";
+  const percent = summary.considered > 0
+    ? Math.round((summary.included / summary.considered) * 100)
+    : 0;
+  const filterLabel = summary.filterReliable
+    ? `${percent}% reliable included`
+    : "All fitted azimuths included";
+  const residualNote = summary.residualUnchecked
+    ? " · residual unchecked"
+    : "";
+  const maskNote = summary.filterReliable
+    ? " · grey = unreliable"
+    : "";
+  return (
+    `${filterLabel} · ${summary.included.toLocaleString()} pixels sampled${residualNote}\n` +
+    `${summary.config.modality} · ${summary.config.symmetryLabel}${maskNote}`
+  );
+}
+
+function updateTransformHistogramStatus(transform, summary = null) {
+  if (!transformHistogramStatus) return;
+  const config = getTransformRoseConfig(transform);
+  const visible = Boolean(config && transformPlotView === "histogram");
+  transformHistogramStatus.hidden = !visible;
+  if (!visible) return;
+  if (!derivedPreviewOverlay?.state) {
+    transformHistogramStatus.textContent =
+      "Start an azimuth preview to display its histogram.";
+    return;
+  }
+  transformHistogramStatus.textContent = summary
+    ? formatTransformAzimuthSummary(summary)
+    : "Waiting for visible azimuth tiles…";
 }
 
 function getTransformHistogramAxisLabels(range = null) {
@@ -18134,12 +18519,16 @@ function drawTransformHistogramAxisLabels(context, width, height, range = null) 
   const [minLabel, maxLabel] = getTransformHistogramAxisLabels(range);
   context.save();
   context.fillStyle = "rgba(17, 17, 17, 0.68)";
-  context.font = `${Math.max(9, Math.round(height * 0.22))}px system-ui, sans-serif`;
+  const chromeHeight = Math.min(
+    height,
+    Math.round(56 * (window.devicePixelRatio || 1)),
+  );
+  context.font = `${Math.max(9, Math.round(chromeHeight * 0.22))}px system-ui, sans-serif`;
   context.textBaseline = "bottom";
   context.textAlign = "left";
-  context.fillText(minLabel, 3, height - 1);
+  context.fillText(minLabel, 3, height - 2);
   context.textAlign = "right";
-  context.fillText(maxLabel, width - 3, height - 1);
+  context.fillText(maxLabel, width - 3, height - 2);
   context.restore();
 }
 
@@ -18162,15 +18551,25 @@ function renderTransformHistogram() {
 
   const context = canvas.getContext("2d", { willReadFrequently: true });
   if (!context) return;
-  drawEmptyTransformHistogram(context, width, height);
+  const transform = getTransformOptionsFromControls();
+  updateTransformHistogramStatus(transform);
+  const showColorBar = shouldDrawTransformHistogramColorBar(transform);
+  const layout = getTransformHistogramLayout(height, showColorBar);
+  drawEmptyTransformHistogram(context, width, height, layout);
+  if (showColorBar) {
+    drawTransformHistogramColorBar(context, width, layout, transform);
+  }
 
   if (!transformImageryPalette || transformImageryPalette.hidden) {
     drawTransformHistogramAxisLabels(context, width, height);
     return;
   }
-  const transform = getTransformOptionsFromControls();
   const analyticalHistogram = getTransformAnalyticalHistogram(transform);
   if (analyticalHistogram) {
+    updateTransformHistogramStatus(
+      transform,
+      analyticalHistogram.azimuthSummary,
+    );
     if (analyticalHistogram.classCounts) {
       drawAnisotropyClassDistribution(
         context,
@@ -18193,7 +18592,7 @@ function renderTransformHistogram() {
           context,
           analyticalHistogram.rgbBins[channelIndex],
           width,
-          height,
+          layout.plotHeight,
           color,
         );
       });
@@ -18202,7 +18601,7 @@ function renderTransformHistogram() {
         context,
         analyticalHistogram.bins,
         width,
-        height,
+        layout.plotHeight,
         "rgba(17, 17, 17, 0.82)",
       );
     }
@@ -18238,7 +18637,10 @@ function renderTransformHistogram() {
   }
 
   const outputRequestsRgb = transform.output === "rgb";
-  const forceScalarHistogram = transform.output === "falseColor";
+  const forceScalarHistogram =
+    transform.output === "falseColor" ||
+    (transform.output === "grayscale" &&
+      (isRasterRecipe(transform) || isPolarizationRecipe(transform)));
   const rgbBins = [
     new Uint32Array(256),
     new Uint32Array(256),
@@ -18313,21 +18715,21 @@ function renderTransformHistogram() {
       context,
       rgbBins[0],
       width,
-      height,
+      layout.plotHeight,
       "rgba(220, 50, 47, 0.42)",
     );
     drawTransformHistogramSeries(
       context,
       rgbBins[1],
       width,
-      height,
+      layout.plotHeight,
       "rgba(30, 160, 80, 0.42)",
     );
     drawTransformHistogramSeries(
       context,
       rgbBins[2],
       width,
-      height,
+      layout.plotHeight,
       "rgba(38, 95, 220, 0.42)",
     );
   } else {
@@ -18335,7 +18737,7 @@ function renderTransformHistogram() {
       context,
       grayBins,
       width,
-      height,
+      layout.plotHeight,
       "rgba(17, 17, 17, 0.82)",
     );
   }
@@ -18361,8 +18763,736 @@ function scheduleTransformHistogramRefresh(options = {}) {
       : (callback) => window.setTimeout(callback, 16);
   transformHistogramRefreshHandle = schedule(() => {
     transformHistogramRefreshHandle = null;
-    renderTransformHistogram();
+    if (transformPlotView === "rose") renderTransformRoseInspector();
+    else renderTransformHistogram();
   });
+}
+
+function getTransformRoseConfig(transform = null) {
+  const settings = transform || getTransformOptionsFromControls();
+  switch (settings.polarizationProduct) {
+    case "ppl_azimuth":
+      return {
+        modality: "PPL",
+        nativePeriod: 180,
+        binWidth: 10,
+        repetitions: 2,
+        symmetryLabel: "180° axial",
+      };
+    case "xpl_extinction_azimuth":
+      return {
+        modality: "XPL",
+        nativePeriod: 90,
+        binWidth: 5,
+        repetitions: 4,
+        symmetryLabel: "90° extinction-equivalent",
+      };
+    default:
+      return null;
+  }
+}
+
+function shouldMaskUnreliableAzimuthPreview(transform = null) {
+  const settings = transform || getTransformOptionsFromControls();
+  return Boolean(
+    getTransformRoseConfig(settings) &&
+      transformAzimuthFilter?.value === "reliable",
+  );
+}
+
+function updatePolarizationAzimuthPreviewMask() {
+  const tileSet = tileSets()[getSelectedTransformTileSetIndex()];
+  const transform = getTileSetTransform(tileSet);
+  if (
+    !tileSet ||
+    !isPolarizationRecipe(transform) ||
+    !getTransformRoseConfig(transform) ||
+    !derivedPreviewOverlay?.isActiveFor(tileSet)
+  ) {
+    return;
+  }
+  const definition = PetroPolarizationAnalysis.getProductDefinition(
+    transform.polarizationProduct,
+  );
+  const appearance = getTileSetAppearance(tileSet);
+  const matrix = derivedPreviewOverlay.item?.tilesMatrix;
+  Object.values(matrix || {}).forEach((columns) => {
+    Object.values(columns || {}).forEach((rows) => {
+      Object.values(rows || {}).forEach((loadedTile) => {
+        const context =
+          PetroDerivedPreviewOverlay.getDerivedTileContext2D(loadedTile);
+        const values = context?.petroImageAdvancedRawValues;
+        const reliability = context?.petroImagePolarizationFitReliability;
+        if (
+          !context?.canvas ||
+          !values?.length ||
+          !reliability?.values?.length ||
+          context.petroImageAdvancedRawWidth !== context.canvas.width ||
+          context.petroImageAdvancedRawHeight !== context.canvas.height
+        ) {
+          return;
+        }
+        mapPolarizationRasterToImageData(
+          context,
+          {
+            values,
+            rgbValues: context.petroImageAdvancedRgbValues || null,
+            definition,
+            fitReliability: reliability,
+          },
+          transform,
+          {
+            maskUnreliable: shouldMaskUnreliableAzimuthPreview(transform),
+          },
+        );
+        if (!isDefaultAppearanceValue(appearance)) {
+          applyTileSetAppearanceToContext(context, appearance);
+        }
+        markContextAsOpaqueTileContext(context);
+      });
+    });
+  });
+  viewer?.forceRedraw?.();
+  refreshTransformValueTooltipAtLastPointer();
+}
+
+function getTransformRoseData(transform = null) {
+  const settings = transform || getTransformOptionsFromControls();
+  const config = getTransformRoseConfig(settings);
+  if (!config || !isTransformPreviewEnabled()) return null;
+  const samples = getTransformVisibleAnalyticalSamples(settings);
+  if (!samples) return null;
+
+  const filterReliable = transformAzimuthFilter?.value === "reliable";
+  const fullBinCount = Math.round(360 / config.binWidth);
+  const bins = new Uint32Array(fullBinCount);
+  let considered = 0;
+  let included = 0;
+  samples.scalarValues.forEach((rawValue, index) => {
+    const value = Number(rawValue);
+    if (!Number.isFinite(value)) return;
+    considered += 1;
+    if (filterReliable && !samples.reliableValues[index]) return;
+    included += 1;
+    const nativeAngle = PetroPolarizationAnalysis.positiveModulo(
+      value,
+      config.nativePeriod,
+    );
+    for (
+      let repetition = 0;
+      repetition < config.repetitions;
+      repetition += 1
+    ) {
+      const angle = nativeAngle + repetition * config.nativePeriod;
+      const bin = Math.min(
+        fullBinCount - 1,
+        Math.floor(angle / config.binWidth),
+      );
+      bins[bin] += 1;
+    }
+  });
+  return {
+    bins,
+    config,
+    considered,
+    included,
+    residualUnchecked: samples.residualUnchecked,
+    filterReliable,
+  };
+}
+
+function drawTransformRoseChart(data) {
+  if (!transformRoseCanvas) return;
+  const canvas = transformRoseCanvas;
+  const rect = canvas.getBoundingClientRect();
+  const cssWidth = Math.max(1, Math.round(rect.width || canvas.clientWidth || 1));
+  const cssHeight = Math.max(1, Math.round(rect.height || 128));
+  const scale = window.devicePixelRatio || 1;
+  canvas.width = Math.max(1, Math.round(cssWidth * scale));
+  canvas.height = Math.max(1, Math.round(cssHeight * scale));
+  const context = canvas.getContext("2d");
+  if (!context) return;
+  context.setTransform(scale, 0, 0, scale, 0, 0);
+  context.clearRect(0, 0, cssWidth, cssHeight);
+  context.fillStyle = "rgba(255,255,255,0.86)";
+  context.fillRect(0, 0, cssWidth, cssHeight);
+  const centerX = cssWidth / 2;
+  const centerY = cssHeight / 2;
+  const radius = Math.max(8, Math.min(cssWidth, cssHeight) / 2 - 15);
+  context.strokeStyle = "rgba(17,17,17,0.16)";
+  context.lineWidth = 1;
+  [0.5, 1].forEach((fraction) => {
+    context.beginPath();
+    context.arc(centerX, centerY, radius * fraction, 0, Math.PI * 2);
+    context.stroke();
+  });
+  context.beginPath();
+  context.moveTo(centerX - radius, centerY);
+  context.lineTo(centerX + radius, centerY);
+  context.moveTo(centerX, centerY - radius);
+  context.lineTo(centerX, centerY + radius);
+  context.stroke();
+
+  const maxCount = data?.bins?.length ? Math.max(...data.bins) : 0;
+  if (maxCount > 0) {
+    const binAngle = (Math.PI * 2) / data.bins.length;
+    data.bins.forEach((count, index) => {
+      if (!count) return;
+      const wedgeRadius = radius * (count / maxCount);
+      const start = index * binAngle - Math.PI / 2;
+      const end = start + binAngle;
+      context.beginPath();
+      context.moveTo(centerX, centerY);
+      context.arc(centerX, centerY, wedgeRadius, start, end);
+      context.closePath();
+      context.fillStyle = "rgba(39,133,74,0.72)";
+      context.fill();
+    });
+  }
+
+  context.fillStyle = "rgba(17,17,17,0.68)";
+  context.font = "8px system-ui, sans-serif";
+  context.textBaseline = "bottom";
+  context.textAlign = "center";
+  context.fillText("0°", centerX, centerY - radius - 2);
+  context.textBaseline = "middle";
+  context.textAlign = "left";
+  context.fillText("90°", centerX + radius + 3, centerY);
+  context.textBaseline = "top";
+  context.textAlign = "center";
+  context.fillText("180°", centerX, centerY + radius + 2);
+  context.textBaseline = "middle";
+  context.textAlign = "right";
+  context.fillText("270°", centerX - radius - 3, centerY);
+}
+
+function renderTransformRoseInspector() {
+  if (transformPlotView !== "rose") return;
+  const transform = getTransformOptionsFromControls();
+  const data = getTransformRoseData(transform);
+  drawTransformRoseChart(data);
+  if (!transformRoseStatus) return;
+  if (!derivedPreviewOverlay?.state) {
+    transformRoseStatus.textContent =
+      "Start an azimuth preview to display its rose diagram.";
+    return;
+  }
+  if (!data) {
+    transformRoseStatus.textContent = "Waiting for visible azimuth tiles…";
+    return;
+  }
+  transformRoseStatus.textContent = formatTransformAzimuthSummary(data);
+}
+
+function getTransformFitAvailableModalities(transform = null) {
+  const settings = transform || getTransformOptionsFromControls();
+  if (!isPolarizationRecipe(settings)) return [];
+  const required = getPolarizationRequiredModalities(
+    settings.polarizationProduct,
+    settings,
+  );
+  return ["ppl", "xpl"].filter((modality) =>
+    required.includes(modality) &&
+    Boolean(
+      getPolarizationFitModel(
+        modality,
+        getPolarizationTileSet(modality, settings),
+      ),
+    ),
+  );
+}
+
+function getPreferredTransformFitModality(transform, available) {
+  const definition = PetroPolarizationAnalysis.getProductDefinition(
+    transform?.polarizationProduct,
+  );
+  if (definition?.mode === "xpl" && available.includes("xpl")) return "xpl";
+  if (definition?.mode === "ppl" && available.includes("ppl")) return "ppl";
+  return available[0] || "ppl";
+}
+
+function syncTransformFitControls(transform = null) {
+  const settings = transform || getTransformOptionsFromControls();
+  const available = getTransformFitAvailableModalities(settings);
+  const fitAvailable = available.length > 0;
+  const selectedTileSet = tileSets()[getSelectedTransformTileSetIndex()];
+  const fitPreviewAvailable = Boolean(
+    fitAvailable &&
+      isPolarizationRecipe(settings) &&
+      isTransformPreviewEnabled() &&
+      isTransformSourceTileSetVisible() &&
+      derivedPreviewOverlay?.isActiveFor(selectedTileSet),
+  );
+  const roseAvailable = Boolean(getTransformRoseConfig(settings));
+  if (transformFitViewButton) {
+    transformFitViewButton.disabled = !fitPreviewAvailable;
+    transformFitViewButton.title = fitPreviewAvailable
+      ? "Inspect the polarization fit under the cursor"
+      : "Start and show a polarization preview to inspect fits";
+  }
+  if (transformRoseViewButton) transformRoseViewButton.disabled = !roseAvailable;
+  if (!fitPreviewAvailable && transformPlotView === "fit") {
+    transformPlotView = "histogram";
+    transformFitPinnedPoint = null;
+    transformFitSample = null;
+    clearTransformFitPinMarker();
+  }
+  if (!roseAvailable && transformPlotView === "rose") {
+    transformPlotView = "histogram";
+  }
+  if (transformFitModality) {
+    Array.from(transformFitModality.options).forEach((option) => {
+      option.disabled = !available.includes(option.value);
+    });
+    if (!available.includes(transformFitModality.value)) {
+      transformFitModality.value = getPreferredTransformFitModality(
+        settings,
+        available,
+      );
+    }
+    transformFitModality.disabled = !fitAvailable;
+  }
+  const showingFit = transformPlotView === "fit" && fitPreviewAvailable;
+  const showingRose = transformPlotView === "rose" && roseAvailable;
+  if (transformAzimuthFilterControls) {
+    transformAzimuthFilterControls.hidden = !roseAvailable || showingFit;
+  }
+  transformHistogramViewButton?.setAttribute(
+    "aria-pressed",
+    showingFit || showingRose ? "false" : "true",
+  );
+  transformFitViewButton?.setAttribute(
+    "aria-pressed",
+    showingFit ? "true" : "false",
+  );
+  transformRoseViewButton?.setAttribute(
+    "aria-pressed",
+    showingRose ? "true" : "false",
+  );
+  if (transformHistogramCanvas) {
+    transformHistogramCanvas.hidden = showingFit || showingRose;
+  }
+  if (transformHistogramStatus) {
+    transformHistogramStatus.hidden = showingFit || showingRose || !roseAvailable;
+  }
+  if (transformFitInspector) transformFitInspector.hidden = !showingFit;
+  if (transformRoseInspector) transformRoseInspector.hidden = !showingRose;
+  if (transformPolarizationClassLegend) {
+    const definition = PetroPolarizationAnalysis.getProductDefinition(
+      settings.polarizationProduct,
+    );
+    transformPolarizationClassLegend.hidden =
+      showingFit ||
+      showingRose ||
+      !isPolarizationRecipe(settings) ||
+      !definition?.categorical;
+  }
+  if (showingFit) scheduleTransformFitRefresh();
+  if (showingRose) scheduleTransformHistogramRefresh();
+}
+
+function setTransformPlotView(view) {
+  transformPlotView = ["fit", "rose"].includes(view) ? view : "histogram";
+  const transform = getTransformOptionsFromControls();
+  if (transformPlotView === "fit" && transformFitModality) {
+    transformFitSample = null;
+    const available = getTransformFitAvailableModalities(transform);
+    const preferred = getPreferredTransformFitModality(transform, available);
+    if (available.includes(preferred)) transformFitModality.value = preferred;
+  } else {
+    transformFitPinnedPoint = null;
+    clearTransformFitPinMarker();
+  }
+  syncTransformFitControls(transform);
+  scheduleTransformHistogramRefresh();
+  scheduleClampOpenToolPalettes();
+}
+
+function getTransformFitLoadedTile(viewportPoint) {
+  const item = derivedPreviewOverlay?.item;
+  if (!item?.tilesMatrix || !viewportPoint) return null;
+  let best = null;
+  Object.entries(item.tilesMatrix).forEach(([level, columns]) => {
+    Object.entries(columns || {}).forEach(([x, rows]) => {
+      Object.entries(rows || {}).forEach(([y, loadedTile]) => {
+        const context =
+          PetroDerivedPreviewOverlay.getDerivedTileContext2D(loadedTile);
+        if (!context?.canvas) return;
+        const bounds = getLoadedTileViewportBounds(loadedTile);
+        if (!bounds) return;
+        const xRatio = (viewportPoint.x - bounds.x) / bounds.width;
+        const yRatio = (viewportPoint.y - bounds.y) / bounds.height;
+        if (xRatio < 0 || xRatio >= 1 || yRatio < 0 || yRatio >= 1) return;
+        const numericLevel = Number.parseInt(level, 10);
+        if (!best || numericLevel > best.level) {
+          best = {
+            level: numericLevel,
+            x: Number.parseInt(x, 10),
+            y: Number.parseInt(y, 10),
+            xRatio,
+            yRatio,
+          };
+        }
+      });
+    });
+  });
+  return best;
+}
+
+function sampleTransformFitSourceImage(data, xRatio, yRatio, channel) {
+  const width = Number(data?.naturalWidth || data?.videoWidth || data?.width);
+  const height = Number(data?.naturalHeight || data?.videoHeight || data?.height);
+  if (!width || !height) return Number.NaN;
+  if (!transformFitScratchCanvas) {
+    transformFitScratchCanvas = document.createElement("canvas");
+    transformFitScratchCanvas.width = 1;
+    transformFitScratchCanvas.height = 1;
+  }
+  const context = transformFitScratchCanvas.getContext("2d", {
+    willReadFrequently: true,
+  });
+  if (!context) return Number.NaN;
+  const x = Math.min(width - 1, Math.max(0, Math.floor(xRatio * width)));
+  const y = Math.min(height - 1, Math.max(0, Math.floor(yRatio * height)));
+  try {
+    context.clearRect(0, 0, 1, 1);
+    context.drawImage(data, x, y, 1, 1, 0, 0, 1, 1);
+    const pixel = context.getImageData(0, 0, 1, 1).data;
+    if (channel === "red") return pixel[0];
+    if (channel === "green") return pixel[1];
+    if (channel === "blue") return pixel[2];
+    return 0.2126 * pixel[0] + 0.7152 * pixel[1] + 0.0722 * pixel[2];
+  } catch (error) {
+    return Number.NaN;
+  }
+}
+
+async function calculateTransformFitSample(point, requestGeneration) {
+  const state = derivedPreviewOverlay?.state;
+  const transform = getTransformOptionsFromControls();
+  const selectedTileSet = tileSets()[getSelectedTransformTileSetIndex()];
+  if (
+    !point ||
+    !state?.item ||
+    !state.petroImageSourceCache ||
+    !state.petroImageReferenceTile?.image ||
+    !derivedPreviewOverlay.isActiveFor(selectedTileSet) ||
+    !isTransformPreviewEnabled() ||
+    !isPolarizationRecipe(transform)
+  ) {
+    return null;
+  }
+  const modality = transformFitModality?.value || "ppl";
+  const sourceTileSet = getPolarizationTileSet(modality, transform);
+  const model = getPolarizationFitModel(modality, sourceTileSet);
+  const loadedTile = getTransformFitLoadedTile(point.viewportPoint);
+  if (!model || !loadedTile) return null;
+  const referenceSource = state.petroImageReferenceTile.image.source;
+  const referenceBounds = referenceSource?.getTileBounds?.(
+    loadedTile.level,
+    loadedTile.x,
+    loadedTile.y,
+  );
+  const referencePoint = referenceBounds
+    ? {
+        x: referenceBounds.x + loadedTile.xRatio * referenceBounds.width,
+        y: referenceBounds.y + loadedTile.yRatio * referenceBounds.height,
+      }
+    : null;
+  let waiting = false;
+  const values = await Promise.all(
+    (sourceTileSet.tiles || []).map(async (tile) => {
+      const coordinates = getMappedDerivedSourceCoordinates(
+        state.petroImageReferenceTile.image,
+        tile.image,
+        loadedTile.level,
+        loadedTile.x,
+        loadedTile.y,
+      );
+      const promise = state.petroImageSourceCache.get(
+        getDerivedSourceCacheKey(tile, coordinates),
+      );
+      if (!promise) {
+        waiting = true;
+        return Number.NaN;
+      }
+      const data = await promise.catch(() => null);
+      const sourceBounds = tile.image?.source?.getTileBounds?.(
+        coordinates.level,
+        coordinates.x,
+        coordinates.y,
+      );
+      const xRatio = referencePoint && sourceBounds
+        ? (referencePoint.x - sourceBounds.x) / sourceBounds.width
+        : loadedTile.xRatio;
+      const yRatio = referencePoint && sourceBounds
+        ? (referencePoint.y - sourceBounds.y) / sourceBounds.height
+        : loadedTile.yRatio;
+      return sampleTransformFitSourceImage(
+        data,
+        xRatio,
+        yRatio,
+        transform.channel,
+      );
+    }),
+  );
+  if (requestGeneration !== transformFitRequestGeneration) return null;
+  if (waiting || values.some((value) => !Number.isFinite(value))) {
+    return { waiting: true, modality, point };
+  }
+  const fit = PetroPolarizationAnalysis.fitHarmonicValues(model, values);
+  if (!fit) return null;
+  return {
+    modality,
+    point,
+    angles: model.angles,
+    values,
+    model,
+    fit,
+  };
+}
+
+function drawTransformFitChart(sample) {
+  if (!transformFitCanvas) return;
+  const canvas = transformFitCanvas;
+  const rect = canvas.getBoundingClientRect();
+  const cssWidth = Math.max(1, Math.round(rect.width || canvas.clientWidth || 1));
+  const cssHeight = Math.max(1, Math.round(rect.height || 94));
+  const scale = window.devicePixelRatio || 1;
+  canvas.width = Math.max(1, Math.round(cssWidth * scale));
+  canvas.height = Math.max(1, Math.round(cssHeight * scale));
+  const context = canvas.getContext("2d");
+  if (!context) return;
+  context.setTransform(scale, 0, 0, scale, 0, 0);
+  context.clearRect(0, 0, cssWidth, cssHeight);
+  context.fillStyle = "rgba(255,255,255,0.86)";
+  context.fillRect(0, 0, cssWidth, cssHeight);
+  if (!sample?.fit) return;
+  const left = 31;
+  const right = 5;
+  const top = 6;
+  const bottom = 16;
+  const plotWidth = Math.max(1, cssWidth - left - right);
+  const plotHeight = Math.max(1, cssHeight - top - bottom);
+  const period = 360 / sample.model.harmonic;
+  const curveValues = Array.from({ length: 73 }, (_, index) => {
+    const angle = (index / 72) * period;
+    return {
+      angle,
+      value: PetroPolarizationAnalysis.evaluateHarmonicFitAtAngle(
+        sample.model,
+        sample.fit,
+        angle,
+      ),
+    };
+  });
+  const allValues = [
+    ...sample.values,
+    ...curveValues.map((entry) => entry.value),
+  ];
+  let minValue = Math.min(...allValues);
+  let maxValue = Math.max(...allValues);
+  const padding = Math.max(2, (maxValue - minValue) * 0.12);
+  minValue = Math.max(0, minValue - padding);
+  maxValue = Math.min(255, maxValue + padding);
+  if (maxValue <= minValue) maxValue = minValue + 1;
+  const xFor = (angle) =>
+    left +
+    (PetroPolarizationAnalysis.positiveModulo(angle, period) / period) *
+      plotWidth;
+  const yFor = (value) =>
+    top + ((maxValue - value) / (maxValue - minValue)) * plotHeight;
+  context.strokeStyle = "rgba(17,17,17,0.14)";
+  context.lineWidth = 1;
+  [0, 0.5, 1].forEach((fraction) => {
+    const y = top + fraction * plotHeight;
+    context.beginPath();
+    context.moveTo(left, y);
+    context.lineTo(left + plotWidth, y);
+    context.stroke();
+  });
+  context.strokeStyle = "#27854a";
+  context.lineWidth = 1.5;
+  context.beginPath();
+  curveValues.forEach((entry, index) => {
+    const x = left + (entry.angle / period) * plotWidth;
+    const y = yFor(entry.value);
+    if (index === 0) context.moveTo(x, y);
+    else context.lineTo(x, y);
+  });
+  context.stroke();
+  context.fillStyle = "#17202a";
+  sample.angles.forEach((angle, index) => {
+    context.beginPath();
+    context.arc(xFor(angle), yFor(sample.values[index]), 2.5, 0, Math.PI * 2);
+    context.fill();
+  });
+  context.fillStyle = "rgba(17,17,17,0.68)";
+  context.font = "8px system-ui, sans-serif";
+  context.textBaseline = "middle";
+  context.textAlign = "right";
+  context.fillText(maxValue.toFixed(1), left - 3, top + 2);
+  context.fillText(
+    minValue.toFixed(1),
+    left - 3,
+    top + plotHeight - 2,
+  );
+  context.textBaseline = "bottom";
+  context.textAlign = "left";
+  context.fillText("0°", left, cssHeight - 2);
+  context.textAlign = "right";
+  context.fillText(`${period}°`, left + plotWidth, cssHeight - 2);
+}
+
+function renderTransformFitInspector() {
+  if (transformPlotView !== "fit") return;
+  drawTransformFitChart(transformFitSample);
+  if (!transformFitStatus) return;
+  if (transformFitSample?.waiting) {
+    transformFitStatus.textContent = "Waiting for source stack tiles…";
+  } else if (!transformFitSample?.fit) {
+    transformFitStatus.textContent = derivedPreviewOverlay?.state
+      ? "Move over a loaded preview tile to inspect a fit. Double-click to pin."
+      : "Start a polarization preview, then move over the image.";
+  } else {
+    const { modality, fit } = transformFitSample;
+    const normalizedRmse = fit.rmse / Math.max(Math.abs(fit.mean), fit.amplitude, 1);
+    const maxFitError = getPolarizationClassificationThresholds().maxFitError;
+    const quality = fit.residualDegreesOfFreedom > 0
+      ? normalizedRmse <= maxFitError
+        ? "reliable"
+        : "uncertain"
+      : "exact fit; residual unchecked";
+    const azimuth = modality === "xpl" ? fit.minimumAzimuth : fit.maximumAzimuth;
+    transformFitStatus.textContent =
+      `RMSE ${formatTransformTooltipNumber(fit.rmse)} DN · nRMSE ${formatTransformTooltipNumber(normalizedRmse)} · ${quality}\n` +
+      `Min ${formatTransformTooltipNumber(fit.minimum)} · Max ${formatTransformTooltipNumber(fit.maximum)} · Mod ${formatTransformTooltipNumber(fit.amplitude)} · Norm ${formatTransformTooltipNumber(fit.normalizedModulation)} · Az ${formatTransformTooltipNumber(azimuth)}°`;
+  }
+  if (transformFitPinButton) {
+    transformFitPinButton.disabled = !transformFitPinnedPoint && !transformFitLastHoverPoint;
+    transformFitPinButton.textContent = transformFitPinnedPoint
+      ? "Unpin"
+      : "Pin point";
+    transformFitPinButton.setAttribute(
+      "aria-pressed",
+      transformFitPinnedPoint ? "true" : "false",
+    );
+  }
+}
+
+function scheduleTransformFitRefresh() {
+  if (transformPlotView !== "fit" || transformFitRefreshHandle !== null) return;
+  transformFitRefreshHandle = window.requestAnimationFrame(async () => {
+    transformFitRefreshHandle = null;
+    const point = transformFitPinnedPoint || transformFitLastHoverPoint;
+    const requestGeneration = ++transformFitRequestGeneration;
+    transformFitSample = await calculateTransformFitSample(
+      point,
+      requestGeneration,
+    );
+    if (requestGeneration !== transformFitRequestGeneration) return;
+    renderTransformFitInspector();
+  });
+}
+
+function clearTransformFitPinMarker() {
+  if (!transformFitPinMarker) return;
+  viewer?.removeOverlay?.(transformFitPinMarker);
+  transformFitPinMarker = null;
+}
+
+function updateTransformFitPinMarker() {
+  clearTransformFitPinMarker();
+  if (!transformFitPinnedPoint?.viewportPoint) return;
+  const marker = document.createElement("div");
+  marker.className = "transform-fit-pin-marker";
+  marker.setAttribute("aria-hidden", "true");
+  viewer.addOverlay({
+    element: marker,
+    location: transformFitPinnedPoint.viewportPoint,
+    placement: OpenSeadragon.Placement.CENTER,
+    checkResize: false,
+  });
+  transformFitPinMarker = marker;
+}
+
+function toggleTransformFitPin() {
+  if (transformFitPinnedPoint) {
+    transformFitPinnedPoint = null;
+    clearTransformFitPinMarker();
+  } else if (transformFitLastHoverPoint) {
+    transformFitPinnedPoint = {
+      viewportPoint: new OpenSeadragon.Point(
+        transformFitLastHoverPoint.viewportPoint.x,
+        transformFitLastHoverPoint.viewportPoint.y,
+      ),
+    };
+    updateTransformFitPinMarker();
+  }
+  scheduleTransformFitRefresh();
+  renderTransformFitInspector();
+}
+
+function clearTransformFitInspector(options = {}) {
+  transformFitRequestGeneration += 1;
+  transformFitSample = null;
+  transformFitPinnedPoint = null;
+  if (options.clearHover) transformFitLastHoverPoint = null;
+  clearTransformFitPinMarker();
+  renderTransformFitInspector();
+}
+
+function updateTransformFitHoverPoint(event) {
+  if (
+    transformPlotView !== "fit" ||
+    transformFitPinnedPoint ||
+    !isPolarizationRecipe(getTransformOptionsFromControls()) ||
+    isTransformValueTooltipSuppressedAtEvent(event) ||
+    !viewer?.viewport
+  ) {
+    return;
+  }
+  const point = getTransformFitPointFromEvent(event);
+  if (!point) return;
+  transformFitLastHoverPoint = point;
+  scheduleTransformFitRefresh();
+}
+
+function getTransformFitPointFromEvent(event) {
+  if (!viewer?.viewport || !viewerContainer) return null;
+  const rect = viewerContainer.getBoundingClientRect();
+  const elementPoint = new OpenSeadragon.Point(
+    event.clientX - rect.left,
+    event.clientY - rect.top,
+  );
+  const viewportPoint = viewer.viewport.pointFromPixel(elementPoint, true);
+  return getTransformFitLoadedTile(viewportPoint)
+    ? { viewportPoint }
+    : null;
+}
+
+function pinTransformFitPointAtEvent(event) {
+  if (
+    transformPlotView !== "fit" ||
+    !isPolarizationRecipe(getTransformOptionsFromControls()) ||
+    isTransformValueTooltipSuppressedAtEvent(event)
+  ) {
+    return;
+  }
+  const point = getTransformFitPointFromEvent(event);
+  if (!point) return;
+  event.preventDefault();
+  event.stopPropagation();
+  transformFitLastHoverPoint = point;
+  transformFitPinnedPoint = {
+    viewportPoint: new OpenSeadragon.Point(
+      point.viewportPoint.x,
+      point.viewportPoint.y,
+    ),
+  };
+  updateTransformFitPinMarker();
+  scheduleTransformFitRefresh();
+  renderTransformFitInspector();
 }
 
 function populateTransformTileSetSelect() {
@@ -18471,6 +19601,7 @@ const POLARIZATION_PRODUCT_LABELS = Object.freeze({
   ppl_rmse: "PPL fit RMSE",
   xpl_maximum: "XPL predicted maximum",
   xpl_minimum: "XPL predicted minimum",
+  xpl_absolute_modulation: "XPL modulation",
   xpl_modulation: "XPL normalized modulation",
   xpl_extinction_azimuth: "XPL extinction azimuth",
   xpl_rmse: "XPL fit RMSE",
@@ -18493,6 +19624,7 @@ const POLARIZATION_PRODUCT_GROUPS = Object.freeze([
   Object.freeze({
     label: "XPL fitted properties",
     products: Object.freeze([
+      "xpl_absolute_modulation",
       "xpl_modulation",
       "xpl_maximum",
       "xpl_minimum",
@@ -18657,9 +19789,10 @@ function getAvailablePolarizationProducts(transform = null) {
   }
   if (getPolarizationFitModel("xpl", xpl)) {
     products.push(
+      "xpl_absolute_modulation",
+      "xpl_modulation",
       "xpl_maximum",
       "xpl_minimum",
-      "xpl_modulation",
       "xpl_extinction_azimuth",
       "xpl_rmse",
     );
@@ -18997,6 +20130,7 @@ function clearSelectedTransformPreviewForRasterEntry() {
 
 function resetTransformImageryForSampleChange(previousTileSets = []) {
   derivedPreviewOverlay?.stop();
+  clearTransformFitInspector({ clearHover: true });
   activeTransformPreviewSettings = { ...TILE_SET_TRANSFORM_DEFAULTS };
   const tileSetsToReset = [...new Set([...previousTileSets, ...tileSets()])];
   tileSetsToReset.forEach((tileSet) => {
@@ -19085,7 +20219,7 @@ function updateTransformControls() {
   if (transformActions) transformActions.hidden = specializedRecipe;
   if (transformColormapField) {
     const colormapHidden =
-      !polarizationRecipe ||
+      (!rasterRecipe && !polarizationRecipe) ||
       polarizationCategorical ||
       transform.output !== "falseColor";
     transformLayoutVisibilityChanged =
@@ -19094,7 +20228,7 @@ function updateTransformControls() {
   }
   if (transformPolarizationColormap) {
     transformPolarizationColormap.disabled =
-      !polarizationRecipe ||
+      (!rasterRecipe && !polarizationRecipe) ||
       polarizationCategorical ||
       transform.output !== "falseColor";
   }
@@ -19107,7 +20241,11 @@ function updateTransformControls() {
     transformPolarizationClassificationPanel.hidden = classificationPanelHidden;
   }
   if (transformPolarizationClassLegend) {
-    const classLegendHidden = !polarizationRecipe || !polarizationCategorical;
+    const classLegendHidden =
+      transformPlotView === "fit" ||
+      transformPlotView === "rose" ||
+      !polarizationRecipe ||
+      !polarizationCategorical;
     transformLayoutVisibilityChanged ||=
       transformPolarizationClassLegend.hidden !== classLegendHidden;
     transformPolarizationClassLegend.hidden = classLegendHidden;
@@ -19157,20 +20295,15 @@ function updateTransformControls() {
   if (transformRasterChannelBSelect) {
     transformRasterChannelBSelect.disabled = !rasterRecipe;
   }
-  if (transformRasterNormalize) {
-    transformRasterNormalize.disabled = !rasterRecipe;
-  }
   if (transformValueTooltipEnabled) {
     transformValueTooltipEnabled.disabled = tileSets().length === 0;
   }
   if (transformRasterScaleSelect) {
-    transformRasterScaleSelect.disabled =
-      !rasterRecipe || transform.rasterNormalize;
+    transformRasterScaleSelect.disabled = !rasterRecipe;
   }
   if (transformRasterCustomRangeFields) {
     const customRangeEnabled =
       rasterRecipe &&
-      !transform.rasterNormalize &&
       transform.rasterScale === "custom";
     transformRasterCustomRangeFields.hidden = !customRangeEnabled;
     transformRasterCustomRangeFields
@@ -19284,6 +20417,7 @@ function updateTransformControls() {
   }
   updateTransformResolutionStatus();
   updateTransformOutputName();
+  syncTransformFitControls(transform);
   if (!transformGenerationRunning) {
     const defaultStatuses = new Set([
       "",
@@ -19292,7 +20426,7 @@ function updateTransformControls() {
       "Preview transform is hidden.",
       "Source tile set is not currently selected.",
       "Generate a derived DZI from the current transform settings.",
-      "Transform Calculator controls are inactive.",
+      "Image Calculator controls are inactive.",
     ]);
     if (defaultStatuses.has(transformStatus?.textContent || "")) {
       if (rasterRecipe) {
@@ -19429,9 +20563,18 @@ function getTransformPreviewIdleStatus(tileSet) {
   }
   if (isDefaultTileSetTransform(tileSet))
     return "Preview transforms are temporary.";
-  return isTransformSourceTileSetVisible()
-    ? "Preview applied."
-    : "Source tile set is not currently selected.";
+  if (!isTransformSourceTileSetVisible()) {
+    return "Source tile set is not currently selected.";
+  }
+  const autoScaleRange = derivedPreviewOverlay?.isActiveFor(tileSet)
+    ? derivedPreviewOverlay.state?.petroImageAutoScaleRange
+    : null;
+  return Number.isFinite(autoScaleRange?.min) &&
+    Number.isFinite(autoScaleRange?.max)
+    ? `Preview applied. Global range ${formatTransformTooltipNumber(
+        autoScaleRange.min,
+      )} to ${formatTransformTooltipNumber(autoScaleRange.max)}.`
+    : "Preview applied.";
 }
 
 function refreshTransformPreviewStatus() {
@@ -19459,9 +20602,6 @@ function syncTransformControlsFromSettings(transform) {
   if (transformOutputSelect) transformOutputSelect.value = normalized.output;
   if (transformRasterCustomExpression) {
     transformRasterCustomExpression.value = normalized.rasterExpression;
-  }
-  if (transformRasterNormalize) {
-    transformRasterNormalize.checked = normalized.rasterNormalize;
   }
   if (transformRasterScaleSelect) {
     transformRasterScaleSelect.value = normalized.rasterScale;
@@ -20128,7 +21268,7 @@ async function applyAdvancedTransformToExportContext(
       mapAdvancedRasterValue(values[valueIndex], transform, minValue, maxValue),
     );
     if (transform.output === "falseColor") {
-      const [red, green, blue] = getFalseColorRgb(value);
+      const [red, green, blue] = getTransformColorMapRgb(value, transform);
       output[offset] = red;
       output[offset + 1] = green;
       output[offset + 2] = blue;
@@ -20141,6 +21281,7 @@ async function applyAdvancedTransformToExportContext(
   }
 
   context.putImageData(outputImageData, 0, 0);
+  return { values, minValue, maxValue };
 }
 
 async function generateTransformedTileSet() {
@@ -20811,6 +21952,13 @@ function getFalseColorRgb(value) {
   return [190, 55, 45];
 }
 
+function getTransformColorMapRgb(value, transform) {
+  return PetroPolarizationAnalysis.getColorMapRgb(
+    Math.max(0, Math.min(1, Number(value) / 255)),
+    transform?.polarizationColormap || "viridis",
+  );
+}
+
 function applyChannelTransformToContext(context, transform) {
   const width = context.canvas.width;
   const height = context.canvas.height;
@@ -21411,7 +22559,7 @@ function applyAdvancedVisibleTransformToContext(
       mapAdvancedRasterValue(values[valueIndex], transform, minValue, maxValue),
     );
     if (transform.output === "falseColor") {
-      const [r, g, b] = getFalseColorRgb(value);
+      const [r, g, b] = getTransformColorMapRgb(value, transform);
       output[offset] = r;
       output[offset + 1] = g;
       output[offset + 2] = b;
@@ -21453,13 +22601,21 @@ function getPolarizationRequiredModalities(product, transform = null) {
   return definition?.mode ? [definition.mode] : [];
 }
 
-function mapPolarizationRasterToImageData(context, raster, transform) {
+function mapPolarizationRasterToImageData(
+  context,
+  raster,
+  transform,
+  options = {},
+) {
   const imageData = context.createImageData(
     context.canvas.width,
     context.canvas.height,
   );
   const output = imageData.data;
   const definition = raster.definition;
+  const reliabilityValues = options.maskUnreliable
+    ? raster.fitReliability?.values
+    : null;
   const displayMin = definition.range[0];
   const displayMax = definition.range[1];
   const span = Math.max(Number.EPSILON, displayMax - displayMin);
@@ -21484,7 +22640,9 @@ function mapPolarizationRasterToImageData(context, raster, transform) {
     }
     const displayValue = clampColorValue(((raw - displayMin) / span) * 255);
     let rgb;
-    if (definition.categorical) {
+    if (reliabilityValues?.[index] !== undefined && reliabilityValues[index] !== 1) {
+      rgb = [128, 128, 128];
+    } else if (definition.categorical) {
       rgb = PetroPolarizationAnalysis.ANISOTROPY_CLASSES[
         Math.max(0, Math.min(
           PetroPolarizationAnalysis.ANISOTROPY_CLASSES.length - 1,
@@ -21568,7 +22726,9 @@ function applyPolarizationVisibleTransformToContext(
         ),
       },
     );
-    mapPolarizationRasterToImageData(context, raster, transform);
+  mapPolarizationRasterToImageData(context, raster, transform, {
+    maskUnreliable: shouldMaskUnreliableAzimuthPreview(transform),
+  });
     context.petroImageAdvancedRawValues = raster.values;
     context.petroImageAdvancedRgbValues = raster.rgbValues;
     context.petroImagePolarizationClassification = raster.classification || null;
@@ -24568,9 +25728,16 @@ function getTransformTooltipSample(event) {
     context.petroImageAdvancedRawWidth === context.canvas.width &&
     context.petroImageAdvancedRawHeight === context.canvas.height
   ) {
-    return formatTransformTooltipNumber(
-      rawValues[y * context.canvas.width + x],
-    );
+    const valueIndex = y * context.canvas.width + x;
+    const valueLabel = formatTransformTooltipNumber(rawValues[valueIndex]);
+    const reliability = context.petroImagePolarizationFitReliability;
+    if (
+      shouldMaskUnreliableAzimuthPreview(activeTransform) &&
+      reliability?.values?.[valueIndex] !== 1
+    ) {
+      return `${valueLabel}\nUnreliable fit`;
+    }
+    return valueLabel;
   }
 
   // RGB is only a display encoding for calculator and polarization products;
@@ -38723,10 +39890,13 @@ const clearAnnotations = ({ markUnsaved = true } = {}) => {
 viewerContainer.addEventListener("pointermove", (event) => {
   mousePos = new OpenSeadragon.Point(event.clientX, event.clientY);
   updateTransformValueTooltip(event);
+  updateTransformFitHoverPoint(event);
   if (enableDivideImages) {
     displayImages();
   }
 });
+
+viewerContainer.addEventListener("dblclick", pinTransformFitPointAtEvent);
 
 viewerContainer.addEventListener("pointerleave", hideTransformValueTooltip);
 

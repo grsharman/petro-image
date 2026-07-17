@@ -60,6 +60,27 @@ test("polarization raster calculation preserves analytical angle values", async 
   assert.equal(result.definition.unit, "degrees");
 });
 
+test("azimuth rasters identify pixels with interpretable fitted orientations", async () => {
+  const { calculatePolarizationRaster } = await polarizationApi;
+  const angles = [0, 30, 60, 90, 120, 150];
+  const stack = angles.map((angle) => {
+    const strong = 100 + 30 * Math.cos((2 * (angle - 25) * Math.PI) / 180);
+    const weak = 100 + 2 * Math.cos((2 * (angle - 70) * Math.PI) / 180);
+    return new Float64Array([
+      strong, strong, strong, 255,
+      weak, weak, weak, 255,
+    ]);
+  });
+  const result = calculatePolarizationRaster(
+    { ppl: stack },
+    2,
+    1,
+    { product: "ppl_azimuth", channel: "luminance", pplAngles: angles },
+  );
+  assert.deepEqual(Array.from(result.fitReliability.values), [1, 0]);
+  assert.equal(result.fitReliability.residualUnchecked, false);
+});
+
 test("PPL raster products distinguish modulation amplitude from normalized modulation", async () => {
   const { calculatePolarizationRaster, getProductDefinition } = await polarizationApi;
   const angles = [0, 30, 60, 90, 120, 150];
@@ -92,12 +113,51 @@ test("PPL raster products distinguish modulation amplitude from normalized modul
   assert.equal(getProductDefinition("cpl_intensity"), null);
 });
 
-test("scalar color maps provide stable endpoints and a cyclic hue option", async () => {
+test("XPL raster products distinguish modulation amplitude from normalized modulation", async () => {
+  const { calculatePolarizationRaster } = await polarizationApi;
+  const angles = [0, 15, 30, 45, 60, 75];
+  const stack = angles.map((angle) => {
+    const value = 80 + 20 * Math.cos((4 * (angle - 10) * Math.PI) / 180);
+    return new Float64Array([value, value, value, 255]);
+  });
+  const modulation = calculatePolarizationRaster(
+    { xpl: stack },
+    1,
+    1,
+    {
+      product: "xpl_absolute_modulation",
+      channel: "luminance",
+      xplAngles: angles,
+    },
+  );
+  const normalized = calculatePolarizationRaster(
+    { xpl: stack },
+    1,
+    1,
+    { product: "xpl_modulation", channel: "luminance", xplAngles: angles },
+  );
+  assert.ok(Math.abs(modulation.values[0] - 20) < 1e-5);
+  assert.ok(Math.abs(normalized.values[0] - 0.25) < 1e-6);
+  assert.equal(modulation.definition.unit, "intensity");
+  assert.equal(normalized.definition.unit, "ratio");
+});
+
+test("scalar color maps provide stable endpoints and cyclic options", async () => {
   const { getColorMapRgb, getDefaultColorMap } = await polarizationApi;
   assert.deepEqual(getColorMapRgb(0, "viridis"), [68, 1, 84]);
   assert.deepEqual(getColorMapRgb(1, "viridis"), [253, 231, 37]);
   assert.deepEqual(getColorMapRgb(0, "hue"), [255, 0, 0]);
   assert.deepEqual(getColorMapRgb(1, "hue"), [255, 0, 0]);
+  assert.deepEqual(getColorMapRgb(0, "hue_shifted"), [0, 255, 255]);
+  assert.deepEqual(getColorMapRgb(1, "hue_shifted"), [0, 255, 255]);
+  assert.deepEqual(getColorMapRgb(0, "twilight"), [226, 217, 226]);
+  assert.deepEqual(getColorMapRgb(1, "twilight"), [226, 217, 226]);
+  assert.deepEqual(getColorMapRgb(0, "twilight_shifted"), [48, 20, 55]);
+  assert.deepEqual(getColorMapRgb(1, "twilight_shifted"), [48, 20, 55]);
+  assert.deepEqual(
+    getColorMapRgb(0.5, "twilight_shifted"),
+    getColorMapRgb(0, "twilight"),
+  );
   assert.deepEqual(getColorMapRgb(0, "unknown"), [68, 1, 84]);
   assert.deepEqual(getColorMapRgb(0.5, "diverging"), [247, 247, 247]);
   assert.equal(getDefaultColorMap("ppl_azimuth"), "hue");

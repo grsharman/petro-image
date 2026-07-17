@@ -1657,27 +1657,28 @@
           </div>
         </div>
         <div class="tool-palette-body transform-imagery-palette-body">
+          <div class="transform-imagery-scroll-content">
           <div class="transform-mode-toggle" role="group" aria-label="Transform Imagery recipe">
-            <label title="Simple Transform">
+            <label title="Simple Filter">
               <input
                 id="transformRecipeSimple"
                 type="radio"
                 name="transformImageryRecipe"
                 value="simple"
-                aria-label="Simple Transform"
+                aria-label="Simple Filter"
                 checked
               />
-              <span>Simple</span>
+              <span>Simple Filter</span>
             </label>
-            <label title="Transform Calculator">
+            <label title="Image Calculator">
               <input
                 id="transformRecipeRaster"
                 type="radio"
                 name="transformImageryRecipe"
                 value="raster"
-                aria-label="Transform Calculator"
+                aria-label="Image Calculator"
               />
-              <span>Calculator</span>
+              <span>Image Calculator</span>
             </label>
             <label title="Polarization Analysis">
               <input
@@ -1687,7 +1688,7 @@
                 value="polarization"
                 aria-label="Polarization Analysis"
               />
-              <span>Polarization</span>
+              <span>Polarization Analysis</span>
             </label>
           </div>
           <label class="snapshot-field">
@@ -1795,12 +1796,6 @@
                 spellcheck="false"
                 aria-label="Expression"
               />
-            </div>
-            <div class="transform-raster-options-row">
-              <label class="snapshot-option">
-                <input id="transformRasterNormalize" type="checkbox" checked />
-                <span>Auto-scale</span>
-              </label>
             </div>
             <label class="snapshot-field">
               <span>Output range</span>
@@ -1935,6 +1930,9 @@
               <option value="blues">Blues</option>
               <option value="gray">Grayscale</option>
               <option value="hue">Cyclic hue</option>
+              <option value="hue_shifted">Cyclic hue shifted</option>
+              <option value="twilight">Cyclic twilight</option>
+              <option value="twilight_shifted">Cyclic twilight shifted</option>
               <option value="diverging">Blue–white–red</option>
             </select>
           </label>
@@ -1978,14 +1976,110 @@
           </label>
           <div class="transform-actions">
             <button id="transformResetPreviewButton" type="button">Reset Preview</button>
-            <button id="transformResetDefaultButton" type="button">Reset to Default</button>
+            <button id="transformResetDefaultButton" type="button">Restore Defaults</button>
           </div>
           <div class="transform-histogram-panel">
+            <div class="transform-plot-toolbar">
+              <div
+                class="transform-plot-mode"
+                role="group"
+                aria-label="Plot view"
+              >
+                <button
+                  id="transformHistogramViewButton"
+                  type="button"
+                  aria-pressed="true"
+                >
+                  Histogram
+                </button>
+                <button
+                  id="transformFitViewButton"
+                  type="button"
+                  aria-pressed="false"
+                  disabled
+                >
+                  Fit at cursor
+                </button>
+                <button
+                  id="transformRoseViewButton"
+                  type="button"
+                  aria-pressed="false"
+                  disabled
+                >
+                  Rose
+                </button>
+              </div>
+            </div>
+            <div
+              id="transformAzimuthFilterControls"
+              class="transform-azimuth-filter-controls"
+              hidden
+            >
+              <label>
+                <span>Fits</span>
+                <select
+                  id="transformAzimuthFilter"
+                  aria-label="Azimuth fit filter"
+                >
+                  <option value="all" selected>All</option>
+                  <option value="reliable">Reliable</option>
+                </select>
+              </label>
+            </div>
             <canvas
               id="transformHistogramCanvas"
               class="transform-histogram-canvas"
               aria-label="Output histogram"
             ></canvas>
+            <p
+              id="transformHistogramStatus"
+              class="transform-histogram-status"
+              role="status"
+              hidden
+            ></p>
+            <div
+              id="transformFitInspector"
+              class="transform-fit-inspector"
+              hidden
+            >
+              <div class="transform-fit-controls">
+                <label>
+                  <span>Stack</span>
+                  <select
+                    id="transformFitModality"
+                    aria-label="Polarization fit stack"
+                  >
+                    <option value="ppl">PPL</option>
+                    <option value="xpl">XPL</option>
+                  </select>
+                </label>
+                <button id="transformFitPinButton" type="button" disabled>
+                  Pin point
+                </button>
+              </div>
+              <canvas
+                id="transformFitCanvas"
+                class="transform-fit-canvas"
+                aria-label="Polarization fit at cursor"
+              ></canvas>
+              <p id="transformFitStatus" class="transform-fit-status" role="status">
+                Move the cursor over the preview to inspect a fit.
+              </p>
+            </div>
+            <div
+              id="transformRoseInspector"
+              class="transform-rose-inspector"
+              hidden
+            >
+              <canvas
+                id="transformRoseCanvas"
+                class="transform-rose-canvas"
+                aria-label="Visible-pixel azimuth rose diagram"
+              ></canvas>
+              <p id="transformRoseStatus" class="transform-rose-status" role="status">
+                Start an azimuth preview to display its rose diagram.
+              </p>
+            </div>
             <div
               id="transformPolarizationClassLegend"
               class="transform-classification-legend"
@@ -2029,14 +2123,17 @@
               </button>
             </div>
           </details>
-          <div id="transformStatus" class="segment-status" role="status">
-            Preview transforms are temporary.
           </div>
-          <div id="transformProgress" class="import-progress transform-progress" hidden>
-            <div class="import-progress-track" aria-hidden="true">
-              <div id="transformProgressBar" class="import-progress-bar"></div>
+          <div class="transform-sticky-status-footer">
+            <div id="transformStatus" class="segment-status" role="status">
+              Preview transforms are temporary.
             </div>
-            <div id="transformProgressText" class="import-progress-text"></div>
+            <div id="transformProgress" class="import-progress transform-progress" hidden>
+              <div class="import-progress-track" aria-hidden="true">
+                <div id="transformProgressBar" class="import-progress-bar"></div>
+              </div>
+              <div id="transformProgressText" class="import-progress-text"></div>
+            </div>
           </div>
         </div>
       </div>
@@ -2061,20 +2158,20 @@
         <div class="measure-help-content transform-imagery-help-content">
           <h4>What It Does</h4>
           <p>Transform Imagery allows filters and calculations to be made on tile sets. Results can be previewed on the fly, or saved to their own tile set (enabling faster loading for calculations).</p>
-          <h4>Simple Transform</h4>
-          <p>Use Simple Transform for common visual filters such as edge detection, local contrast, unsharp masking, relief shading, and channel mapping. These are intended for quick visual exploration.</p>
-          <h4>Transform Calculator</h4>
-          <p>Use Transform Calculator to build expressions from tile-set channels. Calculations can be performed on any tile set (labeled A, B, C, etc.) for R, G, B, luminance, saturation, and hue. Supported functions include abs, normdiff, range, max, min, and mean.</p>
+          <h4>Simple Filter</h4>
+          <p>Use Simple Filter for common visual filters such as edge detection, local contrast, unsharp masking, relief shading, and channel mapping. These are intended for quick visual exploration.</p>
+          <h4>Image Calculator</h4>
+          <p>Use Image Calculator to build expressions from tile-set channels. Calculations can be performed on any tile set (labeled A, B, C, etc.) for R, G, B, luminance, saturation, and hue. Supported functions include abs, normdiff, range, max, min, and mean.</p>
           <h4>Tile-Set Stack Functions</h4>
           <p>range, max, min, and mean summarize all images within the selected source tile set at each pixel. A single-image tile set has a range of 0.</p>
           <h4>Polarization Analysis</h4>
-          <p>Assign PPL, XPL, and CPL roles to angle-aware tile sets. Polarization products use harmonic fits when at least three valid angles are available; six well-spaced images are preferred. Input channel selects the source-image intensity fitted at each angle; Red, Green, Blue, and Luminance are supported. RGB output is available for predicted PPL maximum or minimum transmission and predicted XPL maximum or minimum. It derives one orientation from luminance, then evaluates the fitted red, green, and blue channels at that shared orientation. The XPL predicted minimum corresponds to the fitted extinction orientation. Direct stack statistics such as mean and range remain available in Transform Calculator. XPL fitting assumes crossed polarizer and analyzer rotation.</p>
+          <p>Assign PPL, XPL, and CPL roles to angle-aware tile sets. Polarization products use harmonic fits when at least three valid angles are available; six well-spaced images are preferred. Input channel selects the source-image intensity fitted at each angle; Red, Green, Blue, and Luminance are supported. RGB output is available for predicted PPL maximum or minimum transmission and predicted XPL maximum or minimum. It derives one orientation from luminance, then evaluates the fitted red, green, and blue channels at that shared orientation. The XPL predicted minimum corresponds to the fitted extinction orientation. Direct stack statistics such as mean and range remain available in Image Calculator. XPL fitting assumes crossed polarizer and analyzer rotation.</p>
           <h4>Anisotropy Classification</h4>
           <p>Anisotropy class combines observed PPL/XPL brightness with luminance-based harmonic fits. A single very dark PPL image can support an opaque-like result. Isotropic-like / continuously extinct means PPL is transmissive while observed XPL remains below the extinction ceiling at every measured angle; XPL fit quality is not used when the signal is continuously dark. This remains an optical-behavior description rather than a mineral identification. Pleochroism requires both normalized PPL modulation and a minimum absolute, noise-relative amplitude. Missing evidence is never treated as a negative response, and unavailable legend classes show a dash rather than 0%. Classification confidence reflects threshold separation, angular sampling, fit quality when a fit is identifiable, and input completeness. Presets are general-purpose starting points rather than petrographically calibrated standards.</p>
           <h4>Resolution and Raster Export</h4>
           <p>The selected analysis resolution is used for generated tile sets and raster exports. NumPy and TIFF preserve scalar calculated values; for RGB polarization display they retain the corresponding luminance calculation. PNG and JPEG export the current display mapping. Maximum available uses source-image resolution and may require substantial memory.</p>
           <h4>Display and Histogram</h4>
-          <p>The preview is mapped to a display image. Auto-scale stretches calculator output for viewing. Scalar polarization histograms retain their analytical units, while anisotropy class shows a categorical distribution and legend.</p>
+          <p>The preview is mapped to a display image. Calculator Auto min/max estimates one range from a whole-image overview and locks that range across all preview tiles and zoom levels. It does not rescale individual tiles or change with the viewport. Calculator histograms use the selected Output range as their fixed analytical axis; the bars continue to update for the visible pixels. Scalar polarization histograms retain their analytical units, while anisotropy class shows a categorical distribution and legend. Grayscale and false-color analytical histograms include a colorbar aligned with the numerical axis; RGB and classification displays omit it. For Polarization Analysis, switch to Fit at cursor to compare the measured per-angle intensities with the harmonic fit at a point. The panel reports fitted minimum, maximum, modulation, azimuth, RMSE, and normalized RMSE. Double-click a loaded preview point to pin it directly; the marker remains in the viewer while you pan, zoom, or use the controls. The Unpin button returns the plot to live cursor updates. Histogram, Rose, and Preview views of PPL maximum-transmission and XPL extinction azimuths share an All or Reliable fit filter and report the included fraction and sample count. All is the default. Reliable retains fits that pass the current fit-error, modulation, and signal thresholds and displays excluded preview pixels in neutral grey without changing their analytical values. Rose expands the native 180° PPL or 90° XPL ambiguity symmetrically around the full circle.</p>
           <h4>Export Notes</h4>
           <p>Preview changes are temporary. Use Generate Tile Set to make a persistent transformed tile set. Higher output resolutions preserve more detail but take longer to render. Exported images may be deleted using the Edit Library action.</p>
         </div>

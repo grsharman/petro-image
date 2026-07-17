@@ -1369,6 +1369,17 @@ body.import-wizard-page {
 
 .transform-imagery-palette-body {
   display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  align-content: stretch;
+  gap: 0;
+  overflow-x: hidden;
+  overflow-y: hidden;
+  overscroll-behavior: contain;
+}
+
+.transform-imagery-scroll-content {
+  min-height: 0;
+  display: grid;
   grid-auto-rows: max-content;
   align-content: start;
   gap: 6px;
@@ -1452,14 +1463,178 @@ body.import-wizard-page {
   min-width: 0;
 }
 
+.transform-plot-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-bottom: 3px;
+}
+
+.transform-azimuth-filter-controls {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 3px;
+}
+
+.transform-azimuth-filter-controls label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 9px;
+}
+
+.transform-azimuth-filter-controls select {
+  height: 22px;
+  padding: 1px 5px;
+  font: inherit;
+  font-size: 9px;
+}
+
+.transform-azimuth-filter-controls[hidden] {
+  display: none;
+}
+
+.transform-plot-mode {
+  display: inline-flex;
+  min-width: 0;
+}
+
+.transform-plot-mode button {
+  min-width: 0;
+  padding: 2px 6px;
+  border: 1px solid rgba(17, 17, 17, 0.22);
+  background: rgba(255, 255, 255, 0.72);
+  color: #333;
+  font: inherit;
+  font-size: 9px;
+  line-height: 1.25;
+}
+
+.transform-plot-mode button:first-child {
+  border-radius: 4px 0 0 4px;
+}
+
+.transform-plot-mode button + button {
+  margin-left: -1px;
+}
+
+.transform-plot-mode button:last-child {
+  border-radius: 0 4px 4px 0;
+}
+
+.transform-plot-mode button[aria-pressed="true"] {
+  position: relative;
+  border-color: #27854a;
+  background: #27854a;
+  color: #fff;
+}
+
+.transform-plot-mode button:disabled {
+  opacity: 0.46;
+}
+
 .transform-histogram-canvas {
   display: block;
   box-sizing: border-box;
   width: 100%;
-  height: 44px;
+  height: 84px;
   border: 1px solid rgba(17, 17, 17, 0.16);
   border-radius: 4px;
   background: rgba(255, 255, 255, 0.78);
+}
+
+.transform-histogram-canvas[hidden],
+.transform-fit-inspector[hidden],
+.transform-rose-inspector[hidden] {
+  display: none;
+}
+
+.transform-histogram-status,
+.transform-rose-status {
+  min-height: 2.5em;
+  margin: 3px 1px 0;
+  color: rgba(17, 17, 17, 0.72);
+  font-size: 9px;
+  line-height: 1.25;
+  white-space: pre-line;
+}
+
+.transform-histogram-status[hidden] {
+  display: none;
+}
+
+.transform-fit-inspector {
+  min-width: 0;
+}
+
+.transform-fit-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: 3px;
+}
+
+.transform-fit-controls label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  font-size: 9px;
+}
+
+.transform-fit-controls select,
+.transform-fit-controls button {
+  height: 22px;
+  min-width: 0;
+  padding: 1px 5px;
+  font: inherit;
+  font-size: 9px;
+}
+
+.transform-fit-canvas {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  height: 94px;
+  border: 1px solid rgba(17, 17, 17, 0.16);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.86);
+}
+
+.transform-fit-status {
+  min-height: 2.5em;
+  margin: 3px 1px 0;
+  color: rgba(17, 17, 17, 0.72);
+  font-size: 9px;
+  line-height: 1.25;
+  white-space: pre-line;
+}
+
+.transform-fit-pin-marker {
+  box-sizing: border-box;
+  width: 13px;
+  height: 13px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: #27854a;
+  box-shadow: 0 0 0 2px rgba(17, 17, 17, 0.75);
+  pointer-events: none;
+}
+
+.transform-rose-inspector {
+  min-width: 0;
+}
+
+.transform-rose-canvas {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  height: 128px;
+  border: 1px solid rgba(17, 17, 17, 0.16);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.86);
 }
 
 .transform-classification-settings {
@@ -1545,12 +1720,12 @@ body.import-wizard-page {
   top: 0;
   z-index: 2;
   display: grid;
-  grid-template-columns: 0.8fr 1.15fr 1.45fr;
+  grid-template-columns: 0.9fr 1.15fr 1.45fr;
   gap: 0;
   border: 1px solid rgba(0, 0, 0, 0.24);
   border-radius: 4px;
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.6);
+  background: #fff;
 }
 
 .transform-mode-toggle label {
@@ -1577,18 +1752,19 @@ body.import-wizard-page {
   align-items: center;
   justify-content: center;
   width: 100%;
-  min-height: 32px;
-  padding: 3px 2px;
+  min-height: 36px;
+  padding: 4px 2px;
   text-align: center;
-  font-size: 11px;
+  font-size: 10px;
   line-height: 1.15;
   overflow-wrap: normal;
   word-break: normal;
-  white-space: nowrap;
+  white-space: normal;
+  background: #fff;
 }
 
 .transform-mode-toggle input:checked + span {
-  background: rgba(0, 0, 0, 0.14);
+  background: #dbdbdb;
   font-weight: 600;
 }
 
@@ -1840,6 +2016,31 @@ body.import-wizard-page {
 
 .transform-progress .import-progress-text {
   display: none;
+}
+
+.transform-sticky-status-footer {
+  position: relative;
+  z-index: 3;
+  display: grid;
+  gap: 4px;
+  margin-top: 6px;
+  padding-top: 5px;
+  border-top: 1px solid rgba(0, 0, 0, 0.18);
+  background: #fff;
+}
+
+.transform-sticky-status-footer #transformStatus {
+  background: #fff;
+}
+
+.transform-sticky-status-footer #transformStatus.ok {
+  border-color: #2e7d32;
+  background: #e8f5e9;
+}
+
+.transform-sticky-status-footer #transformStatus.error {
+  border-color: #b3261e;
+  background: #ffebee;
 }
 
 .transform-progress {
