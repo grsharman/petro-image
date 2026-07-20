@@ -350,12 +350,14 @@
       <canvas id="circle-overlay"></canvas>
       <canvas id="scale-overlay" class="electron-only"></canvas>
       <canvas id="porosity-overlay"></canvas>
+      <canvas id="classification-overlay"></canvas>
       <div id="segment-reticle" class="segment-reticle" hidden>
         <span class="segment-reticle-line segment-reticle-line-horizontal"></span>
         <span class="segment-reticle-line segment-reticle-line-vertical"></span>
       </div>
       <div id="annotation-marquee" class="annotation-marquee" hidden></div>
       <div id="transformValueTooltip" class="transform-value-tooltip" hidden></div>
+      <div id="classifyImageCursorTooltip" class="transform-value-tooltip classification" hidden></div>
       <div id="snapshot-selection" class="snapshot-selection" hidden>
         <div
           id="snapshotSelectionBody"
@@ -581,7 +583,7 @@
               </svg>
             </span>
             <span>
-              <span class="electron-action-title">Transform Imagery <span class="beta-badge">βeta</span></span>
+              <span class="electron-action-title">Transform <span class="beta-badge">βeta</span></span>
               <span class="electron-action-description">Preview filters and create tile sets</span>
             </span>
           </button>
@@ -624,8 +626,8 @@
               </svg>
             </span>
             <span>
-              <span class="electron-action-title">Classify Polygons <span class="beta-badge">βeta</span></span>
-              <span class="electron-action-description">Predict labels from image features</span>
+              <span class="electron-action-title">Classify <span class="beta-badge">βeta</span></span>
+              <span class="electron-action-description">Predict polygon labels or image classes</span>
             </span>
           </button>
         </div>
@@ -1441,7 +1443,7 @@
           <h4>Contents and Resolution</h4>
           <p>Choose the tile set and whether to include annotations and labels. Full, half, and quarter resolution use source-image pixels. Current viewer resolution captures the detail currently displayed. The dimensions table previews the chosen output size.</p>
           <h4>Scalebar and Filter</h4>
-          <p>The option to include a scalebar in the image is enabled when image scale is available. Export applied filter uses the active Transform Imagery preview instead of the raw tile set.</p>
+          <p>The option to include a scalebar in the image is enabled when image scale is available. Export applied filter uses the active Transform preview instead of the raw tile set.</p>
           <h4>Save or Copy</h4>
           <p>Save to JPG opens the file-save workflow. Copy to Clipboard places the rendered image directly on the system clipboard and keeps the selected area available.</p>
           <h4>Output Limits</h4>
@@ -1458,13 +1460,13 @@
         hidden
       >
         <div id="classifyPaletteHeader" class="tool-palette-header">
-          <h2 id="classifyPaletteTitle">Classify Polygons</h2>
+          <h2 id="classifyPaletteTitle">Classify</h2>
           <div class="tool-palette-header-actions">
             <button
               id="classifyHelpButton"
               class="tool-palette-help"
               type="button"
-              aria-label="Classify Polygons help"
+              aria-label="Classify help"
               aria-expanded="false"
               title="Help"
             >
@@ -1497,6 +1499,18 @@
           </div>
         </div>
         <div class="tool-palette-body classify-palette-body">
+          <div class="classify-scroll-content">
+          <div class="classify-mode-toggle" role="radiogroup" aria-label="Classification target">
+            <label>
+              <input id="classifyModePolygons" type="radio" name="classifyMode" value="polygons" checked />
+              <span>Polygons</span>
+            </label>
+            <label>
+              <input id="classifyModeImage" type="radio" name="classifyMode" value="image" />
+              <span>Image</span>
+            </label>
+          </div>
+          <div id="classifyPolygonModePanel">
           <details id="classifySetupSection" class="classify-section" open>
             <summary>Set Up Model</summary>
             <label class="snapshot-field">
@@ -1532,11 +1546,29 @@
                 <option value="viewer">Current view</option>
               </select>
             </label>
-            <label class="snapshot-option">
-              <input id="classifyIncludeShape" type="checkbox" />
-              <span>Include shape features</span>
+            <label class="snapshot-field">
+              <span>Feature preset</span>
+              <select id="classifyFeaturePreset">
+                <option value="recommended" selected>Recommended</option>
+                <option value="core">Core color only</option>
+                <option value="full">Full (with shape)</option>
+                <option value="custom">Custom</option>
+              </select>
             </label>
-            <button id="classifyExtractFeaturesButton" type="button">Extract Features</button>
+            <div class="classify-feature-family-options">
+              <label class="snapshot-option">
+                <input id="classifyUseCoreColor" type="checkbox" checked />
+                <span>Core color</span>
+              </label>
+              <label class="snapshot-option">
+                <input id="classifyUseGeneralTexture" type="checkbox" checked />
+                <span>General texture</span>
+              </label>
+              <label class="snapshot-option">
+                <input id="classifyIncludeShape" type="checkbox" />
+                <span>Shape</span>
+              </label>
+            </div>
           </details>
           <details id="classifyRunSection" class="classify-section">
             <summary>Select and Run Model</summary>
@@ -1557,8 +1589,22 @@
                 <input id="classifyMinConfidence" type="number" min="0" max="1" step="0.05" value="0.65" />
               </label>
             </div>
+            <label class="snapshot-option">
+              <input id="classifyValidation" type="checkbox" checked />
+              <span>Validate on held-out polygons</span>
+            </label>
+            <div class="classify-seed-controls">
+              <label class="snapshot-option" title="Repeat the same Random Forest sampling and tree construction for controlled comparisons.">
+                <input id="classifyUseFixedSeed" type="checkbox" />
+                <span>Use fixed seed</span>
+              </label>
+              <label class="snapshot-field">
+                <span>Seed</span>
+                <input id="classifySeed" type="number" min="0" max="4294967295" step="1" value="42" disabled />
+              </label>
+            </div>
             <div class="classify-actions">
-              <button id="classifyTrainPredictButton" type="button" disabled>Train + Predict</button>
+              <button id="classifyTrainPredictButton" class="classify-primary-action" type="button" disabled>Train + Predict</button>
             </div>
             <div class="classify-prediction-controls">
               <label class="snapshot-field">
@@ -1576,29 +1622,208 @@
                 </button>
               </div>
             </div>
-            <div class="classify-feature-table-wrap">
-              <table id="classifyFeatureTable" class="classify-feature-table">
-                <thead>
-                  <tr id="classifyFeatureHeader"></tr>
-                </thead>
-                <tbody id="classifyFeatureBody">
-                  <tr>
-                    <td class="classify-feature-empty">No features extracted</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
             <div class="classify-output-actions">
               <button id="classifyApplyGroupsButton" type="button" disabled>Apply Groups</button>
               <label class="snapshot-option classify-include-low-confidence">
                 <input id="classifyIncludeLowConfidence" type="checkbox" disabled />
                 <span>Include low confidence</span>
               </label>
-              <button id="classifyExportCsvButton" type="button" disabled>
-                Export as CSV
-              </button>
+              <button id="classifyInspectResultsButton" type="button" disabled>Inspect Results</button>
+              <button id="classifyExportCsvButton" type="button" disabled>Export Features CSV</button>
             </div>
           </details>
+          </div>
+          <div id="classifyImageModePanel" hidden>
+            <details id="classifyImageTrainingSection" class="classify-section" open>
+              <summary>Set Up Model</summary>
+              <label class="snapshot-field">
+                <span>Polygons</span>
+                <select id="classifyImageScope">
+                  <option value="all">All unlocked polygons</option>
+                  <option value="selection">Selected polygons</option>
+                  <option value="group">Polygons in group</option>
+                </select>
+              </label>
+              <label class="snapshot-field">
+                <span>Group</span>
+                <select id="classifyImageScopeGroup"></select>
+              </label>
+              <label class="snapshot-field">
+                <span>Training labels</span>
+                <select id="classifyImageLabelSource">
+                  <option value="group">Annotation group</option>
+                  <option value="label">Annotation label</option>
+                </select>
+              </label>
+              <label class="snapshot-field">
+                <span>Tile sets</span>
+                <select id="classifyImageTileSetSelect" multiple size="3"></select>
+              </label>
+              <div id="classifyImagePolarizationStatus" class="classify-polarization-status"></div>
+              <label class="snapshot-field">
+                <span>Feature preset</span>
+                <select id="classifyImageFeaturePreset">
+                  <option value="recommended" selected>Recommended</option>
+                  <option value="core">Core color only</option>
+                  <option value="optical">Color + polarization</option>
+                  <option value="texture">Color + general texture</option>
+                  <option value="custom">Custom</option>
+                </select>
+              </label>
+              <div class="classify-image-feature-dropdown-control">
+                <span>Features</span>
+                <button
+                  id="classifyImageFeatureMenuButton"
+                  type="button"
+                  aria-haspopup="menu"
+                  aria-controls="classifyImageFeatureMenu"
+                  aria-expanded="false"
+                >4 selected</button>
+                <div
+                  id="classifyImageFeatureMenu"
+                  class="classify-image-feature-menu"
+                  role="menu"
+                  hidden
+                >
+                  <label class="snapshot-option">
+                    <input id="classifyImageUseCoreColor" type="checkbox" checked />
+                    <span>Core color</span>
+                  </label>
+                  <label class="snapshot-option">
+                    <input id="classifyImageUsePolarization" type="checkbox" checked />
+                    <span>Polarization</span>
+                  </label>
+                  <label class="snapshot-option">
+                    <input id="classifyImageUseTexture" type="checkbox" checked />
+                    <span>General texture</span>
+                  </label>
+                  <label class="snapshot-option">
+                    <input id="classifyImageUseLamellar" type="checkbox" checked />
+                    <span>Lamellar texture</span>
+                  </label>
+                </div>
+              </div>
+              <label class="snapshot-field classify-texture-windows-field">
+                <span>Windows (µm)</span>
+                <input id="classifyImageTextureWindows" type="text" value="25, 75, 200" />
+              </label>
+              <div id="classifyImageTextureStatus" class="classify-polarization-status"></div>
+              <button id="classifyImageInspectFeaturesButton" type="button">Inspect Feature Products</button>
+              <label class="snapshot-field">
+                <span>Resolution</span>
+                <select id="classifyImageFeatureResolution">
+                  <option value="auto" selected>Auto (max 4 MP)</option>
+                  <option value="1">Full resolution</option>
+                  <option value="0.5">1/2 resolution</option>
+                  <option value="0.25">1/4 resolution</option>
+                  <option value="0.125">1/8 resolution</option>
+                  <option value="0.0625">1/16 resolution</option>
+                </select>
+              </label>
+              <div class="classify-image-number-fields">
+                <label class="snapshot-field">
+                  <span>Boundary inset (px)</span>
+                  <input id="classifyImageBoundaryInset" type="number" min="0" max="25" step="1" value="3" />
+                </label>
+                <label class="snapshot-field">
+                  <span>Samples / polygon</span>
+                  <input id="classifyImageSamplesPerPolygon" type="number" min="50" max="10000" step="50" value="2000" />
+                </label>
+              </div>
+            </details>
+            <details id="classifyImageModelSection" class="classify-section">
+              <summary>Select and Run Model</summary>
+              <label class="snapshot-field">
+                <span>Model</span>
+                <select id="classifyImageModel" disabled>
+                  <option value="randomForest">Random Forest</option>
+                </select>
+              </label>
+              <label class="snapshot-option">
+                <input id="classifyImageValidation" type="checkbox" checked />
+                <span>Validate on hold-out</span>
+              </label>
+              <div class="classify-seed-controls">
+                <label class="snapshot-option" title="Repeat the same Random Forest sampling and tree construction for controlled comparisons.">
+                  <input id="classifyImageUseFixedSeed" type="checkbox" />
+                  <span>Use fixed seed</span>
+                </label>
+                <label class="snapshot-field classify-seed-value-only" title="Fixed random seed value">
+                  <input id="classifyImageSeed" type="number" min="0" max="4294967295" step="1" value="42" aria-label="Fixed seed value" disabled />
+                </label>
+              </div>
+              <label class="snapshot-field">
+                <span>Area</span>
+                <select id="classifyImagePredictionArea">
+                  <option value="view">Current view</option>
+                  <option value="full" selected>Full image</option>
+                </select>
+              </label>
+              <label class="snapshot-field">
+                <span>Resolution</span>
+                <select id="classifyImagePredictionResolution">
+                  <option value="training" selected>Training resolution</option>
+                  <option value="auto">Auto (max 16 MP)</option>
+                  <option value="viewer">Current view</option>
+                  <option value="0.25">1/4 resolution</option>
+                  <option value="0.125">1/8 resolution</option>
+                  <option value="0.0625">1/16 resolution</option>
+                  <option value="0.5">1/2 resolution</option>
+                  <option value="1">Full resolution</option>
+                </select>
+              </label>
+              <label class="snapshot-field">
+                <span>Min confidence</span>
+                <input id="classifyImageMinConfidence" type="number" min="0" max="1" step="0.05" value="0.65" />
+              </label>
+              <label class="snapshot-option">
+                <input id="classifyImageShowOverlay" type="checkbox" checked />
+                <span>Show classification</span>
+              </label>
+              <label class="snapshot-field">
+                <span>Display</span>
+                <select id="classifyImageDisplay" disabled>
+                  <option value="classes">Classes</option>
+                  <option value="confidence">Confidence</option>
+                </select>
+              </label>
+              <label class="snapshot-option">
+                <input id="classifyImageDisplayCursor" type="checkbox" disabled />
+                <span>Display cursor</span>
+              </label>
+              <label class="snapshot-field">
+                <span>Opacity</span>
+                <input id="classifyImageOverlayOpacity" type="range" min="10" max="100" step="5" value="65" />
+              </label>
+              <div class="classify-actions">
+                <button id="classifyImageTrainButton" class="classify-primary-action" type="button">Train + Predict</button>
+              </div>
+              <div id="classifyImageLegend" class="classify-image-legend" hidden></div>
+              <div class="classify-output-actions">
+                <button id="classifyImageInspectResultsButton" type="button" disabled>Inspect Results</button>
+                <button
+                  id="classifyImageExportCsvButton"
+                  type="button"
+                  title="Export calculated feature values for the labeled input polygons as a CSV file."
+                  disabled
+                >Export CSV</button>
+              </div>
+              <div class="classify-image-export-controls">
+                <label class="snapshot-field">
+                  <span>Format</span>
+                  <select id="classifyImageExportFormat">
+                    <option value="npy">NumPy (.npy)</option>
+                    <option value="tiff">TIFF (.tif)</option>
+                    <option value="png">Display PNG</option>
+                  </select>
+                </label>
+                <button id="classifyImageExportClassButton" type="button" disabled>Export Classes</button>
+                <button id="classifyImageExportConfidenceButton" type="button" disabled>Export Confidence</button>
+              </div>
+            </details>
+          </div>
+          </div>
+          <div class="classify-sticky-status-footer">
           <div id="classifyStatus" class="segment-status" role="status">Choose labels and tile sets, then train from labeled polygons.</div>
           <div id="classifyProgress" class="import-progress classify-progress" hidden>
             <div class="import-progress-track" aria-hidden="true">
@@ -1606,6 +1831,107 @@
             </div>
             <div id="classifyProgressText" class="import-progress-text"></div>
           </div>
+          </div>
+        </div>
+      </div>
+      <div
+        id="classifyResultsWindow"
+        class="classify-results-window"
+        role="dialog"
+        aria-labelledby="classifyResultsWindowTitle"
+        hidden
+      >
+        <div id="classifyResultsWindowHeader" class="classify-results-window-header">
+          <h2 id="classifyResultsWindowTitle">Classify Results</h2>
+          <button id="closeClassifyResultsWindowButton" type="button" aria-label="Close Classify Results">×</button>
+        </div>
+        <div class="classify-results-window-body">
+          <div id="classifyResultsRunSummary" class="classify-results-run-summary"></div>
+          <section id="classifyResultsValidationSection">
+            <h3>Validation</h3>
+            <div id="classifyImageValidationSummary" class="classify-validation-summary"></div>
+            <div id="classifyImageConfusionWrap" class="classify-confusion-wrap" hidden>
+              <table id="classifyImageConfusionTable" class="classify-feature-table"></table>
+            </div>
+          </section>
+          <section id="classifyResultsImportanceSection">
+            <h3>Feature Importance</h3>
+            <div id="classifyImageImportance" class="classify-image-importance"></div>
+          </section>
+          <details id="classifyResultsFeatureRowsSection" hidden>
+            <summary>Polygon feature rows</summary>
+            <div class="classify-feature-table-wrap">
+              <table id="classifyFeatureTable" class="classify-feature-table">
+                <thead><tr id="classifyFeatureHeader"></tr></thead>
+                <tbody id="classifyFeatureBody">
+                  <tr><td class="classify-feature-empty">No features extracted</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </details>
+        </div>
+      </div>
+      <div
+        id="classifyFeatureInspectorWindow"
+        class="classify-feature-inspector-window"
+        role="dialog"
+        aria-labelledby="classifyFeatureInspectorTitle"
+        hidden
+      >
+        <div id="classifyFeatureInspectorHeader" class="classify-results-window-header">
+          <h2 id="classifyFeatureInspectorTitle">Feature Inspector</h2>
+          <button id="closeClassifyFeatureInspectorButton" type="button" aria-label="Close Feature Inspector">×</button>
+        </div>
+        <div class="classify-feature-inspector-body">
+          <div class="classify-feature-inspector-controls">
+            <label class="snapshot-field">
+              <span>Source</span>
+              <select id="classifyFeatureInspectorSource"></select>
+            </label>
+            <label class="snapshot-field">
+              <span>Family</span>
+              <select id="classifyFeatureInspectorFamily"></select>
+            </label>
+            <label class="snapshot-field classify-feature-inspector-inline-field">
+              <span>Feature</span>
+              <select id="classifyFeatureInspectorFeature"></select>
+            </label>
+            <label class="snapshot-field">
+              <span>View</span>
+              <select id="classifyFeatureInspectorView">
+                <option value="blend" selected>Blend</option>
+                <option value="feature">Feature</option>
+                <option value="original">Original</option>
+              </select>
+            </label>
+            <label class="snapshot-field">
+              <span>Feature opacity</span>
+              <input id="classifyFeatureInspectorOpacity" type="range" min="0" max="100" step="5" value="60" />
+            </label>
+            <button id="classifyFeatureInspectorRefresh" type="button">Refresh Current View</button>
+          </div>
+          <div id="classifyFeatureInspectorStatus" class="classify-validation-summary">Choose a feature to inspect.</div>
+          <div class="classify-feature-inspector-navigation">
+            <span>Zoom</span>
+            <button id="classifyFeatureInspectorZoomOut" type="button" aria-label="Zoom out">−</button>
+            <span id="classifyFeatureInspectorZoomLabel">Fit</span>
+            <button id="classifyFeatureInspectorZoomIn" type="button" aria-label="Zoom in">+</button>
+            <button id="classifyFeatureInspectorZoomFit" type="button">Fit</button>
+            <span class="classify-feature-inspector-navigation-hint">Scroll to zoom · drag to pan</span>
+          </div>
+          <div class="classify-feature-inspector-display">
+            <div id="classifyFeatureInspectorStage" class="classify-feature-inspector-stage">
+              <canvas id="classifyFeatureInspectorCanvas" aria-label="Feature product preview"></canvas>
+              <div id="classifyFeatureInspectorCursor" class="classify-feature-inspector-cursor" hidden></div>
+            </div>
+          </div>
+          <div class="classify-feature-inspector-scale">
+            <span id="classifyFeatureInspectorMinimum">0</span>
+            <span class="classify-confidence-legend-ramp"></span>
+            <span id="classifyFeatureInspectorMaximum">1</span>
+          </div>
+          <canvas id="classifyFeatureInspectorHistogram" class="classify-feature-inspector-histogram" width="640" height="120" aria-label="Feature value histogram"></canvas>
+          <p id="classifyFeatureInspectorDescription" class="classify-feature-inspector-description"></p>
         </div>
       </div>
       <div
@@ -1618,13 +1944,13 @@
         hidden
       >
         <div id="transformImageryPaletteHeader" class="tool-palette-header">
-          <h2 id="transformImageryPaletteTitle">Transform Imagery</h2>
+          <h2 id="transformImageryPaletteTitle">Transform</h2>
           <div class="tool-palette-header-actions">
             <button
               id="transformImageryHelpButton"
               class="tool-palette-help"
               type="button"
-              aria-label="Transform Imagery help"
+              aria-label="Transform help"
               aria-expanded="false"
               title="Help"
             >
@@ -1634,7 +1960,7 @@
               id="minimizeTransformImageryPaletteButton"
               class="tool-palette-minimize"
               type="button"
-              aria-label="Minimize Transform Imagery"
+              aria-label="Minimize Transform"
               aria-pressed="false"
               title="Minimize"
             >
@@ -1646,7 +1972,7 @@
               id="closeTransformImageryPaletteButton"
               class="tool-palette-close"
               type="button"
-              aria-label="Close Transform Imagery"
+              aria-label="Close Transform"
               title="Close"
             >
               <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -1658,7 +1984,7 @@
         </div>
         <div class="tool-palette-body transform-imagery-palette-body">
           <div class="transform-imagery-scroll-content">
-          <div class="transform-mode-toggle" role="group" aria-label="Transform Imagery recipe">
+          <div class="transform-mode-toggle" role="group" aria-label="Transform recipe">
             <label title="Simple Filter">
               <input
                 id="transformRecipeSimple"
@@ -2141,11 +2467,11 @@
         id="transformImageryHelpDialog"
         class="measure-help-dialog transform-imagery-help-dialog"
         role="dialog"
-        aria-label="Transform Imagery help"
+        aria-label="Transform help"
         hidden
       >
         <div id="transformImageryHelpHeader" class="measure-help-header">
-          <span>Transform Imagery Help</span>
+          <span>Transform Help</span>
           <button
             id="closeTransformImageryHelpButton"
             type="button"
@@ -2157,7 +2483,7 @@
         </div>
         <div class="measure-help-content transform-imagery-help-content">
           <h4>What It Does</h4>
-          <p>Transform Imagery allows filters and calculations to be made on tile sets. Results can be previewed on the fly, or saved to their own tile set (enabling faster loading for calculations).</p>
+          <p>Transform allows filters and calculations to be made on tile sets. Results can be previewed on the fly, or saved to their own tile set (enabling faster loading for calculations).</p>
           <h4>Simple Filter</h4>
           <p>Use Simple Filter for common visual filters such as edge detection, local contrast, unsharp masking, relief shading, and channel mapping. These are intended for quick visual exploration.</p>
           <h4>Image Calculator</h4>
@@ -2180,11 +2506,11 @@
         id="classifyHelpDialog"
         class="measure-help-dialog classify-help-dialog"
         role="dialog"
-        aria-label="Classify Polygons help"
+        aria-label="Classify help"
         hidden
       >
         <div id="classifyHelpHeader" class="measure-help-header">
-          <span>Classify Polygons Help</span>
+          <span>Classify Help</span>
           <button
             id="closeClassifyHelpButton"
             type="button"
@@ -2196,9 +2522,13 @@
         </div>
         <div class="measure-help-content classify-help-content">
           <h4>What It Does</h4>
-          <p>Classify Polygons predicts labels for unlabeled polygons by training from labeled polygon annotations. Predictions are kept committed when Apply Groups is clicked.</p>
+          <p>Classify predicts labels for polygons or creates a pixel classification raster by training from labeled polygon annotations. Polygon predictions are committed when Apply Groups is clicked. Image predictions remain an overlay until exported.</p>
+          <h4>Image Classification</h4>
+          <p>Image mode samples pixels inside labeled polygons, excluding a configurable boundary inset. Ordinary tile sets use raw and normalized color, luminance, saturation, local luminance variation, and luminance-gradient strength. When a selected PPL or XPL tile set has at least three distinct, well-spaced angles, Use polarization products is enabled and checked by default. Eligible multi-angle tile sets then use fitted maximum and minimum intensity, absolute and normalized modulation, normalized fit error, fit reliability, angle-averaged chromaticity, and chromaticity evaluated from the fitted RGB color at the luminance-derived maximum angle instead of a single displayed-angle snapshot. The maximum-color calculation matches the RGB maximum product in Transform and evaluates every RGB channel at one shared angle. Azimuth and anisotropy-class products are not used. When image calibration is available, Use texture products adds local luminance contrast and orientation-independent edge coherence at the requested micron-scale windows. Use lamellar products independently adds lamellar strength, repetition, and relative-spacing estimates at those windows. Lamellar orientation is not passed to the model. Multi-angle stacks retain the strongest texture response across angles, making twinning and alteration texture less dependent on the displayed orientation. Train + Predict validates on held-out polygons, retrains the model on every labeled polygon, and generates the requested classification raster. Full image at the effective training resolution is the default. Each held-out polygon contributes one confusion-matrix result by averaging its sampled-pixel probabilities, so the matrix total equals the validation-polygon count. Inspect Results opens validation and feature importance in a separate window. Min confidence controls which pixels are displayed as Unclassified and can be changed after prediction without rerendering imagery or rerunning the model. Switch Display between Classes and Confidence to inspect the output, and enable Display cursor to see the two most likely classes, their probabilities, the threshold result, source position, and raster position under the pointer. Training Resolution Auto uses a 4-megapixel grid. Generated rasters remain capped at 16 megapixels; another output resolution can be chosen when needed.</p>
+          <h4>Feature Families</h4>
+          <p>Feature presets provide reproducible starting points, while Custom allows controlled family-level experiments. Core color contains direct color, chromaticity, luminance, and saturation measurements. Polarization contains fitted multi-angle optical products. General texture contains local luminance variation, gradients, contrast, and edge coherence. Lamellar texture contains strength, repetition, and relative-spacing products. Shape is available for polygon classification only. The Feature Inspector organizes enabled image products by source and family.</p>
           <h4>Basic Workflow</h4>
-          <p>Choose which polygons to use, the source of training labels, the tile set(s) to use for training, and the image resolution. After clicking Extract Features, select a model and click Train + Predict. Review predictions and add additional training labels before clicking Train + Predict again. Highlighting uncertain polygons can help with adding labels where they are needed the most. Iterate by adding labels and making predictions until you are happy with the results. Then click "Apply Groups" to extend predictions to the annotations.</p>
+          <p>Choose which polygons to use, the source of training labels, the tile set(s), and the image resolution. Select a model and click Train + Predict; required polygon features are extracted automatically. Inspect Results opens held-out-polygon validation and Random Forest feature importance in a separate window. Review predictions and add additional training labels before running again. Highlighting uncertain polygons can help identify where more labels are needed. When satisfied, click Apply Groups to extend predictions to the annotations.</p>
           <h4>Image Features</h4>
           <p>For each selected tile set, the tool samples pixels inside each polygon and summarizes color and brightness. Parameters extracted include RGB means and standard deviations; luminance mean, spread, and range; saturation mean and spread; and a simple internal luminance-edge estimate.</p>
           <h4>Shape Features</h4>

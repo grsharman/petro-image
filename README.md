@@ -14,7 +14,7 @@ By [Glenn R. Sharman](https://github.com/grsharman) and [Jonathan P. Sharman](ht
 - [Overview](#overview)
 - [Image Selection](#image-selection)
 - [Adding Your Own Images](#adding-your-own-images)
-- [Transform Imagery: Polarization Analysis](#transform-imagery-polarization-analysis)
+- [Transform: Polarization Analysis](#transform-polarization-analysis)
 - [Tools](#tools)
 - [Appendix](#appendix)
 
@@ -105,7 +105,7 @@ npm run benchmark:jpeg2000 -- /path/to/scan.jp2 /path/to/benchmark-output
 
 On macOS, `/usr/bin/time -l` can wrap that command to record peak resident memory. Ensure the destination has ample free space: a large DZI includes approximately one third more source pixels across its reduced pyramid levels before JPEG compression.
 
-## Transform Imagery: Polarization Analysis
+## Transform: Polarization Analysis
 
 Polarization Analysis derives pixel-scale optical-response products from registered images acquired at multiple polarization angles. It is intended to quantify patterns that are visible while rotating a petrographic stage; it does not identify minerals or directly determine crystallographic orientation. The calculations and classification rules below describe the current implementation.
 
