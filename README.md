@@ -34,6 +34,92 @@ At present, petro-image mostly hosts petrographic thin sections of sediment and 
 
 <b><i>petro-image</i></b> has two drop-down menus. The top menu is used to select a group of specimens, and the bottom menu is used to select the specimen or sample of interest. Setting the top menu to "All" will return all available specimens.
 
+The web app can also open a remotely hosted library and select its initial group and sample from
+the URL. `library` must resolve to an HTTP(S) JSON file with cross-origin access enabled. `sample`
+matches `id`, `sampleId`, or (for backward compatibility) `title`:
+
+```text
+https://grsharman.github.io/petro-image/?library=https%3A%2F%2Fexample.org%2Fcollection.json&group=Teaching&sample=PA-000184
+```
+
+When embedded, petro-image sends a versioned `viewer.sampleChanged` message to its referring parent
+after the initial selection and whenever the group or sample selection changes. The message contains
+the stable sample identifier, title, and active group. When `embed=1` is combined with `group`, only
+that group is exposed in the group selector; standalone use continues to show every group and `All`.
+
+### Embedded viewer API
+
+An embedding application can control lesson-specific annotations and the starting view with a
+versioned `postMessage` API. petro-image accepts commands only from the window that embedded it and
+only from the exact origin in `document.referrer`. Commands use image-pixel coordinates, matching
+petro-image GeoJSON.
+
+petro-image announces the API with `viewer.apiReady` and returns a request-correlated
+`viewer.commandSucceeded` or `viewer.commandFailed` event for every trusted command. The embedding
+application should normally wait for `viewer.sampleChanged` before sending sample-specific work.
+
+Replace the current annotation layer for one question:
+
+```js
+petroImageFrame.contentWindow.postMessage({
+  source: "petroatlas",
+  version: 1,
+  type: "viewer.setAnnotations",
+  requestId: "question-1-annotations",
+  title: "SD0004",
+  annotations: featureCollection,
+  options: {
+    mode: "replace",       // or "append"
+    canSelect: true,
+    canEdit: false,
+    selectionMode: "multiple",
+    visible: true,
+    labelsVisible: true,
+    selectImported: false
+  }
+}, petroImageOrigin);
+```
+
+`canSelect` and `canEdit` are independent. The combination `canSelect: true, canEdit: false`
+supports teaching and review activities where annotations may be activated but not changed.
+The existing petro-image lock control remains stronger: a locked annotation cannot be selected or
+edited. The legacy `readOnly: true` option remains supported and maps to that fully locked behavior.
+For classification exercises, `selectionMode: "multiple"` makes an ordinary click or tap toggle
+an annotation in the current selection. The default `"single"` mode preserves the normal viewer
+behavior, where Ctrl/Cmd-click is required to build a multi-selection.
+
+Focus one annotation, or several annotations as a group:
+
+```js
+petroImageFrame.contentWindow.postMessage({
+  source: "petroatlas",
+  version: 1,
+  type: "viewer.focusAnnotation",
+  requestId: "question-1-start",
+  title: "SD0004",
+  labels: ["Grain A", "Grain B", "Grain C"],
+  options: { padding: 0.5, immediately: false, select: false }
+}, petroImageOrigin);
+```
+
+Set an arbitrary starting location using image-pixel bounds:
+
+```js
+petroImageFrame.contentWindow.postMessage({
+  source: "petroatlas",
+  version: 1,
+  type: "viewer.setViewport",
+  requestId: "question-2-start",
+  title: "SD0004",
+  bounds: { x: 9000, y: 4000, width: 6000, height: 6000 },
+  options: { padding: 0.1, rotationDegrees: 0, immediately: false }
+}, petroImageOrigin);
+```
+
+`viewer.resetViewport` returns to the whole image. Commands may include `sampleId`, `title`, or both;
+petro-image rejects them if they do not match the active sample. `viewer.annotationsLoaded` and
+`viewer.viewportChanged` provide domain-specific events in addition to the generic command result.
+
 <img src="assets/0_selection.png" alt="Group and specimen selection demonstration" width="150"/>
 
 The angle of image rotation can be controlled using the slider below the drop-down menus. Pressing "r" or "R" keys rotates the image in 90 degree increments. Ctrl+scrolling will also control image rotation.

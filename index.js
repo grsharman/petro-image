@@ -33,6 +33,349 @@ const imageLoadSuccessfulGenerations = new Set();
 const SAMPLE_ID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
+function getEmbeddingParentOrigin() {
+  if (window.parent === window || !document.referrer) return null;
+  try {
+    const origin = new URL(document.referrer).origin;
+    return origin === "null" ? null : origin;
+  } catch {
+    return null;
+  }
+}
+
+function postViewerEvent(type, detail = {}) {
+  const targetOrigin = getEmbeddingParentOrigin();
+  if (!targetOrigin) return;
+  window.parent.postMessage(
+    { source: "petro-image", version: 1, type, ...detail },
+    targetOrigin,
+  );
+}
+
+let embedCommandController = null;
+let embedAnnotationSelectionMode = "single";
+
+function createEmbedCommandError(code, message) {
+  return Object.assign(new Error(message), { code });
+}
+
+function getCurrentEmbedSample() {
+  return samples?.[currentIndex] || null;
+}
+
+function assertEmbedCommandTargetsCurrentSample(message) {
+  const sample = getCurrentEmbedSample();
+  if (!sample) {
+    throw createEmbedCommandError(
+      "sample_unavailable",
+      "The requested sample has not finished loading.",
+    );
+  }
+  const identifiers = [sample.id, sample.sampleId, sample.title].filter(Boolean);
+  if (message.sampleId && !identifiers.includes(message.sampleId)) {
+    throw createEmbedCommandError(
+      "sample_mismatch",
+      `The command targets sample ${message.sampleId}, but ${sample.title || "another sample"} is active.`,
+    );
+  }
+  if (message.title && message.title !== sample.title) {
+    throw createEmbedCommandError(
+      "sample_mismatch",
+      `The command targets ${message.title}, but ${sample.title || "another sample"} is active.`,
+    );
+  }
+  return sample;
+}
+
+function getEmbedAnnotationImage() {
+  try {
+    return getAnnotationImage() || viewer?.world?.getItemAt(0) || null;
+  } catch {
+    return viewer?.world?.getItemAt(0) || null;
+  }
+}
+
+function waitForEmbedImage(timeoutMs = 15000) {
+  const openImage = getEmbedAnnotationImage();
+  if (openImage?.getContentSize?.()) return Promise.resolve(openImage);
+
+  return new Promise((resolve, reject) => {
+    let timeout;
+    let poll;
+    const finish = () => {
+      const image = getEmbedAnnotationImage();
+      if (!image?.getContentSize?.()) return;
+      viewer.removeHandler("open", finish);
+      window.clearTimeout(timeout);
+      window.clearInterval(poll);
+      resolve(image);
+    };
+    timeout = window.setTimeout(() => {
+      viewer.removeHandler("open", finish);
+      window.clearInterval(poll);
+      reject(
+        createEmbedCommandError(
+          "image_timeout",
+          "The image was not ready before the embed command timed out.",
+        ),
+      );
+    }, timeoutMs);
+    viewer.addHandler("open", finish);
+    // An embed command can arrive after OpenSeadragon has fired `open`, but
+    // before the world item is visible to this call stack. Polling closes that
+    // narrow race while the normal `open` handler keeps the common path fast.
+    poll = window.setInterval(finish, 50);
+    finish();
+  });
+}
+
+function cloneEmbedAnnotations(annotations, options = {}) {
+  const clone = JSON.parse(JSON.stringify(annotations));
+  const capabilities =
+    window.PetroImageEmbedApi.normalizeAnnotationCapabilities(options);
+  clone.features.forEach((feature) => {
+    feature.properties = {
+      ...(feature.properties || {}),
+      canSelect: capabilities.canSelect,
+      canEdit: capabilities.canEdit,
+      ...(capabilities.legacyLock
+        ? { locked: true, groupLocked: true }
+        : {}),
+    };
+  });
+  return clone;
+}
+
+function setEmbedAnnotationVisibility(visible = true, labelsVisible = true) {
+  const showAnnotations = document.getElementById("show-annotations");
+  const showLabels = document.getElementById("show-annotation-labels");
+  if (showAnnotations) showAnnotations.checked = visible;
+  if (showLabels) showLabels.checked = labelsVisible;
+  applyAnnotationVisibilityState();
+}
+
+async function handleEmbedSetAnnotations(message) {
+  await waitForEmbedImage();
+  const sample = assertEmbedCommandTargetsCurrentSample(message);
+  const annotationApi = window.PetroImageEmbedApi;
+  const source = annotationApi.validateFeatureCollection(message.annotations);
+  const options = message.options || {};
+  const mode = options.mode === "append" ? "append" : "replace";
+  embedAnnotationSelectionMode =
+    annotationApi.normalizeAnnotationSelectionMode(options);
+  const annotations = cloneEmbedAnnotations(source, options);
+  const countBefore = annoJSON.features.length;
+
+  suppressUnsavedAnnotationTracking = true;
+  try {
+    if (mode === "replace") clearAnnotations({ markUnsaved: false });
+    await loadAnnotations(annotations, {
+      groupMode: "preserve",
+      selectImported: options.selectImported === true,
+      onProgress: () => {},
+    });
+    annotationHistory.reset();
+    setUnsavedWork("annotations", false);
+    setEmbedAnnotationVisibility(
+      options.visible !== false,
+      options.labelsVisible !== false,
+    );
+  } finally {
+    suppressUnsavedAnnotationTracking = false;
+  }
+
+  const featureCount =
+    mode === "replace"
+      ? annoJSON.features.length
+      : Math.max(0, annoJSON.features.length - countBefore);
+  const detail = {
+    sampleId: sample.id || sample.sampleId || "",
+    title: sample.title || "",
+    featureCount,
+    totalFeatureCount: annoJSON.features.length,
+    mode,
+  };
+  postViewerEvent("viewer.annotationsLoaded", detail);
+  return detail;
+}
+
+function clampEmbedBoundsToImage(bounds, imageSize) {
+  const x = Math.max(0, Math.min(bounds.x, imageSize.x));
+  const y = Math.max(0, Math.min(bounds.y, imageSize.y));
+  const right = Math.max(x, Math.min(bounds.x + bounds.width, imageSize.x));
+  const bottom = Math.max(y, Math.min(bounds.y + bounds.height, imageSize.y));
+  if (right <= x || bottom <= y) {
+    throw createEmbedCommandError(
+      "invalid_viewport",
+      "The requested bounds fall outside the active image.",
+    );
+  }
+  return { x, y, width: right - x, height: bottom - y };
+}
+
+function padEmbedBounds(bounds, padding, imageSize) {
+  const ratio = Math.max(0, Math.min(Number(padding) || 0, 2));
+  const horizontal = bounds.width * ratio;
+  const vertical = bounds.height * ratio;
+  return clampEmbedBoundsToImage(
+    {
+      x: bounds.x - horizontal,
+      y: bounds.y - vertical,
+      width: bounds.width + horizontal * 2,
+      height: bounds.height + vertical * 2,
+    },
+    imageSize,
+  );
+}
+
+async function fitEmbedImageBounds(rawBounds, options = {}) {
+  const image = await waitForEmbedImage();
+  const bounds = window.PetroImageEmbedApi.normalizeImageBounds(rawBounds);
+  const imageSize = image.getContentSize();
+  const padded = padEmbedBounds(
+    clampEmbedBoundsToImage(bounds, imageSize),
+    options.padding,
+    imageSize,
+  );
+  const topLeft = image.imageToViewportCoordinates(padded.x, padded.y);
+  const bottomRight = image.imageToViewportCoordinates(
+    padded.x + padded.width,
+    padded.y + padded.height,
+  );
+  const viewportBounds = new OpenSeadragon.Rect(
+    topLeft.x,
+    topLeft.y,
+    bottomRight.x - topLeft.x,
+    bottomRight.y - topLeft.y,
+  );
+  if (Number.isFinite(Number(options.rotationDegrees))) {
+    viewer.viewport.setRotation(Number(options.rotationDegrees), true);
+  }
+  viewer.viewport.fitBounds(viewportBounds, options.immediately === true);
+  const detail = {
+    bounds: padded,
+    rotationDegrees: viewer.viewport.getRotation(true),
+  };
+  postViewerEvent("viewer.viewportChanged", detail);
+  return detail;
+}
+
+async function handleEmbedSetViewport(message) {
+  await waitForEmbedImage();
+  assertEmbedCommandTargetsCurrentSample(message);
+  return fitEmbedImageBounds(message.bounds, message.options || {});
+}
+
+function getEmbedAnnotationMatches(message) {
+  const labels = new Set(
+    [message.label, ...(Array.isArray(message.labels) ? message.labels : [])]
+      .filter((value) => typeof value === "string" && value),
+  );
+  const uuids = new Set(
+    [message.uuid, ...(Array.isArray(message.uuids) ? message.uuids : [])]
+      .filter((value) => typeof value === "string" && value),
+  );
+  if (!labels.size && !uuids.size) {
+    throw createEmbedCommandError(
+      "annotation_selector_required",
+      "focusAnnotation requires a label, labels, uuid, or uuids selector.",
+    );
+  }
+  return annoJSON.features.filter((feature) => {
+    const properties = feature?.properties || {};
+    return labels.has(properties.label) || uuids.has(properties.uuid);
+  });
+}
+
+async function handleEmbedFocusAnnotation(message) {
+  await waitForEmbedImage();
+  assertEmbedCommandTargetsCurrentSample(message);
+  const features = getEmbedAnnotationMatches(message);
+  if (!features.length) {
+    throw createEmbedCommandError(
+      "annotation_not_found",
+      "No loaded annotation matches the requested selector.",
+    );
+  }
+  const bounds = window.PetroImageEmbedApi.mergeBounds(
+    features.map((feature) => window.PetroImageEmbedApi.getFeatureBounds(feature)),
+  );
+  if (!bounds || bounds.width <= 0 || bounds.height <= 0) {
+    throw createEmbedCommandError(
+      "annotation_has_no_bounds",
+      "The selected annotation does not define an area that can be focused.",
+    );
+  }
+  if (message.options?.select === true) {
+    setAnnotationSelection(
+      features.map((feature) => feature.properties.uuid),
+      features[0].properties.uuid,
+      { pan: false, scroll: false },
+    );
+  }
+  const result = await fitEmbedImageBounds(bounds, message.options || {});
+  return {
+    ...result,
+    labels: features.map((feature) => feature.properties?.label || ""),
+    uuids: features.map((feature) => feature.properties?.uuid || ""),
+  };
+}
+
+async function handleEmbedResetViewport(message) {
+  await waitForEmbedImage();
+  assertEmbedCommandTargetsCurrentSample(message);
+  if (Number.isFinite(Number(message.options?.rotationDegrees))) {
+    viewer.viewport.setRotation(Number(message.options.rotationDegrees), true);
+  }
+  viewer.viewport.goHome(message.options?.immediately === true);
+  const detail = {
+    home: true,
+    rotationDegrees: viewer.viewport.getRotation(true),
+  };
+  postViewerEvent("viewer.viewportChanged", detail);
+  return detail;
+}
+
+function initializeEmbedCommandApi() {
+  if (embedCommandController || window.parent === window) return;
+  const parentOrigin = getEmbeddingParentOrigin();
+  const api = window.PetroImageEmbedApi;
+  if (!parentOrigin || !api) return;
+
+  embedCommandController = api.createController({
+    parentWindow: window.parent,
+    parentOrigin,
+    postEvent: postViewerEvent,
+    handlers: {
+      "viewer.setAnnotations": handleEmbedSetAnnotations,
+      "viewer.setViewport": handleEmbedSetViewport,
+      "viewer.focusAnnotation": handleEmbedFocusAnnotation,
+      "viewer.resetViewport": handleEmbedResetViewport,
+    },
+  });
+  window.addEventListener("message", embedCommandController.handleMessage);
+  postViewerEvent("viewer.apiReady", {
+    commands: api.COMMANDS,
+    annotationFormat: "GeoJSON FeatureCollection",
+    viewportCoordinateSpace: "image pixels",
+  });
+}
+
+function getRequestedLibraryUrl() {
+  const library = getQueryParameter("library");
+  if (!library) return "samples.json";
+  try {
+    const url = new URL(library, window.location.href);
+    if (!["http:", "https:"].includes(url.protocol)) {
+      throw new Error("The library URL must use HTTP or HTTPS.");
+    }
+    return url.href;
+  } catch (error) {
+    console.error("Invalid library URL:", error);
+    return "samples.json";
+  }
+}
+
 function createSampleId() {
   if (typeof crypto?.randomUUID === "function") return crypto.randomUUID();
   const bytes = crypto.getRandomValues(new Uint8Array(16));
@@ -526,6 +869,9 @@ function saveLastSamplePreference(sampleIndex) {
 
 async function processJSON(data, options = {}) {
   const { autoLoadSample = true } = options;
+  const requestedGroup = getQueryParameter("group");
+  const restrictToRequestedGroup =
+    getQueryParameter("embed") === "1" && Boolean(requestedGroup);
   currentIndex = 0;
   currentLibraryData = data;
   samples = data.samples;
@@ -556,27 +902,40 @@ async function processJSON(data, options = {}) {
     }
   });
 
-  // Add a default "All" group containing all sample indices
-  groupMapping["All"] = Array.from({ length: samples.length }, (_, i) => i);
+  if (restrictToRequestedGroup) {
+    groupMapping = groupMapping[requestedGroup]
+      ? { [requestedGroup]: groupMapping[requestedGroup] }
+      : {};
+  } else {
+    // Standalone mode retains every library group and the combined "All" option.
+    groupMapping["All"] = Array.from({ length: samples.length }, (_, i) => i);
+  }
 
   populateGroupDropdown();
   disableCountButtons();
   updateStageRotationCheck();
 
   const sampleParam = getQueryParameter("sample");
+  const groupParam = requestedGroup;
   const lastSamplePreference = autoLoadSample
     ? getLastSamplePreference(data)
     : null;
   const preferredSampleTitle =
     sampleParam || lastSamplePreference?.sampleTitle || "";
   if (preferredSampleTitle) {
-    const sampleIndex = samples.findIndex(
-      (sample) => sample.title === preferredSampleTitle,
+    let sampleIndex = samples.findIndex((sample) =>
+      [sample.id, sample.sampleId, sample.title].filter(Boolean).includes(preferredSampleTitle),
     );
+    if (
+      sampleIndex !== -1 &&
+      !Object.values(groupMapping).some((indices) => indices.includes(sampleIndex))
+    ) {
+      sampleIndex = -1;
+    }
     if (sampleIndex !== -1) {
-      const groupForSample = Object.keys(groupMapping).find((group) =>
-        groupMapping[group].includes(sampleIndex),
-      );
+      const groupForSample = groupMapping[groupParam]?.includes(sampleIndex)
+        ? groupParam
+        : Object.keys(groupMapping).find((group) => groupMapping[group].includes(sampleIndex));
       document.getElementById("groupDropdown").value = groupForSample || "All";
       rememberSelectedSampleForGroup(groupForSample || "All", sampleIndex);
       populateSampleDropdown(groupForSample || "All", { autoSelect: false });
@@ -588,9 +947,14 @@ async function processJSON(data, options = {}) {
       }
       return;
     }
+    console.error(`The requested sample “${preferredSampleTitle}” is not in this library.`);
+    const fallbackGroup = groupMapping[groupParam] ? groupParam : "All";
+    document.getElementById("groupDropdown").value = fallbackGroup;
+    populateSampleDropdown(fallbackGroup, { autoSelect: false });
+    return;
   }
 
-  const firstGroup = Object.keys(groupMapping)[0];
+  const firstGroup = groupMapping[groupParam] ? groupParam : Object.keys(groupMapping)[0];
   if (firstGroup) {
     document.getElementById("groupDropdown").value = firstGroup;
     populateSampleDropdown(firstGroup, { autoSelect: autoLoadSample });
@@ -599,6 +963,7 @@ async function processJSON(data, options = {}) {
 
 // Automatically load the default JSON file when the page loads
 document.addEventListener("DOMContentLoaded", async () => {
+  initializeEmbedCommandApi();
   let libraryLoaded = false;
   if (window.electronAPI?.initializeProjectLibrary) {
     try {
@@ -612,7 +977,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   if (!libraryLoaded) {
-    await loadSampleJSON("samples.json");
+    await loadSampleJSON(getRequestedLibraryUrl());
   }
   initializeToolPaletteWorkspacePersistence();
 });
@@ -16666,7 +17031,7 @@ function closeWelcomeDialog({ startTour = false } = {}) {
 function maybeOpenLaunchWelcome() {
   if (launchWelcomeConsidered || !welcomeDialog) return;
   launchWelcomeConsidered = true;
-  if (mobileMode) return;
+  if (mobileMode || window.parent !== window) return;
   if (getOnboardingPreference()?.dismissed) return;
   requestAnimationFrame(openWelcomeDialog);
 }
@@ -19272,6 +19637,13 @@ document
     } else {
       hasAnnotationInJSON = annotationFileOptions.length > 0;
     }
+
+    const selectedSample = samples[currentIndex];
+    postViewerEvent("viewer.sampleChanged", {
+      sampleId: selectedSample?.id || selectedSample?.sampleId || "",
+      title: selectedSample?.title || "",
+      group: document.getElementById("groupDropdown")?.value || "All",
+    });
   });
 
 function normalizeAnnotationFileOptions(annotationEntry) {
@@ -31886,7 +32258,7 @@ function setAnnotationSelection(uuids, primaryUuid = null, options = {}) {
   );
   const validUuids = uuids.filter((uuid) => {
     const feature = featureByUuid.get(uuid);
-    return feature && !isAnnotationFeatureLocked(feature);
+    return feature && isAnnotationFeatureSelectable(feature);
   });
   selectedAnnotationUuids = new Set(validUuids);
 
@@ -31894,7 +32266,7 @@ function setAnnotationSelection(uuids, primaryUuid = null, options = {}) {
     primaryUuid &&
     selectedAnnotationUuids.has(primaryUuid) &&
     featureByUuid.has(primaryUuid) &&
-    !isAnnotationFeatureLocked(featureByUuid.get(primaryUuid));
+    isAnnotationFeatureSelectable(featureByUuid.get(primaryUuid));
   selectedAnnotationUuid = primaryIsValid
     ? primaryUuid
     : validUuids[validUuids.length - 1] || null;
@@ -31945,6 +32317,12 @@ function setAnnotationSelection(uuids, primaryUuid = null, options = {}) {
   if (porosityPalette && !porosityPalette.hidden) {
     updatePorosityControls();
   }
+  const activeFeature = getSelectedAnnotation();
+  postViewerEvent("viewer.annotationSelected", {
+    activeUuid: activeFeature?.properties?.uuid || null,
+    activeLabel: activeFeature?.properties?.label || "",
+    selectedUuids: getSelectedAnnotationUuids(),
+  });
 }
 
 function clearAnnotationSelection(options = {}) {
@@ -31973,6 +32351,12 @@ function normalizeAnnotationProperties(properties = {}) {
       properties.visible === undefined ? true : Boolean(properties.visible),
     locked:
       properties.locked === undefined ? false : Boolean(properties.locked),
+    canSelect:
+      properties.canSelect === undefined
+        ? true
+        : Boolean(properties.canSelect),
+    canEdit:
+      properties.canEdit === undefined ? true : Boolean(properties.canEdit),
     groupId: properties.groupId || DEFAULT_ANNOTATION_GROUP.groupId,
     groupName: properties.groupName || DEFAULT_ANNOTATION_GROUP.groupName,
     groupColor: properties.groupColor || DEFAULT_ANNOTATION_GROUP.groupColor,
@@ -32053,7 +32437,28 @@ function isAnnotationFeatureVisible(feature) {
 function isAnnotationFeatureLocked(feature) {
   if (!feature?.properties?.uuid) return false;
   const props = normalizeAnnotationFeature(feature).properties;
+  return isAnnotationFeatureUserLocked(feature) || props.canEdit === false;
+}
+
+function isAnnotationFeatureUserLocked(feature) {
+  if (!feature?.properties?.uuid) return false;
+  const props = normalizeAnnotationFeature(feature).properties;
   return props.locked === true || props.groupLocked === true;
+}
+
+function isAnnotationFeatureSelectable(feature) {
+  if (!feature?.properties?.uuid) return false;
+  const props = normalizeAnnotationFeature(feature).properties;
+  return !isAnnotationFeatureUserLocked(feature) && props.canSelect !== false;
+}
+
+function isAnnotationFeatureCapabilityReadOnly(feature) {
+  if (!feature?.properties?.uuid) return false;
+  return normalizeAnnotationFeature(feature).properties.canEdit === false;
+}
+
+function isAnnotationUuidSelectable(uuid) {
+  return isAnnotationFeatureSelectable(getAnnotationByUuid(uuid));
 }
 
 function isAnnotationUuidLocked(uuid) {
@@ -32455,7 +32860,7 @@ function getDisplayedAnnotationRangeUuids(anchorUuid, targetUuid) {
   const end = Math.max(anchorIndex, targetIndex);
   return displayedFeatures
     .slice(start, end + 1)
-    .filter((feature) => !isAnnotationFeatureLocked(feature))
+    .filter(isAnnotationFeatureSelectable)
     .map((feature) => feature.properties.uuid);
 }
 
@@ -32608,7 +33013,7 @@ function appendAnnotationHeaderTextFilter(menu) {
 
 function selectDisplayedAnnotations() {
   const displayedUuids = getDisplayedAnnotationFeatures()
-    .filter((feature) => !isAnnotationFeatureLocked(feature))
+    .filter(isAnnotationFeatureSelectable)
     .map((feature) => feature.properties.uuid);
   setAnnotationSelection(
     displayedUuids,
@@ -32860,7 +33265,7 @@ function renderAnnotationListHeader(list) {
 }
 
 function toggleAnnotationInSelection(uuid, options = {}) {
-  if (isAnnotationUuidLocked(uuid)) return;
+  if (!isAnnotationUuidSelectable(uuid)) return;
   const { pan = true } = options;
   const nextSelection = new Set(selectedAnnotationUuids);
   if (nextSelection.has(uuid)) {
@@ -32878,7 +33283,7 @@ function handleAnnotationListRowClick(event, uuid) {
   }
   const clickedIndex = getDisplayedAnnotationIndexByUuid(uuid);
   if (clickedIndex < 0) return;
-  if (isAnnotationUuidLocked(uuid)) return;
+  if (!isAnnotationUuidSelectable(uuid)) return;
 
   if (event.shiftKey && annotationListSelectionAnchorUuid) {
     const rangeUuids = getDisplayedAnnotationRangeUuids(
@@ -32917,7 +33322,7 @@ function handleAnnotationListArrowKey(event, uuid) {
 
   const displayedFeatures = getDisplayedAnnotationFeatures();
   const selectableFeatures = displayedFeatures.filter(
-    (feature) => !isAnnotationFeatureLocked(feature),
+    isAnnotationFeatureSelectable,
   );
   if (selectableFeatures.length === 0) return true;
 
@@ -32928,7 +33333,7 @@ function handleAnnotationListArrowKey(event, uuid) {
     nextIndex =
       (nextIndex + direction + displayedFeatures.length) %
       displayedFeatures.length;
-    if (!isAnnotationFeatureLocked(displayedFeatures[nextIndex])) break;
+    if (isAnnotationFeatureSelectable(displayedFeatures[nextIndex])) break;
   }
   const nextUuid = displayedFeatures[nextIndex]?.properties?.uuid;
   if (!nextUuid) return true;
@@ -32988,7 +33393,7 @@ function refreshAnnotationVisibilityViews() {
 
 function setAnnotationVisibility(uuid, visible) {
   const feature = getAnnotationByUuid(uuid);
-  if (!feature) return;
+  if (!feature || isAnnotationFeatureCapabilityReadOnly(feature)) return;
 
   annotationHistory.push(visible ? "Show annotation" : "Hide annotation");
   feature.properties.visible = visible;
@@ -32998,7 +33403,7 @@ function setAnnotationVisibility(uuid, visible) {
 
 function setAnnotationLocked(uuid, locked) {
   const feature = getAnnotationByUuid(uuid);
-  if (!feature) return;
+  if (!feature || isAnnotationFeatureCapabilityReadOnly(feature)) return;
 
   annotationHistory.push(locked ? "Lock annotation" : "Unlock annotation");
   feature.properties.locked = locked;
@@ -33021,6 +33426,10 @@ function setAnnotationLocked(uuid, locked) {
 }
 
 function setAnnotationGroupVisibility(groupId, visible) {
+  const groupFeatures = annoJSON.features.filter(
+    (feature) => feature.properties?.groupId === groupId,
+  );
+  if (groupFeatures.some(isAnnotationFeatureCapabilityReadOnly)) return;
   annotationHistory.push(
     visible ? "Show annotation group" : "Hide annotation group",
   );
@@ -33035,6 +33444,10 @@ function setAnnotationGroupVisibility(groupId, visible) {
 }
 
 function setAnnotationGroupLocked(groupId, locked) {
+  const groupFeatures = annoJSON.features.filter(
+    (feature) => feature.properties?.groupId === groupId,
+  );
+  if (groupFeatures.some(isAnnotationFeatureCapabilityReadOnly)) return;
   annotationHistory.push(
     locked ? "Lock annotation group" : "Unlock annotation group",
   );
@@ -33071,6 +33484,10 @@ function updateAnnotationGroupProperties(groupId, updates, historyLabel) {
     (candidate) => candidate.groupId === groupId,
   );
   if (!group) return false;
+  const groupFeatures = annoJSON.features.filter(
+    (feature) => feature.properties?.groupId === groupId,
+  );
+  if (groupFeatures.some(isAnnotationFeatureCapabilityReadOnly)) return false;
 
   annotationHistory.push(historyLabel);
   annoJSON.features.forEach((feature) => {
@@ -33120,7 +33537,9 @@ function createAnnotationListRow(feature, annotationId) {
 
   const props = feature.properties;
   const isVisible = isAnnotationFeatureVisible(feature);
-  const isLocked = isAnnotationFeatureLocked(feature);
+  const isLocked = isAnnotationFeatureUserLocked(feature);
+  const isReadOnly = !isLocked && !isAnnotationFeatureLocked(feature);
+  const isCapabilityReadOnly = isAnnotationFeatureCapabilityReadOnly(feature);
   const isGroupLocked = props.groupLocked === true;
   const geometryWarning = getAnnotationGeometryWarning(feature);
   const row = document.createElement("div");
@@ -33151,6 +33570,7 @@ function createAnnotationListRow(feature, annotationId) {
   });
   row.classList.toggle("annotation-row-hidden", !isVisible);
   row.classList.toggle("annotation-row-locked", isLocked);
+  row.classList.toggle("annotation-row-readonly", isReadOnly);
 
   const indexCell = document.createElement("span");
   indexCell.className = "annotation-list-index";
@@ -33182,10 +33602,19 @@ function createAnnotationListRow(feature, annotationId) {
   const visibilityButton = document.createElement("button");
   visibilityButton.type = "button";
   visibilityButton.className = "annotation-visibility-button";
-  visibilityButton.title = isVisible ? "Hide annotation" : "Show annotation";
+  visibilityButton.disabled = isCapabilityReadOnly;
+  visibilityButton.title = isCapabilityReadOnly
+    ? "Visibility is controlled by the embedding activity"
+    : isVisible
+      ? "Hide annotation"
+      : "Show annotation";
   visibilityButton.setAttribute(
     "aria-label",
-    isVisible ? "Hide annotation" : "Show annotation",
+    isCapabilityReadOnly
+      ? "Annotation visibility is read-only"
+      : isVisible
+        ? "Hide annotation"
+        : "Show annotation",
   );
   visibilityButton.appendChild(createVisibilityIcon(isVisible));
   visibilityButton.addEventListener("click", function (event) {
@@ -33196,19 +33625,23 @@ function createAnnotationListRow(feature, annotationId) {
   const lockButton = document.createElement("button");
   lockButton.type = "button";
   lockButton.className = "annotation-lock-button";
-  lockButton.disabled = isGroupLocked;
-  lockButton.title = isGroupLocked
+  lockButton.disabled = isGroupLocked || isCapabilityReadOnly;
+  lockButton.title = isCapabilityReadOnly
+    ? "Editing is disabled by the embedding activity"
+    : isGroupLocked
     ? "Locked by group"
     : isLocked
       ? "Unlock annotation"
       : "Lock annotation";
   lockButton.setAttribute(
     "aria-label",
-    isGroupLocked
-      ? "Locked by group"
-      : isLocked
-        ? "Unlock annotation"
-        : "Lock annotation",
+    isCapabilityReadOnly
+      ? "Annotation editing is read-only"
+      : isGroupLocked
+        ? "Locked by group"
+        : isLocked
+          ? "Unlock annotation"
+          : "Lock annotation",
   );
   lockButton.appendChild(createLockIcon(isLocked));
   lockButton.addEventListener("click", function (event) {
@@ -34248,7 +34681,7 @@ function findAnnotationUuidAtViewerPoint(viewerPoint, options = {}) {
     const feature = annoJSON.features[i];
     if (!feature.geometry || !feature.properties?.uuid) continue;
     if (!isAnnotationFeatureVisible(feature)) continue;
-    if (isAnnotationFeatureLocked(feature)) continue;
+    if (!isAnnotationFeatureSelectable(feature)) continue;
 
     const { type, coordinates } = feature.geometry;
     if (type === "Point") {
@@ -36758,7 +37191,11 @@ viewer.addHandler("canvas-click", function (event) {
 
   const uuid = findAnnotationUuidAtViewerPoint(event.position);
   if (uuid) {
-    if (event.originalEvent?.ctrlKey || event.originalEvent?.metaKey) {
+    if (
+      embedAnnotationSelectionMode === "multiple" ||
+      event.originalEvent?.ctrlKey ||
+      event.originalEvent?.metaKey
+    ) {
       toggleAnnotationInSelection(uuid, { pan: false });
     } else {
       selectAnnotationByUuid(uuid);
@@ -40116,7 +40553,7 @@ function toggleAnnotationsInMarquee(marqueePolygon) {
   const touchedUuids = annoJSON.features
     .filter(
       (feature) =>
-        !isAnnotationFeatureLocked(feature) &&
+        isAnnotationFeatureSelectable(feature) &&
         annotationFeatureIntersectsMarquee(feature, marqueePolygon),
     )
     .map((feature) => feature.properties.uuid);

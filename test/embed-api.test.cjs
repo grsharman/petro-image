@@ -1,0 +1,151 @@
+const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const path = require("node:path");
+const test = require("node:test");
+const vm = require("node:vm");
+
+const source = fs.readFileSync(path.join(__dirname, "..", "embed-api.js"), "utf8");
+
+function loadApi() {
+  const window = {};
+  window.parent = {};
+  vm.runInNewContext(source, { window, globalThis: window });
+  return { api: window.PetroImageEmbedApi, window };
+}
+
+test("only accepts versioned PetroAtlas commands from the embedding parent", () => {
+  const { api, window } = loadApi();
+  const accepted = api.validateEnvelope(
+    {
+      source: window.parent,
+      origin: "https://petroatlas.org",
+      data: { source: "petroatlas", version: 1, type: "viewer.setAnnotations" },
+    },
+    { parentWindow: window.parent, parentOrigin: "https://petroatlas.org" },
+  );
+  assert.equal(accepted.ok, true);
+
+  const wrongOrigin = api.validateEnvelope(
+    {
+      source: window.parent,
+      origin: "https://example.org",
+      data: { source: "petroatlas", version: 1, type: "viewer.setAnnotations" },
+    },
+    { parentWindow: window.parent, parentOrigin: "https://petroatlas.org" },
+  );
+  assert.equal(wrongOrigin.ok, false);
+  assert.equal(wrongOrigin.ignored, true);
+});
+
+test("calculates and merges image-pixel bounds for GeoJSON features", () => {
+  const { api } = loadApi();
+  const first = api.getFeatureBounds({
+    geometry: { type: "Polygon", coordinates: [[[10, 20], [30, 20], [30, 50], [10, 20]]] },
+  });
+  const second = api.getFeatureBounds({
+    geometry: { type: "Point", coordinates: [80, 90] },
+  });
+  assert.deepEqual(JSON.parse(JSON.stringify(first)), { x: 10, y: 20, width: 20, height: 30 });
+  assert.deepEqual(JSON.parse(JSON.stringify(api.mergeBounds([first, second]))), {
+    x: 10,
+    y: 20,
+    width: 70,
+    height: 70,
+  });
+});
+
+test("normalizes independent annotation selection and editing capabilities", () => {
+  const { api } = loadApi();
+  assert.deepEqual(
+    JSON.parse(
+      JSON.stringify(
+        api.normalizeAnnotationCapabilities({ canSelect: true, canEdit: false }),
+      ),
+    ),
+    { canSelect: true, canEdit: false, legacyLock: false },
+  );
+  assert.deepEqual(
+    JSON.parse(
+      JSON.stringify(api.normalizeAnnotationCapabilities({ readOnly: true })),
+    ),
+    { canSelect: false, canEdit: false, legacyLock: true },
+  );
+  assert.deepEqual(
+    JSON.parse(JSON.stringify(api.normalizeAnnotationCapabilities({}))),
+    { canSelect: true, canEdit: true, legacyLock: false },
+  );
+  assert.deepEqual(
+    JSON.parse(
+      JSON.stringify(
+        api.normalizeAnnotationCapabilities({ readOnly: true, canSelect: true }),
+      ),
+    ),
+    { canSelect: true, canEdit: false, legacyLock: false },
+  );
+});
+
+test("normalizes embedded annotation selection modes", () => {
+  const { api } = loadApi();
+  assert.equal(api.normalizeAnnotationSelectionMode({}), "single");
+  assert.equal(api.normalizeAnnotationSelectionMode({ selectionMode: "multiple" }), "multiple");
+  assert.equal(api.normalizeAnnotationSelectionMode({ selectionMode: "anything-else" }), "single");
+});
+
+test("routes commands and returns request-correlated success events", async () => {
+  const { api, window } = loadApi();
+  const events = [];
+  const controller = api.createController({
+    parentWindow: window.parent,
+    parentOrigin: "https://petroatlas.org",
+    postEvent: (type, detail) => events.push({ type, detail }),
+    handlers: {
+      "viewer.setViewport": async (message) => ({ bounds: api.normalizeImageBounds(message.bounds) }),
+    },
+  });
+  const handled = await controller.handleMessage({
+    source: window.parent,
+    origin: "https://petroatlas.org",
+    data: {
+      source: "petroatlas",
+      version: 1,
+      type: "viewer.setViewport",
+      requestId: "question-2-start",
+      bounds: { x: 100, y: 200, width: 300, height: 400 },
+    },
+  });
+  assert.equal(handled, true);
+  assert.equal(events[0].type, "viewer.commandSucceeded");
+  assert.equal(events[0].detail.requestId, "question-2-start");
+  assert.deepEqual(JSON.parse(JSON.stringify(events[0].detail.bounds)), {
+    x: 100,
+    y: 200,
+    width: 300,
+    height: 400,
+  });
+});
+
+test("reports invalid viewport commands without throwing across the message boundary", async () => {
+  const { api, window } = loadApi();
+  const events = [];
+  const controller = api.createController({
+    parentWindow: window.parent,
+    parentOrigin: "https://petroatlas.org",
+    postEvent: (type, detail) => events.push({ type, detail }),
+    handlers: {
+      "viewer.setViewport": (message) => api.normalizeImageBounds(message.bounds),
+    },
+  });
+  await controller.handleMessage({
+    source: window.parent,
+    origin: "https://petroatlas.org",
+    data: {
+      source: "petroatlas",
+      version: 1,
+      type: "viewer.setViewport",
+      requestId: "bad-bounds",
+      bounds: { x: 0, y: 0, width: 0, height: 10 },
+    },
+  });
+  assert.equal(events[0].type, "viewer.commandFailed");
+  assert.equal(events[0].detail.error.code, "invalid_viewport");
+});
