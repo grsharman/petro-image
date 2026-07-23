@@ -605,6 +605,8 @@ The grid tool allows one to create gridded crosshairs within a rectangular area 
 
 A common task in microscopy is to conduct a “point count”, which involves identifying the features that fall beneath binocular crosshairs, typically using a regularly spaced grid. In petro-image, point counting functions become available if a [Grid](#grid) is created or a previously defined grid is imported. A count is recorded by inputting text or numbers into the <img src="assets/2_count_identifier_box.png" alt="icon" height="20" style="vertical-align: middle;"/> text box and pressing “Enter”. Pressing the spacebar will advance to the next grid crosshair and pressing shift+spacebar will advance to the previous grid crosshair. petro-image also includes some basic functions for visualizing the results of the point count, including a table of summary statistics.
 
+In the Desktop app, the first point-count entry creates a per-sample working GeoJSON file in the project's `counts` folder. Later count and note edits are saved automatically, and the working counts are restored when the sample is reopened. These working files are separate from files created with the Export commands.
+
 > [!TIP]
 > Custom grid crosshair locations (in image pixel coordinates) can be imported from a CSV file, allowing custom grid configurations.
 
@@ -645,7 +647,7 @@ A common task in microscopy is to conduct a “point count”, which involves id
 
 ### JSON File Structure
 
-To load your own images, you must format a JSON file as shown below. There are three ways of displaying images, which differ in the way that `tileSets` is defined. Option 1: A single image in a tileset (shown as PPL (0°) below). Option 2: Multiple images in a tileset that are linked with image rotation angle (shown as XPL (multi-pol) below) `periodDegrees` indicates the frequency of image repetition during rotation. Option 3: Multiple images in a tileset that can be toggled in sequence, each with their own label (e.g., shown as Reflected and Reflected-pol below).
+To load your own images, you must format a JSON file as shown below. Set the optional sample-level `rotationDegrees` attribute to an angle from 0 to 360 to open that sample in its preferred orientation. Both the image and stage rotation controls initialize to this angle, but remain independently adjustable unless their lock is enabled. When omitted, both controls start at 0°. This is separate from each tile's acquisition `angleDegrees`. There are three ways of displaying images, which differ in the way that `tileSets` is defined. Option 1: A single image in a tileset (shown as PPL (0°) below). Option 2: Multiple images in a tileset that are linked with image rotation angle (shown as XPL (multi-pol) below) `periodDegrees` indicates the frequency of image repetition during rotation. Option 3: Multiple images in a tileset that can be toggled in sequence, each with their own label (e.g., shown as Reflected and Reflected-pol below).
 
 > [!NOTE]
 > "annotations" are optional.
@@ -664,6 +666,7 @@ To load your own images, you must format a JSON file as shown below. There are t
       "unit": "2",
       "pixelsPerUnit": "0.398",
       "pixelsPerMeter": "398000",
+      "rotationDegrees": 90,
       "tileSets": [
         {
           "label": "PPL (0°)",

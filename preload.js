@@ -14,6 +14,10 @@ contextBridge.exposeInMainWorld("electronAPI", {
     ipcRenderer.invoke("load-working-annotations", { sampleId }),
   saveWorkingAnnotations: (request) =>
     ipcRenderer.invoke("save-working-annotations", request),
+  loadWorkingCounts: (sampleId) =>
+    ipcRenderer.invoke("load-working-counts", { sampleId }),
+  saveWorkingCounts: (request) =>
+    ipcRenderer.invoke("save-working-counts", request),
   saveSamSettings: (samSettings) =>
     ipcRenderer.invoke("save-sam-settings", samSettings),
   saveSegmenteverygrainSettings: (settings) =>

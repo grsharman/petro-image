@@ -639,7 +639,21 @@ document.addEventListener("DOMContentLoaded", function () {
 
 function createJSON() {
   const data = {};
-  data.sampleId = crypto.randomUUID();
+  const sampleIdAlphabet = "0123456789abcdefghjkmnpqrstvwxyz";
+  const sampleIdBytes = crypto.getRandomValues(new Uint8Array(5));
+  let sampleId = "";
+  let sampleIdBuffer = 0;
+  let sampleIdBitCount = 0;
+  for (const byte of sampleIdBytes) {
+    sampleIdBuffer = (sampleIdBuffer << 8) | byte;
+    sampleIdBitCount += 8;
+    while (sampleIdBitCount >= 5) {
+      sampleIdBitCount -= 5;
+      sampleId +=
+        sampleIdAlphabet[(sampleIdBuffer >>> sampleIdBitCount) & 31];
+    }
+  }
+  data.sampleId = sampleId;
 
   // Groups
   data.groups = [];

@@ -31,7 +31,8 @@ let mobileAnnotationState = {
 };
 const imageLoadSuccessfulGenerations = new Set();
 const SAMPLE_ID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  /^(?:[0-9a-hjkmnp-tv-z]{8}|[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$/i;
+const SAMPLE_ID_ALPHABET = "0123456789abcdefghjkmnpqrstvwxyz";
 
 function getEmbeddingParentOrigin() {
   if (window.parent === window || !document.referrer) return null;
@@ -377,14 +378,19 @@ function getRequestedLibraryUrl() {
 }
 
 function createSampleId() {
-  if (typeof crypto?.randomUUID === "function") return crypto.randomUUID();
-  const bytes = crypto.getRandomValues(new Uint8Array(16));
-  bytes[6] = (bytes[6] & 0x0f) | 0x40;
-  bytes[8] = (bytes[8] & 0x3f) | 0x80;
-  const hex = [...bytes].map((value) => value.toString(16).padStart(2, "0"));
-  return `${hex.slice(0, 4).join("")}-${hex.slice(4, 6).join("")}-${hex
-    .slice(6, 8)
-    .join("")}-${hex.slice(8, 10).join("")}-${hex.slice(10).join("")}`;
+  const bytes = crypto.getRandomValues(new Uint8Array(5));
+  let sampleId = "";
+  let buffer = 0;
+  let bitCount = 0;
+  for (const byte of bytes) {
+    buffer = (buffer << 8) | byte;
+    bitCount += 8;
+    while (bitCount >= 5) {
+      bitCount -= 5;
+      sampleId += SAMPLE_ID_ALPHABET[(buffer >>> bitCount) & 31];
+    }
+  }
+  return sampleId;
 }
 
 function ensureInMemorySampleIds(sampleList) {
@@ -718,24 +724,11 @@ window.getImportWizardLibraryContext = function () {
 };
 
 function isTextEntryElement(element) {
-  if (!element) return false;
-  if (element.isContentEditable) return true;
+  return window.PetroImageKeyboard.isTextEntryElement(element);
+}
 
-  const tagName = element.tagName;
-  if (tagName === "TEXTAREA" || tagName === "SELECT") return true;
-  if (tagName !== "INPUT") return false;
-
-  const textInputTypes = new Set([
-    "",
-    "email",
-    "number",
-    "password",
-    "search",
-    "tel",
-    "text",
-    "url",
-  ]);
-  return textInputTypes.has((element.type || "").toLowerCase());
+function isTextEntryActive(event) {
+  return window.PetroImageKeyboard.isTextEntryActive(event, document);
 }
 
 // Global variables related to annotations
@@ -984,6 +977,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 async function loadLibraryWithElectronDialog() {
   await flushAnnotationAutosave();
+  await flushCountAutosave();
   if (!confirmDiscardUnsavedWork("Loading another library")) return;
   try {
     const result = await window.electronAPI.selectExistingJsonFile({
@@ -1005,6 +999,7 @@ async function loadLibraryWithElectronDialog() {
 
 async function changeProjectWithElectronDialog() {
   await flushAnnotationAutosave();
+  await flushCountAutosave();
   if (!confirmDiscardUnsavedWork("Changing projects")) return;
   try {
     const result = await window.electronAPI.changeProjectLibrary();
@@ -1023,7 +1018,6 @@ async function changeProjectWithElectronDialog() {
 }
 
 const loadLibraryInput = document.getElementById("load-sample-JSON");
-const loadLibraryButton = document.getElementById("loadLibraryButton");
 const actionLoadLibraryButton = document.getElementById(
   "actionLoadLibraryButton",
 );
@@ -16904,6 +16898,7 @@ async function startCziConversion() {
     cziImportState.benchmarking
   ) return;
   await flushAnnotationAutosave();
+  await flushCountAutosave();
   if (!confirmDiscardUnsavedWork("Importing and opening a CZI sample")) return;
   const titleText = getUniqueCziSampleTitle(cziSampleTitle.value);
   cziSampleTitle.value = titleText;
@@ -17448,9 +17443,6 @@ function toggleViewerToolsTray() {
 }
 
 if (hasFullViewerMenus) {
-  if (loadLibraryButton) loadLibraryButton.hidden = true;
-  electronActionButton.hidden = false;
-  viewerToolsButton.hidden = false;
   moveGridCountControlsToPalette();
   moveAnnotateControlsToPalette();
   moveMeasureControlsToPalette();
@@ -17635,19 +17627,6 @@ if (
     setCziBenchmarkStatus(
       `${progress.completed}/${progress.total}: ${formatCziCount(result.chunkSize)} × ${formatCziCount(result.chunkSize)} reads · ${formatCziDuration(result.readSeconds)} · ${Number(result.megapixelsPerSecond).toFixed(2)} MP/s`,
     );
-  });
-}
-
-if (loadLibraryButton) {
-  loadLibraryButton.addEventListener("click", function (event) {
-    event.preventDefault();
-
-    if (window.electronAPI?.selectExistingJsonFile) {
-      loadLibraryWithElectronDialog();
-      return;
-    }
-
-    loadLibraryInput.click();
   });
 }
 
@@ -19595,6 +19574,7 @@ document
     const requestedIndex = Number(this.value);
     const sampleChanged = requestedIndex !== currentIndex;
     if (sampleChanged) await flushAnnotationAutosave();
+    if (sampleChanged) await flushCountAutosave();
     if (
       sampleChanged &&
       !confirmDiscardUnsavedWork("Changing samples")
@@ -19654,13 +19634,18 @@ document
         return;
       }
       await loadTileSet();
+      resetRotation(
+        window.PetroImageSampleOrientation.getInitialRotationDegrees(
+          samples[currentIndex],
+        ),
+      );
       displayImages();
       toggleOnImages();
-      resetRotation();
       updateStageRotationCheck();
       updateScaleDependentControls();
       addScalebar();
       await restoreWorkingAnnotationsForCurrentSample();
+      await restoreWorkingCountsForCurrentSample();
       populateClassifyControls();
     } catch (error) {
       console.error("[sample-switch] failed", error);
@@ -27911,6 +27896,7 @@ function setUnsavedWork(domain, value) {
   if (value) unsavedWorkRegistry.add(domain);
   else unsavedWorkRegistry.delete(domain);
   if (domain === "annotations" && value) scheduleAnnotationAutosave();
+  if (domain === "counts" && value) scheduleCountAutosave();
   if (changed) syncUnsavedWorkState();
 }
 
@@ -28076,6 +28062,112 @@ async function flushAnnotationAutosave() {
 }
 
 window.flushAnnotationAutosave = flushAnnotationAutosave;
+
+const COUNT_AUTOSAVE_DELAY_MS = 800;
+let countAutosaveTimer = null;
+let countAutosaveRevision = 0;
+let countAutosaveWriteChain = Promise.resolve();
+let countAutosaveAvailable = null;
+const countAutosaveBlockedSampleIds = new Set();
+
+function scheduleCountAutosave() {
+  if (
+    !window.electronAPI?.saveWorkingCounts ||
+    countAutosaveAvailable === false
+  ) return;
+  countAutosaveRevision += 1;
+  if (countAutosaveTimer !== null) {
+    clearTimeout(countAutosaveTimer);
+  }
+  countAutosaveTimer = window.setTimeout(() => {
+    countAutosaveTimer = null;
+    queueCountAutosave(countAutosaveRevision);
+  }, COUNT_AUTOSAVE_DELAY_MS);
+}
+
+async function queueCountAutosave(revision) {
+  const sample = samples[currentIndex];
+  if (!sample?.sampleId || !window.electronAPI?.saveWorkingCounts) {
+    return false;
+  }
+  const sampleId = sample.sampleId;
+  if (countAutosaveBlockedSampleIds.has(sampleId)) return false;
+  const request = {
+    sampleId,
+    sampleTitle: sample.title || "",
+    geoJSON: cloneData(countJSON),
+  };
+
+  const write = countAutosaveWriteChain.then(() =>
+    window.electronAPI.saveWorkingCounts(request),
+  );
+  countAutosaveWriteChain = write.catch(() => {});
+
+  try {
+    const result = await write;
+    countAutosaveAvailable = Boolean(result?.available);
+    if (!countAutosaveAvailable) return false;
+    const savedCurrentRevision =
+      samples[currentIndex]?.sampleId === sampleId &&
+      revision === countAutosaveRevision;
+    if (savedCurrentRevision) {
+      setUnsavedWork("counts", false);
+    }
+    return savedCurrentRevision;
+  } catch (error) {
+    console.warn("Could not automatically save working counts:", error);
+    return false;
+  }
+}
+
+async function flushCountAutosave() {
+  if (
+    !unsavedWorkRegistry.has("counts") &&
+    countAutosaveTimer === null
+  ) return true;
+  if (!window.electronAPI?.saveWorkingCounts) return false;
+  if (countAutosaveTimer !== null) {
+    clearTimeout(countAutosaveTimer);
+    countAutosaveTimer = null;
+  }
+  return queueCountAutosave(countAutosaveRevision);
+}
+
+window.flushCountAutosave = flushCountAutosave;
+
+async function restoreWorkingCountsForCurrentSample() {
+  const sampleId = samples[currentIndex]?.sampleId;
+  if (!sampleId || !window.electronAPI?.loadWorkingCounts) return false;
+
+  try {
+    const result = await window.electronAPI.loadWorkingCounts(sampleId);
+    countAutosaveAvailable = Boolean(result?.available);
+    if (!countAutosaveAvailable || !result.geoJSON) return false;
+    if (samples[currentIndex]?.sampleId !== sampleId) return false;
+
+    suppressUnsavedCountTracking = true;
+    try {
+      if (!loadCounts(result.geoJSON)) {
+        throw new Error("Working counts could not be loaded.");
+      }
+      document.getElementById("apply-grid-settings").disabled = true;
+      document.getElementById("clear-grid").disabled = false;
+      disableGridOptions();
+      setUnsavedWork("counts", false);
+    } finally {
+      suppressUnsavedCountTracking = false;
+    }
+    return true;
+  } catch (error) {
+    console.warn("Could not restore working counts:", error);
+    countAutosaveBlockedSampleIds.add(sampleId);
+    alert(
+      "The saved working counts for this sample could not be loaded. " +
+        "They will not be overwritten during this session.",
+    );
+    return false;
+  }
+}
 
 async function restoreWorkingAnnotationsForCurrentSample() {
   const sampleId = samples[currentIndex]?.sampleId;
@@ -34507,7 +34599,7 @@ document
 document.addEventListener("keydown", function (event) {
   if (!annotationEditingEnabled) return;
   if (event.ctrlKey || event.metaKey || event.altKey) return;
-  if (isTextEntryElement(event.target)) return;
+  if (isTextEntryActive(event)) return;
   if (event.key !== "l" && event.key !== "L") return;
   if (!selectedAnnotationUuid) return;
 
@@ -37121,7 +37213,7 @@ let isVPressed = false;
 document.addEventListener("keydown", function (event) {
   if (!annotationEditingEnabled) return;
   if (event.ctrlKey || event.metaKey || event.altKey) return;
-  if (isTextEntryElement(event.target)) return;
+  if (isTextEntryActive(event)) return;
 
   if (event.key === "q" || event.key === "Q") {
     isQPressed = true;
@@ -37152,7 +37244,6 @@ document.addEventListener("keydown", function (event) {
 document.addEventListener("keyup", function (event) {
   if (!annotationEditingEnabled) return;
   if (event.ctrlKey || event.metaKey || event.altKey) return;
-  if (isTextEntryElement(event.target)) return;
 
   if (event.key === "q" || event.key === "Q") {
     isQPressed = false;
@@ -37936,6 +38027,9 @@ const libraryEditorGroupsInput = document.getElementById(
 const libraryEditorScaleInput = document.getElementById(
   "libraryEditorScaleInput",
 );
+const libraryEditorRotationInput = document.getElementById(
+  "libraryEditorRotationInput",
+);
 const libraryEditorAnnotationsInput = document.getElementById(
   "libraryEditorAnnotationsInput",
 );
@@ -38140,6 +38234,7 @@ function renderLibraryEditorForm() {
     libraryEditorDescriptionInput,
     libraryEditorGroupsInput,
     libraryEditorScaleInput,
+    libraryEditorRotationInput,
     libraryEditorAnnotationsInput,
     openTileSetEditorButton,
     libraryEditorDeleteButton,
@@ -38152,6 +38247,7 @@ function renderLibraryEditorForm() {
     if (libraryEditorDescriptionInput) libraryEditorDescriptionInput.value = "";
     if (libraryEditorGroupsInput) libraryEditorGroupsInput.value = "";
     if (libraryEditorScaleInput) libraryEditorScaleInput.value = "";
+    if (libraryEditorRotationInput) libraryEditorRotationInput.value = "";
     if (libraryEditorAnnotationsInput) libraryEditorAnnotationsInput.value = "";
     if (libraryEditorTileSetCount) libraryEditorTileSetCount.textContent = "0";
     return;
@@ -38171,6 +38267,13 @@ function renderLibraryEditorForm() {
       selectedSample.pixelsPerMeter === null
         ? ""
         : String(selectedSample.pixelsPerMeter);
+  }
+  if (libraryEditorRotationInput) {
+    libraryEditorRotationInput.value =
+      selectedSample.rotationDegrees === undefined ||
+      selectedSample.rotationDegrees === null
+        ? ""
+        : String(selectedSample.rotationDegrees);
   }
   if (libraryEditorAnnotationsInput) {
     libraryEditorAnnotationsInput.value =
@@ -38206,6 +38309,16 @@ function updateLibraryEditorSelectedSample() {
     selectedSample.pixelsPerMeter = pixelsPerMeter;
   } else {
     delete selectedSample.pixelsPerMeter;
+  }
+
+  const rotationDegrees = libraryEditorRotationInput?.value.trim() || "";
+  if (rotationDegrees) {
+    selectedSample.rotationDegrees =
+      window.PetroImageSampleOrientation.normalizeRotationDegrees(
+        rotationDegrees,
+      );
+  } else {
+    delete selectedSample.rotationDegrees;
   }
 
   const annotationFiles = (libraryEditorAnnotationsInput?.value || "")
@@ -38304,6 +38417,7 @@ async function saveLibraryEditor({
 } = {}) {
   if (libraryEditorState.saving) return;
   await flushAnnotationAutosave();
+  await flushCountAutosave();
   if (!confirmDiscardUnsavedWork("Applying library changes")) return;
 
   updateLibraryEditorSelectedSample();
@@ -43933,7 +44047,9 @@ document.getElementById("save-counts").addEventListener("click", function () {
   });
   // Trigger the download with 'saveAs'
   saveAs(geoJSONBlob, "counts.geojson");
-  unsavedCounts(false);
+  if (!window.electronAPI?.saveWorkingCounts) {
+    unsavedCounts(false);
+  }
 });
 
 const clearAnnotations = ({ markUnsaved = true } = {}) => {
@@ -45410,8 +45526,9 @@ document.getElementById("count-export").addEventListener("click", function () {
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
-  // window.appState.hasUnsavedCounts = false;
-  unsavedCounts(false);
+  if (!window.electronAPI?.saveWorkingCounts) {
+    unsavedCounts(false);
+  }
 });
 
 // Import CSV of previously generated point-count data
@@ -45439,7 +45556,9 @@ document
       const reader = new FileReader();
       reader.onload = function (event) {
         const geoJSONData = event.target.result;
-        if (loadCounts(geoJSONData)) unsavedCounts(false);
+        if (loadCounts(geoJSONData)) {
+          unsavedCounts(Boolean(window.electronAPI?.saveWorkingCounts));
+        }
         fileInput.value = "";
       };
       reader.readAsText(file);
@@ -45481,7 +45600,7 @@ document
         complete: function (results) {
           const parsedData = results.data;
           processCSVData(parsedData);
-          unsavedCounts(false);
+          unsavedCounts(Boolean(window.electronAPI?.saveWorkingCounts));
         },
       });
       // Reset file input to allow reloading the same file
@@ -54411,9 +54530,13 @@ const KEY_TIMEOUT_MS = 500; // 0.5 seconds
 window.addEventListener("keydown", (event) => {
   if (!annotationEditingEnabled) return;
   const code = event.code;
+  const annotationShortcutCodes = ["KeyQ", "KeyZ", "KeyX", "KeyC", "KeyV"];
   if (
-    (event.ctrlKey || event.metaKey || event.altKey) &&
-    ["KeyQ", "KeyZ", "KeyX", "KeyC", "KeyV"].includes(code)
+    annotationShortcutCodes.includes(code) &&
+    (event.ctrlKey ||
+      event.metaKey ||
+      event.altKey ||
+      isTextEntryActive(event))
   ) {
     pressedKeys.delete(code);
     delete keyTimestamps[code];
@@ -54447,11 +54570,12 @@ setInterval(() => {
 
 document.addEventListener("mousemove", (event) => {
   if (!annotationEditingEnabled) return;
-  isCPressed = pressedKeys.has("KeyC");
-  isXPressed = pressedKeys.has("KeyX");
-  isQPressed = pressedKeys.has("KeyQ");
-  isZPressed = pressedKeys.has("KeyZ");
-  isVPressed = pressedKeys.has("KeyV");
+  const shortcutsAllowed = !isTextEntryElement(document.activeElement);
+  isCPressed = shortcutsAllowed && pressedKeys.has("KeyC");
+  isXPressed = shortcutsAllowed && pressedKeys.has("KeyX");
+  isQPressed = shortcutsAllowed && pressedKeys.has("KeyQ");
+  isZPressed = shortcutsAllowed && pressedKeys.has("KeyZ");
+  isVPressed = shortcutsAllowed && pressedKeys.has("KeyV");
   refreshAnnotationFloaters(event);
 });
 
@@ -54517,6 +54641,7 @@ viewer.addHandler("canvas-drag", function (event) {
 window.addEventListener("keydown", function (event) {
   if (!annotationEditingEnabled) return;
   if (event.ctrlKey || event.metaKey || event.altKey) return;
+  if (isTextEntryActive(event)) return;
 
   if (event.key === "x" || event.key === "X") {
     togglePolygonFloaterOn(true);
@@ -54718,13 +54843,7 @@ const imageRotater = document.getElementById("imageRotation");
 const imageRotationValue = document.getElementById("imageRotationValue");
 
 function normalizeAngleDegrees(value) {
-  const numericValue = Number(value);
-
-  if (!Number.isFinite(numericValue)) {
-    return 0;
-  }
-
-  return Math.max(0, Math.min(360, Math.round(numericValue)));
+  return window.PetroImageSampleOrientation.normalizeRotationDegrees(value);
 }
 
 function setRotationValueDisplay(element, angle) {
@@ -54866,19 +54985,23 @@ updateAnnotationOverlayRotation();
 //   }
 // });
 
-function resetRotation() {
+function resetRotation(initialRotationDegrees = 0) {
+  const normalizedRotation =
+    window.PetroImageSampleOrientation.normalizeRotationDegrees(
+      initialRotationDegrees,
+    );
   const rotationSlider = document.getElementById("imageRotation");
   const rotationValue = document.getElementById("imageRotationValue");
   if (rotationSlider && rotationValue) {
-    rotationSlider.value = 0;
-    setRotationValueDisplay(rotationValue, 0);
+    rotationSlider.value = normalizedRotation;
+    setRotationValueDisplay(rotationValue, normalizedRotation);
   }
-  viewer.viewport.setRotation(0, true);
+  viewer.viewport.setRotation(normalizedRotation, true);
   const stageRotationSlider = document.getElementById("stageRotation");
   const stageRotationValue = document.getElementById("stageRotationValue");
   if (stageRotationSlider && stageRotationValue) {
-    stageRotationSlider.value = 0;
-    setRotationValueDisplay(stageRotationValue, 0);
+    stageRotationSlider.value = normalizedRotation;
+    setRotationValueDisplay(stageRotationValue, normalizedRotation);
   }
 }
 

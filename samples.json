@@ -4151,6 +4151,7 @@
       "title": "TMC3",
       "description": "Pierre Shale",
       "pixelsPerMeter": "398000",
+      "rotationDegrees": 90,
       "tileSets": [
         {
           "label": "PPL(0°)",

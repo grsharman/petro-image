@@ -11,6 +11,8 @@
     <script src="mobile-mode.js"></script>
     <script src="embed-api.js"></script>
     <script src="annotation-coordinate-space.js"></script>
+    <script src="sample-orientation.js"></script>
+    <script src="keyboard-shortcuts.js"></script>
     <!-- <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/OpenSeadragonScalebar/2.0.0/openseadragon-scalebar.min.css"
@@ -424,20 +426,6 @@
       </div>
       <div class="viewer-corner-actions">
         <button
-          id="loadLibraryButton"
-          class="viewer-corner-button"
-          type="button"
-          title="Load Library"
-          aria-label="Load Library"
-        >
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M4 3h11l5 5v13H4z" />
-            <path d="M14 3v6h6" />
-            <path d="M8 14h8" />
-            <path d="M8 18h5" />
-          </svg>
-        </button>
-        <button
           id="viewerToolsButton"
           class="viewer-corner-button viewer-action-button viewer-tools-button"
           type="button"
@@ -445,7 +433,6 @@
           aria-label="Tools"
           aria-expanded="false"
           aria-controls="viewerToolsTray"
-          hidden
         >
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="M14.5 5.5 18 2l4 4-3.5 3.5" />
@@ -664,7 +651,6 @@
           aria-label="Actions"
           aria-expanded="false"
           aria-controls="electronActionTray"
-          hidden
         >
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="M4 12h16" />
@@ -2979,6 +2965,15 @@
               <label for="libraryEditorScaleInput">Pixels per meter</label>
               <input id="libraryEditorScaleInput" type="number" min="0" step="any" />
 
+              <label for="libraryEditorRotationInput">Initial rotation (degrees)</label>
+              <input
+                id="libraryEditorRotationInput"
+                type="number"
+                min="0"
+                max="360"
+                step="1"
+              />
+
               <label for="libraryEditorAnnotationsInput">Annotation GeoJSON URIs</label>
               <textarea
                 id="libraryEditorAnnotationsInput"
@@ -3154,253 +3149,257 @@
           </details>
           <details class="segment-primary-details segment-workflow-details" open>
             <summary>Supervised Segmentation</summary>
-            <label class="segment-field segment-inline-field">
-              <span>Tile set</span>
-              <select id="segmentTileSetSelect"></select>
-            </label>
-            <label class="segment-field segment-inline-field segment-resolution-field">
-              <span title="Resolution used for segmentation. Lower resolutions process fewer pixels and run faster, but may miss small grains or fine boundaries.">Resolution</span>
-              <select id="segmentResolutionSelect">
-                <option value="1">Full resolution</option>
-                <option value="0.5">1/2 resolution</option>
-                <option value="0.25">1/4 resolution</option>
-                <option value="viewer">Current viewer resolution</option>
-              </select>
-            </label>
-            <div class="segment-padding-row">
+            <div class="segment-workflow-content">
+              <label class="segment-field segment-inline-field">
+                <span>Tile set</span>
+                <select id="segmentTileSetSelect"></select>
+              </label>
+              <label class="segment-field segment-inline-field segment-resolution-field">
+                <span title="Resolution used for segmentation. Lower resolutions process fewer pixels and run faster, but may miss small grains or fine boundaries.">Resolution</span>
+                <select id="segmentResolutionSelect">
+                  <option value="1">Full resolution</option>
+                  <option value="0.5">1/2 resolution</option>
+                  <option value="0.25">1/4 resolution</option>
+                  <option value="viewer">Current viewer resolution</option>
+                </select>
+              </label>
+              <div class="segment-padding-row">
+                <label class="segment-field">
+                  <span>Padding (%)</span>
+                  <input
+                    id="segmentPaddingPercent"
+                    type="number"
+                    min="0"
+                    max="300"
+                    step="10"
+                    value="50"
+                  />
+                </label>
+                <label class="segment-field segment-compact-number-field">
+                  <span>Min px</span>
+                  <input
+                    id="segmentPaddingMin"
+                    type="number"
+                    min="0"
+                    max="2048"
+                    step="16"
+                    value="256"
+                  />
+                </label>
+                <label class="segment-field segment-compact-number-field">
+                  <span>Max px</span>
+                  <input
+                    id="segmentPaddingMax"
+                    type="number"
+                    min="0"
+                    max="4096"
+                    step="16"
+                    value="512"
+                  />
+                </label>
+              </div>
+              <p id="segmentPaddingStatus" class="segment-inline-status">
+                Padding is based on the larger box dimension.
+              </p>
+              <div class="segment-simplify-row">
+                <label class="segment-option">
+                  <input id="segmentSimplifyEnabled" type="checkbox" checked />
+                  <span>Simplify polygons</span>
+                </label>
+                <input
+                  id="segmentSimplifyEpsilon"
+                  class="segment-compact-number-input"
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="1"
+                  value="2"
+                  title="Higher values remove more vertices."
+                />
+              </div>
               <label class="segment-field">
-                <span>Padding (%)</span>
+                <span>Annotation group</span>
                 <input
-                  id="segmentPaddingPercent"
-                  type="number"
-                  min="0"
-                  max="300"
-                  step="10"
-                  value="50"
+                  id="segmentAnnotationGroup"
+                  type="text"
+                  list="segmentAnnotationGroupOptions"
+                  placeholder="Current annotation group"
                 />
+                <datalist id="segmentAnnotationGroupOptions"></datalist>
               </label>
-              <label class="segment-field segment-compact-number-field">
-                <span>Min px</span>
-                <input
-                  id="segmentPaddingMin"
-                  type="number"
-                  min="0"
-                  max="2048"
-                  step="16"
-                  value="256"
-                />
-              </label>
-              <label class="segment-field segment-compact-number-field">
-                <span>Max px</span>
-                <input
-                  id="segmentPaddingMax"
-                  type="number"
-                  min="0"
-                  max="4096"
-                  step="16"
-                  value="512"
-                />
-              </label>
-            </div>
-            <p id="segmentPaddingStatus" class="segment-inline-status">
-              Padding is based on the larger box dimension.
-            </p>
-            <div class="segment-simplify-row">
               <label class="segment-option">
-                <input id="segmentSimplifyEnabled" type="checkbox" checked />
-                <span>Simplify polygons</span>
+                <input id="segmentModeToggle" type="checkbox" />
+                <span>Fast segmentation mode</span>
               </label>
-              <input
-                id="segmentSimplifyEpsilon"
-                class="segment-compact-number-input"
-                type="number"
-                min="0"
-                max="100"
-                step="1"
-                value="2"
-                title="Higher values remove more vertices."
-              />
+              <label class="segment-option">
+                <input id="segmentAutoAdd" type="checkbox" />
+                <span>Auto-add to annotations</span>
+              </label>
+              <div class="segment-prompt-actions">
+                <button id="segmentDrawBoxButton" type="button">+ Box</button>
+                <button id="segmentAddPositivePointButton" type="button">
+                  + Point
+                </button>
+                <button id="segmentAddNegativePointButton" type="button">
+                  - Point
+                </button>
+              </div>
+              <div class="segment-commit-actions">
+                <button id="segmentAddAnnotationButton" type="button" disabled>
+                  Add Annotation
+                </button>
+                <button id="segmentClearButton" type="button" disabled>Clear</button>
+              </div>
+              <div id="segmentStatus" class="segment-status" role="status">Draw a box around one feature.</div>
             </div>
-            <label class="segment-field">
-              <span>Annotation group</span>
-              <input
-                id="segmentAnnotationGroup"
-                type="text"
-                list="segmentAnnotationGroupOptions"
-                placeholder="Current annotation group"
-              />
-              <datalist id="segmentAnnotationGroupOptions"></datalist>
-            </label>
-            <label class="segment-option">
-              <input id="segmentModeToggle" type="checkbox" />
-              <span>Fast segmentation mode</span>
-            </label>
-            <label class="segment-option">
-              <input id="segmentAutoAdd" type="checkbox" />
-              <span>Auto-add to annotations</span>
-            </label>
-            <div class="segment-prompt-actions">
-              <button id="segmentDrawBoxButton" type="button">+ Box</button>
-              <button id="segmentAddPositivePointButton" type="button">
-                + Point
-              </button>
-              <button id="segmentAddNegativePointButton" type="button">
-                - Point
-              </button>
-            </div>
-            <div class="segment-commit-actions">
-              <button id="segmentAddAnnotationButton" type="button" disabled>
-                Add Annotation
-              </button>
-              <button id="segmentClearButton" type="button" disabled>Clear</button>
-            </div>
-            <div id="segmentStatus" class="segment-status" role="status">Draw a box around one feature.</div>
           </details>
           <details class="segment-primary-details segment-workflow-details">
             <summary>segmenteverygrain</summary>
-            <label class="segment-field segment-inline-field">
-              <span>Tile set</span>
-              <select id="unsupervisedSegmentTileSetSelect"></select>
-            </label>
-            <div class="segment-actions segment-aoi-actions">
-              <button id="unsupervisedDrawAoiButton" type="button" disabled>
-                Draw AOI
-              </button>
-              <button id="unsupervisedClearAoiButton" type="button" disabled>
-                Clear
-              </button>
-            </div>
-            <label class="segment-field segment-inline-field segment-resolution-field">
-              <span>Resolution</span>
-              <select id="unsupervisedResolutionSelect">
-                <option value="1">Full resolution</option>
-                <option value="0.5">1/2 resolution</option>
-                <option value="0.25">1/4 resolution</option>
-                <option value="viewer">Current viewer resolution</option>
-              </select>
-            </label>
-            <div
-              id="unsupervisedAoiStats"
-              class="segment-info-table"
-              aria-live="polite"
-            >
-              <div>
-                <span>AOI</span>
-                <strong id="unsupervisedAoiSourcePixels">Draw AOI</strong>
+            <div class="segment-workflow-content">
+              <label class="segment-field segment-inline-field">
+                <span>Tile set</span>
+                <select id="unsupervisedSegmentTileSetSelect"></select>
+              </label>
+              <div class="segment-actions segment-aoi-actions">
+                <button id="unsupervisedDrawAoiButton" type="button" disabled>
+                  Draw AOI
+                </button>
+                <button id="unsupervisedClearAoiButton" type="button" disabled>
+                  Clear
+                </button>
               </div>
-              <div>
-                <span>Processed</span>
-                <strong id="unsupervisedAoiProcessedPixels">-</strong>
-              </div>
-              <div>
-                <span>Pixels</span>
-                <strong id="unsupervisedAoiPixelCount">-</strong>
-              </div>
-            </div>
-            <div class="segment-simplify-row">
-              <label class="segment-option">
-                <input id="unsupervisedSimplifyEnabled" type="checkbox" checked />
-                <span title="Reduce the number of vertices in returned grain outlines before adding annotations.">Simplify polygons</span>
+              <label class="segment-field segment-inline-field segment-resolution-field">
+                <span>Resolution</span>
+                <select id="unsupervisedResolutionSelect">
+                  <option value="1">Full resolution</option>
+                  <option value="0.5">1/2 resolution</option>
+                  <option value="0.25">1/4 resolution</option>
+                  <option value="viewer">Current viewer resolution</option>
+                </select>
               </label>
-              <input
-                id="unsupervisedSimplifyEpsilon"
-                class="segment-compact-number-input"
-                type="number"
-                min="0"
-                max="100"
-                step="1"
-                value="2"
-                title="Polygon simplification tolerance in processed-image pixels. Higher values remove more vertices."
-              />
-            </div>
-            <label class="segment-option">
-              <input id="unsupervisedUseSamRefinement" type="checkbox" checked />
-              <span title="Refine U-Net grain proposals with SAM 2.1. This generally improves boundaries but takes substantially longer.">SAM refinement</span>
-            </label>
-            <div class="segment-parameter-grid">
-              <label class="segment-field segment-compact-number-field">
-                <span title="Width and height of each processing patch. Larger patches reduce patch overhead but require more memory.">Patch (px)</span>
-                <input
-                  id="unsupervisedPatchSize"
-                  type="number"
-                  min="256"
-                  max="8000"
-                  step="128"
-                  value="3000"
-                />
-              </label>
-              <label class="segment-field segment-compact-number-field">
-                <span title="Overlap between adjacent patches. Use an overlap comparable to the largest grains to reduce boundary artifacts.">Overlap (px)</span>
-                <input
-                  id="unsupervisedOverlap"
-                  type="number"
-                  min="0"
-                  max="4000"
-                  step="50"
-                  value="600"
-                />
-              </label>
-              <label class="segment-field segment-compact-number-field">
-                <span title="Minimum grain area in processed-image pixels. Smaller returned polygons are discarded.">Min area</span>
-                <input
-                  id="unsupervisedMinArea"
-                  type="number"
-                  min="0"
-                  max="1000000"
-                  step="10"
-                  value="400"
-                />
-              </label>
-              <label class="segment-field segment-compact-number-field">
-                <span title="Expand U-Net grain labels by this many pixels. This can compensate for boundary-channel pixel loss, especially without SAM refinement.">Dilation</span>
-                <input
-                  id="unsupervisedDilation"
-                  type="number"
-                  min="0"
-                  max="25"
-                  step="1"
-                  value="3"
-                />
-              </label>
-              <label class="segment-field segment-compact-number-field">
-                <span title="Maximum clustering distance used to generate grain prompts. Lower values can create more prompts when grains are being missed.">DBS distance</span>
-                <input
-                  id="unsupervisedDbsMaxDist"
-                  type="number"
-                  min="0"
-                  max="10000"
-                  step="10"
-                  value="100"
-                />
-              </label>
-            </div>
-            <label class="segment-option">
-              <input id="unsupervisedShowPatchGrid" type="checkbox" />
-              <span title="Preview the patch layout over the AOI. This display option does not change the segmentation.">Show patch grid</span>
-            </label>
-            <label class="segment-option">
-              <input id="unsupervisedRemoveEdgeGrains" type="checkbox" />
-              <span title="Discard grains that touch the outer boundary of the processed AOI.">Remove edge grains</span>
-            </label>
-            <div class="segment-run-actions">
-              <button id="runUnsupervisedSegmentationButton" type="button" disabled>
-                Run segmentation
-              </button>
-              <button id="cancelUnsupervisedSegmentationButton" type="button" disabled hidden>
-                Cancel
-              </button>
-            </div>
-            <div
-              id="unsupervisedSegmentProgress"
-              class="segment-progress"
-              hidden
-            >
               <div
-                id="unsupervisedSegmentProgressBar"
-                class="segment-progress-bar"
-              ></div>
+                id="unsupervisedAoiStats"
+                class="segment-info-table"
+                aria-live="polite"
+              >
+                <div>
+                  <span>AOI</span>
+                  <strong id="unsupervisedAoiSourcePixels">Draw AOI</strong>
+                </div>
+                <div>
+                  <span>Processed</span>
+                  <strong id="unsupervisedAoiProcessedPixels">-</strong>
+                </div>
+                <div>
+                  <span>Pixels</span>
+                  <strong id="unsupervisedAoiPixelCount">-</strong>
+                </div>
+              </div>
+              <div class="segment-simplify-row">
+                <label class="segment-option">
+                  <input id="unsupervisedSimplifyEnabled" type="checkbox" checked />
+                  <span title="Reduce the number of vertices in returned grain outlines before adding annotations.">Simplify polygons</span>
+                </label>
+                <input
+                  id="unsupervisedSimplifyEpsilon"
+                  class="segment-compact-number-input"
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="1"
+                  value="2"
+                  title="Polygon simplification tolerance in processed-image pixels. Higher values remove more vertices."
+                />
+              </div>
+              <label class="segment-option">
+                <input id="unsupervisedUseSamRefinement" type="checkbox" checked />
+                <span title="Refine U-Net grain proposals with SAM 2.1. This generally improves boundaries but takes substantially longer.">SAM refinement</span>
+              </label>
+              <div class="segment-parameter-grid">
+                <label class="segment-field segment-compact-number-field">
+                  <span title="Width and height of each processing patch. Larger patches reduce patch overhead but require more memory.">Patch (px)</span>
+                  <input
+                    id="unsupervisedPatchSize"
+                    type="number"
+                    min="256"
+                    max="8000"
+                    step="128"
+                    value="3000"
+                  />
+                </label>
+                <label class="segment-field segment-compact-number-field">
+                  <span title="Overlap between adjacent patches. Use an overlap comparable to the largest grains to reduce boundary artifacts.">Overlap (px)</span>
+                  <input
+                    id="unsupervisedOverlap"
+                    type="number"
+                    min="0"
+                    max="4000"
+                    step="50"
+                    value="600"
+                  />
+                </label>
+                <label class="segment-field segment-compact-number-field">
+                  <span title="Minimum grain area in processed-image pixels. Smaller returned polygons are discarded.">Min area</span>
+                  <input
+                    id="unsupervisedMinArea"
+                    type="number"
+                    min="0"
+                    max="1000000"
+                    step="10"
+                    value="400"
+                  />
+                </label>
+                <label class="segment-field segment-compact-number-field">
+                  <span title="Expand U-Net grain labels by this many pixels. This can compensate for boundary-channel pixel loss, especially without SAM refinement.">Dilation</span>
+                  <input
+                    id="unsupervisedDilation"
+                    type="number"
+                    min="0"
+                    max="25"
+                    step="1"
+                    value="3"
+                  />
+                </label>
+                <label class="segment-field segment-compact-number-field">
+                  <span title="Maximum clustering distance used to generate grain prompts. Lower values can create more prompts when grains are being missed.">DBS distance</span>
+                  <input
+                    id="unsupervisedDbsMaxDist"
+                    type="number"
+                    min="0"
+                    max="10000"
+                    step="10"
+                    value="100"
+                  />
+                </label>
+              </div>
+              <label class="segment-option">
+                <input id="unsupervisedShowPatchGrid" type="checkbox" />
+                <span title="Preview the patch layout over the AOI. This display option does not change the segmentation.">Show patch grid</span>
+              </label>
+              <label class="segment-option">
+                <input id="unsupervisedRemoveEdgeGrains" type="checkbox" />
+                <span title="Discard grains that touch the outer boundary of the processed AOI.">Remove edge grains</span>
+              </label>
+              <div class="segment-run-actions">
+                <button id="runUnsupervisedSegmentationButton" type="button" disabled>
+                  Run segmentation
+                </button>
+                <button id="cancelUnsupervisedSegmentationButton" type="button" disabled hidden>
+                  Cancel
+                </button>
+              </div>
+              <div
+                id="unsupervisedSegmentProgress"
+                class="segment-progress"
+                hidden
+              >
+                <div
+                  id="unsupervisedSegmentProgressBar"
+                  class="segment-progress-bar"
+                ></div>
+              </div>
+              <div id="unsupervisedSegmentStatus" class="segment-status" role="status">Draw an AOI and test segmenteverygrain setup before running segmentation.</div>
             </div>
-            <div id="unsupervisedSegmentStatus" class="segment-status" role="status">Draw an AOI and test segmenteverygrain setup before running segmentation.</div>
           </details>
         </div>
       </div>

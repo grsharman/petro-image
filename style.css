@@ -2041,7 +2041,7 @@ body.import-wizard-page {
   margin-top: 6px;
   padding-top: 5px;
   border-top: 1px solid rgba(0, 0, 0, 0.18);
-  background: #fff;
+  background: transparent;
 }
 
 .transform-sticky-status-footer #transformStatus {
@@ -2876,7 +2876,18 @@ body.import-wizard-page {
 .segment-workflow-details {
   display: grid;
   gap: 5px;
+  min-width: 0;
   margin-bottom: 0;
+}
+
+.segment-workflow-details {
+  gap: 8px;
+}
+
+.segment-workflow-content {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
 }
 
 .segment-python-details {
@@ -2989,6 +3000,7 @@ body.import-wizard-page {
 .segment-field {
   display: grid;
   gap: 3px;
+  min-width: 0;
 }
 
 .segment-field span {
@@ -3089,9 +3101,10 @@ body.import-wizard-page {
 
 .segment-padding-row {
   display: grid;
-  grid-template-columns: 72px 52px 52px;
+  grid-template-columns: minmax(0, 1fr) repeat(2, minmax(0, 52px));
   gap: 4px;
   align-items: end;
+  min-width: 0;
 }
 
 .segment-simplify-row {

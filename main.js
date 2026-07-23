@@ -18,10 +18,14 @@ import { randomUUID } from "crypto";
 import { convertImageBufferToDzi, convertImageToDzi } from "./dzi-converter.js";
 import {
   ANNOTATIONS_FOLDER_NAME,
+  COUNTS_FOLDER_NAME,
+  createSampleId,
   loadWorkingAnnotations,
+  loadWorkingCounts,
   migrateLibrarySampleIds,
   normalizeLibrarySampleIds,
   saveWorkingAnnotations,
+  saveWorkingCounts,
   writeJsonAtomic,
 } from "./desktop-annotation-store.js";
 import {
@@ -180,6 +184,9 @@ async function ensureProjectStructure(projectDirectory) {
   await fs.mkdir(projectDirectory, { recursive: true });
   await fs.mkdir(path.join(projectDirectory, DZI_FOLDER_NAME), { recursive: true });
   await fs.mkdir(path.join(projectDirectory, ANNOTATIONS_FOLDER_NAME), {
+    recursive: true,
+  });
+  await fs.mkdir(path.join(projectDirectory, COUNTS_FOLDER_NAME), {
     recursive: true,
   });
 
@@ -1223,7 +1230,7 @@ async function runAxioScanCziConversion(request, event) {
     orderedTileSets.push(...remainingTileSets);
     orderedTileSets.forEach((tileSet) => delete tileSet._cziImportKey);
     sample.tileSets = orderedTileSets;
-    sample.sampleId = randomUUID();
+    sample.sampleId = createSampleId();
     await fs.rm(stagingDirectory, { recursive: true, force: true });
     return {
       ok: true,
@@ -2439,6 +2446,24 @@ const createWindow = async () => {
             console.warn("Could not flush working annotations before closing:", error);
           }
         }
+        if (unsavedWorkDomains.includes("counts")) {
+          try {
+            const saved = await mainWindow.webContents.executeJavaScript(
+              "window.flushCountAutosave?.()",
+            );
+            if (saved === true) {
+              unsavedWorkDomains = unsavedWorkDomains.filter(
+                (domain) => domain !== "counts",
+              );
+              unsavedWorkLabels = unsavedWorkLabels.filter(
+                (label) => label !== "point counts",
+              );
+              hasUnsavedWork = unsavedWorkDomains.length > 0;
+            }
+          } catch (error) {
+            console.warn("Could not flush working counts before closing:", error);
+          }
+        }
         if (!hasUnsavedWork) {
           mainWindow.destroy();
           return;
@@ -2668,6 +2693,20 @@ ipcMain.handle("save-working-annotations", async (event, request = {}) => {
   const settings = await readProjectSettings();
   if (!settings.projectDirectory) return { available: false };
   const result = await saveWorkingAnnotations(settings.projectDirectory, request);
+  return { available: true, ...result };
+});
+
+ipcMain.handle("load-working-counts", async (event, { sampleId } = {}) => {
+  const settings = await readProjectSettings();
+  if (!settings.projectDirectory) return { available: false, geoJSON: null };
+  const geoJSON = await loadWorkingCounts(settings.projectDirectory, sampleId);
+  return { available: true, geoJSON };
+});
+
+ipcMain.handle("save-working-counts", async (event, request = {}) => {
+  const settings = await readProjectSettings();
+  if (!settings.projectDirectory) return { available: false };
+  const result = await saveWorkingCounts(settings.projectDirectory, request);
   return { available: true, ...result };
 });
 
