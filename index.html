@@ -1337,8 +1337,10 @@
         </div>
         <div class="tool-palette-body snapshot-palette-body">
           <label class="snapshot-field">
-            <span>Tile set</span>
-            <select id="snapshotTileSetSelect"></select>
+            <span>Source</span>
+            <select id="snapshotTileSetSelect">
+              <option value="visible">Use visible layers</option>
+            </select>
           </label>
           <label class="snapshot-field">
             <span>Contents</span>
@@ -1442,9 +1444,9 @@
           <h4>Select an Area</h4>
           <p>Click Draw Area and click+drag over the image, or use the current screen extent. Drag the box or its handles to adjust the snapshot area.</p>
           <h4>Contents and Resolution</h4>
-          <p>Choose the tile set and whether to include annotations and labels. Full, half, and quarter resolution use source-image pixels. Current viewer resolution captures the detail currently displayed. The dimensions table previews the chosen output size.</p>
+          <p>Use visible layers exports every checked tile set in display order with its current opacity. You can instead choose one tile set by itself. Snapshot always overlaps selected layers and does not reproduce Divide Images. Choose whether to include annotations and labels. Full, half, and quarter resolution use source-image pixels; current viewer resolution uses the current on-screen pixel density. The dimensions table previews the chosen output size.</p>
           <h4>Scalebar and Filter</h4>
-          <p>The option to include a scalebar in the image is enabled when image scale is available. Export applied filter uses the active Transform preview instead of the raw tile set.</p>
+          <p>The option to include a scalebar in the image is enabled when image scale is available. Export applied filter applies each exported tile set's attached Transform before the layers are combined.</p>
           <h4>Save or Copy</h4>
           <p>Save to JPG opens the file-save workflow. Copy to Clipboard places the rendered image directly on the system clipboard and keeps the selected area available.</p>
           <h4>Output Limits</h4>

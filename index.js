@@ -5479,7 +5479,9 @@ function updateSnapshotScalebarAvailability() {
 }
 
 function hasSnapshotExportableTransform() {
-  return !isDefaultTileSetTransform(getSnapshotSelectedTileSet());
+  return getSnapshotLayers().some(
+    ({ tileSetIndex }) => !isDefaultTileSetTransform(tileSets()[tileSetIndex]),
+  );
 }
 
 function updateSnapshotFilterAvailability() {
@@ -5489,7 +5491,7 @@ function updateSnapshotFilterAvailability() {
   snapshotExportFilter.disabled = !hasTransform;
   snapshotExportFilter.title = hasTransform
     ? ""
-    : "Apply a Transform preview before exporting a filter.";
+    : "Attach a Transform to an exported tile set before exporting a filter.";
   if (!hasTransform) {
     snapshotExportFilter.checked = false;
   }
@@ -5568,6 +5570,7 @@ function updateSnapshotStatus(message) {
   updateSnapshotScalebarAvailability();
   updateSnapshotFilterAvailability();
   updateSnapshotPorosityOverlayAvailability();
+  const hasSnapshotLayers = getSnapshotLayers().length > 0;
 
   let exportSize = null;
   let exportLimitError = "";
@@ -5587,6 +5590,7 @@ function updateSnapshotStatus(message) {
       snapshotExportInProgress ||
       !snapshotSelectionRect ||
       snapshotModeActive ||
+      !hasSnapshotLayers ||
       Boolean(exportLimitError);
     snapshotExportButton.title = exportLimitError || "";
   }
@@ -5595,6 +5599,7 @@ function updateSnapshotStatus(message) {
       snapshotExportInProgress ||
       !snapshotSelectionRect ||
       snapshotModeActive ||
+      !hasSnapshotLayers ||
       Boolean(exportLimitError);
     snapshotCopyButton.title = exportLimitError || "";
   }
@@ -5606,6 +5611,8 @@ function updateSnapshotStatus(message) {
 
   if (snapshotModeActive) {
     snapshotStatus.textContent = "Drag a rectangle over the image.";
+  } else if (!hasSnapshotLayers) {
+    snapshotStatus.textContent = "Select at least one visible tile set.";
   } else if (snapshotSelectionRect) {
     if (exportLimitError) {
       snapshotStatus.textContent = `${exportLimitError} Zoom in or choose a lower resolution.`;
@@ -10480,33 +10487,6 @@ async function estimatePorosity(options = {}) {
   }
 }
 
-function renderVisibleSnapshotBaseCanvas(sourceCanvas, sourceRect, exportSize) {
-  if (!sourceCanvas || !sourceRect || !sourceRect.width || !sourceRect.height) {
-    return null;
-  }
-
-  const outputCanvas = document.createElement("canvas");
-  outputCanvas.width = exportSize.width;
-  outputCanvas.height = exportSize.height;
-  const ctx = outputCanvas.getContext("2d");
-  if (!ctx) return null;
-
-  ctx.imageSmoothingEnabled = true;
-  ctx.imageSmoothingQuality = "high";
-  ctx.drawImage(
-    sourceCanvas,
-    sourceRect.left,
-    sourceRect.top,
-    sourceRect.width,
-    sourceRect.height,
-    0,
-    0,
-    outputCanvas.width,
-    outputCanvas.height,
-  );
-  return outputCanvas;
-}
-
 function drawSnapshotPorosityOverlay(ctx, outputCanvas, selectionRect) {
   if (
     !ctx ||
@@ -10825,8 +10805,14 @@ function getSnapshotTileSetLabel(tileSet, index) {
 function populateSnapshotTileSetSelect() {
   if (!snapshotTileSetSelect) return;
 
-  const previousValue = snapshotTileSetSelect.value;
+  const previousValue = snapshotTileSetSelect.value || "visible";
   snapshotTileSetSelect.innerHTML = "";
+
+  const visibleOption = document.createElement("option");
+  visibleOption.value = "visible";
+  visibleOption.textContent = "Use visible layers";
+  snapshotTileSetSelect.append(visibleOption);
+
   tileSets().forEach((tileSet, index) => {
     const option = document.createElement("option");
     option.value = String(index);
@@ -10844,20 +10830,38 @@ function populateSnapshotTileSetSelect() {
     return;
   }
 
-  const checkedIndex = Array.from(
-    document.querySelectorAll(".image-checkbox"),
-  ).findIndex((checkbox) => checkbox.checked);
-  snapshotTileSetSelect.value = String(checkedIndex >= 0 ? checkedIndex : 0);
+  snapshotTileSetSelect.value = "visible";
 }
 
 function getSnapshotTileSetIndex() {
-  const rawIndex = Number.parseInt(snapshotTileSetSelect?.value || "0", 10);
+  const selectedValue = snapshotTileSetSelect?.value || "visible";
+  if (selectedValue === "visible") {
+    return getSnapshotLayers()[0]?.tileSetIndex || 0;
+  }
+  const rawIndex = Number.parseInt(selectedValue, 10);
   if (!Number.isFinite(rawIndex)) return 0;
   return Math.min(Math.max(rawIndex, 0), Math.max(tileSets().length - 1, 0));
 }
 
-function getSnapshotSelectedTileSet() {
-  return tileSets()[getSnapshotTileSetIndex()] || null;
+function getSnapshotLayers() {
+  const selectedValue = snapshotTileSetSelect?.value || "visible";
+  if (selectedValue !== "visible") {
+    const tileSetIndex = getSnapshotTileSetIndex();
+    return tileSets()[tileSetIndex]
+      ? [{ tileSetIndex, opacity: 1 }]
+      : [];
+  }
+
+  const checkboxes = document.querySelectorAll(".image-checkbox");
+  const sliders = document.querySelectorAll(".opacity-slider");
+  return tileSets().flatMap((_, tileSetIndex) => {
+    if (!checkboxes[tileSetIndex]?.checked) return [];
+    const opacityValue = Number(sliders[tileSetIndex]?.value ?? 100);
+    const opacity = Number.isFinite(opacityValue)
+      ? Math.min(1, Math.max(0, opacityValue / 100))
+      : 1;
+    return [{ tileSetIndex, opacity }];
+  });
 }
 
 function getSnapshotResolutionMode() {
@@ -10989,24 +10993,56 @@ function getSnapshotSelectionImageRect(selectionRect = snapshotSelectionRect) {
   };
 }
 
-async function applySnapshotExportFilter(outputCanvas, exportSize) {
-  if (!snapshotExportFilter?.checked || !hasSnapshotExportableTransform()) {
-    return false;
+async function applySnapshotLayerFilter(
+  layerCanvas,
+  tileSetIndex,
+  exportSize,
+) {
+  const tileSet = tileSets()[tileSetIndex];
+  if (
+    !layerCanvas ||
+    !snapshotExportFilter?.checked ||
+    !tileSet ||
+    isDefaultTileSetTransform(tileSet)
+  ) {
+    return { canvas: layerCanvas, applied: false };
   }
 
-  const transform = getTileSetTransform(getSnapshotSelectedTileSet());
-  const context = outputCanvas.getContext("2d", { willReadFrequently: true });
-  if (!context) return false;
+  const transform = getTileSetTransform(tileSet);
+  const imageRect = getSnapshotSelectionImageRect();
+  if (!imageRect) {
+    throw new Error("Could not determine the filter export image area.");
+  }
+  const scale = Math.min(
+    exportSize.width / imageRect.width,
+    exportSize.height / imageRect.height,
+  );
 
-  if (isRasterRecipe(transform)) {
-    const imageRect = getSnapshotSelectionImageRect();
-    if (!imageRect) {
-      throw new Error("Could not determine the filter export image area.");
-    }
-    const scale = Math.min(
-      exportSize.width / imageRect.width,
-      exportSize.height / imageRect.height,
+  if (isPolarizationRecipe(transform)) {
+    const resolution = {
+      key: "snapshot",
+      label: "Snapshot",
+      scale,
+      width: Math.max(1, Math.round(imageRect.width * scale)),
+      height: Math.max(1, Math.round(imageRect.height * scale)),
+    };
+    const raster = await renderPolarizationRaster(
+      imageRect,
+      resolution,
+      transform,
     );
+    const transformedCanvas = createPolarizationRasterDisplayCanvas(
+      raster,
+      transform,
+      resolution.width,
+      resolution.height,
+    );
+    return { canvas: transformedCanvas, applied: true };
+  }
+
+  const context = layerCanvas.getContext("2d", { willReadFrequently: true });
+  if (!context) return { canvas: layerCanvas, applied: false };
+  if (isRasterRecipe(transform)) {
     await applyAdvancedTransformToExportContext(
       context,
       transform,
@@ -11017,7 +11053,7 @@ async function applySnapshotExportFilter(outputCanvas, exportSize) {
     applyTileSetTransformToContext(context, transform);
   }
 
-  return true;
+  return { canvas: layerCanvas, applied: true };
 }
 
 function getSnapshotMetersPerOutputPixel(selectionRect, outputWidth) {
@@ -11408,7 +11444,7 @@ async function waitForExportViewerReady(
   }
 }
 
-async function renderFullResolutionSnapshotBaseCanvas(exportSize) {
+async function renderSnapshotTileSetCanvas(exportSize, tileSetIndex) {
   const pixelDensity =
     OpenSeadragon.pixelDensityRatio || window.devicePixelRatio || 1;
   const containerWidth = Math.max(
@@ -11422,9 +11458,7 @@ async function renderFullResolutionSnapshotBaseCanvas(exportSize) {
   const selectionViewportBounds = getSnapshotViewportBounds(
     snapshotSelectionRect,
   );
-  const selectedTileSetIndex = getSnapshotTileSetIndex();
-  const selectedTileSet = getSnapshotSelectedTileSet();
-  const selectedTileSetOpacity = 1;
+  const selectedTileSet = tileSets()[tileSetIndex] || null;
 
   const exportContainer = document.createElement("div");
   exportContainer.id = `snapshot-export-${Date.now()}`;
@@ -11495,8 +11529,8 @@ async function renderFullResolutionSnapshotBaseCanvas(exportSize) {
     const activeTileImages = applySnapshotTileSetComposition(
       exportViewer,
       exportTileSet,
-      selectedTileSetOpacity,
-      selectedTileSetIndex,
+      1,
+      tileSetIndex,
     );
     await waitForExportViewerReady(exportViewer, activeTileImages, {
       outputPixels: exportSize.width * exportSize.height,
@@ -11529,6 +11563,58 @@ async function renderFullResolutionSnapshotBaseCanvas(exportSize) {
     exportViewer.destroy();
     exportContainer.remove();
   }
+}
+
+async function renderSnapshotCompositionCanvas(exportSize) {
+  const layers = getSnapshotLayers();
+  if (!layers.length) {
+    throw new Error("Select at least one visible tile set.");
+  }
+
+  const outputCanvas = document.createElement("canvas");
+  outputCanvas.width = exportSize.width;
+  outputCanvas.height = exportSize.height;
+  const context = outputCanvas.getContext("2d");
+  if (!context) {
+    throw new Error("Could not create the snapshot composition canvas.");
+  }
+
+  context.fillStyle = "#ffffff";
+  context.fillRect(0, 0, outputCanvas.width, outputCanvas.height);
+
+  let filterApplied = false;
+  for (const layer of layers) {
+    const rawCanvas = await renderSnapshotTileSetCanvas(
+      exportSize,
+      layer.tileSetIndex,
+    );
+    const filteredLayer = await applySnapshotLayerFilter(
+      rawCanvas,
+      layer.tileSetIndex,
+      exportSize,
+    );
+    filterApplied ||= filteredLayer.applied;
+
+    context.save();
+    context.globalAlpha = layer.opacity;
+    context.imageSmoothingEnabled = true;
+    context.imageSmoothingQuality = "high";
+    context.drawImage(
+      filteredLayer.canvas,
+      0,
+      0,
+      filteredLayer.canvas.width,
+      filteredLayer.canvas.height,
+      0,
+      0,
+      outputCanvas.width,
+      outputCanvas.height,
+    );
+    context.restore();
+    await wait(0);
+  }
+
+  return { canvas: outputCanvas, filterApplied };
 }
 
 function getViewportBoundsForImageRect(imageRect) {
@@ -16213,6 +16299,10 @@ async function exportSnapshotSelection(destination = "file") {
     updateSnapshotStatus("Draw a rectangle before exporting.");
     return;
   }
+  if (!getSnapshotLayers().length) {
+    updateSnapshotStatus("Select at least one visible tile set.");
+    return;
+  }
 
   let outputCanvas = null;
   let ctx = null;
@@ -16252,20 +16342,13 @@ async function exportSnapshotSelection(destination = "file") {
 
   let finalStatus = "";
   try {
-    outputCanvas =
-      getSnapshotResolutionMode() === "current"
-        ? renderVisibleSnapshotBaseCanvas(sourceCanvas, sourceRect, exportSize)
-        : await renderFullResolutionSnapshotBaseCanvas(exportSize);
+    const composition = await renderSnapshotCompositionCanvas(exportSize);
+    outputCanvas = composition.canvas;
     ctx = outputCanvas?.getContext("2d");
     if (!ctx || !outputCanvas) {
       throw new Error("Could not create the snapshot canvas.");
     }
-    const filterApplied =
-      getSnapshotResolutionMode() === "current"
-        ? Boolean(
-            snapshotExportFilter?.checked && hasSnapshotExportableTransform(),
-          )
-        : await applySnapshotExportFilter(outputCanvas, exportSize);
+    const filterApplied = composition.filterApplied;
 
     const porosityOverlayDrawn = drawSnapshotPorosityOverlay(
       ctx,
@@ -30143,6 +30226,7 @@ function buildImageCheckboxes() {
       }
       displayImages();
       refreshTransformPreviewStatus();
+      updateSnapshotStatus();
     });
 
     const identity = document.createElement("div");
@@ -30232,11 +30316,13 @@ function buildOpacitySliders() {
       slider.value = opacityValue;
       valueInput.value = opacityValue;
       displayImages();
+      updateSnapshotStatus();
     };
 
     slider.addEventListener("input", () => {
       valueInput.value = slider.value;
       displayImages();
+      updateSnapshotStatus();
     });
 
     valueInput.addEventListener("change", () => {
@@ -44023,6 +44109,7 @@ document.addEventListener("keydown", (event) => {
       }
 
       displayImages();
+      updateSnapshotStatus();
       event.preventDefault();
       return;
     }
@@ -44045,6 +44132,7 @@ document.addEventListener("keydown", (event) => {
       if (event.altKey && !mobileMode) {
         checkboxes.forEach((cb) => (cb.checked = false));
         displayImages();
+        updateSnapshotStatus();
         event.preventDefault();
       }
       break;
