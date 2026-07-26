@@ -583,13 +583,13 @@ function normalizeSamSettings(settings = {}) {
   };
   const allowedModelTypes = new Set(["tiny", "small", "base_plus", "large"]);
   const rawModelType =
-    typeof sam.modelType === "string" ? sam.modelType : "base_plus";
+    typeof sam.modelType === "string" ? sam.modelType : "large";
   const modelType = legacyModelTypeMap[rawModelType] || rawModelType;
   const normalizedSettings = {
     pythonPath: typeof sam.pythonPath === "string" ? sam.pythonPath : "",
     checkpointPath:
       typeof sam.checkpointPath === "string" ? sam.checkpointPath : "",
-    modelType: allowedModelTypes.has(modelType) ? modelType : "base_plus",
+    modelType: allowedModelTypes.has(modelType) ? modelType : "large",
   };
   const validation = normalizeSamValidation(sam.validation, normalizedSettings);
   return {
@@ -602,7 +602,7 @@ function getSamSettingsFingerprint(settings = {}) {
   return JSON.stringify({
     pythonPath: settings.pythonPath || "",
     checkpointPath: settings.checkpointPath || "",
-    modelType: settings.modelType || "base_plus",
+    modelType: settings.modelType || "large",
   });
 }
 
@@ -1261,7 +1261,7 @@ import sys
 import traceback
 
 checkpoint_path = sys.argv[1] if len(sys.argv) > 1 else ""
-model_type = sys.argv[2] if len(sys.argv) > 2 else "base_plus"
+model_type = sys.argv[2] if len(sys.argv) > 2 else "large"
 
 model_configs = {
     "tiny": "configs/sam2.1/sam2.1_hiera_t.yaml",
@@ -1870,7 +1870,7 @@ async function getSegmenteverygrainWorker(
       "--sam-checkpoint",
       samSettings.checkpointPath,
       "--sam-model-type",
-      samSettings.modelType || "base_plus",
+      samSettings.modelType || "large",
       "--device",
       device,
     );

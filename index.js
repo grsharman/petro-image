@@ -3091,7 +3091,7 @@ function getSamSettingsFromInputs() {
   return {
     pythonPath: samPythonPathInput?.value.trim() || "",
     checkpointPath: samCheckpointPathInput?.value.trim() || "",
-    modelType: samModelTypeSelect?.value || "base_plus",
+    modelType: samModelTypeSelect?.value || "large",
   };
 }
 
@@ -3105,7 +3105,7 @@ function getSamSettingsFingerprint(settings = getSamSettingsFromInputs()) {
   return JSON.stringify({
     pythonPath: settings.pythonPath || "",
     checkpointPath: settings.checkpointPath || "",
-    modelType: settings.modelType || "base_plus",
+    modelType: settings.modelType || "large",
   });
 }
 
@@ -3246,7 +3246,7 @@ function normalizeSamModelTypeForUi(modelType) {
   const normalizedModelType = legacyModelTypes[modelType] || modelType;
   return ["tiny", "small", "base_plus", "large"].includes(normalizedModelType)
     ? normalizedModelType
-    : "base_plus";
+    : "large";
 }
 
 function getSamValidationStateFromSettings(settings = {}) {
@@ -34033,6 +34033,7 @@ function deleteSelectedAnnotations() {
   clearAnnotationSelection({ redraw: false, scroll: false });
   drawShape(polyCanvas, [annoJSON]);
   renderAnnotationList();
+  unsavedAnnotations(true);
 
   if (annoJSON.features.length === 0) {
     disableAnnoButtons();

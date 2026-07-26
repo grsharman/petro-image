@@ -31,7 +31,7 @@ def main():
     parser.add_argument("--model", required=True)
     parser.add_argument("--use-sam", action="store_true")
     parser.add_argument("--sam-checkpoint", default="")
-    parser.add_argument("--sam-model-type", default="base_plus")
+    parser.add_argument("--sam-model-type", default="large")
     parser.add_argument("--device", default="auto")
     args = parser.parse_args()
 
