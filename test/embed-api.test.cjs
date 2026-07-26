@@ -13,25 +13,33 @@ function loadApi() {
   return { api: window.PetroImageEmbedApi, window };
 }
 
-test("only accepts versioned PetroAtlas commands from the embedding parent", () => {
+test("only accepts versioned commands from the embedding parent", () => {
   const { api, window } = loadApi();
   const accepted = api.validateEnvelope(
     {
       source: window.parent,
-      origin: "https://petroatlas.org",
-      data: { source: "petroatlas", version: 1, type: "viewer.setAnnotations" },
+      origin: "https://example.org",
+      data: {
+        source: "petro-image-host",
+        version: 1,
+        type: "viewer.setAnnotations",
+      },
     },
-    { parentWindow: window.parent, parentOrigin: "https://petroatlas.org" },
+    { parentWindow: window.parent, parentOrigin: "https://example.org" },
   );
   assert.equal(accepted.ok, true);
 
   const wrongOrigin = api.validateEnvelope(
     {
       source: window.parent,
-      origin: "https://example.org",
-      data: { source: "petroatlas", version: 1, type: "viewer.setAnnotations" },
+      origin: "https://other.example",
+      data: {
+        source: "petro-image-host",
+        version: 1,
+        type: "viewer.setAnnotations",
+      },
     },
-    { parentWindow: window.parent, parentOrigin: "https://petroatlas.org" },
+    { parentWindow: window.parent, parentOrigin: "https://example.org" },
   );
   assert.equal(wrongOrigin.ok, false);
   assert.equal(wrongOrigin.ignored, true);
@@ -96,7 +104,7 @@ test("routes commands and returns request-correlated success events", async () =
   const events = [];
   const controller = api.createController({
     parentWindow: window.parent,
-    parentOrigin: "https://petroatlas.org",
+    parentOrigin: "https://example.org",
     postEvent: (type, detail) => events.push({ type, detail }),
     handlers: {
       "viewer.setViewport": async (message) => ({ bounds: api.normalizeImageBounds(message.bounds) }),
@@ -104,9 +112,9 @@ test("routes commands and returns request-correlated success events", async () =
   });
   const handled = await controller.handleMessage({
     source: window.parent,
-    origin: "https://petroatlas.org",
+    origin: "https://example.org",
     data: {
-      source: "petroatlas",
+      source: "petro-image-host",
       version: 1,
       type: "viewer.setViewport",
       requestId: "question-2-start",
@@ -129,7 +137,7 @@ test("reports invalid viewport commands without throwing across the message boun
   const events = [];
   const controller = api.createController({
     parentWindow: window.parent,
-    parentOrigin: "https://petroatlas.org",
+    parentOrigin: "https://example.org",
     postEvent: (type, detail) => events.push({ type, detail }),
     handlers: {
       "viewer.setViewport": (message) => api.normalizeImageBounds(message.bounds),
@@ -137,9 +145,9 @@ test("reports invalid viewport commands without throwing across the message boun
   });
   await controller.handleMessage({
     source: window.parent,
-    origin: "https://petroatlas.org",
+    origin: "https://example.org",
     data: {
-      source: "petroatlas",
+      source: "petro-image-host",
       version: 1,
       type: "viewer.setViewport",
       requestId: "bad-bounds",

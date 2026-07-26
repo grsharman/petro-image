@@ -2031,13 +2031,11 @@ let porosityAoiModeActive = false;
 let porosityPickModeActive = false;
 let porosityAoiImagePoints = [];
 let porosityAoiComplete = false;
-let porosityAoiMousePoint = null;
 let porosityAoiSelectedVertexIndex = null;
 let porosityAoiDragState = null;
 let porosityAoiDrawState = null;
 let porosityAoiHistoryState = null;
 let porosityAoiVisible = true;
-let porosityAoiConstrainSegment = false;
 let porosityTypes = [];
 let activePorosityTypeId = "";
 let porosityRecolorFrame = null;
@@ -7058,7 +7056,6 @@ function restorePorosityState(state, message = "") {
   porosityPickModeActive = state.pickModeActive;
   porosityAoiHistoryState = null;
   selectedPorositySampleSetId = "";
-  porosityAoiMousePoint = null;
   porosityAoiImagePoints = state.aoiImagePoints.map((point) => ({ ...point }));
   porosityAoiComplete = state.aoiComplete;
   porosityAoiVisible = state.aoiVisible !== false;
@@ -7751,14 +7748,6 @@ function drawPorosityOverlay() {
       ctx.lineTo(point.x, point.y);
     }
   });
-  if (
-    porosityAoiModeActive &&
-    !porosityAoiComplete &&
-    porosityAoiMousePoint &&
-    points.length > 0
-  ) {
-    ctx.lineTo(porosityAoiMousePoint.x, porosityAoiMousePoint.y);
-  }
   if ((porosityAoiComplete || porosityAoiModeActive) && points.length >= 3) {
     ctx.closePath();
   }
@@ -7788,21 +7777,6 @@ function drawPorosityOverlay() {
     ctx.stroke();
   });
   ctx.restore();
-}
-
-function removeDuplicatePorosityAoiFinishPoint() {
-  if (porosityAoiImagePoints.length < 2) return;
-
-  const points = getPorosityAoiScreenPoints();
-  const lastPoint = points[points.length - 1];
-  const previousPoint = points[points.length - 2];
-  if (!lastPoint || !previousPoint) return;
-  if (
-    Math.hypot(lastPoint.x - previousPoint.x, lastPoint.y - previousPoint.y) <=
-    3
-  ) {
-    porosityAoiImagePoints.pop();
-  }
 }
 
 function getPorosityToleranceValue() {
@@ -8397,7 +8371,6 @@ function resetPorosityAnalysis(options = {}) {
   } = options;
   porosityAoiModeActive = false;
   porosityPickModeActive = false;
-  porosityAoiMousePoint = null;
   porosityAoiSelectedVertexIndex = null;
   porosityAoiDragState = null;
   porosityAoiDrawState = null;
@@ -8602,18 +8575,6 @@ function insertPorosityAoiVertex(viewerPixel) {
   drawPorosityOverlay();
   updatePorosityControls("AOI vertex added. Estimate again when ready.");
   return true;
-}
-
-function constrainPorosityAoiPointToPrevious(imagePoint) {
-  const previousPoint =
-    porosityAoiImagePoints[porosityAoiImagePoints.length - 1];
-  if (!imagePoint || !previousPoint) return imagePoint;
-
-  const dx = Math.abs(imagePoint.x - previousPoint.x);
-  const dy = Math.abs(imagePoint.y - previousPoint.y);
-  return dx >= dy
-    ? { x: imagePoint.x, y: previousPoint.y }
-    : { x: previousPoint.x, y: imagePoint.y };
 }
 
 function startPorosityAoiVertexDrag(event) {
@@ -9627,7 +9588,6 @@ function startPorosityAoiMode() {
 }
 
 function finishPorosityAoi() {
-  removeDuplicatePorosityAoiFinishPoint();
   if (porosityAoiImagePoints.length < 3) {
     updatePorosityControls("Add at least three AOI vertices.");
     return;
@@ -9922,28 +9882,6 @@ function isPointInPolygon(point, polygon) {
     if (intersects) inside = !inside;
   }
   return inside;
-}
-
-function addPorosityAoiPoint(event) {
-  let imagePoint = getPorosityImagePointFromViewerPixel(event.position);
-  if (!imagePoint) return;
-  if (event.originalEvent?.shiftKey) {
-    imagePoint = constrainPorosityAoiPointToPrevious(imagePoint);
-  }
-
-  if (porosityAoiImagePoints.length === 0 && porosityAoiHistoryState) {
-    annotationHistory.pushPorosity(
-      "Draw porosity AOI",
-      porosityAoiHistoryState,
-    );
-    porosityAoiHistoryState = null;
-  }
-  porosityAoiImagePoints.push(imagePoint);
-  porosityTypes.forEach((type) => {
-    type.result = null;
-  });
-  drawPorosityOverlay();
-  updatePorosityControls();
 }
 
 function getPorosityCanvasPointFromViewerPixel(sourceCanvas, viewerPixel) {
@@ -40224,34 +40162,6 @@ viewerContainer.addEventListener("pointermove", updateSegmentReticlePosition);
 viewerContainer.addEventListener("pointerenter", updateSegmentReticlePosition);
 viewerContainer.addEventListener("pointerleave", hideSegmentReticle);
 
-viewerContainer.addEventListener("mousemove", (event) => {
-  if (!porosityAoiModeActive || porosityAoiComplete || porosityAoiDrawState) {
-    return;
-  }
-
-  const rect = viewerContainer.getBoundingClientRect();
-  porosityAoiConstrainSegment = event.shiftKey;
-  if (event.shiftKey && porosityAoiImagePoints.length > 0) {
-    const imagePoint = getPorosityImagePointFromClientPoint(
-      event.clientX,
-      event.clientY,
-    );
-    const constrainedPoint = constrainPorosityAoiPointToPrevious(imagePoint);
-    porosityAoiMousePoint = getPorosityScreenPointFromImagePoint(
-      constrainedPoint,
-    ) || {
-      x: event.clientX - rect.left,
-      y: event.clientY - rect.top,
-    };
-  } else {
-    porosityAoiMousePoint = {
-      x: event.clientX - rect.left,
-      y: event.clientY - rect.top,
-    };
-  }
-  drawPorosityOverlay();
-});
-
 viewerContainer.addEventListener(
   "pointerdown",
   (event) => {
@@ -40287,13 +40197,6 @@ viewerContainer.addEventListener(
   },
   true,
 );
-
-viewerContainer.addEventListener("mouseleave", () => {
-  if (!porosityAoiModeActive) return;
-
-  porosityAoiMousePoint = null;
-  drawPorosityOverlay();
-});
 
 // Event listener for double-click to edit existing vertices or end collection
 viewer.addHandler("canvas-double-click", function (event) {
@@ -40798,7 +40701,6 @@ viewer.addHandler("canvas-drag", function (event) {
       isPixelBoxLargeEnough(porosityAoiDrawState.startPixel, event.position, 1)
     ) {
       porosityAoiImagePoints = aoiPoints;
-      porosityAoiMousePoint = null;
       porosityTypes.forEach((type) => {
         type.result = null;
       });
@@ -41008,7 +40910,6 @@ viewer.addHandler("canvas-release", function (event) {
       porosityAoiDrawState &&
       isPixelBoxLargeEnough(porosityAoiDrawState.startPixel, event.position);
     porosityAoiDrawState = null;
-    porosityAoiMousePoint = null;
 
     if (!aoiPoints || !isLargeEnough) {
       porosityAoiImagePoints = [];
@@ -41018,6 +40919,13 @@ viewer.addHandler("canvas-release", function (event) {
       return;
     }
 
+    if (porosityAoiHistoryState) {
+      annotationHistory.pushPorosity(
+        "Draw porosity AOI",
+        porosityAoiHistoryState,
+      );
+      porosityAoiHistoryState = null;
+    }
     porosityAoiImagePoints = aoiPoints;
     finishPorosityAoi();
     return;
@@ -47337,6 +47245,8 @@ function calculateMeasurementProperties(type, coordinates) {
     properties.lengthM = metersFromPixels(
       calculateLineStringLength(coordinates),
     );
+    properties.azimuthDeg =
+      getOrientedAxisProperties(coordinates).longAxisAzimuthDeg;
     return properties;
   }
 
@@ -47461,11 +47371,15 @@ function calculateGeometryMeasurementProperties(type, geometry) {
   };
 
   if (type === "line") {
-    const lengthPixels = getGeometryLineCoordinates(geometry).reduce(
+    const lines = getGeometryLineCoordinates(geometry);
+    const lengthPixels = lines.reduce(
       (total, line) => total + calculateLineStringLength(line || []),
       0,
     );
     properties.lengthM = metersFromPixels(lengthPixels);
+    properties.azimuthDeg = getOrientedAxisProperties(
+      getGeometryCoordinatePoints(geometry),
+    ).longAxisAzimuthDeg;
     return properties;
   }
 
@@ -55097,23 +55011,24 @@ viewer.addHandler("canvas-scroll", function (event) {
   e.stopPropagation();
 
   if (e.ctrlKey) {
-    // Ctrl held → rotate
-
     const delta = e.deltaY;
-    const currentRotation = parseInt(
-      document.getElementById("stageRotation").value,
-    );
-    const newRotation = currentRotation + delta * ROTATION_SENSITIVITY;
+    const rotationTarget =
+      window.PetroImageSampleOrientation.getControlScrollRotationTarget(
+        enableStageRotation,
+      );
+    const rotationControl =
+      rotationTarget === "stage" ? stageRotater : imageRotater;
+    const currentRotation = Number(rotationControl.value);
+    const newRotation =
+      (Number.isFinite(currentRotation) ? currentRotation : 0) +
+      delta * ROTATION_SENSITIVITY;
     const positiveRotation = ((newRotation % 360) + 360) % 360;
-    setStageRotationAngle(positiveRotation, false);
 
-    // If checkbox is checked, sync image rotation
-    if (rotateWithStage.checked) {
-      imageRotater.value = positiveRotation;
-      setRotationValueDisplay(imageRotationValue, positiveRotation);
-      viewer.viewport.setRotation(positiveRotation);
+    if (rotationTarget === "stage") {
+      setStageRotationAngle(positiveRotation);
+    } else {
+      setImageRotationAngle(positiveRotation, false);
     }
-    displayImages();
   } else {
     // No Ctrl → zoom normally
     e.preventDefault();

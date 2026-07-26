@@ -11,7 +11,12 @@
     return normalizeRotationDegrees(sample?.rotationDegrees);
   }
 
+  function getControlScrollRotationTarget(hasRotationAwareTileSet) {
+    return hasRotationAwareTileSet ? "stage" : "image";
+  }
+
   root.PetroImageSampleOrientation = Object.freeze({
+    getControlScrollRotationTarget,
     getInitialRotationDegrees,
     normalizeRotationDegrees,
   });

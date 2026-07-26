@@ -34,3 +34,9 @@ test("normalizes configured rotations to the supported control range", () => {
   assert.equal(api.normalizeRotationDegrees(-10), 0);
   assert.equal(api.normalizeRotationDegrees(450), 360);
 });
+
+test("targets control-scroll rotation based on rotation-aware imagery", () => {
+  const api = loadApi();
+  assert.equal(api.getControlScrollRotationTarget(false), "image");
+  assert.equal(api.getControlScrollRotationTarget(true), "stage");
+});

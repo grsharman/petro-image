@@ -1,7 +1,7 @@
 (function initializePetroImageEmbedApi(global) {
   "use strict";
 
-  const SOURCE = "petroatlas";
+  const SOURCE = "petro-image-host";
   const VERSION = 1;
   const COMMANDS = Object.freeze([
     "viewer.setAnnotations",
