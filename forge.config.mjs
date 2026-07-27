@@ -4,8 +4,6 @@ import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 
-const version = process.env.npm_package_version;
-
 export default {
   packagerConfig: {
     asar: {
@@ -22,6 +20,7 @@ export default {
       /^\/build\/czi-worker(?:-cache|-spec|-work)?(?:\/|$)/,
       /^\/build\/vips-worker(?:\/|$)/,
       /^\/\.vips-worker-build(?:\/|$)/,
+      /^\/dist(?:\/|$)/,
       /^\/test-data(?:\/|$)/,
       /^\/tutorial-assets(?:\/|$)/,
     ],
@@ -29,10 +28,10 @@ export default {
   rebuildConfig: {},
   makers: [
     {
-      name: "@electron-forge/maker-zip",
+      name: "@electron-forge/maker-dmg",
       platforms: ["darwin"],
       config: {
-        name: `petro-image-${version}`,
+        format: "ULFO",
       },
     },
     // {

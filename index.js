@@ -5614,6 +5614,15 @@ function updateSnapshotExportStats(exportSize) {
   );
 }
 
+function getSnapshotClipboardUnavailableReason() {
+  if (window.electronAPI?.copyImageToClipboard) return "";
+  return (
+    window.PetroImageSnapshotClipboard?.getImageClipboardUnavailableReason(
+      window,
+    ) || "Image copying is not supported by this browser."
+  );
+}
+
 function updateSnapshotStatus(message) {
   if (!snapshotStatus) return;
 
@@ -5645,13 +5654,17 @@ function updateSnapshotStatus(message) {
     snapshotExportButton.title = exportLimitError || "";
   }
   if (snapshotCopyButton) {
+    const clipboardUnavailableReason =
+      getSnapshotClipboardUnavailableReason();
     snapshotCopyButton.disabled =
       snapshotExportInProgress ||
       !snapshotSelectionRect ||
       snapshotModeActive ||
       !hasSnapshotLayers ||
-      Boolean(exportLimitError);
-    snapshotCopyButton.title = exportLimitError || "";
+      Boolean(exportLimitError) ||
+      Boolean(clipboardUnavailableReason);
+    snapshotCopyButton.title =
+      exportLimitError || clipboardUnavailableReason || "";
   }
 
   if (message) {
@@ -16326,6 +16339,14 @@ async function exportSnapshotSelection(destination = "file") {
     updateSnapshotStatus("Select at least one visible tile set.");
     return;
   }
+  if (destination === "clipboard") {
+    const clipboardUnavailableReason =
+      getSnapshotClipboardUnavailableReason();
+    if (clipboardUnavailableReason) {
+      updateSnapshotStatus(clipboardUnavailableReason);
+      return;
+    }
+  }
 
   let outputCanvas = null;
   let ctx = null;
@@ -16358,62 +16379,99 @@ async function exportSnapshotSelection(destination = "file") {
     `${destination === "clipboard" ? "Copying" : "Saving"} ${exportSize.width} x ${exportSize.height}px snapshot…`,
   );
 
-  // Give the browser an opportunity to paint the busy state before rendering.
-  await new Promise((resolve) =>
-    requestAnimationFrame(() => setTimeout(resolve, 0)),
-  );
-
   let finalStatus = "";
   try {
-    const composition = await renderSnapshotCompositionCanvas(exportSize);
-    outputCanvas = composition.canvas;
-    ctx = outputCanvas?.getContext("2d");
-    if (!ctx || !outputCanvas) {
-      throw new Error("Could not create the snapshot canvas.");
-    }
-    const filterApplied = composition.filterApplied;
-
-    const porosityOverlayDrawn = drawSnapshotPorosityOverlay(
-      ctx,
-      outputCanvas,
-      snapshotSelectionRect,
-    );
-
-    const contentMode = getSnapshotContentMode();
-    if (contentMode === "annotations" || contentMode === "labels") {
-      drawSnapshotAnnotationShapes(ctx, outputCanvas, snapshotSelectionRect);
-      drawSnapshotPointAnnotations(ctx, outputCanvas, snapshotSelectionRect);
-    }
-    if (contentMode === "labels") {
-      drawSnapshotAnnotationLabels(ctx, outputCanvas, snapshotSelectionRect);
-    }
-
-    const scalebarRequested = Boolean(snapshotIncludeScalebar?.checked);
-    const scalebarDrawn = scalebarRequested
-      ? drawSnapshotScalebar(ctx, outputCanvas, snapshotSelectionRect)
-      : false;
-
-    const blob = await new Promise((resolve, reject) =>
-      outputCanvas.toBlob(
-        (encodedBlob) =>
-          encodedBlob
-            ? resolve(encodedBlob)
-            : reject(new Error("Could not encode the JPG snapshot.")),
-        "image/jpeg",
-        getSnapshotQuality(),
-      ),
-    );
-    if (destination === "clipboard") {
-      if (!window.electronAPI?.copyImageToClipboard) {
-        throw new Error("Image clipboard access is unavailable.");
-      }
-      await window.electronAPI.copyImageToClipboard(
-        new Uint8Array(await blob.arrayBuffer()),
+    const useBrowserClipboard =
+      destination === "clipboard" &&
+      !window.electronAPI?.copyImageToClipboard;
+    const mimeType = useBrowserClipboard ? "image/png" : "image/jpeg";
+    const renderPromise = (async () => {
+      // Give the browser an opportunity to paint the busy state before rendering.
+      await new Promise((resolve) =>
+        requestAnimationFrame(() => setTimeout(resolve, 0)),
       );
+
+      const composition = await renderSnapshotCompositionCanvas(exportSize);
+      outputCanvas = composition.canvas;
+      ctx = outputCanvas?.getContext("2d");
+      if (!ctx || !outputCanvas) {
+        throw new Error("Could not create the snapshot canvas.");
+      }
+
+      const porosityOverlayDrawn = drawSnapshotPorosityOverlay(
+        ctx,
+        outputCanvas,
+        snapshotSelectionRect,
+      );
+
+      const contentMode = getSnapshotContentMode();
+      if (contentMode === "annotations" || contentMode === "labels") {
+        drawSnapshotAnnotationShapes(ctx, outputCanvas, snapshotSelectionRect);
+        drawSnapshotPointAnnotations(ctx, outputCanvas, snapshotSelectionRect);
+      }
+      if (contentMode === "labels") {
+        drawSnapshotAnnotationLabels(ctx, outputCanvas, snapshotSelectionRect);
+      }
+
+      const scalebarRequested = Boolean(snapshotIncludeScalebar?.checked);
+      const scalebarDrawn = scalebarRequested
+        ? drawSnapshotScalebar(ctx, outputCanvas, snapshotSelectionRect)
+        : false;
+
+      const blob = await new Promise((resolve, reject) =>
+        outputCanvas.toBlob(
+          (encodedBlob) =>
+            encodedBlob
+              ? resolve(encodedBlob)
+              : reject(
+                  new Error(
+                    `Could not encode the ${mimeType === "image/png" ? "PNG" : "JPG"} snapshot.`,
+                  ),
+                ),
+          mimeType,
+          mimeType === "image/jpeg" ? getSnapshotQuality() : undefined,
+        ),
+      );
+
+      return {
+        blob,
+        filterApplied: composition.filterApplied,
+        porosityOverlayDrawn,
+        scalebarRequested,
+        scalebarDrawn,
+      };
+    })();
+
+    let renderResult;
+    if (destination === "clipboard") {
+      if (useBrowserClipboard) {
+        const clipboardWritePromise =
+          window.PetroImageSnapshotClipboard.writeBrowserImageToClipboard(
+            renderPromise.then((result) => result.blob),
+            window,
+          );
+        [renderResult] = await Promise.all([
+          renderPromise,
+          clipboardWritePromise,
+        ]);
+      } else {
+        renderResult = await renderPromise;
+        await window.electronAPI.copyImageToClipboard(
+          new Uint8Array(await renderResult.blob.arrayBuffer()),
+        );
+      }
     } else {
-      downloadSnapshotBlob(blob);
+      renderResult = await renderPromise;
+      downloadSnapshotBlob(renderResult.blob);
       clearSnapshotSelection();
     }
+
+    const {
+      filterApplied,
+      porosityOverlayDrawn,
+      scalebarRequested,
+      scalebarDrawn,
+    } = renderResult;
     const action =
       destination === "clipboard" ? "copied to clipboard" : "saved";
     finalStatus =
