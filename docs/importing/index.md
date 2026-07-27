@@ -16,7 +16,7 @@ Prepare one or more images of a specimen. Images that represent different lighti
 - Have the same pixel dimensions.
 - Be registered so that corresponding pixels represent corresponding locations.
 
-Determine pixel dimensions if measurements in physical units are needed. Alternatively, you can use the Add Scale action to calibrate to a scalebar on the image. For multi-angle imagery (e.g., multiple angles of cross-polarized light), also retain the acquisition angle and polarization mode for each image.
+Determine pixel dimensions if measurements in physical units are needed. Alternatively, you can use the [Add Scale action](../actions/add-scale.md) to calibrate to a scalebar on the image. For multi-angle imagery (e.g., multiple angles of cross-polarized light), also retain the acquisition angle and polarization mode for each image.
 
 ### Basic workflow
 
@@ -29,6 +29,10 @@ Determine pixel dimensions if measurements in physical units are needed. Alterna
 7. Run the import and inspect the sample after it opens.
 
 The importer converts source images into tiled Deep Zoom pyramids and updates the selected library JSON. Keeping those files together in a project makes the collection portable and avoids external hosting requirements during local use.
+
+See [Managing libraries and projects](../actions/managing-libraries-and-projects.md)
+for the difference between loading a library, opening a project, and editing
+the active library.
 
 **Important:** We recommend not saving your project on cloud storage unless you specify that files are always downloaded on your device. The Deep Zoom tiles must be readily accessible by the app, and the app is likely to crash if the tiles are hosted only in the cloud.
 

@@ -9,6 +9,8 @@ These pages define petro-image's file formats, coordinate conventions, keyboard 
 - [Annotation GeoJSON](formats/annotations-geojson.md): geometry coordinates and commonly used feature properties
 
 Tool-specific recipes and result files are described by the corresponding [tool and analytical method](../tools/index.md).
+Library, project, calibration, and annotation-update workflows are described
+under [Actions and workflows](../actions/index.md).
 
 ## Coordinates and units
 
@@ -28,3 +30,4 @@ Tool-specific recipes and result files are described by the corresponding [tool 
 - [User guides](../user-guide/viewing-and-comparing.md) explain complete workflows.
 - [Importing](../importing/index.md) explains how to bring local or hosted images into petro-image.
 - [Tools and analytical methods](../tools/index.md) explain calculations, outputs, assumptions, and interpretation.
+- [Actions and workflows](../actions/index.md) explain operations that load or modify libraries, projects, calibration, and existing records.

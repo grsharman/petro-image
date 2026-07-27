@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Estimate Porosity measures the area fraction of pixels classified as one or more pore types within a polygonal area of interest. It can also calculatevgeometric properties of the resulting binary pore regions.
+Estimate Porosity measures the area fraction of pixels classified as one or more pore types within a polygonal area of interest. It can also calculate geometric properties of the resulting binary pore regions.
 
 ## Inputs and prerequisites
 

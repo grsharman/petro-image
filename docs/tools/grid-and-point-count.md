@@ -31,6 +31,9 @@ Outputs can include:
 
 The desktop app maintains a per-sample working GeoJSON file in the project's `counts` folder after the first recorded count.
 
+Point-count labels can be joined to existing grain polygons with the
+[Label Grains from Counts](../actions/label-grains-from-counts.md).
+
 ## Reproducibility
 
 Exporting results will retain the area of interest, point coordinates, and the identifier and notes for each counted point. Export existing work before replacing a grid to avoid losing work.

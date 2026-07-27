@@ -39,6 +39,7 @@ More detailed documentation is organized by what you want to do:
 - [Documentation home](docs/index.md)
 - [Viewing and comparing images](docs/user-guide/viewing-and-comparing.md)
 - [Tools and analytical methods](docs/tools/index.md)
+- [Actions and workflows](docs/actions/index.md)
 - [Using your own images](docs/importing/index.md)
 - [File formats, shortcuts, and integration reference](docs/reference/index.md)
 
@@ -46,7 +47,7 @@ More detailed documentation is organized by what you want to do:
 
 The web viewer is the quickest way to explore petro-image and can open a
 remotely hosted image library. The desktop app adds project-oriented workflows,
-including import tool for loading local files and automatic storage of
+including an import tool for loading local files and automatic storage of
 working annotation and count files.
 
 petro-image is under active development. Some import and analysis

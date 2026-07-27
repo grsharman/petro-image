@@ -81,8 +81,14 @@ The set of properties depends on how a feature was created and which tool export
 | `lineWeight` | number | Line width used by petro-image. |
 | `fillColor` | string | Fill color, normally a CSS color value. |
 | `fillOpacity` | number | Fill opacity. |
+| `countJoin` | object | Audit metadata written by Label Grains from Counts. |
+| `annotationJoin` | object | Audit metadata written by the Transfer Values action. |
 
 Style and application-state properties are not part of the GeoJSON standard; they are petro-image extensions stored in the GeoJSON `properties` object.
+
+The [Label Grains from Counts](../../actions/label-grains-from-counts.md) and
+[Transfer Values](../../actions/transfer-values.md) Actions add audit metadata
+under `countJoin` and `annotationJoin`, respectively.
 
 ## Coordinate requirements
 

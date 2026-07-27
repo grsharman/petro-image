@@ -26,3 +26,8 @@ In the desktop app, the first annotation for a sample creates a working GeoJSON 
 ## Outputs
 
 The primary output is a GeoJSON feature collection containing geometries and their properties. Annotations can also be displayed in snapshots and used as training or transfer inputs by other tools. For example, polyline and polygon annotations can be selected and moved to the Measure tool.
+
+Existing annotation values can be copied into containing polygons with the
+[Transfer Values action](../actions/transfer-values.md). Grain polygons can
+also be grouped from point-count labels with
+[Label Grains from Counts](../actions/label-grains-from-counts.md).

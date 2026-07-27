@@ -40,7 +40,7 @@ d_{\mathrm{m}}=\frac{d_{\mathrm{px}}}{s}
 A_{\mathrm{m}^2}=\frac{A_{\mathrm{px}^2}}{s^2}.
 $$
 
-petro-image can display these results in meters, millimeters, or micrometers and their corresponding square units. Without a valid `pixelsPerMeter`, scale-dependent measurements and scale bars are unavailable. If a scalebar is available on the image, `pixelsPerMeter` can be defined using the Add Scale action.
+petro-image can display these results in meters, millimeters, or micrometers and their corresponding square units. Without a valid `pixelsPerMeter`, scale-dependent measurements and scale bars are unavailable. If a scalebar is available on the image, `pixelsPerMeter` can be defined using the [Add Scale action](../actions/add-scale.md).
 
 Calibration must describe the displayed image derivative. If an image was resampled before its Deep Zoom pyramid was generated, use the pixel density of the resampled derivative rather than the original scan.
 

@@ -41,5 +41,6 @@ The desktop app adds project-oriented storage. For example, working annotation a
 
 - Learn about [viewing and comparing images](../user-guide/viewing-and-comparing.md).
 - Choose a [tool](../tools/index.md).
+- Learn about [Actions and workflows](../actions/index.md).
 - Learn how to [use your own images](../importing/index.md).
 - Read the [Polarization Analysis overview](../tools/polarization-analysis.md).

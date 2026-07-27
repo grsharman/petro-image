@@ -43387,7 +43387,7 @@ function applyCountSegmentWorkflow() {
       group,
     ]),
   );
-  annotationHistory.push("Classify grain segments from point counts");
+  annotationHistory.push("Label grain polygons from point counts");
 
   changedFeatures.forEach((result) => {
     const feature = result.feature;

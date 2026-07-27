@@ -4,6 +4,10 @@
 
 Classify learns from labeled polygon annotations to predict labels for other polygons or to create a pixel-classification raster. It is an interactive supervised-classification tool, and it is up to the user to provide ground-truth labels.
 
+To assign grain-polygon groups directly from point counts without training a
+model, use
+[Label Grains from Counts](../actions/label-grains-from-counts.md).
+
 <b>Note:</b> Classify is still in under development and is presented in beta.
 
 ## Inputs and prerequisites
