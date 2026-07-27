@@ -26,6 +26,13 @@
     return "";
   }
 
+  function getSnapshotClipboardUnavailableReason(
+    environment = globalObject,
+  ) {
+    if (environment?.electronAPI?.copyImageToClipboard) return "";
+    return getImageClipboardUnavailableReason(environment);
+  }
+
   function writeBrowserImageToClipboard(
     pngBlobPromise,
     environment = globalObject,
@@ -59,6 +66,7 @@
   globalObject.PetroImageSnapshotClipboard = {
     PNG_MIME_TYPE,
     getImageClipboardUnavailableReason,
+    getSnapshotClipboardUnavailableReason,
     writeBrowserImageToClipboard,
   };
 })(typeof window !== "undefined" ? window : globalThis);

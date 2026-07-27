@@ -5615,12 +5615,11 @@ function updateSnapshotExportStats(exportSize) {
 }
 
 function getSnapshotClipboardUnavailableReason() {
-  if (window.electronAPI?.copyImageToClipboard) return "";
-  return (
-    window.PetroImageSnapshotClipboard?.getImageClipboardUnavailableReason(
-      window,
-    ) || "Image copying is not supported by this browser."
-  );
+  const clipboardApi = window.PetroImageSnapshotClipboard;
+  if (!clipboardApi?.getSnapshotClipboardUnavailableReason) {
+    return "Image copying is not supported by this browser.";
+  }
+  return clipboardApi.getSnapshotClipboardUnavailableReason(window);
 }
 
 function updateSnapshotStatus(message) {

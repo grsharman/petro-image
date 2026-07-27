@@ -47,6 +47,30 @@ test("reports browser image clipboard capability requirements", () => {
   );
 });
 
+test("accepts supported browser and Electron snapshot clipboards", () => {
+  const api = loadClipboardApi();
+  const supportedBrowser = {
+    isSecureContext: true,
+    navigator: { clipboard: { write() {} } },
+    ClipboardItem: class {
+      static supports(type) {
+        return type === "image/png";
+      }
+    },
+  };
+
+  assert.equal(
+    api.getSnapshotClipboardUnavailableReason(supportedBrowser),
+    "",
+  );
+  assert.equal(
+    api.getSnapshotClipboardUnavailableReason({
+      electronAPI: { copyImageToClipboard() {} },
+    }),
+    "",
+  );
+});
+
 test("starts a PNG clipboard write before the image blob resolves", async () => {
   const api = loadClipboardApi();
   let writtenItems = null;
