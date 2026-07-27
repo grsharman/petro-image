@@ -1503,6 +1503,7 @@ const segmentAnnotationGroupOptions = document.getElementById(
 const segmentModeToggle = document.getElementById("segmentModeToggle");
 const segmentAutoAddCheckbox = document.getElementById("segmentAutoAdd");
 const segmentDrawBoxButton = document.getElementById("segmentDrawBoxButton");
+const segmentRunButton = document.getElementById("segmentRunButton");
 const segmentClearButton = document.getElementById("segmentClearButton");
 const segmentAddPositivePointButton = document.getElementById(
   "segmentAddPositivePointButton",
@@ -2107,6 +2108,7 @@ let segmentPromptBox = null;
 let segmentPromptPoints = [];
 let segmentPointMode = null;
 let segmentPreviewFeature = null;
+let segmentPromptsDirty = false;
 let segmentIsRunning = false;
 let segmentActiveRunCount = 0;
 let segmentModeActive = false;
@@ -3714,11 +3716,20 @@ function handleSegmenteverygrainProgress(payload = {}) {
 }
 
 function updateSegmentControls() {
+  const hasPrompts =
+    Boolean(segmentPromptBox) || segmentPromptPoints.length > 0;
   if (segmentDrawBoxButton) {
-    segmentDrawBoxButton.disabled = segmentModeActive || segmentIsRunning;
+    segmentDrawBoxButton.disabled =
+      segmentModeActive ||
+      segmentIsRunning ||
+      segmentBoxModeActive ||
+      Boolean(segmentPromptBox);
     segmentDrawBoxButton.textContent = segmentBoxModeActive
       ? "Drawing..."
       : "+ Box";
+    segmentDrawBoxButton.title = segmentPromptBox
+      ? "Clear the current prompts before drawing another box."
+      : "Draw a box prompt.";
   }
   if (segmentModeToggle) {
     segmentModeToggle.checked = segmentModeActive;
@@ -3736,6 +3747,13 @@ function updateSegmentControls() {
         !segmentPreviewFeature &&
         !segmentPromptBox &&
         segmentPromptPoints.length === 0);
+  }
+  if (segmentRunButton) {
+    segmentRunButton.disabled =
+      segmentModeActive ||
+      segmentIsRunning ||
+      !hasPrompts ||
+      !segmentPromptsDirty;
   }
   if (segmentAddPositivePointButton) {
     segmentAddPositivePointButton.disabled =
@@ -3755,7 +3773,10 @@ function updateSegmentControls() {
   }
   if (segmentAddAnnotationButton) {
     segmentAddAnnotationButton.disabled =
-      segmentModeActive || segmentIsRunning || !segmentPreviewFeature;
+      segmentModeActive ||
+      segmentIsRunning ||
+      segmentPromptsDirty ||
+      !segmentPreviewFeature;
   }
   updateUnsupervisedSegmentControls();
 }
@@ -4459,6 +4480,7 @@ function clearSegmentPreview(options = {}) {
   segmentPromptPoints = [];
   segmentPointMode = null;
   segmentPreviewFeature = null;
+  segmentPromptsDirty = false;
   if (!keepMode) {
     segmentModeActive = false;
   }
@@ -4478,6 +4500,9 @@ function updateSegmentPromptPreview(promptRect = segmentPromptBox) {
     type: "FeatureCollection",
     features: [],
   };
+  if (segmentPreviewFeature) {
+    annoJSONTemp.features.push(segmentPreviewFeature);
+  }
   if (promptRect) {
     addPolygonToGeoJSON(annoJSONTemp, imageRectToPolygon(promptRect), {
       uuid: "segment-prompt-box",
@@ -4491,9 +4516,6 @@ function updateSegmentPromptPreview(promptRect = segmentPromptBox) {
       fillColor: "#00a6d6",
       fillOpacity: 0.08,
     });
-  }
-  if (segmentPreviewFeature) {
-    annoJSONTemp.features.push(segmentPreviewFeature);
   }
   addSegmentPromptPointFeatures();
   drawShape(polyCanvas, [annoJSON, annoJSONTemp]);
@@ -4514,6 +4536,7 @@ function buildSegmentFeature(fullImagePolygon, result) {
       uuid: "segment-preview",
       label: "Segment preview",
       shapeType: "segment",
+      renderCoordinateSpace: "display",
       labelFontSize,
       labelFontColor: style.labelFontColor,
       labelBackgroundColor: style.labelBackgroundColor,
@@ -4547,6 +4570,7 @@ function previewSegmentPolygon(fullImagePolygon, result) {
     type: "FeatureCollection",
     features: [],
   };
+  annoJSONTemp.features.push(feature);
   if (segmentPromptBox) {
     addPolygonToGeoJSON(annoJSONTemp, imageRectToPolygon(segmentPromptBox), {
       uuid: "segment-prompt-box",
@@ -4561,7 +4585,6 @@ function previewSegmentPolygon(fullImagePolygon, result) {
       fillOpacity: 0.04,
     });
   }
-  annoJSONTemp.features.push(feature);
   addSegmentPromptPointFeatures();
   drawShape(polyCanvas, [annoJSON, annoJSONTemp]);
 }
@@ -4613,6 +4636,7 @@ function setSegmentPointMode(mode) {
   } else {
     setSegmentStatus("Draw a box around one feature.");
   }
+  updateSegmentPromptPreview();
   updateSegmentControls();
 }
 
@@ -4642,12 +4666,41 @@ function addSegmentPromptPoint(event) {
     ...imagePoint,
     label: segmentPointMode === "positive" ? 1 : 0,
   });
+  segmentPromptsDirty = true;
   updateSegmentPromptPreview();
   setSegmentStatus(
-    `Running SAM 2.1 segmentation...${getSegmentPromptSummary()}`,
+    `Prompts ready.${getSegmentPromptSummary()} Add more prompts or click Segment.`,
   );
-  runSegmentForPromptBox(segmentPromptBox);
+  updateSegmentControls();
   return true;
+}
+
+function runSegmentFromPrompts() {
+  const hasPrompts =
+    Boolean(segmentPromptBox) || segmentPromptPoints.length > 0;
+  if (
+    segmentModeActive ||
+    segmentIsRunning ||
+    !segmentPromptsDirty ||
+    !hasPrompts
+  ) {
+    return;
+  }
+
+  segmentPointMode = null;
+  updateSegmentPromptPreview();
+  updateSegmentControls();
+  runSegmentForPromptBox(segmentPromptBox);
+}
+
+function markSegmentPromptsDirty() {
+  const hasPrompts =
+    Boolean(segmentPromptBox) || segmentPromptPoints.length > 0;
+  if (segmentModeActive || !hasPrompts) return;
+
+  segmentPromptsDirty = true;
+  setSegmentStatus("Segmentation settings changed. Click Segment to update.");
+  updateSegmentControls();
 }
 
 function setSegmentModeActive(active) {
@@ -5269,6 +5322,7 @@ async function runSegmentForPromptBox(promptRect) {
     const scoreText = Number.isFinite(Number(result.score))
       ? ` Score: ${Number(result.score).toFixed(3)}.`
       : "";
+    segmentPromptsDirty = false;
     if (shouldAutoAddSegment()) {
       const feature = buildSegmentFeature(fullImagePolygon, result);
       commitSegmentFeature(feature, {
@@ -5295,6 +5349,7 @@ function commitSegmentPreview(options = {}) {
   if (!segmentPreviewFeature) return;
 
   const feature = segmentPreviewFeature;
+  segmentPromptsDirty = false;
   segmentPreviewFeature = null;
   segmentPromptBox = null;
   segmentPromptPoints = [];
@@ -5318,8 +5373,10 @@ function commitSegmentFeature(feature, options = {}) {
   const perimeterM = metersFromPixels(perimeterPixels);
   const style = getCurrentAnnotationStyleColors();
   const segmentGroup = getSegmentAnnotationGroup();
+  const featureProperties = { ...(feature.properties || {}) };
+  delete featureProperties.renderCoordinateSpace;
   const segmentProperties = {
-    ...feature.properties,
+    ...featureProperties,
     uuid: generateUniqueAnnotationUuid(null, 12),
     label: document.getElementById("anno-label")?.value || "",
     imageTitle: title(),
@@ -5353,6 +5410,7 @@ function commitSegmentFeature(feature, options = {}) {
   });
   annoJSON.features.push(storedFeature);
   if (options.clearPrompts) {
+    segmentPromptsDirty = false;
     segmentPromptBox = null;
     segmentPromptPoints = [];
     segmentPointMode = null;
@@ -5641,19 +5699,14 @@ function clearSnapshotSelection() {
 }
 
 function useSnapshotScreenExtent() {
-  const bounds = getSnapshotViewerBounds();
-  if (!snapshotSelection || !bounds?.width || !bounds?.height) {
+  const rect = getSnapshotVisibleImageScreenRect();
+  if (!snapshotSelection || !rect?.width || !rect?.height) {
     updateSnapshotStatus("Could not determine the current screen extent.");
     return;
   }
 
   stopSnapshotDrawMode({ clearSelection: false });
-  renderSnapshotSelection({
-    left: 0,
-    top: 0,
-    width: bounds.width,
-    height: bounds.height,
-  });
+  renderSnapshotSelection(rect);
 }
 
 function startSnapshotDrawMode() {
@@ -5798,6 +5851,42 @@ function getSnapshotViewerBounds() {
   return {
     width: container.clientWidth,
     height: container.clientHeight,
+  };
+}
+
+function getSnapshotVisibleImageScreenRect() {
+  const bounds = getSnapshotViewerBounds();
+  const image = viewer?.world?.getItemAt?.(0);
+  const imageSize = image?.getContentSize?.();
+  if (!bounds || !imageSize?.x || !imageSize?.y) return null;
+
+  const screenPoints = [
+    [0, 0],
+    [imageSize.x, 0],
+    [imageSize.x, imageSize.y],
+    [0, imageSize.y],
+  ].map(([x, y]) =>
+    viewer.viewport.viewportToViewerElementCoordinates(
+      image.imageToViewportCoordinates(new OpenSeadragon.Point(x, y)),
+    ),
+  );
+  const xs = screenPoints.map((point) => point.x).filter(Number.isFinite);
+  const ys = screenPoints.map((point) => point.y).filter(Number.isFinite);
+  if (xs.length !== screenPoints.length || ys.length !== screenPoints.length) {
+    return null;
+  }
+
+  const left = Math.max(0, Math.min(...xs));
+  const top = Math.max(0, Math.min(...ys));
+  const right = Math.min(bounds.width, Math.max(...xs));
+  const bottom = Math.min(bounds.height, Math.max(...ys));
+  if (right <= left || bottom <= top) return null;
+
+  return {
+    left,
+    top,
+    width: right - left,
+    height: bottom - top,
   };
 }
 
@@ -10474,7 +10563,7 @@ function getSnapshotViewportBounds(selectionRect) {
 }
 
 function getSnapshotScreenPointFromImagePoint(imagePoint) {
-  const image = viewer.world.getItemAt(0);
+  const image = getAnnotationImage();
   if (!image) return null;
   const viewportPoint = image.imageToViewportCoordinates(
     new OpenSeadragon.Point(imagePoint[0], imagePoint[1]),
@@ -11055,7 +11144,9 @@ function getSnapshotScalebarType() {
 }
 
 function getSnapshotScalebarLocation() {
-  return document.getElementById("scalebarLocation")?.value || "Bottom left";
+  return document.getElementById("scalebarLocation")?.value === "Bottom right"
+    ? "Bottom right"
+    : "Bottom left";
 }
 
 function getSnapshotScalebarNumber(id, fallback) {
@@ -17817,6 +17908,10 @@ if (
           scheduleTransformHistogramRefresh();
           return;
         }
+        // Image Calculator and Polarization Analysis render into a separate
+        // derived overlay. Remove that outgoing result before Simple Filter
+        // applies its own (reset) transform state.
+        stopDerivedAdvancedPreview();
         resetTransformTileCaches(
           tileSets()[getSelectedTransformTileSetIndex()],
         );
@@ -17869,7 +17964,11 @@ if (
     }
     if (isPolarizationRecipe(getTransformOptionsFromControls())) {
       applyPolarizationPreview();
+      return;
     }
+    applyTransformControlsToSelectedTileSet();
+    updateTransformControls();
+    scheduleTransformHistogramRefresh();
   });
   [
     transformRasterChannelASelect,
@@ -19001,6 +19100,9 @@ if (
   segmentDrawBoxButton?.addEventListener("click", function () {
     startSegmentBoxMode();
   });
+  segmentRunButton?.addEventListener("click", function () {
+    runSegmentFromPrompts();
+  });
   segmentClearButton?.addEventListener("click", function () {
     clearSegmentPreview();
   });
@@ -19035,14 +19137,19 @@ if (
     updateSegmentControls();
   });
   segmentTileSetSelect?.addEventListener("change", function () {
-    updateSegmentControls();
+    markSegmentPromptsDirty();
   });
   segmentResolutionSelect?.addEventListener("change", function () {
-    updateSegmentControls();
+    markSegmentPromptsDirty();
   });
   segmentSimplifyEnabledInput?.addEventListener("change", function () {
     updateSegmentSimplifyControls();
+    markSegmentPromptsDirty();
   });
+  segmentSimplifyEpsilonInput?.addEventListener(
+    "input",
+    markSegmentPromptsDirty,
+  );
   unsupervisedSimplifyEnabledInput?.addEventListener("change", function () {
     updateSegmentSimplifyControls();
   });
@@ -19074,6 +19181,7 @@ if (
   });
   samModelTypeSelect?.addEventListener("change", function () {
     updateSamReadinessIndicator();
+    markSegmentPromptsDirty();
     saveSamSettings("SAM model type saved.");
   });
   [samPythonPathInput, samCheckpointPathInput].forEach((input) => {
@@ -19085,6 +19193,7 @@ if (
     });
     input?.addEventListener("change", function () {
       updateSamReadinessIndicator();
+      markSegmentPromptsDirty();
       if (input === samPythonPathInput) {
         updateSegmenteverygrainReadinessIndicator();
       }
@@ -19106,6 +19215,7 @@ if (
   ].forEach((input) => {
     input?.addEventListener("input", function () {
       updateSegmentPaddingStatus();
+      markSegmentPromptsDirty();
     });
   });
   makeToolPaletteDraggable(
@@ -20070,11 +20180,6 @@ function normalizeTransformValue(key, value) {
         "turbo",
         "blues",
         "gray",
-        "hue",
-        "hue_shifted",
-        "twilight",
-        "twilight_shifted",
-        "diverging",
       ].includes(valueKey)
         ? valueKey
         : fallback;
@@ -20388,6 +20493,8 @@ function getTransformOptionsFromControls() {
     radius: transformRadius?.value || 2,
     output: transformOutputSelect?.value || "grayscale",
     channel: transformChannelSelect?.value || "luminance",
+    polarizationColormap:
+      transformPolarizationColormap?.value || "viridis",
   });
 }
 
@@ -24055,18 +24162,14 @@ function updateTransformControls() {
   if (transformActions) transformActions.hidden = specializedRecipe;
   if (transformColormapField) {
     const colormapHidden =
-      (!rasterRecipe && !polarizationRecipe) ||
-      polarizationCategorical ||
-      transform.output !== "falseColor";
+      polarizationCategorical || transform.output !== "falseColor";
     transformLayoutVisibilityChanged =
       transformColormapField.hidden !== colormapHidden;
     transformColormapField.hidden = colormapHidden;
   }
   if (transformPolarizationColormap) {
     transformPolarizationColormap.disabled =
-      (!rasterRecipe && !polarizationRecipe) ||
-      polarizationCategorical ||
-      transform.output !== "falseColor";
+      polarizationCategorical || transform.output !== "falseColor";
   }
   if (transformPolarizationClassificationPanel) {
     const classificationPanelHidden =
@@ -24217,6 +24320,10 @@ function updateTransformControls() {
       !window.electronAPI?.createDerivedDzi;
   }
   if (transformPolarizationPreviewButton) {
+    const hasPplOrXplSource = Boolean(
+      getPolarizationTileSet("ppl", transform) ||
+        getPolarizationTileSet("xpl", transform),
+    );
     transformPolarizationPreviewButton.textContent = polarizationPreviewActive
       ? "Stop Preview…"
       : "Preview";
@@ -24227,6 +24334,7 @@ function updateTransformControls() {
     transformPolarizationPreviewButton.disabled =
       !polarizationPreviewActive &&
       (!polarizationRecipe ||
+        !hasPplOrXplSource ||
         hasDuplicatePolarizationRoleAssignments(transform) ||
         !getAvailablePolarizationProducts(transform).includes(
           transform.polarizationProduct,
@@ -25765,33 +25873,6 @@ function getSaturationChannelValue(r, g, b) {
   return maxChannel === 0 ? 0 : ((maxChannel - minChannel) / maxChannel) * 255;
 }
 
-function getFalseColorRgb(value) {
-  const t = Math.max(0, Math.min(1, value / 255));
-  const stops = [
-    [0, 36, 32, 120],
-    [0.25, 42, 145, 190],
-    [0.5, 70, 175, 95],
-    [0.75, 245, 190, 65],
-    [1, 190, 55, 45],
-  ];
-
-  for (let index = 1; index < stops.length; index += 1) {
-    const [position, r, g, b] = stops[index];
-    const [previousPosition, previousR, previousG, previousB] =
-      stops[index - 1];
-    if (t <= position) {
-      const localT = (t - previousPosition) / (position - previousPosition);
-      return [
-        clampColorValue(previousR + (r - previousR) * localT),
-        clampColorValue(previousG + (g - previousG) * localT),
-        clampColorValue(previousB + (b - previousB) * localT),
-      ];
-    }
-  }
-
-  return [190, 55, 45];
-}
-
 function getTransformColorMapRgb(value, transform) {
   return PetroPolarizationAnalysis.getColorMapRgb(
     Math.max(0, Math.min(1, Number(value) / 255)),
@@ -25835,7 +25916,10 @@ function applyChannelTransformToContext(context, transform) {
 
     const channelValue = clampColorValue(value);
     if (transform.output === "falseColor") {
-      const [falseR, falseG, falseB] = getFalseColorRgb(channelValue);
+      const [falseR, falseG, falseB] = getTransformColorMapRgb(
+        channelValue,
+        transform,
+      );
       pixels[offset] = falseR;
       pixels[offset + 1] = falseG;
       pixels[offset + 2] = falseB;
@@ -28168,6 +28252,7 @@ const GRID_CONTROL_IDS = [
   "grid-bottom",
   "grid-bottom-value",
   "step-size",
+  "step-size-unit",
   "no-points",
   "gridLabelFontSize",
   "gridLabelFontSizeAfter",
@@ -28195,6 +28280,7 @@ const GRID_CONTROL_HISTORY_LABELS = {
   "grid-bottom": "Change AOI",
   "grid-bottom-value": "Change AOI",
   "step-size": "Change grid step size",
+  "step-size-unit": "Change grid step size unit",
   "no-points": "Change grid point count",
   gridLabelFontSize: "Change grid label style",
   gridLabelFontSizeAfter: "Change counted label style",
@@ -28360,6 +28446,7 @@ function restoreGridControlState(values = {}) {
     }
   });
 
+  syncGridStepUnitControl();
   constrainGridSliders();
   updateAoiRectangle();
   lastCommittedGridControlState = cloneGridControlState();
@@ -29040,8 +29127,6 @@ function addScalebar() {
   const scalebarType = document.getElementById("scalebarType").value;
 
   const locationMapper = {
-    "Top left": OpenSeadragon.ScalebarLocation.TOP_LEFT,
-    "Top right": OpenSeadragon.ScalebarLocation.TOP_RIGHT,
     "Bottom left": OpenSeadragon.ScalebarLocation.BOTTOM_LEFT,
     "Bottom right": OpenSeadragon.ScalebarLocation.BOTTOM_RIGHT,
   };
@@ -29062,7 +29147,12 @@ function addScalebar() {
     document.getElementById("scalebarUnitSystem").value;
   const scalebarMinWidth =
     document.getElementById("scalebarMinWidth").value || 75;
-  const scalebarLocation = document.getElementById("scalebarLocation").value;
+  const scalebarLocationElement = document.getElementById("scalebarLocation");
+  const scalebarLocation =
+    scalebarLocationElement.value === "Bottom right"
+      ? "Bottom right"
+      : "Bottom left";
+  scalebarLocationElement.value = scalebarLocation;
   const scalebarXOffset =
     document.getElementById("scalebarXOffset").value || 10;
   const scalebarYOffset =
@@ -30149,6 +30239,10 @@ function setupUndoableGridControl(id, label) {
   element.addEventListener("change", commit);
 }
 
+document
+  .getElementById("step-size-unit")
+  ?.addEventListener("change", handleGridStepUnitChange);
+
 [
   ["show-aoi", "Change AOI visibility"],
   ["grid-left", "Change AOI"],
@@ -30160,6 +30254,7 @@ function setupUndoableGridControl(id, label) {
   ["grid-bottom", "Change AOI"],
   ["grid-bottom-value", "Change AOI"],
   ["step-size", "Change grid step size"],
+  ["step-size-unit", "Change grid step size unit"],
   ["no-points", "Change grid point count"],
   ["gridLabelFontSize", "Change grid label style"],
   ["gridLabelFontSizeAfter", "Change counted label style"],
@@ -40000,6 +40095,7 @@ function isLiveOverlayInteractionActive() {
     measurementModeActive ||
     circleModeActive ||
     segmentBoxModeActive ||
+    segmentPointMode ||
     unsupervisedAoiModeActive,
   );
 }
@@ -40595,7 +40691,9 @@ function isRectangleDrawGesture(event) {
 
 function isSegmentBoxDrawGesture(event) {
   return (
-    segmentBoxModeActive || (segmentModeActive && event.originalEvent?.altKey)
+    Boolean(segmentBoxDragState) ||
+    segmentBoxModeActive ||
+    (segmentModeActive && event.originalEvent?.altKey)
   );
 }
 
@@ -40983,8 +41081,14 @@ viewer.addHandler("canvas-release", function (event) {
         features: [],
       };
       drawShape(polyCanvas, [annoJSON, annoJSONTemp]);
+      runSegmentForPromptBox(promptRect);
+      return;
     }
-    runSegmentForPromptBox(promptRect);
+    segmentPromptsDirty = true;
+    setSegmentStatus(
+      `Prompts ready.${getSegmentPromptSummary()} Add points or click Segment.`,
+    );
+    updateSegmentControls();
     return;
   }
 
@@ -44187,6 +44291,16 @@ const MIN_GRID_STEP_MICRONS = 2;
 const MIN_GRID_POINTS = 2;
 const MAX_GRID_POINTS = 5000;
 const MAX_GRID_CANDIDATE_POINTS = 250000;
+const GRID_STEP_UNIT_MICRONS = Object.freeze({
+  um: 1,
+  mm: 1000,
+  m: 1000000,
+});
+const GRID_STEP_UNIT_LABELS = Object.freeze({
+  um: "µm",
+  mm: "mm",
+  m: "m",
+});
 
 // Initialize grid with default settings.
 let grid = new Grid({
@@ -44261,6 +44375,54 @@ function getNumericGridInput(id) {
   return Number(document.getElementById(id).value);
 }
 
+function getGridStepUnit() {
+  const unit = document.getElementById("step-size-unit")?.value;
+  return GRID_STEP_UNIT_MICRONS[unit] ? unit : "um";
+}
+
+function getGridStepMicronsFromControls() {
+  return (
+    getNumericGridInput("step-size") *
+    GRID_STEP_UNIT_MICRONS[getGridStepUnit()]
+  );
+}
+
+function formatGridStepControlValue(value) {
+  if (!Number.isFinite(value)) return "";
+  return String(Number(value.toPrecision(12)));
+}
+
+function syncGridStepUnitControl() {
+  const input = document.getElementById("step-size");
+  const select = document.getElementById("step-size-unit");
+  if (!input || !select) return;
+  const unit = getGridStepUnit();
+  input.min = formatGridStepControlValue(
+    MIN_GRID_STEP_MICRONS / GRID_STEP_UNIT_MICRONS[unit],
+  );
+  input.title = `Grid step size in ${GRID_STEP_UNIT_LABELS[unit]}`;
+  select.dataset.previousUnit = unit;
+}
+
+function handleGridStepUnitChange() {
+  const input = document.getElementById("step-size");
+  const select = document.getElementById("step-size-unit");
+  if (!input || !select) return;
+  const previousUnit = GRID_STEP_UNIT_MICRONS[select.dataset.previousUnit]
+    ? select.dataset.previousUnit
+    : "um";
+  const nextUnit = getGridStepUnit();
+  const currentValue = Number(input.value);
+  if (Number.isFinite(currentValue)) {
+    input.value = formatGridStepControlValue(
+      (currentValue * GRID_STEP_UNIT_MICRONS[previousUnit]) /
+        GRID_STEP_UNIT_MICRONS[nextUnit],
+    );
+  }
+  syncGridStepUnitControl();
+  enableGridButtons();
+}
+
 function validateGridSettings(nextGrid) {
   if (
     !Number.isFinite(nextGrid.xMin) ||
@@ -44274,7 +44436,7 @@ function validateGridSettings(nextGrid) {
   }
 
   if (
-    !Number.isInteger(nextGrid.step) ||
+    !Number.isFinite(nextGrid.step) ||
     nextGrid.step < MIN_GRID_STEP_MICRONS
   ) {
     return `Step size must be at least ${MIN_GRID_STEP_MICRONS} micrometers.`;
@@ -44303,7 +44465,7 @@ function prepareGridSettings() {
     yMin: getNumericGridInput("grid-top"),
     xMax: getNumericGridInput("grid-right"),
     yMax: getNumericGridInput("grid-bottom"),
-    step: Math.trunc(getNumericGridInput("step-size")),
+    step: getGridStepMicronsFromControls(),
     noPoints: Math.trunc(getNumericGridInput("no-points")),
   });
 
@@ -44392,7 +44554,7 @@ const applyGridSettings = (preparedGrid) => {
       yMin: parseFloat(document.getElementById("grid-top").value),
       xMax: parseFloat(document.getElementById("grid-right").value),
       yMax: parseFloat(document.getElementById("grid-bottom").value),
-      step: parseInt(document.getElementById("step-size").value),
+      step: grid.step,
       noPoints: parseInt(document.getElementById("no-points").value),
       labelFontSize: labelFontSize,
       labelFontColor: labelFontColor,
@@ -44523,7 +44685,10 @@ const initializeGridSettings = () => {
   document.getElementById("grid-top").value = grid.yMin;
   document.getElementById("grid-right").value = grid.xMax;
   document.getElementById("grid-bottom").value = grid.yMax;
+  const stepUnit = document.getElementById("step-size-unit");
+  if (stepUnit) stepUnit.value = "um";
   document.getElementById("step-size").value = grid.step;
+  syncGridStepUnitControl();
   document.getElementById("no-points").value = grid.noPoints;
   constrainGridSliders();
 };
@@ -45534,6 +45699,7 @@ function disableGridOptions() {
   document.getElementById("grid-top").disabled = true;
   document.getElementById("grid-bottom").disabled = true;
   document.getElementById("step-size").disabled = true;
+  document.getElementById("step-size-unit").disabled = true;
   document.getElementById("no-points").disabled = true;
 }
 
@@ -45548,6 +45714,7 @@ function enableGridOptions() {
   document.getElementById("grid-top").disabled = false;
   document.getElementById("grid-bottom").disabled = false;
   document.getElementById("step-size").disabled = false;
+  document.getElementById("step-size-unit").disabled = false;
   document.getElementById("no-points").disabled = false;
 }
 
@@ -46171,14 +46338,10 @@ viewerContainer.addEventListener("mousemove", function (event) {
   const lineWeight = parseFloat(
     document.getElementById("circleLineWeight").value,
   );
-  const lineOpacity = parseFloat(
-    document.getElementById("circleLineOpacity").value,
-  );
+  const lineOpacity = getAnnotationOpacityValue("circleLineOpacity");
   const lineStyle = document.getElementById("circleLineStyle").value;
   const fillColor = document.getElementById("circleFillColor").value;
-  const fillOpacity = parseFloat(
-    document.getElementById("circleFillOpacity").value,
-  );
+  const fillOpacity = getAnnotationOpacityValue("circleFillOpacity");
 
   const properties = {
     uuid: generateUniqueId(16),
@@ -46717,9 +46880,9 @@ function getMeasureStyle() {
     lineStyle: document.getElementById("measureLineStyle").value,
     lineWeight: Number(document.getElementById("measureLineWeight").value),
     lineColor: document.getElementById("measureLineColor").value,
-    lineOpacity: Number(document.getElementById("measureLineOpacity").value),
+    lineOpacity: getAnnotationOpacityValue("measureLineOpacity"),
     fillColor: document.getElementById("measureFillColor").value,
-    fillOpacity: Number(document.getElementById("measureFillOpacity").value),
+    fillOpacity: getAnnotationOpacityValue("measureFillOpacity"),
   };
 }
 

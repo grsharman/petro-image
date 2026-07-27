@@ -121,7 +121,7 @@ The setup indicators should turn green before running the corresponding workflow
 
 ## Method
 
-For supervised segmentation, the user supplies a bounding box and optionally points that indicate included or excluded regions. SAM 2.1 predicts a mask, which petro-image converts to an editable polygon annotation. In "Fast segmentation mode", users can Alt/Option+drag to define box inputs that are then automatically segmented.
+For supervised segmentation, the user supplies a bounding box and optionally points that indicate included or excluded regions, then clicks **Segment** to run SAM 2.1. After reviewing the predicted mask, the user can add it as an editable polygon annotation. The Segment button is enabled again when prompts or segmentation settings change. In **Fast segmentation mode**, users can Alt/Option+drag to define box inputs that are automatically segmented and added.
 
 For unsupervised segmentation, segmenteverygrain uses a trained U-Net model to propose grain masks over an area of interest. Optional refinement adjusts those outlines with SAM 2.1 before they are added as annotations. Downsampling the image to lower resolution may be required to avoid very long processing times.
 

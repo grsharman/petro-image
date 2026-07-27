@@ -2244,11 +2244,6 @@
               <option value="turbo">Turbo</option>
               <option value="blues">Blues</option>
               <option value="gray">Grayscale</option>
-              <option value="hue">Cyclic hue</option>
-              <option value="hue_shifted">Cyclic hue shifted</option>
-              <option value="twilight">Cyclic twilight</option>
-              <option value="twilight_shifted">Cyclic twilight shifted</option>
-              <option value="diverging">Blue–white–red</option>
             </select>
           </label>
           <label class="snapshot-field transform-range-field">
@@ -2474,7 +2469,7 @@
           <h4>What It Does</h4>
           <p>Transform allows filters and calculations to be made on tile sets. Results can be previewed on the fly, or saved to their own tile set (enabling faster loading for calculations).</p>
           <h4>Simple Filter</h4>
-          <p>Use Simple Filter for common visual filters such as edge detection, local contrast, unsharp masking, relief shading, and channel mapping. These are intended for quick visual exploration.</p>
+          <p>Use Simple Filter for common visual filters such as edge detection, local contrast, unsharp masking, relief shading, and channel mapping. When False color is selected, Color map chooses the palette used for the result. These filters are intended for quick visual exploration.</p>
           <h4>Image Calculator</h4>
           <p>Use Image Calculator to build expressions from tile-set channels. Calculations can be performed on any tile set (labeled A, B, C, etc.) for R, G, B, luminance, saturation, and hue. Supported functions include abs, normdiff, range, max, min, and mean.</p>
           <h4>Tile-Set Stack Functions</h4>
@@ -2800,7 +2795,7 @@
           <div id="porosityThicknessOverlayPanel" class="porosity-thickness-overlay-panel">
             <div class="porosity-thickness-overlay-actions">
               <div class="porosity-thickness-calculate-row">
-                <button id="porosityThicknessCalculateButton" type="button" disabled>Calculate properties</button>
+                <button id="porosityThicknessCalculateButton" class="classify-primary-action" type="button" disabled>Calculate properties</button>
                 <button id="porosityThicknessButton" class="custom-button" type="button" title="Local thickness distribution" aria-label="Local thickness distribution" aria-expanded="false" disabled>
                   <svg class="annotation-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h16" /><path d="M5 20V13h3v7" /><path d="M10.5 20V6h3v14" /><path d="M16 20v-10h3v10" /></svg>
                 </button>
@@ -3245,8 +3240,22 @@
                 </button>
               </div>
               <div class="segment-commit-actions">
-                <button id="segmentAddAnnotationButton" type="button" disabled>
-                  Add Annotation
+                <button
+                  id="segmentRunButton"
+                  class="classify-primary-action"
+                  type="button"
+                  disabled
+                >
+                  Segment
+                </button>
+                <button
+                  id="segmentAddAnnotationButton"
+                  type="button"
+                  title="Add segment as annotation"
+                  aria-label="Add segment as annotation"
+                  disabled
+                >
+                  Add
                 </button>
                 <button id="segmentClearButton" type="button" disabled>Clear</button>
               </div>
@@ -3440,7 +3449,7 @@
           <h4>Test the Setup</h4>
           <p>Click Test SAM, then Test segmenteverygrain. The readiness indicators should turn green before running either workflow.</p>
           <h4>Using the Tools</h4>
-          <p>For supervised segmentation, draw a box and optionally add positive or negative points, then add the result as an annotation. For segmenteverygrain, draw an AOI, choose a processing resolution, review the estimated pixel load, and run the model.</p>
+          <p>For supervised segmentation, draw a box, optionally add positive or negative points, click Segment, review the preview, and then add the result as an annotation. Fast segmentation mode runs automatically after an Option/Alt-drag. For segmenteverygrain, draw an AOI, choose a processing resolution, review the estimated pixel load, and run the model.</p>
           <h4>Citation and Attribution</h4>
           <p>If these tools contribute to a publication, please cite the methods used.</p>
           <p><strong>SAM 2:</strong> Ravi, N., Gabeur, V., Hu, Y.-T., et al. (2024). “SAM 2: Segment Anything in Images and Videos.” arXiv:2408.00714. doi:10.48550/arXiv.2408.00714.</p>
@@ -3665,12 +3674,19 @@
           <h4>Opacity (%)</h4>
           <div id="checkboxOpacityContainer"></div>
           <hr />
-          <details class="settings-disclosure" open>
+          <details
+            class="settings-disclosure"
+            name="image-settings-disclosure"
+            open
+          >
             <summary>Appearance</summary>
             <div id="tileAppearanceControls" class="tile-appearance-controls"></div>
           </details>
           <hr />
-          <details class="settings-disclosure">
+          <details
+            class="settings-disclosure"
+            name="image-settings-disclosure"
+          >
             <summary>Scalebar Options</summary>
             <div>
               <select
@@ -3702,9 +3718,6 @@
                 title="Scalebar Location"
                 onchange="addScalebar()"
               >
-                <option value="None">None</option>
-                <option value="Top left">Top left</option>
-                <option value="Top right">Top right</option>
                 <option value="Bottom right">Bottom right</option>
                 <option value="Bottom left" selected>Bottom left</option>
               </select>
@@ -4063,17 +4076,29 @@
               title="Bottom boundary value"
             />
           </div>
-          <div>
-            <label for="step-size">Step Size (µm):</label>
-            <input
-              id="step-size"
-              class="number-input"
-              type="number"
-              value="1000"
-              min="2"
-              title="Step size in micrometers"
-              onchange="enableGridButtons()"
-            />
+          <div class="grid-step-size-field">
+            <label for="step-size">Step Size:</label>
+            <span class="grid-step-size-controls">
+              <input
+                id="step-size"
+                class="number-input"
+                type="number"
+                value="1000"
+                min="2"
+                step="any"
+                title="Grid step size"
+                onchange="enableGridButtons()"
+              />
+              <select
+                id="step-size-unit"
+                aria-label="Step size unit"
+                title="Step size unit"
+              >
+                <option value="um" selected>µm</option>
+                <option value="mm">mm</option>
+                <option value="m">m</option>
+              </select>
+            </span>
           </div>
           <div class="dropdown-container">
             <label for="no-points"># Points:</label>
@@ -6838,13 +6863,14 @@
                 type="number"
                 class="wide-number-input"
                 id="measureLineOpacity"
-                placeholder="1"
+                placeholder="100"
                 maxlength="3"
-                value="1"
+                value="100"
                 min="0"
-                max="1"
+                max="100"
+                step="1"
               />
-              <label for="measureLineOpacity">Line Opacity</label>
+              <label for="measureLineOpacity">Line Opacity (%)</label>
             </div>
             <div>
               <input type="color" id="measureLineColor" value="#00b4ff" />
@@ -6867,13 +6893,14 @@
                 type="number"
                 class="wide-number-input"
                 id="measureFillOpacity"
-                placeholder="1"
+                placeholder="0"
                 maxlength="3"
                 value="0"
                 min="0"
-                max="1"
+                max="100"
+                step="1"
               />
-              <label for="measureFillOpacity">Fill Opacity</label>
+              <label for="measureFillOpacity">Fill Opacity (%)</label>
             </div>
           </div>
           <div id="referenceCircleSettingsMenu" class="hiddenSettingsMenu">
@@ -6894,13 +6921,14 @@
                 type="number"
                 class="wide-number-input"
                 id="circleLineOpacity"
-                placeholder="1"
+                placeholder="100"
                 maxlength="3"
-                value="1"
+                value="100"
                 min="0"
-                max="1"
+                max="100"
+                step="1"
               />
-              <label for="circleLineOpacity">Line Opacity</label>
+              <label for="circleLineOpacity">Line Opacity (%)</label>
             </div>
             <div>
               <input type="color" id="circleLineColor" value="#ff0000" />
@@ -6923,13 +6951,14 @@
                 type="number"
                 class="wide-number-input"
                 id="circleFillOpacity"
-                placeholder="1"
+                placeholder="0"
                 maxlength="3"
                 value="0"
                 min="0"
-                max="1"
+                max="100"
+                step="1"
               />
-              <label for="circleFillOpacity">Fill Opacity</label>
+              <label for="circleFillOpacity">Fill Opacity (%)</label>
             </div>
           </div>
 

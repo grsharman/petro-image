@@ -1958,6 +1958,15 @@ body.import-wizard-page {
   background: #25915c;
 }
 
+#transformPolarizationPreviewButton:disabled,
+#transformPolarizationPreviewButton:disabled:hover {
+  background: #d1d5db;
+  border-color: #9ca3af;
+  color: #6b7280;
+  cursor: not-allowed;
+  opacity: 0.8;
+}
+
 .transform-calculator-actions {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -3073,8 +3082,20 @@ body.import-wizard-page {
 
 .segment-commit-actions {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 54px;
+  grid-template-columns: minmax(0, 1fr) 44px 54px;
   gap: 4px;
+}
+
+.segment-palette-body #segmentRunButton {
+  border-color: #1b5e20;
+  background: #2e7d32;
+  color: #fff;
+  font-weight: 650;
+}
+
+.segment-palette-body #segmentRunButton:hover:not(:disabled),
+.segment-palette-body #segmentRunButton:focus-visible:not(:disabled) {
+  background: #256428;
 }
 
 .segment-run-actions {
@@ -5962,7 +5983,7 @@ input[type="range"] {
   max-width: 100%;
   padding-inline: 3px;
   white-space: normal;
-  font-size: 10px;
+  font: inherit;
 }
 
 .porosity-thickness-calculate-row #porosityThicknessButton {
@@ -6988,7 +7009,7 @@ input[type="range"] {
   padding: 4px 5px 5px;
   border: 1px solid #d2d2d2;
   border-radius: 4px;
-  background: rgba(255, 255, 255, 0.66);
+  background: transparent;
 }
 
 .porosity-workflow-panel > summary {
@@ -8195,7 +8216,32 @@ input[type="range"] {
 }
 
 #step-size {
-  width: 50px;
+  width: 64px;
+}
+
+.grid-step-size-field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.grid-step-size-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+#step-size-unit {
+  box-sizing: border-box;
+  width: 43px;
+  height: 18px;
+  padding: 1px 2px;
+  color: #000;
+  background-color: #fff;
+  border: 1px solid #777;
+  font-size: 11px;
+  line-height: 16px;
 }
 
 #no-points {
