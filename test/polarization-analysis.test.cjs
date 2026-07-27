@@ -257,7 +257,11 @@ test("XPL raster products distinguish modulation amplitude from normalized modul
 });
 
 test("scalar color maps provide stable endpoints and cyclic options", async () => {
-  const { getColorMapRgb, getDefaultColorMap } = await polarizationApi;
+  const {
+    getAvailableColorMapNames,
+    getColorMapRgb,
+    getDefaultColorMap,
+  } = await polarizationApi;
   assert.deepEqual(getColorMapRgb(0, "viridis"), [68, 1, 84]);
   assert.deepEqual(getColorMapRgb(1, "viridis"), [253, 231, 37]);
   assert.deepEqual(getColorMapRgb(0, "hue"), [255, 0, 0]);
@@ -279,6 +283,32 @@ test("scalar color maps provide stable endpoints and cyclic options", async () =
   assert.equal(getDefaultColorMap("xpl_cpl_difference"), "diverging");
   assert.equal(getDefaultColorMap("ppl_azimuth_reliability"), "gray");
   assert.equal(getDefaultColorMap("xpl_maximum"), "viridis");
+  assert.deepEqual(getAvailableColorMapNames(), [
+    "viridis",
+    "inferno",
+    "turbo",
+    "blues",
+    "gray",
+  ]);
+  assert.deepEqual(getAvailableColorMapNames("ppl_azimuth"), [
+    "viridis",
+    "inferno",
+    "turbo",
+    "blues",
+    "gray",
+    "hue",
+    "hue_shifted",
+    "twilight",
+    "twilight_shifted",
+  ]);
+  assert.deepEqual(getAvailableColorMapNames("xpl_cpl_difference"), [
+    "viridis",
+    "inferno",
+    "turbo",
+    "blues",
+    "gray",
+    "diverging",
+  ]);
 });
 
 test("RGB polarization products evaluate every channel at one luminance-derived angle", async () => {

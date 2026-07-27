@@ -118,6 +118,30 @@
       [178, 24, 43],
     ],
   });
+  const SEQUENTIAL_COLOR_MAP_NAMES = Object.freeze([
+    "viridis",
+    "inferno",
+    "turbo",
+    "blues",
+    "gray",
+  ]);
+  const CYCLIC_COLOR_MAP_NAMES = Object.freeze([
+    "hue",
+    "hue_shifted",
+    "twilight",
+    "twilight_shifted",
+  ]);
+  const DIVERGING_COLOR_MAP_NAMES = Object.freeze(["diverging"]);
+
+  function getAvailableColorMapNames(product = null) {
+    const definition = getProductDefinition(product);
+    const names = [...SEQUENTIAL_COLOR_MAP_NAMES];
+    if (definition?.circular) names.push(...CYCLIC_COLOR_MAP_NAMES);
+    if (definition?.range?.[0] < 0 && definition.range[1] > 0) {
+      names.push(...DIVERGING_COLOR_MAP_NAMES);
+    }
+    return names;
+  }
 
   function getColorMapRgb(value, name = "viridis") {
     const normalized = Math.max(0, Math.min(1, Number(value) || 0));
@@ -933,6 +957,7 @@
     createHarmonicModel,
     evaluateHarmonicFitAtAngle,
     fitHarmonicValues,
+    getAvailableColorMapNames,
     getColorMapRgb,
     getDefaultColorMap,
     getPplXplAzimuthDifference,

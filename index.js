@@ -20180,6 +20180,11 @@ function normalizeTransformValue(key, value) {
         "turbo",
         "blues",
         "gray",
+        "hue",
+        "hue_shifted",
+        "twilight",
+        "twilight_shifted",
+        "diverging",
       ].includes(valueKey)
         ? valueKey
         : fallback;
@@ -24116,6 +24121,31 @@ function resetTransformTileCaches(tileSetToReset = null, options = {}) {
   }
 }
 
+function updateTransformColorMapOptions(transform, polarizationDefinition) {
+  if (!transformPolarizationColormap) return;
+  const product =
+    isPolarizationRecipe(transform) && polarizationDefinition
+      ? transform.polarizationProduct
+      : null;
+  const availableNames = new Set(
+    PetroPolarizationAnalysis.getAvailableColorMapNames(product),
+  );
+  Array.from(transformPolarizationColormap.options).forEach((option) => {
+    const available = availableNames.has(option.value);
+    option.hidden = !available;
+    option.disabled = !available;
+  });
+  if (!availableNames.has(transformPolarizationColormap.value)) {
+    const defaultName = isPolarizationRecipe(transform)
+      ? PetroPolarizationAnalysis.getDefaultColorMap(product)
+      : "viridis";
+    transformPolarizationColormap.value = availableNames.has(defaultName)
+      ? defaultName
+      : "viridis";
+    transform.polarizationColormap = transformPolarizationColormap.value;
+  }
+}
+
 function updateTransformControls() {
   const simpleFields = document.querySelector(".transform-simple-fields");
   const rasterFields = document.querySelector(".transform-raster-fields");
@@ -24136,7 +24166,10 @@ function updateTransformControls() {
     polarizationDefinition?.classification,
   );
   const polarizationCategorical = Boolean(polarizationDefinition?.categorical);
+  updateTransformColorMapOptions(transform, polarizationDefinition);
   const specializedRecipe = rasterRecipe || polarizationRecipe;
+  const simpleTransformInactive =
+    !specializedRecipe && transform.type === "none";
   const polarizationRgbOutput =
     polarizationRecipe &&
     transform.output === "rgb" &&
@@ -24162,14 +24195,22 @@ function updateTransformControls() {
   if (transformActions) transformActions.hidden = specializedRecipe;
   if (transformColormapField) {
     const colormapHidden =
-      polarizationCategorical || transform.output !== "falseColor";
+      simpleTransformInactive ||
+      polarizationCategorical ||
+      transform.output !== "falseColor";
     transformLayoutVisibilityChanged =
       transformColormapField.hidden !== colormapHidden;
     transformColormapField.hidden = colormapHidden;
+    transformColormapField.classList.toggle(
+      "transform-field-disabled",
+      simpleTransformInactive,
+    );
   }
   if (transformPolarizationColormap) {
     transformPolarizationColormap.disabled =
-      polarizationCategorical || transform.output !== "falseColor";
+      polarizationCategorical ||
+      transform.output !== "falseColor" ||
+      simpleTransformInactive;
   }
   if (transformPolarizationClassificationPanel) {
     const classificationPanelHidden =
