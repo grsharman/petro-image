@@ -96,6 +96,39 @@ test("calculates and merges image-pixel bounds for GeoJSON features", () => {
   });
 });
 
+test("expands point bounds using the requested fraction of the active image", () => {
+  const { api } = loadApi();
+
+  assert.deepEqual(
+    JSON.parse(
+      JSON.stringify(
+        api.expandZeroAreaBounds(
+          { x: 500, y: 250, width: 0, height: 0 },
+          { x: 1000, y: 500 },
+          0.06,
+        ),
+      ),
+    ),
+    { x: 470, y: 235, width: 60, height: 30 },
+  );
+});
+
+test("only expands zero dimensions and requires minimumBoundsRatio to do so", () => {
+  const { api } = loadApi();
+  const line = { x: 100, y: 200, width: 300, height: 0 };
+
+  assert.deepEqual(
+    JSON.parse(
+      JSON.stringify(api.expandZeroAreaBounds(line, { x: 1000, y: 500 }, 0.06)),
+    ),
+    { x: 100, y: 185, width: 300, height: 30 },
+  );
+  assert.equal(
+    api.expandZeroAreaBounds(line, { x: 1000, y: 500 }, undefined),
+    null,
+  );
+});
+
 test("converts the visible viewport to source-image pixel bounds", () => {
   const { api } = loadApi();
   const bounds = api.getImageBoundsForViewport(

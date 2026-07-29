@@ -322,7 +322,7 @@ function getEmbedAnnotationMatches(message) {
 }
 
 async function handleEmbedFocusAnnotation(message) {
-  await waitForEmbedImage();
+  const image = await waitForEmbedImage();
   assertEmbedCommandTargetsCurrentSample(message);
   const features = getEmbedAnnotationMatches(message);
   if (!features.length) {
@@ -331,10 +331,16 @@ async function handleEmbedFocusAnnotation(message) {
       "No loaded annotation matches the requested selector.",
     );
   }
-  const bounds = window.PetroImageEmbedApi.mergeBounds(
-    features.map((feature) => window.PetroImageEmbedApi.getFeatureBounds(feature)),
+  const bounds = window.PetroImageEmbedApi.expandZeroAreaBounds(
+    window.PetroImageEmbedApi.mergeBounds(
+      features.map((feature) =>
+        window.PetroImageEmbedApi.getFeatureBounds(feature),
+      ),
+    ),
+    image.getContentSize(),
+    message.options?.minimumBoundsRatio,
   );
-  if (!bounds || bounds.width <= 0 || bounds.height <= 0) {
+  if (!bounds) {
     throw createEmbedCommandError(
       "annotation_has_no_bounds",
       "The selected annotation does not define an area that can be focused.",

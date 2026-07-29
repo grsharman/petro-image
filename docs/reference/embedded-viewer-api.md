@@ -190,6 +190,7 @@ petroImageFrame.contentWindow.postMessage(
     labels: ["Grain A", "Grain B", "Grain C"],
     options: {
       padding: 0.5,
+      minimumBoundsRatio: 0.06,
       immediately: false,
       select: false
     }
@@ -207,7 +208,13 @@ Supply at least one selector:
 | `uuid` | string | One annotation UUID. |
 | `uuids` | array of strings | Several annotation UUIDs. |
 
-The viewport encloses the combined bounds of all matches. The viewport options are the same as for `viewer.setViewport`; `select: true` also selects the matched annotations.
+The viewport encloses the combined bounds of all matches. The viewport options
+are the same as for `viewer.setViewport`; `select: true` also selects the matched
+annotations. For point or line annotations whose combined bounds have zero
+width or height, `minimumBoundsRatio` expands each zero dimension symmetrically
+to the specified fraction of the active image's corresponding dimension. For
+example, `0.06` gives a point bounds that is 6% of the image width by 6% of the
+image height.
 
 ### `viewer.resetViewport`
 

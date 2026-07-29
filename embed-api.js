@@ -184,6 +184,48 @@
     return { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
   }
 
+  function expandZeroAreaBounds(bounds, imageSize, minimumBoundsRatio) {
+    if (!isObject(bounds)) return null;
+    const expanded = {
+      x: Number(bounds.x),
+      y: Number(bounds.y),
+      width: Number(bounds.width),
+      height: Number(bounds.height),
+    };
+    if (
+      !Object.values(expanded).every(Number.isFinite) ||
+      expanded.width < 0 ||
+      expanded.height < 0
+    ) {
+      return null;
+    }
+    if (expanded.width > 0 && expanded.height > 0) return expanded;
+
+    const ratio = Number(minimumBoundsRatio);
+    const imageWidth = Number(imageSize?.x);
+    const imageHeight = Number(imageSize?.y);
+    if (
+      !Number.isFinite(ratio) ||
+      ratio <= 0 ||
+      !Number.isFinite(imageWidth) ||
+      imageWidth <= 0 ||
+      !Number.isFinite(imageHeight) ||
+      imageHeight <= 0
+    ) {
+      return null;
+    }
+
+    if (expanded.width === 0) {
+      expanded.width = imageWidth * ratio;
+      expanded.x -= expanded.width / 2;
+    }
+    if (expanded.height === 0) {
+      expanded.height = imageHeight * ratio;
+      expanded.y -= expanded.height / 2;
+    }
+    return expanded;
+  }
+
   function validateFeatureCollection(value) {
     if (!isObject(value) || value.type !== "FeatureCollection" || !Array.isArray(value.features)) {
       throw Object.assign(
@@ -338,6 +380,7 @@
     VERSION,
     COMMANDS,
     createController,
+    expandZeroAreaBounds,
     getFeatureBounds,
     getImageBoundsForViewport,
     imageBoundsIntersect,
