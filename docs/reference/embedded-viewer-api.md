@@ -50,6 +50,53 @@ The embedding page should normally wait for `viewer.sampleChanged` before sendin
 
 ## Commands
 
+### `viewer.setLibrary`
+
+Replaces the active library with a library JSON object supplied directly by the
+embedding application. This is useful when the host has already fetched and
+filtered a larger library.
+
+```js
+petroImageFrame.contentWindow.postMessage(
+  {
+    source: "petro-image-host",
+    version: 1,
+    type: "viewer.setLibrary",
+    requestId: "filtered-library",
+    library: {
+      format: "v1",
+      samples: [
+        {
+          sampleId: "4m7k2p9x",
+          title: "Teaching sample 1",
+          groups: ["Teaching"],
+          tileSets: [
+            {
+              label: "PPL",
+              tiles: [
+                { uri: "https://example.org/images/sample-1-ppl.dzi" },
+              ],
+            }
+          ],
+        },
+      ],
+    },
+  },
+  petroImageOrigin
+);
+```
+
+`library` must follow the [Library JSON](formats/library-json.md) format and
+contain at least one sample. Each sample must have a title and at least one tile
+set, and each tile set must contain at least one tile URI. Use absolute tile and
+annotation URLs in a directly supplied object because it has no library-file
+URL against which relative paths can be resolved.
+
+The command succeeds after the library and selectors have been replaced. Its
+result includes `sampleCount` and `format`. Image loading continues
+asynchronously; wait for the subsequent `viewer.sampleChanged` event before
+sending sample-specific commands.
+
 ### `viewer.setAnnotations`
 
 Replaces or appends a GeoJSON annotation layer.

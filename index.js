@@ -8,6 +8,7 @@ let currentIndex = 0;
 let samples = [];
 let currentLibraryData = { samples: [] };
 let currentLibraryPath = "";
+let libraryLoadGeneration = 0;
 let annotationFiles = {}; // For loading predefined annotations
 let groupMapping = {}; // To map groups to sample indices
 let lastSelectedSampleByGroup = {};
@@ -228,6 +229,21 @@ async function handleEmbedSetAnnotations(message) {
   return detail;
 }
 
+async function handleEmbedSetLibrary(message) {
+  const library = window.PetroImageEmbedApi.validateLibrary(message.library);
+  const libraryClone = JSON.parse(JSON.stringify(library));
+
+  clearUnsavedWork();
+  currentLibraryPath = "";
+  await loadSampleJSON(libraryClone);
+
+  return {
+    sampleCount: libraryClone.samples.length,
+    format:
+      typeof libraryClone.format === "string" ? libraryClone.format : null,
+  };
+}
+
 function clampEmbedBoundsToImage(bounds, imageSize) {
   const x = Math.max(0, Math.min(bounds.x, imageSize.x));
   const y = Math.max(0, Math.min(bounds.y, imageSize.y));
@@ -412,6 +428,7 @@ function initializeEmbedCommandApi() {
     parentOrigin,
     postEvent: postViewerEvent,
     handlers: {
+      "viewer.setLibrary": handleEmbedSetLibrary,
       "viewer.setAnnotations": handleEmbedSetAnnotations,
       "viewer.setViewport": handleEmbedSetViewport,
       "viewer.focusAnnotation": handleEmbedFocusAnnotation,
@@ -876,11 +893,13 @@ let measureAreaJSONTemp = {
 }; // For drawing temporary measurements of area
 
 function loadSampleJSON(input, options = {}) {
+  const loadGeneration = ++libraryLoadGeneration;
   if (typeof input === "string") {
     // Load necessary information from JSON
     return fetch(input)
       .then((response) => response.json())
       .then((data) => {
+        if (loadGeneration !== libraryLoadGeneration) return false;
         return processJSON(data, options); // Process JSON data
       });
   } else if (typeof input === "object") {

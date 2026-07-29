@@ -4,6 +4,7 @@
   const SOURCE = "petro-image-host";
   const VERSION = 1;
   const COMMANDS = Object.freeze([
+    "viewer.setLibrary",
     "viewer.setAnnotations",
     "viewer.setViewport",
     "viewer.focusAnnotation",
@@ -171,6 +172,73 @@
     return value;
   }
 
+  function validateLibrary(value) {
+    if (
+      !isObject(value) ||
+      !Array.isArray(value.samples) ||
+      value.samples.length === 0
+    ) {
+      throw Object.assign(
+        new Error(
+          "library must be a library object with a non-empty samples array.",
+        ),
+        { code: "invalid_library" },
+      );
+    }
+
+    value.samples.forEach((sample, sampleIndex) => {
+      if (
+        !isObject(sample) ||
+        typeof sample.title !== "string" ||
+        !sample.title.trim() ||
+        !Array.isArray(sample.tileSets) ||
+        sample.tileSets.length === 0
+      ) {
+        throw Object.assign(
+          new Error(
+            `library.samples[${sampleIndex}] must have a title and a non-empty tileSets array.`,
+          ),
+          { code: "invalid_library" },
+        );
+      }
+      if (
+        sample.groups !== undefined &&
+        (!Array.isArray(sample.groups) ||
+          sample.groups.some((group) => typeof group !== "string"))
+      ) {
+        throw Object.assign(
+          new Error(
+            `library.samples[${sampleIndex}].groups must be an array of strings.`,
+          ),
+          { code: "invalid_library" },
+        );
+      }
+
+      sample.tileSets.forEach((tileSet, tileSetIndex) => {
+        if (
+          !isObject(tileSet) ||
+          !Array.isArray(tileSet.tiles) ||
+          tileSet.tiles.length === 0 ||
+          tileSet.tiles.some(
+            (tile) =>
+              !isObject(tile) ||
+              typeof tile.uri !== "string" ||
+              !tile.uri.trim(),
+          )
+        ) {
+          throw Object.assign(
+            new Error(
+              `library.samples[${sampleIndex}].tileSets[${tileSetIndex}] must have a non-empty tiles array whose entries have URI strings.`,
+            ),
+            { code: "invalid_library" },
+          );
+        }
+      });
+    });
+
+    return value;
+  }
+
   function normalizeAnnotationCapabilities(options = {}) {
     const hasExplicitSelection = typeof options.canSelect === "boolean";
     const hasExplicitEditing = typeof options.canEdit === "boolean";
@@ -256,5 +324,6 @@
     normalizeImageBounds,
     validateEnvelope,
     validateFeatureCollection,
+    validateLibrary,
   });
 })(typeof window !== "undefined" ? window : globalThis);

@@ -45,6 +45,40 @@ test("only accepts versioned commands from the embedding parent", () => {
   assert.equal(wrongOrigin.ignored, true);
 });
 
+test("advertises and validates direct library commands", () => {
+  const { api } = loadApi();
+  assert.equal(api.COMMANDS.includes("viewer.setLibrary"), true);
+
+  const library = {
+    format: "v1",
+    samples: [
+      {
+        title: "Filtered sample",
+        groups: ["Teaching"],
+        tileSets: [
+          {
+            label: "PPL",
+            tiles: [{ uri: "https://example.org/ppl.dzi" }],
+          },
+        ],
+      },
+    ],
+  };
+  assert.equal(api.validateLibrary(library), library);
+
+  assert.throws(
+    () => api.validateLibrary({ samples: [] }),
+    (error) => error.code === "invalid_library",
+  );
+  assert.throws(
+    () =>
+      api.validateLibrary({
+        samples: [{ title: "Missing tiles", tileSets: [] }],
+      }),
+    (error) => error.code === "invalid_library",
+  );
+});
+
 test("calculates and merges image-pixel bounds for GeoJSON features", () => {
   const { api } = loadApi();
   const first = api.getFeatureBounds({
