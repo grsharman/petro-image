@@ -2,6 +2,7 @@
 
 const mobileMode = Boolean(window.__PETRO_IMAGE_MOBILE_MODE__);
 const annotationEditingEnabled = !mobileMode;
+const embedMode = getQueryParameter("embed") === "1";
 
 // Index of the currently selected sample
 let currentIndex = 0;
@@ -952,8 +953,7 @@ function saveLastSamplePreference(sampleIndex) {
 async function processJSON(data, options = {}) {
   const { autoLoadSample = true } = options;
   const requestedGroup = getQueryParameter("group");
-  const restrictToRequestedGroup =
-    getQueryParameter("embed") === "1" && Boolean(requestedGroup);
+  const restrictToRequestedGroup = embedMode && Boolean(requestedGroup);
   currentIndex = 0;
   currentLibraryData = data;
   samples = data.samples;
@@ -1110,6 +1110,12 @@ const loadLibraryInput = document.getElementById("load-sample-JSON");
 const actionLoadLibraryButton = document.getElementById(
   "actionLoadLibraryButton",
 );
+
+if (embedMode) {
+  actionLoadLibraryButton.hidden = true;
+  loadLibraryInput.disabled = true;
+}
+
 const openCziImportButton = document.getElementById("openCziImportButton");
 const cziImportDialog = document.getElementById("cziImportDialog");
 const closeCziImportButton = document.getElementById("closeCziImportButton");

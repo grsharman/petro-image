@@ -11,7 +11,7 @@ The viewer recognizes these URL query parameters:
 | `library` | HTTP(S) URL of a library JSON file. Cross-origin access must be allowed. |
 | `group` | Initial group. With `embed=1`, only this group is exposed in the group selector. |
 | `sample` | Initial sample matched against `sampleId`, legacy `id`, or title. |
-| `embed=1` | Enables the restricted embedded-viewer presentation. |
+| `embed=1` | Enables the restricted embedded-viewer presentation and prevents visitors from loading a different local library. |
 
 ```text
 https://grsharman.github.io/petro-image/?library=https%3A%2F%2Fexample.org%2Fcollection.json&group=Teaching&sample=PA-000184&embed=1
