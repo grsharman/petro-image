@@ -579,6 +579,7 @@ const squareMetersFromSquarePixels = (pixels2) => {
 };
 
 const annotationCoordinateApi = window.PetroImageAnnotationCoordinates;
+const annotationLabelPointApi = window.PetroImageAnnotationLabelPoint;
 const inferredAnnotationCoordinateSpaceSamples = new WeakSet();
 
 function getImageCoordinateSpace(image) {
@@ -5065,6 +5066,11 @@ function commitUnsupervisedSegmentFeatures(features, statusMessage) {
   features.forEach((feature) => {
     const style = getCurrentAnnotationStyleColors();
     const coordinates = roundCoordinateTree(feature.geometry.coordinates[0]);
+    const labelPoint =
+      annotationLabelPointApi.getTopmostGeometryPoint({
+        type: "Polygon",
+        coordinates: [coordinates],
+      }) || coordinates[0];
     const areaPixels2 = calculatePolygonArea([coordinates]);
     const perimeterPixels = calculatePolygonExteriorPerimeter([coordinates]);
     const segmentProperties = {
@@ -5075,8 +5081,8 @@ function commitUnsupervisedSegmentFeatures(features, statusMessage) {
       pixelsPerMeter: pixelsPerMeter(),
       imageWidth: imageSize.x,
       imageHeight: imageSize.y,
-      xLabel: coordinates[0][0],
-      yLabel: coordinates[0][1],
+      xLabel: labelPoint[0],
+      yLabel: labelPoint[1],
       labelFontColor: style.labelFontColor,
       labelBackgroundColor: style.labelBackgroundColor,
       lineColor: style.lineColor,
@@ -5367,6 +5373,11 @@ function commitSegmentFeature(feature, options = {}) {
   const image = viewer.world.getItemAt(0);
   const imageSize = image?.getContentSize() || { x: null, y: null };
   const coordinates = roundCoordinateTree(feature.geometry.coordinates[0]);
+  const labelPoint =
+    annotationLabelPointApi.getTopmostGeometryPoint({
+      type: "Polygon",
+      coordinates: [coordinates],
+    }) || coordinates[0];
   const areaPixels2 = calculatePolygonArea([coordinates]);
   const perimeterPixels = calculatePolygonExteriorPerimeter([coordinates]);
   const areaM2 = squareMetersFromSquarePixels(areaPixels2);
@@ -5383,8 +5394,8 @@ function commitSegmentFeature(feature, options = {}) {
     pixelsPerMeter: pixelsPerMeter(),
     imageWidth: imageSize.x,
     imageHeight: imageSize.y,
-    xLabel: coordinates[0][0],
-    yLabel: coordinates[0][1],
+    xLabel: labelPoint[0],
+    yLabel: labelPoint[1],
     labelFontColor: style.labelFontColor,
     labelBackgroundColor: style.labelBackgroundColor,
     lineColor: style.lineColor,
@@ -6898,7 +6909,7 @@ function importPorosityRecipe(recipe) {
     const matchingIndices = tileSets()
       .map((tileSet, index) => ({
         index,
-        label: tileSet.label || `Tile set ${index + 1}`,
+        label: getPorosityTileSetLabel(index),
       }))
       .filter((tileSet) => tileSet.label === recipeTileSet.label)
       .map((tileSet) => tileSet.index);
@@ -7244,7 +7255,7 @@ function renderPorosityTileSetSelect() {
   tileSets().forEach((tileSet, index) => {
     const option = document.createElement("option");
     option.value = String(index);
-    option.textContent = tileSet.label || `Tile set ${index + 1}`;
+    option.textContent = getPorosityTileSetLabel(index);
     option.selected = selectedIndices.has(index);
     porosityTileSetSelect.append(option);
   });
@@ -7256,7 +7267,25 @@ function renderPorosityTileSetSelect() {
 
 function getPorosityTileSetLabel(index) {
   const tileSet = tileSets()[index];
-  return tileSet?.label || `Tile set ${Number(index) + 1}`;
+  const tileSetLabel = tileSet?.label?.trim();
+  if (tileSetLabel) return tileSetLabel;
+
+  const tiles = tileSet?.tiles || [];
+  const tileIndex = tileSet?.periodDegrees
+    ? 0
+    : getTileSetVisibleTileIndex(index);
+  const tileLabel = tiles[tileIndex]?.label?.trim();
+  return tileLabel || `Tile set ${Number(index) + 1}`;
+}
+
+function refreshPorosityTileSetLabels() {
+  if (!porosityTileSetSelect?.options.length) return;
+
+  Array.from(porosityTileSetSelect.options).forEach((option) => {
+    const index = normalizePorosityTileSetIndex(option.value);
+    if (index !== null) option.textContent = getPorosityTileSetLabel(index);
+  });
+  renderPorositySamples();
 }
 
 function normalizePorosityTypeSamples(type) {
@@ -19510,6 +19539,22 @@ const viewer = OpenSeadragon({
   crossOriginPolicy: "Anonymous",
 });
 
+const transformLoadedTilesByImage = new WeakMap();
+
+viewer.addHandler("tile-drawn", (event) => {
+  if (!event?.tiledImage || !event?.tile) return;
+  let loadedTiles = transformLoadedTilesByImage.get(event.tiledImage);
+  if (!loadedTiles) {
+    loadedTiles = new Set();
+    transformLoadedTilesByImage.set(event.tiledImage, loadedTiles);
+  }
+  loadedTiles.add(event.tile);
+});
+
+viewer.addHandler("tile-unloaded", (event) => {
+  transformLoadedTilesByImage.get(event?.tiledImage)?.delete(event?.tile);
+});
+
 derivedPreviewOverlay = new PetroDerivedPreviewOverlay.DerivedPreviewOverlay({
   OpenSeadragon,
   viewer,
@@ -20091,6 +20136,8 @@ function updateImageCheckboxLabels() {
         Boolean(tileSet.periodDegrees) || tiles.length <= 1;
     }
   });
+
+  refreshPorosityTileSetLabels();
 }
 
 function toggleOnImages() {
@@ -28834,9 +28881,38 @@ function isAnnotationOverlayLocationVisible(location, marginRatio = 0.15) {
   );
 }
 
+const annotationOverlayRefreshIntervalMs = 100;
+let annotationOverlayRefreshTimer = null;
+let lastAnnotationOverlayRefreshTime = 0;
+
+function scheduleVisibleAnnotationOverlayRefresh({ immediate = false } = {}) {
+  if (immediate && annotationOverlayRefreshTimer !== null) {
+    window.clearTimeout(annotationOverlayRefreshTimer);
+    annotationOverlayRefreshTimer = null;
+  }
+  if (annotationOverlayRefreshTimer !== null) return;
+
+  const elapsed = performance.now() - lastAnnotationOverlayRefreshTime;
+  const delay = immediate
+    ? 0
+    : Math.max(0, annotationOverlayRefreshIntervalMs - elapsed);
+  annotationOverlayRefreshTimer = window.setTimeout(() => {
+    annotationOverlayRefreshTimer = null;
+    refreshVisibleAnnotationOverlays();
+  }, delay);
+}
+
 function refreshVisibleAnnotationOverlays() {
+  if (annotationOverlayRefreshTimer !== null) {
+    window.clearTimeout(annotationOverlayRefreshTimer);
+    annotationOverlayRefreshTimer = null;
+  }
+  lastAnnotationOverlayRefreshTime = performance.now();
+
   if (!annotationOverlaysAreGloballyVisible()) {
-    removeAnnotationOverlays();
+    // Keep the culled overlays mounted while annotations are hidden. Reusing
+    // them makes a subsequent show operation a cheap visibility change instead
+    // of destroying and rebuilding every visible label.
     return;
   }
 
@@ -28844,10 +28920,10 @@ function refreshVisibleAnnotationOverlays() {
   if (!image) return;
 
   const showLabels = annotationLabelsAreGloballyVisible();
+  const onscreenFeatures = new Map();
   const visibleFeatures = new Map();
   annoJSON.features.forEach((feature) => {
     if (!feature?.geometry || !feature?.properties) return;
-    if (!isAnnotationFeatureVisible(feature)) return;
     const props = feature.properties;
     const x = Number(props.xLabel);
     const y = Number(props.yLabel);
@@ -28856,19 +28932,37 @@ function refreshVisibleAnnotationOverlays() {
       new OpenSeadragon.Point(x, y),
     );
     if (isAnnotationOverlayLocationVisible(location)) {
-      visibleFeatures.set(props.uuid, { feature, location });
+      const entry = { feature, location };
+      onscreenFeatures.set(props.uuid, entry);
+      if (isAnnotationFeatureVisible(feature)) {
+        visibleFeatures.set(props.uuid, entry);
+      }
     }
   });
 
   [...document.getElementsByClassName("annotate-label")].forEach((label) => {
-    if (showLabels && visibleFeatures.has(label.dataset.annotationUuid)) return;
+    const uuid = label.dataset.annotationUuid;
+    if (onscreenFeatures.has(uuid)) {
+      // Labels hidden by the global checkbox are intentionally retained so
+      // toggling them back on does not recreate their OpenSeadragon overlays.
+      if (!showLabels || !visibleFeatures.has(uuid)) {
+        label.style.visibility = "hidden";
+      }
+      return;
+    }
     const container = label.closest(".annotation-overlay");
     viewer.removeOverlay(container || label);
     container?.remove();
   });
   [...document.getElementsByClassName("annotate-crosshairs")].forEach(
     (crosshair) => {
-      if (visibleFeatures.has(crosshair.dataset.annotationUuid)) return;
+      const uuid = crosshair.dataset.annotationUuid;
+      if (onscreenFeatures.has(uuid)) {
+        if (!visibleFeatures.has(uuid)) {
+          crosshair.style.visibility = "hidden";
+        }
+        return;
+      }
       viewer.removeOverlay(crosshair);
       crosshair.remove();
     },
@@ -28906,7 +29000,10 @@ function refreshVisibleAnnotationOverlays() {
   });
 }
 
-function applyAnnotationVisibilityState({ refreshOverlays = true } = {}) {
+function applyAnnotationVisibilityState({
+  refreshOverlays = true,
+  redrawCanvas = true,
+} = {}) {
   const showAnnotations = document.getElementById("show-annotations").checked;
   const showLabels = document.getElementById("show-annotation-labels").checked;
 
@@ -28928,8 +29025,10 @@ function applyAnnotationVisibilityState({ refreshOverlays = true } = {}) {
   // annotations. Keep the canvas present when saved annotations are hidden;
   // drawShape filters annoJSON while still rendering annoJSONTemp (including
   // the segmenteverygrain AOI).
-  polyCanvas.style.display = "block";
-  drawShape(polyCanvas, [annoJSON, annoJSONTemp]);
+  if (redrawCanvas) {
+    polyCanvas.style.display = "block";
+    drawShape(polyCanvas, [annoJSON, annoJSONTemp]);
+  }
   if (refreshOverlays) refreshVisibleAnnotationOverlays();
 }
 
@@ -29593,6 +29692,44 @@ function getTransformTooltipTileCandidates(tileSet, tileSetIndex) {
   return tiles;
 }
 
+function getTransformTooltipLoadedTiles(image) {
+  if (!image) return [];
+
+  const entries = [];
+  const seen = new Set();
+  const addTile = (loadedTile, coordinates = {}) => {
+    if (!loadedTile || seen.has(loadedTile)) return;
+    seen.add(loadedTile);
+    entries.push({
+      loadedTile,
+      level: Number.isFinite(Number(coordinates.level))
+        ? Number(coordinates.level)
+        : Number(loadedTile.level),
+      x: Number.isFinite(Number(coordinates.x))
+        ? Number(coordinates.x)
+        : Number(loadedTile.x),
+      y: Number.isFinite(Number(coordinates.y))
+        ? Number(coordinates.y)
+        : Number(loadedTile.y),
+    });
+  };
+
+  // Browser builds do not consistently retain OpenSeadragon's private
+  // tilesMatrix cache. Prefer tiles observed through tile-drawn events, then
+  // use OpenSeadragon's current draw list and tilesMatrix as compatibility
+  // fallbacks for tiles loaded before the event tracker was initialized.
+  transformLoadedTilesByImage.get(image)?.forEach((tile) => addTile(tile));
+  (image.lastDrawn || []).forEach((tile) => addTile(tile));
+  Object.entries(image.tilesMatrix || {}).forEach(([level, columns]) => {
+    Object.entries(columns || {}).forEach(([x, rows]) => {
+      Object.entries(rows || {}).forEach(([y, loadedTile]) => {
+        addTile(loadedTile, { level, x, y });
+      });
+    });
+  });
+  return entries;
+}
+
 function getLoadedTileViewportBounds(loadedTile) {
   const bounds = loadedTile?.bounds;
   if (
@@ -29705,64 +29842,57 @@ function getTransformTooltipSample(event) {
   let bestRawSample = null;
 
   candidates.forEach((tile) => {
-    const matrix = tile?.image?.tilesMatrix;
-    if (!matrix) return;
+    getTransformTooltipLoadedTiles(tile?.image).forEach(
+      ({ loadedTile, level, x: tileX, y: tileY }) => {
+        const context =
+          PetroDerivedPreviewOverlay.getDerivedTileContext2D(loadedTile);
+        if (!context?.canvas) return;
+        const bounds = getLoadedTileViewportBounds(loadedTile);
+        if (!bounds) return;
+        const xRatio = (viewportPoint.x - bounds.x) / bounds.width;
+        const yRatio = (viewportPoint.y - bounds.y) / bounds.height;
+        if (xRatio < 0 || xRatio >= 1 || yRatio < 0 || yRatio >= 1) return;
 
-    Object.entries(matrix).forEach(([level, columns]) => {
-      Object.entries(columns || {}).forEach(([x, rows]) => {
-        Object.entries(rows || {}).forEach(([y, loadedTile]) => {
-          const context =
-            PetroDerivedPreviewOverlay.getDerivedTileContext2D(loadedTile);
-          if (!context?.canvas) return;
-          const bounds = getLoadedTileViewportBounds(loadedTile);
-          if (!bounds) return;
-          const xRatio = (viewportPoint.x - bounds.x) / bounds.width;
-          const yRatio = (viewportPoint.y - bounds.y) / bounds.height;
-          if (xRatio < 0 || xRatio >= 1 || yRatio < 0 || yRatio >= 1) return;
-
-          const sampleX = Math.min(
-            Math.max(Math.floor(xRatio * context.canvas.width), 0),
-            context.canvas.width - 1,
-          );
-          const sampleY = Math.min(
-            Math.max(Math.floor(yRatio * context.canvas.height), 0),
-            context.canvas.height - 1,
-          );
-          const numericLevel = Number.parseInt(level, 10);
-          const processedContext =
-            loadedTile?.petroImageProcessedContext?.context;
-          const rawContext = [context, processedContext].find(
-            (candidateContext) =>
-              candidateContext?.petroImageAdvancedRawValues &&
-              candidateContext.petroImageAdvancedRawWidth ===
-                candidateContext.canvas?.width &&
-              candidateContext.petroImageAdvancedRawHeight ===
-                candidateContext.canvas?.height,
-          );
-          const sampleContext = rawContext || context;
-          const sample = {
-            context: sampleContext,
-            x: sampleX,
-            y: sampleY,
-            level: Number.isFinite(numericLevel) ? numericLevel : -Infinity,
+        const sampleX = Math.min(
+          Math.max(Math.floor(xRatio * context.canvas.width), 0),
+          context.canvas.width - 1,
+        );
+        const sampleY = Math.min(
+          Math.max(Math.floor(yRatio * context.canvas.height), 0),
+          context.canvas.height - 1,
+        );
+        const processedContext = loadedTile?.petroImageProcessedContext?.context;
+        const rawContext = [context, processedContext].find(
+          (candidateContext) =>
+            candidateContext?.petroImageAdvancedRawValues &&
+            candidateContext.petroImageAdvancedRawWidth ===
+              candidateContext.canvas?.width &&
+            candidateContext.petroImageAdvancedRawHeight ===
+              candidateContext.canvas?.height,
+        );
+        const sampleContext = rawContext || context;
+        const sample = {
+          context: sampleContext,
+          x: sampleX,
+          y: sampleY,
+          level: Number.isFinite(level) ? level : -Infinity,
+        };
+        if (
+          rawContext &&
+          (!bestRawSample || sample.level > bestRawSample.level)
+        ) {
+          bestRawSample = sample;
+        }
+        if (!bestSample || sample.level > bestSample.level) {
+          loadedTile.petroImageTileCoordinates = {
+            level: sample.level,
+            x: tileX,
+            y: tileY,
           };
-          if (
-            rawContext &&
-            (!bestRawSample || sample.level > bestRawSample.level)
-          ) {
-            bestRawSample = sample;
-          }
-          if (!bestSample || sample.level > bestSample.level) {
-            loadedTile.petroImageTileCoordinates = {
-              level: sample.level,
-              x: Number.parseInt(x, 10),
-              y: Number.parseInt(y, 10),
-            };
-            bestSample = sample;
-          }
-        });
-      });
-    });
+          bestSample = sample;
+        }
+      },
+    );
   });
 
   const activeTransform = getTileSetTransform(tileSet);
@@ -32683,10 +32813,43 @@ function normalizeAnnotationProperties(properties = {}) {
 function normalizeAnnotationFeature(feature) {
   if (!feature?.properties) return feature;
   feature.properties = normalizeAnnotationProperties(feature.properties);
+  normalizeSegmenteverygrainLabelPoint(feature);
   if (isAnnotationPolygonGeometry(feature)) {
     updateAnnotationGeometryStatus(feature);
   }
   return feature;
+}
+
+function normalizeSegmenteverygrainLabelPoint(feature) {
+  if (
+    feature?.properties?.segmentationBackend !== "segmenteverygrain" ||
+    !isAnnotationPolygonGeometry(feature)
+  ) {
+    return;
+  }
+
+  const firstExteriorPoint =
+    feature.geometry.type === "Polygon"
+      ? feature.geometry.coordinates?.[0]?.[0]
+      : feature.geometry.coordinates?.[0]?.[0]?.[0];
+  const currentLabelPoint = [
+    Number(feature.properties.xLabel),
+    Number(feature.properties.yLabel),
+  ];
+  if (
+    !Array.isArray(firstExteriorPoint) ||
+    !currentLabelPoint.every(Number.isFinite) ||
+    !coordinatesMatch(currentLabelPoint, firstExteriorPoint)
+  ) {
+    return;
+  }
+
+  const topmostPoint = annotationLabelPointApi.getTopmostGeometryPoint(
+    feature.geometry,
+  );
+  if (!topmostPoint) return;
+  feature.properties.xLabel = topmostPoint[0];
+  feature.properties.yLabel = topmostPoint[1];
 }
 
 function getAnnotationGeometryWarning(feature) {
@@ -33694,7 +33857,6 @@ document.addEventListener(
 );
 
 function refreshAnnotationVisibilityViews() {
-  drawShape(polyCanvas, [annoJSON, annoJSONTemp]);
   applyAnnotationVisibilityState();
   renderAnnotationList();
   updateGroupControls();
@@ -37263,36 +37425,22 @@ const toggleDivideImages = (event) => {
 };
 
 // Import, add, and export points with labels
-const toggleAnnotation = async (event) => {
-  if (!event.checked) {
-    applyAnnotationVisibilityState();
-    return;
-  }
-
-  const total = annoJSON.features.length;
-  const loadStatusSequence = beginAnnotationLoadStatus(total, {
-    delayMs: 0,
-    verb: "Adding",
-  });
+const toggleAnnotation = (event) => {
   applyAnnotationVisibilityState({ refreshOverlays: false });
-  await new Promise((resolve) => window.requestAnimationFrame(resolve));
-  try {
-    refreshVisibleAnnotationOverlays();
-    updateAnnotationLoadStatus(loadStatusSequence, {
-      phase: "features",
-      current: total,
-      total,
-      percent: 100,
-    });
-    await new Promise((resolve) => window.requestAnimationFrame(resolve));
-  } finally {
-    finishAnnotationLoadStatus(loadStatusSequence);
+  if (event.checked) {
+    scheduleVisibleAnnotationOverlayRefresh({ immediate: true });
   }
 };
 
 // Import, add, and export points with labels
 const toggleAnnotationLabels = (event) => {
-  applyAnnotationVisibilityState();
+  applyAnnotationVisibilityState({
+    refreshOverlays: false,
+    redrawCanvas: false,
+  });
+  if (event.checked) {
+    scheduleVisibleAnnotationOverlayRefresh({ immediate: true });
+  }
 };
 
 function disableOtherAnnoModes(mode) {
@@ -40310,6 +40458,7 @@ function boundsIntersect(a, b) {
 // Update previously drawn lines.
 viewer.addHandler("animation", () => {
   drawViewerOverlays();
+  scheduleVisibleAnnotationOverlayRefresh();
   refreshPorosityOverlayForViewportChange();
   drawClassificationOverlay();
   refreshSnapshotSelectionForViewportChange();
@@ -42041,7 +42190,9 @@ function applyInferredAnnotationLabelPoint(properties = {}, geometry) {
     return properties;
   }
 
-  const labelPoint = getFirstFiniteCoordinate(geometry?.coordinates);
+  const labelPoint =
+    annotationLabelPointApi.getTopmostGeometryPoint(geometry) ||
+    getFirstFiniteCoordinate(geometry?.coordinates);
   if (!labelPoint) return properties;
 
   return {

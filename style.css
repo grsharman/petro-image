@@ -3691,12 +3691,27 @@ body.import-wizard-page {
   gap: 1px;
   max-height: 168px;
   overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(68, 68, 68, 0.45) transparent;
   user-select: none;
   margin: 3px 2px 5px;
   padding: 1px;
   border: 1px solid rgba(68, 68, 68, 0.35);
   border-radius: 4px;
   background: rgba(255, 255, 255, 0.62);
+}
+
+.annotation-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.annotation-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.annotation-list::-webkit-scrollbar-thumb {
+  border-radius: 4px;
+  background: rgba(68, 68, 68, 0.45);
 }
 
 .annotation-list-header {
@@ -3717,6 +3732,7 @@ body.import-wizard-page {
   width: 100%;
   height: 19px;
   min-width: 0;
+  overflow: hidden;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -3727,6 +3743,7 @@ body.import-wizard-page {
   background: transparent;
   color: #333;
   cursor: pointer;
+  white-space: nowrap;
   font:
     700 11px/1 system-ui,
     -apple-system,

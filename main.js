@@ -57,6 +57,7 @@ let activeCziConversionOutput = "";
 let activeCziBenchmarkChild = null;
 let activeJpeg2000ConversionChild = null;
 let windowStateSaveTimer = null;
+let lastSelectedImageDirectory = "";
 const localFileServerToken = randomUUID();
 const grantedLocalRoots = [];
 const APP_TITLE = "petro-image";
@@ -2594,7 +2595,7 @@ ipcMain.handle("resize-import-wizard-to-content", (event, { width, height }) => 
 
 ipcMain.handle("select-image-file", async () => {
   const ownerWindow = BrowserWindow.getFocusedWindow() || mainWindow;
-  const { canceled, filePaths } = await dialog.showOpenDialog(ownerWindow, {
+  const dialogOptions = {
     title: "Select image file",
     properties: ["openFile"],
     filters: [
@@ -2618,11 +2619,21 @@ ipcMain.handle("select-image-file", async () => {
         extensions: ["jp2", "j2k", "j2c", "jpc", "jpf", "jpx"],
       },
     ],
-  });
+  };
+  if (lastSelectedImageDirectory) {
+    dialogOptions.defaultPath = lastSelectedImageDirectory;
+  }
+
+  const { canceled, filePaths } = await dialog.showOpenDialog(
+    ownerWindow,
+    dialogOptions,
+  );
 
   if (canceled || !filePaths.length) {
     return { canceled: true };
   }
+
+  lastSelectedImageDirectory = path.dirname(filePaths[0]);
 
   return {
     canceled: false,
