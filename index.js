@@ -35918,13 +35918,22 @@ function rotatePointAroundCenter(point, center, angleRadians) {
   ];
 }
 
-function rotateVector(vector, angleRadians) {
-  const cosAngle = Math.cos(angleRadians);
-  const sinAngle = Math.sin(angleRadians);
-  return {
-    x: vector.x * cosAngle - vector.y * sinAngle,
-    y: vector.x * sinAngle + vector.y * cosAngle,
-  };
+function getAnnotationRotationCoordinateSpaces() {
+  const displaySpace = getImageCoordinateSpace(viewer?.world?.getItemAt?.(0));
+  const annotationSpace = ensureAnnotationCoordinateSpace(displaySpace);
+  return annotationSpace && displaySpace
+    ? { annotationSpace, displaySpace }
+    : null;
+}
+
+function getDisplayPointForAnnotationPoint(point) {
+  const spaces = getAnnotationRotationCoordinateSpaces();
+  if (!spaces) return null;
+  return annotationCoordinateApi.annotationToDisplayPoint(
+    point,
+    spaces.annotationSpace,
+    spaces.displaySpace,
+  );
 }
 
 function snapAngleRadians(angleRadians, snapDegrees = 15) {
@@ -36605,23 +36614,19 @@ function getAnnotationRotationStartState(feature, center, startImagePoint) {
     return null;
   }
 
+  const displayCenter = getDisplayPointForAnnotationPoint(center);
+  const displayStartPoint = getDisplayPointForAnnotationPoint(startImagePoint);
   const startAngle = Math.atan2(
-    startImagePoint.y - center.y,
-    startImagePoint.x - center.x,
+    (displayStartPoint?.y ?? startImagePoint.y) -
+      (displayCenter?.y ?? center.y),
+    (displayStartPoint?.x ?? startImagePoint.x) -
+      (displayCenter?.x ?? center.x),
   );
 
   return {
     center: { ...center },
     startAngle,
     coordinates: cloneData(feature.geometry.coordinates),
-    rectangleModel:
-      feature.properties?.shapeType === "rectangle"
-        ? cloneRectangleEditModel(getRectangleEditModel(feature))
-        : null,
-    ellipseModel:
-      feature.properties?.shapeType === "ellipse"
-        ? cloneEllipseEditModel(getEllipseEditModel(feature))
-        : null,
   };
 }
 
@@ -36631,8 +36636,10 @@ function rotateLineStringFeature(
   center,
   angleRadians,
 ) {
-  feature.geometry.coordinates = startCoordinates.map((coordinate) =>
-    rotatePointAroundCenter(coordinate, center, angleRadians),
+  feature.geometry.coordinates = rotateCoordinateTree(
+    startCoordinates,
+    center,
+    angleRadians,
   );
   invalidateFeatureImageBounds(feature);
 }
@@ -36650,6 +36657,16 @@ function rotatePolygonFeature(feature, startCoordinates, center, angleRadians) {
 }
 
 function rotateCoordinateTree(coordinates, center, angleRadians) {
+  const spaces = getAnnotationRotationCoordinateSpaces();
+  if (spaces) {
+    return annotationCoordinateApi.rotateCoordinateTreeForDisplay(
+      coordinates,
+      center,
+      angleRadians,
+      spaces.annotationSpace,
+      spaces.displaySpace,
+    );
+  }
   if (
     Array.isArray(coordinates) &&
     coordinates.length >= 2 &&
@@ -36685,9 +36702,13 @@ function rotateAnnotationFeatureFromDrag(feature, imagePoint, options = {}) {
   const rotationState = annotationShapeDragState?.rotationState;
   if (!rotationState || !imagePoint) return false;
 
+  const displayCenter = getDisplayPointForAnnotationPoint(rotationState.center);
+  const displayImagePoint = getDisplayPointForAnnotationPoint(imagePoint);
   const currentAngle = Math.atan2(
-    imagePoint.y - rotationState.center.y,
-    imagePoint.x - rotationState.center.x,
+    (displayImagePoint?.y ?? imagePoint.y) -
+      (displayCenter?.y ?? rotationState.center.y),
+    (displayImagePoint?.x ?? imagePoint.x) -
+      (displayCenter?.x ?? rotationState.center.x),
   );
   let angleDelta = currentAngle - rotationState.startAngle;
   if (options.snap) {
@@ -36703,26 +36724,6 @@ function rotateAnnotationFeatureFromDrag(feature, imagePoint, options = {}) {
       rotationState.center,
       angleDelta,
     );
-  } else if (feature.properties?.shapeType === "rectangle") {
-    const model = cloneRectangleEditModel(rotationState.rectangleModel);
-    if (!model) return false;
-    model.u = rotateVector(model.u, angleDelta);
-    model.v = rotateVector(model.v, angleDelta);
-    updatePolygonFeatureCoordinates(
-      feature,
-      getRectangleCoordinatesFromModel(model),
-    );
-  } else if (feature.properties?.shapeType === "ellipse") {
-    const model = cloneEllipseEditModel(rotationState.ellipseModel);
-    if (!model) return false;
-    model.u = rotateVector(model.u, angleDelta);
-    model.v = rotateVector(model.v, angleDelta);
-    const coordinates = getEllipsePoints([
-      [model.center.x, model.center.y],
-      addScaledVector(model.center, model.u, model.majorRadius),
-      addScaledVector(model.center, model.v, model.minorRadius),
-    ]);
-    updatePolygonFeatureCoordinates(feature, coordinates);
   } else if (feature.geometry.type === "Polygon") {
     if (
       !rotatePolygonFeature(

@@ -67,6 +67,75 @@
     };
   }
 
+  function rotateAnnotationPointForDisplay(
+    point,
+    center,
+    angleRadians,
+    annotationSpace,
+    displaySpace,
+  ) {
+    const displayPoint = annotationToDisplayPoint(
+      { x: point?.[0], y: point?.[1] },
+      annotationSpace,
+      displaySpace,
+    );
+    const displayCenter = annotationToDisplayPoint(
+      center,
+      annotationSpace,
+      displaySpace,
+    );
+    if (!displayPoint || !displayCenter) return null;
+
+    const cosAngle = Math.cos(angleRadians);
+    const sinAngle = Math.sin(angleRadians);
+    const dx = displayPoint.x - displayCenter.x;
+    const dy = displayPoint.y - displayCenter.y;
+    const rotated = displayToAnnotationPoint(
+      {
+        x: displayCenter.x + dx * cosAngle - dy * sinAngle,
+        y: displayCenter.y + dx * sinAngle + dy * cosAngle,
+      },
+      displaySpace,
+      annotationSpace,
+    );
+    if (!rotated) return null;
+    return [rotated.x, rotated.y, ...Array.from(point || []).slice(2)];
+  }
+
+  function rotateCoordinateTreeForDisplay(
+    coordinates,
+    center,
+    angleRadians,
+    annotationSpace,
+    displaySpace,
+  ) {
+    if (!Array.isArray(coordinates)) return coordinates;
+    if (
+      coordinates.length >= 2 &&
+      Number.isFinite(Number(coordinates[0])) &&
+      Number.isFinite(Number(coordinates[1]))
+    ) {
+      return (
+        rotateAnnotationPointForDisplay(
+          coordinates,
+          center,
+          angleRadians,
+          annotationSpace,
+          displaySpace,
+        ) || coordinates
+      );
+    }
+    return coordinates.map((coordinate) =>
+      rotateCoordinateTreeForDisplay(
+        coordinate,
+        center,
+        angleRadians,
+        annotationSpace,
+        displaySpace,
+      ),
+    );
+  }
+
   function migrateFeatureToCoordinateSpace(
     feature,
     targetCoordinateSpace,
@@ -114,6 +183,8 @@
     scaleCoordinateTree,
     annotationToDisplayPoint,
     displayToAnnotationPoint,
+    rotateAnnotationPointForDisplay,
+    rotateCoordinateTreeForDisplay,
     migrateFeatureToCoordinateSpace,
   });
 })(typeof window !== "undefined" ? window : globalThis);

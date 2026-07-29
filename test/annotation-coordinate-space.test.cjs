@@ -116,3 +116,64 @@ test("coordinates remain unchanged when tile-set order changes resolution only",
   assert.equal(originalDisplayPoint.x / 20000, sobelDisplayPoint.x / 2000);
   assert.equal(originalDisplayPoint.y / 10000, sobelDisplayPoint.y / 1000);
 });
+
+test("rotation preserves rendered shape when x and y use different scales", () => {
+  const api = loadApi();
+  const annotationSpace = { width: 200, height: 100 };
+  const displaySpace = { width: 100, height: 100 };
+  const center = { x: 100, y: 50 };
+  const coordinates = [
+    [120, 50],
+    [100, 60],
+  ];
+
+  const rotated = api.rotateCoordinateTreeForDisplay(
+    coordinates,
+    center,
+    Math.PI / 2,
+    annotationSpace,
+    displaySpace,
+  );
+
+  assert.ok(Math.abs(rotated[0][0] - 100) < 1e-10);
+  assert.ok(Math.abs(rotated[0][1] - 60) < 1e-10);
+  assert.ok(Math.abs(rotated[1][0] - 80) < 1e-10);
+  assert.ok(Math.abs(rotated[1][1] - 50) < 1e-10);
+
+  const beforeDistances = coordinates.map((point) => {
+    const displayPoint = api.annotationToDisplayPoint(
+      { x: point[0], y: point[1] },
+      annotationSpace,
+      displaySpace,
+    );
+    const displayCenter = api.annotationToDisplayPoint(
+      center,
+      annotationSpace,
+      displaySpace,
+    );
+    return Math.hypot(
+      displayPoint.x - displayCenter.x,
+      displayPoint.y - displayCenter.y,
+    );
+  });
+  const afterDistances = rotated.map((point) => {
+    const displayPoint = api.annotationToDisplayPoint(
+      { x: point[0], y: point[1] },
+      annotationSpace,
+      displaySpace,
+    );
+    const displayCenter = api.annotationToDisplayPoint(
+      center,
+      annotationSpace,
+      displaySpace,
+    );
+    return Math.hypot(
+      displayPoint.x - displayCenter.x,
+      displayPoint.y - displayCenter.y,
+    );
+  });
+
+  beforeDistances.forEach((distance, index) => {
+    assert.ok(Math.abs(distance - afterDistances[index]) < 1e-10);
+  });
+});
