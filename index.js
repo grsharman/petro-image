@@ -28425,6 +28425,7 @@ let suppressUnsavedAnnotationTracking = false;
 let suppressUnsavedCountTracking = false;
 let annotationHistoryPaused = false;
 let activeAnnotationDraft = null;
+let activePolyDraftMode = null;
 let polyDraftRedoStack = [];
 let ellipseDraftRedoStack = [];
 let gridControlHistoryCommittedThisEvent = false;
@@ -28662,6 +28663,7 @@ function resetAnnotationDraftRedo() {
 
 function clearAnnotationDraftState() {
   activeAnnotationDraft = null;
+  activePolyDraftMode = null;
   resetAnnotationDraftRedo();
 }
 
@@ -28761,7 +28763,7 @@ function redrawAnnotationDraft() {
       fillColor: currentPolyStyleColors.fillColor,
       fillOpacity: getAnnotationOpacityValue("fillOpacity"),
     };
-    if (isPolygonMode || isXPressed) {
+    if (activePolyDraftMode === "polygon") {
       addPolygonToGeoJSON(
         annoJSONTemp,
         getClosedDraftPolygonCoordinates(draftCoordinates),
@@ -30896,6 +30898,7 @@ function removeTemporaryPoints() {
   currentCircleAnnotationStyleColors = null;
   currentPolyStyleColors = null;
   currentRectStyleColors = null;
+  activelyMakingPoly = false;
   activelyMakingCircleAnnotation = false;
   annoJSONTemp = {
     type: "FeatureCollection",
@@ -40055,7 +40058,17 @@ applyScaleWizardButton?.addEventListener("click", applyScaleWizard);
 
 viewer.addHandler("canvas-click", function (event) {
   if (scaleWizardState.active) return;
-  if (isPolylineMode || isPolygonMode || isZPressed || isXPressed) {
+  if (
+    isPolylineMode ||
+    isPolygonMode ||
+    isZPressed ||
+    isXPressed ||
+    activelyMakingPoly
+  ) {
+    if (clickImageCoordinates.length === 0) {
+      activePolyDraftMode =
+        isPolygonMode || isXPressed ? "polygon" : "polyline";
+    }
     activelyMakingPoly = true;
     const image = getAnnotationImage();
     const imageSize = image.getContentSize();
@@ -40158,15 +40171,10 @@ viewer.addHandler("canvas-click", function (event) {
         0,
         clickImageCoordinates.length,
       );
-      // Check whether z or x keys were being held at time of double click
-      let ZWasPressed = false;
-      let XWasPressed = false;
-      if (isZPressed) {
-        ZWasPressed = true;
-      }
-      if (isXPressed) {
-        XWasPressed = true;
-      }
+      // Preserve the geometry selected when the draft began, even if its
+      // shortcut key was released before the final double-click.
+      let ZWasPressed = activePolyDraftMode === "polyline";
+      let XWasPressed = activePolyDraftMode === "polygon";
 
       // It's a double-click, so stop the timeout and end collection
       activelyMakingPoly = false;
@@ -55574,7 +55582,7 @@ viewerContainer.addEventListener("mousemove", function (subevent) {
     fillOpacity: getAnnotationOpacityValue("fillOpacity"),
   };
 
-  if (isPolygonMode || isXPressed) {
+  if (activePolyDraftMode === "polygon") {
     addPolygonToGeoJSON(
       annoJSONTemp,
       getClosedDraftPolygonCoordinates(draftCoordinates),
