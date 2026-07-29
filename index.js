@@ -53,6 +53,32 @@ function postViewerEvent(type, detail = {}) {
   );
 }
 
+let embedAnnotationsChangedPending = false;
+
+function postEmbedAnnotationsChanged() {
+  if (
+    suppressUnsavedAnnotationTracking ||
+    embedAnnotationsChangedPending
+  ) {
+    return;
+  }
+
+  embedAnnotationsChangedPending = true;
+  queueMicrotask(() => {
+    embedAnnotationsChangedPending = false;
+    if (suppressUnsavedAnnotationTracking) return;
+
+    const sample = getCurrentEmbedSample();
+    if (!sample) return;
+
+    postViewerEvent("viewer.annotationsChanged", {
+      sampleId: sample.id || sample.sampleId || "",
+      title: sample.title || "",
+      annotations: annoJSON,
+    });
+  });
+}
+
 let embedCommandController = null;
 let embedAnnotationSelectionMode = "single";
 let lastEmbedViewportEventKey = "";
@@ -28554,6 +28580,11 @@ const annotationHistory = {
       (previous.dirtyDomains || ["annotations"]).forEach((domain) =>
         setUnsavedWork(domain, true),
       );
+      if (
+        (previous.dirtyDomains || ["annotations"]).includes("annotations")
+      ) {
+        postEmbedAnnotationsChanged();
+      }
     }
     updateAnnotationHistoryControls();
   },
@@ -28579,6 +28610,9 @@ const annotationHistory = {
       (next.dirtyDomains || ["annotations"]).forEach((domain) =>
         setUnsavedWork(domain, true),
       );
+      if ((next.dirtyDomains || ["annotations"]).includes("annotations")) {
+        postEmbedAnnotationsChanged();
+      }
     }
     updateAnnotationHistoryControls();
   },
@@ -29303,6 +29337,7 @@ setupAnnotationHistoryControls();
 function unsavedAnnotations(value) {
   if (suppressUnsavedAnnotationTracking) return;
   setUnsavedWork("annotations", value);
+  if (value) postEmbedAnnotationsChanged();
 }
 
 function unsavedCounts(value) {
@@ -34905,6 +34940,7 @@ function commitAnnotationTextInput(historyLabel) {
   annoTextToLabel();
   updateText(feature.properties.uuid, "anno", annoLabel.value);
   updateAnnotationListLabel(feature.properties.uuid, annoLabel.value);
+  unsavedAnnotations(true);
 }
 
 // When Enter is pressed in the anno-label text box

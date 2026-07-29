@@ -196,11 +196,16 @@ Events sent by petro-image use:
 | `viewer.apiReady` | `commands`, `annotationFormat`, `viewportCoordinateSpace` | The command API is ready. |
 | `viewer.sampleChanged` | `sampleId`, `title`, `group` | Initial sample selection or a later selection change. |
 | `viewer.annotationsLoaded` | `sampleId`, `title`, `featureCount`, `totalFeatureCount`, `mode` | An annotation command finished loading features. |
+| `viewer.annotationsChanged` | `sampleId`, `title`, `annotations` | A committed annotation create, edit, delete, clear, undo, or redo changed the active GeoJSON `FeatureCollection`. |
 | `viewer.viewportChanged` | `sampleId`, `title`, `bounds`, `rotationDegrees` | The visible viewport settled after a pan, zoom, rotation, resize, or viewport command. |
 | `viewer.commandSucceeded` | `requestId`, `command`, command-specific result fields | A trusted command completed. |
 | `viewer.commandFailed` | `requestId`, `command`, `error.code`, `error.message` | A trusted command was rejected or failed. |
 
 Every trusted command produces either `viewer.commandSucceeded` or `viewer.commandFailed`. Domain-specific events may be emitted in addition to the generic result.
+
+`viewer.annotationsChanged` is not emitted while petro-image handles
+`viewer.setAnnotations`, preventing an inbound synchronization update from
+being echoed back to the host.
 
 `viewer.viewportChanged` reports the visible rectangle in source-image pixels:
 
