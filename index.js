@@ -393,9 +393,11 @@ function initializeEmbedCommandApi() {
     },
   });
   window.addEventListener("message", embedCommandController.handleMessage);
+  viewer.addHandler("open", scheduleEmbedViewportEvent);
   viewer.addHandler("animation-finish", scheduleEmbedViewportEvent);
   viewer.addHandler("rotate", scheduleEmbedViewportEvent);
   viewer.addHandler("resize", scheduleEmbedViewportEvent);
+  scheduleEmbedViewportEvent();
   postViewerEvent("viewer.apiReady", {
     commands: api.COMMANDS,
     annotationFormat: "GeoJSON FeatureCollection",
