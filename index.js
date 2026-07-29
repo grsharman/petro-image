@@ -55,6 +55,8 @@ function postViewerEvent(type, detail = {}) {
 
 let embedCommandController = null;
 let embedAnnotationSelectionMode = "single";
+let lastEmbedViewportEventKey = "";
+let embedViewportEventFrame = null;
 
 function createEmbedCommandError(code, message) {
   return Object.assign(new Error(message), { code });
@@ -257,7 +259,6 @@ async function fitEmbedImageBounds(rawBounds, options = {}) {
     bounds: padded,
     rotationDegrees: viewer.viewport.getRotation(true),
   };
-  postViewerEvent("viewer.viewportChanged", detail);
   return detail;
 }
 
@@ -333,8 +334,45 @@ async function handleEmbedResetViewport(message) {
     home: true,
     rotationDegrees: viewer.viewport.getRotation(true),
   };
-  postViewerEvent("viewer.viewportChanged", detail);
   return detail;
+}
+
+function getCurrentEmbedViewportDetail() {
+  const image = getEmbedAnnotationImage();
+  if (!image?.getContentSize?.() || !viewer?.viewport) return null;
+  const bounds = window.PetroImageEmbedApi.getImageBoundsForViewport(
+    viewer.viewport.getBounds(true),
+    image,
+  );
+  const sample = getCurrentEmbedSample();
+  return {
+    sampleId: sample?.id || sample?.sampleId || "",
+    title: sample?.title || "",
+    bounds,
+    rotationDegrees: viewer.viewport.getRotation(true),
+  };
+}
+
+function postCurrentEmbedViewport() {
+  embedViewportEventFrame = null;
+  let detail;
+  try {
+    detail = getCurrentEmbedViewportDetail();
+  } catch {
+    return;
+  }
+  if (!detail) return;
+  const eventKey = JSON.stringify(detail);
+  if (eventKey === lastEmbedViewportEventKey) return;
+  lastEmbedViewportEventKey = eventKey;
+  postViewerEvent("viewer.viewportChanged", detail);
+}
+
+function scheduleEmbedViewportEvent() {
+  if (!embedCommandController || embedViewportEventFrame !== null) return;
+  embedViewportEventFrame = window.requestAnimationFrame(
+    postCurrentEmbedViewport,
+  );
 }
 
 function initializeEmbedCommandApi() {
@@ -355,6 +393,9 @@ function initializeEmbedCommandApi() {
     },
   });
   window.addEventListener("message", embedCommandController.handleMessage);
+  viewer.addHandler("animation-finish", scheduleEmbedViewportEvent);
+  viewer.addHandler("rotate", scheduleEmbedViewportEvent);
+  viewer.addHandler("resize", scheduleEmbedViewportEvent);
   postViewerEvent("viewer.apiReady", {
     commands: api.COMMANDS,
     annotationFormat: "GeoJSON FeatureCollection",

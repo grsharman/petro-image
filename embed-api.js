@@ -80,6 +80,48 @@
     return normalized;
   }
 
+  function getImageBoundsForViewport(viewportBounds, image) {
+    if (!isObject(viewportBounds) || typeof image?.viewportToImageCoordinates !== "function") {
+      throw new TypeError(
+        "getImageBoundsForViewport requires viewport bounds and an image coordinate adapter.",
+      );
+    }
+    const hasCornerMethods = [
+      "getTopLeft",
+      "getTopRight",
+      "getBottomRight",
+      "getBottomLeft",
+    ].every((method) => typeof viewportBounds[method] === "function");
+    const viewportCorners = hasCornerMethods
+      ? [
+          viewportBounds.getTopLeft(),
+          viewportBounds.getTopRight(),
+          viewportBounds.getBottomRight(),
+          viewportBounds.getBottomLeft(),
+        ]
+      : [
+          { x: viewportBounds.x, y: viewportBounds.y },
+          { x: viewportBounds.x + viewportBounds.width, y: viewportBounds.y },
+          {
+            x: viewportBounds.x + viewportBounds.width,
+            y: viewportBounds.y + viewportBounds.height,
+          },
+          { x: viewportBounds.x, y: viewportBounds.y + viewportBounds.height },
+        ];
+    const corners = viewportCorners.map(({ x, y }) =>
+      image.viewportToImageCoordinates(x, y),
+    );
+    const xValues = corners.map((point) => Number(point?.x));
+    const yValues = corners.map((point) => Number(point?.y));
+    const bounds = {
+      x: Math.min(...xValues),
+      y: Math.min(...yValues),
+      width: Math.max(...xValues) - Math.min(...xValues),
+      height: Math.max(...yValues) - Math.min(...yValues),
+    };
+    return normalizeImageBounds(bounds);
+  }
+
   function visitCoordinates(value, callback) {
     if (!Array.isArray(value)) return;
     if (
@@ -207,6 +249,7 @@
     COMMANDS,
     createController,
     getFeatureBounds,
+    getImageBoundsForViewport,
     mergeBounds,
     normalizeAnnotationCapabilities,
     normalizeAnnotationSelectionMode,

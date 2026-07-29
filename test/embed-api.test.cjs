@@ -62,6 +62,51 @@ test("calculates and merges image-pixel bounds for GeoJSON features", () => {
   });
 });
 
+test("converts the visible viewport to source-image pixel bounds", () => {
+  const { api } = loadApi();
+  const bounds = api.getImageBoundsForViewport(
+    { x: 1, y: 2, width: 3, height: 4 },
+    {
+      viewportToImageCoordinates(x, y) {
+        return { x: x * 100, y: y * 50 };
+      },
+    },
+  );
+  assert.deepEqual(JSON.parse(JSON.stringify(bounds)), {
+    x: 100,
+    y: 100,
+    width: 300,
+    height: 200,
+  });
+});
+
+test("uses OpenSeadragon rectangle corners when calculating rotated image bounds", () => {
+  const { api } = loadApi();
+  const bounds = api.getImageBoundsForViewport(
+    {
+      x: 0,
+      y: 0,
+      width: 2,
+      height: 1,
+      getTopLeft: () => ({ x: 0.5, y: -0.5 }),
+      getTopRight: () => ({ x: 2.5, y: 0.5 }),
+      getBottomRight: () => ({ x: 1.5, y: 1.5 }),
+      getBottomLeft: () => ({ x: -0.5, y: 0.5 }),
+    },
+    {
+      viewportToImageCoordinates(x, y) {
+        return { x: x * 100, y: y * 100 };
+      },
+    },
+  );
+  assert.deepEqual(JSON.parse(JSON.stringify(bounds)), {
+    x: -50,
+    y: -50,
+    width: 300,
+    height: 200,
+  });
+});
+
 test("normalizes independent annotation selection and editing capabilities", () => {
   const { api } = loadApi();
   assert.deepEqual(

@@ -196,11 +196,36 @@ Events sent by petro-image use:
 | `viewer.apiReady` | `commands`, `annotationFormat`, `viewportCoordinateSpace` | The command API is ready. |
 | `viewer.sampleChanged` | `sampleId`, `title`, `group` | Initial sample selection or a later selection change. |
 | `viewer.annotationsLoaded` | `sampleId`, `title`, `featureCount`, `totalFeatureCount`, `mode` | An annotation command finished loading features. |
-| `viewer.viewportChanged` | `bounds`, `rotationDegrees`, or `home` | A viewport command changed the view. |
+| `viewer.viewportChanged` | `sampleId`, `title`, `bounds`, `rotationDegrees` | The visible viewport settled after a pan, zoom, rotation, resize, or viewport command. |
 | `viewer.commandSucceeded` | `requestId`, `command`, command-specific result fields | A trusted command completed. |
 | `viewer.commandFailed` | `requestId`, `command`, `error.code`, `error.message` | A trusted command was rejected or failed. |
 
 Every trusted command produces either `viewer.commandSucceeded` or `viewer.commandFailed`. Domain-specific events may be emitted in addition to the generic result.
+
+`viewer.viewportChanged` reports the visible rectangle in source-image pixels:
+
+```js
+{
+  source: "petro-image",
+  version: 1,
+  type: "viewer.viewportChanged",
+  sampleId: "4m7k2p9x",
+  title: "Teaching sample 1",
+  bounds: {
+    x: 9000,
+    y: 4000,
+    width: 6000,
+    height: 3375
+  },
+  rotationDegrees: 0
+}
+```
+
+The event is emitted after interactive pan and zoom motion settles, rather than
+for every animation frame. Save `bounds.x`, `bounds.y`, `bounds.width`, and
+`bounds.height` with the teaching-set item, then pass the saved `bounds` back to
+`viewer.setViewport` to restore the view. Bounds can extend beyond the image at
+the home zoom when the viewer and image have different aspect ratios.
 
 ## Coordinate format
 
