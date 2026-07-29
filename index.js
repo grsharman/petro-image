@@ -55519,7 +55519,7 @@ document.addEventListener("keydown", function (event) {
     setAnnotationLabelMoveMode(false);
     exitAnnotationVertexEditMode();
     exitAnnotationShapeEditMode();
-    removeTemporaryPoints();
+    deactivateAnnotationDrawingModes();
   }
 });
 
