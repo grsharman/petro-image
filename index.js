@@ -30889,17 +30889,30 @@ function removeTemporaryPoints() {
   clickCoordinates = [];
   clickImageCoordinates = [];
   clickCoordinatesArray = [];
+
   ellipseCoordinates = [];
   ellipseImageCoordinates = [];
+  activelyMakingEllipse = false;
+
   circleAnnotationCenter = null;
   circleAnnotationCenterImage = null;
   currentCircleAnnotationUniqueId = null;
+  activelyMakingCircleAnnotation = false;
+
+  activelyMakingPoly = false;
+
+  startPoint = null;
+  startPointImage = null;
+  startPixel = null;
+  currentRectUniqueId = null;
+  overlayElement = null;
+  isDrawingRectangle = false;
+
   currentEllipseStyleColors = null;
   currentCircleAnnotationStyleColors = null;
   currentPolyStyleColors = null;
   currentRectStyleColors = null;
-  activelyMakingPoly = false;
-  activelyMakingCircleAnnotation = false;
+
   annoJSONTemp = {
     type: "FeatureCollection",
     features: [],
@@ -55528,6 +55541,7 @@ document.addEventListener("keydown", function (event) {
     exitAnnotationVertexEditMode();
     exitAnnotationShapeEditMode();
     deactivateAnnotationDrawingModes();
+    clearTransientAnnotationShortcutState();
   }
 });
 
