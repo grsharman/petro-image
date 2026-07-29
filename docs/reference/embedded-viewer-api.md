@@ -165,7 +165,10 @@ petroImageFrame.contentWindow.postMessage(
 );
 ```
 
-`x`, `y`, `width`, and `height` must be finite; width and height must be positive. Bounds are clamped to the active image.
+`x`, `y`, `width`, and `height` must be finite; width and height must be
+positive. Bounds must intersect the active image, but may extend beyond its
+edges. The complete rectangle is fitted without clamping so a previously
+captured viewport preserves its center and zoom.
 
 | Option | Type | Default | Description |
 | --- | --- | --- | --- |
@@ -274,8 +277,10 @@ being echoed back to the host.
 ```
 
 The event is emitted after interactive pan and zoom motion settles, rather than
-for every animation frame. Save `bounds.x`, `bounds.y`, `bounds.width`, and
-`bounds.height` with the teaching-set item, then pass the saved `bounds` back to
+for every animation frame. Its bounds describe the visible, unrotated viewport
+rectangle; `rotationDegrees` records the rotation separately. Save
+`bounds.x`, `bounds.y`, `bounds.width`, `bounds.height`, and `rotationDegrees`
+with the teaching-set item, then pass the saved values back to
 `viewer.setViewport` to restore the view. Bounds can extend beyond the image at
 the home zoom when the viewer and image have different aspect ratios.
 

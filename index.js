@@ -245,44 +245,33 @@ async function handleEmbedSetLibrary(message) {
   };
 }
 
-function clampEmbedBoundsToImage(bounds, imageSize) {
-  const x = Math.max(0, Math.min(bounds.x, imageSize.x));
-  const y = Math.max(0, Math.min(bounds.y, imageSize.y));
-  const right = Math.max(x, Math.min(bounds.x + bounds.width, imageSize.x));
-  const bottom = Math.max(y, Math.min(bounds.y + bounds.height, imageSize.y));
-  if (right <= x || bottom <= y) {
+function assertEmbedBoundsIntersectImage(bounds, imageSize) {
+  if (!window.PetroImageEmbedApi.imageBoundsIntersect(bounds, imageSize)) {
     throw createEmbedCommandError(
       "invalid_viewport",
       "The requested bounds fall outside the active image.",
     );
   }
-  return { x, y, width: right - x, height: bottom - y };
 }
 
-function padEmbedBounds(bounds, padding, imageSize) {
+function padEmbedBounds(bounds, padding) {
   const ratio = Math.max(0, Math.min(Number(padding) || 0, 2));
   const horizontal = bounds.width * ratio;
   const vertical = bounds.height * ratio;
-  return clampEmbedBoundsToImage(
-    {
-      x: bounds.x - horizontal,
-      y: bounds.y - vertical,
-      width: bounds.width + horizontal * 2,
-      height: bounds.height + vertical * 2,
-    },
-    imageSize,
-  );
+  return {
+    x: bounds.x - horizontal,
+    y: bounds.y - vertical,
+    width: bounds.width + horizontal * 2,
+    height: bounds.height + vertical * 2,
+  };
 }
 
 async function fitEmbedImageBounds(rawBounds, options = {}) {
   const image = await waitForEmbedImage();
   const bounds = window.PetroImageEmbedApi.normalizeImageBounds(rawBounds);
   const imageSize = image.getContentSize();
-  const padded = padEmbedBounds(
-    clampEmbedBoundsToImage(bounds, imageSize),
-    options.padding,
-    imageSize,
-  );
+  assertEmbedBoundsIntersectImage(bounds, imageSize);
+  const padded = padEmbedBounds(bounds, options.padding);
   const topLeft = image.imageToViewportCoordinates(padded.x, padded.y);
   const bottomRight = image.imageToViewportCoordinates(
     padded.x + padded.width,
@@ -383,8 +372,9 @@ async function handleEmbedResetViewport(message) {
 function getCurrentEmbedViewportDetail() {
   const image = getEmbedAnnotationImage();
   if (!image?.getContentSize?.() || !viewer?.viewport) return null;
+  const viewportBounds = viewer.viewport.getBoundsNoRotate(true);
   const bounds = window.PetroImageEmbedApi.getImageBoundsForViewport(
-    viewer.viewport.getBounds(true),
+    viewportBounds,
     image,
   );
   const sample = getCurrentEmbedSample();

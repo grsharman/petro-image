@@ -114,6 +114,33 @@ test("converts the visible viewport to source-image pixel bounds", () => {
   });
 });
 
+test("accepts viewport bounds that intersect the image without clamping them", () => {
+  const { api } = loadApi();
+  const bounds = { x: -25, y: 10, width: 100, height: 80 };
+
+  assert.equal(api.imageBoundsIntersect(bounds, { x: 1000, y: 500 }), true);
+  assert.deepEqual(JSON.parse(JSON.stringify(api.normalizeImageBounds(bounds))), bounds);
+});
+
+test("rejects viewport bounds that do not intersect the image", () => {
+  const { api } = loadApi();
+
+  assert.equal(
+    api.imageBoundsIntersect(
+      { x: -100, y: 10, width: 100, height: 80 },
+      { x: 1000, y: 500 },
+    ),
+    false,
+  );
+  assert.equal(
+    api.imageBoundsIntersect(
+      { x: 1000, y: 10, width: 100, height: 80 },
+      { x: 1000, y: 500 },
+    ),
+    false,
+  );
+});
+
 test("uses OpenSeadragon rectangle corners when calculating rotated image bounds", () => {
   const { api } = loadApi();
   const bounds = api.getImageBoundsForViewport(

@@ -81,6 +81,28 @@
     return normalized;
   }
 
+  function imageBoundsIntersect(bounds, imageSize) {
+    const normalized = normalizeImageBounds(bounds);
+    const imageWidth = Number(imageSize?.x);
+    const imageHeight = Number(imageSize?.y);
+    if (
+      !Number.isFinite(imageWidth) ||
+      !Number.isFinite(imageHeight) ||
+      imageWidth <= 0 ||
+      imageHeight <= 0
+    ) {
+      throw new TypeError(
+        "imageBoundsIntersect requires a positive finite image size.",
+      );
+    }
+    return (
+      normalized.x < imageWidth &&
+      normalized.y < imageHeight &&
+      normalized.x + normalized.width > 0 &&
+      normalized.y + normalized.height > 0
+    );
+  }
+
   function getImageBoundsForViewport(viewportBounds, image) {
     if (!isObject(viewportBounds) || typeof image?.viewportToImageCoordinates !== "function") {
       throw new TypeError(
@@ -318,6 +340,7 @@
     createController,
     getFeatureBounds,
     getImageBoundsForViewport,
+    imageBoundsIntersect,
     mergeBounds,
     normalizeAnnotationCapabilities,
     normalizeAnnotationSelectionMode,
