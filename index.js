@@ -284,13 +284,7 @@ function applyEmbedRotationOptions(options = {}, immediately = true) {
       window.PetroImageSampleOrientation.normalizeRotationDegrees(
         options.rotationDegrees,
       );
-    const imageRotationSlider = document.getElementById("imageRotation");
-    const imageRotationValue = document.getElementById("imageRotationValue");
-    if (imageRotationSlider) imageRotationSlider.value = normalizedRotation;
-    if (imageRotationValue) {
-      setRotationValueDisplay(imageRotationValue, normalizedRotation);
-    }
-    viewer.viewport.setRotation(normalizedRotation, immediately);
+    setImageRotationAngle(normalizedRotation, false, immediately);
   }
 
   return {
@@ -55335,12 +55329,12 @@ function setRotationValueDisplay(element, angle) {
   }
 }
 
-function setImageRotationAngle(angle, syncStage = true) {
+function setImageRotationAngle(angle, syncStage = true, immediately = false) {
   const normalizedAngle = normalizeAngleDegrees(angle);
 
   imageRotater.value = normalizedAngle;
   setRotationValueDisplay(imageRotationValue, normalizedAngle);
-  viewer.viewport.setRotation(normalizedAngle);
+  viewer.viewport.setRotation(normalizedAngle, immediately);
 
   if (syncStage && rotateWithStage.checked) {
     stageRotater.value = normalizedAngle;
