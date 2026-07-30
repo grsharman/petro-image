@@ -266,6 +266,39 @@ function padEmbedBounds(bounds, padding) {
   };
 }
 
+function getEmbedStageRotationDegrees() {
+  const stageRotationInput = document.getElementById("stageRotation");
+  const value = Number(stageRotationInput?.value);
+  return Number.isFinite(value)
+    ? window.PetroImageSampleOrientation.normalizeRotationDegrees(value)
+    : 0;
+}
+
+function applyEmbedRotationOptions(options = {}, immediately = true) {
+  if (Number.isFinite(Number(options.stageRotationDegrees))) {
+    setStageRotationAngle(Number(options.stageRotationDegrees), false);
+  }
+
+  if (Number.isFinite(Number(options.rotationDegrees))) {
+    const normalizedRotation =
+      window.PetroImageSampleOrientation.normalizeRotationDegrees(
+        options.rotationDegrees,
+      );
+    const imageRotationSlider = document.getElementById("imageRotation");
+    const imageRotationValue = document.getElementById("imageRotationValue");
+    if (imageRotationSlider) imageRotationSlider.value = normalizedRotation;
+    if (imageRotationValue) {
+      setRotationValueDisplay(imageRotationValue, normalizedRotation);
+    }
+    viewer.viewport.setRotation(normalizedRotation, immediately);
+  }
+
+  return {
+    rotationDegrees: viewer.viewport.getRotation(true),
+    stageRotationDegrees: getEmbedStageRotationDegrees(),
+  };
+}
+
 async function fitEmbedImageBounds(rawBounds, options = {}) {
   const image = await waitForEmbedImage();
   const bounds = window.PetroImageEmbedApi.normalizeImageBounds(rawBounds);
@@ -283,13 +316,11 @@ async function fitEmbedImageBounds(rawBounds, options = {}) {
     bottomRight.x - topLeft.x,
     bottomRight.y - topLeft.y,
   );
-  if (Number.isFinite(Number(options.rotationDegrees))) {
-    viewer.viewport.setRotation(Number(options.rotationDegrees), true);
-  }
+  const rotationState = applyEmbedRotationOptions(options, true);
   viewer.viewport.fitBounds(viewportBounds, options.immediately === true);
   const detail = {
     bounds: padded,
-    rotationDegrees: viewer.viewport.getRotation(true),
+    ...rotationState,
   };
   return detail;
 }
@@ -364,13 +395,11 @@ async function handleEmbedFocusAnnotation(message) {
 async function handleEmbedResetViewport(message) {
   await waitForEmbedImage();
   assertEmbedCommandTargetsCurrentSample(message);
-  if (Number.isFinite(Number(message.options?.rotationDegrees))) {
-    viewer.viewport.setRotation(Number(message.options.rotationDegrees), true);
-  }
+  const rotationState = applyEmbedRotationOptions(message.options || {}, true);
   viewer.viewport.goHome(message.options?.immediately === true);
   const detail = {
     home: true,
-    rotationDegrees: viewer.viewport.getRotation(true),
+    ...rotationState,
   };
   return detail;
 }
@@ -389,6 +418,7 @@ function getCurrentEmbedViewportDetail() {
     title: sample?.title || "",
     bounds,
     rotationDegrees: viewer.viewport.getRotation(true),
+    stageRotationDegrees: getEmbedStageRotationDegrees(),
   };
 }
 
@@ -55333,6 +55363,7 @@ function setStageRotationAngle(angle, syncImage = true) {
   }
 
   displayImages();
+  scheduleEmbedViewportEvent();
 }
 
 // Update value in real time
