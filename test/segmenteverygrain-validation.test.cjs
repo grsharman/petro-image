@@ -5,6 +5,30 @@ const os = require("node:os");
 const path = require("node:path");
 const { spawnSync } = require("node:child_process");
 
+test("segmenteverygrain validation allows slow native imports", () => {
+  const validator = fs.readFileSync(
+    path.resolve(
+      __dirname,
+      "..",
+      "scripts",
+      "segmenteverygrain_validate.py",
+    ),
+    "utf8",
+  );
+
+  assert.match(validator, /IMPORT_TIMEOUT_SECONDS = 120/);
+  assert.match(validator, /"installed": True/);
+  assert.match(validator, /"timedOut": True/);
+  assert.doesNotMatch(validator, /timeout=45/);
+
+  const interfaceSource = fs.readFileSync(
+    path.resolve(__dirname, "..", "index.js"),
+    "utf8",
+  );
+  assert.match(interfaceSource, /found; import timed out/);
+  assert.match(interfaceSource, /found; import failed/);
+});
+
 test("segmenteverygrain validation survives a native-style import exit", (t) => {
   const python = spawnSync("python3", ["--version"], { encoding: "utf8" });
   if (python.error || python.status !== 0) {

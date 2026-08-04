@@ -3464,9 +3464,14 @@ function formatSamProbeResult(result) {
     const moduleResult = modules[name];
     if (!moduleResult) return;
     const version = moduleResult.version ? ` ${moduleResult.version}` : "";
-    lines.push(
-      `${name}: ${moduleResult.available ? "ok" : "missing"}${version}`,
-    );
+    const status = moduleResult.available
+      ? "ok"
+      : moduleResult.timedOut
+        ? "found; import timed out"
+        : moduleResult.installed
+          ? "found; import failed"
+          : "missing";
+    lines.push(`${name}: ${status}${version}`);
   });
   if (result.torch?.deviceRecommendation) {
     lines.push(`Device: ${result.torch.deviceRecommendation}`);

@@ -99,6 +99,8 @@ The setup indicators should turn green before running the corresponding workflow
 
 **Test segmenteverygrain** verifies that the package can be imported in a separate Python process and that the selected model exists and has a `.keras` or `.h5` extension. It also reports imports of TensorFlow, PyTorch, OpenCV, and scikit-image. Review warnings as well as errors; for example, TensorFlow must be usable when the selected Keras model is loaded.
 
+The first setup test can take several minutes on a new machine because TensorFlow, PyTorch, and other native libraries may initialize slowly the first time they are imported. Each module is allowed up to two minutes. If the diagnostic says a module was found but its import did not finish, wait for the test to complete and try it once more before recreating the environment.
+
 ### Platform and performance notes
 
 - On macOS, the upstream environment includes `tensorflow-metal`, and SAM can use MPS when the installed PyTorch build supports it.

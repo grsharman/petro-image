@@ -3452,7 +3452,7 @@
           <p>Download a SAM 2.1 <code>.pt</code> checkpoint from <code>github.com/facebookresearch/sam2</code>, choose the matching model size, and select it under SAM 2.1 Setup.</p>
           <p>Clone or download <code>github.com/zsylvester/segmenteverygrain</code>, then select a trained <code>.keras</code> file from its <code>models</code> folder (for example, <code>seg_model_smooth_labels.keras</code>) under segmenteverygrain Setup. Installing only the Python package does not necessarily download this model file.</p>
           <h4>Test the Setup</h4>
-          <p>Click Test SAM, then Test segmenteverygrain. The readiness indicators should turn green before running either workflow.</p>
+          <p>Click Test SAM, then Test segmenteverygrain. The first test can take several minutes while native libraries initialize. If a module is found but does not finish importing, let the test complete and try it once more. The readiness indicators should turn green before running either workflow.</p>
           <h4>Using the Tools</h4>
           <p>For supervised segmentation, draw a box, optionally add positive or negative points, click Segment, review the preview, and then add the result as an annotation. Fast segmentation mode runs automatically after an Option/Alt-drag. For segmenteverygrain, draw an AOI, choose a processing resolution, review the estimated pixel load, and run the model.</p>
           <h4>Citation and Attribution</h4>

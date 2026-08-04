@@ -1470,7 +1470,11 @@ async function validateSegmenteverygrainSetup(settings = {}) {
       segSettings.modelPath,
     ],
     {
-      timeoutMs: 240000,
+      // Native ML libraries can take well over a minute to initialize on their
+      // first launch. The Python validator checks them in isolated processes,
+      // each with its own two-minute timeout, so leave enough time for all of
+      // those probes to finish and return useful diagnostics.
+      timeoutMs: 660000,
       env: buildPythonProcessEnv(samSettings.pythonPath),
     },
   );

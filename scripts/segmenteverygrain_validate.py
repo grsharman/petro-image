@@ -14,6 +14,7 @@ import traceback
 
 
 MODEL_EXTENSIONS = {".h5", ".keras"}
+IMPORT_TIMEOUT_SECONDS = 120
 IMPORT_PROBE = r"""
 import importlib
 import json
@@ -77,16 +78,23 @@ def probe_module(display_name, import_name=None, required=False):
                 capture_output=True,
                 encoding="utf-8",
                 errors="replace",
-                timeout=45,
+                timeout=IMPORT_TIMEOUT_SECONDS,
                 check=False,
             )
         except subprocess.TimeoutExpired:
             module_result = {
+                "installed": True,
                 "available": False,
-                "importError": "Import timed out after 45 seconds.",
+                "timedOut": True,
+                "importError": (
+                    "Module was found, but its import did not finish within "
+                    f"{IMPORT_TIMEOUT_SECONDS} seconds. This can happen during "
+                    "first startup; try the setup test again."
+                ),
             }
         except BaseException as error:
             module_result = {
+                "installed": True,
                 "available": False,
                 "importError": f"Could not start import probe: {type(error).__name__}: {error}",
             }
@@ -96,6 +104,7 @@ def probe_module(display_name, import_name=None, required=False):
                 module_result.update(payload)
             else:
                 module_result = {
+                    "installed": True,
                     "available": False,
                     "importError": output_detail(completed),
                     "exitCode": completed.returncode,
