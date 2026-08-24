@@ -117,6 +117,40 @@ test("coordinates remain unchanged when tile-set order changes resolution only",
   assert.equal(originalDisplayPoint.y / 10000, sobelDisplayPoint.y / 1000);
 });
 
+test("annotation coordinate trees scale independently onto display pixels", () => {
+  const api = loadApi();
+  const annotationSpace = { width: 1000, height: 500 };
+  const displaySpace = { width: 2000, height: 2000 };
+  const polygon = [
+    [
+      [100, 100],
+      [200, 100],
+      [200, 200],
+      [100, 100],
+    ],
+  ];
+
+  assert.deepEqual(
+    JSON.parse(
+      JSON.stringify(
+        api.annotationToDisplayCoordinateTree(
+          polygon,
+          annotationSpace,
+          displaySpace,
+        ),
+      ),
+    ),
+    [
+      [
+        [200, 400],
+        [400, 400],
+        [400, 800],
+        [200, 400],
+      ],
+    ],
+  );
+});
+
 test("rotation preserves rendered shape when x and y use different scales", () => {
   const api = loadApi();
   const annotationSpace = { width: 200, height: 100 };

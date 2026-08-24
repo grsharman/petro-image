@@ -56,3 +56,85 @@ test("non-text controls do not block annotation shortcuts", () => {
   assert.equal(api.isTextEntryActive({ target: button }, window.document), false);
   assert.equal(api.isTextEntryElement(checkbox), false);
 });
+
+test("poly vertices require an active toolbar mode or held shortcut", () => {
+  const { api } = loadKeyboardApi();
+
+  assert.equal(api.isPolyVertexInputActive({}), false);
+  assert.equal(
+    api.isPolyVertexInputActive({ polygonShortcutPressed: true }),
+    true,
+  );
+  assert.equal(api.isPolyVertexInputActive({ polylineMode: true }), true);
+  assert.equal(
+    api.isPolyVertexInputActive({
+      polygonMode: false,
+      polygonShortcutPressed: false,
+      activeDraftMode: "polygon",
+    }),
+    false,
+  );
+  assert.equal(
+    api.isPolyVertexInputActive({
+      polylineShortcutPressed: true,
+      polygonShortcutPressed: false,
+      activeDraftMode: "polygon",
+    }),
+    false,
+  );
+});
+
+test("Backspace undoes a draft point while Delete remains unassigned", () => {
+  const { api } = loadKeyboardApi();
+  assert.equal(
+    api.getAnnotationDraftKeyAction({
+      key: "Backspace",
+      hasDraftUndo: true,
+    }),
+    "undo",
+  );
+  assert.equal(
+    api.getAnnotationDraftKeyAction({ key: "Delete", hasDraftUndo: true }),
+    null,
+  );
+});
+
+test("Enter finishes only an active poly draft", () => {
+  const { api } = loadKeyboardApi();
+  assert.equal(
+    api.getAnnotationDraftKeyAction({ key: "Enter", polyDraftActive: true }),
+    "finish",
+  );
+  assert.equal(api.getAnnotationDraftKeyAction({ key: "Enter" }), null);
+  assert.equal(
+    api.getAnnotationDraftKeyAction({
+      key: "Enter",
+      polyDraftActive: true,
+      textEntryActive: true,
+    }),
+    null,
+  );
+});
+
+test("the Mac Delete key deletes completed annotations but preserves draft undo", () => {
+  const { api } = loadKeyboardApi();
+  assert.equal(api.isMacPlatform({ platform: "MacIntel" }), true);
+  assert.equal(api.isMacPlatform({ platform: "Win32" }), false);
+  assert.equal(
+    api.isAnnotationDeleteKey({ key: "Backspace", isMac: true }),
+    true,
+  );
+  assert.equal(
+    api.isAnnotationDeleteKey({
+      key: "Backspace",
+      isMac: true,
+      hasDraftUndo: true,
+    }),
+    false,
+  );
+  assert.equal(
+    api.isAnnotationDeleteKey({ key: "Backspace", isMac: false }),
+    false,
+  );
+  assert.equal(api.isAnnotationDeleteKey({ key: "Delete" }), true);
+});

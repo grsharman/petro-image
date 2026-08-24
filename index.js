@@ -28914,6 +28914,7 @@ function undoAnnotationDraftPoint() {
       activelyMakingPoly = false;
       currentPolyStyleColors = null;
     }
+    lastPolyClick = null;
     redrawAnnotationDraft();
     updateAnnotationHistoryControls();
     return true;
@@ -28945,6 +28946,7 @@ function redoAnnotationDraftPoint() {
     clickCoordinates.push(point.viewport);
     clickImageCoordinates.push(point.image);
     activelyMakingPoly = true;
+    lastPolyClick = null;
     redrawAnnotationDraft();
     updateAnnotationHistoryControls();
     return true;
@@ -30974,6 +30976,7 @@ function removeTemporaryPoints() {
   clickCoordinates = [];
   clickImageCoordinates = [];
   clickCoordinatesArray = [];
+  lastPolyClick = null;
 
   ellipseCoordinates = [];
   ellipseImageCoordinates = [];
@@ -38409,9 +38412,9 @@ viewerContainer.addEventListener("mousemove", function (event) {
 let clickCoordinates = []; // Array to store viewport coordinates
 let clickImageCoordinates = []; // Array to store image coordinates
 let clickCoordinatesArray = []; // Array to store arrays of coordinates
-let clickTimeout; // Timeout reference to detect double-click
-const clickDelay = 300; // Maximum delay between clicks for detecting double-click
-let lastClickTime = 0; // Timestamp of the last click
+let lastPolyClick = null;
+const polyDoubleClickTimeThreshold = 300;
+const polyDoubleClickDistanceThreshold = 20;
 let currentPolyStyleColors = null;
 const polyCanvas = document.getElementById("annotation-overlay"); // Includes polyline and polygon
 const circleCanvas = document.getElementById("circle-overlay"); // Includes circles
@@ -40155,15 +40158,20 @@ cancelScaleWizardButton?.addEventListener("click", closeScaleWizard);
 closeScaleWizardButton?.addEventListener("click", closeScaleWizard);
 applyScaleWizardButton?.addEventListener("click", applyScaleWizard);
 
-viewer.addHandler("canvas-click", function (event) {
+function handlePolyVertexInput(event, options = {}) {
   if (scaleWizardState.active) return;
-  if (
-    isPolylineMode ||
-    isPolygonMode ||
-    isZPressed ||
-    isXPressed ||
-    activelyMakingPoly
-  ) {
+  const polyInputActive = window.PetroImageKeyboard.isPolyVertexInputActive({
+    polylineMode: isPolylineMode,
+    polygonMode: isPolygonMode,
+    polylineShortcutPressed: isZPressed,
+    polygonShortcutPressed: isXPressed,
+    activeDraftMode: activePolyDraftMode,
+  });
+  const mayFinishActiveDraft =
+    options.forceFinish &&
+    activelyMakingPoly &&
+    clickImageCoordinates.length > 0;
+  if (polyInputActive || mayFinishActiveDraft) {
     if (clickImageCoordinates.length === 0) {
       activePolyDraftMode =
         isPolygonMode || isXPressed ? "polygon" : "polyline";
@@ -40178,7 +40186,6 @@ viewer.addHandler("canvas-click", function (event) {
     );
     const x = viewportPoint.x;
     const y = viewportPoint.y;
-    const uniqueID = generateUniqueId(8);
     const labelFontSize = Number(
       document.getElementById("annoLabelFontSize").value,
     );
@@ -40196,10 +40203,12 @@ viewer.addHandler("canvas-click", function (event) {
     const lineOpacity = getAnnotationOpacityValue("lineOpacity");
     const fillColor = currentPolyStyleColors.fillColor;
     const fillOpacity = getAnnotationOpacityValue("fillOpacity");
-    clickCoordinates.push({ x, y });
-    clickImageCoordinates.push([imagePoint.x, imagePoint.y]);
-    activeAnnotationDraft = "poly";
-    resetAnnotationDraftRedo();
+    if (options.addVertex !== false) {
+      clickCoordinates.push({ x, y });
+      clickImageCoordinates.push([imagePoint.x, imagePoint.y]);
+      activeAnnotationDraft = "poly";
+      resetAnnotationDraftRedo();
+    }
     if (clickCoordinates.length > 1) {
       for (let i = 0; i < clickCoordinates.length; i++) {
         const viewportPoint = new OpenSeadragon.Point(
@@ -40259,25 +40268,44 @@ viewer.addHandler("canvas-click", function (event) {
     //   }
     // });
 
-    // If the time between this click and the last click is shorter than clickDelay, it's a double-click
-    const currentTime = new Date().getTime();
-    if (currentTime - lastClickTime < clickDelay) {
-      suppressAnnotationDoubleClickBriefly();
-      clickImageCoordinates = getCoordinatesWithoutTrailingDuplicate(
+    const currentClick = {
+      time: Date.now(),
+      position: { x: event.position.x, y: event.position.y },
+    };
+    const isDoubleClick =
+      options.forceFinish ||
+      window.PetroImageAnnotationInput.isDoubleClick(
+        lastPolyClick,
+        currentClick,
+        {
+          maxDelay: polyDoubleClickTimeThreshold,
+          maxDistance: polyDoubleClickDistanceThreshold,
+        },
+      );
+    if (isDoubleClick) {
+      const minimumVertexCount = activePolyDraftMode === "polygon" ? 3 : 2;
+      const uniqueDraftCoordinates = getCoordinatesWithoutTrailingDuplicate(
         clickImageCoordinates,
       );
+      if (uniqueDraftCoordinates.length < minimumVertexCount) {
+        lastPolyClick = currentClick;
+        redrawAnnotationDraft();
+        return;
+      }
+      suppressAnnotationDoubleClickBriefly();
+      clickImageCoordinates = uniqueDraftCoordinates;
       clickCoordinates = clickCoordinates.slice(
         0,
         clickImageCoordinates.length,
       );
-      // Preserve the geometry selected when the draft began, even if its
-      // shortcut key was released before the final double-click.
+      // Preserve the geometry selected when the draft began while the
+      // shortcut or persistent drawing mode supplies the final double-click.
       let ZWasPressed = activePolyDraftMode === "polyline";
       let XWasPressed = activePolyDraftMode === "polygon";
 
-      // It's a double-click, so stop the timeout and end collection
+      // It's a double-click, so end collection.
       activelyMakingPoly = false;
-      clearTimeout(clickTimeout);
+      lastPolyClick = null;
 
       // Calculate the stuff we need
       const uuid = generateUniqueId(8);
@@ -40352,16 +40380,118 @@ viewer.addHandler("canvas-click", function (event) {
         enableAnnoButtons();
       });
     } else {
-      // It's a single click, so set a timeout to handle it
-      clickTimeout = setTimeout(function () {
-        // Single click detected, continuing collection...
-      }, clickDelay);
+      lastPolyClick = currentClick;
+    }
+  }
+}
+
+let polyVertexPress = null;
+const polyVertexClickDistanceThreshold = 12;
+
+viewerContainer.addEventListener(
+  "pointerdown",
+  function (event) {
+    if (
+      event.button !== 0 ||
+      event.ctrlKey ||
+      event.metaKey ||
+      event.altKey ||
+      scaleWizardState.active
+    ) {
+      return;
+    }
+    if (
+      !window.PetroImageKeyboard.isPolyVertexInputActive({
+        polylineMode: isPolylineMode,
+        polygonMode: isPolygonMode,
+        polylineShortcutPressed: isZPressed,
+        polygonShortcutPressed: isXPressed,
+        activeDraftMode: activePolyDraftMode,
+      })
+    ) {
+      return;
     }
 
-    // Update the last click timestamp
-    lastClickTime = currentTime;
-  }
-});
+    polyVertexPress = {
+      pointerId: event.pointerId,
+      position: { x: event.clientX, y: event.clientY },
+    };
+  },
+  true,
+);
+
+viewerContainer.addEventListener(
+  "contextmenu",
+  function (event) {
+    if (scaleWizardState.active) return;
+    const polyInputActive =
+      window.PetroImageKeyboard.isPolyVertexInputActive({
+        polylineMode: isPolylineMode,
+        polygonMode: isPolygonMode,
+        polylineShortcutPressed: isZPressed,
+        polygonShortcutPressed: isXPressed,
+        activeDraftMode: activePolyDraftMode,
+      });
+    if (!polyInputActive) return;
+
+    event.preventDefault();
+    const rect = viewerContainer.getBoundingClientRect();
+    handlePolyVertexInput(
+      {
+        position: new OpenSeadragon.Point(
+          event.clientX - rect.left,
+          event.clientY - rect.top,
+        ),
+        originalEvent: event,
+        preventDefaultAction: false,
+      },
+      { forceFinish: true, addVertex: true },
+    );
+  },
+  true,
+);
+
+viewerContainer.addEventListener(
+  "pointerup",
+  function (event) {
+    const press = polyVertexPress;
+    polyVertexPress = null;
+    if (!press || scaleWizardState.active) return;
+
+    const release = {
+      pointerId: event.pointerId,
+      position: { x: event.clientX, y: event.clientY },
+    };
+    if (
+      !window.PetroImageAnnotationInput.isVertexClickGesture(press, release, {
+        maxDistance: polyVertexClickDistanceThreshold,
+      })
+    ) {
+      return;
+    }
+
+    const rect = viewerContainer.getBoundingClientRect();
+    handlePolyVertexInput({
+      position: new OpenSeadragon.Point(
+        event.clientX - rect.left,
+        event.clientY - rect.top,
+      ),
+      originalEvent: event,
+      preventDefaultAction: false,
+    });
+  },
+  true,
+);
+
+viewerContainer.addEventListener(
+  "pointercancel",
+  function (event) {
+    if (polyVertexPress?.pointerId === event.pointerId) {
+      polyVertexPress = null;
+    }
+  },
+  true,
+);
 
 function finalizePolyAnnotation(
   constPolylineLabel,
@@ -40768,8 +40898,7 @@ function drawShape(canvas, JSONArray) {
     return;
   }
 
-  const annotationImage =
-    canvas === polyCanvas ? getAnnotationImage() : viewer.world.getItemAt(0);
+  const annotationImage = getAnnotationImage();
   const displayImage = viewer.world.getItemAt(0);
   const annotationVisibleImageBounds = getVisibleImageBounds(
     0.15,
@@ -40785,12 +40914,16 @@ function drawShape(canvas, JSONArray) {
     if (feature.geometry && feature.properties) {
       if (!isAnnotationFeatureVisible(feature)) return;
       const usesDisplayCoordinates =
-        canvas === polyCanvas &&
         feature.properties.renderCoordinateSpace === "display";
-      const image = usesDisplayCoordinates ? displayImage : annotationImage;
-      const visibleImageBounds = usesDisplayCoordinates
-        ? displayVisibleImageBounds
-        : annotationVisibleImageBounds;
+      const usesAnnotationCoordinates =
+        !usesDisplayCoordinates &&
+        (canvas === polyCanvas ||
+          (canvas === measureCanvas &&
+            feature.properties.source === "annotation"));
+      const image = usesAnnotationCoordinates ? annotationImage : displayImage;
+      const visibleImageBounds = usesAnnotationCoordinates
+        ? annotationVisibleImageBounds
+        : displayVisibleImageBounds;
       if (!image) return;
       if (
         !boundsIntersect(getFeatureImageBounds(feature), visibleImageBounds)
@@ -44520,6 +44653,43 @@ viewerContainer.addEventListener("pointerleave", () => {
 
 document.addEventListener("keydown", (event) => {
   if (!annotationEditingEnabled) return;
+  const draftKeyAction =
+    window.PetroImageKeyboard.getAnnotationDraftKeyAction({
+      key: event.key,
+      defaultPrevented: event.defaultPrevented,
+      textEntryActive: isTextEntryActive(event),
+      ctrlKey: event.ctrlKey,
+      metaKey: event.metaKey,
+      altKey: event.altKey,
+      hasDraftUndo: hasDraftUndo(),
+      polyDraftActive:
+        activeAnnotationDraft === "poly" && clickCoordinates.length > 0,
+    });
+
+  if (draftKeyAction === "undo") {
+    event.preventDefault();
+    undoAnnotationDraftPoint();
+    return;
+  }
+
+  if (draftKeyAction === "finish") {
+    event.preventDefault();
+    const lastViewportPoint = clickCoordinates[clickCoordinates.length - 1];
+    handlePolyVertexInput(
+      {
+        position: viewer.viewport.pixelFromPoint(
+          new OpenSeadragon.Point(lastViewportPoint.x, lastViewportPoint.y),
+        ),
+        originalEvent: event,
+        preventDefaultAction: false,
+      },
+      { forceFinish: true, addVertex: false },
+    );
+  }
+});
+
+document.addEventListener("keydown", (event) => {
+  if (!annotationEditingEnabled) return;
   const isUndoKey = event.code === "KeyZ" && (event.ctrlKey || event.metaKey);
   const isRedoKey =
     (event.code === "KeyZ" &&
@@ -44547,7 +44717,15 @@ document.addEventListener("keydown", (event) => {
 
 document.addEventListener("keydown", (event) => {
   if (!annotationEditingEnabled) return;
-  if (event.key !== "Delete" && event.key !== "Backspace") return;
+  if (
+    !window.PetroImageKeyboard.isAnnotationDeleteKey({
+      key: event.key,
+      isMac: window.PetroImageKeyboard.isMacPlatform(),
+      hasDraftUndo: hasDraftUndo(),
+    })
+  ) {
+    return;
+  }
   if (event.defaultPrevented) return;
   if (!porosityPalette || porosityPalette.hidden) return;
   if (porosityAoiSelectedVertexIndex === null) return;
@@ -44561,7 +44739,16 @@ document.addEventListener("keydown", (event) => {
 
 document.addEventListener("keydown", (event) => {
   if (!annotationEditingEnabled) return;
-  if (event.key !== "Delete" && event.key !== "Backspace") return;
+  if (
+    !window.PetroImageKeyboard.isAnnotationDeleteKey({
+      key: event.key,
+      isMac: window.PetroImageKeyboard.isMacPlatform(),
+      hasDraftUndo: hasDraftUndo(),
+    })
+  ) {
+    return;
+  }
+  if (event.defaultPrevented) return;
   if (!segmentPalette || segmentPalette.hidden) return;
   if (unsupervisedAoiSelectedVertexIndex === null) return;
 
@@ -44574,7 +44761,15 @@ document.addEventListener("keydown", (event) => {
 
 document.addEventListener("keydown", (event) => {
   if (!annotationEditingEnabled) return;
-  if (event.key !== "Delete" && event.key !== "Backspace") return;
+  if (
+    !window.PetroImageKeyboard.isAnnotationDeleteKey({
+      key: event.key,
+      isMac: window.PetroImageKeyboard.isMacPlatform(),
+      hasDraftUndo: hasDraftUndo(),
+    })
+  ) {
+    return;
+  }
   if (
     event.defaultPrevented ||
     event.metaKey ||
@@ -48026,6 +48221,21 @@ function calculateGeometryMeasurementProperties(type, geometry) {
   return properties;
 }
 
+function getAnnotationGeometryInDisplayCoordinates(geometry) {
+  if (!geometry?.coordinates) return geometry;
+  const displaySpace = getImageCoordinateSpace(viewer?.world?.getItemAt?.(0));
+  const annotationSpace = ensureAnnotationCoordinateSpace(displaySpace);
+  if (!annotationSpace || !displaySpace) return geometry;
+  return {
+    ...geometry,
+    coordinates: annotationCoordinateApi.annotationToDisplayCoordinateTree(
+      geometry.coordinates,
+      annotationSpace,
+      displaySpace,
+    ),
+  };
+}
+
 function updateMeasurementSummaryFields(
   result = measureResults[measureResults.length - 1],
 ) {
@@ -49834,9 +50044,16 @@ function addMeasureFeature(
     type === "line"
       ? getCoordinatesWithoutTrailingDuplicate(coordinates)
       : closeCoordinates(coordinates);
+  const calculationCoordinates =
+    source === "annotation"
+      ? getAnnotationGeometryInDisplayCoordinates({
+          type: "LineString",
+          coordinates: normalizedCoordinates,
+        }).coordinates
+      : normalizedCoordinates;
   const measurement = calculateMeasurementProperties(
     type,
-    normalizedCoordinates,
+    calculationCoordinates,
   );
   const id = options.id || getNextMeasurementId(source);
   const style = getMeasureStyle();
@@ -49914,7 +50131,14 @@ function addMeasureGeometry(
   sourceFeature = null,
   options = {},
 ) {
-  const measurement = calculateGeometryMeasurementProperties(type, geometry);
+  const calculationGeometry =
+    source === "annotation"
+      ? getAnnotationGeometryInDisplayCoordinates(geometry)
+      : geometry;
+  const measurement = calculateGeometryMeasurementProperties(
+    type,
+    calculationGeometry,
+  );
   const id = options.id || getNextMeasurementId(source);
   const style = getMeasureStyle();
   const measurementUuid = generateUniqueId(16);

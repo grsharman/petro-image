@@ -57,6 +57,21 @@
     };
   }
 
+  function annotationToDisplayCoordinateTree(
+    coordinates,
+    annotationSpace,
+    displaySpace,
+  ) {
+    const annotation = normalizeCoordinateSpace(annotationSpace);
+    const display = normalizeCoordinateSpace(displaySpace);
+    if (!annotation || !display) return coordinates;
+    return scaleCoordinateTree(
+      coordinates,
+      display.width / annotation.width,
+      display.height / annotation.height,
+    );
+  }
+
   function displayToAnnotationPoint(point, displaySpace, annotationSpace) {
     const annotation = normalizeCoordinateSpace(annotationSpace);
     const display = normalizeCoordinateSpace(displaySpace);
@@ -182,6 +197,7 @@
     getGeoJSONCoordinateSpace,
     scaleCoordinateTree,
     annotationToDisplayPoint,
+    annotationToDisplayCoordinateTree,
     displayToAnnotationPoint,
     rotateAnnotationPointForDisplay,
     rotateCoordinateTreeForDisplay,
