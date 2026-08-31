@@ -8057,6 +8057,38 @@
           ]
         }
       ]
+    },
+    {
+      "groups": ["Zircon"],
+      "title": "NZ-01-35 Zr",
+      "description": "Zircon polished mount",
+      "pixelsPerMeter": "2047000",
+      "tileSets": [
+        {
+          "label": "trans",
+          "tiles": [
+            {
+              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage5/main/images/NZ-01-35 5x.dzi"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "groups": ["Zircon"],
+      "title": "NZ-04-04 Zr",
+      "description": "Zircon polished mount",
+      "pixelsPerMeter": "2047000",
+      "tileSets": [
+        {
+          "label": "trans",
+          "tiles": [
+            {
+              "uri": "https://raw.githubusercontent.com/uacsrg/image-storage5/main/images/NZ-04-04 5x.dzi"
+            }
+          ]
+        }
+      ]
     }
   ]
 }
