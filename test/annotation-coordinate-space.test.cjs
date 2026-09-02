@@ -211,3 +211,63 @@ test("rotation preserves rendered shape when x and y use different scales", () =
     assert.ok(Math.abs(distance - afterDistances[index]) < 1e-10);
   });
 });
+
+test("circle coordinates stay circular when x and y use different scales", () => {
+  const api = loadApi();
+  const annotationSpace = { width: 200, height: 100 };
+  const displaySpace = { width: 100, height: 100 };
+  const center = [100, 50];
+  const radius = 20;
+
+  const coordinates = api.getCircleCoordinatesInAnnotationSpace(
+    center,
+    radius,
+    annotationSpace,
+    displaySpace,
+    90,
+  );
+  const displayCenter = api.annotationToDisplayPoint(
+    { x: center[0], y: center[1] },
+    annotationSpace,
+    displaySpace,
+  );
+  const displayRadii = coordinates.slice(0, -1).map((coordinate) => {
+    const point = api.annotationToDisplayPoint(
+      { x: coordinate[0], y: coordinate[1] },
+      annotationSpace,
+      displaySpace,
+    );
+    return Math.hypot(point.x - displayCenter.x, point.y - displayCenter.y);
+  });
+
+  displayRadii.forEach((displayRadius) => {
+    assert.ok(Math.abs(displayRadius - 10) < 1e-10);
+  });
+  assert.deepEqual(coordinates[0], coordinates.at(-1));
+});
+
+test("circle radius follows the displayed distance under anisotropic scaling", () => {
+  const api = loadApi();
+  const annotationSpace = { width: 200, height: 100 };
+  const displaySpace = { width: 100, height: 100 };
+  const center = [100, 50];
+
+  assert.equal(
+    api.getCircleRadiusInAnnotationPixels(
+      center,
+      [120, 50],
+      annotationSpace,
+      displaySpace,
+    ),
+    20,
+  );
+  assert.equal(
+    api.getCircleRadiusInAnnotationPixels(
+      center,
+      [100, 60],
+      annotationSpace,
+      displaySpace,
+    ),
+    20,
+  );
+});

@@ -99,6 +99,42 @@ test("connected components label separate pores and report their areas", async (
   assert.notEqual(labels[0], labels[9]);
 });
 
+test("connected-component orientation preserves negative, zero, and positive angles", async () => {
+  const { connectedComponents } = await localThicknessApi;
+  const componentOrientation = (points) => {
+    const width = 9;
+    const mask = new Uint8Array(width * width);
+    points.forEach(([x, y]) => {
+      mask[y * width + x] = 1;
+    });
+    return connectedComponents(
+      mask,
+      width,
+      width,
+      new Float32Array(mask.length).fill(1),
+    ).components[0].orientation;
+  };
+
+  assert.equal(
+    componentOrientation([
+      [2, 4], [3, 4], [4, 4], [5, 4], [6, 4],
+    ]),
+    0,
+  );
+  assert.ok(
+    componentOrientation([
+      [2, 6], [2, 5], [3, 5], [3, 4],
+      [4, 4], [4, 3], [5, 3], [5, 2],
+    ]) < 0,
+  );
+  assert.ok(
+    componentOrientation([
+      [2, 2], [2, 3], [3, 3], [3, 4],
+      [4, 4], [4, 5], [5, 5], [5, 6],
+    ]) > 0,
+  );
+});
+
 test("chord lengths are extracted independently by direction", async () => {
   const { chordLengths } = await localThicknessApi;
   const mask = new Uint8Array([

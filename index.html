@@ -1431,9 +1431,9 @@
           <h4>Select an Area</h4>
           <p>Click Draw Area and click+drag over the image, or use the current screen extent. Drag the box or its handles to adjust the snapshot area.</p>
           <h4>Contents and Resolution</h4>
-          <p>Use visible layers exports every checked tile set in display order with its current opacity. You can instead choose one tile set by itself. Snapshot always overlaps selected layers and does not reproduce Divide Images. Choose whether to include annotations and labels. Full, half, and quarter resolution use source-image pixels; current viewer resolution uses the current on-screen pixel density. The dimensions table previews the chosen output size.</p>
+          <p>Use visible layers exports every checked tile set in display order with its current opacity. You can instead choose one tile set by itself, or deselect every visible layer and export the porosity overlay alone on a white background. Snapshot always overlaps selected layers and does not reproduce Divide Images. Choose whether to include annotations and labels. Full, half, and quarter resolution use source-image pixels; current viewer resolution uses the current on-screen pixel density. The dimensions table previews the chosen output size.</p>
           <h4>Scalebar and Filter</h4>
-          <p>The option to include a scalebar in the image is enabled when image scale is available. Export applied filter applies each exported tile set's attached Transform before the layers are combined.</p>
+          <p>The option to include a scalebar in the image is enabled when image scale is available. Snapshot always applies each exported tile set's brightness, contrast, saturation, and hue from Controls. Export applied filter additionally applies each tile set's attached Transform before the layers are combined.</p>
           <h4>Save or Copy</h4>
           <p>Save to JPG opens the file-save workflow. Copy to Clipboard places the rendered image directly on the system clipboard and keeps the selected area available.</p>
           <h4>Output Limits</h4>
@@ -2879,13 +2879,13 @@
           <h4>Basic Workflow</h4>
           <p>Draw an AOI, choose one or more tile sets, pick representative pore colors, then click Estimate View or Estimate AOI. Estimate View is a temporary check of the visible part of the AOI; Estimate AOI commits results for the whole AOI.</p>
           <h4>Porosity Types</h4>
-          <p>Use multiple porosity types when different pore colors or textures should be tracked separately. Each type has its own color samples, tolerance, overlay color, opacity, and result. Select polygon annotations that intersect the AOI and use Add selected polygons to force their area to porosity. This can be useful when a pore contains a bubble.</p>
+          <p>Use multiple porosity types when different pore colors or textures should be tracked separately. Each type has its own color samples, tolerance, overlay color, opacity, and result. With an AOI drawn, select polygon annotations and use Add selected polygons to force the portion of their area inside the AOI to porosity. This can be useful when a pore contains a bubble.</p>
           <h4>Color Picking and Tolerance</h4>
           <p>Pick several representative pore pixels for each pore type. With multiple tile sets, each pick is shown as a linked swatch column. Click any swatch to select its whole column, then press Delete or Backspace to remove that linked pick. Higher tolerance includes a broader range of similar colors; lower tolerance keeps the match stricter. Adjusting tolerance updates the estimate after a result exists.</p>
           <h4>Resolution</h4>
           <p>Fast preview is quicker and lower detail. Balanced is the default. High detail and Maximum available preserve more image detail but take longer to render and analyze. Local-thickness calculations on very large analysis rasters show a memory/time warning before continuing.</p>
           <h4>Calculated Properties</h4>
-          <p>Calculate properties computes local thickness, distance to boundary, and connected-component properties. Each pore pixel is assigned the diameter of the largest circle that overlaps it and remains inside that porosity type. The Parameter menu also displays component area, equivalent diameter, mean/max thickness, circularity, aspect ratio, orientation, and ID.</p>
+          <p>Calculate properties computes local thickness, distance to boundary, and connected-component properties. Each pore pixel is assigned the diameter of the largest circle that overlaps it and remains inside that porosity type. The Parameter menu also displays component area, equivalent diameter, mean/max thickness, circularity, aspect ratio, orientation, and ID. Orientation uses a signed linear range from −90° to +90°; 0° is horizontal.</p>
           <h4>Histogram Controls</h4>
           <p>Use the histogram Plot menu to compare local thickness, distance to boundary, component properties, or chord lengths. Weight defaults to pore area. The AOI edge filter can exclude complete pores that touch the analysis edge; it is unavailable for chord lengths because chord values are not linked to component IDs.</p>
           <h4>Recipes and Results</h4>

@@ -5704,6 +5704,16 @@ function updateSnapshotPorosityOverlayAvailability() {
   }
 }
 
+function hasSnapshotExportableContent() {
+  return (
+    getSnapshotLayers().length > 0 ||
+    Boolean(
+      snapshotExportPorosityOverlay?.checked &&
+        hasSnapshotExportablePorosityOverlay(),
+    )
+  );
+}
+
 function getSnapshotExportLimitError(exportSize) {
   if (!exportSize) return "";
 
@@ -5758,7 +5768,7 @@ function updateSnapshotStatus(message) {
   updateSnapshotScalebarAvailability();
   updateSnapshotFilterAvailability();
   updateSnapshotPorosityOverlayAvailability();
-  const hasSnapshotLayers = getSnapshotLayers().length > 0;
+  const hasSnapshotContent = hasSnapshotExportableContent();
 
   let exportSize = null;
   let exportLimitError = "";
@@ -5778,7 +5788,7 @@ function updateSnapshotStatus(message) {
       snapshotExportInProgress ||
       !snapshotSelectionRect ||
       snapshotModeActive ||
-      !hasSnapshotLayers ||
+      !hasSnapshotContent ||
       Boolean(exportLimitError);
     snapshotExportButton.title = exportLimitError || "";
   }
@@ -5789,7 +5799,7 @@ function updateSnapshotStatus(message) {
       snapshotExportInProgress ||
       !snapshotSelectionRect ||
       snapshotModeActive ||
-      !hasSnapshotLayers ||
+      !hasSnapshotContent ||
       Boolean(exportLimitError) ||
       Boolean(clipboardUnavailableReason);
     snapshotCopyButton.title =
@@ -5803,8 +5813,9 @@ function updateSnapshotStatus(message) {
 
   if (snapshotModeActive) {
     snapshotStatus.textContent = "Drag a rectangle over the image.";
-  } else if (!hasSnapshotLayers) {
-    snapshotStatus.textContent = "Select at least one visible tile set.";
+  } else if (!hasSnapshotContent) {
+    snapshotStatus.textContent =
+      "Select at least one tile set or export the porosity overlay.";
   } else if (snapshotSelectionRect) {
     if (exportLimitError) {
       snapshotStatus.textContent = `${exportLimitError} Zoom in or choose a lower resolution.`;
@@ -6618,8 +6629,10 @@ function createPorosityCalculatedPreviewCanvas(type, settings, valid) {
   );
   const span = Math.max(Number.EPSILON, transformedMax - transformedMin);
   for (let index = 0; index < raster.values.length; index += 1) {
+    if (!valid[index] || !isPorosityCalculatedRasterValueDefined(raster, index)) {
+      continue;
+    }
     const value = raster.values[index] * raster.factor;
-    if (!valid[index] || !(value > 0)) continue;
     const color = getPorosityThicknessColor(
       (transformPorosityThicknessDisplayValue(value, settings.scale) -
         transformedMin) /
@@ -6678,7 +6691,7 @@ function createPorosityCompositePreviewCanvas(values, result, settings) {
   const span = Math.max(Number.EPSILON, transformedMax - transformedMin);
   for (let index = 0; index < values.length; index += 1) {
     const value = values[index];
-    if (!(value > 0)) continue;
+    if (!Number.isFinite(value)) continue;
     const color = getPorosityThicknessColor(
       (transformPorosityThicknessDisplayValue(value, settings.scale) -
         transformedMin) /
@@ -7130,57 +7143,10 @@ function importPorosityRecipe(recipe) {
   );
 }
 
-function doesPorosityPolygonIntersectAoi(feature) {
-  if (!porosityAoiComplete || porosityAoiImagePoints.length < 3) return false;
-  if (!isAnnotationPolygonGeometry(feature)) return false;
-
-  const aoiBounds = getPorosityAoiImageBounds();
-  if (!boundsIntersect(getFeatureImageBounds(feature), aoiBounds)) return false;
-
-  const aoiRing = porosityAoiImagePoints.map((point) => [point.x, point.y]);
-  aoiRing.push([...aoiRing[0]]);
-  const aoiSegments = getRingSegments(aoiRing);
-
-  return getGeometryPolygons(feature.geometry).some((polygon) => {
-    if (!Array.isArray(polygon) || polygon.length === 0) return false;
-    if (
-      porosityAoiImagePoints.some((point) =>
-        polygonContainsImagePoint(point, polygon),
-      )
-    ) {
-      return true;
-    }
-    if (
-      polygon.some((ring) =>
-        ring.some((coordinate) =>
-          isPointInPolygon(
-            imagePointFromCoord(coordinate),
-            porosityAoiImagePoints,
-          ),
-        ),
-      )
-    ) {
-      return true;
-    }
-    return polygon.some((ring) =>
-      getRingSegments(ring).some(([start, end]) =>
-        aoiSegments.some(([aoiStart, aoiEnd]) =>
-          imageSegmentsIntersect(
-            imagePointFromCoord(start),
-            imagePointFromCoord(end),
-            imagePointFromCoord(aoiStart),
-            imagePointFromCoord(aoiEnd),
-          ),
-        ),
-      ),
-    );
-  });
-}
-
-function getSelectedPorosityPolygonsInAoi() {
+function getSelectedPorosityPolygons() {
   return getSelectedAnnotationUuids()
     .map((uuid) => getAnnotationByUuid(uuid))
-    .filter((feature) => doesPorosityPolygonIntersectAoi(feature));
+    .filter((feature) => isAnnotationPolygonGeometry(feature));
 }
 
 function isPorosityImagePointInsideManualPolygon(imagePoint, type) {
@@ -7704,13 +7670,19 @@ function getPorosityThicknessOverlaySettings() {
   const selection = porosityCalculatedRasterParameter?.value || "localThickness-diameter";
   const isComponent = selection.startsWith("component-");
   const isLocalThickness = selection.startsWith("localThickness-");
+  const componentProperty = isComponent
+    ? selection.slice("component-".length)
+    : "area";
+  const isOrientation = isComponent && componentProperty === "orientation";
   const selectedLabel =
     porosityCalculatedRasterParameter?.selectedOptions?.[0]?.textContent ||
     "Local thickness";
   return {
     enabled: Boolean(porosityThicknessOverlayEnabled?.checked),
     sizeFactor: selection === "localThickness-diameter" ? 2 : 1,
-    scale: porosityThicknessOverlayScale?.value || "log2",
+    scale: isOrientation
+      ? "linear"
+      : porosityThicknessOverlayScale?.value || "log2",
     colormap: porosityThicknessOverlayColormap?.value || "viridis",
     opacity: Math.max(
       0.05,
@@ -7724,7 +7696,7 @@ function getPorosityThicknessOverlaySettings() {
         : isLocalThickness
           ? "localThickness"
           : "localThickness",
-    componentProperty: isComponent ? selection.slice("component-".length) : "area",
+    componentProperty,
     label: isLocalThickness
       ? `Local thickness (${selectedLabel})`
       : isComponent
@@ -7778,7 +7750,7 @@ function getPorosityCalculatedRasterValues(type, settings) {
     const values = new Float32Array(labels.length);
     for (let index = 0; index < labels.length; index += 1)
       values[index] = lookup[labels[index]] || 0;
-    const raster = { values, factor: 1, unit };
+    const raster = { values, factor: 1, unit, componentLabels: labels };
     result.componentPropertyRasterCache[cacheKey] = {
       labels,
       components,
@@ -7797,6 +7769,13 @@ function transformPorosityThicknessDisplayValue(value, scale) {
   if (scale === "log2") return Math.log2(Math.max(Number.EPSILON, value));
   if (scale === "log10") return Math.log10(Math.max(Number.EPSILON, value));
   return value;
+}
+
+function isPorosityCalculatedRasterValueDefined(raster, index) {
+  if (raster?.componentLabels) {
+    return raster.componentLabels[index] > 0;
+  }
+  return raster?.values?.[index] > 0;
 }
 
 function getPorosityThicknessOverlayExtent(settings) {
@@ -7832,15 +7811,31 @@ function getPorosityThicknessOverlayExtent(settings) {
   let min = Infinity;
   let max = -Infinity;
   let unit = hasKnownScale() ? "µm" : "source px";
+  let hasValues = false;
   sources.forEach(({ raster }) => {
     unit = raster.unit;
-    raster.values.forEach((rawValue) => {
-      if (!(rawValue > 0)) return;
+    raster.values.forEach((rawValue, index) => {
+      if (
+        !isPorosityCalculatedRasterValueDefined(raster, index) ||
+        !Number.isFinite(rawValue)
+      ) {
+        return;
+      }
+      hasValues = true;
       const value = rawValue * raster.factor;
       if (value < min) min = value;
       if (value > max) max = value;
     });
   });
+  if (
+    hasValues &&
+    settings.autoRange &&
+    settings.parameter === "component" &&
+    settings.componentProperty === "orientation"
+  ) {
+    min = -90;
+    max = 90;
+  }
   if (!settings.autoRange) {
     const customMin = Number(porosityThicknessOverlayMin?.value);
     const customMax = Number(porosityThicknessOverlayMax?.value);
@@ -7902,7 +7897,7 @@ function createPorosityThicknessDisplayMask(type, settings, extent) {
   const span = Math.max(Number.EPSILON, transformedMax - transformedMin);
   const alpha = Math.round(settings.opacity * 255);
   for (let index = 0; index < values.length; index += 1) {
-    if (!(values[index] > 0)) continue;
+    if (!isPorosityCalculatedRasterValueDefined(raster, index)) continue;
     const value = values[index] * raster.factor;
     const normalized =
       (transformPorosityThicknessDisplayValue(value, settings.scale) -
@@ -8473,15 +8468,14 @@ function updatePorosityControls(message) {
       : "Pick Porosity";
   }
   if (porosityAddSelectedPolygonsButton) {
-    const selectedPolygonCount = hasAoi
-      ? getSelectedPorosityPolygonsInAoi().length
-      : 0;
-    porosityAddSelectedPolygonsButton.disabled = selectedPolygonCount === 0;
-    porosityAddSelectedPolygonsButton.title = selectedPolygonCount
+    const selectedPolygonCount = getSelectedPorosityPolygons().length;
+    porosityAddSelectedPolygonsButton.disabled =
+      !hasAoi || selectedPolygonCount === 0;
+    porosityAddSelectedPolygonsButton.title = !hasAoi
+      ? "Draw an AOI, then select polygon annotations"
+      : selectedPolygonCount
       ? `Add ${selectedPolygonCount} selected polygon${selectedPolygonCount === 1 ? "" : "s"} as ${activeType?.name || "porosity"}`
-      : hasAoi
-        ? "Select a polygon that intersects the AOI"
-        : "Draw an AOI, then select polygon annotations";
+      : "Select one or more polygon annotations";
   }
   if (porosityTypeSelect) porosityTypeSelect.disabled = !workflowEnabled;
   if (porosityAddTypeButton) porosityAddTypeButton.disabled = !workflowEnabled;
@@ -9401,6 +9395,25 @@ function updatePorosityPropertiesPlotControls() {
 
 function updatePorosityThicknessOverlayControls() {
   const autoRange = porosityThicknessOverlayAutoRange?.checked !== false;
+  const orientationSelected =
+    porosityCalculatedRasterParameter?.value === "component-orientation";
+  if (porosityThicknessOverlayScale) {
+    if (orientationSelected) {
+      if (!porosityThicknessOverlayScale.disabled) {
+        porosityThicknessOverlayScale.dataset.restoreValue =
+          porosityThicknessOverlayScale.value;
+      }
+      porosityThicknessOverlayScale.value = "linear";
+    } else if (porosityThicknessOverlayScale.disabled) {
+      porosityThicknessOverlayScale.value =
+        porosityThicknessOverlayScale.dataset.restoreValue || "log2";
+      delete porosityThicknessOverlayScale.dataset.restoreValue;
+    }
+    porosityThicknessOverlayScale.disabled = orientationSelected;
+    porosityThicknessOverlayScale.title = orientationSelected
+      ? "Orientation uses a signed linear scale from -90° to +90°."
+      : "";
+  }
   if (porosityThicknessOverlayMin)
     porosityThicknessOverlayMin.disabled = autoRange;
   if (porosityThicknessOverlayMax)
@@ -9413,7 +9426,14 @@ function updatePorosityThicknessOverlayControls() {
 function buildPorosityThicknessHistogramModel() {
   const groups = getPorosityThicknessGroupsForPlot();
   const values = groups.flatMap((group) => group.values);
-  const extent = getDefaultHistogramExtent(values);
+  const measuredExtent = getDefaultHistogramExtent(values);
+  const orientationSelected =
+    porosityPropertiesPlot?.value === "component" &&
+    porosityThicknessSize?.value === "orientation";
+  const extent =
+    orientationSelected && values.length
+      ? { ...measuredExtent, min: -90, max: 90, binWidth: 10 }
+      : measuredExtent;
   const defaultBinWidth = porosityThicknessLogX?.checked
     ? 0.5
     : extent.binWidth || 1;
@@ -11174,18 +11194,31 @@ function getSnapshotSelectionImageRect(selectionRect = snapshotSelectionRect) {
   };
 }
 
-async function applySnapshotLayerFilter(
+function applySnapshotLayerAppearance(layerCanvas, tileSet) {
+  if (!layerCanvas || !tileSet || isDefaultTileSetAppearance(tileSet)) {
+    return false;
+  }
+
+  const context = layerCanvas.getContext("2d", { willReadFrequently: true });
+  if (!context) return false;
+  applyTileSetAppearanceToContext(context, getTileSetAppearance(tileSet));
+  return true;
+}
+
+async function applySnapshotLayerProcessing(
   layerCanvas,
   tileSetIndex,
   exportSize,
 ) {
   const tileSet = tileSets()[tileSetIndex];
-  if (
-    !layerCanvas ||
-    !snapshotExportFilter?.checked ||
-    !tileSet ||
-    isDefaultTileSetTransform(tileSet)
-  ) {
+  if (!layerCanvas || !tileSet) {
+    return { canvas: layerCanvas, applied: false };
+  }
+
+  const shouldApplyTransform =
+    snapshotExportFilter?.checked && !isDefaultTileSetTransform(tileSet);
+  if (!shouldApplyTransform) {
+    applySnapshotLayerAppearance(layerCanvas, tileSet);
     return { canvas: layerCanvas, applied: false };
   }
 
@@ -11218,6 +11251,7 @@ async function applySnapshotLayerFilter(
       resolution.width,
       resolution.height,
     );
+    applySnapshotLayerAppearance(transformedCanvas, tileSet);
     return { canvas: transformedCanvas, applied: true };
   }
 
@@ -11230,7 +11264,11 @@ async function applySnapshotLayerFilter(
       imageRect,
       scale,
     );
+    applySnapshotLayerAppearance(layerCanvas, tileSet);
   } else {
+    // Match the viewer's ordinary tile-processing order: Appearance first,
+    // followed by the optional simple Transform.
+    applySnapshotLayerAppearance(layerCanvas, tileSet);
     applyTileSetTransformToContext(context, transform);
   }
 
@@ -11750,9 +11788,6 @@ async function renderSnapshotTileSetCanvas(exportSize, tileSetIndex) {
 
 async function renderSnapshotCompositionCanvas(exportSize) {
   const layers = getSnapshotLayers();
-  if (!layers.length) {
-    throw new Error("Select at least one visible tile set.");
-  }
 
   const outputCanvas = document.createElement("canvas");
   outputCanvas.width = exportSize.width;
@@ -11771,23 +11806,23 @@ async function renderSnapshotCompositionCanvas(exportSize) {
       exportSize,
       layer.tileSetIndex,
     );
-    const filteredLayer = await applySnapshotLayerFilter(
+    const processedLayer = await applySnapshotLayerProcessing(
       rawCanvas,
       layer.tileSetIndex,
       exportSize,
     );
-    filterApplied ||= filteredLayer.applied;
+    filterApplied ||= processedLayer.applied;
 
     context.save();
     context.globalAlpha = layer.opacity;
     context.imageSmoothingEnabled = true;
     context.imageSmoothingQuality = "high";
     context.drawImage(
-      filteredLayer.canvas,
+      processedLayer.canvas,
       0,
       0,
-      filteredLayer.canvas.width,
-      filteredLayer.canvas.height,
+      processedLayer.canvas.width,
+      processedLayer.canvas.height,
       0,
       0,
       outputCanvas.width,
@@ -16482,8 +16517,10 @@ async function exportSnapshotSelection(destination = "file") {
     updateSnapshotStatus("Draw a rectangle before exporting.");
     return;
   }
-  if (!getSnapshotLayers().length) {
-    updateSnapshotStatus("Select at least one visible tile set.");
+  if (!hasSnapshotExportableContent()) {
+    updateSnapshotStatus(
+      "Select at least one tile set or export the porosity overlay.",
+    );
     return;
   }
   if (destination === "clipboard") {
@@ -17239,7 +17276,6 @@ async function cancelCziConversion() {
 function openCziImportDialog() {
   closeElectronActionTray();
   if (!cziImportDialog?.open) cziImportDialog?.showModal();
-  if (!cziImportState.inspection) chooseAndInspectCzi();
 }
 
 function closeCziImportDialog() {
@@ -17628,6 +17664,7 @@ async function copyAboutCitation() {
 
 function closeElectronActionTray() {
   if (!electronActionTray || !electronActionButton) return;
+  if (electronActionTray.hidden) return;
 
   electronActionTray.hidden = true;
   electronActionButton.setAttribute("aria-expanded", "false");
@@ -17636,6 +17673,7 @@ function closeElectronActionTray() {
 
 function closeViewerToolsTray() {
   if (!viewerToolsTray || !viewerToolsButton) return;
+  if (viewerToolsTray.hidden) return;
 
   viewerToolsTray.hidden = true;
   viewerToolsButton.setAttribute("aria-expanded", "false");
@@ -18994,11 +19032,13 @@ if (hasFullViewerMenus && openPorosityEstimatorButton && porosityPalette) {
     "click",
     async function () {
       const activeType = getActivePorosityType();
-      const selectedPolygons = getSelectedPorosityPolygonsInAoi();
+      const selectedPolygons = getSelectedPorosityPolygons();
+      if (!porosityAoiComplete || porosityAoiImagePoints.length < 3) {
+        updatePorosityControls("Draw an AOI before adding selected polygons.");
+        return;
+      }
       if (!activeType || selectedPolygons.length === 0) {
-        updatePorosityControls(
-          "Select polygon annotations that intersect the AOI.",
-        );
+        updatePorosityControls("Select one or more polygon annotations.");
         return;
       }
 
@@ -19449,6 +19489,7 @@ snapshotSelection?.querySelectorAll("[data-handle]").forEach((handle) => {
   snapshotContentMode,
   snapshotResolutionMode,
   snapshotIncludeScalebar,
+  snapshotExportPorosityOverlay,
 ].forEach((element) => {
   element?.addEventListener("change", function () {
     updateSnapshotStatus();
@@ -27785,27 +27826,21 @@ function resetTileSetAppearanceParameter(tileSetIndex, key) {
 function resetTileSetAppearance(tileSetIndex) {
   const tileSet = tileSets()[tileSetIndex];
   if (!tileSet) return;
+  cancelQueuedTileAppearanceReprocess();
   tileSetAppearanceState.set(tileSet, { ...TILE_SET_APPEARANCE_DEFAULTS });
   saveCurrentSampleTileAppearancePreference();
-  cancelQueuedTileAppearanceReprocess();
-  updateTileSetAppearanceRenderingHints(tileSet);
-  reprocessLoadedTileSetTiles(tileSet);
   updateTileAppearanceControls();
-  displayImages();
-  viewer.forceRedraw();
+  scheduleTileAppearanceReprocess(tileSet);
 }
 
 function resetAllTileSetAppearance() {
+  cancelQueuedTileAppearanceReprocess();
   tileSets().forEach((tileSet) => {
     tileSetAppearanceState.set(tileSet, { ...TILE_SET_APPEARANCE_DEFAULTS });
-    updateTileSetAppearanceRenderingHints(tileSet);
-    reprocessLoadedTileSetTiles(tileSet);
   });
   saveCurrentSampleTileAppearancePreference();
-  cancelQueuedTileAppearanceReprocess();
   updateTileAppearanceControls();
-  displayImages();
-  viewer.forceRedraw();
+  tileSets().forEach(scheduleTileAppearanceReprocess);
 }
 
 function getSelectedAppearanceTileSetIndex() {
@@ -28436,9 +28471,18 @@ async function restoreWorkingCountsForCurrentSample() {
       if (!loadCounts(result.geoJSON)) {
         throw new Error("Working counts could not be loaded.");
       }
-      document.getElementById("apply-grid-settings").disabled = true;
-      document.getElementById("clear-grid").disabled = false;
-      disableGridOptions();
+      if (countJSON.features.length > 0) {
+        gridApplied = true;
+        document.getElementById("apply-grid-settings").disabled = true;
+        document.getElementById("clear-grid").disabled = false;
+        disableGridOptions();
+      } else {
+        gridApplied = false;
+        disableCountButtons();
+        enableGridOptions();
+        enableGridButtons();
+        document.getElementById("clear-grid").disabled = true;
+      }
       setUnsavedWork("counts", false);
     } finally {
       suppressUnsavedCountTracking = false;
@@ -29231,6 +29275,7 @@ function renderCountOverlaysFromJSON() {
     );
   });
 
+  syncSelectedAnnotationVisuals();
   applyFormattingAfterCountAll(countJSON, "both");
   applyGridVisibilityState();
 }
@@ -31024,6 +31069,7 @@ function deactivateAnnotationDrawingModes() {
   isEllipseMode = false;
   isCircleAnnotationMode = false;
   removeTemporaryPoints();
+  refreshAnnotationFloaters();
 }
 
 function deactivateAnnotationModes() {
@@ -31048,7 +31094,7 @@ pointButton.addEventListener("click", () => {
   rectButton.classList.remove("active");
   isRectangleMode = false;
   polylineButton.classList.remove("active");
-  isPolygonMode = false;
+  isPolylineMode = false;
   polygonButton.classList.remove("active");
   isPolygonMode = false;
   ellipseButton.classList.remove("active");
@@ -31065,6 +31111,7 @@ pointButton.addEventListener("click", () => {
     pointButton.classList.remove("active");
     isPointMode = false;
   }
+  refreshAnnotationFloaters();
 });
 
 polylineButton.addEventListener("click", () => {
@@ -31091,6 +31138,7 @@ polylineButton.addEventListener("click", () => {
     isPolylineMode = false;
     removeTemporaryPoints();
   }
+  refreshAnnotationFloaters();
 });
 
 rectButton.addEventListener("click", () => {
@@ -31116,6 +31164,7 @@ rectButton.addEventListener("click", () => {
     rectButton.classList.remove("active");
     isRectangleMode = false;
   }
+  refreshAnnotationFloaters();
 });
 
 repeatButton.addEventListener("click", () => {
@@ -31171,6 +31220,7 @@ polygonButton.addEventListener("click", () => {
     polygonButton.classList.remove("active");
     isPolygonMode = false;
   }
+  refreshAnnotationFloaters();
 });
 
 ellipseButton.addEventListener("click", () => {
@@ -31196,6 +31246,7 @@ ellipseButton.addEventListener("click", () => {
     ellipseButton.classList.remove("active");
     isEllipseMode = false;
   }
+  refreshAnnotationFloaters();
 });
 
 circleAnnotationButton.addEventListener("click", () => {
@@ -36689,14 +36740,14 @@ function updateCircleShapeFromDrag(feature, handleType, imagePoint) {
   if (handleType === "radius") {
     model.radius = Math.max(
       1,
-      getVectorLength({
-        x: imagePoint.x - model.center.x,
-        y: imagePoint.y - model.center.y,
-      }),
+      getCircleRadiusPixels(
+        [model.center.x, model.center.y],
+        [imagePoint.x, imagePoint.y],
+      ),
     );
   }
 
-  const coordinates = getCircleCoordinatesInImageSpace(
+  const coordinates = getCircleAnnotationCoordinatesInImageSpace(
     model.center.x,
     model.center.y,
     model.radius * 2,
@@ -38166,9 +38217,36 @@ function finalizeEllipseAnnotation(
 }
 
 function getCircleRadiusPixels(center, perimeterPoint) {
-  return Math.hypot(
-    perimeterPoint[0] - center[0],
-    perimeterPoint[1] - center[1],
+  const displaySpace = getImageCoordinateSpace(viewer?.world?.getItemAt?.(0));
+  const annotationSpace = ensureAnnotationCoordinateSpace(displaySpace);
+  return (
+    annotationCoordinateApi.getCircleRadiusInAnnotationPixels(
+      center,
+      perimeterPoint,
+      annotationSpace,
+      displaySpace,
+    ) ??
+    Math.hypot(
+      perimeterPoint[0] - center[0],
+      perimeterPoint[1] - center[1],
+    )
+  );
+}
+
+function getCircleAnnotationCoordinatesInImageSpace(
+  centerX,
+  centerY,
+  diameter,
+) {
+  const displaySpace = getImageCoordinateSpace(viewer?.world?.getItemAt?.(0));
+  const annotationSpace = ensureAnnotationCoordinateSpace(displaySpace);
+  return (
+    annotationCoordinateApi.getCircleCoordinatesInAnnotationSpace(
+      [centerX, centerY],
+      diameter / 2,
+      annotationSpace,
+      displaySpace,
+    ) ?? getCircleCoordinatesInImageSpace(centerX, centerY, diameter)
   );
 }
 
@@ -38217,7 +38295,7 @@ function previewCircleAnnotation(perimeterImagePoint) {
     circleAnnotationCenterImage,
     perimeterImagePoint,
   );
-  const coordinates = getCircleCoordinatesInImageSpace(
+  const coordinates = getCircleAnnotationCoordinatesInImageSpace(
     circleAnnotationCenterImage[0],
     circleAnnotationCenterImage[1],
     radiusPixels * 2,
@@ -38258,7 +38336,7 @@ function finalizeCircleAnnotation(
     Number.isFinite(fixedDiameterPixels) && fixedDiameterPixels > 0
       ? fixedDiameterPixels / 2
       : getCircleRadiusPixels(circleAnnotationCenterImage, perimeterImagePoint);
-  const coordinates = getCircleCoordinatesInImageSpace(
+  const coordinates = getCircleAnnotationCoordinatesInImageSpace(
     circleAnnotationCenterImage[0],
     circleAnnotationCenterImage[1],
     radiusPixels * 2,
@@ -41928,8 +42006,8 @@ function addText(
   if (type === "anno") {
     annotateLabels.push(pointLabel);
     updateRepeatButton();
+    syncSelectedAnnotationVisuals();
   }
-  syncSelectedAnnotationVisuals();
 
   updateAnnotationOverlayRotation();
 }
@@ -42148,8 +42226,8 @@ function addCrosshairs(
   if (type === "anno") {
     annotatePoints.push(crosshair);
     updateRepeatButton();
+    syncSelectedAnnotationVisuals();
   }
-  syncSelectedAnnotationVisuals();
 }
 
 // TOOD: update this function
@@ -45182,6 +45260,10 @@ const applyGridSettings = (preparedGrid) => {
     );
   }
 
+  // Grid overlays do not change annotation selection. Synchronize once after
+  // the complete batch instead of once for each label and crosshair.
+  syncSelectedAnnotationVisuals();
+
   // Always show the grid right after generating it. (The newly added overlay
   // elements will be visible by default, so checking the box here doesn't
   // actually affect them - it just makes the checkbox state consistent with the
@@ -45201,9 +45283,7 @@ const clearGrid = () => {
     { length: countJSON.features.length },
     (_, i) => i + 1,
   );
-  if (gridIds.length === 0) {
-    return; // Nothing to remove
-  } else {
+  if (gridIds.length > 0) {
     for (let i = 0; i < gridIds.length; i++) {
       const type = countJSON.features[gridIds[i] - 1].geometry.type;
       deleteText(countJSON.features[gridIds[i] - 1].properties.uuid, "grid");
@@ -45224,10 +45304,11 @@ const clearGrid = () => {
   document.getElementById("count-text").value = "";
   document.getElementById("count-notes").value = "";
   disableCountButtons();
-  document.getElementById("apply-grid-settings").disabled = false;
+  gridApplied = false;
   // document.getElementById("restore-grid-settings").disabled = false;
   document.getElementById("clear-grid").disabled = true;
   enableGridOptions();
+  enableGridButtons();
 };
 
 const clearGridOverlayPoints = () => {
@@ -55295,6 +55376,16 @@ function refreshAnnotationFloaters(event = {}) {
     isMeasurePolygonFloater,
   );
 
+  // A mode change can happen without another mousemove. Reset every floater
+  // before showing the one for the current mode so the previous symbol cannot
+  // remain stuck at its last position.
+  toggleCrosshairFloaterOn(false);
+  togglePolylineFloaterOn(false);
+  toggleRectFloaterOn(false);
+  togglePolygonFloaterOn(false);
+  toggleEllipseFloaterOn(false);
+  toggleCircleAnnotationFloaterOn(false);
+
   if (isQPressed || isPointMode) {
     // crosshairFloater.style.display = "block";
     // document.body.style.cursor = "default"; // Hide system cursor when crosshair is active
@@ -55313,17 +55404,8 @@ function refreshAnnotationFloaters(event = {}) {
     toggleCircleAnnotationFloaterOn(true);
   } else if (isMeasureLineFloater) {
     togglePolylineFloaterOn(true);
-    togglePolygonFloaterOn(false);
   } else if (isMeasurePolygonFloater) {
-    togglePolylineFloaterOn(false);
     togglePolygonFloaterOn(true);
-  } else {
-    toggleCrosshairFloaterOn(false);
-    togglePolylineFloaterOn(false);
-    toggleRectFloaterOn(false);
-    togglePolygonFloaterOn(false);
-    toggleEllipseFloaterOn(false);
-    toggleCircleAnnotationFloaterOn(false);
   }
 }
 
@@ -55417,14 +55499,14 @@ function togglePolygonFloaterOn(enable) {
 }
 
 function toggleEllipseFloaterOn(enable) {
-  polygonFloater.style.visibility = enable ? "visible" : "hidden";
+  ellipseFloater.style.visibility = enable ? "visible" : "hidden";
   if (enable) {
     const currentMousePos = getMousePosition();
     const x = currentMousePos.x;
     const y = currentMousePos.y;
     const yoffset = -2;
     const xoffset = 8;
-    polygonFloater.setAttribute(
+    ellipseFloater.setAttribute(
       "points",
       `${x + 7.07 + xoffset},${y + 7.07 + yoffset}
        ${x + 5.02 + xoffset},${y + 7.9 + yoffset}

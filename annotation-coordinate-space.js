@@ -82,6 +82,78 @@
     };
   }
 
+  function getCircleRadiusInAnnotationPixels(
+    center,
+    perimeterPoint,
+    annotationSpace,
+    displaySpace,
+  ) {
+    const annotation = normalizeCoordinateSpace(annotationSpace);
+    const display = normalizeCoordinateSpace(displaySpace);
+    if (!annotation || !display) return null;
+
+    const displayCenter = annotationToDisplayPoint(
+      { x: center?.[0], y: center?.[1] },
+      annotation,
+      display,
+    );
+    const displayPerimeter = annotationToDisplayPoint(
+      { x: perimeterPoint?.[0], y: perimeterPoint?.[1] },
+      annotation,
+      display,
+    );
+    const displayRadius = Math.hypot(
+      displayPerimeter.x - displayCenter.x,
+      displayPerimeter.y - displayCenter.y,
+    );
+    return displayRadius * (annotation.width / display.width);
+  }
+
+  function getCircleCoordinatesInAnnotationSpace(
+    center,
+    radius,
+    annotationSpace,
+    displaySpace,
+    angleStepDegrees = 5,
+  ) {
+    const annotation = normalizeCoordinateSpace(annotationSpace);
+    const display = normalizeCoordinateSpace(displaySpace);
+    const numericRadius = Number(radius);
+    const numericStep = Number(angleStepDegrees);
+    if (
+      !annotation ||
+      !display ||
+      !Number.isFinite(numericRadius) ||
+      numericRadius < 0 ||
+      !Number.isFinite(numericStep) ||
+      numericStep <= 0
+    ) {
+      return null;
+    }
+
+    const displayCenter = annotationToDisplayPoint(
+      { x: center?.[0], y: center?.[1] },
+      annotation,
+      display,
+    );
+    const displayRadius = numericRadius * (display.width / annotation.width);
+    const coordinates = [];
+    for (let angle = 0; angle < 360; angle += numericStep) {
+      const radians = (Math.PI / 180) * angle;
+      const annotationPoint = displayToAnnotationPoint(
+        {
+          x: displayCenter.x + displayRadius * Math.cos(radians),
+          y: displayCenter.y + displayRadius * Math.sin(radians),
+        },
+        display,
+        annotation,
+      );
+      coordinates.push([annotationPoint.x, annotationPoint.y]);
+    }
+    if (coordinates.length > 0) coordinates.push([...coordinates[0]]);
+    return coordinates;
+  }
+
   function rotateAnnotationPointForDisplay(
     point,
     center,
@@ -199,6 +271,8 @@
     annotationToDisplayPoint,
     annotationToDisplayCoordinateTree,
     displayToAnnotationPoint,
+    getCircleRadiusInAnnotationPixels,
+    getCircleCoordinatesInAnnotationSpace,
     rotateAnnotationPointForDisplay,
     rotateCoordinateTreeForDisplay,
     migrateFeatureToCoordinateSpace,
