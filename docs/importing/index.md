@@ -45,6 +45,8 @@ The desktop app includes specialized beta import support for:
 
 The AxioScan workflow discovers available lighting channels, preserves their shared registered extent, and can organize multiple PPL or XPL angles into rotation-aware tile sets.
 
+Multiple CZI files can be selected at once. The desktop app inspects them, skips unsupported profiles, and converts the supported files sequentially so large conversions do not compete for memory and disk access. Each completed sample is saved to the selected library before the next file begins. If an individual file fails, the remaining queue continues and failed files can be retried while the app remains open.
+
 JPEG 2000 files are converted to a standard Deep Zoom pyramid. The current derivative uses 8-bit, quality-90 JPEG tiles, so 16-bit precision, alpha, and lossless source encoding are not retained.
 
 The AxioScan importer currently supports single-scene, two-dimensional scans. It rejects Z-stacks, time series, multiple scenes, and other general CZI layouts. Packaged desktop releases contain the required conversion worker, so users do not need to install Python.

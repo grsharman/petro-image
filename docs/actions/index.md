@@ -19,7 +19,7 @@ project files on the local computer.
 | [Label Grains from Counts](label-grains-from-counts.md) | Assign polygon groups from point-count labels | Yes | Yes |
 | [Transfer Values](transfer-values.md) | Copy annotation values into containing polygons | Yes | Yes |
 | [Edit Library](managing-libraries-and-projects.md#edit-a-library) | Edit, reorder, or remove samples and tile sets | No | Yes |
-| [Import AxioScan 7 CZI](../importing/index.md#specialized-formats) | Convert supported polarization channels to Deep Zoom | No | Yes |
+| [Import AxioScan 7 CZI](../importing/index.md#specialized-formats) | Convert image channels to Deep Zoom | No | Yes |
 | Quick Tour | Review the main viewer controls | Yes | Yes |
 | About petro-image | View version, citation, authors, license, and project links | Yes | Yes |
 

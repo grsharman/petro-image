@@ -5,6 +5,7 @@ import {
   ipcMain,
   dialog,
   nativeImage,
+  powerSaveBlocker,
   screen,
   shell,
 } from "electron";
@@ -161,6 +162,26 @@ async function readProjectSettings() {
 async function writeProjectSettings(settings) {
   await fs.mkdir(path.dirname(getSettingsPath()), { recursive: true });
   await fs.writeFile(getSettingsPath(), JSON.stringify(settings, null, 2), "utf8");
+}
+
+async function getOnboardingPreference() {
+  const settings = await readProjectSettings();
+  const dismissed = settings.onboarding?.welcomeDismissed;
+  return {
+    dismissed: typeof dismissed === "boolean" ? dismissed : null,
+  };
+}
+
+async function setOnboardingPreference(dismissed) {
+  const settings = await readProjectSettings();
+  await writeProjectSettings({
+    ...settings,
+    onboarding: {
+      ...settings.onboarding,
+      welcomeDismissed: Boolean(dismissed),
+    },
+  });
+  return { dismissed: Boolean(dismissed) };
 }
 
 async function readProjectLibrarySummary(libraryPath) {
@@ -1227,6 +1248,7 @@ async function runAxioScanCziConversion(request, event) {
   let resultEvent = null;
   let canceled = false;
   const movedOutputPaths = [];
+  const powerSaveBlockerId = powerSaveBlocker.start("prevent-app-suspension");
   activeCziConversionOutput = stagingDirectory;
 
   try {
@@ -1321,6 +1343,9 @@ async function runAxioScanCziConversion(request, event) {
   } finally {
     activeCziConversionChild = null;
     activeCziConversionOutput = "";
+    if (powerSaveBlocker.isStarted(powerSaveBlockerId)) {
+      powerSaveBlocker.stop(powerSaveBlockerId);
+    }
   }
 }
 
@@ -2716,19 +2741,28 @@ ipcMain.handle("select-image-file", async () => {
 });
 
 ipcMain.handle("select-axioscan-czi", async (event) => {
+  const dialogOptions = {
+    title: "Select AxioScan 7 CZI files",
+    properties: ["openFile", "multiSelections"],
+    filters: [
+      { name: "Zeiss CZI", extensions: ["czi"] },
+      { name: "All Files", extensions: ["*"] },
+    ],
+  };
+  if (lastSelectedImageDirectory) {
+    dialogOptions.defaultPath = lastSelectedImageDirectory;
+  }
   const { canceled, filePaths } = await dialog.showOpenDialog(
     getOwnerWindow(event),
-    {
-      title: "Select AxioScan 7 CZI file",
-      properties: ["openFile"],
-      filters: [
-        { name: "Zeiss CZI", extensions: ["czi"] },
-        { name: "All Files", extensions: ["*"] },
-      ],
-    },
+    dialogOptions,
   );
   if (canceled || !filePaths.length) return { canceled: true };
-  return { canceled: false, sourcePath: filePaths[0] };
+  lastSelectedImageDirectory = path.dirname(filePaths[0]);
+  return {
+    canceled: false,
+    sourcePath: filePaths[0],
+    sourcePaths: filePaths,
+  };
 });
 
 ipcMain.handle("inspect-axioscan-czi", async (event, sourcePath) => {
@@ -2766,6 +2800,14 @@ ipcMain.handle("initialize-project-library", async () => initializeProjectLibrar
 ipcMain.handle("change-project-library", async () => changeProjectLibrary());
 
 ipcMain.handle("get-project-settings", async () => readProjectSettings());
+
+ipcMain.handle("get-onboarding-preference", async () =>
+  getOnboardingPreference(),
+);
+
+ipcMain.handle("set-onboarding-preference", async (event, dismissed) =>
+  setOnboardingPreference(dismissed),
+);
 
 ipcMain.handle("show-project-information", async () => showProjectInformation());
 

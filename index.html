@@ -834,7 +834,7 @@
             </span>
             <span>
               <span class="electron-action-title">Import AxioScan 7 CZI <span class="beta-badge">βeta</span></span>
-              <span class="electron-action-description">Convert polarization channels to DZI</span>
+              <span class="electron-action-description">Convert image channels to DZI</span>
             </span>
           </button>
           <div class="electron-action-separator" role="separator"></div>
@@ -1006,15 +1006,26 @@
         <div class="czi-import-header">
           <div>
             <h2 id="cziImportTitle">Import AxioScan 7 CZI</h2>
-            <p>Convert selected AxioScan lighting channels directly into registered DZI tile sets.</p>
+            <p>Queue one or more AxioScan files and convert them into registered DZI tile sets.</p>
           </div>
           <button id="closeCziImportButton" type="button" aria-label="Close">×</button>
         </div>
         <div class="czi-import-body">
           <div class="czi-source-row">
-            <button id="selectCziFileButton" type="button">Choose CZI File…</button>
-            <span id="cziSourcePath">No file selected</span>
+            <button id="selectCziFileButton" type="button">Choose CZI Files…</button>
+            <span id="cziSourcePath">No files selected</span>
           </div>
+          <section id="cziBatchQueuePanel" class="czi-batch-queue-panel" hidden>
+            <div class="czi-batch-queue-heading">
+              <strong>Conversion queue</strong>
+              <span class="czi-batch-queue-heading-actions">
+                <span id="cziBatchQueueSummary"></span>
+                <button id="removeCziQueueItemButton" type="button">Remove from Queue</button>
+              </span>
+            </div>
+            <div id="cziBatchQueueList" class="czi-batch-queue-list"></div>
+            <small>Select a row to review its metadata and sample title. Unsupported files are skipped.</small>
+          </section>
           <div id="cziInspectionPanel" class="czi-inspection-panel" hidden>
             <div class="czi-profile-heading">
               <span id="cziProfileBadge" class="czi-profile-badge">AxioScan 7</span>
@@ -1028,11 +1039,11 @@
             </dl>
             <div id="cziChannelSummary" class="czi-channel-summary"></div>
             <label class="czi-field">
-              <span>Sample title</span>
+              <span>Selected sample title</span>
               <input id="cziSampleTitle" type="text" maxlength="120" />
             </label>
             <label class="czi-field">
-              <span>Groups</span>
+              <span>Groups for this batch</span>
               <input
                 id="cziGroupsInput"
                 type="text"
@@ -1041,7 +1052,7 @@
                 placeholder="Separate multiple groups with semicolons"
               />
               <datalist id="cziExistingGroups"></datalist>
-              <small>Existing or new group names; separate multiple groups with semicolons.</small>
+              <small>Applied to every queued sample; separate multiple groups with semicolons.</small>
             </label>
             <fieldset class="czi-tile-set-order">
               <legend>Tile set order</legend>
@@ -1108,8 +1119,8 @@
           <p id="cziImportStatus" class="czi-import-status" role="status"></p>
         </div>
         <div class="czi-import-actions">
-          <button id="cancelCziConversionButton" type="button" hidden>Cancel Conversion</button>
-          <button id="startCziConversionButton" type="button" disabled>Convert and Add Sample</button>
+          <button id="cancelCziConversionButton" type="button" hidden>Stop Batch</button>
+          <button id="startCziConversionButton" type="button" disabled>Convert and Add Samples</button>
         </div>
       </dialog>
       <div

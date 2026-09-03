@@ -867,6 +867,105 @@ body.import-wizard-page {
   white-space: nowrap;
 }
 
+.czi-batch-queue-panel {
+  margin-top: 14px;
+  padding: 11px;
+  border: 1px solid #d5d5cf;
+  border-radius: 7px;
+  background: #fff;
+}
+
+.czi-batch-queue-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.czi-batch-queue-heading-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.czi-import-dialog #removeCziQueueItemButton {
+  min-height: 25px;
+  padding: 2px 7px;
+  font-size: 11px;
+}
+
+#cziBatchQueueSummary,
+.czi-batch-queue-panel > small {
+  color: #6b6b66;
+  font-size: 11px;
+}
+
+.czi-batch-queue-list {
+  display: grid;
+  gap: 5px;
+  max-height: 190px;
+  margin-bottom: 8px;
+  overflow: auto;
+}
+
+.czi-import-dialog .czi-batch-queue-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 42px;
+  padding: 6px 8px;
+  border: 1px solid #deded9;
+  border-radius: 5px;
+  background: #f7f7f5;
+  text-align: left;
+}
+
+.czi-batch-queue-row.selected {
+  border-color: #66836d;
+  box-shadow: inset 0 0 0 1px #66836d;
+}
+
+.czi-batch-queue-file {
+  display: grid;
+  min-width: 0;
+}
+
+.czi-batch-queue-file strong,
+.czi-batch-queue-file small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.czi-batch-queue-file small {
+  color: #6b6b66;
+  font-weight: 400;
+}
+
+.czi-batch-queue-status {
+  color: #5d5d58;
+  font-size: 11px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.czi-batch-queue-row[data-status="completed"] .czi-batch-queue-status {
+  color: #23633a;
+}
+
+.czi-batch-queue-row[data-status="failed"] .czi-batch-queue-status,
+.czi-batch-queue-row[data-status="inspection-failed"] .czi-batch-queue-status,
+.czi-batch-queue-row[data-status="unsupported"] .czi-batch-queue-status {
+  color: #a02626;
+}
+
+.czi-batch-queue-row[data-status="converting"] .czi-batch-queue-status {
+  color: #2f6742;
+}
+
 .czi-inspection-panel {
   margin-top: 16px;
   padding: 15px;
