@@ -10,6 +10,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
   initializeProjectLibrary: () => ipcRenderer.invoke("initialize-project-library"),
   changeProjectLibrary: () => ipcRenderer.invoke("change-project-library"),
   getProjectSettings: () => ipcRenderer.invoke("get-project-settings"),
+  showProjectInformation: () => ipcRenderer.invoke("show-project-information"),
   loadWorkingAnnotations: (sampleId) =>
     ipcRenderer.invoke("load-working-annotations", { sampleId }),
   saveWorkingAnnotations: (request) =>

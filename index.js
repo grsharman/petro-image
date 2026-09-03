@@ -1228,6 +1228,9 @@ const openLibraryFromFailureButton = document.getElementById(
 const viewerToolsButton = document.getElementById("viewerToolsButton");
 const viewerToolsTray = document.getElementById("viewerToolsTray");
 const changeProjectButton = document.getElementById("changeProjectButton");
+const showProjectInformationButton = document.getElementById(
+  "showProjectInformationButton",
+);
 const controlsPanel = document.querySelector(".controls");
 const minimizeControlsButton = document.getElementById(
   "minimizeControlsButton",
@@ -19524,6 +19527,26 @@ if (changeProjectButton && window.electronAPI?.changeProjectLibrary) {
     event.preventDefault();
     closeElectronActionTray();
     changeProjectWithElectronDialog();
+  });
+}
+
+if (
+  showProjectInformationButton &&
+  window.electronAPI?.showProjectInformation
+) {
+  showProjectInformationButton.hidden = false;
+  showProjectInformationButton.addEventListener("click", async function (event) {
+    event.preventDefault();
+    closeElectronActionTray();
+    try {
+      const result = await window.electronAPI.showProjectInformation();
+      if (result?.action === "open-project") {
+        await changeProjectWithElectronDialog();
+      }
+    } catch (error) {
+      console.error("Could not show project information:", error);
+      alert(error.message || "Could not show project information.");
+    }
   });
 }
 

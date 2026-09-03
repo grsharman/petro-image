@@ -13,6 +13,7 @@ project files on the local computer.
 | --- | --- | :---: | :---: |
 | [Load Library](managing-libraries-and-projects.md#load-a-library) | Open a library JSON file | Yes | Yes |
 | [Open Project](managing-libraries-and-projects.md#open-a-project) | Switch to another project folder and its library | No | Yes |
+| [Project Information](managing-libraries-and-projects.md#view-project-information) | View or reveal the active project folder | No | Yes |
 | [Import Samples](../importing/index.md#import-with-the-desktop-app) | Convert source images and add samples to a library | No | Yes |
 | [Add Scale](add-scale.md) | Calibrate a sample from a visible scalebar | No | Yes |
 | [Label Grains from Counts](label-grains-from-counts.md) | Assign polygon groups from point-count labels | Yes | Yes |

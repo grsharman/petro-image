@@ -37,6 +37,11 @@ import {
   tryParseJsonLine,
 } from "./process-output.js";
 import { buildPythonProcessEnv } from "./python-environment.js";
+import {
+  formatProjectContents,
+  getProjectFolderButtonLabel,
+  summarizeProjectLibrary,
+} from "./project-information.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -156,6 +161,71 @@ async function readProjectSettings() {
 async function writeProjectSettings(settings) {
   await fs.mkdir(path.dirname(getSettingsPath()), { recursive: true });
   await fs.writeFile(getSettingsPath(), JSON.stringify(settings, null, 2), "utf8");
+}
+
+async function readProjectLibrarySummary(libraryPath) {
+  if (!libraryPath) return null;
+
+  try {
+    const jsonText = await fs.readFile(libraryPath, "utf8");
+    return summarizeProjectLibrary(JSON.parse(jsonText.replace(/^\uFEFF/, "")));
+  } catch {
+    return null;
+  }
+}
+
+async function showProjectInformation() {
+  const settings = await readProjectSettings();
+  const projectDirectory = settings.projectDirectory || "";
+
+  if (!projectDirectory || !(await pathExists(projectDirectory))) {
+    const result = await dialog.showMessageBox(mainWindow, {
+      type: "info",
+      title: "Project Information",
+      message: "No project folder is open",
+      detail: "petro-image is using the bundled default library.",
+      buttons: ["Open Project…", "Close"],
+      defaultId: 1,
+      cancelId: 1,
+    });
+    return { action: result.response === 0 ? "open-project" : "close" };
+  }
+
+  const libraryPath = settings.lastLibraryPath || settings.defaultLibraryPath || "";
+  const summary = await readProjectLibrarySummary(libraryPath);
+  const detailLines = [
+    "Location",
+    projectDirectory,
+    "",
+    "Active library",
+    libraryPath || "Not available",
+  ];
+  if (summary) {
+    detailLines.push("", "Contents", formatProjectContents(summary));
+  }
+
+  const result = await dialog.showMessageBox(mainWindow, {
+    type: "info",
+    title: "Project Information",
+    message: path.basename(projectDirectory),
+    detail: detailLines.join("\n"),
+    buttons: [getProjectFolderButtonLabel(), "Copy Path", "Close"],
+    defaultId: 0,
+    cancelId: 2,
+  });
+
+  if (result.response === 0) {
+    const errorMessage = await shell.openPath(projectDirectory);
+    if (errorMessage) {
+      throw new Error(`Could not open the project folder: ${errorMessage}`);
+    }
+    return { action: "show-folder" };
+  }
+  if (result.response === 1) {
+    clipboard.writeText(projectDirectory);
+    return { action: "copy-path" };
+  }
+  return { action: "close" };
 }
 
 async function pathExists(filePath) {
@@ -2696,6 +2766,8 @@ ipcMain.handle("initialize-project-library", async () => initializeProjectLibrar
 ipcMain.handle("change-project-library", async () => changeProjectLibrary());
 
 ipcMain.handle("get-project-settings", async () => readProjectSettings());
+
+ipcMain.handle("show-project-information", async () => showProjectInformation());
 
 ipcMain.handle("load-working-annotations", async (event, { sampleId } = {}) => {
   const settings = await readProjectSettings();

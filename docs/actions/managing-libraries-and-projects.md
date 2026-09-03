@@ -74,6 +74,19 @@ Removing a sample removes its entry from the library only. It does not delete
 the sample's image tiles (unless "Delete local DZI files if this tile set is removed" is selected), annotation files, or other source files. Changes are
 not written until one of the save or apply operations succeeds.
 
+## View project information
+
+**Availability:** desktop app only.
+
+Choose **Actions → Project Information…** to see the active project's name,
+full folder location, active library, and the number of samples and image
+layers in that library. Use **Copy Path** to copy the project folder location,
+or use the platform-specific folder button to show it in Finder or File
+Explorer.
+
+If the bundled default library is active instead of a project, the dialog says
+that no project folder is open and offers to open one.
+
 ## Related documentation
 
 - [Import Samples](../importing/index.md#import-with-the-desktop-app)
