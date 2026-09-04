@@ -212,6 +212,53 @@ test("rotation preserves rendered shape when x and y use different scales", () =
   });
 });
 
+test("rectangle edit handles stay on rotated geometry", () => {
+  const api = loadApi();
+  const rectangle = [
+    [80, 40],
+    [120, 40],
+    [120, 60],
+    [80, 60],
+    [80, 40],
+  ];
+  const rotated = api.rotateCoordinateTreeForDisplay(
+    rectangle,
+    { x: 100, y: 50 },
+    Math.PI / 4,
+    { width: 200, height: 100 },
+    { width: 100, height: 100 },
+  );
+  const handles = JSON.parse(
+    JSON.stringify(api.getRectangleEditHandleCoordinates(rotated)),
+  );
+  const plainRotated = JSON.parse(JSON.stringify(rotated));
+
+  assert.deepEqual(handles.topLeft, plainRotated[0]);
+  assert.deepEqual(handles.topRight, plainRotated[1]);
+  assert.deepEqual(handles.bottomRight, plainRotated[2]);
+  assert.deepEqual(handles.bottomLeft, plainRotated[3]);
+  assert.deepEqual(handles.top, [
+    (plainRotated[0][0] + plainRotated[1][0]) / 2,
+    (plainRotated[0][1] + plainRotated[1][1]) / 2,
+  ]);
+  assert.deepEqual(handles.center, [100, 50]);
+});
+
+test("rotation handle uses rendered coordinates and a fixed screen offset", () => {
+  const api = loadApi();
+  const handle = api.getRotationHandleDisplayPoint(
+    { x: 100, y: 80 },
+    [
+      [60, 80],
+      [100, 110],
+      [140, 80],
+    ],
+    28,
+  );
+
+  assert.deepEqual(JSON.parse(JSON.stringify(handle)), { x: 100, y: 12 });
+});
+
 test("circle coordinates stay circular when x and y use different scales", () => {
   const api = loadApi();
   const annotationSpace = { width: 200, height: 100 };

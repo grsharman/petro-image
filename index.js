@@ -36572,22 +36572,6 @@ function getFeatureRotationCoordinates(feature) {
   return [];
 }
 
-function getImageDistanceForViewerPixels(center, pixelDistance) {
-  const image = getAnnotationImage();
-  if (!image || !center) return pixelDistance;
-
-  const centerViewport = image.imageToViewportCoordinates(
-    new OpenSeadragon.Point(center.x, center.y),
-  );
-  const centerPixel =
-    viewer.viewport.viewportToViewerElementCoordinates(centerViewport);
-  const offsetViewport = viewer.viewport.viewerElementToViewportCoordinates(
-    new OpenSeadragon.Point(centerPixel.x, centerPixel.y - pixelDistance),
-  );
-  const offsetImage = image.viewportToImageCoordinates(offsetViewport);
-  return Math.hypot(offsetImage.x - center.x, offsetImage.y - center.y);
-}
-
 function getRotationHandleCoordinate(feature) {
   if (!isRotationEditableAnnotation(feature)) return null;
 
@@ -36595,17 +36579,26 @@ function getRotationHandleCoordinate(feature) {
   const coordinates = getFeatureRotationCoordinates(feature);
   if (!center || coordinates.length < 2) return null;
 
-  const maxRadius = coordinates.reduce((maxDistance, coordinate) => {
-    const distance = Math.hypot(
-      Number(coordinate[0]) - center.x,
-      Number(coordinate[1]) - center.y,
-    );
-    return Number.isFinite(distance)
-      ? Math.max(maxDistance, distance)
-      : maxDistance;
-  }, 0);
-  const handleOffset = getImageDistanceForViewerPixels(center, 28);
-  return [center.x, center.y - maxRadius - handleOffset];
+  const image = getAnnotationImage();
+  if (!image) return null;
+
+  // The annotation coordinate space can have different X/Y scales from the
+  // currently displayed image. Compute the rotation handle in viewer pixels so
+  // its radius and screen-up offset use the same space as the rendered shape.
+  const centerPixel = imageCoordToViewerPixel(image, [center.x, center.y]);
+  const coordinatePixels = coordinates.map((coordinate) => {
+    const point = imageCoordToViewerPixel(image, coordinate);
+    return [point.x, point.y];
+  });
+  const handlePixel = annotationCoordinateApi.getRotationHandleDisplayPoint(
+    centerPixel,
+    coordinatePixels,
+  );
+  if (!handlePixel) return null;
+  const handlePoint = getImagePointFromViewerPixel(
+    new OpenSeadragon.Point(handlePixel.x, handlePixel.y),
+  );
+  return handlePoint ? [handlePoint.x, handlePoint.y] : null;
 }
 
 function getRectangleEditModel(feature) {
@@ -36788,28 +36781,20 @@ function getShapeEditHandles(feature) {
   const shapeType = feature.properties.shapeType;
 
   if (shapeType === "rectangle") {
-    const model = getRectangleEditModel(feature);
-    if (!model) return [];
-    const { minU, maxU, minV, maxV, u, v, center } = model;
-    const point = (uValue, vValue) =>
-      addScaledVector(
-        {
-          x: center.x + v.x * vValue,
-          y: center.y + v.y * vValue,
-        },
-        u,
-        uValue,
-      );
+    const ring = getVisiblePolygonRing(feature);
+    const coordinates =
+      annotationCoordinateApi.getRectangleEditHandleCoordinates(ring);
+    if (!coordinates) return [];
     const handles = [
-      { handleType: "center", coordinate: [center.x, center.y] },
-      { handleType: "top-left", coordinate: point(minU, minV) },
-      { handleType: "top", coordinate: point((minU + maxU) / 2, minV) },
-      { handleType: "top-right", coordinate: point(maxU, minV) },
-      { handleType: "right", coordinate: point(maxU, (minV + maxV) / 2) },
-      { handleType: "bottom-right", coordinate: point(maxU, maxV) },
-      { handleType: "bottom", coordinate: point((minU + maxU) / 2, maxV) },
-      { handleType: "bottom-left", coordinate: point(minU, maxV) },
-      { handleType: "left", coordinate: point(minU, (minV + maxV) / 2) },
+      { handleType: "center", coordinate: coordinates.center },
+      { handleType: "top-left", coordinate: coordinates.topLeft },
+      { handleType: "top", coordinate: coordinates.top },
+      { handleType: "top-right", coordinate: coordinates.topRight },
+      { handleType: "right", coordinate: coordinates.right },
+      { handleType: "bottom-right", coordinate: coordinates.bottomRight },
+      { handleType: "bottom", coordinate: coordinates.bottom },
+      { handleType: "bottom-left", coordinate: coordinates.bottomLeft },
+      { handleType: "left", coordinate: coordinates.left },
     ];
     const rotationHandleCoordinate = getRotationHandleCoordinate(feature);
     if (rotationHandleCoordinate) {

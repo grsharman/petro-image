@@ -1,0 +1,3 @@
+pylibCZIrw==6.1.0
+numpy==2.0.2
+Pillow==11.3.0

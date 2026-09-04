@@ -7,10 +7,11 @@ import { fileURLToPath } from "node:url";
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const projectDirectory = path.resolve(scriptDirectory, "..");
 const requirementsPath = path.join(
-  scriptDirectory,
-  "czi-worker-requirements.txt",
+  projectDirectory,
+  "czi_pipeline",
+  "requirements-build.txt",
 );
-const workerSource = path.join(scriptDirectory, "axioscan_czi_worker.py");
+const workerSource = path.join(projectDirectory, "czi_pipeline", "converter.py");
 const venvDirectory = path.join(projectDirectory, ".venv-czi-build");
 const outputDirectory = path.join(projectDirectory, "build", "czi-worker");
 const workDirectory = path.join(projectDirectory, "build", "czi-worker-work");

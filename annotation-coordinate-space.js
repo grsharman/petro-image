@@ -223,6 +223,57 @@
     );
   }
 
+  function getRectangleEditHandleCoordinates(coordinates) {
+    if (!Array.isArray(coordinates) || coordinates.length < 4) return null;
+    const corners = coordinates.slice(0, 4).map((coordinate) => [
+      Number(coordinate?.[0]),
+      Number(coordinate?.[1]),
+    ]);
+    if (corners.some((coordinate) => !coordinate.every(Number.isFinite))) {
+      return null;
+    }
+
+    const midpoint = (a, b) => [
+      (a[0] + b[0]) / 2,
+      (a[1] + b[1]) / 2,
+    ];
+    return {
+      center: [
+        corners.reduce((sum, coordinate) => sum + coordinate[0], 0) / 4,
+        corners.reduce((sum, coordinate) => sum + coordinate[1], 0) / 4,
+      ],
+      topLeft: corners[0],
+      top: midpoint(corners[0], corners[1]),
+      topRight: corners[1],
+      right: midpoint(corners[1], corners[2]),
+      bottomRight: corners[2],
+      bottom: midpoint(corners[2], corners[3]),
+      bottomLeft: corners[3],
+      left: midpoint(corners[3], corners[0]),
+    };
+  }
+
+  function getRotationHandleDisplayPoint(
+    center,
+    coordinates,
+    handleOffset = 28,
+  ) {
+    const centerX = Number(center?.x);
+    const centerY = Number(center?.y);
+    if (!Number.isFinite(centerX) || !Number.isFinite(centerY)) return null;
+    if (!Array.isArray(coordinates) || coordinates.length < 2) return null;
+
+    const maxRadius = coordinates.reduce((currentMax, coordinate) => {
+      const x = Number(coordinate?.[0]);
+      const y = Number(coordinate?.[1]);
+      if (!Number.isFinite(x) || !Number.isFinite(y)) return currentMax;
+      return Math.max(currentMax, Math.hypot(x - centerX, y - centerY));
+    }, 0);
+    const offset = Number(handleOffset);
+    if (!Number.isFinite(offset)) return null;
+    return { x: centerX, y: centerY - maxRadius - offset };
+  }
+
   function migrateFeatureToCoordinateSpace(
     feature,
     targetCoordinateSpace,
@@ -275,6 +326,8 @@
     getCircleCoordinatesInAnnotationSpace,
     rotateAnnotationPointForDisplay,
     rotateCoordinateTreeForDisplay,
+    getRectangleEditHandleCoordinates,
+    getRotationHandleDisplayPoint,
     migrateFeatureToCoordinateSpace,
   });
 })(typeof window !== "undefined" ? window : globalThis);

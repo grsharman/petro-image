@@ -91,6 +91,29 @@ print(json.dumps(worker.build_tile_set_specs(details)))
   assert.ok(specs.every((spec) => spec.rotationEnabled === false));
 });
 
+test("AxioScan calibration reads X and Y dimensions and detects non-square pixels", () => {
+  const result = runWorkerHarness(`
+square = {"Scaling": {"Items": {"Distance": [
+    {"@Id": "X", "Value": "1.73e-7"},
+    {"@Id": "Y", "Value": "1.73e-7"},
+]}}}
+rectangular = {"Scaling": {"Items": {"Distance": [
+    {"@Id": "X", "Value": "1.73e-7"},
+    {"@Id": "Y", "Value": "1.80e-7"},
+]}}}
+print(json.dumps({
+    "sizes": worker.get_pixel_sizes_microns(square),
+    "square": worker.pixel_calibration_status(square)[2],
+    "rectangular": worker.pixel_calibration_status(rectangular)[2],
+}))
+`);
+  assert.equal(result.status, 0, result.stderr);
+  const calibration = JSON.parse(result.stdout);
+  assert.deepEqual(calibration.sizes, { X: 0.173, Y: 0.173 });
+  assert.equal(calibration.square, true);
+  assert.equal(calibration.rectangular, false);
+});
+
 test("AxioScan performance metrics aggregate level timings and pixel counts", () => {
   const result = runWorkerHarness(`
 levels = [
