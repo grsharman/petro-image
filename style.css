@@ -5926,19 +5926,95 @@ input[type="range"] {
 }
 
 .segment-help-dialog {
-  width: min(430px, calc(100vw - 16px));
+  width: min(520px, calc(100vw - 16px));
 }
 
 .segment-help-content ol {
   display: grid;
-  gap: 5px;
+  gap: 10px;
   margin: -4px 0 0;
   padding-left: 20px;
 }
 
-.segment-help-content code {
+.segment-help-content > p code {
+  padding: 1px 3px;
+  border-radius: 3px;
+  background: #eef1f4;
+  color: #252a30;
   overflow-wrap: anywhere;
   user-select: text;
+}
+
+.segment-help-content a {
+  color: #1f5f9f;
+  font-weight: 600;
+}
+
+.segment-help-content a:hover,
+.segment-help-content a:focus-visible {
+  color: #123f6d;
+}
+
+.segment-help-callout {
+  display: grid;
+  gap: 3px;
+  margin-top: -2px;
+  padding: 8px 9px;
+  border: 1px solid #b9d3eb;
+  border-left: 3px solid #2d6fa8;
+  border-radius: 4px;
+  background: #f2f8fd;
+}
+
+.segment-help-callout strong {
+  color: #183f61;
+}
+
+.segment-command-block {
+  min-width: 0;
+  margin-top: 5px;
+  overflow: hidden;
+  border: 1px solid #cbd1d7;
+  border-radius: 4px;
+  background: #f5f6f7;
+}
+
+.segment-command-label {
+  display: block;
+  padding: 4px 7px;
+  border-bottom: 1px solid #cbd1d7;
+  background: #e5e9ed;
+  color: #3d464f;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.segment-command-block pre {
+  margin: 0;
+  padding: 7px;
+  overflow-x: auto;
+  color: #20252a;
+  font-size: 10.5px;
+  line-height: 1.4;
+  white-space: pre;
+  user-select: text;
+}
+
+.segment-command-block code {
+  font: inherit;
+}
+
+.segment-platform-commands {
+  display: grid;
+  gap: 6px;
+}
+
+.segment-platform-note {
+  margin: -1px 0 0;
+  color: #59636d;
+  font-size: 10px;
 }
 
 .measure-help-content {

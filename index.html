@@ -3471,15 +3471,53 @@
           <h4>What It Does</h4>
           <p>Supervised Segmentation uses SAM 2.1 with box and point prompts. segmenteverygrain uses a U-Net model to propose grains and can refine their outlines with SAM 2.1.</p>
           <h4>Create the Python Environment</h4>
+          <div class="segment-help-callout">
+            <strong>Start with the official installation guide</strong>
+            <span>
+              Check the
+              <a href="https://github.com/zsylvester/segmenteverygrain" target="_blank" rel="noopener noreferrer">segmenteverygrain installation instructions</a>
+              for the latest prerequisites and setup notes.
+            </span>
+          </div>
           <ol>
             <li>Install Miniforge (recommended) or another conda/mamba distribution.</li>
-            <li>Clone the project with <code>git clone --depth 1 https://github.com/zsylvester/segmenteverygrain.git</code>.</li>
-            <li>In Terminal or Anaconda Prompt, run <code>conda env create -f segmenteverygrain/environment_macos.yml</code> on macOS, or <code>conda env create -f segmenteverygrain/environment.yml</code> on Windows/Linux.</li>
-            <li>Activate it with <code>conda activate segmenteverygrain</code>.</li>
+            <li>
+              Clone the project:
+              <div class="segment-command-block">
+                <span class="segment-command-label">All platforms</span>
+                <pre><code>git clone --depth 1 https://github.com/zsylvester/segmenteverygrain.git</code></pre>
+              </div>
+            </li>
+            <li>
+              Create the environment using the command for your operating system:
+              <div class="segment-platform-commands">
+                <div class="segment-command-block">
+                  <span class="segment-command-label">macOS · Terminal</span>
+                  <pre><code>conda env create -f segmenteverygrain/environment_macos.yml</code></pre>
+                </div>
+                <div class="segment-command-block">
+                  <span class="segment-command-label">Windows · Miniforge/Anaconda Prompt</span>
+                  <pre><code>conda env create -f segmenteverygrain/environment.yml</code></pre>
+                </div>
+                <p class="segment-platform-note">Linux uses the same environment command as Windows.</p>
+              </div>
+            </li>
+            <li>
+              Activate the environment:
+              <div class="segment-command-block">
+                <span class="segment-command-label">All platforms</span>
+                <pre><code>conda activate segmenteverygrain</code></pre>
+              </div>
+            </li>
           </ol>
           <p>The official environment file installs Python 3.10 and the required segmenteverygrain, TensorFlow, PyTorch, torchvision, SAM 2, OpenCV, and scikit-image dependencies.</p>
           <h4>Find the Python File</h4>
-          <p>Run <code>conda run -n segmenteverygrain python -c "import sys; print(sys.executable)"</code>. Copy the printed path. In SAM 2.1 Setup, click Choose Python and select that exact file. It normally ends in <code>/bin/python</code> on macOS/Linux or <code>python.exe</code> on Windows.</p>
+          <p>Run this command to print the environment's Python path:</p>
+          <div class="segment-command-block">
+            <span class="segment-command-label">All platforms</span>
+            <pre><code>conda run -n segmenteverygrain python -c "import sys; print(sys.executable)"</code></pre>
+          </div>
+          <p>Copy the printed path. In SAM 2.1 Setup, click Choose Python and select that exact file. It normally ends in <code>/bin/python</code> on macOS/Linux or <code>python.exe</code> on Windows.</p>
           <h4>Download the Models</h4>
           <p>Download a SAM 2.1 <code>.pt</code> checkpoint from <code>github.com/facebookresearch/sam2</code>, choose the matching model size, and select it under SAM 2.1 Setup.</p>
           <p>Clone or download <code>github.com/zsylvester/segmenteverygrain</code>, then select a trained <code>.keras</code> file from its <code>models</code> folder (for example, <code>seg_model_smooth_labels.keras</code>) under segmenteverygrain Setup. Installing only the Python package does not necessarily download this model file.</p>

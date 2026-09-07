@@ -630,6 +630,7 @@ let tileAppearanceReprocessTimer = null;
 let tileAppearanceReprocessToken = 0;
 let tileAppearanceReprocessRunning = false;
 const tileAppearanceReprocessQueue = new Set();
+const tileAppearanceReprocessGenerations = new WeakMap();
 let derivedPreviewOverlay = null;
 let transformGenerationRunning = false;
 let activeTransformPreviewSettings = { ...TILE_SET_TRANSFORM_DEFAULTS };
@@ -18226,14 +18227,7 @@ if (
     moveCziTileSet(row.dataset.key, Number(button.dataset.direction));
   });
   cziImportDialog.addEventListener("cancel", function (event) {
-    if (cziImportState.converting || cziImportState.benchmarking) {
-      event.preventDefault();
-      return;
-    }
-    closeCziImportDialog();
-  });
-  cziImportDialog.addEventListener("click", function (event) {
-    if (event.target === cziImportDialog) closeCziImportDialog();
+    event.preventDefault();
   });
   window.electronAPI.onCziConversionProgress?.((progress) => {
     if (!cziImportState.converting) return;
@@ -27732,7 +27726,11 @@ function createSourceContextForLoadedTile(loadedTile) {
 function restoreLoadedTileSourceContext(loadedTile) {
   if (!loadedTile) return false;
 
-  const sourceContext = createSourceContextForLoadedTile(loadedTile);
+  const sourceContext = isUsableSourceTileContext(
+    loadedTile.petroImageOriginalContext,
+  )
+    ? loadedTile.petroImageOriginalContext
+    : createSourceContextForLoadedTile(loadedTile);
   loadedTile.petroImageProcessedContext = null;
   loadedTile.petroImagePendingProcessedContext = null;
   loadedTile.petroImageOriginalContext = sourceContext || null;
@@ -27927,6 +27925,31 @@ function getLoadedTilesInTileSet(tileSet) {
   return loadedTiles;
 }
 
+function restoreLoadedTileSetSourceContexts(tileSet) {
+  let restored = 0;
+  forEachLoadedTileInTileSet(tileSet, (loadedTile) => {
+    if (restoreLoadedTileSourceContext(loadedTile)) restored += 1;
+  });
+  return restored;
+}
+
+function getTileAppearanceReprocessGeneration(tileSet) {
+  return tileAppearanceReprocessGenerations.get(tileSet) || 0;
+}
+
+function invalidateTileAppearanceReprocess(tileSet) {
+  const generation = getTileAppearanceReprocessGeneration(tileSet) + 1;
+  tileAppearanceReprocessGenerations.set(tileSet, generation);
+  return generation;
+}
+
+function isTileAppearanceReprocessCurrent(tileSet, token) {
+  return (
+    token.global === tileAppearanceReprocessToken &&
+    token.tile === getTileAppearanceReprocessGeneration(tileSet)
+  );
+}
+
 function processLoadedTileForScheduledReprocess(
   tileSet,
   loadedTile,
@@ -28060,11 +28083,25 @@ function waitForNextPreviewFrame() {
 async function reprocessLoadedTileSetTilesAsync(tileSet, token) {
   const appearance = getTileSetAppearance(tileSet);
   const transform = getTileSetTransform(tileSet);
+  const allLoadedTiles = getLoadedTilesInTileSet(tileSet);
+  const stats = {
+    total: allLoadedTiles.length,
+    processed: 0,
+    missingAdvancedInputs: 0,
+    contextMessage: "",
+    advancedRawMin: Infinity,
+    advancedRawMax: -Infinity,
+  };
+
+  if (!shouldProcessTileSet(tileSet)) {
+    stats.processed = restoreLoadedTileSetSourceContexts(tileSet);
+    return stats;
+  }
+
   displayImages();
   viewer?.forceRedraw?.();
   await waitForNextPreviewFrame();
-  if (token !== tileAppearanceReprocessToken) return null;
-  const allLoadedTiles = getLoadedTilesInTileSet(tileSet);
+  if (!isTileAppearanceReprocessCurrent(tileSet, token)) return null;
   const visibleLayerTiles = allLoadedTiles.filter((tile) => {
     const entry = findTileEntryForLoadedTile(tileSet, tile);
     return (Number(entry?.tile?.image?.getOpacity?.()) || 0) > 0.001;
@@ -28117,17 +28154,10 @@ async function reprocessLoadedTileSetTilesAsync(tileSet, token) {
     if (levelDifference) return levelDifference;
     return getLastTouch(tileB) - getLastTouch(tileA);
   });
-  const stats = {
-    total: loadedTiles.length,
-    processed: 0,
-    missingAdvancedInputs: 0,
-    contextMessage: "",
-    advancedRawMin: Infinity,
-    advancedRawMax: -Infinity,
-  };
+  stats.total = loadedTiles.length;
 
   for (let index = 0; index < loadedTiles.length; index += 1) {
-    if (token !== tileAppearanceReprocessToken) return null;
+    if (!isTileAppearanceReprocessCurrent(tileSet, token)) return null;
 
     const frameStart = performance.now();
     do {
@@ -28142,7 +28172,7 @@ async function reprocessLoadedTileSetTilesAsync(tileSet, token) {
       index += 1;
     } while (index < loadedTiles.length && performance.now() - frameStart < 10);
 
-    if (token !== tileAppearanceReprocessToken) return null;
+    if (!isTileAppearanceReprocessCurrent(tileSet, token)) return null;
 
     if (index < loadedTiles.length) {
       await waitForNextPreviewFrame();
@@ -28173,13 +28203,17 @@ function startNextTileAppearanceReprocess() {
   tileAppearanceReprocessTimer = window.setTimeout(async () => {
     tileAppearanceReprocessTimer = null;
     const tileSet = tileAppearanceReprocessQueue.values().next().value;
+    if (!tileSet) return;
     tileAppearanceReprocessQueue.delete(tileSet);
-    const token = tileAppearanceReprocessToken;
+    const token = {
+      global: tileAppearanceReprocessToken,
+      tile: getTileAppearanceReprocessGeneration(tileSet),
+    };
     tileAppearanceReprocessRunning = true;
     updateTileSetAppearanceRenderingHints(tileSet);
     try {
       const stats = await reprocessLoadedTileSetTilesAsync(tileSet, token);
-      if (!stats || token !== tileAppearanceReprocessToken) return;
+      if (!stats || !isTileAppearanceReprocessCurrent(tileSet, token)) return;
       displayImages();
       viewer?.forceRedraw?.();
       updateTransformPreviewAfterReprocess(tileSet, stats);
@@ -28193,6 +28227,27 @@ function startNextTileAppearanceReprocess() {
 
 function scheduleTileAppearanceReprocess(tileSet) {
   if (!tileSet) return;
+  invalidateTileAppearanceReprocess(tileSet);
+
+  if (!shouldProcessTileSet(tileSet)) {
+    tileAppearanceReprocessQueue.delete(tileSet);
+    updateTileSetAppearanceRenderingHints(tileSet);
+    const restored = restoreLoadedTileSetSourceContexts(tileSet);
+    const stats = {
+      total: restored,
+      processed: restored,
+      missingAdvancedInputs: 0,
+      contextMessage: "",
+      advancedRawMin: Infinity,
+      advancedRawMax: -Infinity,
+    };
+    displayImages();
+    viewer?.forceRedraw?.();
+    updateTransformPreviewAfterReprocess(tileSet, stats);
+    scheduleTransformHistogramRefresh();
+    return;
+  }
+
   tileAppearanceReprocessQueue.add(tileSet);
   startNextTileAppearanceReprocess();
 }
