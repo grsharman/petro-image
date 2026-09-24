@@ -7445,6 +7445,7 @@ input[type="range"] {
 .porosity-workflow-disabled .porosity-samples,
 .porosity-workflow-disabled .porosity-estimate-row,
 .porosity-workflow-disabled .porosity-tolerance-field,
+.porosity-workflow-disabled .porosity-hole-fill-field,
 .porosity-workflow-disabled .porosity-results {
   opacity: 0.48;
 }
@@ -7483,6 +7484,23 @@ input[type="range"] {
 }
 
 .porosity-tolerance-value {
+  width: 100%;
+  min-width: 0;
+  padding: 2px 4px;
+  font: inherit;
+}
+
+.porosity-hole-fill-field {
+  display: grid;
+  grid-template-columns: auto 1fr 50px auto;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  min-width: 0;
+  font-size: 12px;
+}
+
+.porosity-hole-fill-field input[type="number"] {
   width: 100%;
   min-width: 0;
   padding: 2px 4px;

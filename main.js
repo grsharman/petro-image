@@ -64,6 +64,8 @@ let activeCziBenchmarkChild = null;
 let activeJpeg2000ConversionChild = null;
 let windowStateSaveTimer = null;
 let lastSelectedImageDirectory = "";
+let activeProjectLibrary = null;
+let projectLibraryInitializationPromise = null;
 const localFileServerToken = randomUUID();
 const grantedLocalRoots = [];
 const APP_TITLE = "petro-image";
@@ -628,6 +630,7 @@ async function initializeProjectLibrary() {
   const settings = await readProjectSettings();
   const result = await getInitialProjectLibrary(settings);
   if (!result.canceled) {
+    activeProjectLibrary = result;
     setMainWindowTitle(result.projectDirectory, result.filePath);
   }
   return result;
@@ -637,6 +640,7 @@ async function changeProjectLibrary() {
   const settings = await readProjectSettings();
   const result = await getChangedProjectLibrary(settings);
   if (!result.canceled) {
+    activeProjectLibrary = result;
     setMainWindowTitle(result.projectDirectory, result.filePath);
   }
   return result;
@@ -2610,11 +2614,24 @@ ipcMain.on("set-unsaved-state", (event, state) => {
 
 ipcMain.handle("get-app-version", () => app.getVersion());
 
-function getImportWizardContext(context = {}) {
-  const filePath = typeof context.filePath === "string" ? context.filePath : "";
+async function getImportWizardContext(context = {}) {
+  let sourceContext = context;
+  const requestedFilePath =
+    typeof context.filePath === "string" ? context.filePath : "";
+
+  if (!requestedFilePath && projectLibraryInitializationPromise) {
+    await projectLibraryInitializationPromise;
+  }
+
+  if (!requestedFilePath && activeProjectLibrary?.filePath) {
+    sourceContext = activeProjectLibrary;
+  }
+
+  const filePath =
+    typeof sourceContext.filePath === "string" ? sourceContext.filePath : "";
   const jsonData =
-    context.jsonData && Array.isArray(context.jsonData.samples)
-      ? context.jsonData
+    sourceContext.jsonData && Array.isArray(sourceContext.jsonData.samples)
+      ? sourceContext.jsonData
       : { format: "v1", samples: [] };
   const resolvedFilePath = filePath ? path.resolve(filePath) : "";
   const bundledLibraryPaths = new Set([
@@ -2636,8 +2653,8 @@ function sendImportWizardContext(context) {
   importWizardWindow.webContents.send("import-wizard-context", context);
 }
 
-ipcMain.handle("open-import-wizard", (event, requestedContext) => {
-  const context = getImportWizardContext(requestedContext);
+ipcMain.handle("open-import-wizard", async (event, requestedContext) => {
+  const context = await getImportWizardContext(requestedContext);
   if (importWizardWindow && !importWizardWindow.isDestroyed()) {
     importWizardWindow.focus();
     sendImportWizardContext(context);
@@ -2795,7 +2812,16 @@ ipcMain.handle("cancel-axioscan-czi", async () => {
   return { ok: true, canceled: true, outputDirectory: activeCziConversionOutput };
 });
 
-ipcMain.handle("initialize-project-library", async () => initializeProjectLibrary());
+ipcMain.handle("initialize-project-library", async () => {
+  if (!projectLibraryInitializationPromise) {
+    projectLibraryInitializationPromise = initializeProjectLibrary().finally(
+      () => {
+        projectLibraryInitializationPromise = null;
+      },
+    );
+  }
+  return projectLibraryInitializationPromise;
+});
 
 ipcMain.handle("change-project-library", async () => changeProjectLibrary());
 

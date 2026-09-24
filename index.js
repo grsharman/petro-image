@@ -2007,6 +2007,10 @@ const porosityTolerance = document.getElementById("porosityTolerance");
 const porosityToleranceValue = document.getElementById(
   "porosityToleranceValue",
 );
+const porosityHoleFillEnabled = document.getElementById(
+  "porosityHoleFillEnabled",
+);
+const porosityHoleFillArea = document.getElementById("porosityHoleFillArea");
 const porosityPreviewStatus = document.getElementById("porosityPreviewStatus");
 const porosityOverlayColor = document.getElementById("porosityOverlayColor");
 const porosityOverlayOpacity = document.getElementById(
@@ -6213,6 +6217,8 @@ function createPorosityType(name, options = {}) {
     previewResult: null,
     previewTolerance: null,
     tolerance: options.tolerance ?? 35,
+    holeFillEnabled: options.holeFillEnabled ?? false,
+    holeFillAreaSquareMicrons: options.holeFillAreaSquareMicrons ?? 25,
     overlayColor: options.overlayColor || "#ff0000",
     overlayOpacity: options.overlayOpacity ?? 100,
     visible: options.visible ?? true,
@@ -6318,6 +6324,8 @@ function getPorosityRecipeData() {
       manualPolygonUuids: [...(type.manualPolygonUuids || [])],
       manualPolygons: getPorosityManualPolygonSnapshots(type),
       tolerance: type.tolerance,
+      holeFillEnabled: Boolean(type.holeFillEnabled),
+      holeFillAreaSquareMicrons: type.holeFillAreaSquareMicrons ?? 25,
       overlayColor: type.overlayColor,
       overlayOpacity: type.overlayOpacity,
       visible: type.visible !== false,
@@ -6349,6 +6357,12 @@ function getPorosityExportResults() {
       currentTolerance: type.tolerance,
       tileSetIndices: type.result?.tileSetIndices ?? [],
       manualPolygonCount: getPorosityManualPolygonSnapshots(type).length,
+      holeFillEnabled: Boolean(type.result?.holeFill?.enabled),
+      holeFillThresholdSquareMicrons:
+        type.result?.holeFill?.thresholdSquareMicrons ?? null,
+      filledInclusionCount: type.result?.holeFill?.inclusionCount ?? 0,
+      filledAreaSquareMicrons:
+        type.result?.holeFill?.filledAreaSquareMicrons ?? 0,
     })),
   };
 }
@@ -6397,6 +6411,10 @@ function exportPorosityResultsCsv() {
       "committed_tolerance",
       "current_tolerance",
       "manual_polygon_count",
+      "fill_enclosed_gaps",
+      "fill_threshold_um2",
+      "filled_inclusion_count",
+      "filled_area_um2",
     ],
     ...porosityTypes.map((type) => [
       sourceTitle,
@@ -6416,6 +6434,10 @@ function exportPorosityResultsCsv() {
       type.result?.tolerance ?? "",
       type.tolerance,
       getPorosityManualPolygonSnapshots(type).length,
+      type.result?.holeFill?.enabled ? "true" : "false",
+      type.result?.holeFill?.thresholdSquareMicrons ?? "",
+      type.result?.holeFill?.inclusionCount ?? 0,
+      type.result?.holeFill?.filledAreaSquareMicrons ?? 0,
     ]),
   ];
   const csv = rows.map((row) => row.map(csvEscape).join(",")).join("\n");
@@ -6477,6 +6499,7 @@ function getPorosityRasterExportMetadata(type, product, details = {}) {
       analysisResolutionLabel: result?.analysisResolutionLabel || "",
       analysisScale: result?.analysisScale ?? null,
       tolerance: result?.tolerance ?? null,
+      holeFill: result?.holeFill ? { ...result.holeFill } : null,
     },
     raster: {
       width,
@@ -7082,6 +7105,11 @@ function importPorosityRecipe(recipe) {
   const importedTypes = recipe.types.map((savedType, index) => {
     const type = createPorosityType(savedType.name || `Porosity ${index + 1}`, {
       tolerance: Number(savedType.tolerance) || 35,
+      holeFillEnabled: Boolean(savedType.holeFillEnabled),
+      holeFillAreaSquareMicrons:
+        Number(savedType.holeFillAreaSquareMicrons) > 0
+          ? Number(savedType.holeFillAreaSquareMicrons)
+          : 25,
       overlayColor: savedType.overlayColor || "#ff0000",
       overlayOpacity: Number(savedType.overlayOpacity) || 100,
       visible: savedType.visible !== false,
@@ -7186,6 +7214,7 @@ function clonePorosityMask(mask) {
         }
       : null,
     alphaData: mask.alphaData ? new Uint8Array(mask.alphaData) : null,
+    validData: mask.validData ? new Uint8Array(mask.validData) : null,
   };
 }
 
@@ -7205,6 +7234,9 @@ function clonePorosityResult(result) {
     tolerance: result.tolerance ?? null,
     tileSetIndices: result.tileSetIndices ? [...result.tileSetIndices] : null,
     scope: result.scope || "aoi",
+    analysisPixelAreaSquareMicrons:
+      result.analysisPixelAreaSquareMicrons ?? null,
+    holeFill: result.holeFill ? { ...result.holeFill } : null,
     localThickness: result.localThickness
       ? {
           ...result.localThickness,
@@ -7249,6 +7281,8 @@ function clonePorosityState() {
       manualPolygons: cloneData(type.manualPolygons || []),
       result: clonePorosityResult(type.result),
       tolerance: type.tolerance,
+      holeFillEnabled: Boolean(type.holeFillEnabled),
+      holeFillAreaSquareMicrons: type.holeFillAreaSquareMicrons ?? 25,
       overlayColor: type.overlayColor,
       overlayOpacity: type.overlayOpacity,
       visible: type.visible !== false,
@@ -7520,6 +7554,28 @@ function syncPorosityControlsFromActiveType() {
   if (porosityToleranceValue) {
     porosityToleranceValue.value = String(type.tolerance);
   }
+  const hasScale = Boolean(pixelsPerMicron());
+  if (porosityHoleFillEnabled) {
+    porosityHoleFillEnabled.checked = Boolean(type.holeFillEnabled);
+    porosityHoleFillEnabled.disabled = !hasScale;
+  }
+  if (porosityHoleFillArea) {
+    porosityHoleFillArea.value = String(
+      Number(type.holeFillAreaSquareMicrons) > 0
+        ? type.holeFillAreaSquareMicrons
+        : 25,
+    );
+    porosityHoleFillArea.disabled =
+      !hasScale || !Boolean(type.holeFillEnabled);
+  }
+  const holeFillField = porosityHoleFillEnabled?.closest(
+    ".porosity-hole-fill-field",
+  );
+  if (holeFillField) {
+    holeFillField.title = hasScale
+      ? "Fill fully enclosed non-pore gaps up to this area."
+      : "Calibrate the image scale to fill gaps using µm².";
+  }
   if (porosityOverlayColor) porosityOverlayColor.value = type.overlayColor;
   setPorosityOverlayOpacityControlValue(type.overlayOpacity);
   renderPorositySamples();
@@ -7552,6 +7608,12 @@ function syncActivePorosityTypeFromControls() {
     porosityToleranceValue.value = String(type.tolerance);
   }
   type.overlayColor = porosityOverlayColor?.value || type.overlayColor;
+  if (pixelsPerMicron()) {
+    type.holeFillEnabled = Boolean(porosityHoleFillEnabled?.checked);
+  }
+  const holeFillArea = Number(porosityHoleFillArea?.value);
+  type.holeFillAreaSquareMicrons =
+    holeFillArea > 0 ? holeFillArea : type.holeFillAreaSquareMicrons || 25;
   type.overlayOpacity = clampPorosityOverlayOpacity(
     porosityOverlayOpacity?.value || type.overlayOpacity,
   );
@@ -7570,6 +7632,17 @@ function setPorosityToleranceControlValue(value) {
   if (porosityToleranceValue) porosityToleranceValue.value = String(tolerance);
   const activeType = getActivePorosityType();
   if (activeType) activeType.tolerance = tolerance;
+  return activeType;
+}
+
+function setPorosityHoleFillAreaControlValue(value) {
+  const numericValue = Number(value);
+  const area = Number.isFinite(numericValue) && numericValue > 0
+    ? numericValue
+    : 25;
+  if (porosityHoleFillArea) porosityHoleFillArea.value = String(area);
+  const activeType = getActivePorosityType();
+  if (activeType) activeType.holeFillAreaSquareMicrons = area;
   return activeType;
 }
 
@@ -8591,14 +8664,26 @@ function updatePorosityControls(message) {
   ].forEach((control) => {
     if (control) control.disabled = !workflowEnabled;
   });
+  const canFillHoles = workflowEnabled && Boolean(pixelsPerMicron());
+  if (porosityHoleFillEnabled) {
+    porosityHoleFillEnabled.disabled = !canFillHoles;
+  }
+  if (porosityHoleFillArea) {
+    porosityHoleFillArea.disabled =
+      !canFillHoles || !Boolean(activeType?.holeFillEnabled);
+  }
 
   if (!porosityStatus) return;
   if (message) {
     porosityStatus.textContent = message;
   } else if (activeType?.result) {
+    const filled = activeType.result.holeFill;
+    const filledSummary = filled?.enabled
+      ? ` · filled ${filled.inclusionCount.toLocaleString()} gap${filled.inclusionCount === 1 ? "" : "s"} (${formatCompactNumber(filled.filledAreaSquareMicrons, 4)} µm²)`
+      : "";
     porosityStatus.textContent = `${activeType.name}: ${activeType.result.percent.toFixed(
       1,
-    )}% (${activeType.result.porePixels.toLocaleString()} of ${activeType.result.totalPixels.toLocaleString()} pixels).`;
+    )}% (${activeType.result.porePixels.toLocaleString()} of ${activeType.result.totalPixels.toLocaleString()} pixels)${filledSummary}.`;
   } else if (porosityAoiModeActive) {
     porosityStatus.textContent = "Drag an AOI rectangle over the image.";
   } else if (!hasAoi) {
@@ -8920,6 +9005,7 @@ async function reestimatePorosityTypesWithResults(options = {}) {
       }
     }
   }
+  finalizePorosityHoleFilling(nextResults, typesToEstimate);
   nextResults.forEach((result, typeId) => {
     const type = porosityTypes.find((candidate) => candidate.id === typeId);
     if (type) type.result = result;
@@ -8949,6 +9035,11 @@ async function previewActivePorosityTolerance(estimateGeneration) {
     scope: "view",
   });
   if (estimateGeneration !== porosityEstimateGeneration || !preview) return;
+
+  finalizePorosityHoleFilling(
+    new Map([[activeType.id, preview]]),
+    [activeType],
+  );
 
   activeType.previewResult = preview;
   activeType.previewTolerance = activeType.tolerance;
@@ -10391,6 +10482,98 @@ async function addPorosityColorSample(event) {
   }
 }
 
+function porosityResultsShareRaster(left, right) {
+  if (
+    !left?.mask?.alphaData ||
+    !right?.mask?.alphaData ||
+    left.analysisWidth !== right.analysisWidth ||
+    left.analysisHeight !== right.analysisHeight ||
+    left.scope !== right.scope
+  ) {
+    return false;
+  }
+  const leftCorner = left.mask.imageCorners?.topLeft;
+  const rightCorner = right.mask.imageCorners?.topLeft;
+  return (
+    leftCorner &&
+    rightCorner &&
+    Math.abs(leftCorner.x - rightCorner.x) < 1e-6 &&
+    Math.abs(leftCorner.y - rightCorner.y) < 1e-6
+  );
+}
+
+function finalizePorosityHoleFilling(results, types = porosityTypes) {
+  types.forEach((type) => {
+    const result = results.get(type.id);
+    if (!result?.mask?.alphaData) return;
+    const thresholdSquareMicrons = Number(type.holeFillAreaSquareMicrons) || 25;
+    const pixelArea = Number(result.analysisPixelAreaSquareMicrons);
+    const enabled = Boolean(
+      type.holeFillEnabled && pixelArea > 0 && result.mask.validData,
+    );
+    result.holeFill = {
+      enabled,
+      thresholdSquareMicrons,
+      inclusionCount: 0,
+      filledPixels: 0,
+      filledAreaSquareMicrons: 0,
+    };
+    if (!enabled) return;
+
+    let protectedMask = null;
+    results.forEach((otherResult, otherTypeId) => {
+      if (
+        otherTypeId === type.id ||
+        !porosityResultsShareRaster(result, otherResult)
+      ) {
+        return;
+      }
+      protectedMask ||= new Uint8Array(result.mask.alphaData.length);
+      otherResult.mask.alphaData.forEach((value, index) => {
+        if (value) protectedMask[index] = 1;
+      });
+    });
+    const overlayAlpha = getPorosityOverlayAlphaForType(type);
+    const filled = window.PetroPorosityMaskCleanup.fillEnclosedBackground(
+      result.mask.alphaData,
+      result.mask.validData,
+      result.analysisWidth,
+      result.analysisHeight,
+      {
+        maxPixels: thresholdSquareMicrons / pixelArea,
+        protectedMask,
+        fillValue: overlayAlpha,
+      },
+    );
+    result.holeFill.inclusionCount = filled.inclusionCount;
+    result.holeFill.filledPixels = filled.filledPixels;
+    result.holeFill.filledAreaSquareMicrons = filled.filledPixels * pixelArea;
+    if (!filled.filledPixels) return;
+
+    const overlayColor = getPorosityOverlayColorRgbForType(type);
+    const ctx = result.mask.canvas.getContext("2d", { willReadFrequently: true });
+    const imageData = ctx.getImageData(
+      0,
+      0,
+      result.analysisWidth,
+      result.analysisHeight,
+    );
+    result.mask.alphaData.forEach((value, index) => {
+      if (!value || imageData.data[index * 4 + 3] > 0) return;
+      const offset = index * 4;
+      imageData.data[offset] = overlayColor.r;
+      imageData.data[offset + 1] = overlayColor.g;
+      imageData.data[offset + 2] = overlayColor.b;
+      imageData.data[offset + 3] = overlayAlpha;
+    });
+    ctx.putImageData(imageData, 0, 0);
+    result.porePixels += filled.filledPixels;
+    result.percent = result.totalPixels > 0
+      ? (result.porePixels / result.totalPixels) * 100
+      : 0;
+  });
+}
+
 async function estimateAllPorosityTypes(scope, estimateGeneration) {
   syncActivePorosityTypeFromControls();
   clearPorosityPreviews();
@@ -10453,15 +10636,14 @@ async function estimateAllPorosityTypes(scope, estimateGeneration) {
     if (estimateGeneration !== porosityEstimateGeneration) return;
     if (result) nextResults.set(type.id, result);
   }
+  finalizePorosityHoleFilling(nextResults);
   porosityTypes.forEach((type) => {
     type.result = nextResults.get(type.id) || null;
     type.previewResult = null;
     type.previewTolerance = null;
   });
   drawPorosityOverlay();
-  updatePorosityControls(
-    `${porosityTypes.length} porosity type${porosityTypes.length === 1 ? "" : "s"} estimated.`,
-  );
+  updatePorosityControls();
   setPorosityProgress("Porosity estimation complete.", 100);
 }
 
@@ -10548,6 +10730,7 @@ async function estimatePorosity(options = {}) {
     const maskCtx = maskCanvas.getContext("2d", { willReadFrequently: true });
     const mask = maskCtx.createImageData(maskCanvas.width, maskCanvas.height);
     const alphaData = new Uint8Array(maskCanvas.width * maskCanvas.height);
+    const validData = new Uint8Array(maskCanvas.width * maskCanvas.height);
     if (targetType.id === activePorosityTypeId) {
       syncActivePorosityTypeFromControls();
     }
@@ -10622,6 +10805,9 @@ async function estimatePorosity(options = {}) {
             selectedTileSetIndices,
             toleranceSquared,
           );
+        if (hasPixelForEveryTileSet) {
+          validData[y * sourceCanvas.width + x] = 1;
+        }
         if (
           (isManualPolygonPorosity || matchesSelectedTileSets) &&
           (isManualPolygonPorosity ||
@@ -10659,6 +10845,7 @@ async function estimatePorosity(options = {}) {
         rect: null,
         imageCorners,
         alphaData,
+        validData,
       },
       porePixels,
       totalPixels,
@@ -10668,6 +10855,9 @@ async function estimatePorosity(options = {}) {
       analysisHeight: exportSize.height,
       analysisResolutionMode: exportSize.mode,
       analysisResolutionLabel: exportSize.label,
+      analysisPixelAreaSquareMicrons: pixelsPerMicron()
+        ? (imageScaleX * imageScaleY) / pixelsPerMicron() ** 2
+        : null,
       tolerance: getPorosityToleranceValueForType(targetType),
       tileSetIndices: [...selectedTileSetIndices],
       scope,
@@ -11260,6 +11450,7 @@ async function applySnapshotLayerProcessing(
       transform,
       resolution.width,
       resolution.height,
+      { maskUnreliable: shouldMaskUnreliableAzimuthFits(transform) },
     );
     applySnapshotLayerAppearance(transformedCanvas, tileSet);
     return { canvas: transformedCanvas, applied: true };
@@ -19656,6 +19847,27 @@ if (hasFullViewerMenus && openPorosityEstimatorButton && porosityPalette) {
     schedulePorosityTolerancePreview();
     unsavedPorosity(true);
   });
+  porosityHoleFillEnabled?.addEventListener("change", async function () {
+    const activeType = syncActivePorosityTypeFromControls();
+    updatePorosityControls();
+    unsavedPorosity(true);
+    if (!activeType?.result) return;
+    porosityEstimateGeneration += 1;
+    await reestimatePorosityTypesWithResults({
+      estimateGeneration: porosityEstimateGeneration,
+    });
+  });
+  porosityHoleFillArea?.addEventListener("change", async function () {
+    const activeType = setPorosityHoleFillAreaControlValue(
+      porosityHoleFillArea.value,
+    );
+    unsavedPorosity(true);
+    if (!activeType?.result || !activeType.holeFillEnabled) return;
+    porosityEstimateGeneration += 1;
+    await reestimatePorosityTypesWithResults({
+      estimateGeneration: porosityEstimateGeneration,
+    });
+  });
   porosityOverlayColor?.addEventListener("input", function () {
     syncActivePorosityTypeFromControls();
     schedulePorosityMaskRecolor();
@@ -22336,7 +22548,7 @@ function createDerivedPolarizationTileContext(
     forceOpaque: true,
   });
   mapPolarizationRasterToImageData(context, raster, transform, {
-    maskUnreliable: shouldMaskUnreliableAzimuthPreview(transform),
+    maskUnreliable: shouldMaskUnreliableAzimuthFits(transform),
   });
   context.petroImageGeneratedPreviewContext = true;
   context.petroImageAdvancedRawValues = raster.values;
@@ -23376,7 +23588,7 @@ function getTransformRoseConfig(transform = null) {
   }
 }
 
-function shouldMaskUnreliableAzimuthPreview(transform = null) {
+function shouldMaskUnreliableAzimuthFits(transform = null) {
   const settings = transform || getTransformOptionsFromControls();
   return Boolean(
     getTransformRoseConfig(settings) &&
@@ -23426,7 +23638,7 @@ function updatePolarizationAzimuthPreviewMask() {
           },
           transform,
           {
-            maskUnreliable: shouldMaskUnreliableAzimuthPreview(transform),
+            maskUnreliable: shouldMaskUnreliableAzimuthFits(transform),
           },
         );
         if (!isDefaultAppearanceValue(appearance)) {
@@ -25487,13 +25699,19 @@ async function renderPolarizationRaster(imageRect, resolution, transform) {
   );
 }
 
-function createPolarizationRasterDisplayCanvas(raster, transform, width, height) {
+function createPolarizationRasterDisplayCanvas(
+  raster,
+  transform,
+  width,
+  height,
+  options = {},
+) {
   const canvas = document.createElement("canvas");
   canvas.width = width;
   canvas.height = height;
   const context = canvas.getContext("2d", { willReadFrequently: true });
   if (!context) throw new Error("Could not create polarization display image.");
-  mapPolarizationRasterToImageData(context, raster, transform);
+  mapPolarizationRasterToImageData(context, raster, transform, options);
   return canvas;
 }
 
@@ -27358,7 +27576,7 @@ function applyPolarizationVisibleTransformToContext(
       },
     );
   mapPolarizationRasterToImageData(context, raster, transform, {
-    maskUnreliable: shouldMaskUnreliableAzimuthPreview(transform),
+    maskUnreliable: shouldMaskUnreliableAzimuthFits(transform),
   });
     context.petroImageAdvancedRawValues = raster.values;
     context.petroImageAdvancedRgbValues = raster.rgbValues;
@@ -30647,7 +30865,7 @@ function getTransformTooltipSample(event) {
     const valueLabel = formatTransformTooltipNumber(rawValue);
     const reliability = context.petroImagePolarizationFitReliability;
     if (
-      shouldMaskUnreliableAzimuthPreview(activeTransform) &&
+      shouldMaskUnreliableAzimuthFits(activeTransform) &&
       reliability?.values?.[valueIndex] !== 1
     ) {
       return `${valueLabel}\nUnreliable fit`;
