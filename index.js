@@ -5039,7 +5039,10 @@ function insertUnsupervisedAoiVertex(viewerPixel) {
   const edgeHit = getUnsupervisedAoiEdgeHit(viewerPixel);
   if (!edgeHit) return false;
 
-  const imagePoint = getImagePointFromViewerPixel(viewerPixel);
+  // Segment AOIs are rendered and processed in the current display image's
+  // pixel space. Do not pass this through the stable annotation-coordinate
+  // adapter, which may use a different resolution from the displayed image.
+  const imagePoint = getDisplayImagePointFromViewerPixel(viewerPixel);
   if (!imagePoint) return false;
 
   unsupervisedAoiImagePoints.splice(edgeHit.insertIndex, 0, {
@@ -8801,15 +8804,11 @@ function invalidatePorosityResultsForAoiEdit() {
 }
 
 function getPorosityViewerPixelFromClientPoint(clientX, clientY) {
-  if (!viewerContainer) return null;
-
-  const rect = viewerContainer.getBoundingClientRect();
-  return new OpenSeadragon.Point(clientX - rect.left, clientY - rect.top);
+  return getViewerPixelFromClientPoint(clientX, clientY);
 }
 
 function getPorosityImagePointFromClientPoint(clientX, clientY) {
-  const viewerPixel = getPorosityViewerPixelFromClientPoint(clientX, clientY);
-  return viewerPixel ? getPorosityImagePointFromViewerPixel(viewerPixel) : null;
+  return getDisplayImagePointFromClientPoint(clientX, clientY);
 }
 
 function getPorosityAoiVertexHit(viewerPixel, maxDistance = 9) {
@@ -9977,12 +9976,7 @@ function finishPorosityAoi() {
 }
 
 function getPorosityImagePointFromViewerPixel(viewerPixel) {
-  const image = viewer.world.getItemAt(0);
-  if (!image) return null;
-
-  const viewportPoint = viewer.viewport.pointFromPixel(viewerPixel);
-  const imagePoint = image.viewportToImageCoordinates(viewportPoint);
-  return { x: imagePoint.x, y: imagePoint.y };
+  return getDisplayImagePointFromViewerPixel(viewerPixel);
 }
 
 function getPorosityScreenPointFromImagePoint(imagePoint) {
@@ -36094,10 +36088,35 @@ function getImagePointFromViewerPixel(pixelPoint) {
   return image.viewportToImageCoordinates(viewportPoint);
 }
 
+function getDisplayImagePointFromViewerPixel(pixelPoint) {
+  const image = viewer.world.getItemAt(0);
+  if (!image) return null;
+
+  const viewportPoint = viewer.viewport.pointFromPixel(pixelPoint);
+  const imagePoint = image.viewportToImageCoordinates(viewportPoint);
+  return { x: imagePoint.x, y: imagePoint.y };
+}
+
+function getViewerPixelFromClientPoint(clientX, clientY) {
+  if (!viewerContainer) return null;
+
+  const rect = viewerContainer.getBoundingClientRect();
+  return new OpenSeadragon.Point(clientX - rect.left, clientY - rect.top);
+}
+
+function getDisplayImagePointFromClientPoint(clientX, clientY) {
+  const viewerPixel = getViewerPixelFromClientPoint(clientX, clientY);
+  return viewerPixel
+    ? getDisplayImagePointFromViewerPixel(viewerPixel)
+    : null;
+}
+
 function getImagePointFromPointerEvent(event) {
-  return getImagePointFromViewerPixel(
-    new OpenSeadragon.Point(event.clientX, event.clientY),
+  const viewerPixel = getViewerPixelFromClientPoint(
+    event.clientX,
+    event.clientY,
   );
+  return viewerPixel ? getImagePointFromViewerPixel(viewerPixel) : null;
 }
 
 function translateCoordinateArray(coordinates, dx, dy) {
@@ -47662,13 +47681,11 @@ viewerContainer.addEventListener("mousemove", function (event) {
     circleConversion = 1000000;
   }
 
-  const image = viewer.world.getItemAt(0);
-  const positionPoint = new OpenSeadragon.Point(event.clientX, event.clientY);
-  const viewportPoint = viewer.viewport.pointFromPixel(positionPoint);
-  const imagePoint = image.viewportToImageCoordinates(
-    viewportPoint.x,
-    viewportPoint.y,
+  const imagePoint = getDisplayImagePointFromClientPoint(
+    event.clientX,
+    event.clientY,
   );
+  if (!imagePoint) return;
   const coordinates = getCircleCoordinatesInImageSpace(
     imagePoint.x,
     imagePoint.y,
@@ -56583,7 +56600,8 @@ viewer.addHandler("canvas-scroll", function (event) {
     newZoom = Math.max(minZoom, Math.min(newZoom, maxZoom));
 
     // Get the mouse position relative to the viewport
-    const webPoint = new OpenSeadragon.Point(e.clientX, e.clientY);
+    const webPoint = getViewerPixelFromClientPoint(e.clientX, e.clientY);
+    if (!webPoint) return;
     const viewportPoint = viewer.viewport.pointFromPixel(webPoint);
 
     viewer.viewport.zoomTo(zoom * factor, viewportPoint);
